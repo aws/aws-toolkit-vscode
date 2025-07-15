@@ -18,13 +18,10 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
     public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix, vscode.CodeActionKind.Refactor]
 
     constructor(private readonly autoDebugController: AutoDebugController) {
-        this.logger.debug('AutoDebugCodeActionsProvider: Initializing code actions provider')
         this.registerProvider()
     }
 
     private registerProvider(): void {
-        this.logger.debug('AutoDebugCodeActionsProvider: Registering code actions provider')
-
         // Register for all file types that might have diagnostics
         const selector: vscode.DocumentSelector = [
             { scheme: 'file', language: 'typescript' },
@@ -59,12 +56,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         context: vscode.CodeActionContext,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
-        this.logger.debug(
-            'AutoDebugCodeActionsProvider: Providing code actions for %s at range %s',
-            document.fileName,
-            `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`
-        )
-
         if (token.isCancellationRequested) {
             return []
         }
@@ -80,11 +71,11 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
             // Add "Fix with Amazon Q" action
             actions.push(this.createFixWithQAction(document, range, diagnostics))
 
+            // Add "Fix All with Amazon Q" action
+            actions.push(this.createFixAllWithQAction(document))
+
             // Add "Explain Problem" action
             actions.push(this.createExplainProblemAction(document, range, diagnostics))
-
-            // Add "Add to Amazon Q Chat" action
-            actions.push(this.createAddToChatAction(document, range, diagnostics))
         }
 
         // Always add session management actions
@@ -97,8 +88,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
 
         // Add "Detect Problems" action
         actions.push(this.createDetectProblemsAction(document, range))
-
-        this.logger.debug('AutoDebugCodeActionsProvider: Provided %d code actions', actions.length)
         return actions
     }
 
@@ -113,13 +102,24 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         )
 
         action.command = {
-            command: 'amazonq.autoDebug.fixWithQ',
+            command: 'amazonq.01.fixWithQ',
             title: 'Fix with Amazon Q',
             arguments: [range, diagnostics],
         }
 
         action.diagnostics = diagnostics
         action.isPreferred = true // Make this the preferred quick fix
+
+        return action
+    }
+
+    private createFixAllWithQAction(document: vscode.TextDocument): vscode.CodeAction {
+        const action = new vscode.CodeAction('Fix All with Amazon Q', vscode.CodeActionKind.QuickFix)
+
+        action.command = {
+            command: 'amazonq.02.fixAllWithQ',
+            title: 'Fix All with Amazon Q',
+        }
 
         return action
     }
@@ -132,26 +132,8 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         const action = new vscode.CodeAction('Explain Problem with Amazon Q', vscode.CodeActionKind.QuickFix)
 
         action.command = {
-            command: 'amazonq.autoDebug.explainProblem',
+            command: 'amazonq.03.explainProblem',
             title: 'Explain Problem with Amazon Q',
-            arguments: [range, diagnostics],
-        }
-
-        action.diagnostics = diagnostics
-
-        return action
-    }
-
-    private createAddToChatAction(
-        document: vscode.TextDocument,
-        range: vscode.Range,
-        diagnostics: vscode.Diagnostic[]
-    ): vscode.CodeAction {
-        const action = new vscode.CodeAction('Add to Amazon Q Chat', vscode.CodeActionKind.Refactor)
-
-        action.command = {
-            command: 'amazonq.autoDebug.addToChat',
-            title: 'Add to Amazon Q Chat',
             arguments: [range, diagnostics],
         }
 
@@ -164,7 +146,7 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         const action = new vscode.CodeAction('Start Auto Debug Session', vscode.CodeActionKind.Refactor)
 
         action.command = {
-            command: 'amazonq.autoDebug.startSession',
+            command: 'amazonq.05.startSession',
             title: 'Start Auto Debug Session',
         }
 
@@ -175,7 +157,7 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         const action = new vscode.CodeAction('End Auto Debug Session', vscode.CodeActionKind.Refactor)
 
         action.command = {
-            command: 'amazonq.autoDebug.endSession',
+            command: 'amazonq.06.endSession',
             title: 'End Auto Debug Session',
         }
 

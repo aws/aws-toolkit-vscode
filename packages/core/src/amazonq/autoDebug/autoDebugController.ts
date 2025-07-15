@@ -49,8 +49,6 @@ export class AutoDebugController implements vscode.Disposable {
     public readonly onSessionEnded = new vscode.EventEmitter<string>()
 
     constructor(config?: Partial<AutoDebugConfig>, client?: any, encryptionKey?: Buffer) {
-        this.logger.debug('AutoDebugController: Initializing auto debug controller')
-
         this.config = {
             enabled: true,
             autoReportThreshold: 1, // Report when 1 or more errors detected
@@ -66,7 +64,6 @@ export class AutoDebugController implements vscode.Disposable {
         this.errorFormatter = new ErrorContextFormatter()
         this.lspClient = new AutoDebugLspClient(client, encryptionKey)
 
-        this.setupEventHandlers()
         this.disposables.push(
             this.diagnosticsMonitor,
             this.onProblemsDetected,
@@ -105,8 +102,6 @@ export class AutoDebugController implements vscode.Disposable {
             return
         }
         const sessionId = this.currentSession.id
-        this.logger.debug('AutoDebugController: Ending session %s', sessionId)
-
         this.currentSession = undefined
         this.onSessionEnded.fire(sessionId)
     }
@@ -123,12 +118,10 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public async detectProblems(): Promise<Problem[]> {
         if (!this.config.enabled) {
-            this.logger.debug('AutoDebugController: Auto debug is disabled')
             return []
         }
 
         if (!this.currentSession) {
-            this.logger.debug('AutoDebugController: No active session, starting new one')
             await this.startSession()
         }
 
@@ -144,7 +137,6 @@ export class AutoDebugController implements vscode.Disposable {
         const filteredProblems = this.filterProblems(newProblems)
 
         if (filteredProblems.length > 0) {
-            this.logger.debug('AutoDebugController: Detected %d new problems', filteredProblems.length)
             this.onProblemsDetected.fire(filteredProblems)
         }
 
@@ -155,8 +147,6 @@ export class AutoDebugController implements vscode.Disposable {
      * Creates formatted error contexts for AI debugging
      */
     public async createErrorContexts(problems: Problem[]): Promise<ErrorContext[]> {
-        this.logger.debug('AutoDebugController: Creating error contexts for %d problems', problems.length)
-
         const contexts: ErrorContext[] = []
 
         for (const problem of problems) {
@@ -167,8 +157,6 @@ export class AutoDebugController implements vscode.Disposable {
                 this.logger.warn('AutoDebugController: Failed to create context for problem: %s', error)
             }
         }
-
-        this.logger.debug('AutoDebugController: Created %d error contexts', contexts.length)
         return contexts
     }
 
@@ -176,8 +164,6 @@ export class AutoDebugController implements vscode.Disposable {
      * Formats problems for display or AI consumption
      */
     public formatProblemsForChat(problems: Problem[]): string {
-        this.logger.debug('AutoDebugController: Formatting %d problems for chat', problems.length)
-
         const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd()
         return this.errorFormatter.formatProblemsString(problems, cwd)
     }
@@ -205,7 +191,6 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public updateConfig(newConfig: Partial<AutoDebugConfig>): void {
         this.config = { ...this.config, ...newConfig }
-        this.logger.debug('AutoDebugController: Configuration updated')
     }
 
     /**
@@ -213,15 +198,12 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public setLanguageClient(client: any): void {
         this.lspClient.setLanguageClient(client)
-        this.logger.debug('AutoDebugController: Language client set')
     }
 
     /**
      * Sends a chat message through the LSP client (public interface)
      */
     public async sendChatMessage(message: string, source: string): Promise<void> {
-        this.logger.debug('AutoDebugController: Public sendChatMessage called from source: %s', source)
-
         await this.sendMessageToChat(message)
     }
 
@@ -236,8 +218,6 @@ export class AutoDebugController implements vscode.Disposable {
      * Fix with Amazon Q - sends up to 15 error messages one time when user clicks the button
      */
     public async fixAllProblemsInFile(maxProblems: number = 15): Promise<void> {
-        this.logger.debug('AutoDebugController: Starting single Fix with Amazon Q request')
-
         const editor = vscode.window.activeTextEditor
         if (!editor) {
             void vscode.window.showWarningMessage('No active editor found')
@@ -261,7 +241,6 @@ export class AutoDebugController implements vscode.Disposable {
 
             if (errorDiagnostics.length === 0) {
                 void vscode.window.showInformationMessage(`✅ No errors found in ${fileName}`)
-                this.logger.debug('AutoDebugController: No errors found in current file')
                 return
             }
 
@@ -269,11 +248,6 @@ export class AutoDebugController implements vscode.Disposable {
             const diagnosticsToFix = errorDiagnostics.slice(0, maxProblems)
             const totalErrors = errorDiagnostics.length
             const errorsBeingSent = diagnosticsToFix.length
-
-            this.logger.debug(
-                `AutoDebugController: Found ${totalErrors} total errors, sending ${errorsBeingSent} to Amazon Q`
-            )
-
             // Convert diagnostics to problems
             const problems = diagnosticsToFix.map((diagnostic) => ({
                 uri: editor.document.uri,
@@ -297,20 +271,9 @@ export class AutoDebugController implements vscode.Disposable {
                 totalErrors,
                 errorsBeingSent
             )
-
-            // Show progress message
-            void vscode.window.showInformationMessage(
-                `🔧 Sending ${errorsBeingSent} error${errorsBeingSent !== 1 ? 's' : ''} to Amazon Q for fixing...`
-            )
-
             await this.sendChatMessage(fixMessage, 'singleFix')
-
-            this.logger.debug('AutoDebugController: Fix request sent successfully')
         } catch (error) {
             this.logger.error('AutoDebugController: Error in fix process: %s', error)
-            void vscode.window.showErrorMessage(
-                `Error during fix process: ${error instanceof Error ? error.message : 'Unknown error'}`
-            )
         }
     }
 
@@ -349,7 +312,7 @@ export class AutoDebugController implements vscode.Disposable {
         }
 
         parts.push('')
-        parts.push('Please fix the error in place in the file.')
+        parts.push('Please fix the error')
 
         if (totalErrors > errorsBeingSent) {
             parts.push(
@@ -366,17 +329,7 @@ export class AutoDebugController implements vscode.Disposable {
      */
     private async sendMessageToChat(message: string): Promise<void> {
         const triggerID = randomUUID()
-        this.logger.debug(
-            'AutoDebugController: Sending message directly to language server with triggerID: %s',
-            triggerID
-        )
-        this.logger.debug('AutoDebugController: Message content: %s', message.substring(0, 200))
-
         try {
-            // **DIRECT LSP APPROACH**: Send directly to language server to avoid webview routing issues
-            // The previous approach was going through webview connectors which use the wrong format
-
-            // Use the LSP client to send chat request directly to language server
             const success = await this.lspClient.sendChatMessage({
                 message: message,
                 triggerType: 'autoDebug',
@@ -395,11 +348,6 @@ export class AutoDebugController implements vscode.Disposable {
                 triggerID,
                 error
             )
-            this.logger.error(
-                'AutoDebugController: Error stack: %s',
-                error instanceof Error ? error.stack : 'No stack trace'
-            )
-            throw error
         }
     }
 
@@ -407,14 +355,6 @@ export class AutoDebugController implements vscode.Disposable {
      * Automatically fixes problems using the language server
      */
     public async autoFixProblems(problems: Problem[], filePath: string, autoApply: boolean = false): Promise<boolean> {
-        this.logger.debug('AutoDebugController: Auto-fixing %d problems for %s', problems.length, filePath)
-        this.logger.debug(
-            'AutoDebugController: Problems to fix: %s',
-            problems
-                .map((p) => `${p.severity}: ${p.diagnostic.message} at line ${p.diagnostic.range.start.line}`)
-                .join(', ')
-        )
-
         try {
             // Get file content
             const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
@@ -446,89 +386,8 @@ export class AutoDebugController implements vscode.Disposable {
             return false
         } catch (error) {
             this.logger.error('AutoDebugController: Error during auto-fix: %s', error)
-            void vscode.window.showErrorMessage(
-                `Failed to auto-fix problems: ${error instanceof Error ? error.message : 'Unknown error'}`
-            )
             return false
         }
-    }
-
-    private setupEventHandlers(): void {
-        this.logger.debug('AutoDebugController: Setting up event handlers')
-
-        // **ONLY trigger on specific file events (save/open) - NO continuous monitoring during typing**
-        // This prevents notification spam while you're actively coding
-
-        // Listen for file saves and check for errors
-        this.disposables.push(
-            vscode.workspace.onDidSaveTextDocument(async (document) => {
-                await this.handleFileEvent(document, 'save')
-            })
-        )
-
-        // Listen for file opens and check for errors
-        this.disposables.push(
-            vscode.workspace.onDidOpenTextDocument(async (document) => {
-                await this.handleFileEvent(document, 'open')
-            })
-        )
-    }
-
-    /**
-     * Handles file events (save/open) and checks for errors that should trigger auto-debug
-     */
-    private async handleFileEvent(document: vscode.TextDocument, eventType: 'save' | 'open'): Promise<void> {
-        if (!this.config.enabled) {
-            return
-        }
-
-        if (!this.currentSession) {
-            await this.startSession()
-        }
-
-        this.logger.debug('AutoDebugController: Document %s, checking for errors: %s', eventType, document.fileName)
-
-        // **Only trigger auto-notification if there are actual errors after file event**
-        setTimeout(async () => {
-            try {
-                // Check if there are errors in the file
-                const diagnostics = vscode.languages.getDiagnostics(document.uri)
-                const errorDiagnostics = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error)
-
-                if (errorDiagnostics.length > 0) {
-                    this.logger.debug(`AutoDebugController: Found ${errorDiagnostics.length} errors after ${eventType}`)
-
-                    // **FIX #1: Always show notification when errors are found (removed Amazon Q activity requirement)**
-                    this.logger.debug(`AutoDebugController: Showing notification for errors found after ${eventType}`)
-
-                    // Convert diagnostics to problems
-                    const problems = errorDiagnostics.map((diagnostic) => ({
-                        uri: document.uri,
-                        diagnostic,
-                        severity: mapDiagnosticSeverity(diagnostic.severity),
-                        source: diagnostic.source || 'unknown',
-                        isNew: true,
-                    }))
-
-                    // Update session with new problems
-                    if (this.currentSession) {
-                        this.currentSession = {
-                            ...this.currentSession,
-                            problems: [...this.currentSession.problems, ...problems],
-                        }
-                    }
-
-                    // Fire the problems detected event - this triggers the notification in AutoDebugFeature
-                    this.onProblemsDetected.fire(problems)
-
-                    this.logger.debug('AutoDebugController: Problems detected event fired for notification')
-                } else {
-                    this.logger.debug(`AutoDebugController: No errors found after ${eventType}`)
-                }
-            } catch (error) {
-                this.logger.error(`AutoDebugController: Error checking problems after ${eventType}: %s`, error)
-            }
-        }, this.config.debounceMs)
     }
 
     /**

@@ -19,32 +19,15 @@ export class ContextMenuProvider implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = []
 
     constructor(private readonly autoDebugController: AutoDebugController) {
-        this.logger.debug('ContextMenuProvider: Initializing context menu provider')
         this.registerCommands()
     }
 
     private registerCommands(): void {
-        this.logger.debug('ContextMenuProvider: Registering context menu commands')
-
-        // Register "Add to Amazon Q" command
-        this.disposables.push(
-            Commands.register(
-                {
-                    id: 'amazonq.autoDebug.addToChat',
-                    name: 'Add Code with Diagnostics to Amazon Q',
-                    telemetryName: 'amazonq_openChat',
-                },
-                async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
-                    await this.addToAmazonQ(range, diagnostics)
-                }
-            )
-        )
-
         // Register "Fix with Amazon Q" command
         this.disposables.push(
             Commands.register(
                 {
-                    id: 'amazonq.autoDebug.fixWithQ',
+                    id: 'amazonq.01.fixWithQ',
                     name: 'Fix with Amazon Q',
                     telemetryName: 'amazonq_openChat',
                 },
@@ -54,11 +37,25 @@ export class ContextMenuProvider implements vscode.Disposable {
             )
         )
 
-        // Register "Explain Problem" command
+        // Register "Fix All with Amazon Q" command
         this.disposables.push(
             Commands.register(
                 {
-                    id: 'amazonq.autoDebug.explainProblem',
+                    id: 'amazonq.02.fixAllWithQ',
+                    name: 'Fix All with Amazon Q',
+                    telemetryName: 'amazonq_openChat',
+                },
+                async () => {
+                    await this.fixAllWithAmazonQ()
+                }
+            )
+        )
+
+        // Register "Explain Problem with Amazon Q" command
+        this.disposables.push(
+            Commands.register(
+                {
+                    id: 'amazonq.03.explainProblem',
                     name: 'Explain Problem with Amazon Q',
                     telemetryName: 'amazonq_openChat',
                 },
@@ -68,11 +65,12 @@ export class ContextMenuProvider implements vscode.Disposable {
             )
         )
 
+        // Session management commands (less frequently used, at the end)
         // Register "Start Auto Debug Session" command
         this.disposables.push(
             Commands.register(
                 {
-                    id: 'amazonq.autoDebug.startSession',
+                    id: 'amazonq.05.startSession',
                     name: 'Start Auto Debug Session',
                     telemetryName: 'vscode_executeCommand',
                 },
@@ -86,7 +84,7 @@ export class ContextMenuProvider implements vscode.Disposable {
         this.disposables.push(
             Commands.register(
                 {
-                    id: 'amazonq.autoDebug.endSession',
+                    id: 'amazonq.06.endSession',
                     name: 'End Auto Debug Session',
                     telemetryName: 'vscode_executeCommand',
                 },
@@ -98,47 +96,9 @@ export class ContextMenuProvider implements vscode.Disposable {
     }
 
     /**
-     * Adds selected code with diagnostic context to Amazon Q chat
-     * **Fixed to use working LSP integration like AutoDebug flow**
-     */
-    private async addToAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Adding code to Amazon Q chat')
-
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                this.logger.warn('ContextMenuProvider: No active editor for addToAmazonQ')
-                return
-            }
-
-            const selectedText = this.getSelectedText(editor, range)
-            const filePath = editor.document.uri.fsPath
-            const languageId = editor.document.languageId
-
-            // Use shared helper to get diagnostics and convert to problems
-            const problems = this.getDiagnosticsAsProblems(editor, range, diagnostics) || []
-
-            // Format the context for chat
-            const formattedProblems = this.autoDebugController.formatProblemsForChat(problems)
-            const contextMessage = this.createChatMessage(selectedText, filePath, languageId, formattedProblems)
-
-            // **FIXED: Use working AutoDebugController LSP integration instead of broken webview approach**
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-            await this.autoDebugController.sendChatMessage(contextMessage, 'addToChat')
-
-            this.logger.debug('ContextMenuProvider: Successfully added code to Amazon Q chat using LSP integration')
-        } catch (error) {
-            this.logger.error('ContextMenuProvider: Error adding code to Amazon Q: %s', error)
-            void vscode.window.showErrorMessage('Failed to add code to Amazon Q chat')
-        }
-    }
-
-    /**
-     * Enhanced Fix with Amazon Q - processes all errors in the file iteratively
+     * Fix with Amazon Q - fixes only the specific issues the user selected
      */
     private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Starting enhanced Fix with Amazon Q')
-
         try {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
@@ -146,22 +106,30 @@ export class ContextMenuProvider implements vscode.Disposable {
                 void vscode.window.showWarningMessage('No active editor found')
                 return
             }
+            await this.fixSpecificProblems(range, diagnostics)
+        } catch (error) {
+            this.logger.error('ContextMenuProvider: Error in Fix with Amazon Q: %s', error)
+        }
+    }
 
-            // If specific range/diagnostics provided, use focused fix
-            if (range || diagnostics) {
-                await this.fixSpecificProblems(range, diagnostics)
-            } else {
-                // Use the enhanced fix-all-problems method
-                this.logger.debug('ContextMenuProvider: Using enhanced fix-all-problems method')
-                await this.autoDebugController.fixAllProblemsInFile(10) // 10 errors per batch
+    /**
+     * Fix All with Amazon Q - processes all errors in the current file
+     */
+    private async fixAllWithAmazonQ(): Promise<void> {
+        try {
+            const editor = vscode.window.activeTextEditor
+            if (!editor) {
+                void vscode.window.showWarningMessage('No active editor found')
+                return
             }
 
-            this.logger.debug('ContextMenuProvider: Successfully completed enhanced fix with Amazon Q')
+            // Focus Amazon Q panel first
+            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
+
+            // Use the enhanced fix-all-problems method
+            await this.autoDebugController.fixAllProblemsInFile(10) // 10 errors per batch
         } catch (error) {
-            this.logger.error('ContextMenuProvider: Error in enhanced fix with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage(
-                `Enhanced fix failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-            )
+            this.logger.error('ContextMenuProvider: Error in Fix All with Amazon Q: %s', error)
         }
     }
 
@@ -192,8 +160,6 @@ export class ContextMenuProvider implements vscode.Disposable {
 
         // Use the working AutoDebugController pipeline
         await this.autoDebugController.sendChatMessage(fixMessage, 'focusedFix')
-
-        this.logger.debug('ContextMenuProvider: Successfully sent focused fix request')
     }
 
     /**
@@ -201,8 +167,6 @@ export class ContextMenuProvider implements vscode.Disposable {
      * **Fixed to use working LSP integration like AutoDebug flow**
      */
     private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Explaining problem with Amazon Q')
-
         try {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
@@ -224,12 +188,8 @@ export class ContextMenuProvider implements vscode.Disposable {
 
             // Create explanation message
             const explanationMessage = this.createExplanationMessage(problems)
-
-            // **FIXED: Use working AutoDebugController LSP integration instead of broken webview approach**
             await focusAmazonQPanel.execute(placeholder, 'autoDebug')
             await this.autoDebugController.sendChatMessage(explanationMessage, 'explainProblem')
-
-            this.logger.debug('ContextMenuProvider: Successfully requested problem explanation using LSP integration')
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error explaining problem: %s', error)
             void vscode.window.showErrorMessage('Failed to explain problem with Amazon Q')
@@ -314,28 +274,6 @@ export class ContextMenuProvider implements vscode.Disposable {
         }))
     }
 
-    private createChatMessage(selectedText: string, filePath: string, languageId: string, problems: string): string {
-        const parts = [
-            'I need help with this code that has some issues:',
-            '',
-            `**File:** ${filePath}`,
-            `**Language:** ${languageId}`,
-            '',
-            '**Code:**',
-            `\`\`\`${languageId}`,
-            selectedText,
-            '```',
-            '',
-        ]
-
-        if (problems.trim()) {
-            parts.push('**Problems detected:**')
-            parts.push(problems)
-        }
-
-        return parts.join('\n')
-    }
-
     private createFixMessage(selectedText: string, filePath: string, languageId: string, errorContexts: any[]): string {
         const parts = [
             'Please help me fix the following code issues:',
@@ -359,7 +297,7 @@ export class ContextMenuProvider implements vscode.Disposable {
         }
 
         parts.push('')
-        parts.push('Please fix the error in place in the file.')
+        parts.push('Please fix the error.')
 
         return parts.join('\n')
     }
