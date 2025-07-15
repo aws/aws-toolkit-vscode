@@ -5,7 +5,7 @@
 
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from 'aws-core-vscode/shared'
-import { AutoDebugLspClient } from './autoDebugLspClient'
+import { AutoDebugLspClient } from './autoDebugLspClientUtil'
 
 const logger = getLogger('amazonqLsp')
 
