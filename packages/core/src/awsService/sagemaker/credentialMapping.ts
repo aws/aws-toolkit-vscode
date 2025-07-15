@@ -12,8 +12,6 @@ import { DevSettings } from '../../shared/settings'
 import { Auth } from '../../auth/auth'
 import { SpaceMappings, SsmConnectionInfo } from './types'
 import { getLogger } from '../../shared/logger/logger'
-import { SagemakerClient } from '../../shared/clients/sagemaker'
-import { AppType } from '@amzn/sagemaker-client'
 import { parseArn } from './detached-server/utils'
 
 const mappingFileName = '.sagemaker-space-profiles'
@@ -83,25 +81,13 @@ export async function persistSSMConnection(
     wsUrl?: string,
     token?: string
 ): Promise<void> {
-    const { region, spaceName } = parseArn(appArn)
+    const { region } = parseArn(appArn)
     const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
-    const client = new SagemakerClient(region)
 
-    const spaceDetails = await client.describeSpace({
-        DomainId: domain,
-        SpaceName: spaceName,
-    })
-
-    let appSubDomain: string
-    if (spaceDetails.SpaceSettings?.AppType === AppType.JupyterLab) {
-        appSubDomain = 'jupyterlab'
-    } else if (spaceDetails.SpaceSettings?.AppType === AppType.CodeEditor) {
-        appSubDomain = 'code-editor'
-    } else {
-        throw new ToolkitError(
-            `Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: ${spaceDetails.SpaceSettings?.AppType ?? 'undefined'}`
-        )
-    }
+    // TODO: Hardcoded to 'jupyterlab' due to a bug in Studio that only supports refreshing
+    // the token for both CodeEditor and JupyterLab Apps in the jupyterlab subdomain.
+    // This will be fixed shortly after NYSummit launch to support refresh URL in CodeEditor subdomain.
+    const appSubDomain = 'jupyterlab'
 
     let envSubdomain: string
 

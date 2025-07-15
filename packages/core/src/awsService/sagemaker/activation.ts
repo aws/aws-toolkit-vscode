@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { Commands } from '../../shared/vscode/commands2'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { SagemakerParentNode } from './explorer/sagemakerParentNode'
@@ -20,6 +21,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx),
         Commands.register('aws.sagemaker.openRemoteConnection', async (node: SagemakerSpaceNode) => {
+            if (!validateNode(node)) {
+                return
+            }
             await telemetry.sagemaker_openRemoteConnection.run(async () => {
                 await openRemoteConnect(node, ctx.extensionContext)
             })
@@ -32,6 +36,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.sagemaker.stopSpace', async (node: SagemakerSpaceNode) => {
+            if (!validateNode(node)) {
+                return
+            }
             await telemetry.sagemaker_stopSpace.run(async () => {
                 await stopSpace(node, ctx.extensionContext)
             })
@@ -61,4 +68,15 @@ export async function activate(ctx: ExtContext): Promise<void> {
             },
         })
     }
+}
+
+/**
+ * Checks if a node  is undefined and shows a warning message if so.
+ */
+function validateNode(node: unknown): boolean {
+    if (!node) {
+        void vscode.window.showWarningMessage('Space information is being refreshed. Please try again shortly.')
+        return false
+    }
+    return true
 }
