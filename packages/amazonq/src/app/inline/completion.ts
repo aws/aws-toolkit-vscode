@@ -50,6 +50,8 @@ import { ICursorUpdateRecorder } from './cursorUpdateManager'
 let lastDocumentDeleteEvent: vscode.TextDocumentChangeEvent | undefined = undefined
 let lastDocumentDeleteTime = 0
 
+let lastDocumentChangeEventMap: Map<string, vscode.TextDocumentChangeEvent> = new Map()
+
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
@@ -85,6 +87,9 @@ export class InlineCompletionManager implements Disposable {
             if (e.contentChanges.length === 1 && e.contentChanges[0].text === '') {
                 lastDocumentDeleteEvent = e
                 lastDocumentDeleteTime = performance.now()
+            }
+            if (e.contentChanges.length > 0) {
+                lastDocumentChangeEventMap.set(e.document.uri.fsPath, e)
             }
         })
         this.disposable = languages.registerInlineCompletionItemProvider(
@@ -257,6 +262,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        const event = lastDocumentChangeEventMap.get(document.uri.fsPath) || undefined
+        console.log(event)
         let logstr = `GenerateCompletion metadata:\\n`
         try {
             const t0 = performance.now()
