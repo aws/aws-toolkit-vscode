@@ -22,6 +22,7 @@ export {
 } from './connection'
 export { Auth } from './auth'
 export { CredentialsStore } from './credentials/store'
+export { getMfaTokenFromUser } from './credentials/utils'
 export { LoginManager } from './deprecated/loginManager'
 export * as constants from './sso/constants'
 export * as cache from './sso/cache'
