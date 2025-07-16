@@ -18,6 +18,10 @@ export { open }
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
 const tempFilePath = `${mappingFilePath}.tmp`
 
+// Simple file lock to prevent concurrent writes
+let isWriting = false
+const writeQueue: Array<() => Promise<void>> = []
+
 /**
  * Reads the local endpoint info file (default or via env) and returns pid & port.
  * @throws Error if the file is missing, invalid JSON, or missing fields
@@ -100,14 +104,48 @@ export async function readMapping() {
 }
 
 /**
+ * Processes the write queue to ensure only one write operation happens at a time.
+ */
+async function processWriteQueue() {
+    if (isWriting || writeQueue.length === 0) {
+        return
+    }
+
+    isWriting = true
+    try {
+        while (writeQueue.length > 0) {
+            const writeOperation = writeQueue.shift()!
+            await writeOperation()
+        }
+    } finally {
+        isWriting = false
+    }
+}
+
+/**
  * Writes the mapping to a temp file and atomically renames it to the target path.
+ * Uses a queue to prevent race conditions when multiple requests try to write simultaneously.
  */
 export async function writeMapping(mapping: SpaceMappings) {
-    try {
-        const json = JSON.stringify(mapping, undefined, 2)
-        await fs.writeFile(tempFilePath, json)
-        await fs.rename(tempFilePath, mappingFilePath)
-    } catch (err) {
-        throw new Error(`Failed to write mapping file: ${err instanceof Error ? err.message : String(err)}`)
-    }
+    return new Promise<void>((resolve, reject) => {
+        const writeOperation = async () => {
+            try {
+                // Generate unique temp file name to avoid conflicts
+                const uniqueTempPath = `${tempFilePath}.${process.pid}.${Date.now()}`
+
+                const json = JSON.stringify(mapping, undefined, 2)
+                await fs.writeFile(uniqueTempPath, json)
+                await fs.rename(uniqueTempPath, mappingFilePath)
+                resolve()
+            } catch (err) {
+                reject(new Error(`Failed to write mapping file: ${err instanceof Error ? err.message : String(err)}`))
+            }
+        }
+
+        writeQueue.push(writeOperation)
+
+        // ProcessWriteQueue handles its own errors via individual operation callbacks
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        processWriteQueue()
+    })
 }
