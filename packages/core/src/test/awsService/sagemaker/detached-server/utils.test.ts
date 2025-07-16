@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable no-restricted-imports */
 import * as assert from 'assert'
 import { parseArn, writeMapping, readMapping } from '../../../../awsService/sagemaker/detached-server/utils'
 import { promises as fs } from 'fs'

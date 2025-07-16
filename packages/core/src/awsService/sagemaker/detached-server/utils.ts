@@ -143,6 +143,9 @@ export async function writeMapping(mapping: SpaceMappings) {
         }
 
         writeQueue.push(writeOperation)
+
+        // ProcessWriteQueue handles its own errors via individual operation callbacks
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         processWriteQueue()
     })
 }
