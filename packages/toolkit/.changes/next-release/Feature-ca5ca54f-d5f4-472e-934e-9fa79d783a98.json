@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Lambda Remote Debugging: Remote invoke configuration webview now supports attaching a debugger to directly debug your lambda function in the cloud."
+}
