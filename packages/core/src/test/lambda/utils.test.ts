@@ -13,7 +13,6 @@ import {
     setFunctionInfo,
     compareCodeSha,
 } from '../../lambda/utils'
-import { LambdaFunction } from '../../lambda/commands/uploadLambda'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'

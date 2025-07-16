@@ -471,7 +471,8 @@ describe('RemoteInvokeWebview', () => {
                 createWebviewPanelArgs[1],
                 `Invoke Lambda ${mockFunctionNode.configuration.FunctionName}`
             )
-            assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: -1 })
+            // opens in side panel
+            assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: vscode.ViewColumn.Beside })
         })
     })
 })

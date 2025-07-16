@@ -27,7 +27,8 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
         public configuration: Lambda.FunctionConfiguration,
-        public override readonly contextValue?: string
+        public override readonly contextValue?: string,
+        public localDir?: string
     ) {
         super(
             `${configuration.FunctionArn}`,
