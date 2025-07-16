@@ -609,8 +609,10 @@
         "whatwg-url": "^14.0.0",
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
+        "ws": "^8.16.0",
         "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2",
+        "protobufjs": "^7.2.6",
         "@svgdotjs/svg.js": "^3.0.16",
         "svgdom": "^0.1.0",
         "jaro-winkler": "^0.2.8"
