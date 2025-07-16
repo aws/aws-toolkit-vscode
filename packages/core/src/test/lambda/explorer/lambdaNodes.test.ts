@@ -17,7 +17,7 @@ import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 const regionCode = 'someregioncode'
 
 function createLambdaClient(...functionNames: string[]) {
-    const client = stub(DefaultLambdaClient, { regionCode })
+    const client = stub(DefaultLambdaClient, { regionCode, userAgent: undefined })
     client.listFunctions.returns(asyncGenerator(functionNames.map((name) => ({ FunctionName: name }))))
 
     return client
