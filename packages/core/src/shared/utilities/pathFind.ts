@@ -18,6 +18,7 @@ let vscPath: string
 let sshPath: string
 let gitPath: string
 let bashPath: string
+let javaPath: string
 const pathMap = new Map<string, string>()
 
 /**
@@ -140,6 +141,44 @@ export async function findSshPath(useCache: boolean = true): Promise<string | un
         }
         if (await tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
             sshPath = useCache ? p : sshPath
+            return p
+        }
+    }
+}
+
+/**
+ * Gets a working `java`, or undefined.
+ */
+export async function findJavaPath(): Promise<string | undefined> {
+    if (javaPath !== undefined) {
+        return javaPath
+    }
+
+    const paths = [
+        'java', // Try $PATH first
+        '/usr/bin/java',
+        '/usr/local/bin/java',
+        '/opt/java/bin/java',
+        // Common Oracle JDK locations
+        '/usr/lib/jvm/default-java/bin/java',
+        '/usr/lib/jvm/java-11-openjdk/bin/java',
+        '/usr/lib/jvm/java-8-openjdk/bin/java',
+        // Windows locations
+        'C:/Program Files/Java/jre1.8.0_301/bin/java.exe',
+        'C:/Program Files/Java/jdk1.8.0_301/bin/java.exe',
+        'C:/Program Files/OpenJDK/openjdk-11.0.2/bin/java.exe',
+        'C:/Program Files (x86)/Java/jre1.8.0_301/bin/java.exe',
+        'C:/Program Files (x86)/Java/jdk1.8.0_301/bin/java.exe',
+        // macOS locations
+        '/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java',
+        '/usr/libexec/java_home',
+    ]
+    for (const p of paths) {
+        if (!p || ('java' !== p && !(await fs.exists(p)))) {
+            continue
+        }
+        if (await tryRun(p, ['-version'])) {
+            javaPath = p
             return p
         }
     }

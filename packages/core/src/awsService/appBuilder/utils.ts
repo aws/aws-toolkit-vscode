@@ -569,19 +569,24 @@ export async function getLambdaHandlerFile(
         })
     }
 
+    // if this function is used to get handler from a just downloaded lambda function zip. codeUri will be ''
+    if (codeUri !== '') {
+        folderUri = vscode.Uri.joinPath(folderUri, codeUri)
+    }
+
     const handlerParts = handler.split('.')
     // sample: app.lambda_handler -> app.rb
     if (family === RuntimeFamily.Ruby) {
         // Ruby supports namespace/class handlers as well, but the path is
         // guaranteed to be slash-delimited so we can assume the first part is
         // the path
-        return vscode.Uri.joinPath(folderUri, codeUri, handlerParts.slice(0, handlerParts.length - 1).join('/') + '.rb')
+        return vscode.Uri.joinPath(folderUri, handlerParts.slice(0, handlerParts.length - 1).join('/') + '.rb')
     }
 
     // sample:app.lambda_handler -> app.py
     if (family === RuntimeFamily.Python) {
         // Otherwise (currently Node.js and Python) handle dot-delimited paths
-        return vscode.Uri.joinPath(folderUri, codeUri, handlerParts.slice(0, handlerParts.length - 1).join('/') + '.py')
+        return vscode.Uri.joinPath(folderUri, handlerParts.slice(0, handlerParts.length - 1).join('/') + '.py')
     }
 
     // sample: app.handler -> app.mjs/app.js
@@ -591,8 +596,8 @@ export async function getLambdaHandlerFile(
         const handlerPath = path.dirname(handlerName)
         const handlerFile = path.basename(handlerName)
         const pattern = new vscode.RelativePattern(
-            vscode.Uri.joinPath(folderUri, codeUri, handlerPath),
-            `${handlerFile}.{js,mjs}`
+            vscode.Uri.joinPath(folderUri, handlerPath),
+            `${handlerFile}.{js,mjs,cjs,ts}`
         )
         return searchHandlerFile(folderUri, pattern)
     }
@@ -600,14 +605,14 @@ export async function getLambdaHandlerFile(
     // sample: ImageResize::ImageResize.Function::FunctionHandler -> Function.cs
     if (family === RuntimeFamily.DotNet) {
         const handlerName = path.basename(handler.split('::')[1].replaceAll('.', '/'))
-        const pattern = new vscode.RelativePattern(vscode.Uri.joinPath(folderUri, codeUri), `${handlerName}.cs`)
+        const pattern = new vscode.RelativePattern(folderUri, `${handlerName}.cs`)
         return searchHandlerFile(folderUri, pattern)
     }
 
     // sample: resizer.App::handleRequest -> App.java
     if (family === RuntimeFamily.Java) {
         const handlerName = handler.split('::')[0].replaceAll('.', '/')
-        const pattern = new vscode.RelativePattern(vscode.Uri.joinPath(folderUri, codeUri), `**/${handlerName}.java`)
+        const pattern = new vscode.RelativePattern(folderUri, `**/${handlerName}.java`)
         return searchHandlerFile(folderUri, pattern)
     }
 }

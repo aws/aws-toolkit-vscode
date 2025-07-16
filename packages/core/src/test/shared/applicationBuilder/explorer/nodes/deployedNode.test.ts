@@ -147,6 +147,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'MyLambdaFunction',
                 Type: 'AWS::Serverless::Function',
             },
         }
@@ -237,6 +238,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-project-source-bucket-physical-id',
                 Type: 'AWS::S3::Bucket',
             },
         }
@@ -284,6 +286,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-project-apigw-physical-id',
                 Type: 'AWS::Serverless::Api',
             },
         }
@@ -356,6 +359,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-unsupported-resource-physical-id',
                 Type: 'AWS::Serverless::UnsupportType',
             },
         }
