@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SageMaker: Prompt user to use upgraded instance type if the chosen one has insufficient memory"
-}
