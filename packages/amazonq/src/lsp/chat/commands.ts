@@ -59,10 +59,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                     params: {},
                 })
             })
-        }),
-        registerShellCommandShortCut('aws.amazonq.runCmdExecution', 'run-shell-command', provider),
-        registerShellCommandShortCut('aws.amazonq.rejectCmdExecution', 'reject-shell-command', provider),
-        registerShellCommandShortCut('aws.amazonq.stopCmdExecution', 'stop-shell-command', provider)
+        })
     )
 }
 
@@ -158,15 +155,4 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
 export async function focusAmazonQPanel() {
     await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
     await Commands.tryExecute('aws.amazonq.AmazonCommonAuth.focus')
-}
-
-function registerShellCommandShortCut(commandName: string, buttonId: string, provider: AmazonQChatViewProvider) {
-    return Commands.register(commandName, async () => {
-        void focusAmazonQPanel().then(() => {
-            void provider.webview?.postMessage({
-                command: 'aws/chat/executeShellCommandShortCut',
-                params: { id: buttonId },
-            })
-        })
-    })
 }
