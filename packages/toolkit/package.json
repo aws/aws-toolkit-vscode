@@ -3099,6 +3099,17 @@
                 }
             },
             {
+                "command": "aws.lambda.remoteDebugging.clearSnapshot",
+                "title": "%AWS.command.remoteDebugging.clearSnapshot%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
                 "category": "%AWS.title%",
