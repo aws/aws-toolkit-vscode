@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: Resolve connection issues to SageMaker Spaces with capital letters in the name"
+}
