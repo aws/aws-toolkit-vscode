@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Toolkit fails to recognize it's logged in when editing Lambda function"
-}

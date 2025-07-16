@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SageMaker: Resolve race condition when reconnecting from multiple remote windows."
-}
