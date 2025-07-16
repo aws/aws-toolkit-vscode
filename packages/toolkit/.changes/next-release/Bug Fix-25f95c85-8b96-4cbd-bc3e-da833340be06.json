@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SageMaker: Enable per-region manual filtering of Spaces"
-}
