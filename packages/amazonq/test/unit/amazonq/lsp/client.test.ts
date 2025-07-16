@@ -194,7 +194,7 @@ describe('Language Server Client Authentication', function () {
                         ? AuthUtil.instance.auth.getConnectionState(activeConnection)
                         : 'no-connection'
                     logger.warn(`[${context}] Connection state: ${connectionState}`)
-                // jscpd:ignore-end
+                    // jscpd:ignore-end
                 }
             }
 

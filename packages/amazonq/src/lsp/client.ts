@@ -258,7 +258,7 @@ async function initializeLanguageServerConfiguration(client: LanguageClient, con
 
     if (AuthUtil.instance.isConnectionValid()) {
         logger.info(`[${context}] Initializing language server configuration`)
-// jscpd:ignore-end
+        // jscpd:ignore-end
 
         try {
             // Send profile configuration
