@@ -112,8 +112,7 @@ export async function revertExistingConfig(): Promise<boolean> {
 
         if (
             currentConfig?.Timeout === savedConfig?.Timeout &&
-            currentConfig?.Layers?.length === savedConfig?.Layers?.length &&
-            currentConfig?.Environment === savedConfig?.Environment
+            currentConfig?.Layers?.length === savedConfig?.Layers?.length
         ) {
             // No changes needed, remove the snapshot
             void (await persistLambdaSnapshot(undefined))

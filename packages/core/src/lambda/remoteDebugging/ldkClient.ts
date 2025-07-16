@@ -366,7 +366,11 @@ export class LdkClient {
             }
 
             if (check) {
-                if ((await this.getFunctionDetail(config.FunctionArn)) === config) {
+                const currentConfig = await this.getFunctionDetail(config.FunctionArn)
+                if (
+                    currentConfig?.Timeout === config?.Timeout &&
+                    currentConfig?.Layers?.length === config?.Layers?.length
+                ) {
                     // nothing to remove
                     return true
                 }
