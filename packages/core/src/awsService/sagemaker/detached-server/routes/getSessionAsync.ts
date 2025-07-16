@@ -50,7 +50,7 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
             const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
             const { spaceName } = parseArn(connectionIdentifier)
 
-            const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?reconnect_identifier=${encodeURIComponent(
+            const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
                 connectionIdentifier
             )}&reconnect_request_id=${encodeURIComponent(requestId)}&reconnect_callback_url=${encodeURIComponent(
                 `http://localhost:${serverInfo.port}/refresh_token`
