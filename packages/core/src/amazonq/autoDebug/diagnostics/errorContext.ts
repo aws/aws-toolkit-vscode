@@ -45,12 +45,6 @@ export class ErrorContextFormatter {
      * Converts a Problem to detailed ErrorContext
      */
     public async createErrorContext(problem: Problem): Promise<ErrorContext> {
-        this.logger.debug(
-            'ErrorContextFormatter: Creating error context for %s at line %d',
-            problem.uri.fsPath,
-            problem.diagnostic.range.start.line + 1
-        )
-
         const surroundingCode = await this.extractSurroundingCode(problem.uri, problem.diagnostic.range)
 
         const context: ErrorContext = {
@@ -67,8 +61,6 @@ export class ErrorContextFormatter {
             relatedInformation: problem.diagnostic.relatedInformation,
             surroundingCode,
         }
-
-        this.logger.debug('ErrorContextFormatter: Created error context for %s', context.location.file)
         return context
     }
 
@@ -76,8 +68,6 @@ export class ErrorContextFormatter {
      * Formats multiple error contexts into a comprehensive report
      */
     public formatErrorReport(contexts: ErrorContext[]): FormattedErrorReport {
-        this.logger.debug('ErrorContextFormatter: Formatting error report for %d contexts', contexts.length)
-
         const summary = this.createSummary(contexts)
         const details = this.createDetails(contexts)
         const contextualCode = this.createContextualCode(contexts)
@@ -95,8 +85,6 @@ export class ErrorContextFormatter {
      * Formats a single error context for display
      */
     public formatSingleError(context: ErrorContext): string {
-        this.logger.debug('ErrorContextFormatter: Formatting single error for %s', context.location.file)
-
         const parts = [
             `**${context.severity.toUpperCase()}** in ${context.location.file}`,
             `Line ${context.location.line}, Column ${context.location.column}`,
@@ -134,8 +122,6 @@ export class ErrorContextFormatter {
      * Creates a problems string similar to the reference implementation
      */
     public formatProblemsString(problems: Problem[], cwd: string): string {
-        this.logger.debug('ErrorContextFormatter: Formatting problems string for %d problems', problems.length)
-
         let result = ''
         const fileGroups = this.groupProblemsByFile(problems)
 

@@ -41,7 +41,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
         // Monitor diagnostic changes from all language servers
         this.disposables.push(
             vscode.languages.onDidChangeDiagnostics((event) => {
-                this.logger.debug('DiagnosticsMonitor: Diagnostic change detected for %d URIs', event.uris.length)
                 this.handleDiagnosticChange(event)
             })
         )
@@ -119,8 +118,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
      * Captures a baseline snapshot of current diagnostics
      */
     public async captureBaseline(): Promise<DiagnosticSnapshot> {
-        this.logger.debug('DiagnosticsMonitor: Capturing diagnostic baseline')
-
         const diagnostics = await this.getCurrentDiagnostics(false)
         const snapshot: DiagnosticSnapshot = {
             diagnostics,
@@ -168,7 +165,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
 
             // Only emit if diagnostics actually changed
             if (!this.lastDiagnostics || !this.areDiagnosticsEqual(this.lastDiagnostics, currentDiagnostics)) {
-                this.logger.debug('DiagnosticsMonitor: Emitting diagnostic change event')
                 this.lastDiagnostics = currentDiagnostics
                 this.diagnosticsChangeEmitter.fire(currentDiagnostics)
             }
@@ -230,8 +226,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
     }
 
     public dispose(): void {
-        this.logger.debug('DiagnosticsMonitor: Disposing diagnostic monitor')
-
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer)
         }

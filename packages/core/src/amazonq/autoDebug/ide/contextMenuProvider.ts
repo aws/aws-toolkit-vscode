@@ -200,14 +200,11 @@ export class ContextMenuProvider implements vscode.Disposable {
      * Starts a new auto debug session
      */
     private async startAutoDebugSession(): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Starting auto debug session')
-
         try {
             const session = await this.autoDebugController.startSession()
             void vscode.window.showInformationMessage(
                 `Auto Debug session started (ID: ${session.id.substring(0, 8)}...)`
             )
-            this.logger.debug('ContextMenuProvider: Auto debug session started successfully')
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error starting auto debug session: %s', error)
             void vscode.window.showErrorMessage('Failed to start Auto Debug session')
@@ -223,7 +220,6 @@ export class ContextMenuProvider implements vscode.Disposable {
         try {
             await this.autoDebugController.endSession()
             void vscode.window.showInformationMessage('Auto Debug session ended')
-            this.logger.debug('ContextMenuProvider: Auto debug session ended successfully')
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error ending auto debug session: %s', error)
             void vscode.window.showErrorMessage('Failed to end Auto Debug session')

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger/logger'
 import { DiagnosticCollection, DiagnosticSnapshot } from './diagnosticsMonitor'
 import { mapDiagnosticSeverity } from '../shared/diagnosticUtils'
 
@@ -28,22 +27,10 @@ export interface CategorizedProblems {
  * Detects new problems by comparing diagnostic snapshots and filtering relevant issues.
  */
 export class ProblemDetector {
-    private readonly logger = getLogger('amazonqLsp')
-
-    constructor() {
-        this.logger.debug('ProblemDetector: Initializing problem detector')
-    }
-
     /**
      * Detects new problems by comparing baseline and current diagnostics
      */
     public detectNewProblems(baseline: DiagnosticSnapshot, current: DiagnosticSnapshot): Problem[] {
-        this.logger.debug(
-            'ProblemDetector: Detecting new problems between baseline %s and current %s',
-            baseline.id,
-            current.id
-        )
-
         const newProblems: Problem[] = []
         const baselineMap = this.createDiagnosticMap(baseline.diagnostics)
 
@@ -56,8 +43,6 @@ export class ProblemDetector {
                 }
             }
         }
-
-        this.logger.debug('ProblemDetector: Found %d new problems', newProblems.length)
         return newProblems
     }
 
@@ -65,12 +50,6 @@ export class ProblemDetector {
      * Filters problems to only include those relevant to changed files
      */
     public filterRelevantProblems(problems: Problem[], changedFiles: string[]): Problem[] {
-        this.logger.debug(
-            'ProblemDetector: Filtering %d problems for %d changed files',
-            problems.length,
-            changedFiles.length
-        )
-
         if (changedFiles.length === 0) {
             return problems
         }
@@ -81,8 +60,6 @@ export class ProblemDetector {
             const problemFile = path.normalize(problem.uri.fsPath)
             return changedFileSet.has(problemFile) || this.isRelatedFile(problemFile, changedFiles)
         })
-
-        this.logger.debug('ProblemDetector: Filtered to %d relevant problems', relevantProblems.length)
         return relevantProblems
     }
 
@@ -90,8 +67,6 @@ export class ProblemDetector {
      * Categorizes problems by severity level
      */
     public categorizeBySeverity(problems: Problem[]): CategorizedProblems {
-        this.logger.debug('ProblemDetector: Categorizing %d problems by severity', problems.length)
-
         const categorized: CategorizedProblems = {
             errors: [],
             warnings: [],
@@ -115,15 +90,6 @@ export class ProblemDetector {
                     break
             }
         }
-
-        this.logger.debug(
-            'ProblemDetector: Categorized problems - errors: %d, warnings: %d, info: %d, hints: %d',
-            categorized.errors.length,
-            categorized.warnings.length,
-            categorized.info.length,
-            categorized.hints.length
-        )
-
         return categorized
     }
 
@@ -131,8 +97,6 @@ export class ProblemDetector {
      * Gets all problems from a diagnostic collection
      */
     public getAllProblems(diagnostics: DiagnosticCollection): Problem[] {
-        this.logger.debug('ProblemDetector: Converting diagnostic collection to problems')
-
         const problems: Problem[] = []
 
         for (const [uri, fileDiagnostics] of diagnostics.diagnostics) {
@@ -140,8 +104,6 @@ export class ProblemDetector {
                 problems.push(this.createProblem(uri, diagnostic, false))
             }
         }
-
-        this.logger.debug('ProblemDetector: Converted %d diagnostics to problems', problems.length)
         return problems
     }
 
@@ -149,11 +111,7 @@ export class ProblemDetector {
      * Filters problems by source (TypeScript, ESLint, etc.)
      */
     public filterBySource(problems: Problem[], sources: string[]): Problem[] {
-        this.logger.debug('ProblemDetector: Filtering problems by sources: %O', sources)
-
         const filtered = problems.filter((problem) => sources.length === 0 || sources.includes(problem.source))
-
-        this.logger.debug('ProblemDetector: Filtered to %d problems', filtered.length)
         return filtered
     }
 
