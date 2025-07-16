@@ -119,6 +119,31 @@ export function createMockProgress(): any {
 }
 
 /**
+ * Sets up common debugging state for stop debugging tests
+ */
+export function setupDebuggingState(controller: any, mockGlobalState: any, qualifier: string = 'v1') {
+    controller.isDebugging = true
+    controller.qualifier = qualifier
+    ;(controller as any).lastDebugStartTime = Date.now() - 5000 // 5 seconds ago
+
+    const mockFunctionConfig = {
+        FunctionName: 'testFunction',
+        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+    }
+
+    return mockGlobalState.update('aws.lambda.remoteDebugSnapshot', mockFunctionConfig)
+}
+
+/**
+ * Sets up common mock operations for successful cleanup
+ */
+export function setupMockCleanupOperations(mockLdkClient: any) {
+    mockLdkClient.stopProxy.resolves(true)
+    mockLdkClient.removeDebugDeployment.resolves(true)
+    mockLdkClient.deleteDebugVersion.resolves(true)
+}
+
+/**
  * Sets up common mock operations for LdkClient testing
  */
 export function setupMockLdkClientOperations(mockLdkClient: any, mockFunctionConfig: any) {

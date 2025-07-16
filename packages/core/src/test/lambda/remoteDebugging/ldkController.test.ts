@@ -26,6 +26,8 @@ import {
     setupMockLdkClientOperations,
     setupMockVSCodeDebugAPIs,
     setupMockRevertExistingConfig,
+    setupDebuggingState,
+    setupMockCleanupOperations,
 } from './testUtils'
 
 describe('RemoteDebugController', () => {
@@ -229,6 +231,13 @@ describe('RemoteDebugController', () => {
             assert(mockLdkClient.createOrReuseTunnel.calledOnce, 'Should create tunnel')
             assert(mockLdkClient.createDebugDeployment.calledOnce, 'Should create debug deployment')
             assert(mockLdkClient.startProxy.calledOnce, 'Should start proxy')
+
+            assertTelemetry('lambda_remoteDebugStart', {
+                result: 'Succeeded',
+                source: 'remoteDebug',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                runtimeString: 'nodejs18.x',
+            })
         })
 
         it('should handle debugging start failure and cleanup', async () => {
@@ -284,6 +293,13 @@ describe('RemoteDebugController', () => {
 
             assert.strictEqual(controller.isDebugging, true, 'Should be in debugging state')
             assert.strictEqual(controller.qualifier, 'v1', 'Should set version qualifier')
+            // Verify telemetry was emitted with version action
+            assertTelemetry('lambda_remoteDebugStart', {
+                result: 'Succeeded',
+                source: 'remoteDebug',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                runtimeString: 'nodejs18.x',
+            })
         })
 
         it('should prevent multiple debugging sessions', async () => {
@@ -303,20 +319,10 @@ describe('RemoteDebugController', () => {
             sandbox.stub(vscode.commands, 'executeCommand').resolves()
 
             // Set up debugging state
-            controller.isDebugging = true
-            controller.qualifier = 'v1'
-
-            const mockFunctionConfig = {
-                FunctionName: 'testFunction',
-                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-            }
-            // Set up the snapshot in mock state
-            await mockGlobalState.update('aws.lambda.remoteDebugSnapshot', mockFunctionConfig)
+            await setupDebuggingState(controller, mockGlobalState)
 
             // Mock successful cleanup operations
-            mockLdkClient.stopProxy.resolves(true)
-            mockLdkClient.removeDebugDeployment.resolves(true)
-            mockLdkClient.deleteDebugVersion.resolves(true)
+            setupMockCleanupOperations(mockLdkClient)
 
             await controller.stopDebugging()
 
@@ -327,6 +333,9 @@ describe('RemoteDebugController', () => {
             assert(mockLdkClient.stopProxy.calledOnce, 'Should stop proxy')
             assert(mockLdkClient.removeDebugDeployment.calledOnce, 'Should remove debug deployment')
             assert(mockLdkClient.deleteDebugVersion.calledOnce, 'Should delete debug version')
+            assertTelemetry('lambda_remoteDebugStop', {
+                result: 'Succeeded',
+            })
         })
 
         it('should handle stop debugging when not debugging', async () => {
@@ -363,6 +372,10 @@ describe('RemoteDebugController', () => {
 
             // State should still be cleaned up
             assert.strictEqual(controller.isDebugging, false, 'Should clean up state even on error')
+            // Verify telemetry was emitted for failure
+            assertTelemetry('lambda_remoteDebugStop', {
+                result: 'Failed',
+            })
         })
     })
 
@@ -399,57 +412,6 @@ describe('RemoteDebugController', () => {
             mockFunctionConfig = createMockFunctionConfig()
         })
 
-        it('should emit lambda_remoteDebugStart telemetry for successful debugging start', async () => {
-            // Mock VSCode APIs
-            setupMockVSCodeDebugAPIs(sandbox)
-
-            // Mock runtime support
-            sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
-
-            // Mock successful LdkClient operations
-            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
-
-            // Mock revertExistingConfig
-            setupMockRevertExistingConfig(sandbox)
-
-            await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
-
-            // Verify telemetry was emitted
-            assertTelemetry('lambda_remoteDebugStart', {
-                result: 'Succeeded',
-                source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
-                runtimeString: 'nodejs18.x',
-            })
-        })
-
-        it('should emit lambda_remoteDebugStart telemetry for version publishing', async () => {
-            // Mock VSCode APIs
-            setupMockVSCodeDebugAPIs(sandbox)
-
-            // Mock runtime support
-            sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
-
-            const versionConfig = { ...mockConfig, shouldPublishVersion: true }
-
-            // Mock successful LdkClient operations with version publishing
-            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
-            mockLdkClient.createDebugDeployment.resolves('v1')
-
-            // Mock revertExistingConfig
-            setupMockRevertExistingConfig(sandbox)
-
-            await controller.startDebugging(versionConfig.functionArn, 'nodejs18.x', versionConfig)
-
-            // Verify telemetry was emitted with version action
-            assertTelemetry('lambda_remoteDebugStart', {
-                result: 'Succeeded',
-                source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
-                runtimeString: 'nodejs18.x',
-            })
-        })
-
         it('should emit lambda_remoteDebugStart telemetry for failed debugging start', async () => {
             // Mock VSCode APIs
             setupMockVSCodeDebugAPIs(sandbox)
@@ -476,64 +438,6 @@ describe('RemoteDebugController', () => {
                 source: 'remoteDebug',
                 action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
                 runtimeString: 'nodejs18.x',
-            })
-        })
-
-        it('should emit lambda_remoteDebugStop telemetry for successful debugging stop', async () => {
-            // Mock VSCode APIs
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-
-            // Set up debugging state
-            controller.isDebugging = true
-            controller.qualifier = 'v1'
-            ;(controller as any).lastDebugStartTime = Date.now() - 5000 // 5 seconds ago
-
-            const mockFunctionConfig = {
-                FunctionName: 'testFunction',
-                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-            }
-            // Set up the snapshot in mock state
-            await mockGlobalState.update('aws.lambda.remoteDebugSnapshot', mockFunctionConfig)
-
-            // Mock successful cleanup operations
-            mockLdkClient.stopProxy.resolves(true)
-            mockLdkClient.removeDebugDeployment.resolves(true)
-            mockLdkClient.deleteDebugVersion.resolves(true)
-
-            await controller.stopDebugging()
-
-            // Verify telemetry was emitted
-            assertTelemetry('lambda_remoteDebugStop', {
-                result: 'Succeeded',
-            })
-        })
-
-        it('should emit lambda_remoteDebugStop telemetry for failed debugging stop', async () => {
-            // Mock VSCode APIs
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-
-            controller.isDebugging = true
-
-            const mockFunctionConfig = {
-                FunctionName: 'testFunction',
-                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-            }
-            // Set up the snapshot in mock state
-            await mockGlobalState.update('aws.lambda.remoteDebugSnapshot', mockFunctionConfig)
-
-            // Mock cleanup failure
-            mockLdkClient.stopProxy.rejects(new Error('Cleanup failed'))
-            mockLdkClient.removeDebugDeployment.resolves(true)
-
-            try {
-                await controller.stopDebugging()
-            } catch (error) {
-                // Expected to throw
-            }
-
-            // Verify telemetry was emitted for failure
-            assertTelemetry('lambda_remoteDebugStop', {
-                result: 'Failed',
             })
         })
     })
