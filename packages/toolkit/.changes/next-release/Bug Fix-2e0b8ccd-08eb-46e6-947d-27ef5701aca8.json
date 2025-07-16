@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: Show error message when connecting remotely from a remote workspace"
+}

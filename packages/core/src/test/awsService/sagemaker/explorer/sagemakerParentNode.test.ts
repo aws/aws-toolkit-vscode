@@ -8,7 +8,13 @@ import * as vscode from 'vscode'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../../shared/clients/sagemaker'
-import { SagemakerParentNode } from '../../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { SagemakerConstants } from '../../../../awsService/sagemaker/explorer/constants'
+import {
+    SagemakerParentNode,
+    SelectedDomainUsers,
+    SelectedDomainUsersByRegion,
+} from '../../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { globals } from '../../../../shared'
 import { DefaultStsClient } from '../../../../shared/clients/stsClient'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../../utilities/explorerNodeAssertions'
 import assert from 'assert'
@@ -26,6 +32,71 @@ describe('sagemakerParentNode', function () {
         ['domain1', { DomainId: 'domain1', DomainName: 'domainName1' }],
         ['domain2', { DomainId: 'domain2', DomainName: 'domainName2' }],
     ])
+    const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
+        [
+            'domain1__name1',
+            {
+                SpaceName: 'name1',
+                DomainId: 'domain1',
+                OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
+                Status: 'InService',
+                DomainSpaceKey: 'domain1__name1',
+            },
+        ],
+        [
+            'domain2__name2',
+            {
+                SpaceName: 'name2',
+                DomainId: 'domain2',
+                OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
+                Status: 'InService',
+                DomainSpaceKey: 'domain2__name2',
+            },
+        ],
+    ])
+    const spaceAppsMapPending: Map<string, SagemakerSpaceApp> = new Map([
+        [
+            'domain1__name3',
+            {
+                SpaceName: 'name3',
+                DomainId: 'domain1',
+                OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
+                Status: 'InService',
+                DomainSpaceKey: 'domain1__name3',
+                App: {
+                    Status: 'InService',
+                },
+            },
+        ],
+        [
+            'domain2__name4',
+            {
+                SpaceName: 'name4',
+                DomainId: 'domain2',
+                OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
+                Status: 'InService',
+                DomainSpaceKey: 'domain2__name4',
+                App: {
+                    Status: 'Pending',
+                },
+            },
+        ],
+    ])
+    const iamUser = {
+        UserId: 'test-userId',
+        Account: '123456789012',
+        Arn: 'arn:aws:iam::123456789012:user/user2',
+    }
+    const assumedRoleUser = {
+        UserId: 'test-userId',
+        Account: '123456789012',
+        Arn: 'arn:aws:sts::123456789012:assumed-role/UserRole/user2',
+    }
+    const ssoUser = {
+        UserId: 'test-userId',
+        Account: '123456789012',
+        Arn: 'arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_MyPermissionSet_abcd1234/user2',
+    }
     const getConfigTrue = {
         get: () => true,
     }
@@ -55,50 +126,15 @@ describe('sagemakerParentNode', function () {
         fetchSpaceAppsAndDomainsStub.returns(
             Promise.resolve([new Map<string, SagemakerSpaceApp>(), new Map<string, DescribeDomainResponse>()])
         )
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:iam::123456789012:user/test-user',
-            })
-        )
+        getCallerIdentityStub.returns(Promise.resolve(iamUser))
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyHasPlaceholderNode(childNodes)
     })
 
     it('has child nodes', async function () {
-        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
-            [
-                'domain1__name1',
-                {
-                    SpaceName: 'name1',
-                    DomainId: 'domain1',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain1__name1',
-                },
-            ],
-            [
-                'domain2__name2',
-                {
-                    SpaceName: 'name2',
-                    DomainId: 'domain2',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain2__name2',
-                },
-            ],
-        ])
-
         fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:iam::123456789012:user/test-user',
-            })
-        )
+        getCallerIdentityStub.returns(Promise.resolve(iamUser))
         sinon
             .stub(vscode.workspace, 'getConfiguration')
             .returns(getConfigFalse as unknown as vscode.WorkspaceConfiguration)
@@ -110,43 +146,8 @@ describe('sagemakerParentNode', function () {
     })
 
     it('adds pending nodes to polling nodes set', async function () {
-        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
-            [
-                'domain1__name3',
-                {
-                    SpaceName: 'name3',
-                    DomainId: 'domain1',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain1__name3',
-                    App: {
-                        Status: 'InService',
-                    },
-                },
-            ],
-            [
-                'domain2__name4',
-                {
-                    SpaceName: 'name4',
-                    DomainId: 'domain2',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain2__name4',
-                    App: {
-                        Status: 'Pending',
-                    },
-                },
-            ],
-        ])
-
-        fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:iam::123456789012:user/test-user',
-            })
-        )
+        fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMapPending, domainsMap]))
+        getCallerIdentityStub.returns(Promise.resolve(iamUser))
 
         await testNode.updateChildren()
         assert.strictEqual(testNode.pollingSet.size, 1)
@@ -154,37 +155,8 @@ describe('sagemakerParentNode', function () {
     })
 
     it('filters spaces owned by user profiles that match the IAM user', async function () {
-        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
-            [
-                'domain1__name1',
-                {
-                    SpaceName: 'name1',
-                    DomainId: 'domain1',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain1__name1',
-                },
-            ],
-            [
-                'domain2__name2',
-                {
-                    SpaceName: 'name2',
-                    DomainId: 'domain2',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain2__name2',
-                },
-            ],
-        ])
-
         fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:iam::123456789012:user/user2',
-            })
-        )
+        getCallerIdentityStub.returns(Promise.resolve(iamUser))
         sinon
             .stub(vscode.workspace, 'getConfiguration')
             .returns(getConfigTrue as unknown as vscode.WorkspaceConfiguration)
@@ -195,37 +167,8 @@ describe('sagemakerParentNode', function () {
     })
 
     it('filters spaces owned by user profiles that match the IAM assumed-role session name', async function () {
-        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
-            [
-                'domain1__name1',
-                {
-                    SpaceName: 'name1',
-                    DomainId: 'domain1',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain1__name1',
-                },
-            ],
-            [
-                'domain2__name2',
-                {
-                    SpaceName: 'name2',
-                    DomainId: 'domain2',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain2__name2',
-                },
-            ],
-        ])
-
         fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:sts::123456789012:assumed-role/UserRole/user2',
-            })
-        )
+        getCallerIdentityStub.returns(Promise.resolve(assumedRoleUser))
         sinon
             .stub(vscode.workspace, 'getConfiguration')
             .returns(getConfigTrue as unknown as vscode.WorkspaceConfiguration)
@@ -236,37 +179,8 @@ describe('sagemakerParentNode', function () {
     })
 
     it('filters spaces owned by user profiles that match the Identity Center user', async function () {
-        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
-            [
-                'domain1__name1',
-                {
-                    SpaceName: 'name1',
-                    DomainId: 'domain1',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain1__name1',
-                },
-            ],
-            [
-                'domain2__name2',
-                {
-                    SpaceName: 'name2',
-                    DomainId: 'domain2',
-                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
-                    Status: 'InService',
-                    DomainSpaceKey: 'domain2__name2',
-                },
-            ],
-        ])
-
         fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
-        getCallerIdentityStub.returns(
-            Promise.resolve({
-                UserId: 'test-userId',
-                Account: '123456789012',
-                Arn: 'arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_MyPermissionSet_abcd1234/user2',
-            })
-        )
+        getCallerIdentityStub.returns(Promise.resolve(ssoUser))
         sinon
             .stub(vscode.workspace, 'getConfiguration')
             .returns(getConfigFalse as unknown as vscode.WorkspaceConfiguration)
@@ -274,6 +188,81 @@ describe('sagemakerParentNode', function () {
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 1, 'Unexpected child count')
         assert.strictEqual(childNodes[0].label, 'name2 (Stopped)', 'Unexpected node label')
+    })
+
+    describe('getSelectedDomainUsers', function () {
+        let originalState: Map<string, SelectedDomainUsers>
+
+        beforeEach(async function () {
+            testNode = new SagemakerParentNode(testRegion, client)
+            originalState = new Map(
+                globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
+            )
+        })
+
+        afterEach(async function () {
+            await globals.globalState.update(SagemakerConstants.SelectedDomainUsersState, [...originalState])
+        })
+
+        it('gets cached selectedDomainUsers for a given region', async function () {
+            await globals.globalState.update(SagemakerConstants.SelectedDomainUsersState, [
+                [testRegion, [['arn:aws:iam::123456789012:user/user2', ['domain2__user-cached']]]],
+            ])
+            testNode.callerIdentity = iamUser
+            sinon
+                .stub(vscode.workspace, 'getConfiguration')
+                .returns(getConfigTrue as unknown as vscode.WorkspaceConfiguration)
+
+            const result = await testNode.getSelectedDomainUsers()
+            assert.deepStrictEqual(
+                [...result],
+                ['domain2__user-cached'],
+                'Should match only cached selected domain user'
+            )
+        })
+
+        it('gets default selectedDomainUsers', async function () {
+            await globals.globalState.update(SagemakerConstants.SelectedDomainUsersState, [])
+            testNode.spaceApps = spaceAppsMap
+            testNode.callerIdentity = iamUser
+            sinon
+                .stub(vscode.workspace, 'getConfiguration')
+                .returns(getConfigTrue as unknown as vscode.WorkspaceConfiguration)
+
+            const result = await testNode.getSelectedDomainUsers()
+            assert.deepStrictEqual(
+                [...result],
+                ['domain2__user2-efgh'],
+                'Should match only default selected domain user'
+            )
+        })
+    })
+
+    describe('saveSelectedDomainUsers', function () {
+        let originalState: Map<string, SelectedDomainUsers>
+
+        beforeEach(async function () {
+            testNode = new SagemakerParentNode(testRegion, client)
+            originalState = new Map(
+                globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
+            )
+        })
+
+        afterEach(async function () {
+            await globals.globalState.update(SagemakerConstants.SelectedDomainUsersState, [...originalState])
+        })
+
+        it('saves selectedDomainUsers for a given region', async function () {
+            testNode.callerIdentity = iamUser
+            testNode.saveSelectedDomainUsers(['domain1__user-1', 'domain2__user-2'])
+
+            const selectedDomainUsersByRegionMap = new Map(
+                globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
+            )
+            const selectedDomainUsers = new Map(selectedDomainUsersByRegionMap.get(testRegion))
+
+            assert.deepStrictEqual(selectedDomainUsers.get(iamUser.Arn), ['domain1__user-1', 'domain2__user-2'])
+        })
     })
 
     describe('getLocalSelectedDomainUsers', function () {
