@@ -49,7 +49,8 @@ export class SessionStore {
 
         const asyncEntry = requests[requestId]
         if (asyncEntry?.status === 'fresh') {
-            await this.markConsumed(connectionId, requestId)
+            delete requests[requestId]
+            await writeMapping(mapping)
             return asyncEntry
         }
 

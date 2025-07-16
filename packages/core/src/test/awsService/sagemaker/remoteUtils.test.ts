@@ -38,8 +38,10 @@ describe('getRemoteAppMetadata', function () {
     beforeEach(() => {
         sandbox = sinon.createSandbox()
         fsStub = sandbox.stub(fs, 'readFileText')
-        parseRegionStub = sandbox.stub().returns('us-west-2')
-        sandbox.replace(require('../../../awsService/sagemaker/utils'), 'parseRegionFromArn', parseRegionStub)
+        parseRegionStub = sandbox
+            .stub()
+            .returns({ region: 'us-west-2', accountId: '123456789012', spaceName: 'test-space' })
+        sandbox.replace(require('../../../awsService/sagemaker/detached-server/utils'), 'parseArn', parseRegionStub)
 
         describeSpaceStub = sandbox.stub().resolves(mockSpaceDetails)
         sandbox.stub(SagemakerClient.prototype, 'describeSpace').callsFake(describeSpaceStub)
