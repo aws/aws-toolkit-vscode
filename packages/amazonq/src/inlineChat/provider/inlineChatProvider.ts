@@ -69,6 +69,10 @@ export class InlineChatProvider {
     }
 
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        if (!AuthUtil.instance.isSsoSession()) {
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
+        
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
@@ -83,6 +87,10 @@ export class InlineChatProvider {
 
     // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
+        if (!AuthUtil.instance.isSsoSession()) {
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
+        
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then((context) => {
@@ -186,13 +194,7 @@ export class InlineChatProvider {
                 response = await session.chatSso(request)
             } else {
                 // Call sendMessage because Q Developer Streaming Client does not have generateAssistantResponse
-                const { sendMessageResponse, ...rest } = await session.chatIam(request)
-                // Convert sendMessageCommandOutput to GenerateAssistantResponseCommandOutput
-                response = {
-                    generateAssistantResponseResponse: sendMessageResponse,
-                    conversationId: session.sessionIdentifier,
-                    ...rest
-                }
+                throw new ToolkitError('Inline chat is only available with SSO authentication')
             }
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: %O`,
