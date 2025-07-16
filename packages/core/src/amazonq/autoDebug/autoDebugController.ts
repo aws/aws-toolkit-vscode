@@ -285,42 +285,18 @@ export class AutoDebugController implements vscode.Disposable {
         totalErrors: number,
         errorsBeingSent: number
     ): string {
-        const parts = [
-            `Please help me fix the following code issues:`,
-            '',
-            `**File:** ${filePath}`,
-            `**Language:** ${languageId}`,
-            `**Errors being sent:** ${errorsBeingSent}`,
-            totalErrors > errorsBeingSent ? `**Total errors in file:** ${totalErrors}` : '',
-            '',
-            '**Code:**',
-            `\`\`\`${languageId}`,
-            selectedText,
-            '```',
-            '',
-            '**Issues to fix:**',
-        ]
+        const parts = [`Please help me fix the following errors in ${filePath}`]
 
         for (const problem of problems) {
-            parts.push(`- **ERROR**: ${problem.diagnostic.message}`)
+            const line = problem.diagnostic.range.start.line + 1
+            const column = problem.diagnostic.range.start.character + 1
+            const source = problem.source !== 'unknown' ? problem.source : 'Unknown'
             parts.push(
-                `  Location: Line ${problem.diagnostic.range.start.line + 1}, Column ${problem.diagnostic.range.start.character + 1}`
-            )
-            if (problem.source !== 'unknown') {
-                parts.push(`  Source: ${problem.source}`)
-            }
-        }
-
-        parts.push('')
-        parts.push('Please fix the error')
-
-        if (totalErrors > errorsBeingSent) {
-            parts.push(
-                `Note: This file has ${totalErrors} total errors, but I'm only sending ${errorsBeingSent} errors at a time to avoid overwhelming the system.`
+                `ERROR: ${problem.diagnostic.message} Location: Line ${line}, Column ${column} Source: ${source}`
             )
         }
 
-        return parts.filter(Boolean).join('\n')
+        return parts.join('\n')
     }
 
     /**

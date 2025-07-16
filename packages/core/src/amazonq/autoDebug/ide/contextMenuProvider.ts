@@ -28,7 +28,7 @@ export class ContextMenuProvider implements vscode.Disposable {
             Commands.register(
                 {
                     id: 'amazonq.01.fixWithQ',
-                    name: 'Fix with Amazon Q',
+                    name: 'Amazon Q: Fix Problem',
                     telemetryName: 'amazonq_openChat',
                 },
                 async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
@@ -42,7 +42,7 @@ export class ContextMenuProvider implements vscode.Disposable {
             Commands.register(
                 {
                     id: 'amazonq.02.fixAllWithQ',
-                    name: 'Fix All with Amazon Q',
+                    name: 'Amazon Q: Fix All Errors',
                     telemetryName: 'amazonq_openChat',
                 },
                 async () => {
@@ -56,7 +56,7 @@ export class ContextMenuProvider implements vscode.Disposable {
             Commands.register(
                 {
                     id: 'amazonq.03.explainProblem',
-                    name: 'Explain Problem with Amazon Q',
+                    name: 'Amazon Q: Explain Problem',
                     telemetryName: 'amazonq_openChat',
                 },
                 async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
@@ -271,29 +271,14 @@ export class ContextMenuProvider implements vscode.Disposable {
     }
 
     private createFixMessage(selectedText: string, filePath: string, languageId: string, errorContexts: any[]): string {
-        const parts = [
-            'Please help me fix the following code issues:',
-            '',
-            `**File:** ${filePath}`,
-            `**Language:** ${languageId}`,
-            '',
-            '**Code:**',
-            `\`\`\`${languageId}`,
-            selectedText,
-            '```',
-            '',
-            '**Issues to fix:**',
-        ]
+        const parts = [`Please help me fix the following errors in ${filePath}`]
 
         for (const context of errorContexts) {
-            parts.push(`- **${context.severity.toUpperCase()}**: ${context.message}`)
-            if (context.location) {
-                parts.push(`  Location: Line ${context.location.line}, Column ${context.location.column}`)
-            }
+            const line = context.location ? context.location.line : 'Unknown'
+            const column = context.location ? context.location.column : 'Unknown'
+            const source = context.source || 'Unknown'
+            parts.push(`ERROR: ${context.message} Location: Line ${line}, Column ${column} Source: ${source}`)
         }
-
-        parts.push('')
-        parts.push('Please fix the error.')
 
         return parts.join('\n')
     }

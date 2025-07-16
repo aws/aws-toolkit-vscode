@@ -97,13 +97,13 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         diagnostics: vscode.Diagnostic[]
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            `Fix with Amazon Q (${diagnostics.length} issue${diagnostics.length !== 1 ? 's' : ''})`,
+            `Amazon Q: Fix Problem (${diagnostics.length} issue${diagnostics.length !== 1 ? 's' : ''})`,
             vscode.CodeActionKind.QuickFix
         )
 
         action.command = {
             command: 'amazonq.01.fixWithQ',
-            title: 'Fix with Amazon Q',
+            title: 'Amazon Q: Fix Problem',
             arguments: [range, diagnostics],
         }
 
@@ -114,11 +114,11 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
     }
 
     private createFixAllWithQAction(document: vscode.TextDocument): vscode.CodeAction {
-        const action = new vscode.CodeAction('Fix All with Amazon Q', vscode.CodeActionKind.QuickFix)
+        const action = new vscode.CodeAction('Amazon Q: Fix All Errors', vscode.CodeActionKind.QuickFix)
 
         action.command = {
             command: 'amazonq.02.fixAllWithQ',
-            title: 'Fix All with Amazon Q',
+            title: 'Amazon Q: Fix All Errors',
         }
 
         return action
@@ -129,11 +129,11 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         range: vscode.Range,
         diagnostics: vscode.Diagnostic[]
     ): vscode.CodeAction {
-        const action = new vscode.CodeAction('Explain Problem with Amazon Q', vscode.CodeActionKind.QuickFix)
+        const action = new vscode.CodeAction('Amazon Q: Explain Problem', vscode.CodeActionKind.QuickFix)
 
         action.command = {
             command: 'amazonq.03.explainProblem',
-            title: 'Explain Problem with Amazon Q',
+            title: 'Amazon Q: Explain Problem',
             arguments: [range, diagnostics],
         }
 
