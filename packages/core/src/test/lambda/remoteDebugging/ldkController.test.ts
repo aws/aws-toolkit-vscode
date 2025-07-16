@@ -19,7 +19,14 @@ import globals from '../../../shared/extensionGlobals'
 import * as messages from '../../../shared/utilities/messages'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { assertTelemetry } from '../../testUtil'
-import { createMockFunctionConfig, createMockDebugConfig } from './testUtils'
+import {
+    createMockFunctionConfig,
+    createMockDebugConfig,
+    createMockGlobalState,
+    setupMockLdkClientOperations,
+    setupMockVSCodeDebugAPIs,
+    setupMockRevertExistingConfig,
+} from './testUtils'
 
 describe('RemoteDebugController', () => {
     let sandbox: sinon.SinonSandbox
@@ -35,18 +42,7 @@ describe('RemoteDebugController', () => {
         sandbox.stub(LdkClient, 'instance').get(() => mockLdkClient)
 
         // Mock global state with actual storage
-        const stateStorage = new Map<string, any>()
-        mockGlobalState = {
-            get: (key: string) => stateStorage.get(key),
-            tryGet: (key: string, type?: any, defaultValue?: any) => {
-                const value = stateStorage.get(key)
-                return value !== undefined ? value : defaultValue
-            },
-            update: async (key: string, value: any) => {
-                stateStorage.set(key, value)
-                return Promise.resolve()
-            },
-        }
+        mockGlobalState = createMockGlobalState()
         sandbox.stub(globals, 'globalState').value(mockGlobalState)
 
         // Get controller instance
@@ -210,27 +206,16 @@ describe('RemoteDebugController', () => {
 
         it('should start debugging successfully', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-            sandbox.stub(vscode.debug, 'onDidTerminateDebugSession').returns({ dispose: sandbox.stub() })
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             // Mock successful LdkClient operations
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
-            mockLdkClient.createOrReuseTunnel.resolves({
-                tunnelID: 'tunnel-123',
-                sourceToken: 'source-token',
-                destinationToken: 'dest-token',
-            })
-            mockLdkClient.createDebugDeployment.resolves('$LATEST')
-            mockLdkClient.startProxy.resolves(true)
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
 
@@ -248,23 +233,17 @@ describe('RemoteDebugController', () => {
 
         it('should handle debugging start failure and cleanup', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             // Mock function config retrieval success but tunnel creation failure
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
             mockLdkClient.createOrReuseTunnel.rejects(new Error('Tunnel creation failed'))
-            mockLdkClient.stopProxy.resolves(true)
-            mockLdkClient.removeDebugDeployment.resolves(true)
-            mockLdkClient.deleteDebugVersion.resolves(true)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             let errorThrown = false
             try {
@@ -287,28 +266,19 @@ describe('RemoteDebugController', () => {
 
         it('should handle version publishing workflow', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-            sandbox.stub(vscode.debug, 'onDidTerminateDebugSession').returns({ dispose: sandbox.stub() })
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             const versionConfig = { ...mockConfig, shouldPublishVersion: true }
 
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
-            mockLdkClient.createOrReuseTunnel.resolves({
-                tunnelID: 'tunnel-123',
-                sourceToken: 'source-token',
-                destinationToken: 'dest-token',
-            })
+            // Mock successful LdkClient operations with version publishing
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
             mockLdkClient.createDebugDeployment.resolves('v1')
-            mockLdkClient.startProxy.resolves(true)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             await controller.startDebugging(versionConfig.functionArn, 'nodejs18.x', versionConfig)
 
@@ -431,27 +401,16 @@ describe('RemoteDebugController', () => {
 
         it('should emit lambda_remoteDebugStart telemetry for successful debugging start', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-            sandbox.stub(vscode.debug, 'onDidTerminateDebugSession').returns({ dispose: sandbox.stub() })
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             // Mock successful LdkClient operations
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
-            mockLdkClient.createOrReuseTunnel.resolves({
-                tunnelID: 'tunnel-123',
-                sourceToken: 'source-token',
-                destinationToken: 'dest-token',
-            })
-            mockLdkClient.createDebugDeployment.resolves('$LATEST')
-            mockLdkClient.startProxy.resolves(true)
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
 
@@ -466,28 +425,19 @@ describe('RemoteDebugController', () => {
 
         it('should emit lambda_remoteDebugStart telemetry for version publishing', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
-            sandbox.stub(vscode.debug, 'onDidTerminateDebugSession').returns({ dispose: sandbox.stub() })
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             const versionConfig = { ...mockConfig, shouldPublishVersion: true }
 
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
-            mockLdkClient.createOrReuseTunnel.resolves({
-                tunnelID: 'tunnel-123',
-                sourceToken: 'source-token',
-                destinationToken: 'dest-token',
-            })
+            // Mock successful LdkClient operations with version publishing
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
             mockLdkClient.createDebugDeployment.resolves('v1')
-            mockLdkClient.startProxy.resolves(true)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             await controller.startDebugging(versionConfig.functionArn, 'nodejs18.x', versionConfig)
 
@@ -502,23 +452,17 @@ describe('RemoteDebugController', () => {
 
         it('should emit lambda_remoteDebugStart telemetry for failed debugging start', async () => {
             // Mock VSCode APIs
-            sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-            sandbox.stub(vscode.commands, 'executeCommand').resolves()
+            setupMockVSCodeDebugAPIs(sandbox)
 
             // Mock runtime support
             sandbox.stub(controller, 'supportRuntimeRemoteDebug').returns(true)
 
             // Mock function config retrieval success but tunnel creation failure
-            mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
+            setupMockLdkClientOperations(mockLdkClient, mockFunctionConfig)
             mockLdkClient.createOrReuseTunnel.rejects(new Error('Tunnel creation failed'))
-            mockLdkClient.stopProxy.resolves(true)
-            mockLdkClient.removeDebugDeployment.resolves(true)
-            mockLdkClient.deleteDebugVersion.resolves(true)
 
             // Mock revertExistingConfig
-            sandbox
-                .stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig')
-                .resolves(true)
+            setupMockRevertExistingConfig(sandbox)
 
             try {
                 await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
@@ -603,15 +547,7 @@ describe('Module Functions', () => {
         sandbox = sinon.createSandbox()
 
         // Mock global state with actual storage
-        const stateStorage = new Map<string, any>()
-        mockGlobalState = {
-            get: (key: string) => stateStorage.get(key),
-            tryGet: (key: string) => stateStorage.get(key),
-            update: async (key: string, value: any) => {
-                stateStorage.set(key, value)
-                return Promise.resolve()
-            },
-        }
+        mockGlobalState = createMockGlobalState()
         sandbox.stub(globals, 'globalState').value(mockGlobalState)
     })
 

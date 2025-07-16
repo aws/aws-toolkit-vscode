@@ -117,3 +117,36 @@ export function createMockProgress(): any {
         report: sinon.stub(),
     }
 }
+
+/**
+ * Sets up common mock operations for LdkClient testing
+ */
+export function setupMockLdkClientOperations(mockLdkClient: any, mockFunctionConfig: any) {
+    mockLdkClient.getFunctionDetail.resolves(mockFunctionConfig)
+    mockLdkClient.createOrReuseTunnel.resolves({
+        tunnelID: 'tunnel-123',
+        sourceToken: 'source-token',
+        destinationToken: 'dest-token',
+    })
+    mockLdkClient.createDebugDeployment.resolves('$LATEST')
+    mockLdkClient.startProxy.resolves(true)
+    mockLdkClient.stopProxy.resolves(true)
+    mockLdkClient.removeDebugDeployment.resolves(true)
+    mockLdkClient.deleteDebugVersion.resolves(true)
+}
+
+/**
+ * Sets up common VSCode debug API mocks
+ */
+export function setupMockVSCodeDebugAPIs(sandbox: sinon.SinonSandbox) {
+    sandbox.stub(require('vscode').debug, 'startDebugging').resolves(true)
+    sandbox.stub(require('vscode').commands, 'executeCommand').resolves()
+    sandbox.stub(require('vscode').debug, 'onDidTerminateDebugSession').returns({ dispose: sandbox.stub() })
+}
+
+/**
+ * Sets up mock for revertExistingConfig function
+ */
+export function setupMockRevertExistingConfig(sandbox: sinon.SinonSandbox) {
+    return sandbox.stub(require('../../../lambda/remoteDebugging/ldkController'), 'revertExistingConfig').resolves(true)
+}
