@@ -25,6 +25,11 @@ import { EvaluationResult } from '@aws-sdk/client-iam'
 
 const policyAttachDelay = 5000
 
+export enum RemoteSessionError {
+    ExtensionVersionTooLow = 'ExtensionVersionTooLow',
+    MissingExtension = 'MissingExtension',
+}
+
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
     readonly reason?: string
@@ -114,13 +119,13 @@ export async function ensureRemoteSshInstalled(): Promise<void> {
         if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
             throw new ToolkitError('Remote SSH extension version is too low', {
                 cancelled: true,
-                code: 'ExtensionVersionTooLow',
+                code: RemoteSessionError.ExtensionVersionTooLow,
                 details: { expected: vscodeExtensionMinVersion.remotessh },
             })
         } else {
             throw new ToolkitError('Remote SSH extension not installed', {
                 cancelled: true,
-                code: 'MissingExtension',
+                code: RemoteSessionError.MissingExtension,
             })
         }
     }
