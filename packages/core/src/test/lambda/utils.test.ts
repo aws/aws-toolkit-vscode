@@ -12,9 +12,6 @@ import {
     getFunctionInfo,
     setFunctionInfo,
     compareCodeSha,
-    lambdaEdits,
-    getLambdaEditFromNameRegion,
-    getLambdaEditFromLocation,
 } from '../../lambda/utils'
 import { LambdaFunction } from '../../lambda/commands/uploadLambda'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
@@ -135,7 +132,7 @@ describe('lambda utils', function () {
         })
 
         it('merges with existing data', async function () {
-            const existingData = { lastDeployed: 123456, undeployed: true, sha: 'old-sha' }
+            const existingData = { lastDeployed: 123456, undeployed: true, sha: 'old-sha', handlerFile: 'index.js' }
             sinon.stub(fs, 'readFileText').resolves(JSON.stringify(existingData))
             const writeStub = sinon.stub(fs, 'writeFile').resolves()
             sinon.stub(DefaultLambdaClient.prototype, 'getFunction').resolves({
@@ -149,6 +146,7 @@ describe('lambda utils', function () {
             assert.strictEqual(writtenData.lastDeployed, 123456)
             assert.strictEqual(writtenData.undeployed, false)
             assert.strictEqual(writtenData.sha, 'new-sha')
+            assert.strictEqual(writtenData.handlerFile, 'index.js')
         })
     })
 
@@ -185,50 +183,6 @@ describe('lambda utils', function () {
 
             const result = await compareCodeSha(mockLambda)
             assert.strictEqual(result, false)
-        })
-    })
-
-    describe('lambdaEdits array functions', function () {
-        beforeEach(function () {
-            lambdaEdits.length = 0
-            lambdaEdits.push(
-                {
-                    location: '/tmp/func1',
-                    functionName: 'func1',
-                    region: 'us-east-1',
-                },
-                {
-                    location: '/tmp/func2',
-                    functionName: 'func2',
-                    region: 'us-west-2',
-                }
-            )
-        })
-
-        describe('getLambdaEditFromNameRegion', function () {
-            it('finds edit by name and region', function () {
-                const result = getLambdaEditFromNameRegion('func1', 'us-east-1')
-                assert.strictEqual(result?.functionName, 'func1')
-                assert.strictEqual(result?.region, 'us-east-1')
-            })
-
-            it('returns undefined when not found', function () {
-                const result = getLambdaEditFromNameRegion('nonexistent', 'us-east-1')
-                assert.strictEqual(result, undefined)
-            })
-        })
-
-        describe('getLambdaEditFromLocation', function () {
-            it('finds edit by location', function () {
-                const result = getLambdaEditFromLocation('/tmp/func2')
-                assert.strictEqual(result?.functionName, 'func2')
-                assert.strictEqual(result?.location, '/tmp/func2')
-            })
-
-            it('returns undefined when not found', function () {
-                const result = getLambdaEditFromLocation('/tmp/nonexistent')
-                assert.strictEqual(result, undefined)
-            })
         })
     })
 })

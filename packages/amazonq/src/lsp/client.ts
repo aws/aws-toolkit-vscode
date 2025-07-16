@@ -12,11 +12,11 @@ import {
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
-    DidSaveTextDocumentParams,
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
     WorkspaceFolder,
+    ConnectionMetadata,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
@@ -168,6 +168,7 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        qCodeReviewInChat: true,
                     },
                     window: {
                         notifications: true,
@@ -175,17 +176,18 @@ export async function startLanguageServer(
                     },
                     textDocument: {
                         inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
+                            inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
                         },
                     },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,
                 },
-                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
+                logLevel: isSageMaker() ? 'debug' : toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
+                providesIam: isSageMaker(), // Enable IAM credentials for SageMaker environments
             },
         },
         /**
@@ -210,6 +212,32 @@ export async function startLanguageServer(
     const disposable = client.start()
     toDispose.push(disposable)
     await client.onReady()
+
+    // Set up connection metadata handler
+    client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
+        // For IAM auth, provide a default startUrl
+        if (process.env.USE_IAM_AUTH === 'true') {
+            getLogger().info(
+                `[SageMaker Debug] Connection metadata requested - returning hardcoded startUrl for IAM auth`
+            )
+            return {
+                sso: {
+                    // TODO P261194666 Replace with correct startUrl once identified
+                    startUrl: 'https://amzn.awsapps.com/start', // Default for IAM auth
+                },
+            }
+        }
+
+        // For SSO auth, use the actual startUrl
+        getLogger().info(
+            `[SageMaker Debug] Connection metadata requested - returning actual startUrl for SSO auth: ${AuthUtil.instance.auth.startUrl}`
+        )
+        return {
+            sso: {
+                startUrl: AuthUtil.instance.auth.startUrl,
+            },
+        }
+    })
 
     const auth = await initializeAuth(client)
 
@@ -266,6 +294,14 @@ async function onLanguageServerReady(
 
     toDispose.push(
         inlineManager,
+        Commands.register('aws.amazonq.showPrev', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+        }),
+        Commands.register('aws.amazonq.showNext', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+        }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
@@ -333,13 +369,6 @@ async function onLanguageServerReady(
                     return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
                 }),
             } as RenameFilesParams)
-        }),
-        vscode.workspace.onDidSaveTextDocument((e) => {
-            client.sendNotification('workspace/didSaveTextDocument', {
-                textDocument: {
-                    uri: e.uri.fsPath,
-                },
-            } as DidSaveTextDocumentParams)
         }),
         vscode.workspace.onDidChangeWorkspaceFolders((e) => {
             client.sendNotification('workspace/didChangeWorkspaceFolder', {
