@@ -19,6 +19,7 @@ import globals from '../../../shared/extensionGlobals'
 import * as messages from '../../../shared/utilities/messages'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { assertTelemetry } from '../../testUtil'
+import { createMockFunctionConfig, createMockDebugConfig } from './testUtils'
 
 describe('RemoteDebugController', () => {
     let sandbox: sinon.SinonSandbox
@@ -200,27 +201,11 @@ describe('RemoteDebugController', () => {
         let mockFunctionConfig: Lambda.FunctionConfiguration
 
         beforeEach(() => {
-            mockConfig = {
-                functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-                functionName: 'testFunction',
-                port: 9229,
-                localRoot: '/local/path',
-                remoteRoot: '/var/task',
-                skipFiles: [],
-                shouldPublishVersion: false,
-                lambdaTimeout: 900,
+            mockConfig = createMockDebugConfig({
                 layerArn: 'arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6',
-            }
+            })
 
-            mockFunctionConfig = {
-                FunctionName: 'testFunction',
-                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-                Runtime: 'nodejs18.x',
-                Timeout: 30,
-                Layers: [],
-                Environment: { Variables: {} },
-                Architectures: ['x86_64'],
-            }
+            mockFunctionConfig = createMockFunctionConfig()
         })
 
         it('should start debugging successfully', async () => {
@@ -437,27 +422,11 @@ describe('RemoteDebugController', () => {
         let mockFunctionConfig: Lambda.FunctionConfiguration
 
         beforeEach(() => {
-            mockConfig = {
-                functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-                functionName: 'testFunction',
-                port: 9229,
-                localRoot: '/local/path',
-                remoteRoot: '/var/task',
-                skipFiles: [],
-                shouldPublishVersion: false,
-                lambdaTimeout: 900,
+            mockConfig = createMockDebugConfig({
                 layerArn: 'arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6',
-            }
+            })
 
-            mockFunctionConfig = {
-                FunctionName: 'testFunction',
-                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-                Runtime: 'nodejs18.x',
-                Timeout: 30,
-                Layers: [],
-                Environment: { Variables: {} },
-                Architectures: ['x86_64'],
-            }
+            mockFunctionConfig = createMockFunctionConfig()
         })
 
         it('should emit lambda_remoteDebugStart telemetry for successful debugging start', async () => {

@@ -18,6 +18,7 @@ import * as messages from '../../../../shared/utilities/messages'
 import globals from '../../../../shared/extensionGlobals'
 import fs from '../../../../shared/fs/fs'
 import { ToolkitError } from '../../../../shared'
+import { createMockDebugConfig } from '../../remoteDebugging/testUtils'
 
 describe('RemoteInvokeWebview - Debugging Functionality', () => {
     let outputChannel: vscode.OutputChannel
@@ -168,16 +169,10 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         let mockConfig: DebugConfig
 
         beforeEach(() => {
-            mockConfig = {
+            mockConfig = createMockDebugConfig({
                 functionArn: data.FunctionArn,
                 functionName: data.FunctionName,
-                port: 9229,
-                localRoot: '/local/path',
-                remoteRoot: '/var/task',
-                skipFiles: [],
-                shouldPublishVersion: false,
-                lambdaTimeout: 900,
-            }
+            })
         })
 
         it('should check ready to debug with valid config', async () => {
@@ -227,16 +222,10 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         let mockConfig: DebugConfig
 
         beforeEach(() => {
-            mockConfig = {
+            mockConfig = createMockDebugConfig({
                 functionArn: data.FunctionArn,
                 functionName: data.FunctionName,
-                port: 9229,
-                localRoot: '/local/path',
-                remoteRoot: '/var/task',
-                skipFiles: [],
-                shouldPublishVersion: false,
-                lambdaTimeout: 900,
-            }
+            })
         })
 
         it('should start debugging successfully', async () => {
@@ -492,16 +481,10 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         let mockConfig: DebugConfig
 
         beforeEach(() => {
-            mockConfig = {
+            mockConfig = createMockDebugConfig({
                 functionArn: data.FunctionArn,
                 functionName: data.FunctionName,
-                port: 9229,
-                localRoot: '/local/path',
-                remoteRoot: '/var/task',
-                skipFiles: [],
-                shouldPublishVersion: false,
-                lambdaTimeout: 900,
-            }
+            })
 
             // Mock telemetry to avoid issues
             sandbox.stub(require('../../../../shared/telemetry/telemetry'), 'telemetry').value({

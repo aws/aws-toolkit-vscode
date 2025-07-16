@@ -32,6 +32,30 @@ interface TunnelInfo {
     destinationToken: string
 }
 
+async function callUpdateFunctionConfiguration(
+    lambda: DefaultLambdaClient,
+    config: Lambda.FunctionConfiguration,
+    waitForUpdate: boolean
+): Promise<Lambda.FunctionConfiguration> {
+    // Update function configuration back to original values
+    return await lambda.updateFunctionConfiguration(
+        {
+            FunctionName: config.FunctionName!,
+            Timeout: config.Timeout,
+            Layers: config.Layers?.map((layer) => layer.Arn!).filter(Boolean) || [],
+            Environment: {
+                Variables: config.Environment?.Variables ?? {},
+            },
+        },
+        {
+            maxRetries: 5,
+            initialDelayMs: 2000,
+            backoffMultiplier: 2,
+            waitForUpdate: waitForUpdate,
+        }
+    )
+}
+
 export class LdkClient {
     static #instance: LdkClient
     private localProxy: LocalProxy | undefined
@@ -285,22 +309,18 @@ export class LdkClient {
             if (!config.FunctionArn || !config.FunctionName) {
                 throw new Error('Function ARN is missing')
             }
-            await lambda.updateFunctionConfiguration(
-                {
-                    FunctionName: config.FunctionName,
-                    Timeout: lambdaTimeout ?? 900, // 15 minutes
-                    Layers: updatedLayers,
-                    Environment: {
-                        Variables: updatedEnv,
-                    },
+
+            // Create a temporary config for the update
+            const updateConfig: Lambda.FunctionConfiguration = {
+                FunctionName: config.FunctionName,
+                Timeout: lambdaTimeout ?? 900, // 15 minutes
+                Layers: updatedLayers.map((arn) => ({ Arn: arn })),
+                Environment: {
+                    Variables: updatedEnv,
                 },
-                {
-                    maxRetries: 5,
-                    initialDelayMs: 2000,
-                    backoffMultiplier: 2,
-                    waitForUpdate: true,
-                }
-            )
+            }
+
+            await callUpdateFunctionConfiguration(lambda, updateConfig, true)
 
             // publish version
             let version = '$Latest'
@@ -310,26 +330,14 @@ export class LdkClient {
                 version = versionResp.Version ?? ''
                 // remove debug deployment in a non-blocking way
                 void Promise.resolve(
-                    lambda
-                        .updateFunctionConfiguration(
-                            {
-                                FunctionName: config.FunctionName,
-                                Timeout: config.Timeout,
-                                Layers: config.Layers?.map((layer) => layer.Arn!).filter(Boolean) || [],
-                                Environment: {
-                                    Variables: config.Environment?.Variables ?? {},
-                                },
-                            },
-                            { waitForUpdate: false }
-                        )
-                        .then(() => {
-                            progress.report({
-                                message: localize(
-                                    'AWS.lambda.ldkClient.debugDeploymentCompleted',
-                                    'Debug deployment completed successfully'
-                                ),
-                            })
+                    callUpdateFunctionConfiguration(lambda, config, false).then(() => {
+                        progress.report({
+                            message: localize(
+                                'AWS.lambda.ldkClient.debugDeploymentCompleted',
+                                'Debug deployment completed successfully'
+                            ),
                         })
+                    })
                 )
             }
             return version
@@ -368,21 +376,7 @@ export class LdkClient {
             const lambda = this.getLambdaClient(region)
 
             // Update function configuration back to original values
-            await lambda.updateFunctionConfiguration(
-                {
-                    FunctionName: config.FunctionName,
-                    Timeout: config.Timeout,
-                    Layers: config.Layers?.map((layer) => layer.Arn!).filter(Boolean) || [],
-                    Environment: {
-                        Variables: config.Environment?.Variables ?? {},
-                    },
-                },
-                {
-                    maxRetries: 5,
-                    initialDelayMs: 2000,
-                    backoffMultiplier: 2,
-                }
-            )
+            await callUpdateFunctionConfiguration(lambda, config, false)
 
             return true
         } catch (error) {

@@ -11,6 +11,7 @@ import { LocalProxy } from '../../../lambda/remoteDebugging/localProxy'
 import * as utils from '../../../lambda/remoteDebugging/utils'
 import * as telemetryUtil from '../../../shared/telemetry/util'
 import globals from '../../../shared/extensionGlobals'
+import { createMockFunctionConfig, createMockProgress } from './testUtils'
 
 describe('LdkClient', () => {
     let sandbox: sinon.SinonSandbox
@@ -182,15 +183,9 @@ describe('LdkClient', () => {
     })
 
     describe('getFunctionDetail()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = {
-            FunctionName: 'testFunction',
+        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
-            Runtime: 'nodejs18.x',
-            Timeout: 30,
-            Layers: [],
-            Environment: { Variables: {} },
-            Architectures: ['x86_64'],
-        }
+        })
 
         it('should get function details successfully', async () => {
             mockLambdaClient.getFunction.resolves({ Configuration: mockFunctionConfig })
@@ -217,19 +212,11 @@ describe('LdkClient', () => {
     })
 
     describe('createDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = {
-            FunctionName: 'testFunction',
+        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
-            Runtime: 'nodejs18.x',
-            Timeout: 30,
-            Layers: [],
-            Environment: { Variables: {} },
-            Architectures: ['x86_64'],
-        }
+        })
 
-        const mockProgress = {
-            report: sinon.stub(),
-        }
+        const mockProgress = createMockProgress()
 
         beforeEach(() => {
             mockLambdaClient.updateFunctionConfiguration.resolves({})
@@ -304,15 +291,9 @@ describe('LdkClient', () => {
     })
 
     describe('removeDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = {
-            FunctionName: 'testFunction',
+        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
-            Runtime: 'nodejs18.x',
-            Timeout: 30,
-            Layers: [],
-            Environment: { Variables: {} },
-            Architectures: ['x86_64'],
-        }
+        })
 
         beforeEach(() => {
             mockLambdaClient.updateFunctionConfiguration.resolves({})
