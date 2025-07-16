@@ -1150,6 +1150,77 @@
         {
             "name": "appbuilder_lambda2sam",
             "description": "User click Convert a lambda function to SAM project"
+        },
+        {
+            "name": "lambda_remoteDebugStop",
+            "description": "user stop remote debugging",
+            "metadata": [
+                {
+                    "type": "sessionDuration",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugStart",
+            "description": "user start remote debugging",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugPrecheck",
+            "description": "user click remote debug checkbox",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_invokeRemote",
+            "description": "Called when invoking lambdas remotely",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "runtime",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
         }
     ]
 }
