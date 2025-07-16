@@ -1,0 +1,108 @@
+
+
+Writing code settings to /var/folders/2_/2gq5dx0523d60tk4_xn6_pnr0000gq/T/test-resources/settings/User/settings.json
+Launching browser...
+Browser ready in 1327 ms
+Launching tests...
+  Amazon Q E2E UI Test
+Waiting for manual authentication...
+Manual authentication should be done
+editorview successfully created
+Closed all editors
+Reopened webview view
+    1) Chat Prompt Test
+Screenshot capture failed. NoSuchWindowError: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=134.0.6998.205)
+    at Object.throwDecodedError (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/error.js:523:15)
+    at parseHttpResponse (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/http.js:524:13)
+    at Executor.execute (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/http.js:456:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Driver.execute (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/webdriver.js:745:17)
+    at async VSBrowser.takeScreenshot (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/vscode-extension-tester/out/browser.js:228:22)
+    at async Context.<anonymous> (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/vscode-extension-tester/out/suite/runner.js:109:25) {
+  remoteStacktrace: '0   chromedriver                        0x000000010274b6c8 cxxbridge1$str$ptr + 2791212\n' +
+    '1   chromedriver                        0x0000000102743c9c cxxbridge1$str$ptr + 2759936\n' +
+    '2   chromedriver                        0x0000000102295e30 cxxbridge1$string$len + 92928\n' +
+    '3   chromedriver                        0x000000010226fa00 chromedriver + 129536\n' +
+    '4   chromedriver                        0x0000000102305418 cxxbridge1$string$len + 549096\n' +
+    '5   chromedriver                        0x000000010231e0f8 cxxbridge1$string$len + 650696\n' +
+    '6   chromedriver                        0x00000001022d12fc cxxbridge1$string$len + 335820\n' +
+    '7   chromedriver                        0x00000001027106c4 cxxbridge1$str$ptr + 2549544\n' +
+    '8   chromedriver                        0x0000000102713988 cxxbridge1$str$ptr + 2562540\n' +
+    '9   chromedriver                        0x00000001026f071c cxxbridge1$str$ptr + 2418560\n' +
+    '10  chromedriver                        0x00000001027141e8 cxxbridge1$str$ptr + 2564684\n' +
+    '11  chromedriver                        0x00000001026e1750 cxxbridge1$str$ptr + 2357172\n' +
+    '12  chromedriver                        0x0000000102733f58 cxxbridge1$str$ptr + 2695100\n' +
+    '13  chromedriver                        0x00000001027340e0 cxxbridge1$str$ptr + 2695492\n' +
+    '14  chromedriver                        0x0000000102743910 cxxbridge1$str$ptr + 2759028\n' +
+    '15  libsystem_pthread.dylib             0x000000018254ac0c _pthread_start + 136\n' +
+    '16  libsystem_pthread.dylib             0x0000000182545b80 thread_start + 8\n'
+}
+Error closing tabs: NoSuchWindowError: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=134.0.6998.205)
+    at Object.throwDecodedError (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/error.js:523:15)
+    at parseHttpResponse (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/http.js:524:13)
+    at Executor.execute (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/http.js:456:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Driver.execute (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/webdriver.js:745:17)
+    at async Driver.findElements (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/selenium-webdriver/lib/webdriver.js:1073:17)
+    at async WebviewViewBase.findWebElements (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/node_modules/@redhat-developer/page-objects/out/components/WebviewMixin.js:54:20)
+    at async Context.<anonymous> (/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/packages/amazonq/dist/test/e2e/amazonq/VET.test.js:67:34) {
+  remoteStacktrace: '0   chromedriver                        0x000000010274b6c8 cxxbridge1$str$ptr + 2791212\n' +
+    '1   chromedriver                        0x0000000102743c9c cxxbridge1$str$ptr + 2759936\n' +
+    '2   chromedriver                        0x0000000102295e30 cxxbridge1$string$len + 92928\n' +
+    '3   chromedriver                        0x000000010226fa00 chromedriver + 129536\n' +
+    '4   chromedriver                        0x0000000102305418 cxxbridge1$string$len + 549096\n' +
+    '5   chromedriver                        0x000000010231e0f8 cxxbridge1$string$len + 650696\n' +
+    '6   chromedriver                        0x00000001022d12fc cxxbridge1$string$len + 335820\n' +
+    '7   chromedriver                        0x00000001027106c4 cxxbridge1$str$ptr + 2549544\n' +
+    '8   chromedriver                        0x0000000102713988 cxxbridge1$str$ptr + 2562540\n' +
+    '9   chromedriver                        0x00000001026f071c cxxbridge1$str$ptr + 2418560\n' +
+    '10  chromedriver                        0x00000001027141e8 cxxbridge1$str$ptr + 2564684\n' +
+    '11  chromedriver                        0x00000001026e1750 cxxbridge1$str$ptr + 2357172\n' +
+    '12  chromedriver                        0x0000000102733f58 cxxbridge1$str$ptr + 2695100\n' +
+    '13  chromedriver                        0x00000001027340e0 cxxbridge1$str$ptr + 2695492\n' +
+    '14  chromedriver                        0x0000000102743910 cxxbridge1$str$ptr + 2759028\n' +
+    '15  libsystem_pthread.dylib             0x000000018254ac0c _pthread_start + 136\n' +
+    '16  libsystem_pthread.dylib             0x0000000182545b80 thread_start + 8\n'
+}
+    2) "after all" hook for "Chat Prompt Test"
+
+Shutting down the browser
+
+  0 passing (37s)
+  2 failing
+
+  1) Amazon Q E2E UI Test
+       Chat Prompt Test:
+     NoSuchWindowError: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=134.0.6998.205)
+      at Object.throwDecodedError (node_modules/selenium-webdriver/lib/error.js:523:15)
+      at parseHttpResponse (node_modules/selenium-webdriver/lib/http.js:524:13)
+      at Executor.execute (node_modules/selenium-webdriver/lib/http.js:456:28)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async Driver.execute (node_modules/selenium-webdriver/lib/webdriver.js:745:17)
+      at async Driver.findElements (node_modules/selenium-webdriver/lib/webdriver.js:1073:17)
+      at async WebviewViewBase.findWebElements (node_modules/@redhat-developer/page-objects/out/components/WebviewMixin.js:54:20)
+      at async waitForChatResponse (packages/amazonq/dist/test/e2e/amazonq/VET.test.js:125:44)
+      at async Context.<anonymous> (packages/amazonq/dist/test/e2e/amazonq/VET.test.js:97:34)
+
+  2) Amazon Q E2E UI Test
+       "after all" hook for "Chat Prompt Test":
+     NoSuchWindowError: no such window
+  (Session info: chrome=134.0.6998.205)
+      at Object.throwDecodedError (node_modules/selenium-webdriver/lib/error.js:523:15)
+      at parseHttpResponse (node_modules/selenium-webdriver/lib/http.js:524:13)
+      at Executor.execute (node_modules/selenium-webdriver/lib/http.js:456:28)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async Driver.execute (node_modules/selenium-webdriver/lib/webdriver.js:745:17)
+      at async WebviewViewBase.switchBack (node_modules/@redhat-developer/page-objects/out/components/WebviewMixin.js:82:20)
+      at async Context.<anonymous> (packages/amazonq/dist/test/e2e/amazonq/VET.test.js:83:9)
+
+
+
+[33mINFO: Screenshots of failures can be found in: /var/folders/2_/2gq5dx0523d60tk4_xn6_pnr0000gq/T/test-resources/screenshots/20250714T115245
+[0m
