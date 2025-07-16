@@ -143,6 +143,6 @@ export async function writeMapping(mapping: SpaceMappings) {
         }
 
         writeQueue.push(writeOperation)
-        processWriteQueue().catch(reject)
+        processWriteQueue()
     })
 }
