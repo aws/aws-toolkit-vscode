@@ -168,7 +168,7 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
-                        qCodeReviewInChat: true,
+                        CodeReviewInChat: false,
                     },
                     window: {
                         notifications: true,
