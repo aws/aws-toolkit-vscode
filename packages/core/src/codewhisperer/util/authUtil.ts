@@ -30,7 +30,15 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin, LoginTypes } from '../../auth/auth2'
+import {
+    AuthStateEvent,
+    cacheChangedEvent,
+    LanguageClientAuth,
+    Login,
+    SsoLogin,
+    IamLogin,
+    LoginTypes,
+} from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -167,18 +175,24 @@ export class AuthUtil implements IAuthProvider {
         if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
+        // eslint-disable-next-line prefer-const
         response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
         await showAmazonQWalkthroughOnce()
         return response
     }
 
     // Log in using IAM or STS credentials
-    async login_iam(accessKey: string, secretKey: string, sessionToken?: string): Promise<GetIamCredentialResult | undefined> {
+    async login_iam(
+        accessKey: string,
+        secretKey: string,
+        sessionToken?: string
+    ): Promise<GetIamCredentialResult | undefined> {
         let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
+        // eslint-disable-next-line prefer-const
         response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey })
         await showAmazonQWalkthroughOnce()
         return response

@@ -103,13 +103,14 @@ describe('AuthUtil', async function () {
 
         it('returns IDC forms when using IDC without SSO account access', async function () {
             const session = (auth as any).session
-            session && sinon.stub(session, 'getProfile').resolves({
-                ssoSession: {
-                    settings: {
-                        sso_registration_scopes: ['codewhisperer:*'],
+            session &&
+                sinon.stub(session, 'getProfile').resolves({
+                    ssoSession: {
+                        settings: {
+                            sso_registration_scopes: ['codewhisperer:*'],
+                        },
                     },
-                },
-            })
+                })
 
             await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
             const forms = await auth.getAuthFormIds()
@@ -120,13 +121,14 @@ describe('AuthUtil', async function () {
             await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
             const session = (auth as any).session
 
-            session && sinon.stub(session, 'getProfile').resolves({
-                ssoSession: {
-                    settings: {
-                        sso_registration_scopes: ['codewhisperer:*', 'sso:account:access'],
+            session &&
+                sinon.stub(session, 'getProfile').resolves({
+                    ssoSession: {
+                        settings: {
+                            sso_registration_scopes: ['codewhisperer:*', 'sso:account:access'],
+                        },
                     },
-                },
-            })
+                })
 
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms.sort(), ['identityCenterCodeWhisperer', 'identityCenterExplorer'].sort())
@@ -198,7 +200,7 @@ describe('AuthUtil', async function () {
         it('deletes bearer token when disconnected', async function () {
             await (auth as any).stateChangeHandler({ state: 'notConnected' })
 
-            if (auth.isSsoSession(auth.session)){
+            if (auth.isSsoSession(auth.session)) {
                 assert.ok(mockLspAuth.deleteBearerToken.called)
             }
         })
@@ -290,14 +292,14 @@ describe('AuthUtil', async function () {
             memento.get.returns({ profile1: validProfile })
             mockLspAuth.getSsoToken.rejects(new Error('Token check failed'))
 
-            if (!(auth as any).session){
+            if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
-            const updateProfileStub_3 = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStubNext = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
-            assert.ok(updateProfileStub_3.calledOnce)
+            assert.ok(updateProfileStubNext.calledOnce)
             assert.ok(memento.update.calledWith('auth.profiles', undefined))
         })
 
@@ -360,17 +362,17 @@ describe('AuthUtil', async function () {
             }
             memento.get.returns(mockProfiles)
 
-            if (!(auth as any).session){
+            if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
-            const updateProfileStub_2 = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStubMore = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
-            assert.ok(updateProfileStub_2.calledOnce)
+            assert.ok(updateProfileStubMore.calledOnce)
             assert.ok(memento.update.calledWith('auth.profiles', undefined))
-            assert.deepStrictEqual(updateProfileStub_2.firstCall.args[0], {
+            assert.deepStrictEqual(updateProfileStubMore.firstCall.args[0], {
                 startUrl: validProfile.startUrl,
                 region: validProfile.ssoRegion,
                 scopes: validProfile.scopes,
@@ -389,7 +391,7 @@ describe('AuthUtil', async function () {
             }
             memento.get.returns(mockProfiles)
 
-            if (!(auth as any).session){
+            if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 

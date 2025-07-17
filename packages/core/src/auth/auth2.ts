@@ -168,7 +168,14 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
-    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string, sourceProfile?: string): Promise<UpdateProfileResult> {
+    updateIamProfile(
+        profileName: string,
+        accessKey: string,
+        secretKey: string,
+        sessionToken?: string,
+        roleArn?: string,
+        sourceProfile?: string
+    ): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
         let profile: Profile
         if (roleArn) {
