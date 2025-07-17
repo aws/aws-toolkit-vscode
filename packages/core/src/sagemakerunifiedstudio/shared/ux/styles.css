@@ -1,0 +1,83 @@
+/**************************************************************************************************
+ * Global
+ **************************************************************************************************/
+:root {
+    --tk-inputValidation-errorBorder: #ff7a7a;
+    --tk-font-size-extra-large: 17px;
+    --tk-font-size-large: 15px;
+    --tk-font-size-medium: 13px;
+    --tk-font-size-small: 11px;
+    --tk-font-size-extra-small: 9px;
+}
+
+/* Set box-sizing globally */
+html {
+    box-sizing: border-box;
+}
+
+/* Inherit box-sizing for all elements and their pseudo-elements */
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+/**************************************************************************************************
+ * HTML elements
+ **************************************************************************************************/
+h1 {
+    color: var(--vscode-settings-headerForeground);
+}
+
+input:focus,
+select:focus {
+    outline-color: var(--vscode-focusBorder);
+    outline-offset: -1px;
+    outline-style: solid;
+    outline-width: 1px;
+}
+
+/**************************************************************************************************
+ * Custom components
+ **************************************************************************************************/
+.tk-button {
+    border-radius: 2px;
+    font-size: 13px;
+    line-height: 18px;
+    padding: 2px 14px !important;
+}
+
+.tk-title {
+    font-size: 26px;
+    font-weight: 600;
+}
+
+/**************************************************************************************************
+ * Error styling
+ **************************************************************************************************/
+.input-error {
+    color: var(--tk-inputValidation-errorBorder);
+    font-size: var(--tk-font-size-small);
+}
+
+.input-error input {
+    outline-color: var(--tk-inputValidation-errorBorder);
+    outline-offset: -1px;
+    outline-style: solid;
+    outline-width: 1px;
+}
+
+body.vscode-light .input-error {
+    color: var(--vscode-inputValidation-errorBorder);
+}
+
+body.vscode-light .input-error input {
+    outline-color: var(--vscode-inputValidation-errorBorder);
+}
+
+/**************************************************************************************************
+ * Utilities
+ **************************************************************************************************/
+.tk-width-full {
+    width: 100%;
+}

@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { registerCreateScheduleCommand } from './vue/createSchedule/backend'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    // NOOP
+    extensionContext.subscriptions.push(registerCreateScheduleCommand(extensionContext))
 }

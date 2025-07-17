@@ -4288,6 +4288,11 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.sagemakerunifiedstudio.notebookscheduling.createjob",
+                "title": "Create job",
+                "category": "Job"
             }
         ],
         "jsonValidation": [
