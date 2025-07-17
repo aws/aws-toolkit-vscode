@@ -47,7 +47,7 @@ export class RecommendationService {
     ) {
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
-        let documentChangeParams = documentChangeEvent
+        const documentChangeParams = documentChangeEvent
             ? {
                   textDocument: {
                       uri: document.uri.toString(),
