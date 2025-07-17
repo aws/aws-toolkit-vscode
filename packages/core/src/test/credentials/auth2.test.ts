@@ -102,6 +102,22 @@ describe('LanguageClientAuth', () => {
                 sso_region: region,
             })
         })
+
+        it('sends correct IAM profile update parameters', async () => {
+            await auth.updateIamProfile(profileName, 'accessKey', 'secretKey', 'sessionToken')
+
+            sinon.assert.calledOnce(client.sendRequest)
+            const requestParams = client.sendRequest.firstCall.args[1]
+            sinon.assert.match(requestParams.profile, {
+                name: profileName,
+                kinds: [ProfileKind.IamCredentialsProfile],
+            })
+            sinon.assert.match(requestParams.profile.settings, {
+                aws_access_key_id: 'accessKey',
+                aws_secret_access_key: 'secretKey',
+                aws_session_token: 'sessionToken',
+            })
+        })
     })
 
     describe('getProfile', () => {

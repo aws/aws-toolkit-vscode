@@ -49,6 +49,9 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
+    GetMfaCodeParams,
+    getMfaCodeRequestType,
+
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
@@ -70,6 +73,9 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(
+        getMfaCodeRequestType.method
+    )
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
