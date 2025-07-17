@@ -77,8 +77,8 @@ export class SessionManager {
         this._acceptedSuggestionCount += 1
     }
 
-    public updateActiveEditsStreakToken(partialResultToken?: number | string) {
-        if (!this.activeSession || !partialResultToken) {
+    public updateActiveEditsStreakToken(partialResultToken: number | string) {
+        if (!this.activeSession) {
             return
         }
         this.activeSession.editsStreakPartialResultToken = partialResultToken
