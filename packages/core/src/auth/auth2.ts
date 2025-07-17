@@ -584,10 +584,10 @@ export class IamLogin extends BaseLogin {
     async getCredential() {
         const response = await this._getIamCredential(false)
         const credentials: IamCredentials = {
-            accessKeyId: await this.decrypt(response.credentials.accessKeyId),
-            secretAccessKey: await this.decrypt(response.credentials.secretAccessKey),
-            sessionToken: response.credentials.sessionToken
-                ? await this.decrypt(response.credentials.sessionToken)
+            accessKeyId: await this.decrypt(response.credential.credentials.accessKeyId),
+            secretAccessKey: await this.decrypt(response.credential.credentials.secretAccessKey),
+            sessionToken: response.credential.credentials.sessionToken
+                ? await this.decrypt(response.credential.credentials.sessionToken)
                 : undefined,
         }
         return {
@@ -626,13 +626,13 @@ export class IamLogin extends BaseLogin {
         }
 
         // Update cached credentials and credential ID
-        if (response.credentials.accessKeyId && response.credentials.secretAccessKey) {
+        if (response.credential.credentials.accessKeyId && response.credential.credentials.secretAccessKey) {
             this._data = {
-                accessKey: response.credentials.accessKeyId,
-                secretKey: response.credentials.secretAccessKey,
-                sessionToken: response.credentials.sessionToken,
+                accessKey: response.credential.credentials.accessKeyId,
+                secretKey: response.credential.credentials.secretAccessKey,
+                sessionToken: response.credential.credentials.sessionToken,
             }
-            this.iamCredentialId = response.id
+            this.iamCredentialId = response.credential.id
         }
         this.updateConnectionState('connected')
         return response
