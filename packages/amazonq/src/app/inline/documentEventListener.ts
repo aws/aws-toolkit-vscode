@@ -24,7 +24,7 @@ export class DocumentEventListener {
                 // The VS Code provideInlineCompletionCallback may not trigger when Enter is pressed, especially in Python files
                 // manually make this trigger. In case of duplicate, the provideInlineCompletionCallback is already debounced
                 if (this.isEnter(e) && vscode.window.activeTextEditor) {
-                    vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+                    void vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
                 }
             }
         })
@@ -54,6 +54,9 @@ export class DocumentEventListener {
     }
 
     private isEnter(e: vscode.TextDocumentChangeEvent): boolean {
+        if (e.contentChanges.length !== 1) {
+            return false
+        }
         const str = e.contentChanges[0].text
         if (str.length === 0) {
             return false
