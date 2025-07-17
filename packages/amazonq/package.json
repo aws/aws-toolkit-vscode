@@ -439,17 +439,22 @@
                 },
                 {
                     "command": "aws.amazonq.openSecurityIssuePanel",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "aws.amazonq.security.explain",
                     "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@4"
                 },
                 {
-                    "command": "aws.amazonq.security.ignore",
+                    "command": "aws.amazonq.security.generateFix",
                     "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@5"
                 },
                 {
-                    "command": "aws.amazonq.security.generateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithoutFix",
+                    "command": "aws.amazonq.security.ignore",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@6"
                 },
                 {
@@ -532,16 +537,17 @@
             "aws.amazonq.submenu.securityIssueMoreActions": [
                 {
                     "command": "aws.amazonq.security.explain",
+                    "when": "false",
                     "group": "1_more@1"
                 },
                 {
                     "command": "aws.amazonq.applySecurityFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@3"
                 },
                 {
                     "command": "aws.amazonq.security.regenerateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@4"
                 },
                 {
@@ -551,21 +557,6 @@
             ]
         },
         "commands": [
-            {
-                "command": "aws.amazonq.stopCmdExecution",
-                "title": "Stop Amazon Q Command Execution",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
-                "command": "aws.amazonq.runCmdExecution",
-                "title": "Run Amazon Q Command Execution",
-                "category": "%AWS.amazonq.title%"
-            },
-            {
-                "command": "aws.amazonq.rejectCmdExecution",
-                "title": "Reject Amazon Q Command Execution",
-                "category": "%AWS.amazonq.title%"
-            },
             {
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
@@ -790,6 +781,7 @@
             {
                 "command": "aws.amazonq.security.explain",
                 "title": "%AWS.command.amazonq.explainIssue%",
+                "icon": "$(search)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },
             {
@@ -855,24 +847,6 @@
             }
         ],
         "keybindings": [
-            {
-                "command": "aws.amazonq.stopCmdExecution",
-                "key": "ctrl+shift+backspace",
-                "mac": "cmd+shift+backspace",
-                "when": "aws.amazonq.amazonqChatLSP.isRunning"
-            },
-            {
-                "command": "aws.amazonq.runCmdExecution",
-                "key": "ctrl+shift+enter",
-                "mac": "cmd+shift+enter",
-                "when": "aws.amazonq.amazonqChatLSP.isRunning"
-            },
-            {
-                "command": "aws.amazonq.rejectCmdExecution",
-                "key": "ctrl+shift+r",
-                "mac": "cmd+shift+r",
-                "when": "aws.amazonq.amazonqChatLSP.isRunning"
-            },
             {
                 "command": "_aws.amazonq.focusChat.keybinding",
                 "win": "win+alt+i",

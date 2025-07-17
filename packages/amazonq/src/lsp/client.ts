@@ -16,6 +16,7 @@ import {
     RenameFilesParams,
     ResponseMessage,
     WorkspaceFolder,
+    ConnectionMetadata,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
@@ -38,7 +39,6 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
-    setContext,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -165,10 +165,10 @@ export async function startLanguageServer(
                         pinnedContextEnabled: true,
                         imageContextEnabled: true,
                         mcp: true,
-                        shortcut: true,
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        qCodeReviewInChat: true,
                     },
                     window: {
                         notifications: true,
@@ -176,17 +176,18 @@ export async function startLanguageServer(
                     },
                     textDocument: {
                         inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
+                            inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
                         },
                     },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,
                 },
-                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
+                logLevel: isSageMaker() ? 'debug' : toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
+                providesIam: isSageMaker(), // Enable IAM credentials for SageMaker environments
             },
         },
         /**
@@ -211,6 +212,32 @@ export async function startLanguageServer(
     const disposable = client.start()
     toDispose.push(disposable)
     await client.onReady()
+
+    // Set up connection metadata handler
+    client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
+        // For IAM auth, provide a default startUrl
+        if (process.env.USE_IAM_AUTH === 'true') {
+            getLogger().info(
+                `[SageMaker Debug] Connection metadata requested - returning hardcoded startUrl for IAM auth`
+            )
+            return {
+                sso: {
+                    // TODO P261194666 Replace with correct startUrl once identified
+                    startUrl: 'https://amzn.awsapps.com/start', // Default for IAM auth
+                },
+            }
+        }
+
+        // For SSO auth, use the actual startUrl
+        getLogger().info(
+            `[SageMaker Debug] Connection metadata requested - returning actual startUrl for SSO auth: ${AuthUtil.instance.auth.startUrl}`
+        )
+        return {
+            sso: {
+                startUrl: AuthUtil.instance.auth.startUrl,
+            },
+        }
+    })
 
     const auth = await initializeAuth(client)
 
@@ -249,17 +276,6 @@ async function onLanguageServerReady(
 
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activate(client, encryptionKey, resourcePaths.ui)
-
-        await setContext('aws.amazonq.amazonqChatLSP.isRunning', true)
-        getLogger().info('Amazon Q Chat LSP context flag set on client activated')
-
-        // Add a disposable to reset the context flag when the client stops
-        toDispose.push({
-            dispose: async () => {
-                await setContext('aws.amazonq.amazonqChatLSP.isRunning', false)
-                getLogger().info('Amazon Q Chat LSP context flag reset on client disposal')
-            },
-        })
     }
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
