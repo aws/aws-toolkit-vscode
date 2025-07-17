@@ -32,3 +32,33 @@ export async function closeAllTabs(webview: WebviewView) {
         console.log('Error closing tabs:', error)
     }
 }
+
+/* Dismiss overlays if they are present.
+
+Logic:
+If there are any mynah overlays that still exist, that will interfere with being able to click
+any other buttons such as closing chatTabs. Therefore, if you are testing some kind of overlay
+it is recommended to call this function in the "AfterEach" block to make sure the overlay doesn't
+interfere with any other parts of the test suite */
+
+export async function dismissOverlayIfPresent(webview: WebviewView): Promise<boolean> {
+    try {
+        const overlays = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
+        if (overlays.length > 0) {
+            console.log('Overlay detected, attempting to dismiss...')
+            // Use JavaScript executor to click on the body element (outside the overlay)
+            // This is more reliable than trying to find a specific element to click
+            const driver = webview.getDriver()
+            await driver.executeScript('document.body.click()')
+
+            // Wait briefly and check if overlay is gone
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+            const overlaysAfter = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
+            return overlaysAfter.length === 0
+        }
+        return true // No overlay to dismiss
+    } catch (e) {
+        console.log('Error while trying to dismiss overlay:', e)
+        return false
+    }
+}

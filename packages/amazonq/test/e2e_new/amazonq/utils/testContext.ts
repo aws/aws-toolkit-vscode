@@ -9,5 +9,5 @@ export interface TestContext {
     webviewView?: WebviewView
 }
 
-// arr to store shared context
+// array to store shared context
 export const testContext: TestContext = {}
