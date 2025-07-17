@@ -71,7 +71,16 @@ import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import {
+    AggregatedCodeScanIssue,
+    AuthUtil,
+    CodeAnalysisScope,
+    CodeWhispererSettings,
+    initSecurityScanRender,
+    ReferenceLogViewProvider,
+    SecurityIssueTreeViewProvider,
+    CodeWhispererConstants,
+} from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -85,6 +94,7 @@ import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
+import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -285,6 +295,31 @@ export function registerMessageListeners(
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
+
+                // Add detailed logging for SageMaker debugging
+                if (process.env.USE_IAM_AUTH === 'true') {
+                    languageClient.info(`[SageMaker Debug] Making chat request with IAM auth`)
+                    languageClient.info(`[SageMaker Debug] Chat request method: ${chatRequestType.method}`)
+                    languageClient.info(
+                        `[SageMaker Debug] Original chat params: ${JSON.stringify(
+                            {
+                                tabId: chatParams.tabId,
+                                prompt: chatParams.prompt,
+                                // Don't log full textDocument content, just metadata
+                                textDocument: chatParams.textDocument
+                                    ? { uri: chatParams.textDocument.uri }
+                                    : undefined,
+                                context: chatParams.context ? `${chatParams.context.length} context items` : undefined,
+                            },
+                            undefined,
+                            2
+                        )}`
+                    )
+                    languageClient.info(
+                        `[SageMaker Debug] Environment context: USE_IAM_AUTH=${process.env.USE_IAM_AUTH}, AWS_REGION=${process.env.AWS_REGION}`
+                    )
+                }
+
                 try {
                     const chatResult = await languageClient.sendRequest<string | ChatResult>(
                         chatRequestType.method,
@@ -294,12 +329,33 @@ export function registerMessageListeners(
                         },
                         cancellationToken.token
                     )
+
+                    // Add response content logging for SageMaker debugging
+                    if (process.env.USE_IAM_AUTH === 'true') {
+                        languageClient.info(`[SageMaker Debug] Chat response received - type: ${typeof chatResult}`)
+                        if (typeof chatResult === 'string') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (string): ${chatResult.substring(0, 200)}...`
+                            )
+                        } else if (chatResult && typeof chatResult === 'object') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (object keys): ${Object.keys(chatResult)}`
+                            )
+                            if ('message' in chatResult) {
+                                languageClient.info(
+                                    `[SageMaker Debug] Chat response message: ${JSON.stringify(chatResult.message).substring(0, 200)}...`
+                                )
+                            }
+                        }
+                    }
+
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } catch (e) {
                     const errorMsg = `Error occurred during chat request: ${e}`
@@ -315,7 +371,8 @@ export function registerMessageListeners(
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } finally {
                     chatStreamTokens.delete(chatParams.tabId)
@@ -359,7 +416,8 @@ export function registerMessageListeners(
                     encryptionKey,
                     provider,
                     message.params.tabId,
-                    quickActionDisposable
+                    quickActionDisposable,
+                    languageClient
                 )
                 break
             }
@@ -612,6 +670,12 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
+    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
+    decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
+        (message) =>
+            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+    )
+
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
@@ -632,9 +696,12 @@ async function handleCompleteResult<T extends ChatResult>(
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string,
-    disposable: Disposable
+    disposable: Disposable,
+    languageClient: LanguageClient
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
+
+    handleSecurityFindings(decryptedMessage, languageClient)
 
     void provider.webview?.postMessage({
         command: chatRequestType.method,
@@ -647,6 +714,37 @@ async function handleCompleteResult<T extends ChatResult>(
         ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
     }
     disposable.dispose()
+}
+
+function handleSecurityFindings(
+    decryptedMessage: { additionalMessages?: ChatMessage[] },
+    languageClient: LanguageClient
+): void {
+    if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
+        return
+    }
+    for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
+        const message = decryptedMessage.additionalMessages[i]
+        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+            if (message.body !== undefined) {
+                try {
+                    const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
+                    for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        for (const issue of aggregatedCodeScanIssue.issues) {
+                            issue.visible = !CodeWhispererSettings.instance
+                                .getIgnoredSecurityIssues()
+                                .includes(issue.title)
+                        }
+                    }
+                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    SecurityIssueTreeViewProvider.focus()
+                } catch (e) {
+                    languageClient.info('Failed to parse findings')
+                }
+            }
+            decryptedMessage.additionalMessages.splice(i, 1)
+        }
+    }
 }
 
 async function resolveChatResponse(

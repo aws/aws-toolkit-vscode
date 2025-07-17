@@ -9,6 +9,8 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { initializeCredentialsProviderManager } from './utils'
 import { isAmazonQ, isSageMaker } from '../shared/extensionUtilities'
+import { getLogger } from '../shared/logger/logger'
+import { getErrorMsg } from '../shared/errors'
 
 interface SagemakerCookie {
     authMode?: 'Sso' | 'Iam'
@@ -16,10 +18,19 @@ interface SagemakerCookie {
 
 export async function initialize(loginManager: LoginManager): Promise<void> {
     if (isAmazonQ() && isSageMaker()) {
-        // The command `sagemaker.parseCookies` is registered in VS Code Sagemaker environment.
-        const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
-        if (result.authMode !== 'Sso') {
-            initializeCredentialsProviderManager()
+        try {
+            // The command `sagemaker.parseCookies` is registered in VS Code Sagemaker environment.
+            const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
+            if (result.authMode !== 'Sso') {
+                initializeCredentialsProviderManager()
+            }
+        } catch (e) {
+            const errMsg = getErrorMsg(e as Error)
+            if (errMsg?.includes("command 'sagemaker.parseCookies' not found")) {
+                getLogger().warn(`Failed to execute command "sagemaker.parseCookies": ${e}`)
+            } else {
+                throw e
+            }
         }
     }
     Auth.instance.onDidChangeActiveConnection(async (conn) => {
