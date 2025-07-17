@@ -638,11 +638,13 @@ describe('IamLogin', () => {
     }
 
     const mockGetIamCredentialResponse: GetIamCredentialResult = {
-        id: 'test-credential-id',
-        credentials: {
-            accessKeyId: 'encrypted-access-key',
-            secretAccessKey: 'encrypted-secret-key',
-            sessionToken: 'encrypted-session-token',
+        credential: {
+            id: 'test-credential-id',
+            credentials: {
+                accessKeyId: 'encrypted-access-key',
+                secretAccessKey: 'encrypted-secret-key',
+                sessionToken: 'encrypted-session-token',
+            }
         },
         updateCredentialsParams: {
             data: 'credential-data',
@@ -682,7 +684,7 @@ describe('IamLogin', () => {
             )
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
         })
     })
 
@@ -705,7 +707,7 @@ describe('IamLogin', () => {
 
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
         })
     })
 
