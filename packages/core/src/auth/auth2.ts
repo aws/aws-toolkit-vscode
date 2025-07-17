@@ -49,6 +49,9 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
+    GetMfaCodeParams,
+    getMfaCodeRequestType,
+
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
@@ -70,6 +73,9 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(
+        getMfaCodeRequestType.method
+    )
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -140,7 +146,7 @@ export class LanguageClientAuth {
             {
                 profileName: profileName,
                 options: {
-                    generateOnInvalidStsCredential: login,
+                    callStsOnInvalidIamCredential: login,
                 },
             } satisfies GetIamCredentialParams,
             cancellationToken
@@ -182,7 +188,7 @@ export class LanguageClientAuth {
         let profile: Profile
         if (roleArn) {
             profile = {
-                kinds: [ProfileKind.IamRoleSourceProfile],
+                kinds: [ProfileKind.IamSourceProfileProfile],
                 name: profileName,
                 settings: {
                     sso_session: '',
@@ -195,7 +201,7 @@ export class LanguageClientAuth {
             }
         } else if (accessKey && secretKey) {
             profile = {
-                kinds: [ProfileKind.IamUserProfile],
+                kinds: [ProfileKind.IamCredentialsProfile],
                 name: profileName,
                 settings: {
                     sso_session: '',
