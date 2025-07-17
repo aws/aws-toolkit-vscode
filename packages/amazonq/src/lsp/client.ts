@@ -292,11 +292,6 @@ async function postStartLanguageServer(
             sso: {
                 startUrl: AuthUtil.instance.connection?.startUrl,
             },
-            // Add IAM credentials metadata
-            iam: {
-                region: AuthUtil.instance.connection?.region,
-                accesskey: AuthUtil.instance.connection?.accessKey,
-            },
         }
     })
 
