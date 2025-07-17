@@ -5,26 +5,43 @@
 
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneClient, DataZoneProject } from '../../shared/client/datazoneClient'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-
-const contextValueSmusProject = 'sageMakerUnifiedStudioProject'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
  */
 export class SageMakerUnifiedStudioProjectNode implements TreeNode {
-    public readonly resource = this.project
     private readonly logger = getLogger()
 
-    constructor(
-        public readonly id: string,
-        private readonly project: DataZoneProject
-    ) {}
+    public readonly id = 'smusProjectNode'
+    public readonly resource = this
+    private project?: DataZoneProject
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+
+    public async getTreeItem(): Promise<vscode.TreeItem> {
+        if (this.project) {
+            const item = new vscode.TreeItem(this.project.name, vscode.TreeItemCollapsibleState.Collapsed)
+            item.contextValue = 'smusSelectedProject'
+            item.tooltip = `Project: ${this.project.name}\nID: ${this.project.id}`
+            return item
+        }
+        const item = new vscode.TreeItem('Select a project', vscode.TreeItemCollapsibleState.None)
+        item.contextValue = 'smusProjectSelectPicker'
+        item.command = {
+            command: 'aws.smus.projectView',
+            title: 'Select Project',
+            arguments: [this],
+        }
+        return item
+    }
 
     public async getChildren(): Promise<TreeNode[]> {
+        if (!this.project) {
+            return []
+        }
         try {
             const datazoneClient = DataZoneClient.getInstance()
 
@@ -73,17 +90,12 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         ]
     }
 
-    public getTreeItem(): vscode.TreeItem {
-        const displayName = this.project.name
-        const item = new vscode.TreeItem(displayName, vscode.TreeItemCollapsibleState.Collapsed)
-
-        item.iconPath = getIcon('vscode-folder')
-        item.contextValue = contextValueSmusProject
-
-        return item
-    }
-
     public getParent(): TreeNode | undefined {
         return undefined
+    }
+
+    public setSelectedProject(project: any): void {
+        this.project = project
+        this.onDidChangeEmitter.fire()
     }
 }

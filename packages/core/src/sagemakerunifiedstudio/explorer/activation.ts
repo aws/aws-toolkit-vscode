@@ -5,7 +5,13 @@
 
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider } from '../../shared/treeview/resourceTreeDataProvider'
-import { retrySmusProjectsCommand, SageMakerUnifiedStudioRootNode } from './nodes/sageMakerUnifiedStudioRootNode'
+import {
+    retrySmusProjectsCommand,
+    SageMakerUnifiedStudioRootNode,
+    selectSMUSProject,
+} from './nodes/sageMakerUnifiedStudioRootNode'
+import { DataZoneClient } from '../shared/client/datazoneClient'
+// import { Commands } from '../../shared/vscode/commands2'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Create the SMUS projects tree view
@@ -13,15 +19,22 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => smusRootNode.getChildren() })
 
     // Register the tree view
-    const treeView = vscode.window.createTreeView('aws.smus.projectsView', { treeDataProvider })
+    const treeView = vscode.window.createTreeView('aws.smus.rootView', { treeDataProvider })
     treeDataProvider.refresh()
 
-    // Register the refresh command
+    // Register the commands
     extensionContext.subscriptions.push(
         retrySmusProjectsCommand.register(),
         treeView,
-        vscode.commands.registerCommand('aws.smus.projectsView.refresh', () => {
+        vscode.commands.registerCommand('aws.smus.rootView.refresh', () => {
             treeDataProvider.refresh()
-        })
+        }),
+
+        vscode.commands.registerCommand('aws.smus.projectView', async (rootNode?: any) => {
+            return await selectSMUSProject(rootNode)
+        }),
+
+        // Dispose DataZoneClient when extension is deactivated
+        { dispose: () => DataZoneClient.dispose() }
     )
 }

@@ -65,6 +65,18 @@ export class DataZoneClient {
     }
 
     /**
+     * Disposes the singleton instance and cleans up resources
+     */
+    public static dispose(): void {
+        if (DataZoneClient.instance) {
+            const logger = getLogger()
+            logger.debug('DataZoneClient: Disposing singleton instance')
+            DataZoneClient.instance.datazoneClient = undefined
+            DataZoneClient.instance = undefined
+        }
+    }
+
+    /**
      * A workaround to get the DataZone domain ID from default
      * @returns DataZone domain ID
      */

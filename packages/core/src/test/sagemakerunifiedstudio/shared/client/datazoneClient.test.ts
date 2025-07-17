@@ -64,6 +64,21 @@ describe('DataZoneClient', function () {
         })
     })
 
+    describe('dispose', function () {
+        it('cleans up singleton instance', function () {
+            // Get an instance first
+            const client = DataZoneClient.getInstance()
+            assert.ok(client)
+
+            // Dispose the instance
+            DataZoneClient.dispose()
+
+            // After disposal, a new instance should be created
+            const newClient = DataZoneClient.getInstance()
+            assert.notStrictEqual(client, newClient)
+        })
+    })
+
     describe('getProjectDefaultEnvironmentCreds', function () {
         it('retrieves environment credentials successfully', async function () {
             const client = DataZoneClient.getInstance()

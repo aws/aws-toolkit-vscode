@@ -32,7 +32,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
     }
 
     beforeEach(function () {
-        projectNode = new SageMakerUnifiedStudioProjectNode('sageMakerUnifiedStudioProject-project-123', mockProject)
+        projectNode = new SageMakerUnifiedStudioProjectNode()
 
         sinon.stub(getLogger(), 'info')
         sinon.stub(getLogger(), 'warn')
@@ -55,19 +55,30 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
 
     describe('constructor', function () {
         it('creates instance with correct properties', function () {
-            assert.strictEqual(projectNode.id, 'sageMakerUnifiedStudioProject-project-123')
-            assert.strictEqual(projectNode.resource, mockProject)
+            assert.strictEqual(projectNode.id, 'smusProjectNode')
+            assert.strictEqual(projectNode.resource, projectNode)
         })
     })
 
     describe('getTreeItem', function () {
-        it('returns correct tree item', async function () {
-            const treeItem = projectNode.getTreeItem()
+        it('returns correct tree item when no project is selected', async function () {
+            const treeItem = await projectNode.getTreeItem()
 
-            assert.strictEqual(treeItem.label, 'Test Project')
+            assert.strictEqual(treeItem.label, 'Select a project')
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(treeItem.contextValue, 'smusProjectSelectPicker')
+            assert.ok(treeItem.command)
+            assert.strictEqual(treeItem.command?.command, 'aws.smus.projectView')
+        })
+
+        it('returns correct tree item when project is selected', async function () {
+            projectNode.setSelectedProject(mockProject)
+            const treeItem = await projectNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, mockProject.name)
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
-            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioProject')
-            assert.ok(treeItem.iconPath)
+            assert.strictEqual(treeItem.contextValue, 'smusSelectedProject')
+            assert.strictEqual(treeItem.tooltip, `Project: ${mockProject.name}\nID: ${mockProject.id}`)
         })
     })
 
@@ -77,8 +88,18 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
     })
 
+    describe('setSelectedProject', function () {
+        it('updates the project and fires change event', function () {
+            const emitterSpy = sinon.spy(projectNode['onDidChangeEmitter'], 'fire')
+            projectNode.setSelectedProject(mockProject)
+            assert.strictEqual(projectNode['project'], mockProject)
+            assert(emitterSpy.calledOnce)
+        })
+    })
+
     describe('getChildren', function () {
         it('stores config and gets credentials successfully', async function () {
+            projectNode.setSelectedProject(mockProject)
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
 
             const children = await projectNode.getChildren()
@@ -110,6 +131,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
 
         it('handles credentials error gracefully', async function () {
+            projectNode.setSelectedProject(mockProject)
             const credError = new Error('Credentials failed')
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.rejects(credError)
 

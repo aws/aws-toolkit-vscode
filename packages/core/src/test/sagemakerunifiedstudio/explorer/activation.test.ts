@@ -10,6 +10,8 @@ import { activate } from '../../../sagemakerunifiedstudio/explorer/activation'
 import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { retrySmusProjectsCommand } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
+import { Commands } from '../../../shared/vscode/commands2'
+import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 
 describe('SageMaker Unified Studio explorer activation', function () {
     let mockContext: FakeExtensionContext
@@ -19,6 +21,8 @@ describe('SageMaker Unified Studio explorer activation', function () {
     let mockTreeDataProvider: sinon.SinonStubbedInstance<ResourceTreeDataProvider>
 
     beforeEach(async function () {
+        // Stub Commands.register to prevent duplicate command registration
+        sinon.stub(Commands, 'register').returns({ dispose: sinon.stub() } as any)
         mockContext = await FakeExtensionContext.create()
 
         // Create mock tree view
@@ -49,7 +53,7 @@ describe('SageMaker Unified Studio explorer activation', function () {
         // Verify tree view was created with correct view ID
         assert(createTreeViewStub.calledOnce)
         const [viewId, options] = createTreeViewStub.firstCall.args
-        assert.strictEqual(viewId, 'aws.smus.projectsView')
+        assert.strictEqual(viewId, 'aws.smus.rootView')
         assert.ok(options.treeDataProvider)
     })
 
@@ -57,7 +61,7 @@ describe('SageMaker Unified Studio explorer activation', function () {
         await activate(mockContext)
 
         // Verify refresh command was registered
-        assert(registerCommandStub.calledWith('aws.smus.projectsView.refresh', sinon.match.func))
+        assert(registerCommandStub.calledWith('aws.smus.rootView.refresh', sinon.match.func))
     })
 
     it('registers retry command', async function () {
@@ -72,8 +76,23 @@ describe('SageMaker Unified Studio explorer activation', function () {
     it('adds subscriptions to extension context', async function () {
         await activate(mockContext)
 
-        // Verify subscriptions were added (retry command, tree view, refresh command)
-        assert.strictEqual(mockContext.subscriptions.length, 3)
+        // Verify subscriptions were added (retry command, tree view, refresh command, project view command, DataZoneClient disposable)
+        assert.strictEqual(mockContext.subscriptions.length, 5)
+    })
+
+    it('registers DataZoneClient disposal', async function () {
+        const disposeStub = sinon.stub(DataZoneClient, 'dispose')
+        await activate(mockContext)
+
+        // Get the last subscription which should be our DataZoneClient disposable
+        const disposable = mockContext.subscriptions[mockContext.subscriptions.length - 1]
+        assert.ok(disposable, 'DataZoneClient disposable should be registered')
+
+        // Call the dispose method
+        disposable.dispose()
+
+        // Verify DataZoneClient.dispose was called
+        assert(disposeStub.calledOnce, 'DataZoneClient.dispose should be called when extension is deactivated')
     })
 
     it('refreshes tree data provider on activation', async function () {
@@ -89,7 +108,7 @@ describe('SageMaker Unified Studio explorer activation', function () {
         // Get the registered refresh command function
         const refreshCommandCall = registerCommandStub
             .getCalls()
-            .find((call) => call.args[0] === 'aws.smus.projectsView.refresh')
+            .find((call) => call.args[0] === 'aws.smus.rootView.refresh')
         assert.ok(refreshCommandCall, 'Refresh command should be registered')
 
         const refreshFunction = refreshCommandCall.args[1]

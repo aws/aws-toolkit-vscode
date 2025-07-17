@@ -6,7 +6,10 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import { SageMakerUnifiedStudioRootNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
+import {
+    SageMakerUnifiedStudioRootNode,
+    selectSMUSProject,
+} from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
 import { SageMakerUnifiedStudioProjectNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioProjectNode'
 import {
     DataZoneClient,
@@ -14,6 +17,8 @@ import {
     setDefaultDatazoneDomainId,
     resetDefaultDatazoneDomainId,
 } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { SageMakerUnifiedStudioRegionNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRegionNode'
+import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 
 describe('SmusRootNode', function () {
     let rootNode: SageMakerUnifiedStudioRootNode
@@ -49,9 +54,14 @@ describe('SmusRootNode', function () {
     })
 
     describe('constructor', function () {
-        it('creates instance with correct properties', function () {
-            assert.strictEqual(rootNode.id, 'sageMakerUnifiedStudio')
-            assert.strictEqual(rootNode.resource, rootNode)
+        it('should initialize id and resource properties', function () {
+            const node = new SageMakerUnifiedStudioRootNode()
+            assert.strictEqual(node.id, 'smusRootNode')
+            assert.strictEqual(node.resource, node)
+            assert.ok(node.getProjectRegionNode() instanceof SageMakerUnifiedStudioRegionNode)
+            assert.ok(node.getProjectSelectNode() instanceof SageMakerUnifiedStudioProjectNode)
+            assert.strictEqual(typeof node.onDidChangeTreeItem, 'function')
+            assert.strictEqual(typeof node.onDidChangeChildren, 'function')
         })
     })
 
@@ -67,48 +77,28 @@ describe('SmusRootNode', function () {
     })
 
     describe('getChildren', function () {
-        it('returns project nodes when projects exist', async function () {
+        it('returns root nodes', async function () {
             mockDataZoneClient.listProjects.resolves({ projects: [mockProject], nextToken: undefined })
 
             const children = await rootNode.getChildren()
 
-            assert.strictEqual(children.length, 1)
-            assert.ok(children[0] instanceof SageMakerUnifiedStudioProjectNode)
-            assert.strictEqual(
-                (children[0] as SageMakerUnifiedStudioProjectNode).id,
-                'sageMakerUnifiedStudioProject-project-123'
-            )
-        })
+            assert.strictEqual(children.length, 2)
+            assert.ok(children[0] instanceof SageMakerUnifiedStudioRegionNode)
+            assert.ok(children[1] instanceof SageMakerUnifiedStudioProjectNode)
+            // The first child is the region node, the second is the project node
+            assert.strictEqual(children[0].id, 'smusProjectRegionNode')
+            assert.strictEqual(children[1].id, 'smusProjectNode')
 
-        it('returns no projects node when no projects found', async function () {
-            mockDataZoneClient.listProjects.resolves({ projects: [], nextToken: undefined })
+            assert.strictEqual(children.length, 2)
+            assert.strictEqual(children[1].id, 'smusProjectNode')
 
-            const children = await rootNode.getChildren()
-
-            assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'sageMakerUnifiedStudioNoProject')
-
-            const treeItem = await children[0].getTreeItem()
-            assert.strictEqual(treeItem.label, 'No projects found')
-            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioNoProject')
-        })
-
-        it('returns error node when listProjects fails', async function () {
-            const error = new Error('Failed to list projects')
-            mockDataZoneClient.listProjects.rejects(error)
-
-            const children = await rootNode.getChildren()
-
-            assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'sageMakerUnifiedStudioErrorProject')
-
-            const treeItem = await children[0].getTreeItem()
-            assert.strictEqual(treeItem.label, 'Error loading projects (click to retry)')
-            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioErrorProject')
-            assert.strictEqual(treeItem.tooltip, error.message)
+            const treeItem = await children[1].getTreeItem()
+            assert.strictEqual(treeItem.label, 'Select a project')
+            assert.strictEqual(treeItem.contextValue, 'smusProjectSelectPicker')
             assert.deepStrictEqual(treeItem.command, {
-                command: 'aws.smus.retryProjects',
-                title: 'Retry Loading Projects',
+                command: 'aws.smus.projectView',
+                title: 'Select Project',
+                arguments: [children[1]],
             })
         })
     })
@@ -126,5 +116,85 @@ describe('SmusRootNode', function () {
             assert(onDidChangeTreeItemSpy.calledOnce)
             assert(onDidChangeChildrenSpy.calledOnce)
         })
+    })
+})
+
+describe('SelectSMUSProject', function () {
+    let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
+    let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
+    let createQuickPickStub: sinon.SinonStub
+
+    const testDomainId = 'test-domain-123'
+    const mockProject: DataZoneProject = {
+        id: 'project-123',
+        name: 'Test Project',
+        description: 'Test Description',
+        domainId: testDomainId,
+    }
+
+    beforeEach(function () {
+        // Create mock DataZone client
+        mockDataZoneClient = {
+            getDomainId: sinon.stub().returns(testDomainId),
+            listProjects: sinon.stub(),
+        } as any
+
+        // Create mock project node
+        mockProjectNode = {
+            setSelectedProject: sinon.stub(),
+        } as any
+
+        // Stub DataZoneClient static methods
+        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+
+        // Stub quickPick
+        const mockQuickPick = {
+            prompt: sinon.stub().resolves(mockProject),
+        }
+        createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('lists projects and returns selected project', async function () {
+        mockDataZoneClient.listProjects.resolves({ projects: [mockProject], nextToken: undefined })
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, mockProject)
+        assert.ok(mockDataZoneClient.listProjects.calledOnce)
+        assert.ok(
+            mockDataZoneClient.listProjects.calledWith({
+                domainId: testDomainId,
+                maxResults: 50,
+            })
+        )
+        assert.ok(createQuickPickStub.calledOnce)
+        assert.ok(mockProjectNode.setSelectedProject.calledWith(mockProject))
+    })
+
+    it('shows message when no projects found', async function () {
+        mockDataZoneClient.listProjects.resolves({ projects: [], nextToken: undefined })
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, undefined)
+        assert.ok(!mockProjectNode.setSelectedProject.called)
+    })
+
+    it('uses provided domain ID when specified', async function () {
+        mockDataZoneClient.listProjects.resolves({ projects: [mockProject], nextToken: undefined })
+        const customDomainId = 'custom-domain-456'
+
+        await selectSMUSProject(mockProjectNode as any, customDomainId)
+
+        assert.ok(
+            mockDataZoneClient.listProjects.calledWith({
+                domainId: customDomainId,
+                maxResults: 50,
+            })
+        )
     })
 })
