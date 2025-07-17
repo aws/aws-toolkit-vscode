@@ -29,6 +29,11 @@ export async function showEdits(
         const { svgImage, startLine, newCode, origionalCodeHighlightRange } =
             await svgGenerationService.generateDiffSvg(currentFile, item.insertText as string)
 
+        if (newCode.length === 0) {
+            getLogger('nextEditPrediction').warn('not able to apply provided edit suggestion, skip rendering')
+            return
+        }
+
         if (svgImage) {
             // display the SVG image
             await displaySvgDecoration(
