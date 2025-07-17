@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
+import { RotatingLogChannel } from './rotatingLogChannel'
 import {
     CreateFilesParams,
     DeleteFilesParams,
@@ -94,6 +95,23 @@ export async function startLanguageServer(
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+
+    // Create custom output channel that writes to disk but sends UI output to the appropriate channel
+    const lspLogChannel = new RotatingLogChannel(
+        traceServerEnabled ? 'Amazon Q Language Server' : 'Amazon Q Logs',
+        extensionContext,
+        traceServerEnabled
+            ? vscode.window.createOutputChannel('Amazon Q Language Server', { log: true })
+            : globals.logOutputChannel
+    )
+
+    // Add cleanup for our file output channel
+    toDispose.push({
+        dispose: () => {
+            lspLogChannel.dispose()
+        },
+    })
+
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
     if (isSageMaker()) {
@@ -168,6 +186,7 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        qCodeReviewInChat: true,
                     },
                     window: {
                         notifications: true,
@@ -190,15 +209,9 @@ export async function startLanguageServer(
             },
         },
         /**
-         * When the trace server is enabled it outputs a ton of log messages so:
-         *   When trace server is enabled, logs go to a seperate "Amazon Q Language Server" output.
-         *   Otherwise, logs go to the regular "Amazon Q Logs" channel.
+         * Using our RotatingLogger for all logs
          */
-        ...(traceServerEnabled
-            ? {}
-            : {
-                  outputChannel: globals.logOutputChannel,
-              }),
+        outputChannel: lspLogChannel,
     }
 
     const client = new LanguageClient(
