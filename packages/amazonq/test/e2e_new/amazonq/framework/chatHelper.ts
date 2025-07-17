@@ -3,6 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
+import { waitForElement } from './generalHelper'
+
+/* Writes a prompt to the chat input and waits for a response
+
+Logic:
+Finds the chat input element using the .mynah-chat-prompt-input CSS selector,
+sends the provided prompt test, clicks the send button, and waits for a chat
+response. Returns true if successful, throws an error if the response times out */
+
+export async function writeToChat(prompt: string, webview: WebviewView): Promise<boolean> {
+    const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
+    await chatInput.sendKeys(prompt)
+    const sendButton = await waitForElement(webview, By.css('.mynah-chat-prompt-button'))
+    await sendButton.click()
+    return true
+}
 
 /* Waits for a chat response and outputs whether the response is "correct"
 

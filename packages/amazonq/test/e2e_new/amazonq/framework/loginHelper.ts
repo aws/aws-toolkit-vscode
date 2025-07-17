@@ -4,7 +4,7 @@
  */
 import { Workbench, By, WebviewView } from 'vscode-extension-tester'
 import { waitForElement, findItemByText } from './generalHelper'
-
+import { testContext } from '../utils/testContext'
 /* Completes the entire Amazon Q login flow
 
 Currently, the function will
@@ -16,7 +16,7 @@ Currently, the function will
 TO-DO: Currently this loginToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up
 Documentation: https://quip-amazon.com/PoJOAyt4ja8H/Authentication-for-UI-Tests-Documentation */
 
-export async function loginToAmazonQ(): Promise<{ workbench: Workbench; webviewView: WebviewView }> {
+export async function loginToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
 
@@ -48,5 +48,6 @@ export async function loginToAmazonQ(): Promise<{ workbench: Workbench; webviewV
     webviewView = new WebviewView()
     await webviewView.switchToFrame()
 
-    return { workbench, webviewView }
+    testContext.workbench = workbench
+    testContext.webviewView = webviewView
 }
