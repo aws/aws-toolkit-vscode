@@ -114,22 +114,23 @@ export class RecommendationService {
             )
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
-            if (!isInlineEdit) {
-                // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                getLogger().info(
-                    'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                )
-                if (result.partialResultToken) {
+
+            if (result.partialResultToken) {
+                if (!isInlineEdit) {
+                    // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
+                    getLogger().info(
+                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
+                    )
                     this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
                         languageClient.warn(`Error when getting suggestions: ${error}`)
                     })
+                } else {
+                    // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
+                    // suggestions when the user start to accept a suggesion.
+                    // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
+                    getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                    this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
-            } else {
-                // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
-                // suggestions when the user start to accept a suggesion.
-                // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
-                this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
             }
         } catch (error: any) {
             getLogger().error('Error getting recommendations: %O', error)
