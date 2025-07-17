@@ -69,7 +69,7 @@ export class RegionProfileManager {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
             super(
                 'aws.amazonq.regionProfiles.cache',
-                60000,
+                3600000,
                 {
                     resource: {
                         locked: false,
@@ -77,7 +77,7 @@ export class RegionProfileManager {
                         result: undefined,
                     },
                 },
-                { timeout: 15000, interval: 1500, truthy: true }
+                { timeout: 15000, interval: 500, truthy: true }
             )
         }
 
