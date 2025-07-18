@@ -12,7 +12,6 @@ export class RotatingLogChannel implements vscode.LogOutputChannel {
     private fileStream: fs.WriteStream | undefined
     private originalChannel: vscode.LogOutputChannel
     private logger = getLogger('amazonqLsp')
-    private _logLevel: vscode.LogLevel = vscode.LogLevel.Info
     private currentFileSize = 0
     // eslint-disable-next-line @typescript-eslint/naming-convention
     private readonly MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -133,7 +132,7 @@ export class RotatingLogChannel implements vscode.LogOutputChannel {
     }
 
     get logLevel(): vscode.LogLevel {
-        return this._logLevel
+        return this.originalChannel.logLevel
     }
 
     get onDidChangeLogLevel(): vscode.Event<vscode.LogLevel> {
