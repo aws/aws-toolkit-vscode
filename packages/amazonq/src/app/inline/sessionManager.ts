@@ -140,9 +140,13 @@ export class SessionManager {
         if (this.activeSession?.suggestions && this.activeSession.suggestions.length > 0) {
             const reference = this.activeSession.suggestions[this._currentSuggestionIndex].references
             if (reference && reference.length > 0) {
+                const insertText = this.activeSession.suggestions[this._currentSuggestionIndex].insertText
+                const insertTextStr =
+                    typeof insertText === 'string' ? insertText : (insertText.value ?? String(insertText))
+
                 ReferenceInlineProvider.instance.setInlineReference(
                     this.activeSession.startPosition.line,
-                    this.activeSession.suggestions[this._currentSuggestionIndex].insertText.toString(),
+                    insertTextStr,
                     reference
                 )
             }
