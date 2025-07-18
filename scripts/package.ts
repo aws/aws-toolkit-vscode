@@ -20,7 +20,6 @@
 import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
-import { platform } from 'os'
 import { downloadLanguageServer } from './lspArtifact'
 
 function parseArgs() {
@@ -107,69 +106,6 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
-/**
- * @returns true if curl is available
- */
-function isCurlAvailable(): boolean {
-    try {
-        child_process.execFileSync('curl', ['--version'])
-        return true
-    } catch {
-        return false
-    }
-}
-
-/**
- * Small utility to download files.
- */
-function downloadFiles(urls: string[], outputDir: string, outputFile: string): void {
-    if (platform() !== 'linux') {
-        return
-    }
-
-    if (!isCurlAvailable()) {
-        return
-    }
-
-    // Create output directory if it doesn't exist
-    if (!nodefs.existsSync(outputDir)) {
-        nodefs.mkdirSync(outputDir, { recursive: true })
-    }
-
-    urls.forEach((url) => {
-        const filePath = path.join(outputDir, outputFile || '')
-
-        try {
-            child_process.execFileSync('curl', ['-o', filePath, url])
-        } catch {}
-    })
-}
-
-/**
- * Performs steps to ensure build stability.
- *
- * TODO: retrieve from authoritative system
- */
-function preparePackager(): void {
-    const dir = process.cwd()
-    const REPO_NAME = 'aws/aws-toolkit-vscode'
-    const TAG_NAME = 'stability'
-
-    if (!dir.includes('amazonq')) {
-        return
-    }
-
-    if (process.env.STAGE !== 'prod') {
-        return
-    }
-
-    downloadFiles(
-        [`https://raw.githubusercontent.com/${REPO_NAME}/${TAG_NAME}/scripts/extensionNode.bk`],
-        'src/',
-        'extensionNode.ts'
-    )
-}
-
 async function main() {
     const args = parseArgs()
     // It is expected that this will package from a packages/{subproject} folder.
@@ -191,11 +127,6 @@ async function main() {
         if (release && isBeta()) {
             throw new Error('Cannot package VSIX as both a release and a beta simultaneously')
         }
-
-        if (release) {
-            preparePackager()
-        }
-
         // Create backup file so we can restore the originals later.
         nodefs.copyFileSync(packageJsonFile, backupJsonFile)
         const packageJson = JSON.parse(nodefs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
