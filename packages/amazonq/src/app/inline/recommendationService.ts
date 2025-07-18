@@ -2,10 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
+    TextDocumentContentChangeEvent,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
@@ -40,10 +42,20 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken,
         isAutoTrigger: boolean,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
+        documentChangeEvent?: vscode.TextDocumentChangeEvent
     ) {
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
+        const documentChangeParams = documentChangeEvent
+            ? {
+                  textDocument: {
+                      uri: document.uri.toString(),
+                      version: document.version,
+                  },
+                  contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
+              }
+            : undefined
 
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
@@ -51,6 +63,7 @@ export class RecommendationService {
             },
             position,
             context,
+            documentChangeParams: documentChangeParams,
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
