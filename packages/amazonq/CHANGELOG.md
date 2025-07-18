@@ -1,3 +1,19 @@
+## 1.84.0 2025-07-17
+
+- **Bug Fix** Slightly delay rendering inline completion when user is typing
+- **Bug Fix** Render first response before receiving all paginated inline completion results
+- **Feature** Explain and Fix for any issue in Code Issues panel will pull the experience into chat. Also no more view details tab.
+
+## 1.83.0 2025-07-09
+
+- **Feature** Amazon Q /test, /doc, and /dev capabilities integrated into Agentic coding.
+- **Feature** Added image support to Amazon Q chat, users can now upload images from their local file system
+- **Removal** Deprecate "amazon q is generating..." UI for inline suggestion
+
+## 1.82.0 2025-07-07
+
+- **Bug Fix** Prompt re-authenticate if auto trigger failed with expired token
+
 ## 1.81.0 2025-07-02
 
 - **Bug Fix** Stop auto inline completion when deleting code

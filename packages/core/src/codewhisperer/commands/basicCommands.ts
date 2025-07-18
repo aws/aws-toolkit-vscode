@@ -12,7 +12,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { confirmStopSecurityScan, startSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import {
-    codeFixState,
     CodeScanIssue,
     CodeScansState,
     codeScanState,
@@ -50,7 +49,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
+import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -61,7 +60,6 @@ import { SecurityIssueProvider } from '../service/securityIssueProvider'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { closeDiff, getPatchedCode } from '../../shared/utilities/diffUtils'
 import { insertCommentAboveLine } from '../../shared/utilities/commentUtils'
-import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
@@ -368,10 +366,6 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetIssue: CodeScanIssue = issue instanceof IssueItem ? issue.issue : issue
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
-
-        if (targetIssue.suggestedFixes.length === 0) {
-            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
-        }
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
             detectorId: targetIssue.detectorId,
@@ -640,6 +634,12 @@ const registerToolkitApiCallbackOnce = once(() => {
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async (toolkitApi?: any) => {
+        // Early return if already registered to avoid duplicate work
+        if (_toolkitApi) {
+            getLogger().debug('Toolkit API callback already registered, skipping')
+            return
+        }
+
         // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
         // we need to do it manually here because the Toolkit would have been unable to call
         // this API if the Q/CW extension started afterwards (and this code block is running).
@@ -685,116 +685,13 @@ export const generateFix = Commands.declare(
     { id: 'aws.amazonq.security.generateFix' },
     (client: DefaultCodeWhispererClient, context: ExtContext) =>
         async (
-            issue: CodeScanIssue | IssueItem | undefined,
+            issueItem: IssueItem,
             filePath: string,
             source: Component,
             refresh: boolean = false,
             shouldOpenSecurityIssuePanel: boolean = true
         ) => {
-            const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
-            const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
-            const targetSource: Component = issue instanceof IssueItem ? 'tree' : source
-            if (!targetIssue) {
-                return
-            }
-            if (targetIssue.ruleId === CodeWhispererConstants.sasRuleId) {
-                getLogger().warn('GenerateFix is not available for SAS findings.')
-                return
-            }
-            await telemetry.codewhisperer_codeScanIssueGenerateFix.run(async () => {
-                try {
-                    if (shouldOpenSecurityIssuePanel) {
-                        await vscode.commands
-                            .executeCommand('aws.amazonq.openSecurityIssuePanel', targetIssue, targetFilePath)
-                            .then(undefined, (e) => {
-                                getLogger().error('Failed to open security issue panel: %s', e.message)
-                            })
-                    }
-                    await updateSecurityIssueWebview({
-                        isGenerateFixLoading: true,
-                        // eslint-disable-next-line unicorn/no-null
-                        generateFixError: null,
-                        context: context.extensionContext,
-                        filePath: targetFilePath,
-                        shouldRefreshView: false,
-                    })
-
-                    codeFixState.setToRunning()
-                    let hasSuggestedFix = false
-                    const { suggestedFix, jobId } = await startCodeFixGeneration(
-                        client,
-                        targetIssue,
-                        targetFilePath,
-                        targetIssue.findingId
-                    )
-                    // redact the fix if the user disabled references and there is a reference
-                    if (
-                        // TODO: enable references later for scans
-                        // !CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled() &&
-                        suggestedFix?.references &&
-                        suggestedFix?.references?.length > 0
-                    ) {
-                        getLogger().debug(
-                            `Received fix with reference and user settings disallow references. Job ID: ${jobId}`
-                        )
-                        // TODO: re-enable notifications once references published
-                        // void vscode.window.showInformationMessage(
-                        //     'Your settings do not allow code generation with references.'
-                        // )
-                        hasSuggestedFix = false
-                    } else {
-                        hasSuggestedFix = suggestedFix !== undefined
-                    }
-                    telemetry.record({ includesFix: hasSuggestedFix })
-                    const updatedIssue: CodeScanIssue = {
-                        ...targetIssue,
-                        fixJobId: jobId,
-                        suggestedFixes:
-                            hasSuggestedFix && suggestedFix
-                                ? [
-                                      {
-                                          code: suggestedFix.codeDiff,
-                                          description: suggestedFix.description ?? '',
-                                          references: suggestedFix.references,
-                                      },
-                                  ]
-                                : [],
-                    }
-                    await updateSecurityIssueWebview({
-                        issue: updatedIssue,
-                        isGenerateFixLoading: false,
-                        filePath: targetFilePath,
-                        context: context.extensionContext,
-                        shouldRefreshView: true,
-                    })
-
-                    SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
-                    SecurityIssueTreeViewProvider.instance.refresh()
-                } catch (err) {
-                    const error = err instanceof Error ? err : new TypeError('Unexpected error')
-                    await updateSecurityIssueWebview({
-                        issue: targetIssue,
-                        isGenerateFixLoading: false,
-                        generateFixError: getErrorMsg(error, true),
-                        filePath: targetFilePath,
-                        context: context.extensionContext,
-                        shouldRefreshView: false,
-                    })
-                    SecurityIssueProvider.instance.updateIssue(targetIssue, targetFilePath)
-                    SecurityIssueTreeViewProvider.instance.refresh()
-                    throw err
-                } finally {
-                    telemetry.record({
-                        component: targetSource,
-                        detectorId: targetIssue.detectorId,
-                        findingId: targetIssue.findingId,
-                        ruleId: targetIssue.ruleId,
-                        variant: refresh ? 'refresh' : undefined,
-                        autoDetected: targetIssue.autoDetected,
-                        codewhispererCodeScanJobId: targetIssue.scanJobId,
-                    })
-                }
-            })
+            await vscode.commands.executeCommand('aws.amazonq.generateFix', issueItem.issue, issueItem.filePath)
         }
 )
 
@@ -824,19 +721,13 @@ export const rejectFix = Commands.declare(
 
 export const regenerateFix = Commands.declare(
     { id: 'aws.amazonq.security.regenerateFix' },
-    () => async (issue: CodeScanIssue | IssueItem | undefined, filePath: string, source: Component) => {
-        const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
-        const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
-        const targetSource: Component = issue instanceof IssueItem ? 'tree' : source
-        const updatedIssue = await rejectFix.execute(targetIssue, targetFilePath)
-        await generateFix.execute(updatedIssue, targetFilePath, targetSource, true)
-    }
+    () => async (issue: CodeScanIssue | IssueItem | undefined, filePath: string, source: Component) => {}
 )
 
 export const explainIssue = Commands.declare(
     { id: 'aws.amazonq.security.explain' },
     () => async (issueItem: IssueItem) => {
-        await vscode.commands.executeCommand('aws.amazonq.explainIssue', issueItem.issue)
+        await vscode.commands.executeCommand('aws.amazonq.explainIssue', issueItem.issue, issueItem.filePath)
     }
 )
 

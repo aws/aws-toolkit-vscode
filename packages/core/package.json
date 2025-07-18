@@ -455,7 +455,7 @@
         "webpackDev": "webpack --mode development",
         "serveVue": "ts-node ./scripts/build/checkServerPort.ts && webpack serve --port 8080 --config-name vue --mode development",
         "watch": "npm run clean && npm run buildScripts && npm run compileOnly -- --watch",
-        "lint": "ts-node ./scripts/lint/testLint.ts",
+        "lint": "node --max-old-space-size=8192 -r ts-node/register ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
@@ -470,9 +470,9 @@
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
         "@aws/chat-client": "^0.1.4",
-        "@aws/chat-client-ui-types": "^0.1.24",
-        "@aws/language-server-runtimes": "^0.2.97",
-        "@aws/language-server-runtimes-types": "^0.1.39",
+        "@aws/chat-client-ui-types": "^0.1.47",
+        "@aws/language-server-runtimes": "^0.2.111",
+        "@aws/language-server-runtimes-types": "^0.1.47",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -609,8 +609,10 @@
         "whatwg-url": "^14.0.0",
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
+        "ws": "^8.16.0",
         "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2",
+        "protobufjs": "^7.2.6",
         "@svgdotjs/svg.js": "^3.0.16",
         "svgdom": "^0.1.0",
         "jaro-winkler": "^0.2.8"

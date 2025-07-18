@@ -166,7 +166,14 @@ export async function compareCodeSha(lambda: LambdaFunction): Promise<boolean> {
     return local === remote
 }
 
-export async function getFunctionInfo(lambda: LambdaFunction, field?: 'lastDeployed' | 'undeployed' | 'sha') {
+export interface FunctionInfo {
+    lastDeployed?: number
+    undeployed?: boolean
+    sha?: string
+    handlerFile?: string
+}
+
+export async function getFunctionInfo<K extends keyof FunctionInfo>(lambda: LambdaFunction, field?: K) {
     try {
         const data = JSON.parse(await fs.readFileText(getInfoLocation(lambda)))
         getLogger().debug('Data returned from getFunctionInfo for %s: %O', lambda.name, data)
@@ -176,16 +183,14 @@ export async function getFunctionInfo(lambda: LambdaFunction, field?: 'lastDeplo
     }
 }
 
-export async function setFunctionInfo(
-    lambda: LambdaFunction,
-    info: { lastDeployed?: number; undeployed?: boolean; sha?: string }
-) {
+export async function setFunctionInfo(lambda: LambdaFunction, info: Partial<FunctionInfo>) {
     try {
         const existing = await getFunctionInfo(lambda)
-        const updated = {
+        const updated: FunctionInfo = {
             lastDeployed: info.lastDeployed ?? existing.lastDeployed,
             undeployed: info.undeployed ?? true,
             sha: info.sha ?? (await getCodeShaLive(lambda)),
+            handlerFile: info.handlerFile ?? existing.handlerFile,
         }
         await fs.writeFile(getInfoLocation(lambda), JSON.stringify(updated))
     } catch (err) {
@@ -201,24 +206,4 @@ export function getTempRegionLocation(region: string) {
 
 export function getTempLocation(functionName: string, region: string) {
     return path.join(getTempRegionLocation(region), functionName)
-}
-
-type LambdaEdit = {
-    location: string
-    functionName: string
-    region: string
-    configuration?: Lambda.FunctionConfiguration
-}
-
-// Array to keep the list of functions that are being edited.
-export const lambdaEdits: LambdaEdit[] = []
-
-// Given a particular function and region, it returns the full LambdaEdit object
-export function getLambdaEditFromNameRegion(name: string, functionRegion: string) {
-    return lambdaEdits.find(({ functionName, region }) => functionName === name && region === functionRegion)
-}
-
-// Given a particular localPath, it returns the full LambdaEdit object
-export function getLambdaEditFromLocation(functionLocation: string) {
-    return lambdaEdits.find(({ location }) => location === functionLocation)
 }

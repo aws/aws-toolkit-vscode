@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.82.0-SNAPSHOT",
+    "version": "1.85.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -442,17 +442,22 @@
                 },
                 {
                     "command": "aws.amazonq.openSecurityIssuePanel",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "aws.amazonq.security.explain",
                     "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@4"
                 },
                 {
-                    "command": "aws.amazonq.security.ignore",
+                    "command": "aws.amazonq.security.generateFix",
                     "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@5"
                 },
                 {
-                    "command": "aws.amazonq.security.generateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithoutFix",
+                    "command": "aws.amazonq.security.ignore",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@6"
                 },
                 {
@@ -535,16 +540,17 @@
             "aws.amazonq.submenu.securityIssueMoreActions": [
                 {
                     "command": "aws.amazonq.security.explain",
+                    "when": "false",
                     "group": "1_more@1"
                 },
                 {
                     "command": "aws.amazonq.applySecurityFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@3"
                 },
                 {
                     "command": "aws.amazonq.security.regenerateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@4"
                 },
                 {
@@ -778,6 +784,7 @@
             {
                 "command": "aws.amazonq.security.explain",
                 "title": "%AWS.command.amazonq.explainIssue%",
+                "icon": "$(search)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },
             {
@@ -917,12 +924,12 @@
             },
             {
                 "key": "right",
-                "command": "editor.action.inlineSuggest.showNext",
+                "command": "aws.amazonq.showNext",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "key": "left",
-                "command": "editor.action.inlineSuggest.showPrevious",
+                "command": "aws.amazonq.showPrev",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
@@ -1325,25 +1332,39 @@
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e2"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e3"
                 }
             }
         },

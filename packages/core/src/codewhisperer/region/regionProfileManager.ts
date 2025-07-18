@@ -69,7 +69,7 @@ export class RegionProfileManager {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
             super(
                 'aws.amazonq.regionProfiles.cache',
-                60000,
+                3600000,
                 {
                     resource: {
                         locked: false,
@@ -77,7 +77,7 @@ export class RegionProfileManager {
                         result: undefined,
                     },
                 },
-                { timeout: 15000, interval: 1500, truthy: true }
+                { timeout: 15000, interval: 500, truthy: true }
             )
         }
 
@@ -287,38 +287,6 @@ export class RegionProfileManager {
         }
 
         await this.switchRegionProfile(previousSelected, 'reload')
-
-        // cross-validation
-        // jitter of 0 ~ 5 second
-        const jitterInSec = Math.floor(Math.random() * 6)
-        const jitterInMs = jitterInSec * 1000
-        setTimeout(async () => {
-            this.getProfiles()
-                .then(async (profiles) => {
-                    const r = profiles.find((it) => it.arn === previousSelected.arn)
-                    if (!r) {
-                        telemetry.amazonq_profileState.emit({
-                            source: 'reload',
-                            amazonQProfileRegion: 'not-set',
-                            reason: 'profile could not be selected',
-                            result: 'Failed',
-                        })
-
-                        await this.invalidateProfile(previousSelected.arn)
-                        RegionProfileManager.logger.warn(
-                            `invlaidating ${previousSelected.name} profile, arn=${previousSelected.arn}`
-                        )
-                    }
-                })
-                .catch((e) => {
-                    telemetry.amazonq_profileState.emit({
-                        source: 'reload',
-                        amazonQProfileRegion: 'not-set',
-                        reason: (e as Error).message,
-                        result: 'Failed',
-                    })
-                })
-        }, jitterInMs)
     }
 
     private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {

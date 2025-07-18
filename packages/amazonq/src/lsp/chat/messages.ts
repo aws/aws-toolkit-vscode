@@ -16,6 +16,7 @@ import {
     ChatPromptOptionAcknowledgedMessage,
     STOP_CHAT_RESPONSE,
     StopChatResponseMessage,
+    OPEN_FILE_DIALOG,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -60,12 +61,26 @@ import {
     ruleClickRequestType,
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
+    listAvailableModelsRequestType,
+    ShowOpenDialogRequestType,
+    ShowOpenDialogParams,
+    openFileDialogRequestType,
+    OpenFileDialogResult,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import {
+    AggregatedCodeScanIssue,
+    AuthUtil,
+    CodeAnalysisScope,
+    CodeWhispererSettings,
+    initSecurityScanRender,
+    ReferenceLogViewProvider,
+    SecurityIssueTreeViewProvider,
+    CodeWhispererConstants,
+} from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -79,6 +94,8 @@ import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
+import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
+import { CommentUtils } from 'aws-core-vscode/utils'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -279,6 +296,31 @@ export function registerMessageListeners(
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
+
+                // Add detailed logging for SageMaker debugging
+                if (process.env.USE_IAM_AUTH === 'true') {
+                    languageClient.info(`[SageMaker Debug] Making chat request with IAM auth`)
+                    languageClient.info(`[SageMaker Debug] Chat request method: ${chatRequestType.method}`)
+                    languageClient.info(
+                        `[SageMaker Debug] Original chat params: ${JSON.stringify(
+                            {
+                                tabId: chatParams.tabId,
+                                prompt: chatParams.prompt,
+                                // Don't log full textDocument content, just metadata
+                                textDocument: chatParams.textDocument
+                                    ? { uri: chatParams.textDocument.uri }
+                                    : undefined,
+                                context: chatParams.context ? `${chatParams.context.length} context items` : undefined,
+                            },
+                            undefined,
+                            2
+                        )}`
+                    )
+                    languageClient.info(
+                        `[SageMaker Debug] Environment context: USE_IAM_AUTH=${process.env.USE_IAM_AUTH}, AWS_REGION=${process.env.AWS_REGION}`
+                    )
+                }
+
                 try {
                     const chatResult = await languageClient.sendRequest<string | ChatResult>(
                         chatRequestType.method,
@@ -288,12 +330,33 @@ export function registerMessageListeners(
                         },
                         cancellationToken.token
                     )
+
+                    // Add response content logging for SageMaker debugging
+                    if (process.env.USE_IAM_AUTH === 'true') {
+                        languageClient.info(`[SageMaker Debug] Chat response received - type: ${typeof chatResult}`)
+                        if (typeof chatResult === 'string') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (string): ${chatResult.substring(0, 200)}...`
+                            )
+                        } else if (chatResult && typeof chatResult === 'object') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (object keys): ${Object.keys(chatResult)}`
+                            )
+                            if ('message' in chatResult) {
+                                languageClient.info(
+                                    `[SageMaker Debug] Chat response message: ${JSON.stringify(chatResult.message).substring(0, 200)}...`
+                                )
+                            }
+                        }
+                    }
+
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } catch (e) {
                     const errorMsg = `Error occurred during chat request: ${e}`
@@ -309,11 +372,25 @@ export function registerMessageListeners(
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } finally {
                     chatStreamTokens.delete(chatParams.tabId)
                 }
+                break
+            }
+            case OPEN_FILE_DIALOG: {
+                // openFileDialog is the event emitted from webView to open
+                // file system
+                const result = await languageClient.sendRequest<OpenFileDialogResult>(
+                    openFileDialogRequestType.method,
+                    message.params
+                )
+                void provider.webview?.postMessage({
+                    command: openFileDialogRequestType.method,
+                    params: result,
+                })
                 break
             }
             case quickActionRequestType.method: {
@@ -340,7 +417,8 @@ export function registerMessageListeners(
                     encryptionKey,
                     provider,
                     message.params.tabId,
-                    quickActionDisposable
+                    quickActionDisposable,
+                    languageClient
                 )
                 break
             }
@@ -351,6 +429,7 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+            case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
@@ -458,6 +537,24 @@ export function registerMessageListeners(
 
         return {
             targetUri: targetUri.toString(),
+        }
+    })
+
+    languageClient.onRequest(ShowOpenDialogRequestType.method, async (params: ShowOpenDialogParams) => {
+        try {
+            const uris = await vscode.window.showOpenDialog({
+                canSelectFiles: params.canSelectFiles ?? true,
+                canSelectFolders: params.canSelectFolders ?? false,
+                canSelectMany: params.canSelectMany ?? false,
+                filters: params.filters,
+                defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri, false) : undefined,
+                title: params.title,
+            })
+            const urisString = uris?.map((uri) => uri.fsPath)
+            return { uris: urisString || [] }
+        } catch (err) {
+            languageClient.error(`[VSCode Client] Failed to open file dialog: ${(err as Error).message}`)
+            return { uris: [] }
         }
     })
 
@@ -574,6 +671,12 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
+    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
+    decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
+        (message) =>
+            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+    )
+
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
@@ -594,9 +697,12 @@ async function handleCompleteResult<T extends ChatResult>(
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string,
-    disposable: Disposable
+    disposable: Disposable,
+    languageClient: LanguageClient
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
+
+    await handleSecurityFindings(decryptedMessage, languageClient)
 
     void provider.webview?.postMessage({
         command: chatRequestType.method,
@@ -609,6 +715,45 @@ async function handleCompleteResult<T extends ChatResult>(
         ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
     }
     disposable.dispose()
+}
+
+async function handleSecurityFindings(
+    decryptedMessage: { additionalMessages?: ChatMessage[] },
+    languageClient: LanguageClient
+): Promise<void> {
+    if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
+        return
+    }
+    for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
+        const message = decryptedMessage.additionalMessages[i]
+        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+            if (message.body !== undefined) {
+                try {
+                    const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
+                    for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        const document = await vscode.workspace.openTextDocument(aggregatedCodeScanIssue.filePath)
+                        for (const issue of aggregatedCodeScanIssue.issues) {
+                            const isIssueTitleIgnored = CodeWhispererSettings.instance
+                                .getIgnoredSecurityIssues()
+                                .includes(issue.title)
+                            const isSingleIssueIgnored = CommentUtils.detectCommentAboveLine(
+                                document,
+                                issue.startLine,
+                                CodeWhispererConstants.amazonqIgnoreNextLine
+                            )
+
+                            issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
+                        }
+                    }
+                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    SecurityIssueTreeViewProvider.focus()
+                } catch (e) {
+                    languageClient.info('Failed to parse findings')
+                }
+            }
+            decryptedMessage.additionalMessages.splice(i, 1)
+        }
+    }
 }
 
 async function resolveChatResponse(

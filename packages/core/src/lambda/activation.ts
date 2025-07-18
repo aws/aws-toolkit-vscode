@@ -13,11 +13,10 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand, openLambdaFile } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { ExtContext } from '../shared/extensions'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
-import { DefaultLambdaClient, getFunctionWithCredentials } from '../shared/clients/lambdaClient'
+import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
 import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
@@ -29,47 +28,127 @@ import { ToolkitError, isError } from '../shared/errors'
 import { LogStreamFilterResponse } from '../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
 import { tempDirPath } from '../shared/filesystemUtilities'
 import fs from '../shared/fs/fs'
-import { deployFromTemp, editLambda, getReadme, openLambdaFolderForEdit } from './commands/editLambda'
-import { getTempLocation } from './utils'
+import {
+    confirmOutdatedChanges,
+    deleteFilesInFolder,
+    deployFromTemp,
+    getReadme,
+    openLambdaFolderForEdit,
+    watchForUpdates,
+} from './commands/editLambda'
+import { compareCodeSha, getFunctionInfo, getTempLocation, setFunctionInfo } from './utils'
 import { registerLambdaUriHandler } from './uriHandlers'
+import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
+import { activateRemoteDebugging } from './remoteDebugging/ldkController'
+import { ExtContext } from '../shared/extensions'
+
+async function openReadme() {
+    const readmeUri = vscode.Uri.file(await getReadme())
+    // We only want to do it if there's not a readme already
+    const isPreviewOpen = vscode.window.tabGroups.all.some((group) =>
+        group.tabs.some((tab) => tab.label.includes('README'))
+    )
+    if (!isPreviewOpen) {
+        await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+    }
+}
+
+async function quickEditActivation() {
+    if (vscode.workspace.workspaceFolders) {
+        for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+            // Making the comparison case insensitive because Windows can have `C\` or `c\`
+            const workspacePath = workspaceFolder.uri.fsPath.toLowerCase()
+            const tempPath = path.join(tempDirPath, 'lambda').toLowerCase()
+            if (workspacePath.includes(tempPath)) {
+                const name = path.basename(workspaceFolder.uri.fsPath)
+                const region = path.basename(path.dirname(workspaceFolder.uri.fsPath))
+
+                const lambda = { name, region, configuration: undefined }
+
+                watchForUpdates(lambda, vscode.Uri.file(workspacePath))
+
+                await openReadme()
+
+                // Open handler function
+                try {
+                    const handler = await getFunctionInfo(lambda, 'handlerFile')
+                    const lambdaLocation = path.join(workspacePath, handler)
+                    await openLambdaFile(lambdaLocation, vscode.ViewColumn.One)
+                } catch (e) {
+                    void vscode.window.showWarningMessage(
+                        localize('AWS.lambda.openFile.failure', `Failed to determine handler location: ${e}`)
+                    )
+                }
+
+                // Check if there are changes that need overwritten
+                try {
+                    // Checking if there are changes that need to be overwritten
+                    const prompt = localize(
+                        'AWS.lambda.download.confirmOutdatedSync',
+                        'There are changes to your function in the cloud since you last edited locally, do you want to overwrite your local changes?'
+                    )
+
+                    // Adding delay to give the authentication time to catch up
+                    await new Promise((resolve) => globals.clock.setTimeout(resolve, 1000))
+
+                    const overwriteChanges = !(await compareCodeSha(lambda))
+                        ? await confirmOutdatedChanges(prompt)
+                        : false
+                    if (overwriteChanges) {
+                        // Close all open tabs from this workspace
+                        const workspaceUri = vscode.Uri.file(workspacePath)
+                        for (const tabGroup of vscode.window.tabGroups.all) {
+                            const tabsToClose = tabGroup.tabs.filter(
+                                (tab) =>
+                                    tab.input instanceof vscode.TabInputText &&
+                                    tab.input.uri.fsPath.startsWith(workspaceUri.fsPath)
+                            )
+                            if (tabsToClose.length > 0) {
+                                await vscode.window.tabGroups.close(tabsToClose)
+                            }
+                        }
+
+                        // Delete all files in the directory
+                        await deleteFilesInFolder(workspacePath)
+
+                        // Show message to user about next steps
+                        void vscode.window.showInformationMessage(
+                            localize(
+                                'AWS.lambda.refresh.complete',
+                                'Local workspace cleared. Navigate to the Toolkit explorer to get fresh code from the cloud.'
+                            )
+                        )
+
+                        await setFunctionInfo(lambda, { undeployed: false })
+
+                        // Remove workspace folder
+                        const workspaceIndex = vscode.workspace.workspaceFolders?.findIndex(
+                            (folder) => folder.uri.fsPath.toLowerCase() === workspacePath
+                        )
+                        if (workspaceIndex !== undefined && workspaceIndex >= 0) {
+                            vscode.workspace.updateWorkspaceFolders(workspaceIndex, 1)
+                        }
+                    }
+                } catch (e) {
+                    void vscode.window.showWarningMessage(
+                        localize(
+                            'AWS.lambda.pull.failure',
+                            `Failed to pull latest changes from the cloud, you can still edit locally: ${e}`
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
-    try {
-        if (vscode.workspace.workspaceFolders) {
-            for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-                // Making the comparison case insensitive because Windows can have `C\` or `c\`
-                const workspacePath = workspaceFolder.uri.fsPath.toLowerCase()
-                const tempPath = path.join(tempDirPath, 'lambda').toLowerCase()
-                if (workspacePath.startsWith(tempPath)) {
-                    const name = path.basename(workspaceFolder.uri.fsPath)
-                    const region = path.basename(path.dirname(workspaceFolder.uri.fsPath))
-                    const getFunctionOutput = await getFunctionWithCredentials(region, name)
-                    const configuration = getFunctionOutput.Configuration
-                    await editLambda(
-                        {
-                            name,
-                            region,
-                            // Configuration as any due to the difference in types between sdkV2 and sdkV3
-                            configuration: configuration as any,
-                        },
-                        true
-                    )
-
-                    const readmeUri = vscode.Uri.file(await getReadme())
-                    await vscode.commands.executeCommand('markdown.showPreview', readmeUri, vscode.ViewColumn.Two)
-                }
-            }
-        }
-    } catch (e) {
-        void vscode.window.showWarningMessage(
-            localize('AWS.lambda.open.failure', `Unable to edit Lambda Function locally: ${e}`)
-        )
-    }
+    void quickEditActivation()
 
     context.extensionContext.subscriptions.push(
         Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode | TreeNode) => {
@@ -185,4 +264,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
         registerLambdaUriHandler()
     )
+
+    void activateRemoteDebugging()
 }

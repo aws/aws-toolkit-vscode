@@ -27,6 +27,7 @@ import {
     s3BucketType,
 } from '../../../../shared/cloudformation/cloudformation'
 import { ToolkitError } from '../../../../shared/errors'
+import { ResourceTreeEntity } from '../samProject'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {
@@ -77,7 +78,8 @@ export async function generateDeployedNode(
     deployedResource: any,
     regionCode: string,
     stackName: string,
-    resourceTreeEntity: any
+    resourceTreeEntity: ResourceTreeEntity,
+    location?: vscode.Uri
 ): Promise<any[]> {
     let newDeployedResource: any
     const partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition
@@ -90,7 +92,13 @@ export async function generateDeployedNode(
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
                         .Configuration as Lambda.FunctionConfiguration
-                    newDeployedResource = new LambdaFunctionNode(lambdaNode, regionCode, configuration)
+                    newDeployedResource = new LambdaFunctionNode(
+                        lambdaNode,
+                        regionCode,
+                        configuration,
+                        undefined,
+                        location ? vscode.Uri.joinPath(location, resourceTreeEntity.CodeUri ?? '').fsPath : undefined
+                    )
                 } catch (error: any) {
                     getLogger().error('Error getting Lambda configuration: %O', error)
                     throw ToolkitError.chain(error, 'Error getting Lambda configuration', {

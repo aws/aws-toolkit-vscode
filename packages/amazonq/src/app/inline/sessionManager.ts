@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
+import { FileDiagnostic, getDiagnosticsOfCurrentFile } from 'aws-core-vscode/codewhisperer'
 
 // TODO: add more needed data to the session interface
 export interface CodeWhispererSession {
@@ -14,11 +15,16 @@ export interface CodeWhispererSession {
     requestStartTime: number
     firstCompletionDisplayLatency?: number
     startPosition: vscode.Position
+    diagnosticsBeforeAccept: FileDiagnostic | undefined
+    // partialResultToken for the next trigger if user accepts an EDITS suggestion
+    editsStreakPartialResultToken?: number | string
+    triggerOnAcceptance?: boolean
 }
 
 export class SessionManager {
     private activeSession?: CodeWhispererSession
     private _acceptedSuggestionCount: number = 0
+    private _refreshedSessions = new Set<string>()
 
     constructor() {}
 
@@ -29,6 +35,7 @@ export class SessionManager {
         startPosition: vscode.Position,
         firstCompletionDisplayLatency?: number
     ) {
+        const diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
         this.activeSession = {
             sessionId,
             suggestions,
@@ -36,6 +43,7 @@ export class SessionManager {
             requestStartTime,
             startPosition,
             firstCompletionDisplayLatency,
+            diagnosticsBeforeAccept,
         }
     }
 
@@ -69,7 +77,30 @@ export class SessionManager {
         this._acceptedSuggestionCount += 1
     }
 
+    public updateActiveEditsStreakToken(partialResultToken: number | string) {
+        if (!this.activeSession) {
+            return
+        }
+        this.activeSession.editsStreakPartialResultToken = partialResultToken
+    }
+
     public clear() {
         this.activeSession = undefined
+    }
+
+    // re-render the session ghost text to display paginated responses once per completed session
+    public async maybeRefreshSessionUx() {
+        if (
+            this.activeSession &&
+            !this.activeSession.isRequestInProgress &&
+            !this._refreshedSessions.has(this.activeSession.sessionId)
+        ) {
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            if (this._refreshedSessions.size > 1000) {
+                this._refreshedSessions.clear()
+            }
+            this._refreshedSessions.add(this.activeSession.sessionId)
+        }
     }
 }

@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
+
 import {
     CancellationToken,
     InlineCompletionContext,
@@ -35,8 +35,10 @@ import {
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
     ReferenceInlineProvider,
+    getDiagnosticsDifferences,
+    getDiagnosticsOfCurrentFile,
+    toIdeDiagnostics,
 } from 'aws-core-vscode/codewhisperer'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
@@ -44,9 +46,7 @@ import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-
-let lastDocumentDeleteEvent: vscode.TextDocumentChangeEvent | undefined = undefined
-let lastDocumentDeleteTime = 0
+import { DocumentEventListener } from './documentEventListener'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -55,10 +55,10 @@ export class InlineCompletionManager implements Disposable {
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
-    private incomingGeneratingMessage: InlineGeneratingMessage
+
     private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
-    private documentChangeListener: Disposable
+    private documentEventListener: DocumentEventListener
 
     constructor(
         languageClient: LanguageClient,
@@ -70,31 +70,21 @@ export class InlineCompletionManager implements Disposable {
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
-        this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(
-            this.sessionManager,
-            this.incomingGeneratingMessage,
-            cursorUpdateRecorder
-        )
+        this.recommendationService = new RecommendationService(this.sessionManager, cursorUpdateRecorder)
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
+        this.documentEventListener = new DocumentEventListener()
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
             this.sessionManager,
-            this.inlineTutorialAnnotation
+            this.inlineTutorialAnnotation,
+            this.documentEventListener
         )
 
-        this.documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
-            if (e.contentChanges.length === 1 && e.contentChanges[0].text === '') {
-                lastDocumentDeleteEvent = e
-                lastDocumentDeleteTime = performance.now()
-            }
-        })
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
         )
-
         this.lineTracker.ready()
     }
 
@@ -105,11 +95,10 @@ export class InlineCompletionManager implements Disposable {
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
-            this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
         }
-        if (this.documentChangeListener) {
-            this.documentChangeListener.dispose()
+        if (this.documentEventListener) {
+            this.documentEventListener.dispose()
         }
     }
 
@@ -123,6 +112,13 @@ export class InlineCompletionManager implements Disposable {
             firstCompletionDisplayLatency?: number
         ) => {
             // TODO: also log the seen state for other suggestions in session
+            // Calculate timing metrics before diagnostic delay
+            const totalSessionDisplayTime = performance.now() - requestStartTime
+            await sleep(1000)
+            const diagnosticDiff = getDiagnosticsDifferences(
+                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
+                getDiagnosticsOfCurrentFile()
+            )
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
@@ -132,8 +128,10 @@ export class InlineCompletionManager implements Disposable {
                         discarded: false,
                     },
                 },
-                totalSessionDisplayTime: Date.now() - requestStartTime,
+                totalSessionDisplayTime: totalSessionDisplayTime,
                 firstCompletionDisplayLatency: firstCompletionDisplayLatency,
+                addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
+                removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()
@@ -206,7 +204,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
+        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
+        private readonly documentEventListener: DocumentEventListener
     ) {}
 
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
@@ -228,6 +227,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             position,
             context,
             triggerKind: context.triggerKind === InlineCompletionTriggerKind.Automatic ? 'Automatic' : 'Invoke',
+            options: JSON.stringify(getAllRecommendationsOptions),
         })
 
         // prevent concurrent API calls and write to shared state variables
@@ -235,12 +235,23 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             getLogger().info('Recommendations already active, returning empty')
             return []
         }
+
+        if (vsCodeState.isCodeWhispererEditing) {
+            getLogger().info('Q is editing, returning empty')
+            return []
+        }
+
+        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+            // return early when suggestions are disabled with auto trigger
+            return []
+        }
+
         // yield event loop to let the document listen catch updates
         await sleep(1)
         // prevent user deletion invoking auto trigger
         // this is a best effort estimate of deletion
-        const timeDiff = Math.abs(performance.now() - lastDocumentDeleteTime)
-        if (timeDiff < 500 && lastDocumentDeleteEvent && lastDocumentDeleteEvent.document.uri === document.uri) {
+        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
             getLogger().debug('Skip auto trigger when deleting code')
             return []
         }
@@ -249,17 +260,17 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         try {
             const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
-            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
-            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
-                // return early when suggestions are disabled with auto trigger
-                return []
-            }
-
             // handling previous session
             const prevSession = this.sessionManager.getActiveSession()
             const prevSessionId = prevSession?.sessionId
             const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const prevStartPosition = prevSession?.startPosition
+            if (prevSession?.triggerOnAcceptance) {
+                getAllRecommendationsOptions = {
+                    ...getAllRecommendationsOptions,
+                    editsStreakToken: prevSession?.editsStreakPartialResultToken,
+                }
+            }
             const editor = window.activeTextEditor
             if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
                 const prefix = document.getText(new Range(prevStartPosition, position))
@@ -324,7 +335,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 context,
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions
+                getAllRecommendationsOptions,
+                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -336,6 +348,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const t2 = performance.now()
 
             logstr = logstr += `- number of suggestions: ${items.length}
+- sessionId: ${this.sessionManager.getActiveSession()?.sessionId}
 - first suggestion content (next line):
 ${itemLog}
 - duration since trigger to before sending Flare call: ${t1 - t0}ms
@@ -374,6 +387,20 @@ ${itemLog}
                 return []
             }
 
+            // delay the suggestion rendeing if user is actively typing
+            // see https://github.com/aws/aws-toolkit-vscode/commit/a537602a96f498f372ed61ec9d82cf8577a9d854
+            for (let i = 0; i < 30; i++) {
+                const lastDocumentChange = this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)
+                if (
+                    lastDocumentChange &&
+                    performance.now() - lastDocumentChange.timestamp < CodeWhispererConstants.inlineSuggestionShowDelay
+                ) {
+                    await sleep(CodeWhispererConstants.showRecommendationTimerPollPeriod)
+                } else {
+                    break
+                }
+            }
+
             // the user typed characters from invoking suggestion cursor position to receiving suggestion position
             const typeahead = document.getText(new Range(position, editor.selection.active))
 
@@ -382,12 +409,11 @@ ${itemLog}
             for (const item of items) {
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
-                    if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
-                        void showEdits(item, editor, session, this.languageClient, this).then(() => {
-                            const t3 = performance.now()
-                            logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
-                            this.logger.info(logstr)
-                        })
+                    if (Experiments.instance.get('amazonqLSPNEP', true)) {
+                        await showEdits(item, editor, session, this.languageClient, this)
+                        const t3 = performance.now()
+                        logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
+                        this.logger.info(logstr)
                     }
                     return []
                 }
