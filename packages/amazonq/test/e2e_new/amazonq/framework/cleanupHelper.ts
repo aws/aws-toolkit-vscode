@@ -4,7 +4,7 @@
  */
 import { By, WebviewView } from 'vscode-extension-tester'
 
-export async function closeAllTabs(webview: WebviewView) {
+export async function closeAllTabs(webview: WebviewView): Promise<boolean> {
     try {
         const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
 
@@ -13,16 +13,20 @@ export async function closeAllTabs(webview: WebviewView) {
             await new Promise((resolve) => setTimeout(resolve, 500))
         }
 
-        // double check that all tabs are closed by checking if the mynah-tabs-container is empty
         const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
-        if (
+        const allClosed =
             tabsContainer.length === 0 ||
             (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0
-        ) {
+
+        if (allClosed) {
             console.log('All chat tabs successfully closed')
+            return true
+        } else {
+            throw new Error('Failed to close all tabs')
         }
     } catch (error) {
-        console.log('Error closing tabs:', error)
+        console.error('Error closing tabs:', error)
+        throw error
     }
 }
 
@@ -31,17 +35,14 @@ export async function dismissOverlayIfPresent(webview: WebviewView): Promise<boo
         const overlays = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
         if (overlays.length > 0) {
             console.log('Overlay detected, attempting to dismiss...')
-            // Use JavaScript executor to click on the body element (outside the overlay)
-            // This is more reliable than trying to find a specific element to click
             const driver = webview.getDriver()
             await driver.executeScript('document.body.click()')
 
-            // Wait briefly and check if overlay is gone
             await new Promise((resolve) => setTimeout(resolve, 1000))
             const overlaysAfter = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
             return overlaysAfter.length === 0
         }
-        return true // No overlay to dismiss
+        return true
     } catch (e) {
         console.log('Error while trying to dismiss overlay:', e)
         return false

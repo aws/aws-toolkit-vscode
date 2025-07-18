@@ -13,8 +13,7 @@ Currently, the function will
 3. Inputs the Start URL
 4. IMPORTANT: you must click manually open yourself when the popup window asks to open the browser and complete the authentication in the browser** 
 
-TO-DO: Currently this loginToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up
-Documentation: https://quip-amazon.com/PoJOAyt4ja8H/Authentication-for-UI-Tests-Documentation */
+TO-DO: Currently this loginToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
 
 export async function loginToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
