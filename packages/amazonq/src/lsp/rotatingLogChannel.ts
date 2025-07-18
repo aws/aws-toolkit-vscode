@@ -18,6 +18,12 @@ export class RotatingLogChannel implements vscode.LogOutputChannel {
     private readonly MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
     // eslint-disable-next-line @typescript-eslint/naming-convention
     private readonly MAX_LOG_FILES = 4
+    private static currentLogPath: string | undefined
+
+    private static generateNewLogPath(logDir: string): string {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').replace('Z', '')
+        return path.join(logDir, `amazonq-lsp-${timestamp}.log`)
+    }
 
     constructor(
         public readonly name: string,
@@ -61,13 +67,19 @@ export class RotatingLogChannel implements vscode.LogOutputChannel {
     }
 
     private getLogFilePath(): string {
+        // If we already have a path, reuse it
+        if (RotatingLogChannel.currentLogPath) {
+            return RotatingLogChannel.currentLogPath
+        }
+
         const logDir = this.extensionContext.storageUri?.fsPath
         if (!logDir) {
             throw new Error('No storage URI available')
         }
 
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').replace('Z', '')
-        return path.join(logDir, `amazonq-lsp-${timestamp}.log`)
+        // Generate initial path
+        RotatingLogChannel.currentLogPath = RotatingLogChannel.generateNewLogPath(logDir)
+        return RotatingLogChannel.currentLogPath
     }
 
     private async rotateLog(): Promise<void> {
@@ -77,15 +89,22 @@ export class RotatingLogChannel implements vscode.LogOutputChannel {
                 this.fileStream.end()
             }
 
-            // Create new log file
-            const newLogPath = this.getLogFilePath()
-            this.fileStream = fs.createWriteStream(newLogPath, { flags: 'a' })
+            const logDir = this.extensionContext.storageUri?.fsPath
+            if (!logDir) {
+                throw new Error('No storage URI available')
+            }
+
+            // Generate new path directly
+            RotatingLogChannel.currentLogPath = RotatingLogChannel.generateNewLogPath(logDir)
+
+            // Create new log file with new path
+            this.fileStream = fs.createWriteStream(RotatingLogChannel.currentLogPath, { flags: 'a' })
             this.currentFileSize = 0
 
             // Clean up old files
             await this.cleanupOldLogs()
 
-            this.logger.info(`Created new log file: ${newLogPath}`)
+            this.logger.info(`Created new log file: ${RotatingLogChannel.currentLogPath}`)
         } catch (err) {
             this.logger.error(`Failed to rotate log file: ${err}`)
         }
