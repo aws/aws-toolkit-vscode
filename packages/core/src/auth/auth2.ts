@@ -276,7 +276,7 @@ export class LanguageClientAuth {
 
     invalidateStsCredential(tokenId: string) {
         return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-            profileName: tokenId,
+            iamCredentialId: tokenId,
         } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
     }
 
@@ -644,7 +644,7 @@ export class IamLogin extends BaseLogin {
                 this.updateConnectionState('expired')
                 return
             } else if (params.kind === StsCredentialChangedKind.Refreshed) {
-                this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+                this.eventEmitter.fire({ id: this.iamCredentialId, state: 'refreshed' })
             }
         }
     }
