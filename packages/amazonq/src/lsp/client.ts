@@ -191,6 +191,7 @@ export async function startLanguageServer(
      * Because of this we initialize our Auth client **immediately** after the language server is ready.
      * Doing this removes the chance of something else attempting to use the Auth client before it is ready.
      */
+    getLogger().info(`inside startLanguageServer`)
     await initializeAuth(client)
 
     await postStartLanguageServer(extensionContext, client, resourcePaths, toDispose)
@@ -198,6 +199,7 @@ export async function startLanguageServer(
     return client
 
     async function initializeAuth(client: LanguageClient) {
+        getLogger().info(`reached initializeAuth`)
         AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
 
         // Migrate SSO connections from old Auth to the LSP identity server

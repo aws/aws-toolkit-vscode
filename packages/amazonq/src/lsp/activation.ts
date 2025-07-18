@@ -9,6 +9,7 @@ import { AmazonQLspInstaller, getBundledResourcePaths } from './lspInstaller'
 import { lspSetupStage, ToolkitError, messages, getLogger } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext) {
+    getLogger('amazonqLsp').debug('Amazon Q LSP extension activated')
     try {
         await lspSetupStage('all', async () => {
             const installResult = await new AmazonQLspInstaller().resolve()

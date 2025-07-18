@@ -367,13 +367,13 @@ describe('AuthUtil', async function () {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
-            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStubNew = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
-            assert.ok(updateProfileStub.calledOnce)
+            assert.ok(updateProfileStubNew.calledOnce)
             assert.ok(memento.update.calledWith('auth.profiles', undefined))
-            assert.deepStrictEqual(updateProfileStub.firstCall.args[0], {
+            assert.deepStrictEqual(updateProfileStubNew.firstCall.args[0], {
                 startUrl: validProfile.startUrl,
                 region: validProfile.ssoRegion,
                 scopes: validProfile.scopes,
@@ -396,12 +396,12 @@ describe('AuthUtil', async function () {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
-            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStubNext = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
             assert.ok(
-                updateProfileStub.calledWith({
+                updateProfileStubNext.calledWith({
                     startUrl: validProfile.startUrl,
                     region: validProfile.ssoRegion,
                     scopes: validProfile.scopes,
