@@ -4,13 +4,6 @@
  */
 import { By, WebviewView } from 'vscode-extension-tester'
 
-/* Finds all the tabs by looking for the close buttons and then closes them one by one.
-
-Logic:
-There is a button with the css mynah-tabs-close-button, we need to click that button and 
-close all the tabs after the test is done to avoid memory from a previous test. To double
-check if all the tabs are closed, we can check if the mynah-tabs-container is empty. */
-
 export async function closeAllTabs(webview: WebviewView) {
     try {
         const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
@@ -32,14 +25,6 @@ export async function closeAllTabs(webview: WebviewView) {
         console.log('Error closing tabs:', error)
     }
 }
-
-/* Dismiss overlays if they are present.
-
-Logic:
-If there are any mynah overlays that still exist, that will interfere with being able to click
-any other buttons such as closing chatTabs. Therefore, if you are testing some kind of overlay
-it is recommended to call this function in the "AfterEach" block to make sure the overlay doesn't
-interfere with any other parts of the test suite */
 
 export async function dismissOverlayIfPresent(webview: WebviewView): Promise<boolean> {
     try {
