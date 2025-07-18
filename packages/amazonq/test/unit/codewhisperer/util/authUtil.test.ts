@@ -42,13 +42,13 @@ describe('AuthUtil', async function () {
             assert.ok(auth.isInternalAmazonUser())
         })
 
-        it('identifies SSO session', function () {
-            ;(auth as any).session = { loginType: auth2.LoginTypes.SSO }
+        it('identifies SSO session', async function () {
+            await auth.login_sso(constants.internalStartUrl, 'us-east-1')
             assert.strictEqual(auth.isSsoSession(), true)
         })
 
-        it('identifies non-SSO session', function () {
-            ;(auth as any).session = { loginType: auth2.LoginTypes.IAM }
+        it('identifies non-SSO session', async function () {
+            await auth.login_iam('accessKey', 'secretKey', 'sessionToken')
             assert.strictEqual(auth.isSsoSession(), false)
         })
     })
@@ -137,6 +137,7 @@ describe('AuthUtil', async function () {
         it('returns credentials form for IAM credentials', async function () {
             sinon.stub(auth, 'isSsoSession').returns(false)
             sinon.stub(auth, 'isConnected').returns(true)
+            sinon.stub(auth, 'isIamSession').returns(true)
 
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['credentials'])
@@ -295,11 +296,11 @@ describe('AuthUtil', async function () {
             if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
-            const updateProfileStubNext = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
-            assert.ok(updateProfileStubNext.calledOnce)
+            assert.ok(updateProfileStub.calledOnce)
             assert.ok(memento.update.calledWith('auth.profiles', undefined))
         })
 
@@ -366,13 +367,13 @@ describe('AuthUtil', async function () {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
-            const updateProfileStubMore = sinon.stub((auth as any).session, 'updateProfile').resolves()
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
-            assert.ok(updateProfileStubMore.calledOnce)
+            assert.ok(updateProfileStub.calledOnce)
             assert.ok(memento.update.calledWith('auth.profiles', undefined))
-            assert.deepStrictEqual(updateProfileStubMore.firstCall.args[0], {
+            assert.deepStrictEqual(updateProfileStub.firstCall.args[0], {
                 startUrl: validProfile.startUrl,
                 region: validProfile.ssoRegion,
                 scopes: validProfile.scopes,
@@ -406,6 +407,139 @@ describe('AuthUtil', async function () {
                     scopes: validProfile.scopes,
                 })
             )
+        })
+    })
+
+    describe('login_iam', function () {
+        it('creates IAM session and logs in', async function () {
+            const mockResponse = {
+                id: 'test-credential-id',
+                credentials: {
+                    accessKeyId: 'encrypted-access-key',
+                    secretAccessKey: 'encrypted-secret-key',
+                    sessionToken: 'encrypted-session-token',
+                },
+                updateCredentialsParams: {
+                    data: 'credential-data',
+                },
+            }
+
+            const mockIamLogin = {
+                login: sinon.stub().resolves(mockResponse),
+                loginType: 'iam',
+            }
+
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
+
+            const response = await auth.login_iam('accessKey', 'secretKey', 'sessionToken')
+
+            assert.ok(mockIamLogin.login.calledOnce)
+            assert.ok(
+                mockIamLogin.login.calledWith({
+                    accessKey: 'accessKey',
+                    secretKey: 'secretKey',
+                })
+            )
+            assert.strictEqual(response, mockResponse)
+        })
+    })
+
+    describe('getIamCredential', function () {
+        it('returns IAM credentials from session', async function () {
+            const mockCredentials = {
+                accessKeyId: 'test-access-key',
+                secretAccessKey: 'test-secret-key',
+                sessionToken: 'test-session-token',
+            }
+
+            const mockSession = {
+                getCredential: sinon.stub().resolves({
+                    credential: mockCredentials,
+                    updateCredentialsParams: { data: 'test' },
+                }),
+                loginType: 'iam',
+            }
+
+            ;(auth as any).session = mockSession
+
+            const result = await auth.getIamCredential()
+
+            assert.ok(mockSession.getCredential.calledOnce)
+            assert.deepStrictEqual(result, mockCredentials)
+        })
+
+        it('throws error for SSO session', async function () {
+            const mockSession = {
+                getCredential: sinon.stub().resolves({
+                    credential: 'sso-token',
+                    updateCredentialsParams: { data: 'test' },
+                }),
+                loginType: 'sso',
+            }
+
+            ;(auth as any).session = mockSession
+
+            try {
+                await auth.getIamCredential()
+                assert.fail('Should have thrown an error')
+            } catch (err) {
+                assert.strictEqual((err as Error).message, 'Cannot get token with SSO session')
+            }
+        })
+
+        it('throws error when not logged in', async function () {
+            ;(auth as any).session = undefined
+
+            try {
+                await auth.getIamCredential()
+                assert.fail('Should have thrown an error')
+            } catch (err) {
+                assert.strictEqual((err as Error).message, 'Cannot get credential without logging in.')
+            }
+        })
+    })
+
+    describe('isIamSession', function () {
+        it('returns true for IAM session', function () {
+            const mockSession = new auth2.IamLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
+            ;(auth as any).session = mockSession
+
+            assert.strictEqual(auth.isIamSession(), true)
+        })
+
+        it('returns false for SSO session', function () {
+            const mockSession = { loginType: 'sso' }
+            ;(auth as any).session = mockSession
+
+            assert.strictEqual(auth.isIamSession(), false)
+        })
+
+        it('returns false when no session', function () {
+            ;(auth as any).session = undefined
+
+            assert.strictEqual(auth.isIamSession(), false)
+        })
+    })
+
+    describe('IAM session state changes', function () {
+        let mockLspAuth: any
+
+        beforeEach(function () {
+            mockLspAuth = (auth as any).lspAuth
+        })
+
+        it('updates IAM credential when state is refreshed', async function () {
+            const mockSession = new auth2.IamLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
+            sinon.stub(mockSession, 'getCredential').resolves({
+                credential: { accessKeyId: 'key', secretAccessKey: 'secret' },
+                updateCredentialsParams: { data: 'fake-data' },
+            })
+            ;(auth as any).session = mockSession
+
+            await (auth as any).stateChangeHandler({ state: 'refreshed' })
+
+            assert.ok(mockLspAuth.updateIamCredential.called)
+            assert.strictEqual(mockLspAuth.updateIamCredential.firstCall.args[0].data, 'fake-data')
         })
     })
 })

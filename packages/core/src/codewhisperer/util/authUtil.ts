@@ -30,15 +30,7 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import {
-    AuthStateEvent,
-    cacheChangedEvent,
-    LanguageClientAuth,
-    Login,
-    SsoLogin,
-    IamLogin,
-    LoginTypes,
-} from '../../auth/auth2'
+import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -116,11 +108,11 @@ export class AuthUtil implements IAuthProvider {
     }
 
     isSsoSession(): boolean {
-        return this.session?.loginType === LoginTypes.SSO || this.session instanceof SsoLogin
+        return this.session instanceof SsoLogin
     }
 
     isIamSession(): boolean {
-        return this.session?.loginType === LoginTypes.IAM || this.session instanceof IamLogin
+        return this.session instanceof IamLogin
     }
 
     /**
@@ -378,7 +370,11 @@ export class AuthUtil implements IAuthProvider {
 
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
-            this.lspAuth.deleteBearerToken()
+            if (this.isSsoSession()) {
+                this.lspAuth.deleteBearerToken()
+            } else if (this.isIamSession()) {
+                this.lspAuth.deleteIamCredential()
+            }
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()

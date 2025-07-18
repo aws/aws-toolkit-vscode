@@ -5,10 +5,11 @@
 
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { LanguageClientAuth, SsoLogin } from '../../auth/auth2'
+import { LanguageClientAuth, SsoLogin, IamLogin } from '../../auth/auth2'
 import { LanguageClient } from 'vscode-languageclient'
 import {
     GetSsoTokenResult,
+    GetIamCredentialResult,
     SsoTokenSourceKind,
     AuthorizationFlowKind,
     ListProfilesResult,
@@ -16,6 +17,8 @@ import {
     SsoTokenChangedParams,
     bearerCredentialsUpdateRequestType,
     bearerCredentialsDeleteNotificationType,
+    iamCredentialsUpdateRequestType,
+    iamCredentialsDeleteNotificationType,
     ssoTokenChangedRequestType,
     SsoTokenChangedKind,
     invalidateSsoTokenRequestType,
@@ -95,6 +98,22 @@ describe('LanguageClientAuth', () => {
                 sso_region: region,
             })
         })
+
+        it('sends correct IAM profile update parameters', async () => {
+            await auth.updateIamProfile(profileName, 'accessKey', 'secretKey', 'sessionToken')
+
+            sinon.assert.calledOnce(client.sendRequest)
+            const requestParams = client.sendRequest.firstCall.args[1]
+            sinon.assert.match(requestParams.profile, {
+                name: profileName,
+                kinds: [ProfileKind.IamCredentialsProfile],
+            })
+            sinon.assert.match(requestParams.profile.settings, {
+                aws_access_key_id: 'accessKey',
+                aws_secret_access_key: 'secretKey',
+                aws_session_token: 'sessionToken',
+            })
+        })
     })
 
     describe('getProfile', () => {
@@ -156,6 +175,47 @@ describe('LanguageClientAuth', () => {
 
             sinon.assert.calledOnce(client.sendNotification)
             sinon.assert.calledWith(client.sendNotification, bearerCredentialsDeleteNotificationType.method)
+        })
+    })
+
+    describe('updateIamCredential', () => {
+        it('sends request', async () => {
+            const updateParams: UpdateCredentialsParams = {
+                data: 'credential-data',
+                encrypted: true,
+            }
+
+            await auth.updateIamCredential(updateParams)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(client.sendRequest, iamCredentialsUpdateRequestType.method, updateParams)
+        })
+    })
+
+    describe('deleteIamCredential', () => {
+        it('sends notification', async () => {
+            auth.deleteIamCredential()
+
+            sinon.assert.calledOnce(client.sendNotification)
+            sinon.assert.calledWith(client.sendNotification, iamCredentialsDeleteNotificationType.method)
+        })
+    })
+
+    describe('getIamCredential', () => {
+        it('sends correct request parameters', async () => {
+            await auth.getIamCredential(profileName, true)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(
+                client.sendRequest,
+                sinon.match.any,
+                sinon.match({
+                    profileName: profileName,
+                    options: {
+                        callStsOnInvalidIamCredential: true,
+                    },
+                })
+            )
         })
     })
 
@@ -525,6 +585,136 @@ describe('SsoLogin', () => {
             })
 
             sinon.assert.notCalled(fireEventSpy)
+        })
+    })
+})
+
+describe('IamLogin', () => {
+    let lspAuth: sinon.SinonStubbedInstance<LanguageClientAuth>
+    let iamLogin: IamLogin
+    let eventEmitter: vscode.EventEmitter<any>
+
+    const loginOpts = {
+        accessKey: 'test-access-key',
+        secretKey: 'test-secret-key',
+        sessionToken: 'test-session-token',
+    }
+
+    const mockGetIamCredentialResponse: GetIamCredentialResult = {
+        id: 'test-credential-id',
+        credentials: {
+            accessKeyId: 'encrypted-access-key',
+            secretAccessKey: 'encrypted-secret-key',
+            sessionToken: 'encrypted-session-token',
+        },
+        updateCredentialsParams: {
+            data: 'credential-data',
+        },
+    }
+
+    beforeEach(() => {
+        lspAuth = sinon.createStubInstance(LanguageClientAuth)
+        eventEmitter = new vscode.EventEmitter()
+        iamLogin = new IamLogin(profileName, lspAuth as any, eventEmitter)
+        ;(iamLogin as any).eventEmitter = eventEmitter
+        ;(iamLogin as any).connectionState = 'notConnected'
+    })
+
+    afterEach(() => {
+        sinon.restore()
+        eventEmitter.dispose()
+    })
+
+    describe('login', () => {
+        it('updates profile and returns IAM credential', async () => {
+            lspAuth.updateIamProfile.resolves()
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await iamLogin.login(loginOpts)
+
+            sinon.assert.calledOnce(lspAuth.updateIamProfile)
+            sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts.accessKey, loginOpts.secretKey)
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            sinon.assert.match(response.id, 'test-credential-id')
+        })
+    })
+
+    describe('reauthenticate', () => {
+        it('throws when not connected', async () => {
+            ;(iamLogin as any).connectionState = 'notConnected'
+            try {
+                await iamLogin.reauthenticate()
+                sinon.assert.fail('Should have thrown an error')
+            } catch (err) {
+                sinon.assert.match((err as Error).message, 'Cannot reauthenticate when not connected.')
+            }
+        })
+
+        it('returns new IAM credential when connected', async () => {
+            ;(iamLogin as any).connectionState = 'connected'
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await iamLogin.reauthenticate()
+
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            sinon.assert.match(response.id, 'test-credential-id')
+        })
+    })
+
+    describe('restore', () => {
+        it('restores connection state', async () => {
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            await iamLogin.restore()
+
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.calledWith(lspAuth.getIamCredential, profileName, false)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+        })
+    })
+
+    describe('_getIamCredential', () => {
+        const testErrorHandling = async (errorCode: string, expectedState: string) => {
+            const error = new Error('Credential error')
+            ;(error as any).data = { awsErrorCode: errorCode }
+            lspAuth.getIamCredential.rejects(error)
+
+            try {
+                await (iamLogin as any)._getIamCredential(false)
+                sinon.assert.fail('Should have thrown an error')
+            } catch (err) {
+                sinon.assert.match(err, error)
+            }
+
+            sinon.assert.match(iamLogin.getConnectionState(), expectedState)
+        }
+
+        const notConnectedErrors = [
+            AwsErrorCodes.E_CANCELLED,
+            AwsErrorCodes.E_INVALID_PROFILE,
+            AwsErrorCodes.E_PROFILE_NOT_FOUND,
+            AwsErrorCodes.E_CANNOT_CREATE_STS_CREDENTIAL,
+            AwsErrorCodes.E_INVALID_STS_CREDENTIAL,
+        ]
+
+        for (const errorCode of notConnectedErrors) {
+            it(`handles ${errorCode} error`, async () => {
+                await testErrorHandling(errorCode, 'notConnected')
+            })
+        }
+
+        it('returns correct response and updates state', async () => {
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await (iamLogin as any)._getIamCredential(true)
+
+            sinon.assert.calledWith(lspAuth.getIamCredential, profileName, true)
+            sinon.assert.match(response, mockGetIamCredentialResponse)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            // Note: iamCredentialId is commented out in the implementation
+            // sinon.assert.match((iamLogin as any).iamCredentialId, 'test-credential-id')
         })
     })
 })
