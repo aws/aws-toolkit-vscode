@@ -13,6 +13,7 @@ import {
     setFunctionInfo,
     compareCodeSha,
 } from '../../lambda/utils'
+import { LambdaFunction } from '../../lambda/commands/uploadLambda'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'
@@ -116,9 +117,21 @@ describe('lambda utils', function () {
     })
 
     describe('setFunctionInfo', function () {
+        let mockLambda: LambdaFunction
+
+        // jscpd:ignore-start
+        beforeEach(function () {
+            mockLambda = {
+                name: 'test-function',
+                region: 'us-east-1',
+                configuration: { FunctionName: 'test-function' },
+            }
+        })
+
         afterEach(function () {
             sinon.restore()
         })
+        // jscpd:ignore-end
 
         it('merges with existing data', async function () {
             const existingData = { lastDeployed: 123456, undeployed: true, sha: 'old-sha', handlerFile: 'index.js' }
@@ -140,9 +153,21 @@ describe('lambda utils', function () {
     })
 
     describe('compareCodeSha', function () {
+        let mockLambda: LambdaFunction
+
+        // jscpd:ignore-start
+        beforeEach(function () {
+            mockLambda = {
+                name: 'test-function',
+                region: 'us-east-1',
+                configuration: { FunctionName: 'test-function' },
+            }
+        })
+
         afterEach(function () {
             sinon.restore()
         })
+        // jscpd:ignore-end
 
         it('returns true when local and remote SHA match', async function () {
             sinon.stub(fs, 'readFileText').resolves(JSON.stringify({ sha: 'same-sha' }))
