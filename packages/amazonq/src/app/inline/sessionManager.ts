@@ -136,6 +136,7 @@ export class SessionManager {
     // Ideally use this API handleDidShowCompletionItem
     // https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts#L83
     updateCodeReferenceAndImports() {
+        this.clearReferenceInlineHintsAndImportHints()
         if (this.activeSession?.suggestions && this.activeSession.suggestions.length > 0) {
             const reference = this.activeSession.suggestions[this._currentSuggestionIndex].references
             if (reference && reference.length > 0) {
