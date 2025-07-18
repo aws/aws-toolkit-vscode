@@ -307,6 +307,11 @@ export async function getMachineId(): Promise<string> {
         // TODO: use `vscode.env.machineId` instead?
         return 'browser'
     }
+    // Eclipse Che-based envs (backing compute rotates, not classified as a web instance)
+    // TODO: use `vscode.env.machineId` instead?
+    if (process.env.CHE_WORKSPACE_ID) {
+        return process.env.CHE_WORKSPACE_ID
+    }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
