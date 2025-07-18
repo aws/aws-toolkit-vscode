@@ -5,6 +5,7 @@
 import { Workbench, By, WebviewView } from 'vscode-extension-tester'
 import { waitForElement, findItemByText } from './generalHelper'
 import { testContext } from '../utils/testContext'
+
 /* Completes the entire Amazon Q login flow
 
 Currently, the function will
@@ -14,8 +15,7 @@ Currently, the function will
 4. IMPORTANT: you must click manually open yourself when the popup window asks to open the browser and complete the authentication in the browser** 
 
 TO-DO: Currently this loginToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
-
-export async function loginToAmazonQ(): Promise<void> {
+export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
 
@@ -49,4 +49,10 @@ export async function loginToAmazonQ(): Promise<void> {
 
     testContext.workbench = workbench
     testContext.webviewView = webviewView
+}
+
+/* NOTE: The workbench and webviewView is grabbed directly from testContext because we are under the assumption that if you want to log out
+you've already logged in before. */
+export async function signOutFromAmazonQ(workbench: Workbench): Promise<void> {
+    await workbench.executeCommand('Amazon Q: Sign Out')
 }

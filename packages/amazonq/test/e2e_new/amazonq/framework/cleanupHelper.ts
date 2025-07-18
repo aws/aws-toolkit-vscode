@@ -4,6 +4,12 @@
  */
 import { By, WebviewView } from 'vscode-extension-tester'
 
+/**
+ * Closes all open chat tabs
+ * @param webview The WebviewView instance
+ * @returns Promise<boolean> True if all tabs were successfully closed
+ * @throws Error if tabs could not be closed
+ */
 export async function closeAllTabs(webview: WebviewView): Promise<boolean> {
     try {
         const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
@@ -30,6 +36,11 @@ export async function closeAllTabs(webview: WebviewView): Promise<boolean> {
     }
 }
 
+/**
+ * Attempts to dismiss any open overlays
+ * @param webview The WebviewView instance
+ * @returns Promise<boolean> True if overlay was dismissed or none was present, false if dismissal failed
+ */
 export async function dismissOverlayIfPresent(webview: WebviewView): Promise<boolean> {
     try {
         const overlays = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))

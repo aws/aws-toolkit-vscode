@@ -78,11 +78,9 @@ export async function getPinContextMenuItems(webview: WebviewView): Promise<{ it
  */
 export async function clickPinContextMenuItem(webview: WebviewView, itemName: string): Promise<boolean> {
     try {
-        // Find the menu list independently
         const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
         await new Promise((resolve) => setTimeout(resolve, 3000))
         const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
-        // Iterate through items to find the one with matching text
         for (const item of menuListItems) {
             try {
                 const textWrapper = await item.findElement(By.css('.mynah-detailed-list-item-text'))
@@ -95,7 +93,6 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
                     return true
                 }
             } catch (e) {
-                // Continue to next item if this one has issues
                 continue
             }
         }
