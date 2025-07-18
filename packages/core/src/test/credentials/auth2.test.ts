@@ -640,6 +640,7 @@ describe('IamLogin', () => {
     const mockGetIamCredentialResponse: GetIamCredentialResult = {
         credential: {
             id: 'test-credential-id',
+            kinds: [],
             credentials: {
                 accessKeyId: 'encrypted-access-key',
                 secretAccessKey: 'encrypted-secret-key',
