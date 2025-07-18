@@ -69,6 +69,10 @@ export class InlineChatProvider {
     }
 
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        if (!AuthUtil.instance.isSsoSession()) {
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
+        
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
@@ -83,6 +87,10 @@ export class InlineChatProvider {
 
     // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
+        if (!AuthUtil.instance.isSsoSession()) {
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
+        
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then((context) => {
@@ -143,7 +151,7 @@ export class InlineChatProvider {
     private async generateResponse(
         triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
         triggerID: string
-    ) {
+    ): Promise<GenerateAssistantResponseCommandOutput | undefined> {
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
             return
@@ -182,7 +190,12 @@ export class InlineChatProvider {
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
-            response = await session.chatSso(request)
+            if (AuthUtil.instance.isSsoSession()) {
+                response = await session.chatSso(request)
+            } else {
+                // Call sendMessage because Q Developer Streaming Client does not have generateAssistantResponse
+                throw new ToolkitError('Inline chat is only available with SSO authentication')
+            }
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: %O`,
                 response.$metadata

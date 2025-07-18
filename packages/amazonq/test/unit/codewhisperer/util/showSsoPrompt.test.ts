@@ -28,7 +28,7 @@ describe('showConnectionPrompt', function () {
     })
 
     it('can select connect to AwsBuilderId', async function () {
-        sinon.stub(AuthUtil.instance, 'login').resolves()
+        sinon.stub(AuthUtil.instance, 'login_sso').resolves()
 
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
@@ -44,7 +44,7 @@ describe('showConnectionPrompt', function () {
 
     it('connectToAwsBuilderId calls AuthUtil login with builderIdStartUrl', async function () {
         sinon.stub(vscode.commands, 'executeCommand')
-        const loginStub = sinon.stub(AuthUtil.instance, 'login').resolves()
+        const loginStub = sinon.stub(AuthUtil.instance, 'login_sso').resolves()
 
         await awsIdSignIn()
 
