@@ -63,6 +63,7 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
             messageType: MessageType.BROADCAST,
             command: Command.INIT,
             executionArn: context.executionArn,
+            startTime: context.startTime,
         })
     } catch (e) {
         await context.panel.webview.postMessage({

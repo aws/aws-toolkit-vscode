@@ -6,6 +6,8 @@
 import * as StepFunctions from '@aws-sdk/client-sfn'
 import { IamClient, IamRole } from '../../shared/clients/iam'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
+import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { ApiAction, ApiCallRequestMessage, Command, MessageType, BaseContext } from './types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ListRolesRequest } from '@aws-sdk/client-iam'
@@ -17,6 +19,8 @@ export class StepFunctionApiHandler {
         private readonly clients = {
             sfn: new StepFunctionsClient(region),
             iam: new IamClient(region),
+            cwl: new CloudWatchLogsClient(region),
+            lambda: new DefaultLambdaClient(region),
         }
     ) {}
 
@@ -56,6 +60,12 @@ export class StepFunctionApiHandler {
                     break
                 case ApiAction.SFNStopExecution:
                     response = await this.clients.sfn.stopExecution(params)
+                    break
+                case ApiAction.CWlFilterLogEvents:
+                    response = await this.clients.cwl.filterLogEvents(params)
+                    break
+                case ApiAction.LambdaGetFunctionConfiguration:
+                    response = await this.clients.lambda.getFunctionConfiguration(params.FunctionName!)
                     break
                 default:
                     throw new Error(`Unknown API: ${apiName}`)

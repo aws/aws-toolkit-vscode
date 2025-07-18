@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
+import { viewExecutionDetails } from './commands/viewExecutionDetails'
 import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
@@ -23,8 +24,6 @@ import { ASLLanguageClient } from './asl/client'
 import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
 import { StateMachineNode } from './explorer/stepFunctionsNodes'
 import { downloadStateMachineDefinition } from './commands/downloadStateMachineDefinition'
-import { ExecutionDetailProvider } from './executionDetails/executionDetailProvider'
-import { validate } from '@aws-sdk/util-arn-parser'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -101,19 +100,7 @@ async function registerStepFunctionCommands(
             await publishStateMachine({ awsContext: awsContext, outputChannel: outputChannel, region: region })
         }),
         Commands.register('aws.stepfunctions.viewExecutionDetailsByExecutionARN', async () => {
-            const arn = await vscode.window.showInputBox({
-                prompt: 'Enter Execution ARN',
-                placeHolder:
-                    'arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:12345678-1234-1234-1234-123456789012',
-            })
-
-            if (validate(arn)) {
-                await ExecutionDetailProvider.openExecutionDetails(arn!)
-            } else {
-                void vscode.window.showErrorMessage(
-                    'Invalid ARN format. Please provide a valid Step Functions execution ARN (e.g., arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:12345678-1234-1234-1234-123456789012)'
-                )
-            }
+            await viewExecutionDetails({ awsContext: awsContext, outputChannel: outputChannel })
         })
     )
 }

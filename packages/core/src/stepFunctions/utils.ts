@@ -21,6 +21,9 @@ import { IamRole } from '../shared/clients/iam'
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
 
+const arnResourceTypeSegmentIndex = 5
+const expressExecutionArnSegmentCount = 9
+
 export async function* listStateMachines(
     client: StepFunctionsClient
 ): AsyncIterableIterator<StepFunctions.StateMachineListItem> {
@@ -90,6 +93,18 @@ export const isInvalidYamlFile = (textDocument: vscode.TextDocument): boolean =>
     } catch {
         return true
     }
+}
+
+/**
+ * Determines if execution ARN is for an express execution
+ * @param arn  Execution ARN to check
+ * @returns true if it's an express execution, false if its a standard execution
+ */
+export const isExpressExecution = (arn: string): boolean => {
+    const arnSegments = arn.split(':')
+    return (
+        arnSegments.length === expressExecutionArnSegmentCount && arnSegments[arnResourceTypeSegmentIndex] === 'express'
+    )
 }
 
 const isInvalidJson = (content: string): boolean => {

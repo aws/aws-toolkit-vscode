@@ -28,6 +28,7 @@ export class ExecutionDetailProvider {
      */
     public static async openExecutionDetails(
         executionArn: string,
+        startTime?: string,
         params?: vscode.WebviewPanelOptions & vscode.WebviewOptions
     ): Promise<void> {
         // Create and show the webview panel
@@ -43,7 +44,7 @@ export class ExecutionDetailProvider {
         )
         // Create the provider and initialize the panel
         const provider = new ExecutionDetailProvider()
-        await provider.initializePanel(panel, executionArn)
+        await provider.initializePanel(panel, executionArn, startTime)
     }
 
     protected webviewHtml: string
@@ -67,7 +68,7 @@ export class ExecutionDetailProvider {
      * Gets the webview content for Execution Details.
      * @private
      */
-    private getWebviewContent = async (executionArn: string): Promise<string> => {
+    private getWebviewContent = async (executionArn: string, startTime?: string): Promise<string> => {
         const htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
@@ -85,7 +86,10 @@ export class ExecutionDetailProvider {
         const componentTypeTag = `<meta name="component-type" content="${ComponentType.ExecutionDetails}" />`
         const executionArnTag = `<meta name="execution-arn" content="${executionArn}" />`
 
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${executionArnTag} ${htmlFileSplit[1]}`
+        // Only include start time tag for express executions (when startTime is provided)
+        const startTimeTag = startTime ? `<meta name="start-time" content="${startTime}" />` : ''
+
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${executionArnTag} ${startTimeTag} ${htmlFileSplit[1]}`
     }
 
     /**
@@ -93,18 +97,19 @@ export class ExecutionDetailProvider {
      * @param panel The WebView panel to initialize
      * @param executionArn The ARN of the execution to display
      */
-    public async initializePanel(panel: vscode.WebviewPanel, executionArn: string): Promise<void> {
+    public async initializePanel(panel: vscode.WebviewPanel, executionArn: string, startTime?: string): Promise<void> {
         try {
             if (!this.webviewHtml) {
                 await this.fetchWebviewHtml()
             }
 
             // Set up the content
-            panel.webview.html = await this.getWebviewContent(executionArn)
+            panel.webview.html = await this.getWebviewContent(executionArn, startTime)
             const context: ExecutionDetailsContext = {
                 panel,
                 loaderNotification: undefined,
                 executionArn,
+                startTime,
             }
 
             // Handle messages from the webview
