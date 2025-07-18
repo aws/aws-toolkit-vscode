@@ -21,7 +21,7 @@ export async function closeAllTabs(webview: WebviewView): Promise<boolean> {
 
         const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
         const allClosed =
-            tabsContainer.length === 0 ||
+            tabsContainer.length === 1 ||
             (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0
 
         if (allClosed) {

@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { signInToAmazonQ } from '../framework/loginHelper'
+import { signInToAmazonQ } from '../framework/authHelper'
 
 before(async function () {
     this.timeout(60000)
