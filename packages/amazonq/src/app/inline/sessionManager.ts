@@ -136,27 +136,35 @@ export class SessionManager {
     // Ideally use this API handleDidShowCompletionItem
     // https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts#L83
     updateCodeReferenceAndImports() {
-        this.clearReferenceInlineHintsAndImportHints()
-        if (this.activeSession?.suggestions && this.activeSession.suggestions.length > 0) {
-            const reference = this.activeSession.suggestions[this._currentSuggestionIndex].references
-            if (reference && reference.length > 0) {
+        try {
+            this.clearReferenceInlineHintsAndImportHints()
+            if (
+                this.activeSession?.suggestions &&
+                this.activeSession.suggestions[this._currentSuggestionIndex] &&
+                this.activeSession.suggestions.length > 0
+            ) {
+                const reference = this.activeSession.suggestions[this._currentSuggestionIndex].references
                 const insertText = this.activeSession.suggestions[this._currentSuggestionIndex].insertText
-                const insertTextStr =
-                    typeof insertText === 'string' ? insertText : (insertText.value ?? String(insertText))
+                if (reference && reference.length > 0) {
+                    const insertTextStr =
+                        typeof insertText === 'string' ? insertText : (insertText.value ?? String(insertText))
 
-                ReferenceInlineProvider.instance.setInlineReference(
-                    this.activeSession.startPosition.line,
-                    insertTextStr,
-                    reference
-                )
+                    ReferenceInlineProvider.instance.setInlineReference(
+                        this.activeSession.startPosition.line,
+                        insertTextStr,
+                        reference
+                    )
+                }
+                if (vscode.window.activeTextEditor) {
+                    ImportAdderProvider.instance.onShowRecommendation(
+                        vscode.window.activeTextEditor.document,
+                        this.activeSession.startPosition.line,
+                        this.activeSession.suggestions[this._currentSuggestionIndex]
+                    )
+                }
             }
-            if (vscode.window.activeTextEditor) {
-                ImportAdderProvider.instance.onShowRecommendation(
-                    vscode.window.activeTextEditor.document,
-                    this.activeSession.startPosition.line,
-                    this.activeSession.suggestions[this._currentSuggestionIndex]
-                )
-            }
+        } catch {
+            // do nothing as this is not critical path
         }
     }
 }
