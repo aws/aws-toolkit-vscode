@@ -256,6 +256,7 @@ describe('InlineCompletionManager', () => {
                     getActiveSession: getActiveSessionStub,
                     getActiveRecommendation: getActiveRecommendationStub,
                     clear: () => {},
+                    updateCodeReferenceAndImports: () => {},
                 } as unknown as SessionManager
 
                 getActiveSessionStub.returns({
