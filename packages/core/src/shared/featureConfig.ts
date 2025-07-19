@@ -55,9 +55,6 @@ export const featureDefinitions = new Map<FeatureName, FeatureContext>([
 
 export class FeatureConfigProvider {
     private featureConfigs = new Map<string, FeatureContext>()
-    private fetchPromise: Promise<void> | undefined = undefined
-    private lastFetchTime = 0
-    private readonly minFetchInterval = 5000 // 5 seconds minimum between fetches
 
     static #instance: FeatureConfigProvider
 
@@ -126,28 +123,6 @@ export class FeatureConfigProvider {
             return
         }
 
-        // Debounce multiple concurrent calls
-        const now = performance.now()
-        if (this.fetchPromise && now - this.lastFetchTime < this.minFetchInterval) {
-            getLogger().debug('amazonq: Debouncing feature config fetch')
-            return this.fetchPromise
-        }
-
-        if (this.fetchPromise) {
-            return this.fetchPromise
-        }
-
-        this.lastFetchTime = now
-        this.fetchPromise = this._fetchFeatureConfigsInternal()
-
-        try {
-            await this.fetchPromise
-        } finally {
-            this.fetchPromise = undefined
-        }
-    }
-
-    private async _fetchFeatureConfigsInternal(): Promise<void> {
         getLogger().debug('amazonq: Fetching feature configs')
         try {
             const response = await this.listFeatureEvaluations()
