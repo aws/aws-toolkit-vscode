@@ -90,7 +90,7 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         const generateFixCommand = this._getCommandMarkdown(
             'aws.amazonq.generateFix',
             [issue, filePath],
-            'wrench',
+            'comment',
             'Fix',
             'Fix with Amazon Q'
         )
