@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Render first response before receiving all paginated inline completion results"
-}
