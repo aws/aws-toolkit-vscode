@@ -1,9 +1,3 @@
-## 1.84.0 2025-07-17
-
-- **Bug Fix** Slightly delay rendering inline completion when user is typing
-- **Bug Fix** Render first response before receiving all paginated inline completion results
-- **Feature** Explain and Fix for any issue in Code Issues panel will pull the experience into chat. Also no more view details tab.
-
 ## 1.83.0 2025-07-09
 
 - **Feature** Amazon Q /test, /doc, and /dev capabilities integrated into Agentic coding.
