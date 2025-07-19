@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { DevSettings, getServiceEnvVarConfig, BaseLspInstaller, getLogger } from 'aws-core-vscode/shared'
+import { DevSettings, getServiceEnvVarConfig, BaseLspInstaller } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
 import {
     DidChangeConfigurationNotification,
@@ -68,31 +68,23 @@ export function toAmazonQLSPLogLevel(logLevel: vscode.LogLevel): LspLogLevel {
  * push the given config.
  */
 export async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
-    const logger = getLogger('amazonqLsp')
-
     switch (config.type) {
         case 'profile':
-            logger.debug(`Pushing profile configuration: ${config.profileArn || 'undefined'}`)
             await client.sendRequest(updateConfigurationRequestType.method, {
                 section: 'aws.q',
                 settings: { profileArn: config.profileArn },
             })
-            logger.debug(`Profile configuration pushed successfully`)
             break
         case 'customization':
-            logger.debug(`Pushing customization configuration: ${config.customization || 'undefined'}`)
             client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.q',
                 settings: { customization: config.customization },
             })
-            logger.debug(`Customization configuration pushed successfully`)
             break
         case 'logLevel':
-            logger.debug(`Pushing log level configuration`)
             client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.logLevel',
             })
-            logger.debug(`Log level configuration pushed successfully`)
             break
     }
 }

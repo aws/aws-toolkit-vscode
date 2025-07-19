@@ -634,12 +634,6 @@ const registerToolkitApiCallbackOnce = once(() => {
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async (toolkitApi?: any) => {
-        // Early return if already registered to avoid duplicate work
-        if (_toolkitApi) {
-            getLogger().debug('Toolkit API callback already registered, skipping')
-            return
-        }
-
         // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
         // we need to do it manually here because the Toolkit would have been unable to call
         // this API if the Q/CW extension started afterwards (and this code block is running).

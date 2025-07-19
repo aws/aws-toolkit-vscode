@@ -60,21 +60,6 @@ export abstract class CachedResource<V> {
     abstract resourceProvider(): Promise<V>
 
     async getResource(): Promise<V> {
-        // Check cache without locking first
-        const quickCheck = this.readCacheOrDefault()
-        if (quickCheck.resource.result && !quickCheck.resource.locked) {
-            const duration = now() - quickCheck.resource.timestamp
-            if (duration < this.expirationInMilli) {
-                logger.debug(
-                    `cache hit (fast path), duration(%sms) is less than expiration(%sms), returning cached value: %s`,
-                    duration,
-                    this.expirationInMilli,
-                    this.key
-                )
-                return quickCheck.resource.result
-            }
-        }
-
         const cachedValue = await this.tryLoadResourceAndLock()
         const resource = cachedValue?.resource
 
