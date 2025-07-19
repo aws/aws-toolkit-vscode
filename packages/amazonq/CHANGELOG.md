@@ -1,3 +1,7 @@
+## 1.85.0 2025-07-19
+
+- Miscellaneous non-user-facing changes
+
 ## 1.84.0 2025-07-17
 
 - **Bug Fix** Slightly delay rendering inline completion when user is typing
