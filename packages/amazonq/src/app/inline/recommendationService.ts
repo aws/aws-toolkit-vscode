@@ -79,13 +79,15 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
+            const t0 = performance.now()
             const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
-            getLogger().info('Received inline completion response: %O', {
+            getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
+                latency: performance.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,

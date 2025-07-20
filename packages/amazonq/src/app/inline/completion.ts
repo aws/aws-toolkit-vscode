@@ -199,12 +199,11 @@ export class InlineCompletionManager implements Disposable {
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
-    private logger = getLogger('nextEditPrediction')
+    private logger = getLogger()
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        // eslint-disable-next-line no-unused-vars
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
         private readonly documentEventListener: DocumentEventListener
     ) {}
@@ -320,9 +319,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
-            // TODO: this line will take ~200ms each trigger, need to root cause and re-enable once it's fixed
             // tell the tutorial that completions has been triggered
-            // await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
@@ -347,12 +345,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             const t2 = performance.now()
 
-            logstr = logstr += `- number of suggestions: ${items.length}
+            logstr += `- number of suggestions: ${items.length}
 - sessionId: ${this.sessionManager.getActiveSession()?.sessionId}
 - first suggestion content (next line):
 ${itemLog}
-- duration since trigger to before sending Flare call: ${t1 - t0}ms
-- duration since trigger to receiving responses from Flare: ${t2 - t0}ms
+- duration between trigger to before sending LSP call: ${t1 - t0}ms
+- duration between trigger to after receiving LSP response: ${t2 - t0}ms
+- duration between before sending LSP call to after receving LSP response: ${t2 - t1}ms
 `
             const session = this.sessionManager.getActiveSession()
 
@@ -411,9 +410,7 @@ ${itemLog}
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
                         await showEdits(item, editor, session, this.languageClient, this)
-                        const t3 = performance.now()
-                        logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
-                        this.logger.info(logstr)
+                        logstr += `- duration between trigger to edits suggestion is displayed: ${performance.now() - t0}ms`
                     }
                     return []
                 }
@@ -459,12 +456,14 @@ ${itemLog}
             }
 
             // suggestions returned here will be displayed on screen
+            logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
             return []
         } finally {
             vsCodeState.isRecommendationsActive = false
+            this.logger.info(logstr)
         }
     }
 }

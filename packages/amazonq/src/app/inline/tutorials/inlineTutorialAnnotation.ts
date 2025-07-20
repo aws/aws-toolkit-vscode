@@ -5,13 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as os from 'os'
-import {
-    AnnotationChangeSource,
-    AuthUtil,
-    inlinehintKey,
-    runtimeLanguageContext,
-    TelemetryHelper,
-} from 'aws-core-vscode/codewhisperer'
+import { AnnotationChangeSource, AuthUtil, inlinehintKey, runtimeLanguageContext } from 'aws-core-vscode/codewhisperer'
 import { editorUtilities, getLogger, globals, setContext, vscodeUtilities } from 'aws-core-vscode/shared'
 import { LinesChangeEvent, LineSelection, LineTracker } from '../stateTracker/lineTracker'
 import { telemetry } from 'aws-core-vscode/telemetry'
@@ -296,28 +290,27 @@ export class InlineTutorialAnnotation implements vscode.Disposable {
     }
 
     async triggered(triggerType: vscode.InlineCompletionTriggerKind): Promise<void> {
-        await telemetry.withTraceId(async () => {
-            if (!this._isReady) {
-                return
-            }
-
-            if (this._currentState instanceof ManualtriggerState) {
-                if (
-                    triggerType === vscode.InlineCompletionTriggerKind.Invoke &&
-                    this._currentState.hasManualTrigger === false
-                ) {
-                    this._currentState.hasManualTrigger = true
-                }
-                if (
-                    this.sessionManager.getActiveRecommendation().length > 0 &&
-                    this._currentState.hasValidResponse === false
-                ) {
-                    this._currentState.hasValidResponse = true
-                }
-            }
-
-            await this.refresh(vscode.window.activeTextEditor, 'codewhisperer')
-        }, TelemetryHelper.instance.traceId)
+        // TODO: this logic will take ~200ms each trigger, need to root cause and re-enable once it's fixed, or it should only be invoked when the tutorial is actually needed
+        // await telemetry.withTraceId(async () => {
+        //     if (!this._isReady) {
+        //         return
+        //     }
+        //     if (this._currentState instanceof ManualtriggerState) {
+        //         if (
+        //             triggerType === vscode.InlineCompletionTriggerKind.Invoke &&
+        //             this._currentState.hasManualTrigger === false
+        //         ) {
+        //             this._currentState.hasManualTrigger = true
+        //         }
+        //         if (
+        //             this.sessionManager.getActiveRecommendation().length > 0 &&
+        //             this._currentState.hasValidResponse === false
+        //         ) {
+        //             this._currentState.hasValidResponse = true
+        //         }
+        //     }
+        //     await this.refresh(vscode.window.activeTextEditor, 'codewhisperer')
+        // }, TelemetryHelper.instance.traceId)
     }
 
     isTutorialDone(): boolean {
