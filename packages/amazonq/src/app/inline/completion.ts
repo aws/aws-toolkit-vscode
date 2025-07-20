@@ -300,7 +300,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 // re-use previous suggestions as long as new typed prefix matches
                 if (prevItemMatchingPrefix.length > 0) {
-                    getLogger().debug(`Re-using suggestions that match user typed characters`)
+                    logstr += `- not calling LSP and reuse previous suggestions that match user typed characters
+                    - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
                     return prevItemMatchingPrefix
                 }
                 getLogger().debug(`Auto rejecting suggestions from previous session`)
@@ -361,16 +362,13 @@ ${itemLog}
             }
 
             if (!session || !items.length || !editor) {
-                getLogger().debug(
-                    `Failed to produce inline suggestion results. Received ${items.length} items from service`
-                )
+                logstr += `Failed to produce inline suggestion results. Received ${items.length} items from service`
                 return []
             }
 
             const cursorPosition = document.validatePosition(position)
 
             if (position.isAfter(editor.selection.active)) {
-                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion...`)
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -383,6 +381,7 @@ ${itemLog}
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
                 return []
             }
 
@@ -437,9 +436,6 @@ ${itemLog}
 
             // report discard if none of suggestions match typeahead
             if (itemsMatchingTypeahead.length === 0) {
-                getLogger().debug(
-                    `Suggestion does not match user typeahead from insertion position. Discarding suggestion...`
-                )
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -452,6 +448,7 @@ ${itemLog}
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                logstr += `- suggestion does not match user typeahead from insertion position. Discarding suggestion...`
                 return []
             }
 
@@ -460,6 +457,7 @@ ${itemLog}
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
+            logstr += `- failed to provide completion items ${(e as Error).message}`
             return []
         } finally {
             vsCodeState.isRecommendationsActive = false
