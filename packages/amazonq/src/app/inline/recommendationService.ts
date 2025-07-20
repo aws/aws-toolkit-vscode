@@ -117,6 +117,7 @@ export class RecommendationService {
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 
+            // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
