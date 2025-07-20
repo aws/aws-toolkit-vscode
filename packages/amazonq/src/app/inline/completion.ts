@@ -300,7 +300,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 // re-use previous suggestions as long as new typed prefix matches
                 if (prevItemMatchingPrefix.length > 0) {
-                    logstr += `- not calling LSP and reuse previous suggestions that match user typed characters
+                    logstr += `- not call LSP and reuse previous suggestions that match user typed characters
                     - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
                     return prevItemMatchingPrefix
                 }
