@@ -204,6 +204,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
+        // eslint-disable-next-line no-unused-vars
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
         private readonly documentEventListener: DocumentEventListener
     ) {}
