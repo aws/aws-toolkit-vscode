@@ -319,9 +319,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
-            // TODO: this line will take ~200ms each trigger, need to root cause and maybe better to disable it for now
+            // TODO: this line will take ~200ms each trigger, need to root cause and re-enable once it's fixed
             // tell the tutorial that completions has been triggered
-            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            // await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
