@@ -146,7 +146,6 @@ describe('RecommendationService', () => {
                 },
                 position: mockPosition,
                 context: mockContext,
-                documentChangeParams: undefined,
             })
 
             // Verify session management
@@ -188,7 +187,6 @@ describe('RecommendationService', () => {
                 },
                 position: mockPosition,
                 context: mockContext,
-                documentChangeParams: undefined,
             }
             const secondRequestArgs = sendRequestStub.secondCall.args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)

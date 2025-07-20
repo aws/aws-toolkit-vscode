@@ -52,7 +52,6 @@ describe('showEdits', function () {
         delete require.cache[moduleId]
         delete require.cache[sharedModuleId]
 
-        // jscpd:ignore-start
         // Create getLogger stub and store reference for test verification
         getLoggerStub = sandbox.stub().returns(loggerStub)
 
@@ -73,7 +72,6 @@ describe('showEdits', function () {
         } as any
 
         // Now require the module - it should use our mocked getLogger
-        // jscpd:ignore-end
         const imageRendererModule = require('../../../../../src/app/inline/EditRendering/imageRenderer')
         showEdits = imageRendererModule.showEdits
 
