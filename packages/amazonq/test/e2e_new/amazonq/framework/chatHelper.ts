@@ -48,3 +48,24 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 15000)
 
     return false
 }
+
+/**
+ * Clears the text in the chat input field
+ * @param webview The WebviewView instance
+ * @returns Promise<boolean> True if successful, false if an error occurred
+ */
+export async function clearChat(webview: WebviewView): Promise<boolean> {
+    try {
+        const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
+        await chatInput.sendKeys(
+            process.platform === 'darwin'
+                ? '\uE03D\u0061' // Command+A on macOS
+                : '\uE009\u0061' // Ctrl+A on Windows/Linux
+        )
+        await chatInput.sendKeys('\uE003') // Backspace
+        return true
+    } catch (e) {
+        console.error('Error clearing chat input:', e)
+        return false
+    }
+}
