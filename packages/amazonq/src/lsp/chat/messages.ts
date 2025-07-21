@@ -95,6 +95,7 @@ import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
+import { CommentUtils } from 'aws-core-vscode/utils'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -701,7 +702,7 @@ async function handleCompleteResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
 
-    handleSecurityFindings(decryptedMessage, languageClient)
+    await handleSecurityFindings(decryptedMessage, languageClient)
 
     void provider.webview?.postMessage({
         command: chatRequestType.method,
@@ -716,10 +717,10 @@ async function handleCompleteResult<T extends ChatResult>(
     disposable.dispose()
 }
 
-function handleSecurityFindings(
+async function handleSecurityFindings(
     decryptedMessage: { additionalMessages?: ChatMessage[] },
     languageClient: LanguageClient
-): void {
+): Promise<void> {
     if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
         return
     }
@@ -730,10 +731,18 @@ function handleSecurityFindings(
                 try {
                     const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
                     for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        const document = await vscode.workspace.openTextDocument(aggregatedCodeScanIssue.filePath)
                         for (const issue of aggregatedCodeScanIssue.issues) {
-                            issue.visible = !CodeWhispererSettings.instance
+                            const isIssueTitleIgnored = CodeWhispererSettings.instance
                                 .getIgnoredSecurityIssues()
                                 .includes(issue.title)
+                            const isSingleIssueIgnored = CommentUtils.detectCommentAboveLine(
+                                document,
+                                issue.startLine,
+                                CodeWhispererConstants.amazonqIgnoreNextLine
+                            )
+
+                            issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
                         }
                     }
                     initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
