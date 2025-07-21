@@ -28,8 +28,6 @@
         "test": "npm run test -w packages/ --if-present",
         "testWeb": "npm run testWeb -w packages/ --if-present",
         "testE2E": "npm run testE2E -w packages/ --if-present",
-        "setupUI": "cd packages/amazonq && npm run package 2>&1 | grep -o 'VSIX Version: [^ ]*' | cut -d' ' -f3 | xargs -I{} bash -c 'cd ../../ && ./node_modules/.bin/extest install-vsix --vsix_file amazon-q-vscode-{}.vsix'",
-        "testUI": "npm run testCompile && node_modules/.bin/extest run-tests packages/amazonq/dist/test/e2e/amazonq/VET.test.js -u",
         "test:ui:prepare": "./node_modules/.bin/extest get-vscode -s ~/.vscode-test-resources -n && extest get-chromedriver -s ~/.vscode-test-resources -n",
         "test:ui:install": "cd packages/amazonq && npm run package 2>&1 | grep -o 'VSIX Version: [^ ]*' | cut -d' ' -f3 | xargs -I{} bash -c 'cd ../../ && ./node_modules/.bin/extest install-vsix -f amazon-q-vscode-{}.vsix -e packages/amazonq/test/e2e/amazonq/resources -s ~/.vscode-test-resources'",
         "test:ui:run": "npm run testCompile && ./node_modules/.bin/extest run-tests -s ~/.vscode-test-resources -e packages/amazonq/test/e2e/amazonq/resources packages/amazonq/dist/test/e2e/amazonq/VET.test.js",

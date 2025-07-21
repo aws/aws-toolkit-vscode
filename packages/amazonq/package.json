@@ -69,9 +69,6 @@
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateSettings": "ts-node ../../scripts/generateSettings.ts"
     },
-    "dependencies": {
-        "aws-core-vscode": "file:../core/"
-    },
     "contributesComments": {
         "configuration": {
             "properties": "Any settings also defined in packages/core/package.json will override same-named settings in this file."
