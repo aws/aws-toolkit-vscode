@@ -24,15 +24,15 @@ import {
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { startInterval, pollTransformationStatusUntilComplete } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { convertToTimeString } from '../../../shared/datetime'
+import { convertToTimeString, isWithin30Days } from '../../../shared/datetime'
 import { AuthUtil } from '../../util/authUtil'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
-import { setMaven, readHistoryFile } from './transformFileHandler'
+import { setMaven } from './transformFileHandler'
 
-export interface HistoryObject {
+interface HistoryObject {
     startTime: string
     projectName: string
     status: string
@@ -40,10 +40,6 @@ export interface HistoryObject {
     diffPath: string
     summaryPath: string
     jobId: string
-}
-
-export async function updateHistoryTable(historyFileUpdated?: boolean) {
-    await TransformationHubViewProvider.instance.updateContent('job history', undefined, historyFileUpdated)
 }
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
@@ -155,8 +151,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <body>
             <p><b>Transformation History</b></p>
             <p>This table lists the most recent jobs that you have run in the past 30 days. 
-            To open the diff patch and summary files, choose the provided links. To get an updated job status, choose the refresh icon. 
-            The diff path and summary will appear once they are available.
+            To open the diff patch and summary files, click the provided links. 
+            Jobs with a status of FAILED may still be in progress. 
+            Resume them within 12 hours of starting the job to get an updated job status and artifacts. Click the refresh icon to do so. 
+            The diff patch and summary will appear once they are available.
             </p>
             ${
                 jobsToDisplay.length === 0
@@ -239,7 +237,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     <tr>
                         <td>${job.startTime}</td>
                         <td>${job.projectName}</td>
-                        <td>${job.status}</td>
+                        <td>${job.status === 'FAILED_BE' ? 'FAILED' : job.status}</td>
                         <td>${job.duration}</td>
                         <td>${job.diffPath ? `<a href="#" class="diff-link" diff-path="${job.diffPath}">diff.patch</a>` : ''}</td>
                         <td>${job.summaryPath ? `<a href="#" class="summary-link" summary-path="${job.summaryPath}">summary.md</a>` : ''}</td>
@@ -251,12 +249,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                                 proj-name="${job.projectName}"
                                 status="${job.status}"
                                 ${
-                                    (job.jobId === transformByQState.getJobId() && transformByQState.isRunning()) ||
-                                    (!CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(job.status) &&
-                                        transformByQState.isRunning()) ||
-                                    transformByQState.isRefreshInProgress()
+                                    transformByQState.isRunning() || transformByQState.isRefreshInProgress()
                                         ? 'disabled title="A job is ongoing"'
-                                        : job.status === 'CANCELLED' || job.status === 'STOPPED'
+                                        : job.status === 'CANCELLED' ||
+                                            job.status === 'STOPPED' ||
+                                            job.status === 'FAILED_BE'
                                           ? 'disabled title="Unable to refresh this job"'
                                           : ''
                                 }
@@ -275,8 +272,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private async refreshJob(jobId: string, currentStatus: string, projectName: string) {
-        console.log('refreshing job id: %s', jobId)
-
         // fetch status from server
         let status = ''
         let duration = ''
@@ -297,9 +292,18 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     )
                 }
 
-                console.log('status returned: %s\nduration returned: %s', status, duration)
+                getLogger().info(
+                    'Code Transformation: Job Id: %s\nFetched status: %s\nDuration: %s',
+                    jobId,
+                    status,
+                    duration
+                )
             } catch (error) {
-                console.error('error fetching status: %s', (error as Error).message)
+                getLogger().error(
+                    'Code Transformation: Error fetching status (job id: %s): %s',
+                    jobId,
+                    (error as Error).message
+                )
                 return
             }
         }
@@ -307,8 +311,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         // retrieve artifacts and updated duration if available
         let jobHistoryPath: string = ''
         if (status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED') {
-            console.log('valid successful status')
-
             // artifacts should be available to download
             jobHistoryPath = await this.retrieveArtifacts(jobId, projectName)
 
@@ -316,18 +318,23 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), { force: true })
         } else if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
             // still in progress on server side
-            console.log('job in progress on BE')
             if (transformByQState.isRunning()) {
-                console.log('there is a job currently running; cannot resume polling BE job')
+                getLogger().warn(
+                    'Code Transformation: There is a job currently running (id: %s). Cannot resume another job (id: %s)',
+                    transformByQState.getJobId(),
+                    jobId
+                )
                 return
             }
             transformByQState.setRefreshInProgress(true)
-            const messenger = transformByQState.getChatMessenger() // to send message to chat when refresh completes
+            const messenger = transformByQState.getChatMessenger()
+            if (messenger) {
+                messenger.sendJobRefreshInProgressMessage(ChatSessionManager.Instance.getSession().tabID!, jobId)
+            }
 
             // set state to prepare to resume job
             transformByQState.setJobId(jobId)
             transformByQState.setPolledJobStatus(status)
-
             try {
                 transformByQState.setJobHistoryPath(path.join(os.homedir(), '.aws', 'transform', projectName, jobId))
                 const metadataFile = fs.readFileSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), {
@@ -348,26 +355,22 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 transformByQState.setProjectPath(metadata[7])
                 transformByQState.setStartTime(metadata[8])
             } catch (e: any) {
-                console.warn('no metadata file, not enough info to poll')
-                console.error('error: %s', (e as Error).message)
+                // reaching this means there was most likely a problem with the metadata file
+                getLogger().error('Code Transformation: Error setting job state: %s', (e as Error).message)
                 transformByQState.setJobDefaults()
-                if (messenger && transformByQState.wasBlockedByRefresh()) {
-                    transformByQState.setBlockedByRefresh(false)
+                if (messenger) {
                     messenger.sendJobFinishedMessage(
                         ChatSessionManager.Instance.getSession().tabID!,
                         "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
                     )
-                    void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
-                } else {
-                    // just show notification
-                    void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
                 }
+                void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
                 return
             }
 
             // resume polling job
             try {
-                updateHistoryTable() // refreshing the table disables all jobs' refresh buttons while this one is polling
+                this.updateContent('job history') // refreshing the table disables all jobs' refresh buttons while this one is polling
                 status = await pollTransformationStatusUntilComplete(
                     jobId,
                     AuthUtil.instance.regionProfileManager.activeRegionProfile
@@ -392,46 +395,43 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     }
                 }
             } catch (e: any) {
-                console.error('error resuming job %s: %s', jobId, (e as Error).message)
+                getLogger().error('Code Transformation: Error resuming job (id: %s): %s', jobId, (e as Error).message)
                 transformByQState.setJobDefaults()
-                if (messenger && transformByQState.wasBlockedByRefresh()) {
-                    transformByQState.setBlockedByRefresh(false)
+                if (messenger) {
                     messenger.sendJobFinishedMessage(
                         ChatSessionManager.Instance.getSession().tabID!,
                         "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
                     )
-                    void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
-                } else {
-                    // just show notification
-                    void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
                 }
-                updateHistoryTable() // re-enable refresh buttons
+                void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
+                this.updateContent('job history') // re-enable refresh buttons
                 return
             }
 
             // reset state
             transformByQState.setJobDefaults()
-            if (messenger && transformByQState.wasBlockedByRefresh()) {
-                transformByQState.setBlockedByRefresh(false)
+            if (messenger) {
                 messenger.sendJobFinishedMessage(
                     ChatSessionManager.Instance.getSession().tabID!,
                     'Job refresh completed. Please see the transformation history table for the updated status and artifacts.'
                 )
-                void vscode.window.showInformationMessage(`Job refresh completed. (Job Id: ${jobId})`)
-            } else {
-                // just show notification
-                void vscode.window.showInformationMessage(`Job refresh completed. (Job Id: ${jobId})`)
             }
         } else {
             // FAILED or STOPPED job
-            console.log('no artifacts available')
+            getLogger().info('Code Transformation: No artifacts available to download (job status = %s)', status)
+            if (status === 'FAILED') {
+                // if job failed on backend, mark it to disable the refresh button
+                status = 'FAILED_BE' // this will be truncated to just 'FAILED' in the table
+            }
         }
 
         if (status === currentStatus && !jobHistoryPath) {
             // no changes, no need to update file/table
+            void vscode.window.showInformationMessage(`No updates. (Job Id: ${jobId})`)
             return
         }
 
+        void vscode.window.showInformationMessage(`Job refresh completed. (Job Id: ${jobId})`)
         // update local file and history table
         await this.updateHistoryFile(status, duration, jobHistoryPath, jobId)
     }
@@ -441,12 +441,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         let jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', projectName, jobId)
 
         if (fs.existsSync(path.join(jobHistoryPath, 'diff.patch'))) {
-            console.log('diff patch already exists')
+            getLogger().info('Code Transformation: Diff patch already exists for job id: %s', jobId)
             jobHistoryPath = ''
         } else {
             try {
                 await downloadAndExtractResultArchive(jobId, resultsPath)
-                console.log('artifacts downloaded')
 
                 if (!fs.existsSync(path.join(jobHistoryPath, 'summary'))) {
                     fs.mkdirSync(path.join(jobHistoryPath, 'summary'), { recursive: true })
@@ -461,13 +460,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     path.join(jobHistoryPath, 'summary', 'buildCommandOutput.log')
                 )
             } catch (error) {
-                console.error('error downloading artifacts: %s', (error as Error).message)
                 jobHistoryPath = ''
             } finally {
                 if (fs.existsSync(resultsPath)) {
                     fs.rmSync(resultsPath, { recursive: true, force: true })
                 }
-                console.log('deleted temporary extraction directory')
+                getLogger().info('Code Transformation: Deleted temporary extraction directory')
             }
         }
         return jobHistoryPath
@@ -508,7 +506,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             fs.writeFileSync(historyLogFilePath, tsvContent, { flag: 'a' })
 
             // update table content
-            await updateHistoryTable(true)
+            await this.updateContent('job history', undefined, true)
         }
     }
 
@@ -918,4 +916,32 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             return `<span class="status-PENDING"> ✓ </span>`
         }
     }
+}
+
+export function readHistoryFile(): HistoryObject[] {
+    const history: HistoryObject[] = []
+    const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
+    if (fs.existsSync(jobHistoryFilePath)) {
+        const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
+        const jobs = historyFile.split('\n')
+        jobs.shift() // removes headers
+
+        // Process from end, stop at 10 valid entries
+        for (let i = jobs.length - 1; i >= 0 && history.length < 10; i--) {
+            const job = jobs[i]
+            if (job && isWithin30Days(job.split('\t')[0])) {
+                const jobInfo = job.split('\t')
+                history.push({
+                    startTime: jobInfo[0],
+                    projectName: jobInfo[1],
+                    status: jobInfo[2],
+                    duration: jobInfo[3],
+                    diffPath: jobInfo[4],
+                    summaryPath: jobInfo[5],
+                    jobId: jobInfo[6],
+                })
+            }
+        }
+    }
+    return history
 }

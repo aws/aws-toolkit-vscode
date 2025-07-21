@@ -58,6 +58,7 @@ import {
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
 import { setContext } from '../../../shared/vscode/setContext'
+import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHubViewProvider'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -189,9 +190,16 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
-        this.messenger.sendViewHistoryMessage(message.tabID)
+        // check if any jobs potentially still in progress on backend
+        const history = readHistoryFile()
+        let numInProgress = 0
+        history.forEach((job) => {
+            if (job.status === 'FAILED') {
+                numInProgress += 1
+            }
+        })
+        this.messenger.sendViewHistoryMessage(message.tabID, numInProgress)
         if (transformByQState.isRefreshInProgress()) {
-            transformByQState.setBlockedByRefresh(true)
             this.messenger.sendMessage(
                 'A job refresh is currently in progress. Please wait for it to complete.',
                 message.tabID,
@@ -470,7 +478,6 @@ export class GumbyController {
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
         if (transformByQState.isRefreshInProgress()) {
-            transformByQState.setBlockedByRefresh(true)
             this.messenger.sendMessage(
                 'A job refresh is currently in progress. Please wait for it to complete.',
                 message.tabID,
@@ -511,7 +518,6 @@ export class GumbyController {
 
     private async handleUserSQLConversionProjectSelection(message: any) {
         if (transformByQState.isRefreshInProgress()) {
-            transformByQState.setBlockedByRefresh(true)
             this.messenger.sendMessage(
                 'A job refresh is currently in progress. Please wait for it to complete.',
                 message.tabID,

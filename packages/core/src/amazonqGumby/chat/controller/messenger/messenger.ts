@@ -377,7 +377,7 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
-    public sendViewHistoryMessage(tabID: string) {
+    public sendViewHistoryMessage(tabID: string, numInProgress: number) {
         const buttons: ChatItemButton[] = []
 
         buttons.push({
@@ -387,15 +387,29 @@ export class Messenger {
             disabled: false,
         })
 
+        const messageText =
+            numInProgress > 0
+                ? `You have ${numInProgress} job${numInProgress > 1 ? 's' : ''} in progress. You can resume ${numInProgress > 1 ? 'them' : 'it'} in the transformation history table.`
+                : 'View previous transformations run from the IDE'
+
         const message = new ChatMessage(
             {
-                message: 'View previous transformations run from the IDE',
+                message: messageText,
                 messageType: 'ai-prompt',
                 buttons,
             },
             tabID
         )
         this.dispatcher.sendChatMessage(message)
+    }
+
+    public sendJobRefreshInProgressMessage(tabID: string, jobId: string) {
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: `I am now resuming your job (id: ${jobId}). This can take 10 to 30 minutes to complete.`,
+            })
+        )
     }
 
     public sendMessage(prompt: string, tabID: string, type: 'prompt' | 'ai-prompt') {

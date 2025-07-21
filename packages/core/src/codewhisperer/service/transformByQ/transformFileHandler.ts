@@ -17,8 +17,6 @@ import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
 import { IManifestFile } from './humanInTheLoopManager'
-import { HistoryObject } from './transformationHubViewProvider'
-import { isWithin30Days } from '../../../shared/datetime'
 
 export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -182,34 +180,6 @@ export async function openBuildLogFile() {
     const logFilePath = transformByQState.getPreBuildLogFilePath()
     const doc = await vscode.workspace.openTextDocument(logFilePath)
     await vscode.window.showTextDocument(doc)
-}
-
-export function readHistoryFile(): HistoryObject[] {
-    const history: HistoryObject[] = []
-    const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
-    if (existsSync(jobHistoryFilePath)) {
-        const historyFile = readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
-        const jobs = historyFile.split('\n')
-        jobs.shift() // removes headers
-
-        // Process from end, stop at 10 valid entries
-        for (let i = jobs.length - 1; i >= 0 && history.length < 10; i--) {
-            const job = jobs[i]
-            if (job && isWithin30Days(job.split('\t')[0])) {
-                const jobInfo = job.split('\t')
-                history.push({
-                    startTime: jobInfo[0],
-                    projectName: jobInfo[1],
-                    status: jobInfo[2],
-                    duration: jobInfo[3],
-                    diffPath: jobInfo[4],
-                    summaryPath: jobInfo[5],
-                    jobId: jobInfo[6],
-                })
-            }
-        }
-    }
-    return history
 }
 
 export async function createPomCopy(

@@ -79,7 +79,7 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { updateHistoryTable } from '../service/transformByQ/transformationHubViewProvider'
+import { TransformationHubViewProvider } from '../service/transformByQ/transformationHubViewProvider'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -803,33 +803,19 @@ export async function postTransformationJob() {
 
         const jobDetails = fields.join('\t') + '\n'
         fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' })
-        await updateHistoryTable(true)
+        await TransformationHubViewProvider.instance.updateContent('job history', undefined, true)
     }
 }
 
 export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
-        await stopJob(transformByQState.getJobId())
         transformByQState.setToFailed()
         transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
-        const displayedErrorMessage =
-            transformByQState.getJobFailureErrorNotification() ?? CodeWhispererConstants.failedToCompleteJobNotification
         transformByQState.setJobFailureErrorChatMessage(
             transformByQState.getJobFailureErrorChatMessage() ?? CodeWhispererConstants.failedToCompleteJobChatMessage
         )
-        void vscode.window
-            .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
-            .then((choice) => {
-                if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback(
-                        placeholder,
-                        CodeWhispererConstants.amazonQFeedbackKey,
-                        getFeedbackCommentData()
-                    )
-                }
-            })
     } else {
         transformByQState.setToCancelled()
         transformByQState.setPolledJobStatus('CANCELLED')

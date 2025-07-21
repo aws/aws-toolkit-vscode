@@ -763,7 +763,6 @@ export class TransformByQState {
     private intervalId: NodeJS.Timeout | undefined = undefined
 
     private refreshInProgress: boolean = false
-    private blockedByRefresh: boolean = false
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -791,10 +790,6 @@ export class TransformByQState {
 
     public isRefreshInProgress() {
         return this.refreshInProgress
-    }
-
-    public wasBlockedByRefresh() {
-        return this.blockedByRefresh
     }
 
     public getHasSeenTransforming() {
@@ -993,10 +988,6 @@ export class TransformByQState {
 
     public setRefreshInProgress(inProgress: boolean) {
         this.refreshInProgress = inProgress
-    }
-
-    public setBlockedByRefresh(blocked: boolean): void {
-        this.blockedByRefresh = blocked
     }
 
     public setHasSeenTransforming(hasSeen: boolean) {
