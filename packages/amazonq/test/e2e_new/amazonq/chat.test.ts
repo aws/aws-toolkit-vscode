@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import '../utils/setup'
+import './utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs } from './framework/cleanupHelper'
 import { testContext } from './utils/testContext'
