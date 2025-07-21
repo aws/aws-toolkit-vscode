@@ -4,10 +4,8 @@
  */
 import './utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { closeAllTabs } from './framework/cleanupHelper'
 import { testContext } from './utils/testContext'
-import { waitForChatResponse, writeToChat } from './framework/chatHelper'
-import assert from 'assert'
+import { clearChat, waitForChatResponse, writeToChat } from './framework/chatHelper'
 
 describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -19,11 +17,7 @@ describe('Amazon Q Chat Basic Functionality', function () {
     })
 
     afterEach(async () => {
-        try {
-            await closeAllTabs(webviewView)
-        } catch (e) {
-            assert.fail(`Failed to clean up tabs: ${e}`)
-        }
+        await clearChat(webviewView)
     })
 
     it('Chat Prompt Test', async () => {

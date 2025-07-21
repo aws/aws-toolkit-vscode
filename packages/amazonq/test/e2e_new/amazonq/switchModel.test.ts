@@ -4,7 +4,6 @@
  */
 import './utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { closeAllTabs } from './framework/cleanupHelper'
 import { testContext } from './utils/testContext'
 import { listModels, selectModel } from './framework/switchModelHelper'
 
@@ -15,10 +14,6 @@ describe('Amazon Q Switch Model Functionality', function () {
 
     before(async function () {
         webviewView = testContext.webviewView!
-    })
-
-    after(async () => {
-        await closeAllTabs(webviewView)
     })
 
     it('Switch Model Test', async () => {
