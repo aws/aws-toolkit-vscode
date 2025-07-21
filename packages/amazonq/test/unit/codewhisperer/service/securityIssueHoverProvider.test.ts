@@ -21,41 +21,17 @@ describe('securityIssueHoverProvider', () => {
         token = new vscode.CancellationTokenSource()
     })
 
-    function buildCommandLink(
-        command: string,
-        commandIcon: string,
-        args: any[],
-        label: string,
-        tooltip: string
-    ): string {
-        return `[$(${commandIcon}) ${label}](command:${command}?${encodeURIComponent(JSON.stringify(args))} '${tooltip}')`
+    function buildCommandLink(command: string, args: any[], label: string, tooltip: string): string {
+        return `[$(${command.includes('ignore') ? 'error' : 'comment'}) ${label}](command:${command}?${encodeURIComponent(JSON.stringify(args))} '${tooltip}')`
     }
 
     function buildExpectedContent(issue: any, fileName: string, description: string, severity?: string): string {
         const severityBadge = severity ? ` ![${severity}](severity-${severity.toLowerCase()}.svg)` : ' '
         const commands = [
-            buildCommandLink(
-                'aws.amazonq.explainIssue',
-                'comment',
-                [issue, fileName],
-                'Explain',
-                'Explain with Amazon Q'
-            ),
-            buildCommandLink('aws.amazonq.generateFix', 'wrench', [issue, fileName], 'Fix', 'Fix with Amazon Q'),
-            buildCommandLink(
-                'aws.amazonq.security.ignore',
-                'error',
-                [issue, fileName, 'hover'],
-                'Ignore',
-                'Ignore Issue'
-            ),
-            buildCommandLink(
-                'aws.amazonq.security.ignoreAll',
-                'error',
-                [issue, 'hover'],
-                'Ignore All',
-                'Ignore Similar Issues'
-            ),
+            buildCommandLink('aws.amazonq.explainIssue', [issue, fileName], 'Explain', 'Explain with Amazon Q'),
+            buildCommandLink('aws.amazonq.generateFix', [issue, fileName], 'Fix', 'Fix with Amazon Q'),
+            buildCommandLink('aws.amazonq.security.ignore', [issue, fileName, 'hover'], 'Ignore', 'Ignore Issue'),
+            buildCommandLink('aws.amazonq.security.ignoreAll', [issue, 'hover'], 'Ignore All', 'Ignore Similar Issues'),
         ]
         return `## title${severityBadge}\n${description}\n\n${commands.join('\n | ')}\n`
     }

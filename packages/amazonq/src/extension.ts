@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -44,6 +44,7 @@ import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
+import { activate as activateInlineCompletion } from './app/inline/activation'
 import { hasGlibcPatch } from './lsp/client'
 
 export const amazonQContextPrefix = 'amazonq'
@@ -125,10 +126,16 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-
-    if (!isAmazonLinux2() || hasGlibcPatch()) {
-        // Activate Amazon Q LSP for everyone unless they're using AL2 without the glibc patch
+    if (
+        (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
+        (!isAmazonLinux2() || hasGlibcPatch())
+    ) {
+        // start the Amazon Q LSP for internal users first
+        // for AL2, start LSP if glibc patch is found
         await activateAmazonqLsp(context)
+    }
+    if (!Experiments.instance.get('amazonqLSPInline', true)) {
+        await activateInlineCompletion()
     }
 
     // Generic extension commands
