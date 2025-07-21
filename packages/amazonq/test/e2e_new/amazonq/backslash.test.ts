@@ -4,7 +4,7 @@
  */
 import './utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { dismissOverlayIfPresent } from './framework/cleanupHelper'
+import { closeAllTabs, dismissOverlayIfPresent } from './framework/cleanupHelper'
 import { testContext } from './utils/testContext'
 import { clickBackslashCommand } from './framework/backslashHelper'
 import { clearChat } from './framework/chatHelper'
@@ -16,6 +16,10 @@ describe('Amazon Q Chat Backslash Functionality', function () {
 
     before(async function () {
         webviewView = testContext.webviewView!
+    })
+
+    after(async function () {
+        await closeAllTabs(webviewView)
     })
 
     afterEach(async () => {

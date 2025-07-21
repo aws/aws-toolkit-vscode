@@ -6,6 +6,7 @@ import './utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from './utils/testContext'
 import { listModels, selectModel } from './framework/switchModelHelper'
+import { closeAllTabs } from './framework/cleanupHelper'
 
 describe('Amazon Q Switch Model Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -14,6 +15,10 @@ describe('Amazon Q Switch Model Functionality', function () {
 
     before(async function () {
         webviewView = testContext.webviewView!
+    })
+
+    after(async function () {
+        await closeAllTabs(webviewView)
     })
 
     it('Switch Model Test', async () => {
