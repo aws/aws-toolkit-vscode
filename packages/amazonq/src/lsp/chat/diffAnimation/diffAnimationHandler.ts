@@ -326,10 +326,20 @@ export class DiffAnimationHandler implements vscode.Disposable {
                 }
 
                 ;(this.diffAnimationController as any).activeAnimations.set(session.filePath, animationData)
+
+                // **CRITICAL FIX**: Proper dispose logic for streaming sessions (same as fsWrite)
+                // Clean up the session from diffAnimationHandler when streaming completes
                 this.streamingSessions.delete(toolUseId)
+                getLogger().info(
+                    `[DiffAnimationHandler] 🧹 Cleaned up streaming session for ${toolUseId} after completion`
+                )
             }
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to stream content for ${toolUseId}: ${error}`)
+
+            // **CRITICAL FIX**: Clean up session on error to prevent memory leaks
+            this.streamingSessions.delete(toolUseId)
+            getLogger().warn(`[DiffAnimationHandler] 🧹 Cleaned up streaming session for ${toolUseId} after error`)
         }
     }
 

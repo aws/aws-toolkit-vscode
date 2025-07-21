@@ -160,6 +160,12 @@ export function registerMessageListeners(
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
 
+    // **FIXED**: Track streaming sessions by file path to handle fsReplace correctly
+    const initializingStreamsByFile = new Map<string, Set<string>>() // filePath -> Set of toolUseIds
+
+    // **IMPROVED**: Track processed chunks with better deduplication logic
+    const processedChunks = new Map<string, Set<string>>() // toolUseId -> Set of content hashes
+
     // Initialize DiffAnimationHandler
     const animationHandler = getDiffAnimationHandler()
 
@@ -282,6 +288,9 @@ export function registerMessageListeners(
                 token?.cancel()
                 token?.dispose()
                 chatStreamTokens.delete(tabId)
+
+                // **RACE CONDITION FIX**: Clear any pending initialization locks
+                initializingStreamsByFile.clear()
 
                 // **CRITICAL FIX**: Clean up temp files when chat is stopped
                 // This ensures temp files are cleaned up when users stop ongoing operations
@@ -670,49 +679,287 @@ export function registerMessageListeners(
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
         // Process fsReplace complete events for line-by-line diff animation
-        if ((params.data as any)?.fsReplaceComplete) {
-            const fsReplaceComplete = (params.data as any).fsReplaceComplete
-            try {
-                getLogger().info(
-                    `[VSCode Client] 🔄 Received fsReplace complete for ${fsReplaceComplete.toolUseId}: ${fsReplaceComplete.diffString?.length || 0} chars`
-                )
+        // if ((params.data as any)?.fsReplaceComplete) {
+        //     const fsReplaceComplete = (params.data as any).fsReplaceComplete
+        //     try {
+        //         getLogger().info(
+        //             `[VSCode Client] 🔄 Received fsReplace complete for ${fsReplaceComplete.toolUseId}: ${fsReplaceComplete.diffString?.length || 0} chars`
+        //         )
 
-                // Process fsReplace complete with StreamingDiffController
-                const animationHandler = getDiffAnimationHandler()
-                const streamingController = (animationHandler as any).streamingDiffController
-                if (streamingController && streamingController.processFsReplaceComplete) {
-                    await streamingController.processFsReplaceComplete(fsReplaceComplete)
-                } else {
-                    getLogger().warn(
-                        `[VSCode Client] ⚠️ StreamingDiffController not available for fsReplace processing`
-                    )
-                }
+        //         // Process fsReplace complete with StreamingDiffController
+        //         const animationHandler = getDiffAnimationHandler()
+        //         const streamingController = (animationHandler as any).streamingDiffController
+        //         if (streamingController && streamingController.processFsReplaceComplete) {
+        //             await streamingController.processFsReplaceComplete(fsReplaceComplete)
+        //         } else {
+        //             getLogger().warn(
+        //                 `[VSCode Client] ⚠️ StreamingDiffController not available for fsReplace processing`
+        //             )
+        //         }
 
-                getLogger().info(`[VSCode Client] ✅ fsReplace complete processed successfully`)
-            } catch (error) {
-                getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace complete: ${error}`)
-            }
-            // Don't forward fsReplaceComplete to the webview - it's handled by the animation
-            return
-        }
+        //         getLogger().info(`[VSCode Client] ✅ fsReplace complete processed successfully`)
+        //     } catch (error) {
+        //         getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace complete: ${error}`)
+        //     }
+        //     // Don't forward fsReplaceComplete to the webview - it's handled by the animation
+        //     return
+        // }
 
-        // Process streaming chunks for real-time diff animations (fsWrite only)
+        // Process streaming chunks for real-time diff animations (fsWrite and fsReplace)
         if ((params.data as any)?.streamingChunk) {
             const streamingChunk = (params.data as any).streamingChunk
+
+            // **NEW: Handle fsReplace streaming chunks separately**
+            if (streamingChunk.toolName === 'fsReplace') {
+                try {
+                    getLogger().info(
+                        `[VSCode Client] 🔄 Received fsReplace streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete}) command: ${streamingChunk.fsWriteParams?.command}`
+                    )
+
+                    // **CORRECTED FIX**: Only deduplicate truly identical chunks, not progressive streaming
+                    // For fsReplace_diffPair, each chunk should be processed as they represent different stages
+                    // Only skip if we get the EXACT same content hash multiple times in rapid succession
+                    const contentHash = streamingChunk.content
+                        ? `${streamingChunk.content.substring(0, 50)}-${streamingChunk.content.length}`
+                        : 'empty'
+                    const chunkHash = `${streamingChunk.toolUseId}-${contentHash}-${streamingChunk.fsWriteParams?.pairIndex || 0}-${streamingChunk.isComplete}`
+
+                    if (!processedChunks.has(streamingChunk.toolUseId)) {
+                        processedChunks.set(streamingChunk.toolUseId, new Set())
+                    }
+
+                    const toolChunks = processedChunks.get(streamingChunk.toolUseId)!
+
+                    // **CRITICAL FIX**: For fsReplace_diffPair, only skip if we get identical content + completion state
+                    // This allows progressive streaming while preventing true duplicates
+                    if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
+                        // For diff pairs, only skip if we get the exact same content AND completion state
+                        if (toolChunks.has(chunkHash)) {
+                            getLogger().info(
+                                `[VSCode Client] 🚫 Skipping duplicate fsReplace diffPair chunk for ${streamingChunk.toolUseId}: ${chunkHash}`
+                            )
+                            return
+                        }
+                    } else {
+                        // For regular streaming, use the original logic but be more permissive
+                        const simpleHash = `${streamingChunk.toolUseId}-${streamingChunk.content?.length || 0}`
+                        if (toolChunks.has(simpleHash) && streamingChunk.isComplete) {
+                            getLogger().info(
+                                `[VSCode Client] 🚫 Skipping duplicate final chunk for ${streamingChunk.toolUseId}: ${simpleHash}`
+                            )
+                            return
+                        }
+                        toolChunks.add(simpleHash)
+                    }
+
+                    // Mark this chunk as processed
+                    toolChunks.add(chunkHash)
+
+                    // **CRITICAL DEBUG**: Log the exact payload received
+                    getLogger().info(`[VSCode Client] 📥 RECEIVED DIFF CHUNK PAYLOAD:`)
+                    getLogger().info(`[VSCode Client]   toolUseId: ${streamingChunk.toolUseId}`)
+                    getLogger().info(`[VSCode Client]   toolName: ${streamingChunk.toolName}`)
+                    getLogger().info(`[VSCode Client]   filePath: ${streamingChunk.filePath}`)
+                    getLogger().info(
+                        `[VSCode Client]   content: "${streamingChunk.content?.substring(0, 100)}${streamingChunk.content && streamingChunk.content.length > 100 ? '...' : ''}"`
+                    )
+                    getLogger().info(`[VSCode Client]   isComplete: ${streamingChunk.isComplete}`)
+                    getLogger().info('[VSCode Client]   fsWriteParams: %O', streamingChunk.fsWriteParams)
+                    getLogger().info(`[VSCode Client]   chunkHash: ${chunkHash}`)
+
+                    // Process fsReplace streaming chunk with DiffAnimationHandler
+                    const animationHandler = getDiffAnimationHandler()
+
+                    // **CRITICAL FIX**: Use the same mechanism as fsWrite to prevent race conditions
+                    // fsWrite uses a try/finally pattern to ensure initialization locks are always cleaned up
+                    const filePath = streamingChunk.filePath
+                    const isAlreadyInitializing =
+                        filePath &&
+                        initializingStreamsByFile.has(filePath) &&
+                        initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
+
+                    if (
+                        !animationHandler.isStreamingActive(streamingChunk.toolUseId) &&
+                        filePath &&
+                        !isAlreadyInitializing
+                    ) {
+                        // Mark as initializing IMMEDIATELY to prevent race condition
+                        if (!initializingStreamsByFile.has(filePath)) {
+                            initializingStreamsByFile.set(filePath, new Set())
+                        }
+                        initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
+
+                        try {
+                            getLogger().info(
+                                `[VSCode Client] 🎬 Initializing fsReplace streaming session for ${streamingChunk.toolUseId} at ${filePath}`
+                            )
+                            await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
+                            getLogger().info(
+                                `[VSCode Client] ✅ Successfully initialized fsReplace streaming session for ${streamingChunk.toolUseId}`
+                            )
+                        } catch (error) {
+                            getLogger().error(
+                                `[VSCode Client] ❌ Failed to initialize fsReplace streaming session for ${streamingChunk.toolUseId}: ${error}`
+                            )
+                            // **CRITICAL**: Don't throw error - continue processing the chunk
+                            // The animation might still work even if initialization had issues
+                            getLogger().warn(
+                                `[VSCode Client] ⚠️ Continuing fsReplace processing despite initialization error`
+                            )
+                        } finally {
+                            // **CRITICAL FIX**: Always remove the lock, even if initialization failed
+                            // This matches the fsWrite pattern and prevents deadlocks
+                            if (filePath && initializingStreamsByFile.has(filePath)) {
+                                const toolUseIds = initializingStreamsByFile.get(filePath)!
+                                toolUseIds.delete(streamingChunk.toolUseId)
+                                if (toolUseIds.size === 0) {
+                                    initializingStreamsByFile.delete(filePath)
+                                }
+                            }
+                        }
+                    } else if (isAlreadyInitializing) {
+                        getLogger().info(
+                            `[VSCode Client] 🚫 Skipping duplicate fsReplace streaming session initialization for ${streamingChunk.toolUseId} (already initializing)`
+                        )
+                    }
+
+                    // **ALWAYS UPDATE PARAMS**: Pass fsReplace parameters to streaming controller for correct phase handling
+                    if (streamingChunk.fsWriteParams) {
+                        getLogger().info(
+                            `[VSCode Client] 📝 Updating fsReplace params for ${streamingChunk.toolUseId}: command=${streamingChunk.fsWriteParams.command}, pairIndex=${streamingChunk.fsWriteParams.pairIndex}, totalPairs=${streamingChunk.fsWriteParams.totalPairs}`
+                        )
+                        // Access the streaming controller directly to update fsWrite params
+                        const streamingController = (animationHandler as any).streamingDiffController
+                        if (streamingController && streamingController.updateFsWriteParams) {
+                            streamingController.updateFsWriteParams(
+                                streamingChunk.toolUseId,
+                                streamingChunk.fsWriteParams
+                            )
+                        }
+                    }
+
+                    // **CRITICAL FIX**: Handle fsReplace diff pairs differently from progressive streaming
+                    // fsReplace sends complete diff pairs that should trigger immediate animations
+                    if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
+                        getLogger().info(
+                            `[VSCode Client] 🎬 Processing fsReplace diff pair ${streamingChunk.fsWriteParams.pairIndex + 1}/${streamingChunk.fsWriteParams.totalPairs}`
+                        )
+
+                        // **CRITICAL FIX**: Use the public streamContentUpdate method instead of accessing private fields
+                        // The streamingDiffController.streamContentUpdate method already handles fsReplace_diffPair commands
+                        await animationHandler.streamContentUpdate(
+                            streamingChunk.toolUseId,
+                            streamingChunk.content || '',
+                            streamingChunk.isComplete || false
+                        )
+                    } else {
+                        // **EXISTING**: Handle progressive streaming (fsWrite style)
+                        await animationHandler.streamContentUpdate(
+                            streamingChunk.toolUseId,
+                            streamingChunk.content || '',
+                            streamingChunk.isComplete || false
+                        )
+                    }
+
+                    // **CRITICAL FIX**: The problem is that each diff pair gets a different toolUseId
+                    // But they're all part of the same fsReplace operation on the same file
+                    // We need to track completion by FILE PATH, not by individual toolUseId
+                    if (streamingChunk.isComplete) {
+                        const { pairIndex = 0, totalPairs = 1 } = streamingChunk.fsWriteParams || {}
+
+                        getLogger().info(`[VSCode Client] 🔍 CRITICAL DEBUG: fsReplace chunk analysis:`)
+                        getLogger().info(`[VSCode Client]   toolUseId: ${streamingChunk.toolUseId}`)
+                        getLogger().info(`[VSCode Client]   filePath: ${streamingChunk.filePath}`)
+                        getLogger().info(`[VSCode Client]   pairIndex: ${pairIndex}`)
+                        getLogger().info(`[VSCode Client]   totalPairs: ${totalPairs}`)
+                        getLogger().info(`[VSCode Client]   isComplete: ${streamingChunk.isComplete}`)
+
+                        // **CRITICAL INSIGHT**: Each diff pair has totalPairs=1 because they're separate operations
+                        // The real issue is that the LSP is sending separate fsReplace operations instead of batched diff pairs
+                        // For now, treat each complete chunk as individual operations (don't wait for more pairs)
+
+                        getLogger().info(
+                            `[VSCode Client] ✅ Individual fsReplace operation complete for ${streamingChunk.toolUseId} (${pairIndex + 1}/${totalPairs}) - treating as standalone operation`
+                        )
+
+                        // **RACE CONDITION FIX**: Clean up initialization lock for this specific toolUseId
+                        // Since each diff pair is a separate operation with its own toolUseId
+                        const filePath = streamingChunk.filePath
+                        if (filePath && initializingStreamsByFile.has(filePath)) {
+                            const toolUseIds = initializingStreamsByFile.get(filePath)!
+                            toolUseIds.delete(streamingChunk.toolUseId)
+                            if (toolUseIds.size === 0) {
+                                initializingStreamsByFile.delete(filePath)
+                            }
+                        }
+                    } else {
+                        getLogger().debug(
+                            `[VSCode Client] ⚡ Partial fsReplace streaming chunk processed for ${streamingChunk.toolUseId}`
+                        )
+                    }
+                } catch (error) {
+                    getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace streaming chunk: ${error}`)
+                    // **CRITICAL**: Clean up initialization lock on error to prevent deadlock
+                    initializingStreamsByFile.delete(streamingChunk.toolUseId)
+                }
+                // Don't forward fsReplace streaming chunks to the webview - they're handled by the animation handler
+                return
+            }
+
+            // **EXISTING: Handle fsWrite streaming chunks**
             try {
                 getLogger().info(
-                    `[VSCode Client] 🌊 Received streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete})`
+                    `[VSCode Client] 🌊 Received fsWrite streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete})`
                 )
 
                 // Process streaming chunk with DiffAnimationHandler
                 const animationHandler = getDiffAnimationHandler()
 
-                // Check if this is the first chunk for this toolUseId - if so, initialize streaming session
-                if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && streamingChunk.filePath) {
+                // **RACE CONDITION FIX**: Atomic check-and-create to prevent duplicate initialization
+                const filePath = streamingChunk.filePath
+                const isAlreadyInitializing =
+                    filePath &&
+                    initializingStreamsByFile.has(filePath) &&
+                    initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
+
+                if (
+                    !animationHandler.isStreamingActive(streamingChunk.toolUseId) &&
+                    filePath &&
+                    !isAlreadyInitializing
+                ) {
+                    // Mark as initializing IMMEDIATELY to prevent race condition
+                    if (!initializingStreamsByFile.has(filePath)) {
+                        initializingStreamsByFile.set(filePath, new Set())
+                    }
+                    initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
+
+                    try {
+                        getLogger().info(
+                            `[VSCode Client] 🎬 Initializing streaming session for ${streamingChunk.toolUseId} at ${filePath}`
+                        )
+                        await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
+                        getLogger().info(
+                            `[VSCode Client] ✅ Successfully initialized streaming session for ${streamingChunk.toolUseId}`
+                        )
+                    } catch (error) {
+                        getLogger().error(
+                            `[VSCode Client] ❌ Failed to initialize streaming session for ${streamingChunk.toolUseId}: ${error}`
+                        )
+                        throw error
+                    } finally {
+                        // Always remove the lock, even if initialization failed
+                        if (filePath && initializingStreamsByFile.has(filePath)) {
+                            const toolUseIds = initializingStreamsByFile.get(filePath)!
+                            toolUseIds.delete(streamingChunk.toolUseId)
+                            if (toolUseIds.size === 0) {
+                                initializingStreamsByFile.delete(filePath)
+                            }
+                        }
+                    }
+                } else if (isAlreadyInitializing) {
                     getLogger().info(
-                        `[VSCode Client] 🎬 Initializing streaming session for ${streamingChunk.toolUseId} at ${streamingChunk.filePath}`
+                        `[VSCode Client] 🚫 Skipping duplicate streaming session initialization for ${streamingChunk.toolUseId} (already initializing)`
                     )
-                    await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, streamingChunk.filePath)
                 }
 
                 // Pass fsWrite parameters to streaming controller for correct region animation
@@ -738,6 +985,16 @@ export function registerMessageListeners(
                     getLogger().info(
                         `[VSCode Client] ✅ FINAL streaming chunk processed for ${streamingChunk.toolUseId} - cleanup should be triggered`
                     )
+                    // **RACE CONDITION FIX**: Clean up initialization lock when streaming completes
+                    // Note: For fsWrite, we use a simple Set approach since each toolUseId maps to one file
+                    const filePath = streamingChunk.filePath
+                    if (filePath && initializingStreamsByFile.has(filePath)) {
+                        const toolUseIds = initializingStreamsByFile.get(filePath)!
+                        toolUseIds.delete(streamingChunk.toolUseId)
+                        if (toolUseIds.size === 0) {
+                            initializingStreamsByFile.delete(filePath)
+                        }
+                    }
                 } else {
                     getLogger().debug(
                         `[VSCode Client] ⚡ Partial streaming chunk processed for ${streamingChunk.toolUseId}`

@@ -36,7 +36,21 @@ export class StreamingDiffController implements vscode.Disposable {
                 newStr?: string
                 fileText?: string
                 explanation?: string
+                pairIndex?: number
+                totalPairs?: number
             }
+        }
+    >()
+
+    // **NEW: Track fsReplace sessions by file path to handle multiple diff pairs correctly**
+    private fsReplaceSessionsByFile = new Map<
+        string,
+        {
+            toolUseIds: Set<string>
+            totalExpectedPairs: number
+            completedPairs: number
+            tempFilePath: string
+            lastActivity: number
         }
     >()
 
@@ -60,6 +74,33 @@ export class StreamingDiffController implements vscode.Disposable {
             getLogger().info(
                 `[StreamingDiffController] 📝 Updated fsWrite params for ${toolUseId}: command=${fsWriteParams?.command}, insertLine=${fsWriteParams?.insertLine}`
             )
+
+            // **NEW: Track fsReplace sessions by file path for proper cleanup**
+            if (fsWriteParams?.command === 'fsReplace_diffPair') {
+                const filePath = session.filePath
+                const { totalPairs = 1 } = fsWriteParams
+
+                if (!this.fsReplaceSessionsByFile.has(filePath)) {
+                    this.fsReplaceSessionsByFile.set(filePath, {
+                        toolUseIds: new Set([toolUseId]),
+                        totalExpectedPairs: totalPairs,
+                        completedPairs: 0,
+                        tempFilePath: session.tempFilePath,
+                        lastActivity: Date.now(),
+                    })
+                    getLogger().info(
+                        `[StreamingDiffController] 📝 Created fsReplace session for ${filePath}: expecting ${totalPairs} pairs`
+                    )
+                } else {
+                    // Add this toolUseId to existing session
+                    const fsReplaceSession = this.fsReplaceSessionsByFile.get(filePath)!
+                    fsReplaceSession.toolUseIds.add(toolUseId)
+                    fsReplaceSession.lastActivity = Date.now()
+                    getLogger().info(
+                        `[StreamingDiffController] 📝 Added ${toolUseId} to existing fsReplace session for ${filePath}`
+                    )
+                }
+            }
         }
     }
 
@@ -75,8 +116,27 @@ export class StreamingDiffController implements vscode.Disposable {
         try {
             const fileName = path.basename(filePath)
 
-            // **CRITICAL FIX**: Create temporary file for animation
-            const tempFilePath = path.join(path.dirname(filePath), `.amazonq-temp-${toolUseId}-${fileName}`)
+            // **NEW: Check if we already have a temp file for this file path (for fsReplace)**
+            let tempFilePath: string
+            let shouldCreateNewTempFile = true
+
+            // Check if there's already an fsReplace session for this file
+            const existingFsReplaceSession = this.fsReplaceSessionsByFile.get(filePath)
+            if (existingFsReplaceSession) {
+                tempFilePath = existingFsReplaceSession.tempFilePath
+                shouldCreateNewTempFile = false
+                getLogger().info(
+                    `[StreamingDiffController] 🔄 Reusing existing temp file for fsReplace: ${tempFilePath}`
+                )
+
+                // Add this toolUseId to the existing session
+                existingFsReplaceSession.toolUseIds.add(toolUseId)
+                existingFsReplaceSession.lastActivity = Date.now()
+            } else {
+                // Create new temp file path
+                tempFilePath = path.join(path.dirname(filePath), `.amazonq-temp-${toolUseId}-${fileName}`)
+            }
+
             const tempFileUri = vscode.Uri.file(tempFilePath)
 
             // **KEY FIX**: Create virtual URI for original content (same as fsWrite)
@@ -84,8 +144,10 @@ export class StreamingDiffController implements vscode.Disposable {
                 query: Buffer.from(originalContent).toString('base64'),
             })
 
-            // **STEP 1**: Create temporary file with original content for animation
-            await this.createTempFile(tempFilePath, originalContent)
+            // **STEP 1**: Create temporary file with original content for animation (if needed)
+            if (shouldCreateNewTempFile) {
+                await this.createTempFile(tempFilePath, originalContent)
+            }
 
             // **CRITICAL FIX**: Open diff view between virtual original and temp file (same as fsWrite)
             const activeDiffEditor = await new Promise<vscode.TextEditor>((resolve, reject) => {
@@ -147,7 +209,7 @@ export class StreamingDiffController implements vscode.Disposable {
     }
 
     /**
-     * Stream content updates to temporary file for animation - handles different fsWrite operation types
+     * Stream content updates to temporary file for animation - handles different fsWrite and fsReplace operation types
      */
     async streamContentUpdate(toolUseId: string, partialContent: string, isFinal: boolean = false): Promise<void> {
         const session = this.activeStreamingSessions.get(toolUseId)
@@ -162,7 +224,32 @@ export class StreamingDiffController implements vscode.Disposable {
         )
 
         try {
-            // **KEY FIX: Handle different fsWrite operation types correctly**
+            // **CRITICAL FIX: Handle fsReplace operations with diff pair approach**
+            // Check both the session fsWriteParams and log the exact command value for debugging
+            const command = session.fsWriteParams?.command
+            getLogger().info(
+                `[StreamingDiffController] 🔍 DEBUG: Checking command: "${command}" (type: ${typeof command})`
+            )
+
+            if (command === 'fsReplace_diffPair') {
+                // **NEW APPROACH**: Handle individual diff pairs (like Cline's SEARCH/REPLACE blocks)
+                getLogger().info(`[StreamingDiffController] 🔄 Processing fsReplace_diffPair phase`)
+                await this.handleFsReplaceDiffPair(session, partialContent, isFinal)
+                return
+            } else if (command === 'fsReplace_completion') {
+                // **CRITICAL FIX**: Handle final completion signal from parser
+                getLogger().info(
+                    `[StreamingDiffController] 🏁 Processing fsReplace_completion signal - triggering cleanup`
+                )
+                await this.handleFsReplaceCompletionSignal(session)
+                return
+            } else {
+                getLogger().info(
+                    `[StreamingDiffController] ⚠️ Command "${command}" does not match known fsReplace commands, falling back to default processing`
+                )
+            }
+
+            // **EXISTING: Handle different fsWrite operation types correctly**
             let contentToAnimate = partialContent
 
             if (session.fsWriteParams?.command === 'strReplace' && session.fsWriteParams.oldStr) {
@@ -350,80 +437,172 @@ export class StreamingDiffController implements vscode.Disposable {
     }
 
     /**
-     * METHOD 2: Force diff computation by toggling diff options
+     * Handle fsReplace diffPair phase - individual diff pair animation (like Cline's SEARCH/REPLACE blocks)
+     * **RACE CONDITION FIX**: Ensures the same temp file is reused for all diff pairs from the same toolUseId
      */
-    private async forceDiffRefreshByOptions(): Promise<void> {
+    async handleFsReplaceDiffPair(session: any, partialContent: string, isFinal: boolean): Promise<void> {
+        getLogger().info(
+            `[StreamingDiffController] 🔄 fsReplace diffPair phase: ${partialContent.length} chars (final: ${isFinal})`
+        )
+
         try {
-            const config = vscode.workspace.getConfiguration('diffEditor')
-            const currentIgnoreTrimWhitespace = config.get('ignoreTrimWhitespace')
+            const diffEditor = session.activeDiffEditor
+            const document = diffEditor.document
 
-            // Toggle setting to force recomputation
-            await config.update(
-                'ignoreTrimWhitespace',
-                !currentIgnoreTrimWhitespace,
-                vscode.ConfigurationTarget.Workspace
-            )
-            await new Promise((resolve) => setTimeout(resolve, 50))
-            await config.update(
-                'ignoreTrimWhitespace',
-                currentIgnoreTrimWhitespace,
-                vscode.ConfigurationTarget.Workspace
+            if (!diffEditor || !document) {
+                throw new Error('User closed text editor, unable to edit file...')
+            }
+
+            // **RACE CONDITION FIX**: Add small delay to ensure document is ready for editing
+            // This prevents race conditions when multiple small diff pairs arrive rapidly
+            await new Promise((resolve) => setTimeout(resolve, 10))
+
+            // Extract diff pair parameters from fsWriteParams (removed startLine - calculate dynamically)
+            const { oldStr, newStr, pairIndex, totalPairs } = session.fsWriteParams || {}
+
+            if (!oldStr || !newStr) {
+                getLogger().warn(`[StreamingDiffController] ⚠️ Missing oldStr or newStr in diffPair parameters`)
+                return
+            }
+
+            getLogger().info(
+                `[StreamingDiffController] 🔄 Processing diff pair ${(pairIndex || 0) + 1}/${totalPairs || 1}: oldStr=${oldStr.length} chars, newStr=${newStr.length} chars`
             )
 
-            getLogger().debug(`[StreamingDiffController] 🔄 Forced diff refresh by toggling ignoreTrimWhitespace`)
+            // **CRITICAL FIX**: Get current document content from the SAME temp file
+            // This ensures all diff pairs are applied to the same file progressively
+            const currentContent = document.getText()
+
+            // **RACE CONDITION FIX**: Verify the temp file path matches the session
+            // This ensures we're always working with the correct temp file
+            if (document.uri.fsPath !== session.tempFilePath) {
+                getLogger().warn(
+                    `[StreamingDiffController] ⚠️ Document path mismatch: expected ${session.tempFilePath}, got ${document.uri.fsPath}`
+                )
+                // Try to get the correct document
+                try {
+                    const correctDocument = await vscode.workspace.openTextDocument(
+                        vscode.Uri.file(session.tempFilePath)
+                    )
+                    if (correctDocument) {
+                        getLogger().info(
+                            `[StreamingDiffController] ✅ Corrected document path to ${session.tempFilePath}`
+                        )
+                        // Update the session with the correct document
+                        const correctEditor = vscode.window.visibleTextEditors.find(
+                            (editor) => editor.document.uri.fsPath === session.tempFilePath
+                        )
+                        if (correctEditor) {
+                            session.activeDiffEditor = correctEditor
+                            // **FIX**: Don't recursively call - just update the references and continue
+                            getLogger().info(
+                                `[StreamingDiffController] ✅ Updated session with correct editor, continuing with diff pair processing`
+                            )
+                        }
+                    }
+                } catch (error) {
+                    getLogger().error(`[StreamingDiffController] ❌ Failed to correct document path: ${error}`)
+                    return // Exit if we can't get the correct document
+                }
+            }
+
+            // Find the location of oldStr in the current content
+            const oldStrIndex = currentContent.indexOf(oldStr)
+            if (oldStrIndex === -1) {
+                getLogger().warn(`[StreamingDiffController] ⚠️ Could not find oldStr in document for diff pair`)
+                getLogger().warn(
+                    `[StreamingDiffController] 🔍 DEBUG: Looking for oldStr (${oldStr.length} chars): "${oldStr.substring(0, 100)}..."`
+                )
+                getLogger().warn(
+                    `[StreamingDiffController] 🔍 DEBUG: In document (${currentContent.length} chars): "${currentContent.substring(0, 200)}..."`
+                )
+                getLogger().warn(
+                    `[StreamingDiffController] 🔍 DEBUG: Document ends with: "...${currentContent.substring(Math.max(0, currentContent.length - 100))}"`
+                )
+                return
+            }
+
+            // Calculate line numbers for the replacement
+            const beforeOldStr = currentContent.substring(0, oldStrIndex)
+            const startLineNumber = beforeOldStr.split('\n').length - 1
+            const oldStrLines = oldStr.split('\n')
+            const endLineNumber = startLineNumber + oldStrLines.length - 1
+
+            // Scroll to the change location
+            this.scrollEditorToLine(diffEditor, startLineNumber)
+
+            // **STEP 1: Highlight and remove old content (deletion animation)**
+            getLogger().info(
+                `[StreamingDiffController] 🗑️ Animating deletion of oldStr at lines ${startLineNumber + 1}-${endLineNumber + 1}`
+            )
+
+            // Highlight the lines being deleted
+            for (let lineNum = startLineNumber; lineNum <= endLineNumber; lineNum++) {
+                session.activeLineController.setActiveLine(lineNum)
+                await new Promise((resolve) => setTimeout(resolve, 50)) // Quick highlight
+            }
+
+            // **CRITICAL FIX**: Replace oldStr with newStr in the SAME temp file
+            // This ensures all diff pairs are applied progressively to the same file
+            const edit = new vscode.WorkspaceEdit()
+            const oldStrStartPos = document.positionAt(oldStrIndex)
+            const oldStrEndPos = document.positionAt(oldStrIndex + oldStr.length)
+            const replaceRange = new vscode.Range(oldStrStartPos, oldStrEndPos)
+            edit.replace(document.uri, replaceRange, newStr)
+            await vscode.workspace.applyEdit(edit)
+
+            // **STEP 2: Highlight new content (creation animation)**
+            getLogger().info(`[StreamingDiffController] ➕ Animating creation of newStr`)
+
+            // Calculate new line positions after replacement
+            const newStrLines = newStr.split('\n')
+            const newEndLineNumber = startLineNumber + newStrLines.length - 1
+
+            // Highlight the new lines
+            for (let lineNum = startLineNumber; lineNum <= newEndLineNumber; lineNum++) {
+                session.activeLineController.setActiveLine(lineNum)
+                session.fadedOverlayController.updateOverlayAfterLine(lineNum, document.lineCount)
+                await new Promise((resolve) => setTimeout(resolve, 20)) // Animation delay
+            }
+
+            // Clear active line decoration after animation
+            setTimeout(() => {
+                session.activeLineController.clear()
+            }, 500)
+
+            // **ALWAYS SAVE**: Save the temp file after each diff pair to persist changes
+            try {
+                await document.save()
+                getLogger().info(
+                    `[StreamingDiffController] 💾 Saved diff pair ${(pairIndex || 0) + 1}/${totalPairs || 1} to temp file: ${session.tempFilePath}`
+                )
+                vscode.window.setStatusBarMessage(
+                    `✅ Applied diff pair ${(pairIndex || 0) + 1}/${totalPairs || 1}: ${path.basename(session.filePath)}`,
+                    1000
+                )
+            } catch (saveError) {
+                getLogger().error(
+                    `[StreamingDiffController] ❌ Failed to save fsReplace diffPair temp file: ${saveError}`
+                )
+            }
+
+            // **CORRECTED CLEANUP LOGIC**: Only cleanup when the parser signals completion
+            // The parser sets isFinal=true only when the entire fsReplace operation is complete
+            if (isFinal) {
+                getLogger().info(
+                    `[StreamingDiffController] 🏁 Parser signaled completion (isFinal=true) for diff pair ${(pairIndex || 0) + 1}/${totalPairs || 1}, triggering cleanup`
+                )
+                await this.handleFsReplaceCompletion(session, pairIndex || 0, totalPairs || 1)
+            } else {
+                getLogger().info(
+                    `[StreamingDiffController] ⚡ Diff pair ${(pairIndex || 0) + 1}/${totalPairs || 1} processed, waiting for completion signal (isFinal=false)`
+                )
+            }
         } catch (error) {
-            getLogger().warn(`[StreamingDiffController] ⚠️ Failed to force diff refresh: ${error}`)
+            getLogger().error(`[StreamingDiffController] ❌ Failed to handle fsReplace diffPair: ${error}`)
         }
     }
 
-    /**
-     * Helper method to create temp file and open diff view - eliminates code duplication
-     */
-    private async createTempFileAndOpenDiff(
-        filePath: string,
-        originalContent: string,
-        toolUseId: string,
-        diffTitle: string
-    ): Promise<{ tempFilePath: string; activeDiffEditor: vscode.TextEditor }> {
-        const fileName = path.basename(filePath)
-        const tempFilePath = path.join(path.dirname(filePath), `.amazonq-temp-${toolUseId}-${fileName}`)
-        const tempFileUri = vscode.Uri.file(tempFilePath)
-
-        // Create virtual URI for original content
-        const originalUri = vscode.Uri.parse(`${diffViewUriScheme}:${fileName}`).with({
-            query: Buffer.from(originalContent).toString('base64'),
-        })
-
-        // Create temporary file with original content
-        await this.createTempFile(tempFilePath, originalContent)
-
-        // Open diff view between virtual original and temp file
-        const activeDiffEditor = await new Promise<vscode.TextEditor>((resolve, reject) => {
-            const disposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
-                if (editor && editor.document.uri.fsPath === tempFilePath) {
-                    disposable.dispose()
-                    resolve(editor)
-                }
-            })
-
-            void vscode.commands.executeCommand('vscode.diff', originalUri, tempFileUri, diffTitle, {
-                preserveFocus: true,
-                preview: false,
-            })
-
-            // Timeout after 10 seconds
-            setTimeout(() => {
-                disposable.dispose()
-                reject(new Error('Failed to open diff editor within timeout'))
-            }, 10000)
-        })
-
-        return { tempFilePath, activeDiffEditor }
-    }
-
-    /**
-     * Configure VSCode's diff editor settings for better focus on changed regions
-     */
     private async configureDiffEditorSettings(editor: vscode.TextEditor): Promise<void> {
         try {
             getLogger().info(`[StreamingDiffController] 🎯 Configuring diff editor settings for focused editing`)
@@ -501,224 +680,6 @@ export class StreamingDiffController implements vscode.Disposable {
         editor.revealRange(new vscode.Range(scrollLine, 0, scrollLine, 0), vscode.TextEditorRevealType.InCenter)
     }
 
-    /**
-     * Process fsReplace complete event using temporary file diff view (like fsWrite)
-     * **FIXED**: Now uses temp file to show proper red/green diff decorations
-     */
-    async processFsReplaceComplete(fsReplaceComplete: {
-        toolUseId: string
-        filePath: string
-        diffString: string
-        timestamp: number
-    }): Promise<void> {
-        // **CRITICAL FIX**: Check if session was cancelled by stop button
-        const session = this.activeStreamingSessions.get(fsReplaceComplete.toolUseId)
-        if (session && session.disposed) {
-            getLogger().info(
-                `[StreamingDiffController] 🛑 fsReplace session ${fsReplaceComplete.toolUseId} was cancelled, skipping animation`
-            )
-            return
-        }
-        try {
-            getLogger().info(
-                `[StreamingDiffController] 🔄 Processing fsReplace complete: ${fsReplaceComplete.filePath} (${fsReplaceComplete.diffString.length} chars)`
-            )
-
-            // **NEW: Parse structured diffs from JSON format**
-            let structuredDiffs: Array<{ oldStr: string; newStr: string }> = []
-            try {
-                const parsedDiff = JSON.parse(fsReplaceComplete.diffString)
-                if (parsedDiff.type === 'structured_diffs' && Array.isArray(parsedDiff.diffs)) {
-                    structuredDiffs = parsedDiff.diffs
-                    getLogger().info(
-                        `[StreamingDiffController] ✅ Parsed ${structuredDiffs.length} structured diffs from LSP`
-                    )
-                } else {
-                    throw new Error('Invalid structured diff format')
-                }
-            } catch (error) {
-                getLogger().warn(
-                    `[StreamingDiffController] ⚠️ Failed to parse structured diffs, falling back to line-by-line: ${error}`
-                )
-                // **FALLBACK: Handle old line-by-line format for backward compatibility**
-                const diffLines = fsReplaceComplete.diffString.split('\n')
-                for (let i = 0; i < diffLines.length; i += 2) {
-                    const oldLine = diffLines[i]
-                    const newLine = diffLines[i + 1]
-                    if (oldLine && oldLine.startsWith('-') && newLine && newLine.startsWith('+')) {
-                        structuredDiffs.push({
-                            oldStr: oldLine.substring(1), // Remove '-' prefix
-                            newStr: newLine.substring(1), // Remove '+' prefix
-                        })
-                    }
-                }
-            }
-
-            if (structuredDiffs.length === 0) {
-                getLogger().warn(`[StreamingDiffController] ⚠️ No valid diffs found to process`)
-                return
-            }
-
-            // **KEY FIX: Use temp file approach like fsWrite to show proper diff decorations**
-            const uri = vscode.Uri.file(fsReplaceComplete.filePath)
-            let originalDocument: vscode.TextDocument
-
-            try {
-                originalDocument = await vscode.workspace.openTextDocument(uri)
-            } catch (error) {
-                getLogger().error(`[StreamingDiffController] ❌ Failed to open original document: ${error}`)
-                return
-            }
-
-            const originalContent = originalDocument.getText()
-            const fileName = path.basename(fsReplaceComplete.filePath)
-
-            // **STEP 1 & 2: Use helper method to create temp file and open diff view**
-            const { tempFilePath, activeDiffEditor } = await this.createTempFileAndOpenDiff(
-                fsReplaceComplete.filePath,
-                originalContent,
-                fsReplaceComplete.toolUseId,
-                `${fileName}: Original ↔ Amazon Q fsReplace Changes`
-            )
-            const tempFileUri = vscode.Uri.file(tempFilePath)
-
-            // **STEP 3: Apply all diffs to create final content**
-            let finalContent = originalContent
-            for (const { oldStr, newStr } of structuredDiffs) {
-                finalContent = finalContent.replace(oldStr, newStr)
-            }
-
-            // **STEP 4: Configure diff editor settings**
-            await this.configureDiffEditorSettings(activeDiffEditor)
-
-            // Initialize decoration controllers
-            const activeLineController = new DecorationController('activeLine', activeDiffEditor)
-            const fadedOverlayController = new DecorationController('fadedOverlay', activeDiffEditor)
-
-            // Apply faded overlay to all lines initially
-            fadedOverlayController.addLines(0, activeDiffEditor.document.lineCount)
-
-            try {
-                // CRITICAL FIX: Instead of progressive building, use line-by-line updates
-                // This forces VSCode to recalculate diffs incrementally
-
-                const originalLines = originalContent.split('\n')
-                const finalLines = finalContent.split('\n')
-
-                // Find all line indices that have changes
-                const changedLineIndices: number[] = []
-                const maxLines = Math.max(originalLines.length, finalLines.length)
-
-                for (let i = 0; i < maxLines; i++) {
-                    const origLine = originalLines[i] || ''
-                    const finalLine = finalLines[i] || ''
-                    if (origLine !== finalLine) {
-                        changedLineIndices.push(i)
-                    }
-                }
-
-                getLogger().info(
-                    `[StreamingDiffController] 🎬 Starting fsReplace animation: ${changedLineIndices.length} changed lines to animate`
-                )
-
-                // Scroll to first change
-                if (changedLineIndices.length > 0) {
-                    const firstChange = changedLineIndices[0]
-                    activeDiffEditor.revealRange(
-                        new vscode.Range(firstChange, 0, firstChange, 0),
-                        vscode.TextEditorRevealType.InCenter
-                    )
-                }
-
-                // APPROACH 1: Animate each changed line individually
-                // This ensures VSCode recalculates diffs for each change
-                for (let i = 0; i < changedLineIndices.length; i++) {
-                    const lineIndex = changedLineIndices[i]
-                    const finalLine = finalLines[lineIndex] || ''
-
-                    getLogger().info(
-                        `[StreamingDiffController] 🔄 Animating changed line ${lineIndex + 1}: "${finalLine.substring(0, 30)}..."`
-                    )
-
-                    // Set active line decoration
-                    activeLineController.setActiveLine(lineIndex)
-
-                    // CRITICAL: Update just this specific line
-                    const edit = new vscode.WorkspaceEdit()
-
-                    if (lineIndex < activeDiffEditor.document.lineCount) {
-                        // Replace existing line
-                        const currentLine = activeDiffEditor.document.lineAt(lineIndex)
-                        edit.replace(tempFileUri, currentLine.range, finalLine)
-                    } else {
-                        // Add new line
-                        const insertPos = new vscode.Position(activeDiffEditor.document.lineCount, 0)
-                        const prefix = activeDiffEditor.document.lineCount > 0 ? '\n' : ''
-                        edit.insert(tempFileUri, insertPos, prefix + finalLine)
-                    }
-
-                    await vscode.workspace.applyEdit(edit)
-
-                    // Update overlay
-                    fadedOverlayController.updateOverlayAfterLine(lineIndex, activeDiffEditor.document.lineCount)
-
-                    // Scroll to current change
-                    this.scrollEditorToLine(activeDiffEditor, lineIndex)
-
-                    // Animation delay - can be adjusted based on preference
-                    await new Promise((resolve) => setTimeout(resolve, 100))
-
-                    // METHOD 2: Force VSCode to update the diff view by toggling diff options
-                    // This forces diff recomputation and ensures decorations appear immediately
-                    await this.forceDiffRefreshByOptions()
-                }
-
-                // Ensure final content is correct
-                const finalEdit = new vscode.WorkspaceEdit()
-                const fullRange = new vscode.Range(0, 0, activeDiffEditor.document.lineCount, 0)
-                finalEdit.replace(tempFileUri, fullRange, finalContent)
-                await vscode.workspace.applyEdit(finalEdit)
-                await activeDiffEditor.document.save()
-
-                getLogger().info(
-                    `[StreamingDiffController] 🎬 fsReplace animation complete: ${changedLineIndices.length} changes animated`
-                )
-
-                // Clear decorations after animation
-                setTimeout(() => {
-                    activeLineController.clear()
-                    fadedOverlayController.clear()
-                }, 1000)
-
-                // Show completion status
-                vscode.window.setStatusBarMessage(
-                    `✅ fsReplace animation complete: ${fileName} (${structuredDiffs.length} changes)`,
-                    5000
-                )
-
-                // Auto-cleanup temp file
-                setTimeout(async () => {
-                    try {
-                        await this.cleanupTempFile(tempFilePath)
-                        getLogger().info(
-                            `[StreamingDiffController] 🧹 Auto-cleaned fsReplace temp file: ${tempFilePath}`
-                        )
-                    } catch (error) {
-                        getLogger().warn(`[StreamingDiffController] ⚠️ Failed to cleanup fsReplace temp file: ${error}`)
-                    }
-                }, 5000)
-            } catch (animationError) {
-                getLogger().error(`[StreamingDiffController] ❌ Failed during fsReplace animation: ${animationError}`)
-                await this.cleanupTempFile(tempFilePath)
-            }
-        } catch (error) {
-            getLogger().error(`[StreamingDiffController] ❌ Failed to process fsReplace complete: ${error}`)
-        }
-    }
-
-    /**
-     * Checks if streaming is active
-     */
     isStreamingActive(toolUseId: string): boolean {
         const session = this.activeStreamingSessions.get(toolUseId)
         return session !== undefined && !session.disposed
@@ -774,17 +735,177 @@ export class StreamingDiffController implements vscode.Disposable {
     }
 
     /**
+     * Handle fsReplace completion signal from parser - triggers immediate cleanup
+     */
+    private async handleFsReplaceCompletionSignal(session: any): Promise<void> {
+        const filePath = session.filePath
+
+        getLogger().info(
+            `[StreamingDiffController] 🏁 Received fsReplace completion signal for ${filePath} - triggering immediate cleanup`
+        )
+
+        try {
+            // Clear decorations immediately
+            session.fadedOverlayController.clear()
+            session.activeLineController.clear()
+
+            // Save the temp file one final time
+            const diffEditor = session.activeDiffEditor
+            const document = diffEditor?.document
+            if (document) {
+                try {
+                    await document.save()
+                    getLogger().info(
+                        `[StreamingDiffController] 💾 Final save completed for fsReplace temp file: ${session.tempFilePath}`
+                    )
+                } catch (saveError) {
+                    getLogger().error(`[StreamingDiffController] ❌ Failed to save fsReplace temp file: ${saveError}`)
+                }
+            }
+
+            // Show completion message
+            vscode.window.setStatusBarMessage(`✅ fsReplace complete: ${path.basename(filePath)}`, 3000)
+
+            // Schedule cleanup after a short delay
+            setTimeout(async () => {
+                try {
+                    // Clean up temp file
+                    await this.cleanupTempFile(session.tempFilePath)
+                    getLogger().info(
+                        `[StreamingDiffController] 🧹 Cleaned up fsReplace temp file: ${session.tempFilePath}`
+                    )
+
+                    // Mark session as disposed and remove it
+                    session.disposed = true
+
+                    // Find and remove all sessions for this file
+                    const sessionsToRemove: string[] = []
+                    for (const [toolUseId, sessionData] of this.activeStreamingSessions.entries()) {
+                        if (sessionData.filePath === filePath) {
+                            sessionsToRemove.push(toolUseId)
+                        }
+                    }
+
+                    for (const toolUseId of sessionsToRemove) {
+                        this.activeStreamingSessions.delete(toolUseId)
+                        getLogger().info(`[StreamingDiffController] 🧹 Removed fsReplace session ${toolUseId}`)
+                    }
+
+                    // Clean up fsReplace session tracker
+                    this.fsReplaceSessionsByFile.delete(filePath)
+                    getLogger().info(
+                        `[StreamingDiffController] 🧹 Cleaned up fsReplace session tracker for ${filePath}`
+                    )
+                } catch (error) {
+                    getLogger().warn(
+                        `[StreamingDiffController] ⚠️ Failed to cleanup fsReplace session for ${filePath}: ${error}`
+                    )
+                }
+            }, 500) // Short delay to ensure all operations complete
+        } catch (error) {
+            getLogger().error(`[StreamingDiffController] ❌ Failed to handle fsReplace completion signal: ${error}`)
+        }
+    }
+
+    /**
+     * Handle fsReplace completion - properly track and cleanup when all diff pairs for a file are done
+     */
+    private async handleFsReplaceCompletion(session: any, pairIndex: number, totalPairs: number): Promise<void> {
+        const filePath = session.filePath
+        const fsReplaceSession = this.fsReplaceSessionsByFile.get(filePath)
+
+        if (!fsReplaceSession) {
+            getLogger().warn(`[StreamingDiffController] ⚠️ No fsReplace session found for ${filePath}`)
+            return
+        }
+
+        // Increment completed pairs count
+        fsReplaceSession.completedPairs++
+        fsReplaceSession.lastActivity = Date.now()
+
+        getLogger().info(
+            `[StreamingDiffController] 📊 fsReplace progress for ${filePath}: ${fsReplaceSession.completedPairs}/${fsReplaceSession.totalExpectedPairs} pairs completed`
+        )
+
+        // Check if all expected diff pairs for this file are complete
+        const allPairsComplete = fsReplaceSession.completedPairs >= fsReplaceSession.totalExpectedPairs
+        const isLastPairInSequence = pairIndex === totalPairs - 1
+
+        // **CORRECTED**: Only cleanup when we've truly completed all expected pairs for this file
+        // AND this is the last pair in the current sequence
+        if (allPairsComplete && isLastPairInSequence) {
+            getLogger().info(
+                `[StreamingDiffController] 🏁 All fsReplace diff pairs complete for ${filePath}, scheduling cleanup`
+            )
+
+            // Clear decorations
+            session.fadedOverlayController.clear()
+            session.activeLineController.clear()
+
+            // Show final completion message
+            vscode.window.setStatusBarMessage(
+                `✅ fsReplace complete: ${fsReplaceSession.completedPairs} changes applied to ${path.basename(filePath)}`,
+                3000
+            )
+
+            // **IMPROVED CLEANUP**: Clean up all sessions for this file after a delay
+            setTimeout(async () => {
+                try {
+                    // Clean up temp file
+                    await this.cleanupTempFile(fsReplaceSession.tempFilePath)
+                    getLogger().info(
+                        `[StreamingDiffController] 🧹 Cleaned up fsReplace temp file: ${fsReplaceSession.tempFilePath}`
+                    )
+
+                    // Remove all sessions associated with this file
+                    for (const toolUseId of fsReplaceSession.toolUseIds) {
+                        const sessionToCleanup = this.activeStreamingSessions.get(toolUseId)
+                        if (sessionToCleanup) {
+                            sessionToCleanup.disposed = true
+                            this.activeStreamingSessions.delete(toolUseId)
+                            getLogger().info(`[StreamingDiffController] 🧹 Removed fsReplace session ${toolUseId}`)
+                        }
+                    }
+
+                    // Remove the fsReplace session tracker
+                    this.fsReplaceSessionsByFile.delete(filePath)
+                    getLogger().info(
+                        `[StreamingDiffController] 🧹 Cleaned up fsReplace session tracker for ${filePath}`
+                    )
+                } catch (error) {
+                    getLogger().warn(
+                        `[StreamingDiffController] ⚠️ Failed to cleanup fsReplace session for ${filePath}: ${error}`
+                    )
+                }
+            }, 1000) // 1 second delay to ensure all operations complete
+        } else {
+            getLogger().info(
+                `[StreamingDiffController] ⚡ fsReplace diff pair ${pairIndex + 1}/${totalPairs} completed, waiting for more pairs`
+            )
+        }
+    }
+
+    /**
      * Clean up all temporary files for a chat session
      */
     async cleanupChatSession(): Promise<void> {
         const tempFilesToCleanup: string[] = []
 
+        // Collect temp files from regular sessions
         for (const [, session] of this.activeStreamingSessions.entries()) {
             if (session.tempFilePath) {
                 tempFilesToCleanup.push(session.tempFilePath)
             }
         }
 
+        // Collect temp files from fsReplace sessions
+        for (const [, fsReplaceSession] of this.fsReplaceSessionsByFile.entries()) {
+            if (fsReplaceSession.tempFilePath) {
+                tempFilesToCleanup.push(fsReplaceSession.tempFilePath)
+            }
+        }
+
+        // Clean up all temp files
         for (const tempFilePath of tempFilesToCleanup) {
             try {
                 await this.cleanupTempFile(tempFilePath)
@@ -792,6 +913,9 @@ export class StreamingDiffController implements vscode.Disposable {
                 getLogger().warn(`[StreamingDiffController] ⚠️ Failed to cleanup temp file ${tempFilePath}: ${error}`)
             }
         }
+
+        // Clear fsReplace session trackers
+        this.fsReplaceSessionsByFile.clear()
     }
 
     /**
