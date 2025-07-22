@@ -241,6 +241,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+            // return early when suggestions are disabled with auto trigger
+            return []
+        }
+
         // yield event loop to let the document listen catch updates
         await sleep(1)
         // prevent user deletion invoking auto trigger
@@ -254,12 +260,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         try {
             const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
-            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
-            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
-                // return early when suggestions are disabled with auto trigger
-                return []
-            }
-
             // handling previous session
             const prevSession = this.sessionManager.getActiveSession()
             const prevSessionId = prevSession?.sessionId
@@ -335,7 +335,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 context,
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions
+                getAllRecommendationsOptions,
+                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -433,7 +434,6 @@ ${itemLog}
                     }
                     item.range = new Range(cursorPosition, cursorPosition)
                     itemsMatchingTypeahead.push(item)
-                    ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
                 }
             }
 
@@ -457,6 +457,7 @@ ${itemLog}
                 return []
             }
 
+            this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
