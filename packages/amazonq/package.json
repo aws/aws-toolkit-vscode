@@ -389,19 +389,24 @@
                     "group": "0_topAmazonQ@1"
                 },
                 {
+                    "command": "aws.amazonq.accountDetails",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.isSageMakerUnifiedStudio && aws.amazonq.connectedSsoIdc == true",
+                    "group": "1_amazonQ@1"
+                },
+                {
                     "command": "aws.amazonq.selectRegionProfile",
                     "when": "view == aws.amazonq.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
-                    "group": "1_amazonQ@1"
+                    "group": "1_amazonQ@2"
                 },
                 {
                     "command": "aws.amazonq.manageSubscription",
                     "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
-                    "group": "1_amazonQ@2"
+                    "group": "1_amazonQ@3"
                 },
                 {
                     "command": "aws.amazonq.learnMore",
                     "when": "view =~ /^aws\\.amazonq/",
-                    "group": "1_amazonQ@3"
+                    "group": "1_amazonQ@4"
                 },
                 {
                     "command": "aws.amazonq.signout",
@@ -732,6 +737,11 @@
             {
                 "command": "aws.amazonq.learnMore",
                 "title": "%AWS.amazonq.learnMore%",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.accountDetails",
+                "title": "%AWS.amazonq.accountDetails%",
                 "category": "%AWS.amazonq.title%"
             },
             {
