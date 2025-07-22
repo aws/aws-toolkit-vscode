@@ -4,7 +4,12 @@
  */
 import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
-import { FileDiagnostic, getDiagnosticsOfCurrentFile } from 'aws-core-vscode/codewhisperer'
+import {
+    FileDiagnostic,
+    getDiagnosticsOfCurrentFile,
+    ImportAdderProvider,
+    ReferenceInlineProvider,
+} from 'aws-core-vscode/codewhisperer'
 
 // TODO: add more needed data to the session interface
 export interface CodeWhispererSession {
@@ -25,7 +30,7 @@ export class SessionManager {
     private activeSession?: CodeWhispererSession
     private _acceptedSuggestionCount: number = 0
     private _refreshedSessions = new Set<string>()
-
+    private _currentSuggestionIndex = 0
     constructor() {}
 
     public startSession(
@@ -45,6 +50,7 @@ export class SessionManager {
             firstCompletionDisplayLatency,
             diagnosticsBeforeAccept,
         }
+        this._currentSuggestionIndex = 0
     }
 
     public closeSession() {
@@ -86,6 +92,8 @@ export class SessionManager {
 
     public clear() {
         this.activeSession = undefined
+        this._currentSuggestionIndex = 0
+        this.clearReferenceInlineHintsAndImportHints()
     }
 
     // re-render the session ghost text to display paginated responses once per completed session
@@ -101,6 +109,62 @@ export class SessionManager {
                 this._refreshedSessions.clear()
             }
             this._refreshedSessions.add(this.activeSession.sessionId)
+        }
+    }
+
+    public onNextSuggestion() {
+        if (this.activeSession?.suggestions && this.activeSession?.suggestions.length > 0) {
+            this._currentSuggestionIndex = (this._currentSuggestionIndex + 1) % this.activeSession.suggestions.length
+            this.updateCodeReferenceAndImports()
+        }
+    }
+
+    public onPrevSuggestion() {
+        if (this.activeSession?.suggestions && this.activeSession.suggestions.length > 0) {
+            this._currentSuggestionIndex =
+                (this._currentSuggestionIndex - 1 + this.activeSession.suggestions.length) %
+                this.activeSession.suggestions.length
+            this.updateCodeReferenceAndImports()
+        }
+    }
+
+    private clearReferenceInlineHintsAndImportHints() {
+        ReferenceInlineProvider.instance.removeInlineReference()
+        ImportAdderProvider.instance.clear()
+    }
+
+    // Ideally use this API handleDidShowCompletionItem
+    // https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts#L83
+    updateCodeReferenceAndImports() {
+        try {
+            this.clearReferenceInlineHintsAndImportHints()
+            if (
+                this.activeSession?.suggestions &&
+                this.activeSession.suggestions[this._currentSuggestionIndex] &&
+                this.activeSession.suggestions.length > 0
+            ) {
+                const reference = this.activeSession.suggestions[this._currentSuggestionIndex].references
+                const insertText = this.activeSession.suggestions[this._currentSuggestionIndex].insertText
+                if (reference && reference.length > 0) {
+                    const insertTextStr =
+                        typeof insertText === 'string' ? insertText : (insertText.value ?? String(insertText))
+
+                    ReferenceInlineProvider.instance.setInlineReference(
+                        this.activeSession.startPosition.line,
+                        insertTextStr,
+                        reference
+                    )
+                }
+                if (vscode.window.activeTextEditor) {
+                    ImportAdderProvider.instance.onShowRecommendation(
+                        vscode.window.activeTextEditor.document,
+                        this.activeSession.startPosition.line,
+                        this.activeSession.suggestions[this._currentSuggestionIndex]
+                    )
+                }
+            }
+        } catch {
+            // do nothing as this is not critical path
         }
     }
 }
