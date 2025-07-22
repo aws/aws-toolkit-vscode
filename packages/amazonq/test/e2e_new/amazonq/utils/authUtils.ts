@@ -28,15 +28,20 @@ export async function signInToAmazonQ(): Promise<void> {
         throw new Error('No selectable login options found')
     }
 
+    // find the button / input + click the button / input
     const companyItem = await findItemByText(selectableItems, 'Company account')
     await companyItem.click()
+
     const signInContinue = await webviewView.findWebElement(By.css('#connection-selection-continue-button'))
     await signInContinue.click()
+
     const startUrlInput = await webviewView.findWebElement(By.id('startUrl'))
     await startUrlInput.clear()
     await startUrlInput.sendKeys('https://amzn.awsapps.com/start')
+
     const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
     await UrlContinue.click()
+
     console.log('Waiting for manual authentication...')
     await sleep(12000)
     console.log('Manual authentication should be done')
