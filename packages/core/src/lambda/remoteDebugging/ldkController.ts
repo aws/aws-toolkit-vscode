@@ -729,6 +729,7 @@ export class RemoteDebugController {
                 )
                 return
             }
+            // use sessionDuration to record debug duration
             span.record({ sessionDuration: this.lastDebugStartTime === 0 ? 0 : Date.now() - this.lastDebugStartTime })
             try {
                 await vscode.window.withProgress(
