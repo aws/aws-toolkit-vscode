@@ -87,6 +87,7 @@ import {
     messages,
     openUrl,
     isTextEditor,
+    globals,
     setContext,
 } from 'aws-core-vscode/shared'
 import {
@@ -436,6 +437,38 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+                // handling for show_logs button
+                if (message.params.action === 'show_logs') {
+                    languageClient.info('[VSCode Client] Received show_logs action, showing disclaimer')
+
+                    // Show warning message without buttons - just informational
+                    void vscode.window.showWarningMessage(
+                        'Log files may contain sensitive information such as account IDs, resource names, and other data. Be careful when sharing these logs.'
+                    )
+
+                    // Get the log directory path
+                    const logPath = globals.context.logUri?.fsPath
+                    const result = { ...message.params, success: false }
+
+                    if (logPath) {
+                        // Open the log directory in the OS file explorer directly
+                        languageClient.info('[VSCode Client] Opening logs directory')
+                        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logPath))
+                        result.success = true
+                    } else {
+                        // Fallback: show error if log path is not available
+                        void vscode.window.showErrorMessage('Log location not available.')
+                        languageClient.error('[VSCode Client] Log location not available')
+                    }
+
+                    void webview?.postMessage({
+                        command: message.command,
+                        params: result,
+                    })
+
+                    break
+                }
+            // eslint-disable-next-line no-fallthrough
             case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
@@ -691,7 +724,7 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
-    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
+    // This is to filter out the message containing findings from CodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
             !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
