@@ -14,7 +14,7 @@ Currently, the function will
 3. Inputs the Start URL
 4. IMPORTANT: you must click manually open yourself when the popup window asks to open the browser and complete the authentication in the browser** 
 
-TO-DO: Currently this loginToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
+TO-DO: Currently this signInToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
 export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
