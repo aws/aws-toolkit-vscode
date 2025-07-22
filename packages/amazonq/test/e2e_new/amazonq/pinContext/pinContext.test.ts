@@ -2,12 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import './utils/setup'
+import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { dismissOverlayIfPresent } from './framework/cleanupHelper'
-import { testContext } from './utils/testContext'
-import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from './framework/pinContextHelper'
-import { clearChat } from './framework/chatHelper'
+import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupHelper'
+import { testContext } from '../utils/testContext'
+import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from './pinContextHelper'
+import { clearChat } from '../chat/chatHelper'
 
 describe('Amazon Q Pin Context Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -15,7 +15,11 @@ describe('Amazon Q Pin Context Functionality', function () {
     let webviewView: WebviewView
 
     before(async function () {
-        webviewView = testContext.webviewView!
+        webviewView = testContext.webviewView
+    })
+
+    after(async function () {
+        await closeAllTabs(webviewView)
     })
 
     afterEach(async () => {

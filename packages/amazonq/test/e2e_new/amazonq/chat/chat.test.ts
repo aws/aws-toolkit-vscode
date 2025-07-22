@@ -2,10 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import './utils/setup'
+import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { testContext } from './utils/testContext'
-import { clearChat, waitForChatResponse, writeToChat } from './framework/chatHelper'
+import { testContext } from '../utils/testContext'
+import { clearChat, waitForChatResponse, writeToChat } from './chatHelper'
+import { closeAllTabs } from '../utils/cleanupHelper'
 
 describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -13,7 +14,11 @@ describe('Amazon Q Chat Basic Functionality', function () {
     let webviewView: WebviewView
 
     before(async function () {
-        webviewView = testContext.webviewView!
+        webviewView = testContext.webviewView
+    })
+
+    after(async function () {
+        await closeAllTabs(webviewView)
     })
 
     afterEach(async () => {

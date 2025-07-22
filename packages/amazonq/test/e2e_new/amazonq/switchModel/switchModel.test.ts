@@ -2,11 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import './utils/setup'
+import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { testContext } from './utils/testContext'
-import { listModels, selectModel } from './framework/switchModelHelper'
-import { closeAllTabs } from './framework/cleanupHelper'
+import { testContext } from '../utils/testContext'
+import { listModels, selectModel } from './switchModelHelper'
+import { closeAllTabs } from '../utils/cleanupHelper'
 
 describe('Amazon Q Switch Model Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -14,7 +14,7 @@ describe('Amazon Q Switch Model Functionality', function () {
     let webviewView: WebviewView
 
     before(async function () {
-        webviewView = testContext.webviewView!
+        webviewView = testContext.webviewView
     })
 
     after(async function () {

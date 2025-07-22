@@ -4,8 +4,8 @@
  */
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
-import { writeToChat } from './chatHelper'
-import { waitForElement } from './generalHelper'
+import { writeToChat } from '../chat/chatHelper'
+import { sleep, waitForElement } from '../utils/generalHelper'
 
 /**
  * Gets all backslash command menu items
@@ -53,23 +53,19 @@ export async function getBackslashCommands(webview: WebviewView): Promise<{ item
 export async function clickBackslashCommand(webview: WebviewView, commandName: string): Promise<boolean> {
     try {
         const { items, texts } = await getBackslashCommands(webview)
-
         if (items.length === 0) {
             console.log('No backslash commands found to click')
             return false
         }
-
         const indexToClick = texts.findIndex((text) => text === commandName)
 
         if (indexToClick === -1) {
             console.log(`Command "${commandName}" not found`)
             return false
         }
-
         console.log(`Clicking on command: ${commandName}`)
         await items[indexToClick].click()
-
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await sleep(3000)
         console.log('Command clicked successfully')
         return true
     } catch (e) {

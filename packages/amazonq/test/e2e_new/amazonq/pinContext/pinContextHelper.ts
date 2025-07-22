@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
-import { waitForElement } from './generalHelper'
+import { sleep, waitForElement } from '../utils/generalHelper'
 import { WebElement } from 'vscode-extension-tester'
 
 /**
@@ -44,7 +44,7 @@ export async function clickPinContextButton(webview: WebviewView): Promise<boole
 export async function getPinContextMenuItems(webview: WebviewView): Promise<{ items: WebElement[]; labels: string[] }> {
     try {
         const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await sleep(3000)
         const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
         const labels: string[] = []
 
@@ -79,7 +79,7 @@ export async function getPinContextMenuItems(webview: WebviewView): Promise<{ it
 export async function clickPinContextMenuItem(webview: WebviewView, itemName: string): Promise<boolean> {
     try {
         const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await sleep(3000)
         const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
         for (const item of menuListItems) {
             try {

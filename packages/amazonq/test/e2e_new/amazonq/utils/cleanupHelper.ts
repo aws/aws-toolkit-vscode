@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
+import { sleep } from './generalHelper'
 
 /**
  * Closes all open chat tabs
@@ -16,7 +17,7 @@ export async function closeAllTabs(webview: WebviewView): Promise<boolean> {
 
         for (const button of closeButtons) {
             await button.click()
-            await new Promise((resolve) => setTimeout(resolve, 500))
+            await sleep(500)
         }
 
         const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
@@ -49,7 +50,7 @@ export async function dismissOverlayIfPresent(webview: WebviewView): Promise<boo
             const driver = webview.getDriver()
             await driver.executeScript('document.body.click()')
 
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            await sleep(1000)
             const overlaysAfter = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
             return overlaysAfter.length === 0
         }

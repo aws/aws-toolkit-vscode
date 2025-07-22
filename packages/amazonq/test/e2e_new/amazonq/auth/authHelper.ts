@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Workbench, By, WebviewView } from 'vscode-extension-tester'
-import { waitForElement, findItemByText } from './generalHelper'
+import { findItemByText, sleep, waitForElements } from '../utils/generalHelper'
 import { testContext } from '../utils/testContext'
 
 /* Completes the entire Amazon Q login flow
@@ -19,11 +19,11 @@ export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
 
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    await sleep(5000)
     let webviewView = new WebviewView()
     await webviewView.switchToFrame()
 
-    const selectableItems = await waitForElement(webviewView, By.css('.selectable-item'), true)
+    const selectableItems = await waitForElements(webviewView, By.css('.selectable-item'))
     if (selectableItems.length === 0) {
         throw new Error('No selectable login options found')
     }
@@ -38,7 +38,7 @@ export async function signInToAmazonQ(): Promise<void> {
     const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
     await UrlContinue.click()
     console.log('Waiting for manual authentication...')
-    await new Promise((resolve) => setTimeout(resolve, 12000))
+    await sleep(12000)
     console.log('Manual authentication should be done')
     await webviewView.switchBack()
 

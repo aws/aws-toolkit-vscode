@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
-import { waitForElement } from './generalHelper'
+import { sleep, waitForElement } from '../utils/generalHelper'
 
 /**
  * Writes text to the chat input and optionally sends it
@@ -43,7 +43,7 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 15000)
                 return true
             }
         }
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        await sleep(500)
     }
 
     return false
