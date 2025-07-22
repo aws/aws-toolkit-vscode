@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
+import { RotatingLogChannel } from './rotatingLogChannel'
 import {
     CreateFilesParams,
     DeleteFilesParams,
@@ -94,6 +95,23 @@ export async function startLanguageServer(
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+
+    // Create custom output channel that writes to disk but sends UI output to the appropriate channel
+    const lspLogChannel = new RotatingLogChannel(
+        traceServerEnabled ? 'Amazon Q Language Server' : 'Amazon Q Logs',
+        extensionContext,
+        traceServerEnabled
+            ? vscode.window.createOutputChannel('Amazon Q Language Server', { log: true })
+            : globals.logOutputChannel
+    )
+
+    // Add cleanup for our file output channel
+    toDispose.push({
+        dispose: () => {
+            lspLogChannel.dispose()
+        },
+    })
+
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
     if (isSageMaker()) {
@@ -168,6 +186,7 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        qCodeReviewInChat: true,
                     },
                     window: {
                         notifications: true,
@@ -190,15 +209,9 @@ export async function startLanguageServer(
             },
         },
         /**
-         * When the trace server is enabled it outputs a ton of log messages so:
-         *   When trace server is enabled, logs go to a seperate "Amazon Q Language Server" output.
-         *   Otherwise, logs go to the regular "Amazon Q Logs" channel.
+         * Using our RotatingLogger for all logs
          */
-        ...(traceServerEnabled
-            ? {}
-            : {
-                  outputChannel: globals.logOutputChannel,
-              }),
+        outputChannel: lspLogChannel,
     }
 
     const client = new LanguageClient(
@@ -251,6 +264,59 @@ async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
     return auth
 }
 
+// jscpd:ignore-start
+async function initializeLanguageServerConfiguration(client: LanguageClient, context: string = 'startup') {
+    const logger = getLogger('amazonqLsp')
+
+    if (AuthUtil.instance.isConnectionValid()) {
+        logger.info(`[${context}] Initializing language server configuration`)
+        // jscpd:ignore-end
+
+        try {
+            // Send profile configuration
+            logger.debug(`[${context}] Sending profile configuration to language server`)
+            await sendProfileToLsp(client)
+            logger.debug(`[${context}] Profile configuration sent successfully`)
+
+            // Send customization configuration
+            logger.debug(`[${context}] Sending customization configuration to language server`)
+            await pushConfigUpdate(client, {
+                type: 'customization',
+                customization: getSelectedCustomization(),
+            })
+            logger.debug(`[${context}] Customization configuration sent successfully`)
+
+            logger.info(`[${context}] Language server configuration completed successfully`)
+        } catch (error) {
+            logger.error(`[${context}] Failed to initialize language server configuration: ${error}`)
+            throw error
+        }
+    } else {
+        logger.warn(
+            `[${context}] Connection invalid, skipping language server configuration - this will cause authentication failures`
+        )
+        const activeConnection = AuthUtil.instance.auth.activeConnection
+        const connectionState = activeConnection
+            ? AuthUtil.instance.auth.getConnectionState(activeConnection)
+            : 'no-connection'
+        logger.warn(`[${context}] Connection state: ${connectionState}`)
+    }
+}
+
+async function sendProfileToLsp(client: LanguageClient) {
+    const logger = getLogger('amazonqLsp')
+    const profileArn = AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn
+
+    logger.debug(`Sending profile to LSP: ${profileArn || 'undefined'}`)
+
+    await pushConfigUpdate(client, {
+        type: 'profile',
+        profileArn: profileArn,
+    })
+
+    logger.debug(`Profile sent to LSP successfully`)
+}
+
 async function onLanguageServerReady(
     extensionContext: vscode.ExtensionContext,
     auth: AmazonQLspAuth,
@@ -282,14 +348,7 @@ async function onLanguageServerReady(
     // We manually push the cached values the first time since event handlers, which should push, may not have been setup yet.
     // Execution order is weird and should be fixed in the flare implementation.
     // TODO: Revisit if we need this if we setup the event handlers properly
-    if (AuthUtil.instance.isConnectionValid()) {
-        await sendProfileToLsp(client)
-
-        await pushConfigUpdate(client, {
-            type: 'customization',
-            customization: getSelectedCustomization(),
-        })
-    }
+    await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
         inlineManager,
@@ -391,13 +450,6 @@ async function onLanguageServerReady(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client, auth)
     )
-
-    async function sendProfileToLsp(client: LanguageClient) {
-        await pushConfigUpdate(client, {
-            type: 'profile',
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        })
-    }
 }
 
 /**
@@ -417,8 +469,21 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
         // TODO: Port this metric override to common definitions
         telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
 
-        // Need to set the auth token in the again
-        await auth.refreshConnection(true)
+        const logger = getLogger('amazonqLsp')
+        logger.info('[crash-recovery] Language server crash detected, reinitializing authentication')
+
+        try {
+            // Send bearer token
+            logger.debug('[crash-recovery] Refreshing connection and sending bearer token')
+            await auth.refreshConnection(true)
+            logger.debug('[crash-recovery] Bearer token sent successfully')
+
+            // Send profile and customization configuration
+            await initializeLanguageServerConfiguration(client, 'crash-recovery')
+            logger.info('[crash-recovery] Authentication reinitialized successfully')
+        } catch (error) {
+            logger.error(`[crash-recovery] Failed to reinitialize after crash: ${error}`)
+        }
     })
 }
 
