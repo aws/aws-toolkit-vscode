@@ -215,7 +215,7 @@ export class AuthUtil implements IAuthProvider {
         if (this.session) {
             const credential = (await this.session.getCredential()).credential
             if (typeof credential !== 'object') {
-                throw new ToolkitError('Cannot get token with SSO session')
+                throw new ToolkitError('Cannot get credential with SSO session')
             }
             return credential
         } else {
