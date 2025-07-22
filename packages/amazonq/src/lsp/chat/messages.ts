@@ -81,7 +81,14 @@ import {
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
+import {
+    amazonQDiffScheme,
+    AmazonQPromptSettings,
+    messages,
+    openUrl,
+    isTextEditor,
+    globals,
+} from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -429,6 +436,39 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+                // Special handling for tab bar actions
+                if (message.params.action === 'show_logs') {
+                    languageClient.info('[VSCode Client] Received show_logs action, showing disclaimer')
+
+                    // Show warning message without buttons - just informational
+                    void vscode.window.showWarningMessage(
+                        'Log files may contain sensitive information such as account IDs, resource names, and other data. Be careful when sharing these logs.'
+                    )
+
+                    // Get the log directory path
+                    const logPath = globals.context.logUri?.fsPath
+                    if (logPath) {
+                        // Open the log directory in the OS file explorer directly
+                        languageClient.info('[VSCode Client] Opening logs directory')
+                        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logPath))
+                        const result = { ...message.params, success: true }
+                        void webview?.postMessage({
+                            command: message.command,
+                            params: result,
+                        })
+                    } else {
+                        // Fallback: show error if log path is not available
+                        void vscode.window.showErrorMessage('Log location not available.')
+                        languageClient.error('[VSCode Client] Log location not available')
+                        const result = { ...message.params, success: false }
+                        void webview?.postMessage({
+                            command: message.command,
+                            params: result,
+                        })
+                    }
+                    break
+                }
+            // eslint-disable-next-line no-fallthrough
             case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break

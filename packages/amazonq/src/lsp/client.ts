@@ -191,6 +191,7 @@ export async function startLanguageServer(
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
+                        showLogs: true,
                     },
                     textDocument: {
                         inlineCompletionWithReferences: {
