@@ -434,7 +434,6 @@ ${itemLog}
                     }
                     item.range = new Range(cursorPosition, cursorPosition)
                     itemsMatchingTypeahead.push(item)
-                    ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
                 }
             }
 
@@ -458,6 +457,7 @@ ${itemLog}
                 return []
             }
 
+            this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {

@@ -355,10 +355,12 @@ async function onLanguageServerReady(
         Commands.register('aws.amazonq.showPrev', async () => {
             await sessionManager.maybeRefreshSessionUx()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+            sessionManager.onPrevSuggestion()
         }),
         Commands.register('aws.amazonq.showNext', async () => {
             await sessionManager.maybeRefreshSessionUx()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+            sessionManager.onNextSuggestion()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
