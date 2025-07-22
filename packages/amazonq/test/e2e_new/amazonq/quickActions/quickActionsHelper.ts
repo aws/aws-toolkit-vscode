@@ -8,11 +8,11 @@ import { writeToChat } from '../chat/chatHelper'
 import { sleep, waitForElements } from '../utils/generalHelper'
 
 /**
- * Gets all backslash command menu items
+ * Gets all quick action command menu items
  * @param webview The WebviewView instance
  * @returns Promise<{items: WebElement[], texts: string[]}> Array of menu items and their text labels
  */
-export async function getBackslashCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
+export async function getQuickActionsCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
     try {
         await writeToChat('/', webview, false)
         await sleep(2000)
@@ -35,25 +35,25 @@ export async function getBackslashCommands(webview: WebviewView): Promise<{ item
             }
         }
 
-        console.log(`Found ${menuItems.length} backslash command items`)
+        console.log(`Found ${menuItems.length} quick action command items`)
         return { items: menuItems, texts: menuTexts }
     } catch (e) {
-        console.error('Error getting backslash commands:', e)
+        console.error('Error getting quick action commands:', e)
         return { items: [], texts: [] }
     }
 }
 
 /**
- * Clicks a specific backslash command by name
+ * Clicks a specific quick action command by name
  * @param webview The WebviewView instance
  * @param commandName The name of the command to click
  * @returns Promise<boolean> True if command was found and clicked, false otherwise
  */
-export async function clickBackslashCommand(webview: WebviewView, commandName: string): Promise<boolean> {
+export async function clickQuickActionsCommand(webview: WebviewView, commandName: string): Promise<boolean> {
     try {
-        const { items, texts } = await getBackslashCommands(webview)
+        const { items, texts } = await getQuickActionsCommands(webview)
         if (items.length === 0) {
-            console.log('No backslash commands found to click')
+            console.log('No quick action commands found to click')
             return false
         }
         const indexToClick = texts.findIndex((text) => text === commandName)
@@ -68,7 +68,7 @@ export async function clickBackslashCommand(webview: WebviewView, commandName: s
         console.log('Command clicked successfully')
         return true
     } catch (e) {
-        console.error('Error clicking backslash command:', e)
+        console.error('Error clicking quick action command:', e)
         return false
     }
 }

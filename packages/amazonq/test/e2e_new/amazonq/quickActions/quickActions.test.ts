@@ -6,10 +6,10 @@ import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupHelper'
 import { testContext } from '../utils/testContext'
-import { clickBackslashCommand } from './quickActionsHelper'
+import { clickQuickActionsCommand } from './quickActionsHelper'
 import { clearChat } from '../chat/chatHelper'
 
-describe('Amazon Q Chat Backslash Functionality', function () {
+describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
@@ -28,7 +28,7 @@ describe('Amazon Q Chat Backslash Functionality', function () {
         await clearChat(webviewView)
     })
 
-    it('Backslash Test', async () => {
-        await clickBackslashCommand(webviewView, 'dev')
+    it('Quick Actions Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'dev')
     })
 })
