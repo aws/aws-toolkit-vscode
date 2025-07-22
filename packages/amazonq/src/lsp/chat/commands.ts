@@ -10,6 +10,7 @@ import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
 import { getLogger } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import * as path from 'path'
+import { codeReviewInChat } from '../../app/amazonqScan/models/constants'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -61,6 +62,11 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
             })
         })
     )
+    if (codeReviewInChat) {
+        globals.context.subscriptions.push(
+            registerGenericCommand('aws.amazonq.security.scan-statusbar', 'Review', provider)
+        )
+    }
 }
 
 async function handleIssueCommand(
