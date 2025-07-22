@@ -45,7 +45,6 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { hasGlibcPatch } from './lsp/client'
-import { RotatingLogChannel } from './lsp/rotatingLogChannel'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -104,12 +103,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    // Create rotating log channel for all Amazon Q logs
-    const qLogChannel = new RotatingLogChannel(
-        'Amazon Q Logs',
-        context,
-        vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
-    )
+    const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
     await activateLogger(context, amazonQContextPrefix, qLogChannel)
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
@@ -117,8 +111,6 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     if (homeDirLogs.length > 0) {
         getLogger().error('fs.init: invalid env vars found: %O', homeDirLogs)
     }
-
-    getLogger().info('Rotating logger has been setup')
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
