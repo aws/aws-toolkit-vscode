@@ -5,7 +5,7 @@
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
 import { writeToChat } from '../chat/chatHelper'
-import { sleep, waitForElement } from '../utils/generalHelper'
+import { sleep, waitForElements } from '../utils/generalHelper'
 
 /**
  * Gets all backslash command menu items
@@ -15,12 +15,11 @@ import { sleep, waitForElement } from '../utils/generalHelper'
 export async function getBackslashCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
     try {
         await writeToChat('/', webview, false)
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        await sleep(2000)
 
-        const menuItems = await waitForElement(
+        const menuItems = await waitForElements(
             webview,
             By.css('.mynah-detailed-list-item.mynah-ui-clickable-item.target-command'),
-            true,
             10000
         )
 
