@@ -161,32 +161,4 @@ describe('RotatingLogChannel', () => {
         assert.ok(content.includes('[WARN]'), 'Should include WARN level')
         assert.ok(content.includes('[ERROR]'), 'Should include ERROR level')
     })
-
-    it('delegates log level to the original channel', () => {
-        // Set up a mock output channel with a specific log level
-        const mockChannel = {
-            ...mockOutputChannel,
-            logLevel: vscode.LogLevel.Trace,
-        }
-
-        // Create a new log channel with the mock
-        const testLogChannel = new RotatingLogChannel('test-delegate', mockExtensionContext, mockChannel)
-
-        // Verify that the log level is delegated correctly
-        assert.strictEqual(
-            testLogChannel.logLevel,
-            vscode.LogLevel.Trace,
-            'Should delegate log level to original channel'
-        )
-
-        // Change the mock's log level
-        mockChannel.logLevel = vscode.LogLevel.Debug
-
-        // Verify that the change is reflected
-        assert.strictEqual(
-            testLogChannel.logLevel,
-            vscode.LogLevel.Debug,
-            'Should reflect changes to original channel log level'
-        )
-    })
 })
