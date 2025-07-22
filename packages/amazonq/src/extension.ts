@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -44,8 +44,8 @@ import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
-import { activate as activateInlineCompletion } from './app/inline/activation'
 import { hasGlibcPatch } from './lsp/client'
+import { RotatingLogChannel } from './lsp/rotatingLogChannel'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -104,7 +104,12 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     globals.manifestPaths.endpoints = context.asAbsolutePath(join('resources', 'endpoints.json'))
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
 
-    const qLogChannel = vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
+    // Create rotating log channel for all Amazon Q logs
+    const qLogChannel = new RotatingLogChannel(
+        'Amazon Q Logs',
+        context,
+        vscode.window.createOutputChannel('Amazon Q Logs', { log: true })
+    )
     await activateLogger(context, amazonQContextPrefix, qLogChannel)
     globals.logOutputChannel = qLogChannel
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
@@ -112,6 +117,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     if (homeDirLogs.length > 0) {
         getLogger().error('fs.init: invalid env vars found: %O', homeDirLogs)
     }
+
+    getLogger().info('Rotating logger has been setup')
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
@@ -126,16 +133,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (
-        (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
-        (!isAmazonLinux2() || hasGlibcPatch())
-    ) {
-        // start the Amazon Q LSP for internal users first
-        // for AL2, start LSP if glibc patch is found
+
+    if (!isAmazonLinux2() || hasGlibcPatch()) {
+        // Activate Amazon Q LSP for everyone unless they're using AL2 without the glibc patch
         await activateAmazonqLsp(context)
-    }
-    if (!Experiments.instance.get('amazonqLSPInline', true)) {
-        await activateInlineCompletion()
     }
 
     // Generic extension commands
