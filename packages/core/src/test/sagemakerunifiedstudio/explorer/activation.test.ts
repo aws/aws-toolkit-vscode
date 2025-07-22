@@ -60,7 +60,7 @@ describe('SageMaker Unified Studio explorer activation', function () {
     it('registers refresh command', async function () {
         await activate(mockContext)
 
-        // Verify refresh command was registered
+        // Verify refresh command wasß registered
         assert(registerCommandStub.calledWith('aws.smus.rootView.refresh', sinon.match.func))
     })
 
@@ -90,9 +90,8 @@ describe('SageMaker Unified Studio explorer activation', function () {
     it('adds subscriptions to extension context', async function () {
         await activate(mockContext)
 
-        // Verify subscriptions were added (retry command, tree view, refresh command,
-        // project view command, switch project command, DataZoneClient disposable)
-        assert.strictEqual(mockContext.subscriptions.length, 6)
+        // Verify subscriptions were added (retry command, tree view, refresh command, project view command, DataZoneClient disposable, sign in command, learn more command)
+        assert.strictEqual(mockContext.subscriptions.length, 7)
     })
 
     it('registers DataZoneClient disposal', async function () {

@@ -7,6 +7,8 @@ import * as vscode from 'vscode'
 import { ResourceTreeDataProvider } from '../../shared/treeview/resourceTreeDataProvider'
 import {
     retrySmusProjectsCommand,
+    smusLoginCommand,
+    smusLearnMoreCommand,
     SageMakerUnifiedStudioRootNode,
     selectSMUSProject,
 } from './nodes/sageMakerUnifiedStudioRootNode'
@@ -23,6 +25,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
     // Register the commands
     extensionContext.subscriptions.push(
+        smusLoginCommand.register(),
+        smusLearnMoreCommand.register(),
         retrySmusProjectsCommand.register(),
         treeView,
         vscode.commands.registerCommand('aws.smus.rootView.refresh', () => {

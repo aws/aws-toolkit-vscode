@@ -20,7 +20,7 @@ export interface DataZoneProject {
 
 // Default values, input your domain id here
 let defaultDatazoneDomainId = ''
-const defaultDatazoneRegion = 'us-east-1'
+let defaultDatazoneRegion = 'us-east-1'
 
 // Constants for DataZone environment configuration
 const toolingBlueprintName = 'Tooling'
@@ -29,6 +29,11 @@ const sageMakerProviderName = 'Amazon SageMaker'
 // For testing purposes
 export function setDefaultDatazoneDomainId(domainId: string): void {
     defaultDatazoneDomainId = domainId
+}
+
+// For testing purposes
+export function setDefaultDataZoneRegion(region: string): void {
+    defaultDatazoneRegion = region
 }
 
 export function resetDefaultDatazoneDomainId(): void {

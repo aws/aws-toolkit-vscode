@@ -17,7 +17,7 @@ import {
     setDefaultDatazoneDomainId,
     resetDefaultDatazoneDomainId,
 } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
-import { SageMakerUnifiedStudioRegionNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRegionNode'
+import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 
 describe('SmusRootNode', function () {
@@ -58,7 +58,7 @@ describe('SmusRootNode', function () {
             const node = new SageMakerUnifiedStudioRootNode()
             assert.strictEqual(node.id, 'smusRootNode')
             assert.strictEqual(node.resource, node)
-            assert.ok(node.getProjectRegionNode() instanceof SageMakerUnifiedStudioRegionNode)
+            assert.ok(node.getAuthInfoNode() instanceof SageMakerUnifiedStudioAuthInfoNode)
             assert.ok(node.getProjectSelectNode() instanceof SageMakerUnifiedStudioProjectNode)
             assert.strictEqual(typeof node.onDidChangeTreeItem, 'function')
             assert.strictEqual(typeof node.onDidChangeChildren, 'function')
@@ -66,27 +66,92 @@ describe('SmusRootNode', function () {
     })
 
     describe('getTreeItem', function () {
-        it('returns correct tree item', async function () {
+        it('returns correct tree item when authenticated', async function () {
             const treeItem = rootNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
             assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot')
+            assert.strictEqual(treeItem.description, 'Connected')
+            assert.ok(treeItem.iconPath)
+        })
+
+        it('returns correct tree item when not authenticated', async function () {
+            // Mock empty domain ID to simulate unauthenticated state
+            mockDataZoneClient.getDomainId.returns('')
+
+            const treeItem = rootNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
+            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot')
+            assert.strictEqual(treeItem.description, 'Not authenticated')
             assert.ok(treeItem.iconPath)
         })
     })
 
     describe('getChildren', function () {
-        it('returns root nodes', async function () {
+        it('returns login node when not authenticated (empty domain ID)', async function () {
+            // Mock empty domain ID to simulate unauthenticated state
+            mockDataZoneClient.getDomainId.returns('')
+
+            const children = await rootNode.getChildren()
+
+            assert.strictEqual(children.length, 2)
+            assert.strictEqual(children[0].id, 'smusLogin')
+            assert.strictEqual(children[1].id, 'smusLearnMore')
+
+            // Check login node
+            const loginTreeItem = await children[0].getTreeItem()
+            assert.strictEqual(loginTreeItem.label, 'Sign in to get started')
+            assert.strictEqual(loginTreeItem.contextValue, 'sageMakerUnifiedStudioLogin')
+            assert.deepStrictEqual(loginTreeItem.command, {
+                command: 'aws.smus.login',
+                title: 'Sign in to SageMaker Unified Studio',
+            })
+
+            // Check learn more node
+            const learnMoreTreeItem = await children[1].getTreeItem()
+            assert.strictEqual(learnMoreTreeItem.label, 'Learn more about SageMaker Unified Studio')
+            assert.strictEqual(learnMoreTreeItem.contextValue, 'sageMakerUnifiedStudioLearnMore')
+            assert.deepStrictEqual(learnMoreTreeItem.command, {
+                command: 'aws.smus.learnMore',
+                title: 'Learn more about SageMaker Unified Studio',
+            })
+        })
+
+        it('returns login node when DataZone client throws error', async function () {
+            // Restore the existing stub and create a new one that throws
+            sinon.restore()
+            sinon.stub(DataZoneClient, 'getInstance').throws(new Error('Client initialization failed'))
+
+            const children = await rootNode.getChildren()
+
+            assert.strictEqual(children.length, 2)
+            assert.strictEqual(children[0].id, 'smusLogin')
+            assert.strictEqual(children[1].id, 'smusLearnMore')
+
+            // Check login node
+            const loginTreeItem = await children[0].getTreeItem()
+            assert.strictEqual(loginTreeItem.label, 'Sign in to get started')
+            assert.strictEqual(loginTreeItem.contextValue, 'sageMakerUnifiedStudioLogin')
+
+            // Check learn more node
+            const learnMoreTreeItem = await children[1].getTreeItem()
+            assert.strictEqual(learnMoreTreeItem.label, 'Learn more about SageMaker Unified Studio')
+            assert.strictEqual(learnMoreTreeItem.contextValue, 'sageMakerUnifiedStudioLearnMore')
+        })
+
+        it('returns root nodes when authenticated', async function () {
             mockDataZoneClient.listProjects.resolves({ projects: [mockProject], nextToken: undefined })
 
             const children = await rootNode.getChildren()
 
             assert.strictEqual(children.length, 2)
-            assert.ok(children[0] instanceof SageMakerUnifiedStudioRegionNode)
+            assert.ok(children[0] instanceof SageMakerUnifiedStudioAuthInfoNode)
             assert.ok(children[1] instanceof SageMakerUnifiedStudioProjectNode)
-            // The first child is the region node, the second is the project node
-            assert.strictEqual(children[0].id, 'smusProjectRegionNode')
+            // The first child is the auth info node, the second is the project node
+            assert.strictEqual(children[0].id, 'smusAuthInfoNode')
             assert.strictEqual(children[1].id, 'smusProjectNode')
 
             assert.strictEqual(children.length, 2)
