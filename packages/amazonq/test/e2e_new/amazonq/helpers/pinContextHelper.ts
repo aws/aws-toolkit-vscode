@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
-import { sleep, waitForElement } from '../utils/generalHelper'
+import { sleep, waitForElement } from '../utils/generalUtils'
 import { WebElement } from 'vscode-extension-tester'
 
 /**

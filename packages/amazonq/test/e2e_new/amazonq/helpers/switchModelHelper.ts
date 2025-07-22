@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView, WebElement } from 'vscode-extension-tester'
-import { waitForElement } from '../utils/generalHelper'
+import { waitForElement } from '../utils/generalUtils'
 
 /**
  * Lists all available model options in the dropdown

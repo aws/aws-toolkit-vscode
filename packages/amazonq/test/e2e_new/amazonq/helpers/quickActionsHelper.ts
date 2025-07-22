@@ -4,8 +4,8 @@
  */
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
-import { writeToChat } from '../chat/chatHelper'
-import { sleep, waitForElements } from '../utils/generalHelper'
+import { writeToChat } from '../utils/generalUtils'
+import { sleep, waitForElements } from '../utils/generalUtils'
 
 /**
  * Gets all quick action command menu items

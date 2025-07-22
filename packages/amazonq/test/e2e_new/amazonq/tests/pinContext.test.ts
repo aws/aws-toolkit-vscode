@@ -4,11 +4,12 @@
  */
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
+import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
-import { clearChat, waitForChatResponse, writeToChat } from './chatHelper'
-import { closeAllTabs } from '../utils/cleanupHelper'
+import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from '../helpers/pinContextHelper'
+import { clearChat } from '../utils/generalUtils'
 
-describe('Amazon Q Chat Basic Functionality', function () {
+describe('Amazon Q Pin Context Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
@@ -22,15 +23,13 @@ describe('Amazon Q Chat Basic Functionality', function () {
     })
 
     afterEach(async () => {
+        await dismissOverlayIfPresent(webviewView)
         await clearChat(webviewView)
     })
 
-    it('Chat Prompt Test', async () => {
-        await writeToChat('Hello, Amazon Q!', webviewView)
-        const responseReceived = await waitForChatResponse(webviewView)
-        if (!responseReceived) {
-            throw new Error('Chat response not received within timeout')
-        }
-        console.log('Chat response detected successfully')
+    it('Pin Context Test', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, '@workspace')
     })
 })

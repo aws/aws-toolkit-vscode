@@ -4,12 +4,11 @@
  */
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupHelper'
 import { testContext } from '../utils/testContext'
-import { clickQuickActionsCommand } from './quickActionsHelper'
-import { clearChat } from '../chat/chatHelper'
+import { clearChat, waitForChatResponse, writeToChat } from '../utils/generalUtils'
+import { closeAllTabs } from '../utils/cleanupUtils'
 
-describe('Amazon Q Chat Quick Actions Functionality', function () {
+describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
@@ -23,12 +22,15 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     })
 
     afterEach(async () => {
-        // before closing the tabs, make sure that any overlays have been dismissed
-        await dismissOverlayIfPresent(webviewView)
         await clearChat(webviewView)
     })
 
-    it('Quick Actions Test', async () => {
-        await clickQuickActionsCommand(webviewView, 'dev')
+    it('Chat Prompt Test', async () => {
+        await writeToChat('Hello, Amazon Q!', webviewView)
+        const responseReceived = await waitForChatResponse(webviewView)
+        if (!responseReceived) {
+            throw new Error('Chat response not received within timeout')
+        }
+        console.log('Chat response detected successfully')
     })
 })

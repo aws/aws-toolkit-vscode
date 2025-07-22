@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Workbench, By, WebviewView } from 'vscode-extension-tester'
-import { findItemByText, sleep, waitForElements } from '../utils/generalHelper'
-import { testContext } from '../utils/testContext'
+import { findItemByText, sleep, waitForElements } from './generalUtils'
+import { testContext } from './testContext'
 
 /* Completes the entire Amazon Q login flow
 

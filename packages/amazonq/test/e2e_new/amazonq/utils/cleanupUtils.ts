@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
-import { sleep } from './generalHelper'
+import { sleep } from './generalUtils'
 
 /**
  * Closes all open chat tabs

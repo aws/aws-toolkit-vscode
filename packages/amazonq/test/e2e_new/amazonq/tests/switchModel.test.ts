@@ -5,8 +5,8 @@
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { listModels, selectModel } from './switchModelHelper'
-import { closeAllTabs } from '../utils/cleanupHelper'
+import { listModels, selectModel } from '../helpers/switchModelHelper'
+import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Switch Model Functionality', function () {
     // this timeout is the general timeout for the entire test suite

@@ -4,12 +4,12 @@
  */
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupHelper'
+import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
-import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from './pinContextHelper'
-import { clearChat } from '../chat/chatHelper'
+import { clickQuickActionsCommand } from '../helpers/quickActionsHelper'
+import { clearChat } from '../utils/generalUtils'
 
-describe('Amazon Q Pin Context Functionality', function () {
+describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
@@ -23,13 +23,12 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     afterEach(async () => {
+        // before closing the tabs, make sure that any overlays have been dismissed
         await dismissOverlayIfPresent(webviewView)
         await clearChat(webviewView)
     })
 
-    it('Pin Context Test', async () => {
-        await clickPinContextButton(webviewView)
-        await getPinContextMenuItems(webviewView)
-        await clickPinContextMenuItem(webviewView, '@workspace')
+    it('Quick Actions Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'dev')
     })
 })
