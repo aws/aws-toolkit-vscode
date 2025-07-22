@@ -51,7 +51,6 @@ import {
     SsoSession,
     GetMfaCodeParams,
     getMfaCodeRequestType,
-
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
@@ -73,9 +72,7 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
-    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(
-        getMfaCodeRequestType.method
-    )
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -101,7 +98,10 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
-    readonly #stsCacheWatcher = getCacheFileWatcher(getStsCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
+    readonly #stsCacheWatcher = getCacheFileWatcher(
+        getStsCacheDir(),
+        getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq)
+    )
 
     constructor(
         private readonly client: LanguageClient,
@@ -183,7 +183,14 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
-    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string, sourceProfile?: string): Promise<UpdateProfileResult> {
+    updateIamProfile(
+        profileName: string,
+        accessKey: string,
+        secretKey: string,
+        sessionToken?: string,
+        roleArn?: string,
+        sourceProfile?: string
+    ): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
         let profile: Profile
         if (roleArn) {
@@ -306,7 +313,9 @@ export abstract class BaseLogin {
     protected loginType: LoginType | undefined
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
-    protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string } | undefined
+    protected _data:
+        | { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string }
+        | undefined
 
     constructor(
         public readonly profileName: string,
@@ -533,7 +542,7 @@ export class IamLogin extends BaseLogin {
         )
     }
 
-    async login(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
+    async login(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -556,13 +565,27 @@ export class IamLogin extends BaseLogin {
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
+    async updateProfile(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
         if (opts.roleArn) {
             const sourceProfile = this.profileName + '-source'
-            await this.lspAuth.updateIamProfile(sourceProfile, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
+            await this.lspAuth.updateIamProfile(
+                sourceProfile,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
             await this.lspAuth.updateIamProfile(this.profileName, '', '', '', opts.roleArn, sourceProfile)
         } else {
-            await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
+            await this.lspAuth.updateIamProfile(
+                this.profileName,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
         }
     }
 
