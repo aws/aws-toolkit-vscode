@@ -1262,6 +1262,10 @@
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
                     "when": "false"
+                },
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1324,6 +1328,11 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost",
+                    "group": "smus@0"
+                },
                 {
                     "command": "aws.toolkit.submitFeedback",
                     "when": "view == aws.explorer && !aws.isWebExtHost",
@@ -2651,6 +2660,17 @@
                 "command": "aws.sagemaker.stopSpace",
                 "title": "Stop SageMaker Space",
                 "icon": "$(debug-stop)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.switchProject",
+                "title": "%AWS.command.smus.switchProject%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {

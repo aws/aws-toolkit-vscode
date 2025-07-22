@@ -64,6 +64,20 @@ describe('SageMaker Unified Studio explorer activation', function () {
         assert(registerCommandStub.calledWith('aws.smus.rootView.refresh', sinon.match.func))
     })
 
+    it('registers project view command', async function () {
+        await activate(mockContext)
+
+        // Verify project view command was registered
+        assert(registerCommandStub.calledWith('aws.smus.projectView', sinon.match.func))
+    })
+
+    it('registers switch project command', async function () {
+        await activate(mockContext)
+
+        // Verify switch project command was registered
+        assert(registerCommandStub.calledWith('aws.smus.switchProject', sinon.match.func))
+    })
+
     it('registers retry command', async function () {
         const registerStub = sinon.stub(retrySmusProjectsCommand, 'register').returns({ dispose: sinon.stub() } as any)
 
@@ -76,8 +90,9 @@ describe('SageMaker Unified Studio explorer activation', function () {
     it('adds subscriptions to extension context', async function () {
         await activate(mockContext)
 
-        // Verify subscriptions were added (retry command, tree view, refresh command, project view command, DataZoneClient disposable)
-        assert.strictEqual(mockContext.subscriptions.length, 5)
+        // Verify subscriptions were added (retry command, tree view, refresh command,
+        // project view command, switch project command, DataZoneClient disposable)
+        assert.strictEqual(mockContext.subscriptions.length, 6)
     })
 
     it('registers DataZoneClient disposal', async function () {

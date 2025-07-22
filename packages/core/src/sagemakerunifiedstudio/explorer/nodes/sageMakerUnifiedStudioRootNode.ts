@@ -102,33 +102,36 @@ export const retrySmusProjectsCommand = Commands.declare('aws.smus.retryProjects
     }
 })
 
-export async function selectSMUSProject(
-    selectNode?: SageMakerUnifiedStudioProjectNode,
-    smusDomainId?: string,
-    maxResults: number = 50
-) {
+export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode, smusDomainId?: string) {
     const logger = getLogger()
     getLogger().info('Listing SMUS projects in the domain')
     try {
         const datazoneClient = DataZoneClient.getInstance()
         const domainId = smusDomainId ? smusDomainId : datazoneClient.getDomainId()
 
-        // List projects in the domain. Make this paginated in the follow up PR.
-        const smusProjects = await datazoneClient.listProjects({
+        // Fetching all projects in the specified domain as we have to sort them by updatedAt
+        const smusProjects = await datazoneClient.fetchAllProjects({
             domainId: domainId,
-            maxResults: maxResults,
         })
 
-        if (smusProjects.projects.length === 0) {
+        if (smusProjects.length === 0) {
             void vscode.window.showInformationMessage('No projects found in the domain')
             return
         }
-        const items = smusProjects.projects.map((project) => ({
-            label: project.name,
-            detail: project.id,
-            description: project.description,
-            data: project,
-        }))
+        // Process projects: sort by updatedAt, filter out current project, and map to quick pick items
+        const items = [...smusProjects]
+            .sort(
+                (a, b) =>
+                    (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) -
+                    (a.updatedAt ? new Date(a.updatedAt).getTime() : 0)
+            )
+            .filter((project) => !projectNode?.getProject() || project.id !== projectNode.getProject()?.id)
+            .map((project) => ({
+                label: project.name,
+                detail: project.id,
+                description: project.description,
+                data: project,
+            }))
 
         const quickPick = createQuickPick(items, {
             title: 'Select a SageMaker Unified Studio project you want to open',
@@ -136,13 +139,16 @@ export async function selectSMUSProject(
         })
 
         const selectedProject = await quickPick.prompt()
-        if (selectedProject && selectNode) {
-            selectNode.setSelectedProject(selectedProject)
+        if (selectedProject && projectNode) {
+            projectNode.setProject(selectedProject)
+
+            // Refresh the entire tree view
+            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
         }
 
         return selectedProject
     } catch (err) {
-        logger.error('Failed to get SMUS projects: %s', (err as Error).message)
-        void vscode.window.showErrorMessage(`Failed to load projects: ${(err as Error).message}`)
+        logger.error('Failed to select project: %s', (err as Error).message)
+        void vscode.window.showErrorMessage(`Failed to select project: ${(err as Error).message}`)
     }
 }

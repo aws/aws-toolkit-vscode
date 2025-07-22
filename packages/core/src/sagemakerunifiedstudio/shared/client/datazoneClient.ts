@@ -226,4 +226,37 @@ export class DataZoneClient {
             throw err
         }
     }
+
+    /**
+     * Fetches all projects in a DataZone domain by handling pagination automatically
+     * @param options Options for listing projects (excluding nextToken which is handled internally)
+     * @returns Promise resolving to an array of all DataZone projects
+     */
+    public async fetchAllProjects(options?: {
+        domainId?: string
+        userIdentifier?: string
+        groupIdentifier?: string
+        name?: string
+    }): Promise<DataZoneProject[]> {
+        try {
+            let allProjects: DataZoneProject[] = []
+            let nextToken: string | undefined
+            do {
+                const maxResultsPerPage = 50
+                const response = await this.listProjects({
+                    ...options,
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+                allProjects = [...allProjects, ...response.projects]
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            this.logger.info(`DataZoneClient: Fetched a total of ${allProjects.length} projects`)
+            return allProjects
+        } catch (err) {
+            this.logger.error('DataZoneClient: Failed to fetch all projects: %s', err as Error)
+            throw err
+        }
+    }
 }

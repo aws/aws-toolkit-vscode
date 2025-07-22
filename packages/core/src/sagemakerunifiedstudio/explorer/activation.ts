@@ -11,7 +11,6 @@ import {
     selectSMUSProject,
 } from './nodes/sageMakerUnifiedStudioRootNode'
 import { DataZoneClient } from '../shared/client/datazoneClient'
-// import { Commands } from '../../shared/vscode/commands2'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Create the SMUS projects tree view
@@ -30,8 +29,14 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             treeDataProvider.refresh()
         }),
 
-        vscode.commands.registerCommand('aws.smus.projectView', async (rootNode?: any) => {
-            return await selectSMUSProject(rootNode)
+        vscode.commands.registerCommand('aws.smus.projectView', async (projectNode?: any) => {
+            return await selectSMUSProject(projectNode)
+        }),
+
+        vscode.commands.registerCommand('aws.smus.switchProject', async () => {
+            // Get the project node from the root node to ensure we're using the same instance
+            const projectNode = smusRootNode.getProjectSelectNode()
+            return await selectSMUSProject(projectNode)
         }),
 
         // Dispose DataZoneClient when extension is deactivated

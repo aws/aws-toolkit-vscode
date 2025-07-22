@@ -173,4 +173,96 @@ describe('DataZoneClient', function () {
             )
         })
     })
+
+    describe('fetchAllProjects', function () {
+        it('fetches all projects by handling pagination', async function () {
+            const client = DataZoneClient.getInstance()
+
+            // Create a stub for listProjects that returns paginated results
+            const listProjectsStub = sinon.stub()
+
+            // First call returns first page with nextToken
+            listProjectsStub.onFirstCall().resolves({
+                projects: [
+                    {
+                        id: 'project-1',
+                        name: 'Project 1',
+                        description: 'First project',
+                        domainId: testDomainId,
+                    },
+                ],
+                nextToken: 'next-page-token',
+            })
+
+            // Second call returns second page with no nextToken
+            listProjectsStub.onSecondCall().resolves({
+                projects: [
+                    {
+                        id: 'project-2',
+                        name: 'Project 2',
+                        description: 'Second project',
+                        domainId: testDomainId,
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            // Replace the listProjects method with our stub
+            client.listProjects = listProjectsStub
+
+            // Call fetchAllProjects
+            const result = await client.fetchAllProjects({ domainId: testDomainId })
+
+            // Verify results
+            assert.strictEqual(result.length, 2)
+            assert.strictEqual(result[0].id, 'project-1')
+            assert.strictEqual(result[1].id, 'project-2')
+
+            // Verify listProjects was called correctly
+            assert.strictEqual(listProjectsStub.callCount, 2)
+            assert.deepStrictEqual(listProjectsStub.firstCall.args[0], {
+                domainId: testDomainId,
+                maxResults: 50,
+                nextToken: undefined,
+            })
+            assert.deepStrictEqual(listProjectsStub.secondCall.args[0], {
+                domainId: testDomainId,
+                maxResults: 50,
+                nextToken: 'next-page-token',
+            })
+        })
+
+        it('returns empty array when no projects found', async function () {
+            const client = DataZoneClient.getInstance()
+
+            // Create a stub for listProjects that returns empty results
+            const listProjectsStub = sinon.stub().resolves({
+                projects: [],
+                nextToken: undefined,
+            })
+
+            // Replace the listProjects method with our stub
+            client.listProjects = listProjectsStub
+
+            // Call fetchAllProjects
+            const result = await client.fetchAllProjects()
+
+            // Verify results
+            assert.strictEqual(result.length, 0)
+            assert.strictEqual(listProjectsStub.callCount, 1)
+        })
+
+        it('handles errors gracefully', async function () {
+            const client = DataZoneClient.getInstance()
+
+            // Create a stub for listProjects that throws an error
+            const listProjectsStub = sinon.stub().rejects(new Error('API error'))
+
+            // Replace the listProjects method with our stub
+            client.listProjects = listProjectsStub
+
+            // Call fetchAllProjects and expect it to throw
+            await assert.rejects(() => client.fetchAllProjects(), /API error/)
+        })
+    })
 })
