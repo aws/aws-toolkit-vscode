@@ -34,7 +34,6 @@ import {
     vsCodeState,
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
-    ReferenceInlineProvider,
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
@@ -111,88 +110,88 @@ export class InlineCompletionManager implements Disposable {
             startLine: number,
             firstCompletionDisplayLatency?: number
         ) => {
-            // TODO: also log the seen state for other suggestions in session
-            // Calculate timing metrics before diagnostic delay
-            const totalSessionDisplayTime = performance.now() - requestStartTime
-            await sleep(1000)
-            const diagnosticDiff = getDiagnosticsDifferences(
-                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
-                getDiagnosticsOfCurrentFile()
-            )
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: sessionId,
-                completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: true,
-                        discarded: false,
+            try {
+                vsCodeState.isCodeWhispererEditing = true
+                // TODO: also log the seen state for other suggestions in session
+                // Calculate timing metrics before diagnostic delay
+                const totalSessionDisplayTime = performance.now() - requestStartTime
+                await sleep(500)
+                const diagnosticDiff = getDiagnosticsDifferences(
+                    this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
+                    getDiagnosticsOfCurrentFile()
+                )
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: sessionId,
+                    completionSessionResult: {
+                        [item.itemId]: {
+                            seen: true,
+                            accepted: true,
+                            discarded: false,
+                        },
                     },
-                },
-                totalSessionDisplayTime: totalSessionDisplayTime,
-                firstCompletionDisplayLatency: firstCompletionDisplayLatency,
-                addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
-                removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
-            }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                this.inlineCompletionProvider
-            )
-            if (item.references && item.references.length) {
-                const referenceLog = ReferenceLogViewProvider.getReferenceLog(
-                    item.insertText as string,
-                    item.references,
-                    editor
+                    totalSessionDisplayTime: totalSessionDisplayTime,
+                    firstCompletionDisplayLatency: firstCompletionDisplayLatency,
+                    addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
+                    removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.disposable.dispose()
+                this.disposable = languages.registerInlineCompletionItemProvider(
+                    CodeWhispererConstants.platformLanguageIds,
+                    this.inlineCompletionProvider
                 )
-                ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-                ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
-
-                // Show codelense for 5 seconds.
-                ReferenceInlineProvider.instance.setInlineReference(
-                    startLine,
-                    item.insertText as string,
-                    item.references
-                )
-                setTimeout(() => {
-                    ReferenceInlineProvider.instance.removeInlineReference()
-                }, 5000)
+                if (item.references && item.references.length) {
+                    const referenceLog = ReferenceLogViewProvider.getReferenceLog(
+                        item.insertText as string,
+                        item.references,
+                        editor
+                    )
+                    ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
+                    ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+                }
+                if (item.mostRelevantMissingImports?.length) {
+                    await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
+                }
+                this.sessionManager.incrementSuggestionCount()
+                // clear session manager states once accepted
+                this.sessionManager.clear()
+            } finally {
+                vsCodeState.isCodeWhispererEditing = false
             }
-            if (item.mostRelevantMissingImports?.length) {
-                await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
-            }
-            this.sessionManager.incrementSuggestionCount()
-            // clear session manager states once accepted
-            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
         const onInlineRejection = async () => {
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
-            // TODO: also log the seen state for other suggestions in session
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                this.inlineCompletionProvider
-            )
-            const sessionId = this.sessionManager.getActiveSession()?.sessionId
-            const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-            if (!sessionId || !itemId) {
-                return
-            }
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: sessionId,
-                completionSessionResult: {
-                    [itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
+            try {
+                vsCodeState.isCodeWhispererEditing = true
+                await commands.executeCommand('editor.action.inlineSuggest.hide')
+                // TODO: also log the seen state for other suggestions in session
+                this.disposable.dispose()
+                this.disposable = languages.registerInlineCompletionItemProvider(
+                    CodeWhispererConstants.platformLanguageIds,
+                    this.inlineCompletionProvider
+                )
+                const sessionId = this.sessionManager.getActiveSession()?.sessionId
+                const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
+                if (!sessionId || !itemId) {
+                    return
+                }
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: true,
+                            accepted: false,
+                            discarded: false,
+                        },
                     },
-                },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                // clear session manager states once rejected
+                this.sessionManager.clear()
+            } finally {
+                vsCodeState.isCodeWhispererEditing = false
             }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-            // clear session manager states once rejected
-            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.rejectCodeSuggestion', onInlineRejection)
     }
@@ -241,6 +240,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+            // return early when suggestions are disabled with auto trigger
+            return []
+        }
+
         // yield event loop to let the document listen catch updates
         await sleep(1)
         // prevent user deletion invoking auto trigger
@@ -254,12 +259,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         try {
             const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
-            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
-            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
-                // return early when suggestions are disabled with auto trigger
-                return []
-            }
-
             // handling previous session
             const prevSession = this.sessionManager.getActiveSession()
             const prevSessionId = prevSession?.sessionId
@@ -335,7 +334,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 context,
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions
+                getAllRecommendationsOptions,
+                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -430,7 +430,6 @@ ${itemLog}
                     }
                     item.range = new Range(cursorPosition, cursorPosition)
                     itemsMatchingTypeahead.push(item)
-                    ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
                 }
             }
 
@@ -452,6 +451,7 @@ ${itemLog}
                 return []
             }
 
+            this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
             logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
             return itemsMatchingTypeahead as InlineCompletionItem[]
