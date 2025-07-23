@@ -34,12 +34,41 @@ export class QuickActionGenerator {
         const quickActionCommands = [
             {
                 commands: [
+                    ...(!this.disabledCommands.includes('/dev')
+                        ? [
+                              {
+                                  command: '/dev',
+                                  icon: MynahIcons.CODE_BLOCK,
+                                  placeholder: 'Describe your task or issue in as much detail as possible',
+                                  description: 'Generate code to make a change in your project',
+                              },
+                          ]
+                        : []),
+                    ...(!this.disabledCommands.includes('/test')
+                        ? [
+                              {
+                                  command: '/test',
+                                  icon: MynahIcons.CHECK_LIST,
+                                  placeholder: 'Specify a function(s) in the current file (optional)',
+                                  description: 'Generate unit tests for selected code',
+                              },
+                          ]
+                        : []),
                     ...(this.isScanEnabled && !this.disabledCommands.includes('/review')
                         ? [
                               {
                                   command: '/review',
                                   icon: MynahIcons.BUG,
                                   description: 'Identify and fix code issues before committing',
+                              },
+                          ]
+                        : []),
+                    ...(!this.disabledCommands.includes('/doc')
+                        ? [
+                              {
+                                  command: '/doc',
+                                  icon: MynahIcons.FILE,
+                                  description: 'Generate documentation',
                               },
                           ]
                         : []),
