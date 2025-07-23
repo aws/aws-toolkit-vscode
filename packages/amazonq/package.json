@@ -562,17 +562,17 @@
         "commands": [
             {
                 "command": "aws.amazonq.stopCmdExecution",
-                "title": "Stop Amazon Q Command Execution",
+                "title": "Stop Amazon Q",
                 "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.runCmdExecution",
-                "title": "Run Amazon Q Command Execution",
+                "title": "Run Amazon Q Tool",
                 "category": "%AWS.amazonq.title%"
             },
             {
                 "command": "aws.amazonq.rejectCmdExecution",
-                "title": "Reject Amazon Q Command Execution",
+                "title": "Reject Amazon Q Tool",
                 "category": "%AWS.amazonq.title%"
             },
             {
