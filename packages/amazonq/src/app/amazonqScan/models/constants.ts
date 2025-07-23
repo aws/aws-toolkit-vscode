@@ -98,4 +98,4 @@ const getIconForStep = (targetStep: number, currentStep: number) => {
           : checkIcons.wait
 }
 
-export const codeReviewInChat = false
+export const codeReviewInChat = true
