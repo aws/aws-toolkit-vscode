@@ -11,9 +11,6 @@ export function activateAgents() {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
     amazonqNode.cwChatAppInit(appInitContext)
-    amazonqNode.featureDevChatAppInit(appInitContext)
     amazonqNode.gumbyChatAppInit(appInitContext)
-    amazonqNode.testChatAppInit(appInitContext)
-    amazonqNode.docChatAppInit(appInitContext)
     scanChatAppInit(appInitContext)
 }
