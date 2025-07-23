@@ -232,7 +232,9 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     emitIamClick() {
-        telemetry.auth_iamOptionClick.emit()
+        telemetry.auth_signInOptionClick.emit({
+            signInOption: 'IAM Credentials',
+        })
     }
 
     /**
