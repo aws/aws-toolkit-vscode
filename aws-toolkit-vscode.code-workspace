@@ -1,23 +1,26 @@
 {
     "folders": [
         {
-            "path": "."
+            "path": ".",
         },
         {
-            "path": "packages/toolkit"
+            "path": "packages/toolkit",
         },
         {
-            "path": "packages/core"
+            "path": "packages/core",
         },
         {
-            "path": "packages/amazonq"
+            "path": "packages/amazonq",
         },
         {
-            "path": "../language-servers"
+            "path": "../language-servers",
         },
         {
-            "path": "../language-server-runtimes"
-        }
+            "path": "../language-server-runtimes",
+        },
+        {
+            "path": "../aws-toolkit-common",
+        },
     ],
     "settings": {
         "typescript.tsdk": "node_modules/typescript/lib",
