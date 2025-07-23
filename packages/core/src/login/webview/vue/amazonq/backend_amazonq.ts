@@ -20,7 +20,7 @@ import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile, vsCodeState } from '../../../../codewhisperer/models/model'
 import { randomUUID } from '../../../../shared/crypto'
 import globals from '../../../../shared/extensionGlobals'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { CredentialType, telemetry } from '../../../../shared/telemetry/telemetry'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 const className = 'AmazonQLoginWebview'
@@ -204,6 +204,15 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         // Defining separate auth function to emit telemetry before returning from this method
         await globals.globalState.update('recentIamKeys', { accessKey: accessKey })
         await globals.globalState.update('recentRoleArn', { roleArn: roleArn })
+        let credentialsType: CredentialType | undefined
+        if (!sessionToken && !roleArn) {
+            credentialsType = 'staticProfile'
+        } else if (roleArn) {
+            credentialsType = 'assumeRoleProfile'
+        } else {
+            credentialsType = 'staticSessionProfile'
+        }
+
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
                 await AuthUtil.instance.login_iam(accessKey, secretKey, sessionToken, roleArn)
@@ -225,6 +234,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.storeMetricMetadata({
             credentialSourceId: 'sharedCredentials',
             authEnabledFeatures: 'codewhisperer',
+            credentialType: credentialsType,
             ...this.getResultForMetrics(result),
         })
         this.emitAuthMetric()

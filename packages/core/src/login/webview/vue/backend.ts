@@ -232,8 +232,8 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     emitIamClick() {
-        telemetry.auth_signInOptionClick.emit({
-            signInOption: 'IAM Credentials',
+        telemetry.ui_click.emit({
+            elementId: 'Use with IAM Credentials',
         })
     }
 
