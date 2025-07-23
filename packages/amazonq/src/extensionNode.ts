@@ -100,7 +100,10 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
 async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     const state = AuthUtil.instance.getAuthState()
 
-    if (AuthUtil.instance.isConnected() && !(AuthUtil.instance.isSsoSession() || AuthUtil.instance.isIamSession() || isSageMaker())) {
+    if (
+        AuthUtil.instance.isConnected() &&
+        !(AuthUtil.instance.isSsoSession() || AuthUtil.instance.isIamSession() || isSageMaker())
+    ) {
         getLogger().error('Current Amazon Q connection is not SSO nor IAM')
     }
 
