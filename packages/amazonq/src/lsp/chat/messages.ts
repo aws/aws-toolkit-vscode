@@ -88,6 +88,7 @@ import {
     openUrl,
     isTextEditor,
     globals,
+    setContext,
 } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -490,6 +491,11 @@ export function registerMessageListeners(
             }
             default:
                 if (isServerEvent(message.command)) {
+                    if (enterFocus(message.params)) {
+                        await setContext('aws.amazonq.amazonqChatLSP.isFocus', true)
+                    } else if (exitFocus(message.params)) {
+                        await setContext('aws.amazonq.amazonqChatLSP.isFocus', false)
+                    }
                     languageClient.sendNotification(message.command, message.params)
                 }
                 break
@@ -697,6 +703,14 @@ export function registerMessageListeners(
 
 function isServerEvent(command: string) {
     return command.startsWith('aws/chat/') || command === 'telemetry/event'
+}
+
+function enterFocus(params: any) {
+    return params.name === 'enterFocus'
+}
+
+function exitFocus(params: any) {
+    return params.name === 'exitFocus'
 }
 
 /**
