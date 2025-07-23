@@ -13,7 +13,6 @@ import {
     CodewhispererPreviousSuggestionState,
     CodewhispererUserDecision,
     CodewhispererUserTriggerDecision,
-    Status,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
@@ -28,7 +27,6 @@ import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import CodeWhispererUserClient, { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
-import { Session } from '../../amazonqTest/chat/session/session'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { getDiagnosticsDifferences, getDiagnosticsOfCurrentFile, toIdeDiagnostics } from './diagnosticsUtil'
 import { Auth } from '../../auth/auth'
@@ -69,54 +67,6 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
-    }
-
-    public sendTestGenerationToolkitEvent(
-        session: Session,
-        isSupportedLanguage: boolean,
-        isFileInWorkspace: boolean,
-        result: 'Succeeded' | 'Failed' | 'Cancelled',
-        requestId?: string,
-        perfClientLatency?: number,
-        reasonDesc?: string,
-        isCodeBlockSelected?: boolean,
-        artifactsUploadDuration?: number,
-        buildPayloadBytes?: number,
-        buildZipFileBytes?: number,
-        acceptedCharactersCount?: number,
-        acceptedCount?: number,
-        acceptedLinesCount?: number,
-        generatedCharactersCount?: number,
-        generatedCount?: number,
-        generatedLinesCount?: number,
-        reason?: string,
-        status?: Status
-    ) {
-        telemetry.amazonq_utgGenerateTests.emit({
-            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-            hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isSupportedLanguage: session.isSupportedLanguage,
-            isFileInWorkspace: isFileInWorkspace,
-            result: result,
-            artifactsUploadDuration: artifactsUploadDuration,
-            buildPayloadBytes: buildPayloadBytes,
-            buildZipFileBytes: buildZipFileBytes,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            acceptedCharactersCount: acceptedCharactersCount,
-            acceptedCount: acceptedCount,
-            acceptedLinesCount: acceptedLinesCount,
-            generatedCharactersCount: generatedCharactersCount,
-            generatedCount: generatedCount,
-            generatedLinesCount: generatedLinesCount,
-            isCodeBlockSelected: isCodeBlockSelected,
-            jobGroup: session.testGenerationJobGroupName,
-            jobId: session.listOfTestGenerationJobId[0],
-            perfClientLatency: perfClientLatency,
-            requestId: requestId,
-            reasonDesc: reasonDesc,
-            reason: reason,
-            status: status,
-        })
     }
 
     public recordServiceInvocationTelemetry(

@@ -4,17 +4,7 @@
  */
 
 export type TabStatus = 'free' | 'busy' | 'dead'
-const TabTypes = [
-    'cwc',
-    'featuredev',
-    'gumby',
-    'review',
-    'testgen',
-    'doc',
-    'agentWalkthrough',
-    'welcome',
-    'unknown',
-] as const
+const TabTypes = ['cwc', 'gumby', 'review', 'agentWalkthrough', 'welcome', 'unknown'] as const
 export type TabType = (typeof TabTypes)[number]
 export function isTabType(value: string): value is TabType {
     return (TabTypes as readonly string[]).includes(value)
@@ -22,16 +12,10 @@ export function isTabType(value: string): value is TabType {
 
 export function getTabCommandFromTabType(tabType: TabType): string {
     switch (tabType) {
-        case 'featuredev':
-            return '/dev'
-        case 'doc':
-            return '/doc'
         case 'gumby':
             return '/transform'
         case 'review':
             return '/review'
-        case 'testgen':
-            return '/test'
         default:
             return ''
     }

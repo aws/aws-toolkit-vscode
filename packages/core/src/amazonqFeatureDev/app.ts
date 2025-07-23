@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { UIMessageListener } from './views/actions/uiMessageListener'
 import { ChatControllerEventEmitters, FeatureDevController } from './controllers/chat/controller'
 import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
-import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
 import { getLogger } from '../shared/logger/logger'
@@ -80,11 +79,6 @@ export function init(appContext: AmazonQAppInitContext) {
         chatControllerEventEmitters: featureDevChatControllerEventEmitters,
         webViewMessageListener: new MessageListener<any>(featureDevChatUIInputEventEmitter),
     })
-
-    appContext.registerWebViewToAppMessagePublisher(
-        new MessagePublisher<any>(featureDevChatUIInputEventEmitter),
-        'featuredev'
-    )
 
     const debouncedEvent = debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'

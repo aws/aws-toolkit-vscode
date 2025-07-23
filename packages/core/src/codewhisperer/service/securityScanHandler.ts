@@ -35,13 +35,11 @@ import {
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
 } from '../models/errors'
-import { getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
+import { getTelemetryReasonDesc } from '../../shared/errors'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { detectCommentAboveLine } from '../../shared/utilities/commentUtils'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { FeatureUseCase } from '../models/constants'
-import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
-import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { AmazonqCreateUpload, Span, telemetry } from '../../shared/telemetry/telemetry'
 import { AuthUtil } from '../util/authUtil'
 
@@ -432,10 +430,7 @@ export async function uploadArtifactToS3(
         } else {
             errorMessage = errorDesc ?? defaultMessage
         }
-        if (isAwsError(error) && featureUseCase === FeatureUseCase.TEST_GENERATION) {
-            ChatSessionManager.Instance.getSession().startTestGenerationRequestId = error.requestId
-        }
-        throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
+        throw new UploadArtifactToS3Error(errorMessage)
     } finally {
         getLogger().debug(`Upload to S3 response details: x-amz-request-id: ${requestId}, x-amz-id-2: ${id2}`)
         if (span) {

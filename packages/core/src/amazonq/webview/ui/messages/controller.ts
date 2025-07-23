@@ -14,11 +14,8 @@ export interface MessageControllerProps {
     mynahUIRef: MynahUIRef
     connector: Connector
     tabsStorage: TabsStorage
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
-    isTestEnabled: boolean
-    isDocEnabled: boolean
     disabledCommands?: string[]
 }
 
@@ -33,11 +30,8 @@ export class MessageController {
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
-            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
             isScanEnabled: props.isScanEnabled,
-            isTestEnabled: props.isTestEnabled,
-            isDocEnabled: props.isDocEnabled,
             disabledCommands: props.disabledCommands,
         })
     }
