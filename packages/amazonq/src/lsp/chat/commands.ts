@@ -6,11 +6,12 @@
 import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
+import { CodeScanIssue, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { getLogger } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { codeReviewInChat } from '../../app/amazonqScan/models/constants'
+import { telemetry, AmazonqCodeReviewTool } from 'aws-core-vscode/telemetry'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -30,7 +31,8 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 filePath,
                 'Explain',
                 'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user.',
-                provider
+                provider,
+                'explainIssue'
             )
         ),
         Commands.register('aws.amazonq.generateFix', (issue: CodeScanIssue, filePath: string) =>
@@ -39,7 +41,8 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 filePath,
                 'Fix',
                 'Generate a fix for the following code issue. You must not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed.',
-                provider
+                provider,
+                'applyFix'
             )
         ),
         Commands.register('aws.amazonq.sendToPrompt', (data) => {
@@ -74,7 +77,8 @@ async function handleIssueCommand(
     filePath: string,
     action: string,
     contextPrompt: string,
-    provider: AmazonQChatViewProvider
+    provider: AmazonQChatViewProvider,
+    metricName: string
 ) {
     await focusAmazonQPanel()
 
@@ -98,6 +102,16 @@ async function handleIssueCommand(
             autoSubmit: true,
         },
     })
+
+    telemetry.amazonq_codeReviewTool.emit({
+        findingId: issue.findingId,
+        detectorId: issue.detectorId,
+        ruleId: issue.ruleId,
+        credentialStartUrl: AuthUtil.instance.startUrl,
+        autoDetected: issue.autoDetected,
+        result: 'Succeeded',
+        reason: metricName,
+    } as AmazonqCodeReviewTool)
 }
 
 async function openFileWithSelection(issue: CodeScanIssue, filePath: string) {
