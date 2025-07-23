@@ -69,6 +69,8 @@ export class ExecuteStateMachineWebview extends VueWebview {
             this.logger.info('started execution for Step Functions State Machine')
             this.channel.appendLine(localize('AWS.stepFunctions.executeStateMachine.info.started', 'Execution started'))
             this.channel.appendLine(startExecResponse.executionArn || '')
+
+            this.dispose()
         } catch (e) {
             executeResult = 'Failed'
             const error = e as Error
