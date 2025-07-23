@@ -15,6 +15,7 @@ import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { ExecutionDetailProvider } from '../../executionDetails/executionDetailProvider'
 
 interface StateMachine {
     arn: string
@@ -61,6 +62,10 @@ export class ExecuteStateMachineWebview extends VueWebview {
                 stateMachineArn: this.stateMachine.arn,
                 input,
             })
+            await ExecutionDetailProvider.openExecutionDetails(
+                startExecResponse.executionArn!,
+                startExecResponse.startDate!.toString()
+            )
             this.logger.info('started execution for Step Functions State Machine')
             this.channel.appendLine(localize('AWS.stepFunctions.executeStateMachine.info.started', 'Execution started'))
             this.channel.appendLine(startExecResponse.executionArn || '')
