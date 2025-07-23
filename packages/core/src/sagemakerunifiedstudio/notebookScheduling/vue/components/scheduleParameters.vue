@@ -1,6 +1,11 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { reactive } from 'vue'
-import TkSpaceBetween from '../../../../shared/ux/tkSpaceBetween.vue'
+import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import KeyValueParameter from './keyValueParameter.vue'
 
 interface ParameterValue {
@@ -20,17 +25,17 @@ const state: State = reactive({
     parameterValues: new Map(),
 })
 
-const onAdd = () => {
+function onAdd(): void {
     state.count += 1
     state.parameters.push(state.count)
 }
 
-const onRemove = (id: number) => {
+function onRemove(id: number): void {
     state.parameters = state.parameters.filter((parameterId) => parameterId !== id)
     state.parameterValues.delete(id)
 }
 
-const onParameterChange = (id: number, error: boolean, name: string, value: string) => {
+function onParameterChange(id: number, error: boolean, name: string, value: string): void {
     if (error) {
         state.parameterValues.delete(id)
     } else {

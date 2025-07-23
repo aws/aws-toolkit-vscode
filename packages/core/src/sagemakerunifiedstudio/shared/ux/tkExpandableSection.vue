@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  * TkExpandableSection Component
  *
@@ -35,7 +40,7 @@ const state: State = reactive({
     expanded: false,
 })
 
-const onExpandClicked = () => {
+function onExpandClicked(): void {
     state.expanded = !state.expanded
 }
 </script>

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  * TkFixedLayout Component
  *
@@ -7,6 +12,7 @@
  *
  * ### Props
  * @prop {number} width - The fixed width (in pixels) applied to the content section.
+ * @prop {boolean} [center=true] - If true, content section is center aligned, otherwise left aligned.
  *
  * ### Slots
  * @slot default - The content to render inside the fixed-width layout container.
@@ -23,9 +29,12 @@ import { computed } from 'vue'
 
 interface Props {
     width: number
+    center?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {})
+const props = withDefaults(defineProps<Props>(), {
+    center: true,
+})
 
 const widthValue = computed(() => {
     return `${props.width}px`
@@ -33,7 +42,7 @@ const widthValue = computed(() => {
 </script>
 
 <template>
-    <main class="tk-fixed-layout">
+    <main class="tk-fixed-layout" :class="props.center ? 'tk-fixed-layout_center' : ''">
         <section>
             <slot />
         </section>
@@ -41,13 +50,16 @@ const widthValue = computed(() => {
 </template>
 
 <style scoped>
-.tk-fixed-layout {
+.tk-fixed-layout.tk-fixed-layout_center {
     display: flex;
 }
 
 .tk-fixed-layout > section {
-    margin: 0 auto;
     min-width: v-bind(widthValue);
+}
+
+.tk-fixed-layout.tk-fixed-layout_center > section {
+    margin: 0 auto;
     width: v-bind(widthValue);
 }
 </style>

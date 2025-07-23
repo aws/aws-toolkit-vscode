@@ -1,17 +1,22 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { reactive } from 'vue'
-import { WebviewClientFactory } from '../../../../../webviews/client'
-import { CreateScheduleWebview } from '../backend'
-import TkSpaceBetween from '../../../../shared/ux/tkSpaceBetween.vue'
-import TkBox from '../../../../shared/ux/tkBox.vue'
+import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
+import TkBox from '../../../shared/ux/tkBox.vue'
 import ScheduleParameters from '../components/scheduleParameters.vue'
-import TkExpandableSection from '../../../../shared/ux/tkExpandableSection.vue'
-import TkLabel from '../../../../shared/ux/tkLabel.vue'
-import CronSchedule, { ScheduleChange } from '../components/CronSchedule.vue'
-import TkInputField from '../../../../shared/ux/tkInputField.vue'
-import TkCheckboxField from '../../../../shared/ux/tkCheckboxField.vue'
-import TkSelectField, { Option } from '../../../../shared/ux/tkSelectField.vue'
-import TkHighlightContainer from '../../../../shared/ux/tkHighlightContainer.vue'
+import TkExpandableSection from '../../../shared/ux/tkExpandableSection.vue'
+import TkLabel from '../../../shared/ux/tkLabel.vue'
+import CronSchedule, { ScheduleChange } from '../components/cronSchedule.vue'
+import TkInputField from '../../../shared/ux/tkInputField.vue'
+import TkCheckboxField from '../../../shared/ux/tkCheckboxField.vue'
+import TkSelectField, { Option } from '../../../shared/ux/tkSelectField.vue'
+import TkHighlightContainer from '../../../shared/ux/tkHighlightContainer.vue'
+import { client } from '../composables/useClient'
+import { viewJobsPage } from '../../utils/constants'
 
 interface State {
     scheduleName: string
@@ -42,11 +47,9 @@ const state: State = reactive({
     maxRuntimeErrorMessage: '',
 })
 
-const client = WebviewClientFactory.create<CreateScheduleWebview>()
-
 const onCreatedClick = (event: MouseEvent) => {
     console.log('Button is clicked')
-    client.test()
+    client.setCurrentPage(viewJobsPage)
 }
 
 const onScheduleChange = (schedule: ScheduleChange) => {

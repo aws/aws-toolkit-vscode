@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  * TkLabel Component
  *
@@ -32,9 +37,6 @@ const props = withDefaults(defineProps<Props>(), { optional: false })
 </template>
 
 <style scoped>
-.tk-label {
-}
-
 .tk-label-label {
     color: var(--vscode-settings-headerForeground);
     font-size: var(--tk-font-size-medium);

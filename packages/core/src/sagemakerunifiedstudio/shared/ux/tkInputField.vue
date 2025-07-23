@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  * TkInputField Component
  *
@@ -75,7 +80,7 @@ const emit = defineEmits<{
                     @input="emit('update:value', ($event.target as HTMLInputElement).value)"
                 />
             </tk-box>
-            <span>{{ props.validationMessage }}</span>
+            <span v-if="props.validationMessage.length > 0">{{ props.validationMessage }}</span>
         </tk-space-between>
     </tk-space-between>
 </template>

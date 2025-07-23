@@ -1465,6 +1465,16 @@
                     "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.smus.notebookscheduling.createjob",
+                    "when": "resourceExtname == .ipynb",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.smus.notebookscheduling.viewjobs",
+                    "when": "resourceExtname == .ipynb",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
@@ -4290,8 +4300,13 @@
                 }
             },
             {
-                "command": "aws.sagemakerunifiedstudio.notebookscheduling.createjob",
-                "title": "Create job",
+                "command": "aws.smus.notebookscheduling.createjob",
+                "title": "Create Notebook Job",
+                "category": "Job"
+            },
+            {
+                "command": "aws.smus.notebookscheduling.viewjobs",
+                "title": "View Notebook Jobs",
                 "category": "Job"
             }
         ],

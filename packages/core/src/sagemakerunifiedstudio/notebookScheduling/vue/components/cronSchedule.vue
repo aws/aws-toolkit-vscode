@@ -1,9 +1,14 @@
 <script setup lang="ts">
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { reactive, watch } from 'vue'
-import TkSpaceBetween from '../../../../shared/ux/tkSpaceBetween.vue'
-import TkRadioField from '../../../../shared/ux/tkRadioField.vue'
-import TkSelectField, { Option } from '../../../../shared/ux/tkSelectField.vue'
-import TkInputField from '../../../../shared/ux/tkInputField.vue'
+import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
+import TkRadioField from '../../../shared/ux/tkRadioField.vue'
+import TkSelectField, { Option } from '../../../shared/ux/tkSelectField.vue'
+import TkInputField from '../../../shared/ux/tkInputField.vue'
 
 interface State {
     scheduleType: string

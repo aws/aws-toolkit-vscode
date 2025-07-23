@@ -8,6 +8,8 @@
     --tk-font-size-medium: 13px;
     --tk-font-size-small: 11px;
     --tk-font-size-extra-small: 9px;
+
+    --tk-gap-medium: 10px;
 }
 
 /* Set box-sizing globally */
