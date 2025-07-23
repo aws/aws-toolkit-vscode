@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Start Execution command from AWS Explorer now launches Execution Details after clicking Execute"
+	"description": "Start Execution option in the AWS Explorer now opens the execution details page after clicking Execute"
 }
