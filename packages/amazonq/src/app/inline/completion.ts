@@ -34,7 +34,6 @@ import {
     vsCodeState,
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
-    ReferenceInlineProvider,
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
@@ -114,12 +113,7 @@ export class InlineCompletionManager implements Disposable {
             // TODO: also log the seen state for other suggestions in session
             // Calculate timing metrics before diagnostic delay
             const totalSessionDisplayTime = performance.now() - requestStartTime
-            await sleep(1000)
-            const diagnosticDiff = getDiagnosticsDifferences(
-                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
-                getDiagnosticsOfCurrentFile()
-            )
-            const params: LogInlineCompletionSessionResultsParams = {
+            let params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
                     [item.itemId]: {
@@ -130,10 +124,9 @@ export class InlineCompletionManager implements Disposable {
                 },
                 totalSessionDisplayTime: totalSessionDisplayTime,
                 firstCompletionDisplayLatency: firstCompletionDisplayLatency,
-                addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
-                removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
+                addedDiagnostics: [],
+                removedDiagnostics: [],
             }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
@@ -147,23 +140,23 @@ export class InlineCompletionManager implements Disposable {
                 )
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
-
-                // Show codelense for 5 seconds.
-                ReferenceInlineProvider.instance.setInlineReference(
-                    startLine,
-                    item.insertText as string,
-                    item.references
-                )
-                setTimeout(() => {
-                    ReferenceInlineProvider.instance.removeInlineReference()
-                }, 5000)
             }
             if (item.mostRelevantMissingImports?.length) {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
             this.sessionManager.incrementSuggestionCount()
-            // clear session manager states once accepted
+            // clear session manager states immediately once accepted
             this.sessionManager.clear()
+
+            // compute diagnostics differences AFTER the session is cleared.
+            await sleep(1000)
+            const diagnosticDiff = getDiagnosticsDifferences(
+                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
+                getDiagnosticsOfCurrentFile()
+            )
+            params.addedDiagnostics = diagnosticDiff.added.map((it) => toIdeDiagnostics(it))
+            params.removedDiagnostics = diagnosticDiff.removed.map((it) => toIdeDiagnostics(it))
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
