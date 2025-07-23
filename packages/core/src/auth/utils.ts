@@ -40,6 +40,7 @@ import {
     hasScopes,
     scopesSsoAccountAccess,
     isSsoConnection,
+    IamConnection,
 } from './connection'
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
@@ -77,6 +78,18 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
 
     if (resp === 'editCredentials') {
         return globals.awsContextCommands.onCommandEditCredentials()
+    }
+
+    // If selected connection is SSO connection and has linked IAM profiles, show second quick pick with the linked IAM profiles
+    if (isSsoConnection(resp)) {
+        const linkedProfiles = await getLinkedIamProfiles(auth, resp)
+
+        if (linkedProfiles.length > 0) {
+            const linkedResp = await showLinkedProfilePicker(linkedProfiles, resp)
+            if (linkedResp) {
+                return linkedResp
+            }
+        }
     }
 
     return resp
@@ -340,6 +353,36 @@ export const createDeleteConnectionButton: () => vscode.QuickInputButton = () =>
     return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
 }
 
+async function getLinkedIamProfiles(auth: Auth, ssoConnection: SsoConnection): Promise<IamConnection[]> {
+    const allConnections = await auth.listAndTraverseConnections().promise()
+
+    return allConnections.filter(
+        (conn) => isIamConnection(conn) && conn.id.startsWith(`sso:${ssoConnection.id}#`)
+    ) as IamConnection[]
+}
+
+/**
+ * Shows a quick pick with linked IAM profiles for a selected SSO connection
+ */
+async function showLinkedProfilePicker(
+    linkedProfiles: IamConnection[],
+    ssoConnection: SsoConnection
+): Promise<IamConnection | undefined> {
+    const title = `Select an IAM Role for ${ssoConnection.label}`
+
+    const items: DataQuickPickItem<IamConnection>[] = linkedProfiles.map((profile) => ({
+        label: codicon`${getIcon('vscode-key')} ${profile.label}`,
+        description: 'IAM Credential, sourced from IAM Identity Center',
+        data: profile,
+    }))
+
+    return await showQuickPick(items, {
+        title,
+        placeholder: 'Select an IAM role',
+        buttons: [createRefreshButton(), createExitButton()],
+    })
+}
+
 export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
@@ -433,14 +476,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         for await (const conn of connections) {
             if (conn.label.includes('profile:') && !hasShownEdit) {
                 hasShownEdit = true
-                yield [toPickerItem(conn), editCredentials]
+                yield [await toPickerItem(conn), editCredentials]
             } else {
-                yield [toPickerItem(conn)]
+                yield [await toPickerItem(conn)]
             }
         }
     }
 
-    function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
+    async function toPickerItem(conn: Connection): Promise<DataQuickPickItem<Connection>> {
         const state = auth.getConnectionState(conn)
         // Only allow SSO connections to be deleted
         const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
@@ -448,7 +491,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
             return {
                 data: conn,
                 label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
-                description: getConnectionDescription(conn),
+                description: await getConnectionDescription(conn),
                 buttons: [...deleteButton],
             }
         }
@@ -502,7 +545,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         }
     }
 
-    function getConnectionDescription(conn: Connection) {
+    async function getConnectionDescription(conn: Connection) {
         if (conn.type === 'iam') {
             // TODO: implement a proper `getConnectionSource` method to discover where a connection came from
             const descSuffix = conn.id.startsWith('profile:')
@@ -512,6 +555,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
                   : 'sourced from the environment'
 
             return `IAM Credential, ${descSuffix}`
+        }
+
+        // If this is an SSO connection, check if it has linked IAM profiles
+        if (isSsoConnection(conn)) {
+            const linkedProfiles = await getLinkedIamProfiles(auth, conn)
+            if (linkedProfiles.length > 0) {
+                return `Has ${linkedProfiles.length} IAM role${linkedProfiles.length > 1 ? 's' : ''} (click to select)`
+            }
         }
 
         const toolAuths = getDependentAuths(conn)
