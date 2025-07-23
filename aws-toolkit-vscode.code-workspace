@@ -12,15 +12,6 @@
         {
             "path": "packages/amazonq",
         },
-        {
-            "path": "../language-servers",
-        },
-        {
-            "path": "../mynah-ui",
-        },
-        {
-            "path": "../aws-toolkit-common",
-        },
     ],
     "settings": {
         "typescript.tsdk": "node_modules/typescript/lib",
