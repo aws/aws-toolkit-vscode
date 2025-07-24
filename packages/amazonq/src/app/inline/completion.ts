@@ -204,7 +204,7 @@ export class InlineCompletionManager implements Disposable {
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
-    private logger = getLogger('nextEditPrediction')
+    private logger = getLogger()
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
@@ -305,7 +305,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 // re-use previous suggestions as long as new typed prefix matches
                 if (prevItemMatchingPrefix.length > 0) {
-                    getLogger().debug(`Re-using suggestions that match user typed characters`)
+                    logstr += `- not call LSP and reuse previous suggestions that match user typed characters
+                    - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
                     return prevItemMatchingPrefix
                 }
                 getLogger().debug(`Auto rejecting suggestions from previous session`)
@@ -325,7 +326,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
-            // TODO: this line will take ~200ms each trigger, need to root cause and maybe better to disable it for now
             // tell the tutorial that completions has been triggered
             await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
@@ -353,12 +353,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             const t2 = performance.now()
 
-            logstr = logstr += `- number of suggestions: ${items.length}
+            logstr += `- number of suggestions: ${items.length}
 - sessionId: ${this.sessionManager.getActiveSession()?.sessionId}
 - first suggestion content (next line):
 ${itemLog}
-- duration since trigger to before sending Flare call: ${t1 - t0}ms
-- duration since trigger to receiving responses from Flare: ${t2 - t0}ms
+- duration between trigger to before sending LSP call: ${t1 - t0}ms
+- duration between trigger to after receiving LSP response: ${t2 - t0}ms
+- duration between before sending LSP call to after receving LSP response: ${t2 - t1}ms
 `
             const session = this.sessionManager.getActiveSession()
 
@@ -368,16 +369,13 @@ ${itemLog}
             }
 
             if (!session || !items.length || !editor) {
-                getLogger().debug(
-                    `Failed to produce inline suggestion results. Received ${items.length} items from service`
-                )
+                logstr += `Failed to produce inline suggestion results. Received ${items.length} items from service`
                 return []
             }
 
             const cursorPosition = document.validatePosition(position)
 
             if (position.isAfter(editor.selection.active)) {
-                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion...`)
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -390,6 +388,7 @@ ${itemLog}
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
                 return []
             }
 
@@ -417,9 +416,7 @@ ${itemLog}
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
                         await showEdits(item, editor, session, this.languageClient, this)
-                        const t3 = performance.now()
-                        logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
-                        this.logger.info(logstr)
+                        logstr += `- duration between trigger to edits suggestion is displayed: ${performance.now() - t0}ms`
                     }
                     return []
                 }
@@ -445,9 +442,6 @@ ${itemLog}
 
             // report discard if none of suggestions match typeahead
             if (itemsMatchingTypeahead.length === 0) {
-                getLogger().debug(
-                    `Suggestion does not match user typeahead from insertion position. Discarding suggestion...`
-                )
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -460,17 +454,21 @@ ${itemLog}
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                logstr += `- suggestion does not match user typeahead from insertion position. Discarding suggestion...`
                 return []
             }
 
             this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
+            logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
+            logstr += `- failed to provide completion items ${(e as Error).message}`
             return []
         } finally {
             vsCodeState.isRecommendationsActive = false
+            this.logger.info(logstr)
         }
     }
 }

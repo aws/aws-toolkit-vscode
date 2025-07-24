@@ -92,13 +92,15 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
+            const t0 = performance.now()
             const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
-            getLogger().info('Received inline completion response: %O', {
+            getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
+                latency: performance.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -128,6 +130,7 @@ export class RecommendationService {
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 
+            // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
