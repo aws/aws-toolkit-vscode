@@ -4,7 +4,6 @@
  */
 import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor, Key } from 'vscode-extension-tester'
 import { until, WebDriver } from 'selenium-webdriver'
-import { IKey } from 'selenium-webdriver/lib/input'
 
 /**
  * General sleep function to wait for a specified amount of time
