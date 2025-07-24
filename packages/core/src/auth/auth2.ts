@@ -193,7 +193,7 @@ export class LanguageClientAuth {
     ): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
         let profile: Profile
-        if (roleArn) {
+        if (roleArn && sourceProfile) {
             profile = {
                 kinds: [ProfileKind.IamSourceProfileProfile],
                 name: profileName,
@@ -234,10 +234,6 @@ export class LanguageClientAuth {
         }
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: profile,
-            ssoSession: {
-                name: profileName,
-                settings: undefined,
-            },
         } satisfies UpdateProfileParams)
     }
 

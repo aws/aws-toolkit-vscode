@@ -179,7 +179,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using SSO
-    async login_sso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
+    async loginSso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
         let response: GetSsoTokenResult | undefined
         // Create SSO login session
         if (!this.isSsoSession()) {
@@ -191,7 +191,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using IAM or STS credentials
-    async login_iam(
+    async loginIam(
         accessKey: string,
         secretKey: string,
         sessionToken?: string,
