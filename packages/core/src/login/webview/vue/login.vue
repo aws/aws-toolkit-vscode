@@ -124,6 +124,16 @@
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
+                    :itemId="LoginOption.IAM_CREDENTIAL"
+                    :itemText="''"
+                    :itemTitle="'Use with IAM Credentials'"
+                    :itemType="LoginOption.IAM_CREDENTIAL"
+                    class="selectable-item bottomMargin"
+                ></SelectableItem>
+                <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
@@ -238,17 +248,19 @@
                 </svg>
             </button>
             <div class="header">IAM Credentials:</div>
-            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div class="title topMargin">Profile Name</div>
-            <div class="hint">The identifier for these credentials</div>
-            <input
-                class="iamInput bottomMargin"
-                type="text"
-                id="profileName"
-                name="profileName"
-                v-model="profileName"
-                @keydown.enter="handleContinueClick()"
-            />
+            <div v-if="app === 'TOOLKIT'">
+                <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+                <div class="title topMargin">Profile Name</div>
+                <div class="hint">The identifier for these credentials</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="profileName"
+                    name="profileName"
+                    v-model="profileName"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <div class="title">Access Key</div>
             <input
                 class="iamInput bottomMargin"
@@ -587,7 +599,11 @@ export default defineComponent({
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
         },
         shouldDisableIamContinue() {
-            return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            if (this.app === 'TOOLKIT') {
+                return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            } else {
+                return this.accessKey.length <= 0 || this.secretKey.length <= 0
+            }
         },
     },
 })
