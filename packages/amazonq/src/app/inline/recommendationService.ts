@@ -12,10 +12,10 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { globals, getLogger } from 'aws-core-vscode/shared'
+import { getLogger } from 'aws-core-vscode/shared'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -68,7 +68,7 @@ export class RecommendationService {
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
         }
-        const requestStartTime = globals.clock.Date.now()
+        const requestStartTime = performance.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -119,7 +119,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
+            const firstCompletionDisplayLatency = performance.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
@@ -186,6 +186,11 @@ export class RecommendationService {
                 request,
                 token
             )
+            // when pagination is in progress, but user has already accepted or rejected an inline completion
+            // then stop pagination
+            if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
+                break
+            }
             this.sessionManager.updateSessionSuggestions(result.items)
             nextToken = result.partialResultToken
         }
