@@ -271,7 +271,7 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead
         onClick = () => {
-            void AuthUtil.instance.login_sso(builderIdStartUrl, builderIdRegion)
+            void AuthUtil.instance.loginSso(builderIdStartUrl, builderIdRegion)
         }
     }
 

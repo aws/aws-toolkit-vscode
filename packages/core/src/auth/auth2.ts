@@ -178,7 +178,7 @@ export class LanguageClientAuth {
     ): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
         let profile: Profile
-        if (roleArn) {
+        if (roleArn && sourceProfile) {
             profile = {
                 kinds: [ProfileKind.IamSourceProfileProfile],
                 name: profileName,
@@ -219,10 +219,6 @@ export class LanguageClientAuth {
         }
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: profile,
-            ssoSession: {
-                name: profileName,
-                settings: undefined,
-            },
         } satisfies UpdateProfileParams)
     }
 
@@ -266,19 +262,9 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
-    // invalidateStsCredential(tokenId: string) {
-    //     return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-    //         stsCredentialId: tokenId,
-    //     } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
-    // }
-
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
     }
-
-    // registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
-    //     this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
-    // }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))

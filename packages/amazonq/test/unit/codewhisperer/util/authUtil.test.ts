@@ -26,36 +26,36 @@ describe('AuthUtil', async function () {
 
     describe('Auth state', function () {
         it('login with BuilderId', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+            await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
             assert.ok(auth.isConnected())
             assert.ok(auth.isBuilderIdConnection())
         })
 
         it('login with IDC', async function () {
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
             assert.ok(auth.isConnected())
             assert.ok(auth.isIdcConnection())
         })
 
         it('identifies internal users', async function () {
-            await auth.login_sso(constants.internalStartUrl, 'us-east-1')
+            await auth.loginSso(constants.internalStartUrl, 'us-east-1')
             assert.ok(auth.isInternalAmazonUser())
         })
 
         it('identifies SSO session', async function () {
-            await auth.login_sso(constants.internalStartUrl, 'us-east-1')
+            await auth.loginSso(constants.internalStartUrl, 'us-east-1')
             assert.strictEqual(auth.isSsoSession(), true)
         })
 
         it('identifies non-SSO session', async function () {
-            await auth.login_iam('accessKey', 'secretKey', 'sessionToken')
+            await auth.loginIam('accessKey', 'secretKey', 'sessionToken')
             assert.strictEqual(auth.isSsoSession(), false)
         })
     })
 
     describe('Token management', function () {
         it('can get token when connected with SSO', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+            await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
             const token = await auth.getToken()
             assert.ok(token)
         })
@@ -68,14 +68,14 @@ describe('AuthUtil', async function () {
 
     describe('getTelemetryMetadata', function () {
         it('returns valid metadata for BuilderId connection', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+            await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
             const metadata = await auth.getTelemetryMetadata()
             assert.strictEqual(metadata.credentialSourceId, 'awsId')
             assert.strictEqual(metadata.credentialStartUrl, constants.builderIdStartUrl)
         })
 
         it('returns valid metadata for IDC connection', async function () {
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
             const metadata = await auth.getTelemetryMetadata()
             assert.strictEqual(metadata.credentialSourceId, 'iamIdentityCenter')
             assert.strictEqual(metadata.credentialStartUrl, 'https://example.awsapps.com/start')
@@ -96,7 +96,7 @@ describe('AuthUtil', async function () {
         })
 
         it('returns BuilderId forms when using BuilderId', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+            await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['builderIdCodeWhisperer'])
         })
@@ -112,13 +112,13 @@ describe('AuthUtil', async function () {
                     },
                 })
 
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['identityCenterCodeWhisperer'])
         })
 
         it('returns IDC forms with explorer when using IDC with SSO account access', async function () {
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
             const session = (auth as any).session
 
             session &&
@@ -182,7 +182,7 @@ describe('AuthUtil', async function () {
         })
 
         it('updates bearer token when state is refreshed', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, 'us-east-1')
+            await auth.loginSso(constants.builderIdStartUrl, 'us-east-1')
 
             await (auth as any).stateChangeHandler({ state: 'refreshed' })
 
@@ -191,7 +191,7 @@ describe('AuthUtil', async function () {
         })
 
         it('cleans up when connection expires', async function () {
-            await auth.login_sso(constants.builderIdStartUrl, 'us-east-1')
+            await auth.loginSso(constants.builderIdStartUrl, 'us-east-1')
 
             await (auth as any).stateChangeHandler({ state: 'expired' })
 
@@ -209,7 +209,7 @@ describe('AuthUtil', async function () {
         it('updates bearer token and restores profile on reconnection', async function () {
             const restoreProfileSelectionSpy = sinon.spy(regionProfileManager, 'restoreProfileSelection')
 
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
 
             await (auth as any).stateChangeHandler({ state: 'connected' })
 
@@ -221,7 +221,7 @@ describe('AuthUtil', async function () {
             const invalidateProfileSpy = sinon.spy(regionProfileManager, 'invalidateProfile')
             const clearCacheSpy = sinon.spy(regionProfileManager, 'clearCache')
 
-            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
 
             await (auth as any).stateChangeHandler({ state: 'expired' })
 
@@ -410,7 +410,7 @@ describe('AuthUtil', async function () {
         })
     })
 
-    describe('login_iam', function () {
+    describe('loginIam', function () {
         it('creates IAM session and logs in', async function () {
             const mockResponse = {
                 id: 'test-credential-id',
@@ -431,7 +431,7 @@ describe('AuthUtil', async function () {
 
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
 
-            const response = await auth.login_iam('accessKey', 'secretKey', 'sessionToken')
+            const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken')
 
             assert.ok(mockIamLogin.login.calledOnce)
             assert.ok(
