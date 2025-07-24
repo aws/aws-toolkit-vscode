@@ -12,7 +12,7 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { globals, getLogger } from 'aws-core-vscode/shared'
@@ -183,6 +183,11 @@ export class RecommendationService {
                 request,
                 token
             )
+            // when pagination is in progress, but user has already accepted or rejected an inline completion
+            // then stop pagination
+            if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
+                break
+            }
             this.sessionManager.updateSessionSuggestions(result.items)
             nextToken = result.partialResultToken
         }
