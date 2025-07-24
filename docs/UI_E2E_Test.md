@@ -45,27 +45,12 @@ npm run test:ui:run
 -   Compiles test files with `npm run testCompile`
 -   Runs tests matching `packages/amazonq/dist/test/e2e_new/amazonq/tests/*.js`
 
-#### Directory Structure
+#### Authentication
 
-```
-packages/amazonq/test/e2e_new/amazonq/
-├── tests/            # Test files
-│   ├── chat.test.ts
-│   ├── pinContext.test.ts
-│   ├── quickActions.test.ts
-│   └── switchModel.test.ts
-├── helpers/          # Test helpers
-│   ├── pinContextHelper.ts
-│   ├── quickActionsHelper.ts
-│   └── switchModelHelper.ts
-├── utils/            # Testing utilities
-│   ├── authUtils.ts
-│   ├── cleanupUtils.ts
-│   ├── generalUtils.ts
-│   ├── setup.ts
-│   └── testContext.ts
-└── resources/        # Extension config
-    └── extensions.json
+Currently, authentication is not configured to be automatically logged into AmazonQ due to issues with Authentication credentials and the VET setup running in a new VSCode instance through a packaged VSIX. To bypass this for now (as of July 24th, 2025), you must click the approve/open button that redirects you to a browser in order for tests to be run in an authenticated environment at the start of a new.
+
+```bash
+npm run test:ui:run
 ```
 
 #### Test Categories
