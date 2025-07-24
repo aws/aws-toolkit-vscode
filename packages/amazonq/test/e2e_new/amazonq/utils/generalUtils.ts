@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { By, WebviewView, WebElement } from 'vscode-extension-tester'
+import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor } from 'vscode-extension-tester'
 import { until, WebDriver, Key } from 'selenium-webdriver'
 
 /**
@@ -189,6 +189,19 @@ export async function clearChat(webview: WebviewView): Promise<boolean> {
         console.error('Error clearing chat input:', e)
         return false
     }
+}
+
+/**
+ * Creates a new text file and returns the editor
+ * @param workbench The Workbench instance
+ * @returns Promise<TextEditor> The text editor for the new file
+ */
+export async function createNewTextFile(workbench: Workbench, editorView: EditorView): Promise<TextEditor> {
+    await workbench.executeCommand('Create: New File...')
+    await (await InputBox.create()).selectQuickPick('Text File')
+    await sleep(1000)
+    const textEditor = (await editorView.openEditor('Untitled-1')) as TextEditor
+    return textEditor
 }
 
 /**
