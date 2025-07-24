@@ -39,7 +39,7 @@ The test suite has the following categories of tests:
     -   Trigger VSCode commands and UI elements to test codepaths as from an actual user session, instead of invoking functions directly.
     -   Do not use mocks.
 -   E2E Tests: **slow** tests
-    -   Live in `src/testE2E`
+    -   Live in `packages/amazonq/test/e2e_new`
     -   These tests are heavier than Integration tests.
     -   Some E2E tests have a more complicated architecture, described in [UI_E2E_Test](./UI_E2E_Test.md)
 -   Performance Tests: **slow** tests
