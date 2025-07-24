@@ -20,8 +20,6 @@ export const tempDirPath = path.join(
     'aws-toolkit-vscode'
 )
 
-export const testGenerationLogsDir = path.join(tempDirPath, 'testGenerationLogs')
-
 export async function getDirSize(dirPath: string, startTime: number, duration: number): Promise<number> {
     if (performance.now() - startTime > duration) {
         getLogger().warn('getDirSize: exceeds time limit')

@@ -19,12 +19,9 @@ import {
     DetailedList,
 } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
-import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { Connector as GumbyChatConnector } from './apps/gumbyChatConnector'
 import { Connector as ScanChatConnector } from './apps/scanChatConnector'
-import { Connector as TestChatConnector } from './apps/testChatConnector'
-import { Connector as docChatConnector } from './apps/docChatConnector'
 import { ExtensionMessage } from './commands'
 import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
@@ -123,11 +120,8 @@ export class Connector {
     private readonly sendMessageToExtension
     private readonly onMessageReceived
     private readonly cwChatConnector
-    private readonly featureDevChatConnector
     private readonly gumbyChatConnector
     private readonly scanChatConnector
-    private readonly testChatConnector
-    private readonly docChatConnector
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
@@ -137,11 +131,8 @@ export class Connector {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
-        this.featureDevChatConnector = new FeatureDevChatConnector(props)
-        this.docChatConnector = new docChatConnector(props)
         this.gumbyChatConnector = new GumbyChatConnector(props)
         this.scanChatConnector = new ScanChatConnector(props)
-        this.testChatConnector = new TestChatConnector(props)
         this.amazonqCommonsConnector = new AmazonQCommonsConnector({
             sendMessageToExtension: this.sendMessageToExtension,
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
@@ -172,20 +163,12 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
-                break
             case 'gumby':
                 this.gumbyChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
             case 'review':
                 this.scanChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
-            case 'testgen':
-                this.testChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
-                break
-            case 'doc':
-                this.docChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
         }
     }
 
@@ -201,8 +184,6 @@ export class Connector {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'gumby':
                 return this.gumbyChatConnector.requestAnswer(tabID, payload)
-            case 'testgen':
-                return this.testChatConnector.requestAnswer(tabID, payload)
         }
     }
 
@@ -210,10 +191,6 @@ export class Connector {
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
-                    case 'featuredev':
-                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
-                    case 'doc':
-                        return this.docChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                     default:
                         return this.cwChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }
@@ -247,10 +224,6 @@ export class Connector {
         }
     }
 
-    startTestGen = (tabID: string, prompt: string): void => {
-        this.testChatConnector.startTestGen(tabID, prompt)
-    }
-
     transform = (tabID: string): void => {
         this.gumbyChatConnector.transform(tabID)
     }
@@ -261,9 +234,6 @@ export class Connector {
 
     onStopChatResponse = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onStopChatResponse(tabID)
-                break
             case 'cwc':
                 this.cwChatConnector.onStopChatResponse(tabID)
                 break
@@ -283,16 +253,10 @@ export class Connector {
 
         if (messageData.sender === 'CWChat') {
             await this.cwChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === 'featureDevChat') {
-            await this.featureDevChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'gumbyChat') {
             await this.gumbyChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'scanChat') {
             await this.scanChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === 'testChat') {
-            await this.testChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === 'docChat') {
-            await this.docChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'amazonqCore') {
             await this.amazonqCommonsConnector.handleMessageReceive(messageData)
         }
@@ -322,20 +286,6 @@ export class Connector {
                 break
             case 'review':
                 this.scanChatConnector.onTabAdd(tabID)
-                break
-            case 'testgen':
-                this.testChatConnector.onTabAdd(tabID)
-                break
-        }
-    }
-
-    onKnownTabOpen = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onTabOpen(tabID)
-                break
-            case 'doc':
-                this.docChatConnector.onTabOpen(tabID)
                 break
         }
     }
@@ -371,23 +321,6 @@ export class Connector {
                     userIntent,
                     codeBlockLanguage
                 )
-                break
-            case 'featuredev':
-                this.featureDevChatConnector.onCodeInsertToCursorPosition(
-                    tabID,
-                    messageId,
-                    code,
-                    type,
-                    codeReference,
-                    eventId,
-                    codeBlockIndex,
-                    totalCodeBlocks,
-                    userIntent,
-                    codeBlockLanguage
-                )
-                break
-            case 'testgen':
-                this.testChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
                 break
         }
     }
@@ -477,20 +410,6 @@ export class Connector {
                     codeBlockLanguage
                 )
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onCopyCodeToClipboard(
-                    tabID,
-                    messageId,
-                    code,
-                    type,
-                    codeReference,
-                    eventId,
-                    codeBlockIndex,
-                    totalCodeBlocks,
-                    userIntent,
-                    codeBlockLanguage
-                )
-                break
         }
     }
 
@@ -501,20 +420,11 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onTabRemove(tabID)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onTabRemove(tabID)
-                break
-            case 'doc':
-                this.docChatConnector.onTabRemove(tabID)
-                break
             case 'gumby':
                 this.gumbyChatConnector.onTabRemove(tabID)
                 break
             case 'review':
                 this.scanChatConnector.onTabRemove(tabID)
-                break
-            case 'testgen':
-                this.testChatConnector.onTabRemove(tabID)
                 break
         }
     }
@@ -564,8 +474,6 @@ export class Connector {
         const tabType = this.tabsStorage.getTab(tabID)?.type
         switch (tabType) {
             case 'cwc':
-            case 'doc':
-            case 'featuredev':
                 this.amazonqCommonsConnector.authFollowUpClicked(tabID, tabType, authType)
         }
     }
@@ -578,17 +486,8 @@ export class Connector {
             case 'unknown':
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.followUpClicked(tabID, messageId, followUp)
-                break
-            case 'testgen':
-                this.testChatConnector.followUpClicked(tabID, messageId, followUp)
-                break
             case 'review':
                 this.scanChatConnector.followUpClicked(tabID, messageId, followUp)
-                break
-            case 'doc':
-                this.docChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
@@ -596,30 +495,10 @@ export class Connector {
         }
     }
 
-    onFileActionClick = (tabID: string, messageId: string, filePath: string, actionName: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onFileActionClick(tabID, messageId, filePath, actionName)
-                break
-            case 'doc':
-                this.docChatConnector.onFileActionClick(tabID, messageId, filePath, actionName)
-                break
-        }
-    }
-
     onFileClick = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted, messageId)
-                break
-            case 'testgen':
-                this.testChatConnector.onFileDiff(tabID, filePath, deleted, messageId)
-                break
             case 'review':
                 this.scanChatConnector.onFileClick(tabID, filePath, messageId)
-                break
-            case 'doc':
-                this.docChatConnector.onOpenDiff(tabID, filePath, deleted)
                 break
             case 'cwc':
                 this.cwChatConnector.onFileClick(tabID, filePath, messageId)
@@ -629,12 +508,6 @@ export class Connector {
 
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
-                break
-            case 'testgen':
-                this.testChatConnector.onSendFeedback(tabId, feedbackPayload)
-                break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
                 break
@@ -669,14 +542,8 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onChatItemVoted(tabId, messageId, vote)
-                break
             case 'review':
                 this.scanChatConnector.onChatItemVoted(tabId, messageId, vote)
-                break
-            case 'testgen':
-                this.testChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
         }
     }
@@ -715,14 +582,8 @@ export class Connector {
             case 'gumby':
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
-            case 'testgen':
-                this.testChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
-                break
             case 'review':
                 this.scanChatConnector.onCustomFormAction(tabId, action)
-                break
-            case 'doc':
-                this.docChatConnector.onCustomFormAction(tabId, action)
                 break
             case 'cwc':
                 if (action.id === `open-settings`) {
