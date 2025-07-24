@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemAction, ChatItemType, MynahIcons, MynahUI } from '@aws/mynah-ui'
+import { ChatItemAction, ChatItemType, MynahUI } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './generator'
-import { FollowUpTypes, MynahUIRef } from '../../../commons/types'
+import { MynahUIRef } from '../../../commons/types'
 
 export interface FollowUpInteractionHandlerProps {
     mynahUIRef: MynahUIRef
@@ -71,82 +71,6 @@ export class FollowUpInteractionHandler {
                     chatMessage: followUp.prompt,
                 })
                 return
-            }
-        }
-
-        const addChatItem = (tabID: string, messageId: string, options: any[]) => {
-            this.mynahUI?.addChatItem(tabID, {
-                type: ChatItemType.ANSWER_PART,
-                messageId,
-                followUp: {
-                    text: '',
-                    options,
-                },
-            })
-        }
-
-        const ViewDiffOptions = [
-            {
-                icon: MynahIcons.OK,
-                pillText: 'Accept',
-                status: 'success',
-                type: FollowUpTypes.AcceptCode,
-            },
-            {
-                icon: MynahIcons.REVERT,
-                pillText: 'Reject',
-                status: 'error',
-                type: FollowUpTypes.RejectCode,
-            },
-        ]
-
-        const AcceptCodeOptions = [
-            {
-                icon: MynahIcons.OK,
-                pillText: 'Accepted',
-                status: 'success',
-                disabled: true,
-            },
-        ]
-
-        const RejectCodeOptions = [
-            {
-                icon: MynahIcons.REVERT,
-                pillText: 'Rejected',
-                status: 'error',
-                disabled: true,
-            },
-        ]
-
-        const ViewCodeDiffAfterIterationOptions = [
-            {
-                icon: MynahIcons.OK,
-                pillText: 'Accept',
-                status: 'success',
-                type: FollowUpTypes.AcceptCode,
-            },
-            {
-                icon: MynahIcons.REVERT,
-                pillText: 'Reject',
-                status: 'error',
-                type: FollowUpTypes.RejectCode, // TODO: Add new Followup Action for "Reject"
-            },
-        ]
-
-        if (this.tabsStorage.getTab(tabID)?.type === 'testgen') {
-            switch (followUp.type) {
-                case FollowUpTypes.ViewDiff:
-                    addChatItem(tabID, messageId, ViewDiffOptions)
-                    break
-                case FollowUpTypes.AcceptCode:
-                    addChatItem(tabID, messageId, AcceptCodeOptions)
-                    break
-                case FollowUpTypes.RejectCode:
-                    addChatItem(tabID, messageId, RejectCodeOptions)
-                    break
-                case FollowUpTypes.ViewCodeDiffAfterIteration:
-                    addChatItem(tabID, messageId, ViewCodeDiffAfterIterationOptions)
-                    break
             }
         }
 
