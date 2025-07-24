@@ -447,13 +447,15 @@ export function registerMessageListeners(
                     )
 
                     // Get the log directory path
-                    const logPath = globals.context.logUri?.fsPath
+                    const logFolderPath = globals.context.logUri?.fsPath
                     const result = { ...message.params, success: false }
 
-                    if (logPath) {
+                    if (logFolderPath) {
                         // Open the log directory in the OS file explorer directly
                         languageClient.info('[VSCode Client] Opening logs directory')
-                        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logPath))
+                        const path = require('path')
+                        const logFilePath = path.join(logFolderPath, 'Amazon Q Logs.log')
+                        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logFilePath))
                         result.success = true
                     } else {
                         // Fallback: show error if log path is not available
