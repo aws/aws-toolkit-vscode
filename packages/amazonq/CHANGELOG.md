@@ -1,3 +1,9 @@
+## 1.83.0 2025-07-09
+
+- **Feature** Amazon Q /test, /doc, and /dev capabilities integrated into Agentic coding.
+- **Feature** Added image support to Amazon Q chat, users can now upload images from their local file system
+- **Removal** Deprecate "amazon q is generating..." UI for inline suggestion
+
 ## 1.82.0 2025-07-07
 
 - **Bug Fix** Prompt re-authenticate if auto trigger failed with expired token

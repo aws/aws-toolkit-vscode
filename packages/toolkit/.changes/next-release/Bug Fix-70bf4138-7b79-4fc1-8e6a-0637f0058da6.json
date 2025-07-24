@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Lambda upload from directory doesn't allow selection of directory"
+}
