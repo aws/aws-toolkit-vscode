@@ -7,13 +7,7 @@ import { ChatItem, ChatItemAction, ChatItemType, ChatPrompt } from '@aws/mynah-u
 import { ExtensionMessage } from '../commands'
 import { AuthFollowUpType } from '../followUps/generator'
 import { getTabCommandFromTabType, isTabType, TabType } from '../storages/tabsStorage'
-import {
-    docUserGuide,
-    userGuideURL as featureDevUserGuide,
-    helpMessage,
-    reviewGuideUrl,
-    testGuideUrl,
-} from '../texts/constants'
+import { helpMessage, reviewGuideUrl } from '../texts/constants'
 import { linkToDocsHome } from '../../../../codewhisperer/models/constants'
 import { createClickTelemetry, createOpenAgentTelemetry } from '../telemetry/actions'
 
@@ -110,17 +104,8 @@ export class Connector {
     private processUserGuideLink(tabType: TabType, actionId: string) {
         let userGuideLink = ''
         switch (tabType) {
-            case 'featuredev':
-                userGuideLink = featureDevUserGuide
-                break
-            case 'testgen':
-                userGuideLink = testGuideUrl
-                break
             case 'review':
                 userGuideLink = reviewGuideUrl
-                break
-            case 'doc':
-                userGuideLink = docUserGuide
                 break
             case 'gumby':
                 userGuideLink = linkToDocsHome
