@@ -275,6 +275,7 @@
     "AWS.command.codewhisperer.signout": "Sign Out",
     "AWS.command.codewhisperer.reconnect": "Reconnect",
     "AWS.command.codewhisperer.openReferencePanel": "Open Code Reference Log",
+    "AWS.command.codewhisperer.showLogs": "Show Logs",
     "AWS.command.q.selectRegionProfile": "Select Profile",
     "AWS.command.q.transform.acceptChanges": "Accept",
     "AWS.command.q.transform.rejectChanges": "Reject",
