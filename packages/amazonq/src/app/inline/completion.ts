@@ -319,6 +319,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: false,
                         },
                     },
+                    totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
