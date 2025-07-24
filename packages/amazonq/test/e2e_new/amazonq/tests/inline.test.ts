@@ -26,16 +26,11 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         textEditor = await createNewTextFile(workbench, editorView)
     })
 
-    // after(async function () {
-    //     await editorView.closeAllEditors()
-    // })
-
     it('Inline Test', async () => {
         await textEditor.typeTextAt(1, 1, 'Select Me')
         const text = await textEditor.getText()
         expect(text).equals('Select Me')
         await textEditor.clearText()
-
         await workbench.executeCommand('Amazon Q: Inline Chat')
         const input = new InputBox()
         await input.sendKeys('Write a simple sentece')
@@ -45,8 +40,6 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await pressKey(driver, 'Enter')
         await sleep(3000)
         await pressKey(driver, 'Tab')
-        // we can also replace all the text with whatever we want
         await sleep(3000)
-        // await textEditor.clear()
     })
 })
