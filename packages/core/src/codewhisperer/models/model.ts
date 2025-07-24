@@ -18,7 +18,6 @@ import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
 import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
-import { TestChatControllerEventEmitters } from '../../amazonqTest/chat/controller/controller'
 import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -371,55 +370,6 @@ export interface CodeLine {
     content: string
     number: number
 }
-
-/**
- * Unit Test Generation
- */
-enum TestGenStatus {
-    NotStarted,
-    Running,
-    Cancelling,
-}
-// TODO: Refactor model of /scan and /test
-export class TestGenState {
-    // Define a constructor for this class
-    private testGenState: TestGenStatus = TestGenStatus.NotStarted
-
-    protected chatControllers: TestChatControllerEventEmitters | undefined = undefined
-
-    public isNotStarted() {
-        return this.testGenState === TestGenStatus.NotStarted
-    }
-
-    public isRunning() {
-        return this.testGenState === TestGenStatus.Running
-    }
-
-    public isCancelling() {
-        return this.testGenState === TestGenStatus.Cancelling
-    }
-
-    public setToNotStarted() {
-        this.testGenState = TestGenStatus.NotStarted
-    }
-
-    public setToCancelling() {
-        this.testGenState = TestGenStatus.Cancelling
-    }
-
-    public setToRunning() {
-        this.testGenState = TestGenStatus.Running
-    }
-
-    public setChatControllers(controllers: TestChatControllerEventEmitters) {
-        this.chatControllers = controllers
-    }
-    public getChatControllers() {
-        return this.chatControllers
-    }
-}
-
-export const testGenState: TestGenState = new TestGenState()
 
 enum CodeFixStatus {
     NotStarted,
