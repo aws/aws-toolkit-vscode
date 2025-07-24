@@ -2,8 +2,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor } from 'vscode-extension-tester'
-import { until, WebDriver, Key } from 'selenium-webdriver'
+import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor, Key } from 'vscode-extension-tester'
+import { until, WebDriver } from 'selenium-webdriver'
+import { IKey } from 'selenium-webdriver/lib/input'
 
 /**
  * General sleep function to wait for a specified amount of time
@@ -69,7 +70,7 @@ export async function waitForElements(webview: WebviewView, locator: By, timeout
  * @param driver The WebDriver instance
  * @param key The key to press
  */
-export async function pressKey(driver: WebDriver, key: string): Promise<void> {
+export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promise<void> {
     await driver.actions().sendKeys(key).perform()
 }
 
