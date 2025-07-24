@@ -36,7 +36,9 @@ export interface SsoCache {
 }
 
 const defaultCacheDir = () => path.join(fs.getUserHomeDir(), '.aws/sso/cache')
+const defaultStsCacheDir = () => path.join(fs.getUserHomeDir(), '.aws/cli/cache')
 export const getCacheDir = () => DevSettings.instance.get('ssoCacheDirectory', defaultCacheDir())
+export const getStsCacheDir = () => DevSettings.instance.get('stsCacheDirectory', defaultStsCacheDir())
 
 export function getCache(directory = getCacheDir()): SsoCache {
     return {

@@ -192,7 +192,11 @@ export function createManageSubscription(): DataQuickPickItem<'manageSubscriptio
 export function createSignout(): DataQuickPickItem<'signout'> {
     const label = localize('AWS.codewhisperer.signoutNode.label', 'Sign Out')
     const icon = getIcon('vscode-export')
-    const connection = AuthUtil.instance.isBuilderIdConnection() ? 'AWS Builder ID' : 'IAM Identity Center'
+    const connection = AuthUtil.instance.isIamConnection()
+        ? 'IAM Credentials'
+        : AuthUtil.instance.isBuilderIdConnection()
+          ? 'AWS Builder ID'
+          : 'IAM Identity Center'
 
     return {
         data: 'signout',
@@ -271,7 +275,7 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead
         onClick = () => {
-            void AuthUtil.instance.login(builderIdStartUrl, builderIdRegion)
+            void AuthUtil.instance.loginSso(builderIdStartUrl, builderIdRegion)
         }
     }
 
