@@ -14,8 +14,9 @@ export async function sleep(timeout: number) {
 }
 
 /**
- * Expect
- * @param timeout Time in miliseconds
+ * Minimal assertion library for testing
+ * @param actual The value to test
+ * @returns Object with assertion methods (equals, include, is.true)
  */
 export const expect = (actual: any) => ({
     equals: (expected: any) => {
