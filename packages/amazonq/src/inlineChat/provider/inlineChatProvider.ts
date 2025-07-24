@@ -16,6 +16,7 @@ import {
     ChatTriggerType,
     EditorContextExtractor,
     PromptMessage,
+    TriggerEvent,
     TriggerEventsStorage,
     TriggerPayload,
     triggerPayloadToChatRequest,
@@ -30,6 +31,7 @@ import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
 import { InlineChatParams, InlineChatResult } from '@aws/language-server-runtimes-types'
 import { decryptResponse, encryptRequest } from '../../lsp/encryption'
 import { getCursorState } from '../../lsp/utils'
+import { CwsprChatTriggerInteraction, telemetry } from 'aws-core-vscode/telemetry'
 
 export class InlineChatProvider {
     private readonly editorContextExtractor: EditorContextExtractor
@@ -68,11 +70,34 @@ export class InlineChatProvider {
         }
     }
 
+    private getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
+        switch (triggerEvent?.type) {
+            case 'editor_context_command':
+                return triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
+            case 'follow_up':
+            case 'chat_message':
+            default:
+                return 'click'
+        }
+    }
+
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        const triggerInteraction = this.getTriggerInteractionFromTriggerEvent(
+            this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
+        )
         if (!AuthUtil.instance.isSsoSession()) {
+            telemetry.amazonq_messageResponseError.emit({
+                result: 'Failed',
+                cwsprChatConversationType: 'Chat',
+                cwsprChatRequestLength: message.message?.length ?? 0,
+                cwsprChatResponseCode: 401,
+                cwsprChatTriggerInteraction: triggerInteraction,
+                reason: 'AuthenticationError',
+                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
+            })
             throw new ToolkitError('Inline chat is only available with SSO authentication')
         }
-        
+
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
@@ -87,10 +112,23 @@ export class InlineChatProvider {
 
     // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
+        const triggerInteraction = this.getTriggerInteractionFromTriggerEvent(
+            this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
+        )
         if (!AuthUtil.instance.isSsoSession()) {
+            telemetry.amazonq_messageResponseError.emit({
+                result: 'Failed',
+                cwsprChatConversationType: 'Chat',
+                cwsprChatRequestLength: message.message?.length ?? 0,
+                cwsprChatResponseCode: 401,
+                cwsprChatTriggerInteraction: triggerInteraction,
+                reason: 'AuthenticationError',
+                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+            })
             throw new ToolkitError('Inline chat is only available with SSO authentication')
         }
-        
+
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then((context) => {

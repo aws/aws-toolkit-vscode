@@ -465,8 +465,6 @@ export class AuthUtil implements IAuthProvider {
         } else if (this.isIamSession()) {
             return {
                 credentialSourceId: 'sharedCredentials',
-                credentialAccessKey: AuthUtil.instance.connection?.accessKey,
-                credentialRoleArn: AuthUtil.instance.connection?.roleArn,
             }
         }
 
