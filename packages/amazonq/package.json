@@ -409,6 +409,11 @@
                     "group": "2_amazonQ@4"
                 },
                 {
+                    "command": "aws.amazonq.showLogs",
+                    "when": "view == aws.amazonq.AmazonQChatView",
+                    "group": "1_amazonQ@5"
+                },
+                {
                     "command": "aws.amazonq.reconnect",
                     "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
@@ -633,6 +638,12 @@
             {
                 "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.showLogs",
+                "title": "%AWS.command.codewhisperer.showLogs%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
             },
