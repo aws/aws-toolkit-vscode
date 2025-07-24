@@ -277,6 +277,10 @@ export class AuthUtil implements IAuthProvider {
         return Boolean(this.connection?.startUrl && this.connection?.startUrl !== builderIdStartUrl)
     }
 
+    isIamConnection() {
+        return Boolean(this.connection?.accessKey && this.connection?.secretKey)
+    }
+
     isInternalAmazonUser(): boolean {
         return this.isConnected() && this.connection?.startUrl === internalStartUrl
     }
