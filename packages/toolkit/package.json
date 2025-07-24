@@ -140,10 +140,6 @@
                         }
                     }
                 },
-                "aws.codewhisperer.endpointOverride": {
-                    "type": "string",
-                    "default": ""
-                },
                 "aws.stepfunctions.asl.format.enable": {
                     "type": "boolean",
                     "scope": "window",
