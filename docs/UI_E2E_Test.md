@@ -47,7 +47,7 @@ npm run test:ui:run
 
 #### Authentication
 
-Currently, authentication is not configured to be automatically logged into AmazonQ due to issues with Authentication credentials and the VET setup running in a new VSCode instance through a packaged VSIX. To bypass this for now (as of July 24th, 2025), you must click the approve/open button that redirects you to a browser in order for tests to be run in an authenticated environment at the start of a new.
+Currently, authentication is not configured to be automatically logged into AmazonQ. To bypass this for now (as of July 24th, 2025), you must click the approve/open button that redirects you to a browser in order for tests to be run in an authenticated environment at the start of a new.
 
 ```bash
 npm run test:ui:run
