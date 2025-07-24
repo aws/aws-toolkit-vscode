@@ -1420,5 +1420,8 @@
     "engines": {
         "npm": "^10.1.0",
         "vscode": "^1.83.0"
+    },
+    "devDependencies": {
+        "@types/chai": "^5.2.2"
     }
 }

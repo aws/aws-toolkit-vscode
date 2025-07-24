@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView, WebElement } from 'vscode-extension-tester'
-import { until } from 'selenium-webdriver'
+import { until, WebDriver, Key } from 'selenium-webdriver'
 
 /**
  * General sleep function to wait for a specified amount of time
@@ -12,6 +12,30 @@ import { until } from 'selenium-webdriver'
 export async function sleep(timeout: number) {
     await new Promise((resolve) => setTimeout(resolve, timeout))
 }
+
+/**
+ * Expect
+ * @param timeout Time in miliseconds
+ */
+export const expect = (actual: any) => ({
+    equals: (expected: any) => {
+        if (actual !== expected) {
+            throw new Error(`Expected ${expected}, got ${actual}`)
+        }
+    },
+    include: (expected: any) => {
+        if (!actual.includes(expected)) {
+            throw new Error(`Expected "${actual}" to include "${expected}"`)
+        }
+    },
+    is: {
+        true: () => {
+            if (actual !== true) {
+                throw new Error(`Expected true, got ${actual}`)
+            }
+        },
+    },
+})
 
 /**
  * Waits for an element to be located, if there are multiple elements with the same locator it will just return the first one
@@ -37,6 +61,69 @@ export async function waitForElements(webview: WebviewView, locator: By, timeout
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElements(locator)
+}
+
+/**
+ * Presses a single key globally
+ * @param driver The WebDriver instance
+ * @param key The key to press
+ */
+export async function pressKey(driver: WebDriver, key: string): Promise<void> {
+    await driver.actions().sendKeys(key).perform()
+}
+
+type OSType = 'windows' | 'mac'
+type modifierKey = 'alt' | 'ctrl' | 'shift' | 'option' | 'command'
+
+const MODIFIERKEYS: Record<OSType, Record<modifierKey, string>> = {
+    windows: {
+        alt: Key.ALT,
+        ctrl: Key.CONTROL,
+        shift: Key.SHIFT,
+        option: Key.ALT,
+        command: Key.COMMAND,
+    },
+    mac: {
+        alt: Key.ALT,
+        ctrl: Key.CONTROL,
+        shift: Key.SHIFT,
+        option: Key.ALT,
+        command: Key.COMMAND,
+    },
+}
+
+/**
+ * Presses a keyboard shortcut with modifier keys
+ * @param driver The WebDriver instance
+ * @param key The key to press
+ * @param modifier The modifier key(s)
+ * @param osType The operating system type
+ */
+export async function pressShortcut(
+    driver: WebDriver,
+    key: string,
+    modifier: modifierKey | modifierKey[],
+    osType: OSType = 'windows'
+): Promise<void> {
+    const actions = driver.actions({ bridge: true })
+
+    try {
+        const modifiers = Array.isArray(modifier) ? modifier : modifier ? [modifier] : []
+        for (const mod of modifiers) {
+            if (!(mod in MODIFIERKEYS[osType])) {
+                throw new Error(`Invalid modifier key '${mod}' for ${osType}`)
+            }
+            actions.keyDown(MODIFIERKEYS[osType][mod])
+        }
+        actions.sendKeys(key)
+        for (const mod of modifiers.reverse()) {
+            actions.keyUp(MODIFIERKEYS[osType][mod])
+        }
+        await actions.perform()
+    } catch (error) {
+        console.error(`Error performing keyboard shortcut: ${error}`)
+        throw error
+    }
 }
 
 /**
