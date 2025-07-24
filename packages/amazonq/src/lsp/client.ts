@@ -28,7 +28,6 @@ import {
     Settings,
     createServerOptions,
     globals,
-    Experiments,
     Commands,
     oneSecond,
     validateNodeExe,
@@ -39,17 +38,20 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
+    Experiments,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
+import { activateAutoDebug } from '../autoDebug/activation'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { AutoDebugFeature } from 'aws-core-vscode/amazonq'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -329,8 +331,51 @@ async function onLanguageServerReady(
     inlineManager.registerInlineCompletion()
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
-    if (Experiments.instance.get('amazonqChatLSP', true)) {
+    // Activate AutoDebug LSP client using the exact same pattern as inline chat
+    try {
+        activateAutoDebug(client, encryptionKey)
+        getLogger('amazonqLsp').info('AutoDebug LSP client activated successfully')
+    } catch (error) {
+        getLogger('amazonqLsp').error('Failed to activate AutoDebug LSP client: %s', error)
+        // Continue with extension activation even if AutoDebug fails
+    }
+
+    // Always activate chat LSP - remove experiment flag dependency
+    try {
         await activate(client, encryptionKey, resourcePaths.ui)
+        getLogger('amazonqLsp').info('Amazon Q Chat LSP activated successfully')
+    } catch (error) {
+        getLogger('amazonqLsp').error('Failed to activate Amazon Q Chat LSP: %s', error)
+        throw error
+    }
+
+    // Connect AutoDebug feature to the language client
+    try {
+        getLogger('amazonqLsp').debug('Attempting to connect AutoDebug feature to language client')
+
+        // Function to attempt connection
+        const attemptConnection = (attempt: number = 1): void => {
+            const autoDebugFeature = (global as any).autoDebugFeature as AutoDebugFeature | undefined
+
+            if (autoDebugFeature) {
+                autoDebugFeature.setLanguageClient(client, encryptionKey)
+            } else if (attempt < 5) {
+                // Retry up to 5 times with exponential backoff
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000) // Max 10 seconds
+                setTimeout(() => attemptConnection(attempt + 1), delay)
+            } else {
+                getLogger('amazonqLsp').error(
+                    'AutoDebug feature not found after %d attempts - integration will not work. ' +
+                        'This may indicate that the AutoDebug feature failed to activate or there is a timing issue.',
+                    attempt
+                )
+            }
+        }
+
+        // Start the connection attempts
+        attemptConnection()
+    } catch (error) {
+        getLogger('amazonqLsp').error('Failed to connect AutoDebug feature to language client: %s', error)
     }
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
