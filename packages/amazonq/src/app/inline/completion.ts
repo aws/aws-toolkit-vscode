@@ -164,6 +164,11 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
+                if (this.sessionManager.getActiveSession() === undefined) {
+                    return
+                }
+                const requestStartTime = this.sessionManager.getActiveSession()!.requestStartTime
+                const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
                 this.disposable.dispose()
@@ -185,6 +190,7 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
+                    totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 // clear session manager states once rejected
