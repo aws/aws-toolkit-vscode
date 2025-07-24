@@ -19,14 +19,13 @@ import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { getLambdaEditFromNameRegion, getLambdaDetails, listLambdaFunctions } from '../utils'
+import { getLambdaDetails, listLambdaFunctions } from '../utils'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
-import { SkipPrompter } from '../../shared/ui/common/skipPrompter'
 import { ToolkitError } from '../../shared/errors'
 import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
 import globals from '../../shared/extensionGlobals'
@@ -104,13 +103,6 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
         } else if (response.uploadType === 'directory' && response.directoryBuildType) {
             result = (await runUploadDirectory(lambda, response.directoryBuildType, response.targetUri)) ?? result
             result = 'Succeeded'
-        } else if (response.uploadType === 'edit') {
-            const functionPath = getLambdaEditFromNameRegion(lambda.name, lambda.region)?.location
-            if (!functionPath) {
-                throw new ToolkitError('Function had a local copy before, but not anymore')
-            } else {
-                await runUploadDirectory(lambda, 'zip', vscode.Uri.file(functionPath))
-            }
         }
         // TODO(sijaden): potentially allow the wizard to easily support tagged-union states
     } catch (err) {
@@ -139,8 +131,8 @@ export async function uploadLambdaCommand(lambdaArg?: LambdaFunction, path?: vsc
 /**
  * Selects the type of file to upload (zip/dir) and proceeds with the rest of the workflow.
  */
-function createUploadTypePrompter(lambda?: LambdaFunction) {
-    const items: DataQuickPickItem<'edit' | 'zip' | 'directory'>[] = [
+function createUploadTypePrompter() {
+    const items: DataQuickPickItem<'zip' | 'directory'>[] = [
         {
             label: addCodiconToString('file-zip', localize('AWS.generic.filetype.zipfile', 'ZIP Archive')),
             data: 'zip',
@@ -150,17 +142,6 @@ function createUploadTypePrompter(lambda?: LambdaFunction) {
             data: 'directory',
         },
     ]
-
-    if (lambda !== undefined) {
-        const { region, name: functionName } = lambda
-        const lambdaEdit = getLambdaEditFromNameRegion(functionName, region)
-        if (lambdaEdit) {
-            items.unshift({
-                label: addCodiconToString('edit', localize('AWS.generic.filetype.edit', 'Local edit')),
-                data: 'edit',
-            })
-        }
-    }
 
     return createQuickPick(items, {
         title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
@@ -215,7 +196,7 @@ function createConfirmDeploymentPrompter(lambda: LambdaFunction) {
 }
 
 export interface UploadLambdaWizardState {
-    readonly uploadType: 'edit' | 'zip' | 'directory'
+    readonly uploadType: 'zip' | 'directory'
     readonly targetUri: vscode.Uri
     readonly directoryBuildType: 'zip' | 'sam'
     readonly confirmedDeploy: boolean
@@ -234,23 +215,23 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
                 this.form.targetUri.setDefault(this.invokePath)
             }
         } else {
-            this.form.uploadType.bindPrompter(() => createUploadTypePrompter(this.lambda))
-            this.form.targetUri.bindPrompter(
-                ({ uploadType }) => {
-                    if (uploadType === 'directory') {
-                        return createSingleFileDialog({
-                            canSelectFolders: false,
-                            canSelectFiles: true,
-                            filters: {
-                                'ZIP archive': ['zip'],
-                            },
-                        })
-                    } else {
-                        return new SkipPrompter()
-                    }
-                },
-                { showWhen: ({ uploadType }) => uploadType !== 'edit' }
-            )
+            this.form.uploadType.bindPrompter(() => createUploadTypePrompter())
+            this.form.targetUri.bindPrompter(({ uploadType }) => {
+                if (uploadType === 'directory') {
+                    return createSingleFileDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: false,
+                    })
+                } else {
+                    return createSingleFileDialog({
+                        canSelectFolders: false,
+                        canSelectFiles: true,
+                        filters: {
+                            'ZIP archive': ['zip'],
+                        },
+                    })
+                }
+            })
         }
 
         this.form.lambda.name.bindPrompter((state) => {
@@ -277,12 +258,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
             this.form.directoryBuildType.setDefault('zip')
         }
 
-        this.form.confirmedDeploy.bindPrompter(
-            (state) => {
-                return createConfirmDeploymentPrompter(state.lambda!)
-            },
-            { showWhen: ({ uploadType }) => uploadType !== 'edit' }
-        )
+        this.form.confirmedDeploy.bindPrompter((state) => createConfirmDeploymentPrompter(state.lambda!))
 
         return this
     }

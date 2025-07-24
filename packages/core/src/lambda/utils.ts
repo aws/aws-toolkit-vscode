@@ -202,23 +202,3 @@ export function getTempRegionLocation(region: string) {
 export function getTempLocation(functionName: string, region: string) {
     return path.join(getTempRegionLocation(region), functionName)
 }
-
-type LambdaEdit = {
-    location: string
-    functionName: string
-    region: string
-    configuration?: Lambda.FunctionConfiguration
-}
-
-// Array to keep the list of functions that are being edited.
-export const lambdaEdits: LambdaEdit[] = []
-
-// Given a particular function and region, it returns the full LambdaEdit object
-export function getLambdaEditFromNameRegion(name: string, functionRegion: string) {
-    return lambdaEdits.find(({ functionName, region }) => functionName === name && region === functionRegion)
-}
-
-// Given a particular localPath, it returns the full LambdaEdit object
-export function getLambdaEditFromLocation(functionLocation: string) {
-    return lambdaEdits.find(({ location }) => location === functionLocation)
-}
