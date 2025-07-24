@@ -13,11 +13,8 @@ import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 export interface TabDataGeneratorProps {
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
-    isTestEnabled: boolean
-    isDocEnabled: boolean
     disabledCommands?: string[]
     commandHighlight?: FeatureContext
     regionProfile?: RegionProfile
@@ -32,11 +29,8 @@ export class TabDataGenerator {
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
         this.quickActionsGenerator = new QuickActionGenerator({
-            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
             isScanEnabled: props.isScanEnabled,
-            isTestEnabled: props.isTestEnabled,
-            isDocEnabled: props.isDocEnabled,
             disableCommands: props.disabledCommands,
         })
         this.highlightCommand = props.commandHighlight

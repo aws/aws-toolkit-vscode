@@ -7,15 +7,12 @@ import assert from 'assert'
 import vscode from 'vscode'
 import sinon from 'sinon'
 import { join } from 'path'
-import path from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { CodeAnalysisScope, codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
-import { tempDirPath } from '../../shared/filesystemUtilities'
-import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -138,45 +135,6 @@ describe('zipUtil', function () {
             const zip = await JSZip.loadAsync(zipFileData)
             const files = Object.keys(zip.files)
             assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
-        })
-    })
-
-    describe('generateZipTestGen', function () {
-        let zipUtil: ZipUtil
-        let getZipDirPathStub: sinon.SinonStub
-        let testTempDirPath: string
-
-        beforeEach(function () {
-            zipUtil = new ZipUtil()
-            testTempDirPath = path.join(tempDirPath, CodeWhispererConstants.TestGenerationTruncDirPrefix)
-            getZipDirPathStub = sinon.stub(zipUtil, 'getZipDirPath')
-            getZipDirPathStub.callsFake(() => testTempDirPath)
-        })
-
-        afterEach(function () {
-            sinon.restore()
-        })
-
-        it('should generate zip for test generation successfully', async function () {
-            const mkdirSpy = sinon.spy(fs, 'mkdir')
-
-            const result = await zipUtil.generateZipTestGen(appRoot, false)
-
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir')))
-            assert.ok(
-                mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'buildAndExecuteLogDir'))
-            )
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'repoMapData')))
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'testCoverageDir')))
-
-            assert.strictEqual(result.rootDir, testTempDirPath)
-            assert.strictEqual(result.zipFilePath, testTempDirPath + CodeWhispererConstants.codeScanZipExt)
-            assert.ok(result.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(result.buildPayloadSizeInBytes, 0)
-            assert.ok(result.zipFileSizeInBytes > 0)
-            assert.strictEqual(result.lines, 150)
-            assert.strictEqual(result.language, 'java')
-            assert.strictEqual(result.scannedFiles.size, 4)
         })
     })
 })
