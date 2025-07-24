@@ -9,6 +9,8 @@ UI tests use [vscode-extension-tester](https://github.com/redhat-developer/vscod
 npm run test:ui
 ```
 
+Note: All of these commands must be run at the root level aws-toolkit-vscode directory.
+
 ### Individual Commands
 
 #### `test:ui:prepare`
@@ -42,10 +44,6 @@ npm run test:ui:run
 
 -   Compiles test files with `npm run testCompile`
 -   Runs tests matching `packages/amazonq/dist/test/e2e_new/amazonq/tests/*.js`
-
-### E2E New Test Suite
-
-Modern UI testing framework located at `packages/amazonq/test/e2e_new/amazonq/`
 
 #### Directory Structure
 
@@ -120,12 +118,9 @@ describe('Feature Tests', () => {
 -   **Tests won't start**: Verify ChromeDriver/Chrome compatibility
 -   **Permission errors**: Check `~/.vscode-test-resources` permissions
 
-#### Debug and Reset
+#### Reset
 
 ```bash
-# Debug mode
-DEBUG=true npm run test:ui:run
-
 # Reset test environment
 rm -rf ~/.vscode-test-resources
 npm run test:ui:prepare
