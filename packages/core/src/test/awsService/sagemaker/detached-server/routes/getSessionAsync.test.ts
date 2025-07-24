@@ -8,6 +8,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { SessionStore } from '../../../../../awsService/sagemaker/detached-server/sessionStore'
 import { handleGetSessionAsync } from '../../../../../awsService/sagemaker/detached-server/routes/getSessionAsync'
+import * as utils from '../../../../../awsService/sagemaker/detached-server/utils'
 
 describe('handleGetSessionAsync', () => {
     let req: Partial<http.IncomingMessage>
@@ -51,46 +52,46 @@ describe('handleGetSessionAsync', () => {
         })
     })
 
-    // Temporarily disabling reconnect logic for the 7/3 Phase 1 launch.
-    // Will re-enable in the next release around 7/14.
+    it('responds with 204 if session is pending', async () => {
+        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+        storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+        storeStub.getStatus.returns(Promise.resolve('pending'))
 
-    // it('responds with 204 if session is pending', async () => {
-    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-    //     storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-    //     storeStub.getStatus.returns(Promise.resolve('pending'))
+        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+        assert(resWriteHead.calledWith(204))
+        assert(resEnd.calledOnce)
+    })
 
-    //     assert(resWriteHead.calledWith(204))
-    //     assert(resEnd.calledOnce)
-    // })
+    it('responds with 202 if status is not-started and opens browser', async () => {
+        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
 
-    // it('responds with 202 if status is not-started and opens browser', async () => {
-    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+        storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+        storeStub.getStatus.returns(Promise.resolve('not-started'))
+        storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
+        storeStub.markPending.returns(Promise.resolve())
 
-    //     storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-    //     storeStub.getStatus.returns(Promise.resolve('not-started'))
-    //     storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
-    //     storeStub.markPending.returns(Promise.resolve())
+        sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
+        sinon
+            .stub(utils, 'parseArn')
+            .returns({ region: 'us-east-1', accountId: '123456789012', spaceName: 'test-space' })
+        sinon.stub(utils, 'open').resolves()
+        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-    //     sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
-    //     sinon.stub(utils, 'open').resolves()
-    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+        assert(resWriteHead.calledWith(202))
+        assert(resEnd.calledWithMatch(/Session is not ready yet/))
+        assert(storeStub.markPending.calledWith('abc', 'req123'))
+    })
 
-    //     assert(resWriteHead.calledWith(202))
-    //     assert(resEnd.calledWithMatch(/Session is not ready yet/))
-    //     assert(storeStub.markPending.calledWith('abc', 'req123'))
-    // })
+    it('responds with 500 if unexpected error occurs', async () => {
+        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+        storeStub.getFreshEntry.throws(new Error('fail'))
 
-    // it('responds with 500 if unexpected error occurs', async () => {
-    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-    //     storeStub.getFreshEntry.throws(new Error('fail'))
+        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
-
-    //     assert(resWriteHead.calledWith(500))
-    //     assert(resEnd.calledWith('Unexpected error'))
-    // })
+        assert(resWriteHead.calledWith(500))
+        assert(resEnd.calledWith('Unexpected error'))
+    })
 
     afterEach(() => {
         sinon.restore()

@@ -1,6 +1,8 @@
 .Icontainer {
     margin-inline: auto;
-    margin-top: 5rem;
+    margin-top: 2rem;
+    width: 100%;
+    min-width: 650px;
 }
 
 h1 {
@@ -8,17 +10,35 @@ h1 {
     margin-bottom: 20px;
 }
 
+/* Remove fixed width for divs to allow responsive behavior */
 div {
-    width: 521px;
+    width: 100%;
 }
 
 .form-row {
     display: grid;
     grid-template-columns: 150px 1fr;
     margin-bottom: 10px;
+    align-items: center;
 }
+
+.form-row-no-align {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    margin-bottom: 10px;
+}
+
+.form-double-row {
+    display: grid;
+    grid-template-rows: 20px 1fr;
+    margin-inline: 0px;
+    padding: 0px 0px;
+    align-items: center;
+}
+
 .form-row-select {
-    width: 387px;
+    width: 100%;
+    max-width: 387px;
     height: 28px;
     border: 1px;
     border-radius: 5px;
@@ -29,16 +49,18 @@ div {
 .dynamic-span {
     white-space: nowrap;
     text-overflow: initial;
-    overflow: scroll;
-    width: 381px;
-    height: 28px;
+    overflow: auto;
+    width: 100%;
+    max-width: 381px;
+    height: auto;
     font-weight: 500;
     font-size: 13px;
     line-height: 15.51px;
 }
 
 .form-row-event-select {
-    width: 244px;
+    width: 100%;
+    max-width: 244px;
     height: 28px;
     margin-bottom: 15px;
     margin-left: 8px;
@@ -52,6 +74,23 @@ div {
 }
 
 label {
+    font-weight: 500;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+info {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+    font-size: 13px;
+    margin-right: 10px;
+    text-wrap-mode: nowrap;
+}
+
+info-wrap {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+    font-size: 13px;
     margin-right: 10px;
 }
 
@@ -65,6 +104,9 @@ textarea {
     color: var(--vscode-settings-textInputForeground);
     background: var(--vscode-settings-textInputBackground);
     border: 1px solid var(--vscode-settings-textInputBorder);
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
 }
 
 .payload-options-button {
@@ -94,6 +136,17 @@ textarea {
     padding: 8px 12px;
 }
 .button-theme-secondary:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
+}
+
+.button-theme-inline {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+    padding: 4px 6px;
+}
+.button-theme-inline:hover:not(:disabled) {
     background: var(--vscode-button-secondaryHoverBackground);
     cursor: pointer;
 }
@@ -129,4 +182,86 @@ textarea {
     display: flex;
     align-items: center;
     margin-bottom: 0.5rem;
+}
+
+.debug-timer {
+    padding: 5px 10px;
+    background-color: var(--vscode-editorWidget-background);
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.collapsible-section {
+    margin: 15px 0;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+}
+
+.collapsible-header {
+    padding: 8px 12px;
+    background-color: var(--vscode-sideBarSectionHeader-background);
+    cursor: pointer;
+    font-weight: 500;
+    max-width: 96%;
+}
+
+.collapsible-content {
+    padding: 10px;
+    border-top: 1px solid var(--vscode-widget-border);
+    max-width: 96%;
+}
+
+/* Ensure buttons in the same line are properly spaced */
+.button-container {
+    display: flex;
+    gap: 5px;
+}
+
+/* For buttons that should be disabled */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Validation error styles */
+.input-error {
+    border: 1px solid var(--vscode-inputValidation-errorBorder) !important;
+    background-color: var(--vscode-inputValidation-errorBackground) !important;
+}
+
+.error-message {
+    color: var(--vscode-inputValidation-errorForeground);
+    font-size: 12px;
+    margin-top: 4px;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+/* Enhanced styling for remote debug checkbox to make it more obvious in dark mode */
+.remote-debug-checkbox {
+    width: 18px !important;
+    height: 18px !important;
+    accent-color: var(--vscode-checkbox-foreground);
+    border: 2px solid var(--vscode-checkbox-border) !important;
+    border-radius: 3px !important;
+    background-color: var(--vscode-checkbox-background) !important;
+    border-color: var(--vscode-checkbox-selectBorder) !important;
+    cursor: pointer;
+}
+
+.remote-debug-checkbox:checked {
+    background-color: var(--vscode-checkbox-selectBackground) !important;
+    border-color: var(--vscode-checkbox-selectBorder) !important;
+}
+
+.remote-debug-checkbox:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    border-color: var(--vscode-checkbox-border);
+    background-color: var(--vscode-input-background);
+}
+
+.remote-debug-checkbox:focus {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
 }

@@ -81,7 +81,15 @@ import {
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
+import {
+    amazonQDiffScheme,
+    AmazonQPromptSettings,
+    messages,
+    openUrl,
+    isTextEditor,
+    globals,
+    setContext,
+} from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -95,6 +103,7 @@ import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
+import { CommentUtils } from 'aws-core-vscode/utils'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -428,6 +437,40 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+                // handling for show_logs button
+                if (message.params.action === 'show_logs') {
+                    languageClient.info('[VSCode Client] Received show_logs action, showing disclaimer')
+
+                    // Show warning message without buttons - just informational
+                    void vscode.window.showWarningMessage(
+                        'Log files may contain sensitive information such as account IDs, resource names, and other data. Be careful when sharing these logs.'
+                    )
+
+                    // Get the log directory path
+                    const logFolderPath = globals.context.logUri?.fsPath
+                    const result = { ...message.params, success: false }
+
+                    if (logFolderPath) {
+                        // Open the log directory in the OS file explorer directly
+                        languageClient.info('[VSCode Client] Opening logs directory')
+                        const path = require('path')
+                        const logFilePath = path.join(logFolderPath, 'Amazon Q Logs.log')
+                        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logFilePath))
+                        result.success = true
+                    } else {
+                        // Fallback: show error if log path is not available
+                        void vscode.window.showErrorMessage('Log location not available.')
+                        languageClient.error('[VSCode Client] Log location not available')
+                    }
+
+                    void webview?.postMessage({
+                        command: message.command,
+                        params: result,
+                    })
+
+                    break
+                }
+            // eslint-disable-next-line no-fallthrough
             case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
@@ -450,6 +493,11 @@ export function registerMessageListeners(
             }
             default:
                 if (isServerEvent(message.command)) {
+                    if (enterFocus(message.params)) {
+                        await setContext('aws.amazonq.amazonqChatLSP.isFocus', true)
+                    } else if (exitFocus(message.params)) {
+                        await setContext('aws.amazonq.amazonqChatLSP.isFocus', false)
+                    }
                     languageClient.sendNotification(message.command, message.params)
                 }
                 break
@@ -659,6 +707,14 @@ function isServerEvent(command: string) {
     return command.startsWith('aws/chat/') || command === 'telemetry/event'
 }
 
+function enterFocus(params: any) {
+    return params.name === 'enterFocus'
+}
+
+function exitFocus(params: any) {
+    return params.name === 'exitFocus'
+}
+
 /**
  * Decodes partial chat responses from the language server before sending them to mynah UI
  */
@@ -670,7 +726,7 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
-    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
+    // This is to filter out the message containing findings from CodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
             !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
@@ -701,7 +757,7 @@ async function handleCompleteResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
 
-    handleSecurityFindings(decryptedMessage, languageClient)
+    await handleSecurityFindings(decryptedMessage, languageClient)
 
     void provider.webview?.postMessage({
         command: chatRequestType.method,
@@ -716,10 +772,10 @@ async function handleCompleteResult<T extends ChatResult>(
     disposable.dispose()
 }
 
-function handleSecurityFindings(
+async function handleSecurityFindings(
     decryptedMessage: { additionalMessages?: ChatMessage[] },
     languageClient: LanguageClient
-): void {
+): Promise<void> {
     if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
         return
     }
@@ -730,10 +786,18 @@ function handleSecurityFindings(
                 try {
                     const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
                     for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        const document = await vscode.workspace.openTextDocument(aggregatedCodeScanIssue.filePath)
                         for (const issue of aggregatedCodeScanIssue.issues) {
-                            issue.visible = !CodeWhispererSettings.instance
+                            const isIssueTitleIgnored = CodeWhispererSettings.instance
                                 .getIgnoredSecurityIssues()
                                 .includes(issue.title)
+                            const isSingleIssueIgnored = CommentUtils.detectCommentAboveLine(
+                                document,
+                                issue.startLine,
+                                CodeWhispererConstants.amazonqIgnoreNextLine
+                            )
+
+                            issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
                         }
                     }
                     initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)

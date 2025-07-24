@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Let Enter invoke auto completion more consistently"
+}

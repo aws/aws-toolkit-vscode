@@ -131,7 +131,7 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
                     AppType: 'CodeEditor',
                     CodeEditorAppSettings: {
                         DefaultResourceSpec: {
-                            InstanceType: 'ml.t3.medium',
+                            InstanceType: 'ml.t3.large',
                             SageMakerImageArn: 'arn:aws:sagemaker:us-west-2:img',
                             SageMakerImageVersionAlias: '1.0.0',
                         },
@@ -155,7 +155,13 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
                 SpaceSettings: {
                     RemoteAccess: 'ENABLED',
                     AppType: 'CodeEditor',
-                    CodeEditorAppSettings: {},
+                    CodeEditorAppSettings: {
+                        DefaultResourceSpec: {
+                            InstanceType: 'ml.t3.large',
+                            SageMakerImageArn: 'arn:aws:sagemaker:us-west-2:img',
+                            SageMakerImageVersionAlias: '1.0.0',
+                        },
+                    },
                 },
             })
 
@@ -184,7 +190,11 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
                 SpaceSettings: {
                     RemoteAccess: 'ENABLED',
                     AppType: 'JupyterLab',
-                    JupyterLabAppSettings: {},
+                    JupyterLabAppSettings: {
+                        DefaultResourceSpec: {
+                            InstanceType: 'ml.t3.large',
+                        },
+                    },
                 },
             })
 
@@ -194,7 +204,11 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
 
             sinon.assert.calledOnceWithExactly(
                 createAppStub,
-                sinon.match.hasNested('ResourceSpec.InstanceType', 'ml.t3.medium')
+                sinon.match.hasNested('ResourceSpec', {
+                    InstanceType: 'ml.t3.large',
+                    SageMakerImageArn: 'arn:aws:sagemaker:us-west-2:542918446943:image/sagemaker-distribution-cpu',
+                    SageMakerImageVersionAlias: '3.2.0',
+                })
             )
         })
 

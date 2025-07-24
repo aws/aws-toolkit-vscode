@@ -59,7 +59,7 @@ describe('SessionStore', () => {
         assert(writeMappingStub.calledOnce)
     })
 
-    it('returns async fresh entry and marks consumed', async () => {
+    it('returns async fresh entry and deletes it', async () => {
         const store = new SessionStore()
         // Disable initial-connection freshness
         readMappingStub.returns({
@@ -77,6 +77,10 @@ describe('SessionStore', () => {
         assert.ok(result, 'Expected result to be defined')
         assert.strictEqual(result.sessionId, 'a')
         assert(writeMappingStub.calledOnce)
+
+        // Verify the entry was deleted from the mapping
+        const updated = writeMappingStub.firstCall.args[0]
+        assert.strictEqual(updated.deepLink[connectionId].requests[requestId], undefined)
     })
 
     it('returns undefined if no fresh entries exist', async () => {
