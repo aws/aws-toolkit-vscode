@@ -10,13 +10,13 @@ import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { BuildSystem, DB, FolderInfo, transformByQState } from '../../models/model'
-import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
+import { IManifestFile } from './humanInTheLoopManager'
 
 export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`

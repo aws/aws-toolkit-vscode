@@ -30,7 +30,7 @@ export class SvgGenerationService {
         origionalCodeHighlightRange: Range[]
     }> {
         const textDoc = await vscode.workspace.openTextDocument(filePath)
-        const originalCode = textDoc.getText()
+        const originalCode = textDoc.getText().replaceAll('\r\n', '\n')
         if (originalCode === '') {
             logger.error(`udiff format error`)
             throw new ToolkitError('udiff format error')
