@@ -228,6 +228,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
     }
 
+    // this method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
