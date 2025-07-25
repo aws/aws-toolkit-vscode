@@ -10,6 +10,9 @@ import TkRadioField from '../../../shared/ux/tkRadioField.vue'
 import TkSelectField, { Option } from '../../../shared/ux/tkSelectField.vue'
 import TkInputField from '../../../shared/ux/tkInputField.vue'
 
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface State {
     scheduleType: string
     intervalType: string
@@ -52,10 +55,27 @@ const state: State = reactive({
 
 export interface ScheduleChange extends State {}
 
+//-------------------------------------------------------------------------------------------------
+// Emitted Events
+//-------------------------------------------------------------------------------------------------
 const emit = defineEmits<{
     (e: 'schedule-change', payload: ScheduleChange): void
 }>()
 
+//-------------------------------------------------------------------------------------------------
+// Watchers
+//-------------------------------------------------------------------------------------------------
+watch(
+    () => state,
+    (newValue: State, oldValue: State) => {
+        emit('schedule-change', { ...newValue })
+    },
+    { deep: true }
+)
+
+//-------------------------------------------------------------------------------------------------
+// Variables & Methods
+//-------------------------------------------------------------------------------------------------
 const globalTimeErrorMessage = 'Time must be in hh:mm format'
 const timeString1 = 'Specify time in UTC (add 7 hours to local time)'
 const timeString2 = 'Schedules in UTC are affected by daylight saving time or summer time changes'
@@ -79,14 +99,6 @@ const daysList: Option[] = [
     { text: 'Saturday', value: 'saturday' },
     { text: 'Sunday', value: 'sunday' },
 ]
-
-watch(
-    () => state,
-    (newValue: State, oldValue: State) => {
-        emit('schedule-change', { ...newValue })
-    },
-    { deep: true }
-)
 
 const onRunNowUpdate = (newValue: string) => {
     state.scheduleType = newValue

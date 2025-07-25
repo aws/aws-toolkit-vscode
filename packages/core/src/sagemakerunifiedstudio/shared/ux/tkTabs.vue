@@ -30,9 +30,12 @@
  * ```
  */
 
-import type { Component } from 'vue'
+import { Component, computed } from 'vue'
 import { reactive } from 'vue'
 
+//-------------------------------------------------------------------------------------------------
+// Props
+//-------------------------------------------------------------------------------------------------
 export interface Tab {
     label: string
     id: string
@@ -41,19 +44,42 @@ export interface Tab {
 
 interface Props {
     tabs: Tab[]
+    selectedTab?: number
 }
 
-const props = withDefaults(defineProps<Props>(), {})
+const props = withDefaults(defineProps<Props>(), { selectedTab: undefined })
 
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface State {
     activeTab: number
+    tabClicked: boolean
 }
 
 const state: State = reactive({
     activeTab: 0,
+    tabClicked: false,
 })
 
+//-------------------------------------------------------------------------------------------------
+// Computed Properties
+//-------------------------------------------------------------------------------------------------
+const activeTab = computed(() => {
+    if (state.tabClicked) {
+        return state.activeTab
+    } else if (props.selectedTab && props.selectedTab < props.tabs.length) {
+        return props.selectedTab
+    } else {
+        return state.activeTab
+    }
+})
+
+//-------------------------------------------------------------------------------------------------
+// Variables & Methods
+//-------------------------------------------------------------------------------------------------
 function onTabClick(index: number): void {
+    state.tabClicked = true
     state.activeTab = index
 }
 </script>
@@ -65,7 +91,7 @@ function onTabClick(index: number): void {
                 <li v-for="(tab, index) in props.tabs" :key="index">
                     <div
                         class="tk-tabs-header-tablist-item"
-                        :class="index === state.activeTab ? 'tk-tabs-header-tablist-item_active' : ''"
+                        :class="{ 'tk-tabs-header-tablist-item_active': index === activeTab }"
                     >
                         <button @click="onTabClick(index)">{{ tab.label }}</button>
                     </div>
@@ -74,10 +100,7 @@ function onTabClick(index: number): void {
         </div>
         <div class="tk-tabs-content">
             <template v-for="(tab, index) in props.tabs" :key="index">
-                <div
-                    class="tk-tabs-content-item"
-                    :class="index === state.activeTab ? 'tk-tabs-content-item_active' : ''"
-                >
+                <div class="tk-tabs-content-item" :class="{ 'tk-tabs-content-item_active': index === activeTab }">
                     <component :is="tab.content"></component>
                 </div>
             </template>

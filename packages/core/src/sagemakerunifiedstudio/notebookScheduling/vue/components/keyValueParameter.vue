@@ -6,17 +6,18 @@
 
 import { reactive, computed } from 'vue'
 
+//-------------------------------------------------------------------------------------------------
+// Props
+//-------------------------------------------------------------------------------------------------
 interface Props {
     id: number
 }
 
 const props = withDefaults(defineProps<Props>(), {})
 
-const emit = defineEmits<{
-    (e: 'change', id: number, error: boolean, name: string, value: string): void
-    (e: 'remove', id: number): void
-}>()
-
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface State {
     parameterName: string
     parameterNameErrorMessage: string
@@ -31,6 +32,17 @@ const state: State = reactive({
     parameterValueErrorMessage: 'No value specified for parameter.',
 })
 
+//-------------------------------------------------------------------------------------------------
+// Emitted Events
+//-------------------------------------------------------------------------------------------------
+const emit = defineEmits<{
+    (e: 'change', id: number, error: boolean, name: string, value: string): void
+    (e: 'remove', id: number): void
+}>()
+
+//-------------------------------------------------------------------------------------------------
+// Computed Properties
+//-------------------------------------------------------------------------------------------------
 const parameterNameErrorClass = computed(() => {
     emit(
         'change',

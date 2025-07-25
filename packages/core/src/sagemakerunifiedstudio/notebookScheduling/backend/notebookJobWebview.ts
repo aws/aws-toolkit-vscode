@@ -24,6 +24,9 @@ export class NotebookJobWebview extends VueWebview {
     /** Tracks the currently displayed page */
     private currentPage: string = createJobPage
 
+    private newJob?: string
+    private newJobDefinition?: string
+
     /**
      * Creates a new NotebookJobWebview instance
      */
@@ -46,5 +49,21 @@ export class NotebookJobWebview extends VueWebview {
     public setCurrentPage(newPage: string): void {
         this.currentPage = newPage
         this.onShowPage.fire({ page: this.currentPage })
+    }
+
+    public getNewJob(): string | undefined {
+        return this.newJob
+    }
+
+    public setNewJob(newJob?: string): void {
+        this.newJob = newJob
+    }
+
+    public getNewJobDefinition(): string | undefined {
+        return this.newJobDefinition
+    }
+
+    public setNewJobDefinition(jobDefinition?: string): void {
+        this.newJobDefinition = jobDefinition
     }
 }

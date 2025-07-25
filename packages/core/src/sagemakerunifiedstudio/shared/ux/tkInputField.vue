@@ -38,6 +38,9 @@ import TkSpaceBetween from './tkSpaceBetween.vue'
 import TkBox from './tkBox.vue'
 import TkLabel from './tkLabel.vue'
 
+//-------------------------------------------------------------------------------------------------
+// Props
+//-------------------------------------------------------------------------------------------------
 interface Props {
     type?: 'text' | 'number'
     label: string
@@ -57,6 +60,9 @@ const props = withDefaults(defineProps<Props>(), {
     validationMessage: '',
 })
 
+//-------------------------------------------------------------------------------------------------
+// Emitted Events
+//-------------------------------------------------------------------------------------------------
 const emit = defineEmits<{
     (e: 'update:value', value: string | number): void
 }>()

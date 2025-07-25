@@ -8,6 +8,9 @@ import { reactive } from 'vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import KeyValueParameter from './keyValueParameter.vue'
 
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface ParameterValue {
     name: string
     value: string
@@ -25,6 +28,9 @@ const state: State = reactive({
     parameterValues: new Map(),
 })
 
+//-------------------------------------------------------------------------------------------------
+// Variables & Methods
+//-------------------------------------------------------------------------------------------------
 function onAdd(): void {
     state.count += 1
     state.parameters.push(state.count)

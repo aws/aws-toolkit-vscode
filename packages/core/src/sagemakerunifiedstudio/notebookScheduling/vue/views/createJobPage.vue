@@ -7,17 +7,20 @@
 import { reactive } from 'vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import TkBox from '../../../shared/ux/tkBox.vue'
-import ScheduleParameters from '../components/scheduleParameters.vue'
 import TkExpandableSection from '../../../shared/ux/tkExpandableSection.vue'
 import TkLabel from '../../../shared/ux/tkLabel.vue'
-import CronSchedule, { ScheduleChange } from '../components/cronSchedule.vue'
 import TkInputField from '../../../shared/ux/tkInputField.vue'
 import TkCheckboxField from '../../../shared/ux/tkCheckboxField.vue'
 import TkSelectField, { Option } from '../../../shared/ux/tkSelectField.vue'
 import TkHighlightContainer from '../../../shared/ux/tkHighlightContainer.vue'
+import CronSchedule, { ScheduleChange } from '../components/cronSchedule.vue'
+import ScheduleParameters from '../components/scheduleParameters.vue'
 import { client } from '../composables/useClient'
 import { viewJobsPage } from '../../utils/constants'
 
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface State {
     scheduleName: string
     notebookFileName: string
@@ -26,6 +29,7 @@ interface State {
     kernel: string
     maxRetryAttempts: number
     maxRuntime: number
+    isJobDefinition: boolean
     scheduleNameErrorMessage: string
     maxRetryAttemptsErrorMessage: string
     maxRuntimeErrorMessage: string
@@ -42,18 +46,29 @@ const state: State = reactive({
     kernel: 'python3',
     maxRetryAttempts: 1,
     maxRuntime: 172800,
+    isJobDefinition: false,
     scheduleNameErrorMessage: '',
     maxRetryAttemptsErrorMessage: '',
     maxRuntimeErrorMessage: '',
 })
 
-const onCreatedClick = (event: MouseEvent) => {
-    console.log('Button is clicked')
+//-------------------------------------------------------------------------------------------------
+// Variables & Methods
+//-------------------------------------------------------------------------------------------------
+const onCreateClick = (event: MouseEvent) => {
+    if (state.isJobDefinition) {
+        client.setNewJobDefinition('new-job-definition')
+    } else {
+        client.setNewJob('new-job')
+    }
+
     client.setCurrentPage(viewJobsPage)
 }
 
 const onScheduleChange = (schedule: ScheduleChange) => {
-    console.log('onScheduleChange', schedule)
+    if (schedule.scheduleType === 'runonschedule') {
+        state.isJobDefinition = true
+    }
 }
 
 const onScheduleNameUpdate = (newValue: string | number) => {
@@ -175,7 +190,7 @@ const onMaxRuntimeUpdate = (newValue: string | number) => {
                 <tk-box float="right">
                     <tk-space-between direction="horizontal">
                         <button class="tk-button button-theme-secondary">Cancel</button>
-                        <button class="tk-button button-theme-primary" @click="onCreatedClick">Create</button>
+                        <button class="tk-button button-theme-primary" @click="onCreateClick">Create</button>
                     </tk-space-between>
                 </tk-box>
             </tk-highlight-container>

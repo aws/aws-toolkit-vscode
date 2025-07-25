@@ -23,7 +23,6 @@ onBeforeMount(async () => {
     state.showPage = await client.getCurrentPage()
 
     client.onShowPage((payload: { page: string }) => {
-        console.log('onShowPage', payload)
         state.showPage = payload.page
     })
 })

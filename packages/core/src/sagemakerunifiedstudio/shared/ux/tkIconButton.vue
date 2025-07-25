@@ -20,13 +20,16 @@
  * ```
  */
 
+//-------------------------------------------------------------------------------------------------
+// Emitted Events
+//-------------------------------------------------------------------------------------------------
 const emit = defineEmits<{
-    (e: 'clicked'): void
+    (e: 'click'): void
 }>()
 </script>
 
 <template>
-    <div role="button" class="icon-button" @click="emit('clicked')">
+    <div role="button" class="icon-button" @click="emit('click')">
         <slot />
     </div>
 </template>
@@ -34,6 +37,13 @@ const emit = defineEmits<{
 <style scoped>
 .icon-button {
     cursor: pointer;
-    display: inline;
+    padding: 5px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.icon-button:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
 }
 </style>

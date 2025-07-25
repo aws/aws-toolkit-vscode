@@ -40,6 +40,9 @@ import { computed } from 'vue'
 import TkSpaceBetween from './tkSpaceBetween.vue'
 import TkLabel from './tkLabel.vue'
 
+//-------------------------------------------------------------------------------------------------
+// Props
+//-------------------------------------------------------------------------------------------------
 export interface Option {
     text: string
     value: string
@@ -60,10 +63,16 @@ const props = withDefaults(defineProps<Props>(), {
     optional: false,
 })
 
+//-------------------------------------------------------------------------------------------------
+// Emitted Events
+//-------------------------------------------------------------------------------------------------
 const emit = defineEmits<{
     (e: 'update:value', value: string): void
 }>()
 
+//-------------------------------------------------------------------------------------------------
+// Computed Properties
+//-------------------------------------------------------------------------------------------------
 const selectedValue = computed(() => {
     if (props.selected.length > 0) {
         return props.selected
