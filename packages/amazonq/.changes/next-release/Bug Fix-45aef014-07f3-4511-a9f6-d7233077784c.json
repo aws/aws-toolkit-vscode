@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Slightly delay rendering inline completion when user is typing"
-}

@@ -21,6 +21,11 @@ export class DocumentEventListener {
                     this.lastDocumentChangeEventMap.clear()
                 }
                 this.lastDocumentChangeEventMap.set(e.document.uri.fsPath, { event: e, timestamp: performance.now() })
+                // The VS Code provideInlineCompletionCallback may not trigger when Enter is pressed, especially in Python files
+                // manually make this trigger. In case of duplicate, the provideInlineCompletionCallback is already debounced
+                if (this.isEnter(e) && vscode.window.activeTextEditor) {
+                    void vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+                }
             }
         })
     }
@@ -46,5 +51,19 @@ export class DocumentEventListener {
         if (this.documentChangeListener) {
             this.documentChangeListener.dispose()
         }
+    }
+
+    private isEnter(e: vscode.TextDocumentChangeEvent): boolean {
+        if (e.contentChanges.length !== 1) {
+            return false
+        }
+        const str = e.contentChanges[0].text
+        if (str.length === 0) {
+            return false
+        }
+        return (
+            (str.startsWith('\r\n') && str.substring(2).trim() === '') ||
+            (str[0] === '\n' && str.substring(1).trim() === '')
+        )
     }
 }

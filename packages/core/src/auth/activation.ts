@@ -12,7 +12,7 @@ import { isAmazonQ, isSageMaker } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger/logger'
 import { getErrorMsg } from '../shared/errors'
 
-interface SagemakerCookie {
+export interface SagemakerCookie {
     authMode?: 'Sso' | 'Iam'
 }
 
