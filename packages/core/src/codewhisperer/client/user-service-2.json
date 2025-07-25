@@ -202,6 +202,37 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "GetProfile": {
+            "name": "GetProfile",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetProfileRequest"
+            },
+            "output": {
+                "shape": "GetProfileResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ThrottlingException"
+                },
+                {
+                    "shape": "ResourceNotFoundException"
+                },
+                {
+                    "shape": "InternalServerException"
+                },
+                {
+                    "shape": "ValidationException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ],
+            "documentation": "<p>Get the requested CodeWhisperer profile.</p>"
+        },
         "GetTaskAssistCodeGeneration": {
             "name": "GetTaskAssistCodeGeneration",
             "http": {
@@ -1997,6 +2028,24 @@
                 "suggestedFix": { "shape": "SuggestedFix" }
             }
         },
+        "GetProfileRequest": {
+            "type": "structure",
+            "required": ["profileArn"],
+            "members": {
+                "profileArn": {
+                    "shape": "ProfileArn"
+                }
+            }
+        },
+        "GetProfileResponse": {
+            "type": "structure",
+            "required": ["profile"],
+            "members": {
+                "profile": {
+                    "shape": "ProfileInfo"
+                }
+            }
+        },
         "GetTaskAssistCodeGenerationRequest": {
             "type": "structure",
             "required": ["conversationId", "codeGenerationId"],
@@ -2426,6 +2475,15 @@
             "type": "long",
             "box": true
         },
+        "MCPConfiguration": {
+            "type": "structure",
+            "required": ["toggle"],
+            "members": {
+                "toggle": {
+                    "shape": "OptInFeatureToggle"
+                }
+            }
+        },
         "MemoryEntry": {
             "type": "structure",
             "required": ["id", "memoryEntryString", "metadata"],
@@ -2532,7 +2590,8 @@
                 "byUserAnalytics": { "shape": "ByUserAnalytics" },
                 "dashboardAnalytics": { "shape": "DashboardAnalytics" },
                 "notifications": { "shape": "Notifications" },
-                "workspaceContext": { "shape": "WorkspaceContext" }
+                "workspaceContext": { "shape": "WorkspaceContext" },
+                "mcpConfiguration": { "shape": "MCPConfiguration" }
             }
         },
         "OptOutPreference": {
@@ -2681,6 +2740,30 @@
             "max": 256,
             "min": 1,
             "pattern": "[\\sa-zA-Z0-9_-]*"
+        },
+        "ProfileInfo": {
+            "type": "structure",
+            "required": ["arn"],
+            "members": {
+                "arn": {
+                    "shape": "ProfileArn"
+                },
+                "profileName": {
+                    "shape": "ProfileName"
+                },
+                "description": {
+                    "shape": "ProfileDescription"
+                },
+                "status": {
+                    "shape": "ProfileStatus"
+                },
+                "profileType": {
+                    "shape": "ProfileType"
+                },
+                "optInFeatures": {
+                    "shape": "OptInFeatures"
+                }
+            }
         },
         "ProfileList": {
             "type": "list",
