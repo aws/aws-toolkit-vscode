@@ -73,58 +73,24 @@ export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promis
     await driver.actions().sendKeys(key).perform()
 }
 
-type OSType = 'windows' | 'mac'
-type modifierKey = 'alt' | 'ctrl' | 'shift' | 'option' | 'command'
-
-const MODIFIERKEYS: Record<OSType, Record<modifierKey, string>> = {
-    windows: {
-        alt: Key.ALT,
-        ctrl: Key.CONTROL,
-        shift: Key.SHIFT,
-        option: Key.ALT,
-        command: Key.COMMAND,
-    },
-    mac: {
-        alt: Key.ALT,
-        ctrl: Key.CONTROL,
-        shift: Key.SHIFT,
-        option: Key.ALT,
-        command: Key.COMMAND,
-    },
-}
-
 /**
  * Presses a keyboard shortcut with modifier keys
  * @param driver The WebDriver instance
- * @param key The key to press
- * @param modifier The modifier key(s)
- * @param osType The operating system type
+ * @param key The keys to press
+ *
+ * Examples:
+ * Ctrl + C | await pressShortcut(driver, Key.CONTROL, 'c')
+ * Ctrl + Shift + T | await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 't')
  */
-export async function pressShortcut(
-    driver: WebDriver,
-    key: string,
-    modifier: modifierKey | modifierKey[],
-    osType: OSType = 'windows'
-): Promise<void> {
-    const actions = driver.actions({ bridge: true })
-
-    try {
-        const modifiers = Array.isArray(modifier) ? modifier : modifier ? [modifier] : []
-        for (const mod of modifiers) {
-            if (!(mod in MODIFIERKEYS[osType])) {
-                throw new Error(`Invalid modifier key '${mod}' for ${osType}`)
-            }
-            actions.keyDown(MODIFIERKEYS[osType][mod])
-        }
-        actions.sendKeys(key)
-        for (const mod of modifiers.reverse()) {
-            actions.keyUp(MODIFIERKEYS[osType][mod])
-        }
-        await actions.perform()
-    } catch (error) {
-        console.error(`Error performing keyboard shortcut: ${error}`)
-        throw error
+export async function pressShortcut(driver: WebDriver, ...keys: (keyof typeof Key)[]): Promise<void> {
+    const actions = driver.actions()
+    for (const key of keys) {
+        actions.keyDown(key)
     }
+    for (const key of keys.reverse()) {
+        actions.keyUp(key)
+    }
+    await actions.perform()
 }
 
 /**
@@ -203,6 +169,18 @@ export async function createNewTextFile(workbench: Workbench, editorView: Editor
     await sleep(1000)
     const textEditor = (await editorView.openEditor('Untitled-1')) as TextEditor
     return textEditor
+}
+
+/**
+ * Writes the given string in the textEditor in the next empty line
+ * @param textEditor The TextEditor instance
+ * @param text The text the user wants to type
+ * @returns Promise<void>
+ */
+export async function writeToTextEditor(textEditor: TextEditor, text: string): Promise<void> {
+    const currentLines = await textEditor.getNumberOfLines()
+    const nextLine = currentLines + 1
+    await textEditor.typeTextAt(nextLine, 1, text)
 }
 
 /**

@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { Workbench, EditorView, InputBox, TextEditor, WebviewView, Key } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { sleep, expect, pressKey, createNewTextFile } from '../utils/generalUtils'
+import { sleep, expect, pressKey, createNewTextFile, writeToTextEditor } from '../utils/generalUtils'
 
 describe('Amazon Q Inline Completion / Chat Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -27,19 +27,17 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
     })
 
     it('Inline Test', async () => {
-        await textEditor.typeTextAt(1, 1, 'Select Me')
+        await writeToTextEditor(textEditor, 'Select Me')
         const text = await textEditor.getText()
         expect(text).equals('Select Me')
         await textEditor.clearText()
+
         await workbench.executeCommand('Amazon Q: Inline Chat')
         const input = new InputBox()
         await input.sendKeys('Write a simple sentece')
         await input.sendKeys(Key.ENTER)
-        await sleep(5000)
         const driver = textEditor.getDriver()
         await pressKey(driver, 'ENTER')
-        await sleep(3000)
         await pressKey(driver, 'TAB')
-        await sleep(3000)
     })
 })
