@@ -360,6 +360,10 @@ async function onLanguageServerReady(
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
             sessionManager.onNextSuggestion()
         }),
+        // this is a workaround since handleDidShowCompletionItem is not public API
+        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+            sessionManager.checkInlineSuggestionVisibility()
+        }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
