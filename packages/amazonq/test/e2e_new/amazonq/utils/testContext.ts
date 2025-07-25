@@ -2,11 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, WebviewView } from 'vscode-extension-tester'
+import { Workbench, WebviewView, EditorView } from 'vscode-extension-tester'
 
 export interface TestContext {
     workbench: Workbench
     webviewView: WebviewView
+    editorView: EditorView
 }
 
 export const testContext = new Proxy<TestContext>({} as TestContext, {
@@ -24,7 +25,8 @@ export const testContext = new Proxy<TestContext>({} as TestContext, {
     },
 })
 
-export function initializeTestContext(workbench: Workbench, webviewView: WebviewView): void {
+export function initializeTestContext(workbench: Workbench, webviewView: WebviewView, editorView: EditorView): void {
     testContext.workbench = workbench
     testContext.webviewView = webviewView
+    testContext.editorView = editorView
 }
