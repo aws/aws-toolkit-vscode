@@ -167,7 +167,11 @@ export async function createNewTextFile(workbench: Workbench, editorView: Editor
     await workbench.executeCommand('Create: New File...')
     await (await InputBox.create()).selectQuickPick('Text File')
     await sleep(1000)
-    const textEditor = (await editorView.openEditor('Untitled-1')) as TextEditor
+    const editor = await editorView.openEditor('Untitled-1')
+    if (!editor || !(editor instanceof TextEditor)) {
+        throw new Error('Failed to open text editor')
+    }
+    const textEditor = editor as TextEditor
     return textEditor
 }
 
