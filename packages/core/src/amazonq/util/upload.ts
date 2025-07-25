@@ -5,11 +5,10 @@
 
 import request, { RequestError } from '../../shared/request'
 import { getLogger } from '../../shared/logger/logger'
-import { featureName } from '../../amazonqFeatureDev/constants'
 
-import { UploadCodeError, UploadURLExpired } from '../../amazonqFeatureDev/errors'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, UploadCodeError, UploadURLExpired } from '../../shared/errors'
 import { i18n } from '../../shared/i18n-helper'
+import { featureName } from '../../shared/constants'
 
 /**
  * uploadCode
