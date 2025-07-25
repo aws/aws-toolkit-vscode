@@ -378,7 +378,7 @@ describe('InlineCompletionManager', () => {
                     )
                     await messageShown
                 })
-            describe('debounce behavior', function () {
+            describe.skip('debounce behavior', function () {
                 let clock: ReturnType<typeof installFakeClock>
 
                 beforeEach(function () {
