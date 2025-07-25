@@ -14,31 +14,6 @@ export async function sleep(timeout: number) {
 }
 
 /**
- * Minimal assertion library for testing
- * @param actual The value to test
- * @returns Object with assertion methods (equals, include, is.true)
- */
-export const expect = (actual: any) => ({
-    equals: (expected: any) => {
-        if (actual !== expected) {
-            throw new Error(`Expected ${expected}, got ${actual}`)
-        }
-    },
-    include: (expected: any) => {
-        if (!actual.includes(expected)) {
-            throw new Error(`Expected "${actual}" to include "${expected}"`)
-        }
-    },
-    is: {
-        true: () => {
-            if (actual !== true) {
-                throw new Error(`Expected true, got ${actual}`)
-            }
-        },
-    },
-})
-
-/**
  * Waits for an element to be located, if there are multiple elements with the same locator it will just return the first one
  * @param webview The WebviewView instance
  * @param locator The selenium locator
