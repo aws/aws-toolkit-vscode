@@ -222,8 +222,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // this line is to force VS Code to re-render the inline completion
         // if it decides the inline completion can be shown
         await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-        // yield event loop to let backend state transition finish
-        await sleep(1)
+        // yield event loop to let backend state transition finish plus wait for vsc to render
+        await sleep(10)
         // run the command to detect if inline suggestion is really shown or not
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
     }
@@ -316,7 +316,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 if (prevItemMatchingPrefix.length > 0) {
                     logstr += `- not call LSP and reuse previous suggestions that match user typed characters
                     - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
-                    this.checkWhetherInlineCompletionWasShown()
+                    void this.checkWhetherInlineCompletionWasShown()
                     return prevItemMatchingPrefix
                 }
 
@@ -471,7 +471,7 @@ ${itemLog}
             this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
             logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
-            this.checkWhetherInlineCompletionWasShown()
+            void this.checkWhetherInlineCompletionWasShown()
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
