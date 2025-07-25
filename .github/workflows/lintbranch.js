@@ -54,6 +54,7 @@ function _test() {
 
 function main() {
     const mode = process.argv[2]
+    console.log("executing lint branch");
 
     if (mode === 'test') {
         _test()
