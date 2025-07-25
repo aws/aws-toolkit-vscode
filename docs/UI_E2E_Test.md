@@ -36,7 +36,7 @@ npm run test:ui:install
 
 #### `test:ui:run`
 
-Compiles TypeScript and runs UI tests within the dist directory. You must run this everytime you make a new change to your tests in order to recompile them.
+Compiles TypeScript and runs UI tests within the dist directory. You must run this everytime you make a new change to your tests in order to recompile the tests.
 
 ```bash
 npm run test:ui:run
