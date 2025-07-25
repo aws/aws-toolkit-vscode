@@ -15,7 +15,7 @@ Note: All of these commands must be run at the root level aws-toolkit-vscode dir
 
 #### `test:ui:prepare`
 
-Downloads VS Code and ChromeDriver to `~/.vscode-test-resources`
+Downloads VS Code and ChromeDriver to `~/.vscode-test-resources` in order to properly hook Selenium/VET to our new VSCode instance we launch. Without this, test cannot be run at all.
 
 ```bash
 npm run test:ui:prepare
@@ -23,7 +23,7 @@ npm run test:ui:prepare
 
 #### `test:ui:install`
 
-Packages the Amazon Q extension and installs it for testing
+Packages the Amazon Q extension VSIX and installs it for testing. This reflects local changes within your immediate aws-toolkit-vscode directory.
 
 ```bash
 npm run test:ui:install
@@ -36,7 +36,7 @@ npm run test:ui:install
 
 #### `test:ui:run`
 
-Compiles TypeScript and runs UI tests
+Compiles TypeScript and runs UI tests within the dist directory. You must run this everytime you make a new change to your tests in order to recompile them.
 
 ```bash
 npm run test:ui:run
@@ -66,6 +66,12 @@ npm run test:ui:run
 2. Import utilities from `../utils/`
 3. Use helpers from `../helpers/`
 4. Follow existing patterns for setup/cleanup
+
+#### Writing New Helpers
+
+1. Plan out abstractions/helpers after confirming current helpers are not viable
+2. Create helper file in `../helpers/`
+3. Following existing pattens for helper conventions and parameters
 
 #### Example Test Structure
 
