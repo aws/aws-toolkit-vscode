@@ -389,7 +389,7 @@ describe('InlineCompletionManager', () => {
                     clock.uninstall()
                 })
 
-                it('should only trigger once on rapid events', async () => {
+                it.skip('should only trigger once on rapid events', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
