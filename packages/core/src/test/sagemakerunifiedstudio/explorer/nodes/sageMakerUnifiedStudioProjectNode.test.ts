@@ -72,7 +72,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
 
         it('returns correct tree item when project is selected', async function () {
-            projectNode.setSelectedProject(mockProject)
+            projectNode.setProject(mockProject)
             const treeItem = await projectNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, mockProject.name)
@@ -88,10 +88,10 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
     })
 
-    describe('setSelectedProject', function () {
+    describe('setProject', function () {
         it('updates the project and fires change event', function () {
             const emitterSpy = sinon.spy(projectNode['onDidChangeEmitter'], 'fire')
-            projectNode.setSelectedProject(mockProject)
+            projectNode.setProject(mockProject)
             assert.strictEqual(projectNode['project'], mockProject)
             assert(emitterSpy.calledOnce)
         })
@@ -99,7 +99,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
 
     describe('getChildren', function () {
         it('stores config and gets credentials successfully', async function () {
-            projectNode.setSelectedProject(mockProject)
+            projectNode.setProject(mockProject)
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
 
             const children = await projectNode.getChildren()
@@ -131,7 +131,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
 
         it('handles credentials error gracefully', async function () {
-            projectNode.setSelectedProject(mockProject)
+            projectNode.setProject(mockProject)
             const credError = new Error('Credentials failed')
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.rejects(credError)
 

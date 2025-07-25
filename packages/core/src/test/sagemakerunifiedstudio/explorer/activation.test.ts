@@ -64,6 +64,20 @@ describe('SageMaker Unified Studio explorer activation', function () {
         assert(registerCommandStub.calledWith('aws.smus.rootView.refresh', sinon.match.func))
     })
 
+    it('registers project view command', async function () {
+        await activate(mockContext)
+
+        // Verify project view command was registered
+        assert(registerCommandStub.calledWith('aws.smus.projectView', sinon.match.func))
+    })
+
+    it('registers switch project command', async function () {
+        await activate(mockContext)
+
+        // Verify switch project command was registered
+        assert(registerCommandStub.calledWith('aws.smus.switchProject', sinon.match.func))
+    })
+
     it('registers retry command', async function () {
         const registerStub = sinon.stub(retrySmusProjectsCommand, 'register').returns({ dispose: sinon.stub() } as any)
 

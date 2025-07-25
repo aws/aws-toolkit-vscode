@@ -94,8 +94,13 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         return undefined
     }
 
-    public setSelectedProject(project: any): void {
+    public setProject(project: any): void {
         this.project = project
+        // Fire the event to refresh this node and its children
         this.onDidChangeEmitter.fire()
+    }
+
+    public getProject(): DataZoneProject | undefined {
+        return this.project
     }
 }
