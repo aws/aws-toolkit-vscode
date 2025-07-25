@@ -24,6 +24,8 @@ export interface CodeWhispererSession {
     // partialResultToken for the next trigger if user accepts an EDITS suggestion
     editsStreakPartialResultToken?: number | string
     triggerOnAcceptance?: boolean
+    // whether any suggestion in this session was displayed on screen
+    displayed: boolean
 }
 
 export class SessionManager {
@@ -49,6 +51,7 @@ export class SessionManager {
             startPosition,
             firstCompletionDisplayLatency,
             diagnosticsBeforeAccept,
+            displayed: false,
         }
         this._currentSuggestionIndex = 0
     }
@@ -125,6 +128,12 @@ export class SessionManager {
                 (this._currentSuggestionIndex - 1 + this.activeSession.suggestions.length) %
                 this.activeSession.suggestions.length
             this.updateCodeReferenceAndImports()
+        }
+    }
+
+    public checkInlineSuggestionVisibility() {
+        if (this.activeSession) {
+            this.activeSession.displayed = true
         }
     }
 

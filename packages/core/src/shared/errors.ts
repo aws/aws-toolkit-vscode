@@ -15,7 +15,7 @@ import type * as os from 'os'
 import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
 import { driveLetterRegex } from './utilities/pathUtils'
 import { getLogger } from './logger/logger'
-import { crashMonitoringDirName } from './constants'
+import { crashMonitoringDirName, uploadCodeError } from './constants'
 import { RequestCancelledError } from './request'
 
 let _username = 'unknown-user'
@@ -846,6 +846,21 @@ export class ClientError extends ToolkitError {
 export class ServiceError extends ToolkitError {
     constructor(message: string, info: ErrorInformation = { code: '500' }) {
         super(message, info)
+    }
+}
+
+export class UploadURLExpired extends ClientError {
+    constructor() {
+        super(
+            "I’m sorry, I wasn't able to generate code. A connection timed out or became unavailable. Please try again or check the following:\n\n- Exclude non-essential files in your workspace’s .gitignore.\n\n- Check that your network connection is stable.",
+            { code: 'UploadURLExpired' }
+        )
+    }
+}
+
+export class UploadCodeError extends ServiceError {
+    constructor(statusCode: string) {
+        super(uploadCodeError, { code: `UploadCode-${statusCode}` })
     }
 }
 
