@@ -976,6 +976,10 @@
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
+                "command": "aws.amazonq.checkInlineSuggestionVisibility",
+                "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
+            },
+            {
                 "command": "aws.amazonq.inline.invokeChat",
                 "win": "ctrl+i",
                 "mac": "cmd+i",

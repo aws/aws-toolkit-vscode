@@ -25,7 +25,7 @@ import jaroWinkler from 'jaro-winkler'
  */
 export async function getPatchedCode(filePath: string, patch: string, snippetMode = false) {
     const document = await vscode.workspace.openTextDocument(filePath)
-    const fileContent = document.getText()
+    const fileContent = document.getText().replaceAll('\r\n', '\n')
     // Usage with the existing getPatchedCode function:
 
     let updatedPatch = patch
