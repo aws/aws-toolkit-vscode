@@ -390,7 +390,7 @@
                 },
                 {
                     "command": "aws.amazonq.accountDetails",
-                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.isSageMakerUnifiedStudio && aws.amazonq.connectedSsoIdc == true",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
                     "group": "1_amazonQ@1"
                 },
                 {
