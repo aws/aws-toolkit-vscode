@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import {
     CancellationToken,
     InlineCompletionContext,
@@ -32,7 +32,6 @@ import {
     ImportAdderProvider,
     CodeSuggestionsState,
     vsCodeState,
-    inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
@@ -42,7 +41,7 @@ import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
-import { debounce, messageUtils } from 'aws-core-vscode/utils'
+import { messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { DocumentEventListener } from './documentEventListener'
@@ -214,13 +213,23 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     ) {}
 
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
-    provideInlineCompletionItems = debounce(
-        this._provideInlineCompletionItems.bind(this),
-        inlineCompletionsDebounceDelay,
-        true
-    )
 
-    private async _provideInlineCompletionItems(
+    // Ideally use this API handleDidShowCompletionItem
+    // https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts#L83
+    // we need this because the returned items of provideInlineCompletionItems may not be actually rendered on screen
+    // if VS Code believes the user is actively typing then it will not show such item
+    async checkWhetherInlineCompletionWasShown() {
+        // this line is to force VS Code to re-render the inline completion
+        // if it decides the inline completion can be shown
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+        // yield event loop to let backend state transition finish plus wait for vsc to render
+        await sleep(10)
+        // run the command to detect if inline suggestion is really shown or not
+        await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
+    }
+
+    // this method is automatically invoked by VS Code as user types
+    async provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
@@ -307,17 +316,18 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 if (prevItemMatchingPrefix.length > 0) {
                     logstr += `- not call LSP and reuse previous suggestions that match user typed characters
                     - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
+                    void this.checkWhetherInlineCompletionWasShown()
                     return prevItemMatchingPrefix
                 }
-                getLogger().debug(`Auto rejecting suggestions from previous session`)
-                // if no such suggestions, report the previous suggestion as Reject
+
+                // if no such suggestions, report the previous suggestion as Reject or Discarded
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: prevSessionId,
                     completionSessionResult: {
                         [prevItemId]: {
-                            seen: true,
+                            seen: prevSession.displayed,
                             accepted: false,
-                            discarded: false,
+                            discarded: !prevSession.displayed,
                         },
                     },
                     totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
@@ -461,6 +471,7 @@ ${itemLog}
             this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
             logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
+            void this.checkWhetherInlineCompletionWasShown()
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
