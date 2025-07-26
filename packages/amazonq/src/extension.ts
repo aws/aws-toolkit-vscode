@@ -7,6 +7,7 @@ import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-c
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
+import { checkMcpConfiguration } from 'aws-core-vscode/codewhisperer'
 import {
     amazonQDiffScheme,
     DefaultAWSClientBuilder,
@@ -47,6 +48,16 @@ import { activate as activateAmazonqLsp } from './lsp/activation'
 import { hasGlibcPatch } from './lsp/client'
 
 export const amazonQContextPrefix = 'amazonq'
+
+// Global variable to store mcpAdmin feature flag
+export let mcpAdmin = true
+
+/**
+ * Safely checks MCP configuration from user profile and sets mcpAdmin feature flag
+ */
+async function setMcpAdminFlag(): Promise<void> {
+    mcpAdmin = await checkMcpConfiguration()
+}
 
 /**
  * Activation code for Amazon Q that will we want in all environments (eg Node.js, web mode)
@@ -125,6 +136,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
+
+    // Check MCP configuration from profile before activation
+    await setMcpAdminFlag()
 
     if (!isAmazonLinux2() || hasGlibcPatch()) {
         // Activate Amazon Q LSP for everyone unless they're using AL2 without the glibc patch

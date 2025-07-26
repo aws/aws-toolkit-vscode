@@ -51,6 +51,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { mcpAdmin } from '../extension'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -175,6 +176,7 @@ export async function startLanguageServer(
                         pinnedContextEnabled: true,
                         imageContextEnabled: true,
                         mcp: true,
+                        mcpAdmin: mcpAdmin,
                         shortcut: true,
                         reroute: true,
                         modelSelection: true,
