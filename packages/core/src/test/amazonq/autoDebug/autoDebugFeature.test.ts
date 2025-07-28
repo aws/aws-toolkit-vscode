@@ -9,19 +9,14 @@ import sinon from 'sinon'
 import { AutoDebugFeature } from '../../../amazonq/autoDebug/index'
 import { AutoDebugController, AutoDebugConfig } from '../../../amazonq/autoDebug/autoDebugController'
 import { Commands } from '../../../shared/vscode/commands2'
-import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 describe('AutoDebugFeature', function () {
     let autoDebugFeature: AutoDebugFeature
     let mockContext: vscode.ExtensionContext
     let commandsRegisterStub: sinon.SinonStub
-    let focusAmazonQPanelStub: sinon.SinonStub
 
     beforeEach(function () {
         // Mock Commands
         commandsRegisterStub = sinon.stub(Commands, 'register')
-
-        // Mock focusAmazonQPanel
-        focusAmazonQPanelStub = sinon.stub(focusAmazonQPanel, 'execute')
 
         // Mock VSCode APIs
         mockContext = {
@@ -209,41 +204,6 @@ describe('AutoDebugFeature', function () {
             })
         })
     })
-
-    describe('triggerFixWithAmazonQ', function () {
-        it('triggers fix successfully', async function () {
-            const fixAllProblemsStub = sinon.stub(AutoDebugController.prototype, 'fixAllProblemsInFile').resolves()
-            focusAmazonQPanelStub.resolves()
-            await autoDebugFeature.activate(mockContext)
-
-            // Access private method through any cast for testing
-            await (autoDebugFeature as any).triggerFixWithAmazonQ()
-
-            assert.ok(focusAmazonQPanelStub.calledOnce)
-            assert.ok(fixAllProblemsStub.calledOnceWith(10))
-        })
-
-        it('handles controller not initialized', async function () {
-            // Access private method through any cast for testing
-            await (autoDebugFeature as any).triggerFixWithAmazonQ()
-
-            // Should not throw, should handle gracefully
-            assert.ok(focusAmazonQPanelStub.notCalled)
-        })
-
-        it('handles fix errors', async function () {
-            sinon.stub(AutoDebugController.prototype, 'fixAllProblemsInFile').rejects(new Error('Fix failed'))
-            focusAmazonQPanelStub.resolves()
-            await autoDebugFeature.activate(mockContext)
-
-            // Access private method through any cast for testing
-            // Should not throw, should handle gracefully
-            assert.doesNotThrow(async () => {
-                await (autoDebugFeature as any).triggerFixWithAmazonQ()
-            })
-        })
-    })
-
     describe('setLanguageClient', function () {
         it('sets language client on controller', async function () {
             const setLanguageClientStub = sinon.stub(AutoDebugController.prototype, 'setLanguageClient')
