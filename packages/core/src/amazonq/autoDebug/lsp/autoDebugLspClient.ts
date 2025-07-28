@@ -87,10 +87,6 @@ export class AutoDebugLspClient {
         return this.languageClient
     }
 
-    /**
-     * Sends a chat message using the webview postMessage system
-     * This uses the same approach as the working explainIssue command
-     */
     public async sendChatMessage(params: { message: string; triggerType: string; eventId: string }): Promise<boolean> {
         try {
             // Get the webview provider (stored globally during activation)
