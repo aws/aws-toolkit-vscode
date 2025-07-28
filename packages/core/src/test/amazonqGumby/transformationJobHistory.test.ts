@@ -220,26 +220,31 @@ describe('Transformation Job History', function () {
                 }
 
                 fsExistsStub.returns(false) // Assuming history file doesn't exist yet
-                const updateContentStub = sinon.stub(transformationHub, 'updateContent').resolves()
+                const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
                 sinon.stub(transformApiHandler, 'updateJobHistory')
-                sinon.stub(vscode.commands, 'executeCommand').resolves()
 
                 await postTransformationJob()
 
                 sinon.assert.calledWith(
                     fsWriteStub.firstCall,
-                    sinon.match(/transformation-history\.tsv$/),
+                    sinon.match(/transformation_history\.tsv$/),
                     'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'
                 )
 
                 sinon.assert.calledWith(
                     fsWriteStub.secondCall,
-                    sinon.match(/transformation-history\.tsv$/),
+                    sinon.match(/transformation_history\.tsv$/),
                     sinon.match(/test-project.*COMPLETED.*4 min.*diff\.patch.*summary\.md.*completed-job-123/),
                     { flag: 'a' }
                 )
 
-                sinon.assert.calledWith(updateContentStub, 'job history', undefined, true)
+                sinon.assert.calledWith(
+                    executeCommandStub,
+                    'aws.amazonq.transformationHub.updateContent',
+                    'job history',
+                    undefined,
+                    true
+                )
             })
         })
     })

@@ -382,15 +382,12 @@ export class Messenger {
 
         buttons.push({
             keepCardAfterClick: true,
-            text: 'Open job history',
+            text: CodeWhispererConstants.jobHistoryButtonText,
             id: ButtonActions.VIEW_JOB_HISTORY,
             disabled: false,
         })
 
-        const messageText =
-            numInProgress > 0
-                ? `You have ${numInProgress} job${numInProgress > 1 ? 's' : ''} in progress. You can resume ${numInProgress > 1 ? 'them' : 'it'} in the transformation history table.`
-                : 'View previous transformations run from the IDE'
+        const messageText = CodeWhispererConstants.viewHistoryMessage(numInProgress)
 
         const message = new ChatMessage(
             {
@@ -407,7 +404,7 @@ export class Messenger {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, {
                 inProgress: true,
-                message: `I am now resuming your job (id: ${jobId}). This can take 10 to 30 minutes to complete.`,
+                message: CodeWhispererConstants.refreshingJobChatMessage(jobId),
             })
         )
     }

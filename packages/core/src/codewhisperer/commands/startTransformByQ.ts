@@ -79,7 +79,6 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { TransformationHubViewProvider } from '../service/transformByQ/transformationHubViewProvider'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -758,9 +757,9 @@ export async function postTransformationJob() {
         if (transformByQState.getPayloadFilePath()) {
             // delete original upload ZIP at very end of transformation
             fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
-            // delete the copy of the upload ZIP
-            fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
         }
+        // delete the copy of the upload ZIP
+        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
         // delete transformation job metadata file (no longer needed)
         fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
     }
@@ -779,7 +778,7 @@ export async function postTransformationJob() {
     // store job details and diff path locally (history)
     // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
     if (!transformByQState.isCancelled()) {
-        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
         // create transform folder if necessary
         if (!fs.existsSync(historyLogFilePath)) {
             fs.mkdirSync(path.dirname(historyLogFilePath), { recursive: true })
@@ -803,7 +802,12 @@ export async function postTransformationJob() {
 
         const jobDetails = fields.join('\t') + '\n'
         fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' })
-        await TransformationHubViewProvider.instance.updateContent('job history', undefined, true)
+        await vscode.commands.executeCommand(
+            'aws.amazonq.transformationHub.updateContent',
+            'job history',
+            undefined,
+            true
+        )
     }
 }
 

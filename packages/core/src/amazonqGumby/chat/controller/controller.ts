@@ -200,11 +200,7 @@ export class GumbyController {
         })
         this.messenger.sendViewHistoryMessage(message.tabID, numInProgress)
         if (transformByQState.isRefreshInProgress()) {
-            this.messenger.sendMessage(
-                'A job refresh is currently in progress. Please wait for it to complete.',
-                message.tabID,
-                'ai-prompt'
-            )
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
             return
         }
 
@@ -478,11 +474,7 @@ export class GumbyController {
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
         if (transformByQState.isRefreshInProgress()) {
-            this.messenger.sendMessage(
-                'A job refresh is currently in progress. Please wait for it to complete.',
-                message.tabID,
-                'ai-prompt'
-            )
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
             return
         }
         await telemetry.codeTransform_submitSelection.run(async () => {
@@ -518,11 +510,7 @@ export class GumbyController {
 
     private async handleUserSQLConversionProjectSelection(message: any) {
         if (transformByQState.isRefreshInProgress()) {
-            this.messenger.sendMessage(
-                'A job refresh is currently in progress. Please wait for it to complete.',
-                message.tabID,
-                'ai-prompt'
-            )
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
             return
         }
         await telemetry.codeTransform_submitSelection.run(async () => {
