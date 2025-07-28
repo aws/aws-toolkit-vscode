@@ -44,7 +44,7 @@ export const commonTabData: TabTypeData = {
     contextCommands: [workspaceCommand],
 }
 
-export const TabTypeDataMap: Record<Exclude<TabType, 'agentWalkthrough' | 'welcome'>, TabTypeData> = {
+export const TabTypeDataMap: Record<Exclude<TabType, 'welcome'>, TabTypeData> = {
     unknown: commonTabData,
     cwc: commonTabData,
     gumby: {
