@@ -48,7 +48,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
     private transformationHistory: HistoryObject[] = []
-    constructor() {}
+    constructor() {
+        vscode.commands.registerCommand(
+            'aws.amazonq.transformationHub.updateContent',
+            (button: 'job history' | 'plan progress', startTime?: number, historyFileUpdated?: boolean) => {
+                return this.updateContent(button, startTime, historyFileUpdated)
+            }
+        )
+    }
     static #instance: TransformationHubViewProvider
 
     public async updateContent(
@@ -150,12 +157,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </head>
             <body>
             <p><b>Transformation History</b></p>
-            <p>This table lists the most recent jobs that you have run in the past 30 days. 
-            To open the diff patch and summary files, click the provided links. 
-            Jobs with a status of FAILED may still be in progress. 
-            Resume them within 12 hours of starting the job to get an updated job status and artifacts. Click the refresh icon to do so. 
-            The diff patch and summary will appear once they are available.
-            </p>
+            <p>${CodeWhispererConstants.transformationHistoryTableDescription}</p>
             ${
                 jobsToDisplay.length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
@@ -314,8 +316,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             // artifacts should be available to download
             jobHistoryPath = await this.retrieveArtifacts(jobId, projectName)
 
-            // delete metadata file, if it exists
+            // delete metadata and zipped code files, if they exist
             fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), { force: true })
+            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
+                force: true,
+            })
         } else if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
             // still in progress on server side
             if (transformByQState.isRunning()) {
@@ -361,10 +366,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 if (messenger) {
                     messenger.sendJobFinishedMessage(
                         ChatSessionManager.Instance.getSession().tabID!,
-                        "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
+                        CodeWhispererConstants.refreshErrorChatMessage
                     )
                 }
-                void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.refreshErrorNotification(jobId))
                 return
             }
 
@@ -400,10 +405,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 if (messenger) {
                     messenger.sendJobFinishedMessage(
                         ChatSessionManager.Instance.getSession().tabID!,
-                        "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
+                        CodeWhispererConstants.refreshErrorChatMessage
                     )
                 }
-                void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
+                void vscode.window.showErrorMessage(CodeWhispererConstants.refreshErrorNotification(jobId))
                 this.updateContent('job history') // re-enable refresh buttons
                 return
             }
@@ -413,7 +418,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (messenger) {
                 messenger.sendJobFinishedMessage(
                     ChatSessionManager.Instance.getSession().tabID!,
-                    'Job refresh completed. Please see the transformation history table for the updated status and artifacts.'
+                    CodeWhispererConstants.refreshCompletedChatMessage
                 )
             }
         } else {
@@ -423,15 +428,20 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 // if job failed on backend, mark it to disable the refresh button
                 status = 'FAILED_BE' // this will be truncated to just 'FAILED' in the table
             }
+            // delete metadata and zipped code files, if they exist
+            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), { force: true })
+            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
+                force: true,
+            })
         }
 
         if (status === currentStatus && !jobHistoryPath) {
             // no changes, no need to update file/table
-            void vscode.window.showInformationMessage(`No updates. (Job Id: ${jobId})`)
+            void vscode.window.showInformationMessage(CodeWhispererConstants.refreshNoUpdatesNotification(jobId))
             return
         }
 
-        void vscode.window.showInformationMessage(`Job refresh completed. (Job Id: ${jobId})`)
+        void vscode.window.showInformationMessage(CodeWhispererConstants.refreshCompletedNotification(jobId))
         // update local file and history table
         await this.updateHistoryFile(status, duration, jobHistoryPath, jobId)
     }
@@ -473,7 +483,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
     private async updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
         const history: string[][] = []
-        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
         if (fs.existsSync(historyLogFilePath)) {
             const historyFile = fs.readFileSync(historyLogFilePath, { encoding: 'utf8', flag: 'r' })
             const jobs = historyFile.split('\n')
@@ -920,7 +930,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
 export function readHistoryFile(): HistoryObject[] {
     const history: HistoryObject[] = []
-    const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
+    const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
     if (fs.existsSync(jobHistoryFilePath)) {
         const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
         const jobs = historyFile.split('\n')
