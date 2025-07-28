@@ -17,7 +17,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared/fs/fs'
-import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
+import { openWorkflowStudioWithDefinition } from '../utils'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -35,16 +35,7 @@ export async function downloadStateMachineDefinition(params: {
             })
 
         if (params.isPreviewAndRender) {
-            const doc = await vscode.workspace.openTextDocument({
-                language: 'asl',
-                content: stateMachineDetails.definition,
-            })
-
-            const textEditor = await vscode.window.showTextDocument(doc)
-            await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
-                preserveFocus: true,
-                viewColumn: vscode.ViewColumn.Beside,
-            })
+            await openWorkflowStudioWithDefinition(stateMachineDetails.definition)
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath

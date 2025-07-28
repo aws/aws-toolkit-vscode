@@ -96,6 +96,7 @@ export class ExecutionDetailProvider {
      * Initializes a WebView panel with execution details.
      * @param panel The WebView panel to initialize
      * @param executionArn The ARN of the execution to display
+     * @param startTime Optional start time for the execution
      */
     public async initializePanel(panel: vscode.WebviewPanel, executionArn: string, startTime?: string): Promise<void> {
         try {

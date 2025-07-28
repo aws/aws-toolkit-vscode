@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import {
     Command,
     Message,
@@ -17,6 +19,12 @@ import {
     handleUnsupportedMessage,
     apiCallMessageHandler,
 } from '../messageHandlers/handleMessageHelpers'
+import { parseExecutionArnForStateMachine, openWFSfromARN } from '../utils'
+import { ExecuteStateMachineWebview } from '../vue/executeStateMachine/executeStateMachine'
+import { VueWebview } from '../../webviews/main'
+import globals from '../../shared/extensionGlobals'
+// import { ExecutionDetailProvider } from './executionDetailProvider'
+// import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -33,6 +41,12 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
                 break
             case Command.API_CALL:
                 void apiCallMessageHandler(message as ApiCallRequestMessage, context)
+                break
+            case Command.START_EXECUTION:
+                void startExecutionMessageHandler(context)
+                break
+            case Command.EDIT_STATE_MACHINE:
+                void editStateMachineMessageHandler(context)
                 break
             default:
                 void handleUnsupportedMessage(context, message)
@@ -73,4 +87,25 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
             failureReason: (e as Error).message,
         } as InitResponseMessage)
     }
+}
+
+async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
+    // Parsing execution ARN to get state machine info
+    const { region, stateMachineName, stateMachineArn } = parseExecutionArnForStateMachine(context.executionArn)
+
+    const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
+    const wv = new Panel(globals.context, globals.outputChannel, {
+        arn: stateMachineArn,
+        name: stateMachineName,
+        region: region,
+    })
+
+    await wv.show({
+        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+        cssFiles: ['executeStateMachine.css'],
+    })
+}
+
+async function editStateMachineMessageHandler(context: ExecutionDetailsContext) {
+    await openWFSfromARN(context)
 }
