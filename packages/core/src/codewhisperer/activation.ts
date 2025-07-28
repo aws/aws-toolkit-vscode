@@ -49,7 +49,6 @@ import {
     regenerateFix,
     ignoreAllIssues,
     focusIssue,
-    showExploreAgentsView,
     showCodeIssueGroupingQuickPick,
     selectRegionProfileCommand,
 } from './commands/basicCommands'
@@ -301,7 +300,6 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
         showReferenceLog.register(),
         showLogs.register(),
-        showExploreAgentsView.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance
