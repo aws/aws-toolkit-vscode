@@ -36,6 +36,7 @@ import {
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
+    handleExtraBrackets,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
@@ -106,11 +107,14 @@ export class InlineCompletionManager implements Disposable {
             item: InlineCompletionItemWithReferences,
             editor: TextEditor,
             requestStartTime: number,
-            startLine: number,
+            position: vscode.Position,
             firstCompletionDisplayLatency?: number
         ) => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
+                const startLine = position.line
+                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+                await handleExtraBrackets(editor, editor.selection.active, position)
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
                 const totalSessionDisplayTime = performance.now() - requestStartTime
@@ -304,7 +308,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                                 item,
                                 editor,
                                 prevSession?.requestStartTime,
-                                position.line,
+                                position,
                                 prevSession?.firstCompletionDisplayLatency,
                             ],
                         }
@@ -441,7 +445,7 @@ ${itemLog}
                             item,
                             editor,
                             session.requestStartTime,
-                            cursorPosition.line,
+                            cursorPosition,
                             session.firstCompletionDisplayLatency,
                         ],
                     }
