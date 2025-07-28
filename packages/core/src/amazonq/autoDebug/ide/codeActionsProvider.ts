@@ -22,22 +22,9 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
     }
 
     private registerProvider(): void {
-        // Register for all file types that might have diagnostics
+        // Register for all file types
         const selector: vscode.DocumentSelector = [
-            { scheme: 'file', language: 'typescript' },
-            { scheme: 'file', language: 'javascript' },
-            { scheme: 'file', language: 'python' },
-            { scheme: 'file', language: 'java' },
-            { scheme: 'file', language: 'csharp' },
-            { scheme: 'file', language: 'cpp' },
-            { scheme: 'file', language: 'c' },
-            { scheme: 'file', language: 'go' },
-            { scheme: 'file', language: 'rust' },
-            { scheme: 'file', language: 'php' },
-            { scheme: 'file', language: 'ruby' },
-            { scheme: 'file', language: 'json' },
-            { scheme: 'file', language: 'yaml' },
-            { scheme: 'file', language: 'xml' },
+            { scheme: 'file' }, // All file types
         ]
 
         this.disposables.push(
