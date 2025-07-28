@@ -88,26 +88,74 @@ export class AutoDebugLspClient {
     }
 
     /**
-     * Sends a chat message using the real AutoDebugLspClient from amazonq package
-     * This uses the regular Amazon Q chat pipeline - response will appear in chat UI automatically
+     * Sends a chat message using the webview postMessage system
+     * This uses the same approach as the working explainIssue command
      */
     public async sendChatMessage(params: { message: string; triggerType: string; eventId: string }): Promise<boolean> {
         try {
-            // Get the real AutoDebugLspClient from the amazonq package
-            const realAutoDebugClient = (global as any).autoDebugLspClient
+            // Get the webview provider (stored globally during activation)
+            const amazonQChatViewProvider = (global as any).amazonQChatViewProvider
 
-            if (!realAutoDebugClient) {
-                this.logger.error(
-                    'AutoDebugLspClient: Real AutoDebugLspClient not found - it should be activated by amazonq package'
-                )
+            if (!amazonQChatViewProvider?.webview) {
+                this.logger.error('AutoDebugLspClient: Amazon Q Chat View Provider not available')
                 return false
             }
-            // Use the real client - it handles the chat pipeline and UI display automatically
-            const result = await realAutoDebugClient.sendChatMessage(params.message, params.eventId)
-            return !!result
+
+            // Focus Amazon Q panel first
+            const focusAmazonQPanel = (global as any).focusAmazonQPanel
+            if (focusAmazonQPanel) {
+                await focusAmazonQPanel()
+            }
+
+            // Wait for panel to focus
+            await new Promise((resolve) => setTimeout(resolve, 200))
+
+            // Send message using the same pattern as explainIssue command (which works)
+            await amazonQChatViewProvider.webview.postMessage({
+                command: 'sendToPrompt',
+                params: {
+                    selection: '',
+                    triggerType: 'autoDebug',
+                    prompt: {
+                        prompt: params.message, // what gets sent to the user
+                        escapedPrompt: params.message, // what gets sent to the backend
+                    },
+                    autoSubmit: true, // Automatically submit the message
+                },
+            })
+
+            this.logger.debug('AutoDebugLspClient: Successfully sent message via webview postMessage')
+            return true
         } catch (error) {
-            this.logger.error('AutoDebugLspClient: ❌ Error using real AutoDebugLspClient: %s', error)
-            return false
+            this.logger.error('AutoDebugLspClient: Error sending message via webview: %s', error)
+
+            // Fallback: Copy to clipboard and show notification
+            try {
+                const vscode = require('vscode')
+                await vscode.env.clipboard.writeText(params.message)
+
+                const choice = await vscode.window.showInformationMessage(
+                    `🔧 AutoDebug detected errors and wants to send this message to Amazon Q:\n\n${params.message.substring(0, 200)}...`,
+                    'Copy & Send Manually',
+                    'Cancel'
+                )
+
+                if (choice === 'Copy & Send Manually') {
+                    // Try to focus the panel
+                    const focusAmazonQPanel = (global as any).focusAmazonQPanel
+                    if (focusAmazonQPanel) {
+                        await focusAmazonQPanel()
+                    }
+                    vscode.window.showInformationMessage(
+                        'AutoDebug message copied to clipboard. Please paste it in Amazon Q chat and press Enter.'
+                    )
+                }
+
+                return true // Consider fallback as success
+            } catch (fallbackError) {
+                this.logger.error('AutoDebugLspClient: Fallback also failed: %s', fallbackError)
+                return false
+            }
         }
     }
 

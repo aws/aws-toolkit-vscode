@@ -45,7 +45,6 @@ import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
-import { activateAutoDebug } from '../autoDebug/activation'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
@@ -244,16 +243,6 @@ async function onLanguageServerReady(
     const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
     inlineManager.registerInlineCompletion()
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
-
-    // Activate AutoDebug LSP client using the exact same pattern as inline chat
-    try {
-        activateAutoDebug(client, encryptionKey)
-        getLogger('amazonqLsp').info('AutoDebug LSP client activated successfully')
-    } catch (error) {
-        getLogger('amazonqLsp').error('Failed to activate AutoDebug LSP client: %s', error)
-        // Continue with extension activation even if AutoDebug fails
-    }
-
     // Always activate chat LSP - remove experiment flag dependency
     try {
         await activate(client, encryptionKey, resourcePaths.ui)

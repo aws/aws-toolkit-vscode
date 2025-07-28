@@ -255,6 +255,81 @@ export function registerMessageListeners(
                 chatStreamTokens.delete(tabId)
                 break
             }
+            case 'sendToPrompt': {
+                languageClient.info('[VSCode Client] sendToPrompt message received, using regular chat flow')
+
+                // Create chat parameters from sendToPrompt message
+                const chatParams: ChatParams = {
+                    prompt: {
+                        prompt: message.params.prompt?.prompt || message.params.prompt || '',
+                        escapedPrompt:
+                            message.params.prompt?.escapedPrompt ||
+                            message.params.prompt?.prompt ||
+                            message.params.prompt ||
+                            '',
+                    },
+                    tabId: message.params.tabId || uuidv4(),
+                }
+
+                const partialResultToken = uuidv4()
+                let lastPartialResult: ChatResult | undefined
+                const cancellationToken = new CancellationTokenSource()
+                chatStreamTokens.set(chatParams.tabId, cancellationToken)
+
+                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                        (result) => {
+                            lastPartialResult = result
+                        }
+                    )
+                )
+
+                const editor =
+                    vscode.window.activeTextEditor ||
+                    vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
+                if (editor) {
+                    chatParams.cursorState = getCursorState(editor.selections)
+                    chatParams.textDocument = { uri: editor.document.uri.toString() }
+                }
+
+                const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
+                try {
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(
+                        chatRequestType.method,
+                        {
+                            ...chatRequest,
+                            partialResultToken,
+                        },
+                        cancellationToken.token
+                    )
+                    await handleCompleteResult<ChatResult>(
+                        chatResult,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                } catch (e) {
+                    const errorMsg = `Error occurred during sendToPrompt chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from language server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
+                    if (!isValidResponseError(e)) {
+                        throw e
+                    }
+                    await handleCompleteResult<ChatResult>(
+                        e.data,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                } finally {
+                    chatStreamTokens.delete(chatParams.tabId)
+                }
+                break
+            }
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
