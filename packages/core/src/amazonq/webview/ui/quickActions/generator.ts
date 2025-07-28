@@ -25,11 +25,6 @@ export class QuickActionGenerator {
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
-        // agentWalkthrough is static and doesn't have any quick actions
-        if (tabType === 'agentWalkthrough') {
-            return []
-        }
-
         // TODO: Update acc to UX
         const quickActionCommands = [
             {
@@ -101,7 +96,7 @@ export class QuickActionGenerator {
         ].filter((section) => section.commands.length > 0)
 
         const commandUnavailability: Record<
-            Exclude<TabType, 'agentWalkthrough'>,
+            Exclude<TabType, []>,
             {
                 description: string
                 unavailableItems: string[]
