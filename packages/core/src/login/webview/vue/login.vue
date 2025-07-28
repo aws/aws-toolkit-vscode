@@ -261,7 +261,7 @@
                     @keydown.enter="handleContinueClick()"
                 />
             </div>
-            <div class="title">Access Key</div>
+            <div class="title">Access Key ID</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -270,7 +270,7 @@
                 v-model="accessKey"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Secret Key</div>
+            <div class="title">Secret Access Key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
