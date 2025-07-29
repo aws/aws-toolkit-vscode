@@ -19,12 +19,10 @@ import {
     handleUnsupportedMessage,
     apiCallMessageHandler,
 } from '../messageHandlers/handleMessageHelpers'
-import { parseExecutionArnForStateMachine, openWFSfromARN } from '../utils'
+import { parseExecutionArnForStateMachine, openWorkflowStudio } from '../utils'
 import { ExecuteStateMachineWebview } from '../vue/executeStateMachine/executeStateMachine'
 import { VueWebview } from '../../webviews/main'
 import globals from '../../shared/extensionGlobals'
-// import { ExecutionDetailProvider } from './executionDetailProvider'
-// import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -91,7 +89,12 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
 
 async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
     // Parsing execution ARN to get state machine info
-    const { region, stateMachineName, stateMachineArn } = parseExecutionArnForStateMachine(context.executionArn)
+    const parsedArn = parseExecutionArnForStateMachine(context.executionArn)
+    if (!parsedArn) {
+        throw new Error(`Invalid execution ARN format: ${context.executionArn}`)
+    }
+
+    const { region, stateMachineName, stateMachineArn } = parsedArn
 
     const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
     const wv = new Panel(globals.context, globals.outputChannel, {
@@ -107,5 +110,6 @@ async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
 }
 
 async function editStateMachineMessageHandler(context: ExecutionDetailsContext) {
-    await openWFSfromARN(context)
+    const params = parseExecutionArnForStateMachine(context.executionArn)
+    await openWorkflowStudio(params!.stateMachineArn, params!.region)
 }

@@ -17,7 +17,6 @@ import {
 } from 'amazon-states-language-service'
 import { fromExtensionManifest } from '../shared/settings'
 import { IamRole } from '../shared/clients/iam'
-import { ExecutionDetailsContext } from './messageHandlers/types'
 import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
@@ -25,6 +24,7 @@ const languageService = getLanguageService({})
 
 const arnResourceTypeSegmentIndex = 5
 const expressExecutionArnSegmentCount = 9
+const executionArnSegmentCount = 8
 const arnRegionSegmentIndex = 3
 const arnAccountIdSegmentIndex = 4
 const arnStateMachineNameSegmentIndex = 6
@@ -119,14 +119,16 @@ export const isExpressExecution = (arn: string): boolean => {
  */
 export const parseExecutionArnForStateMachine = (executionArn: string) => {
     const arnSegments = executionArn.split(':')
-    const region = arnSegments[arnRegionSegmentIndex]
-    const stateMachineName = arnSegments[arnStateMachineNameSegmentIndex]
-    const stateMachineArn = `arn:aws:states:${region}:${arnSegments[arnAccountIdSegmentIndex]}:stateMachine:${stateMachineName}`
+    if (arnSegments.length === executionArnSegmentCount || arnSegments.length === expressExecutionArnSegmentCount) {
+        const region = arnSegments[arnRegionSegmentIndex]
+        const stateMachineName = arnSegments[arnStateMachineNameSegmentIndex]
+        const stateMachineArn = `arn:aws:states:${region}:${arnSegments[arnAccountIdSegmentIndex]}:stateMachine:${stateMachineName}`
 
-    return {
-        region,
-        stateMachineName,
-        stateMachineArn,
+        return {
+            region,
+            stateMachineName,
+            stateMachineArn,
+        }
     }
 }
 
@@ -156,14 +158,9 @@ export const openWorkflowStudioWithDefinition = async (definition: string | unde
 
     const textEditor = await vscode.window.showTextDocument(doc)
     await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
-        preserveFocus: true,
-        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: false,
+        viewColumn: vscode.ViewColumn.One,
     })
-}
-
-export const openWFSfromARN = async (context: ExecutionDetailsContext) => {
-    const params = parseExecutionArnForStateMachine(context.executionArn)
-    await openWorkflowStudio(params.stateMachineArn, params.region)
 }
 
 const isInvalidJson = (content: string): boolean => {

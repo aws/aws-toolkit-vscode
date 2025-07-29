@@ -276,6 +276,7 @@ describe('parseExecutionArnForStateMachine', function () {
         const expressArn = 'arn:aws:states:us-east-1:123456789012:express:stateMachine:MyStateMachine:execution-name'
         const result = parseExecutionArnForStateMachine(expressArn)
 
+        assert.ok(result)
         assert.strictEqual(result.region, 'us-east-1')
         assert.strictEqual(result.stateMachineName, 'MyStateMachine')
         assert.strictEqual(result.stateMachineArn, 'arn:aws:states:us-east-1:123456789012:stateMachine:MyStateMachine')
@@ -285,6 +286,7 @@ describe('parseExecutionArnForStateMachine', function () {
         const standardArn = 'arn:aws:states:us-west-2:987654321098:stateMachine:TestMachine:execution-id'
         const result = parseExecutionArnForStateMachine(standardArn)
 
+        assert.ok(result)
         assert.strictEqual(result.region, 'us-west-2')
         assert.strictEqual(result.stateMachineName, 'TestMachine')
         assert.strictEqual(result.stateMachineArn, 'arn:aws:states:us-west-2:987654321098:stateMachine:TestMachine')
@@ -294,6 +296,7 @@ describe('parseExecutionArnForStateMachine', function () {
         const euArn = 'arn:aws:states:eu-west-1:555666777888:stateMachine:EuroMachine:exec-123'
         const result = parseExecutionArnForStateMachine(euArn)
 
+        assert.ok(result)
         assert.strictEqual(result.region, 'eu-west-1')
         assert.strictEqual(result.stateMachineName, 'EuroMachine')
         assert.strictEqual(result.stateMachineArn, 'arn:aws:states:eu-west-1:555666777888:stateMachine:EuroMachine')
@@ -304,6 +307,7 @@ describe('parseExecutionArnForStateMachine', function () {
             'arn:aws:states:ap-southeast-2:111222333444:stateMachine:My-State_Machine.Test:exec-456'
         const result = parseExecutionArnForStateMachine(arnWithSpecialName)
 
+        assert.ok(result)
         assert.strictEqual(result.region, 'ap-southeast-2')
         assert.strictEqual(result.stateMachineName, 'My-State_Machine.Test')
         assert.strictEqual(
@@ -316,6 +320,7 @@ describe('parseExecutionArnForStateMachine', function () {
         const differentAccountArn = 'arn:aws:states:us-central-1:999888777666:stateMachine:AccountTestMachine:exec-789'
         const result = parseExecutionArnForStateMachine(differentAccountArn)
 
+        assert.ok(result)
         assert.strictEqual(result.region, 'us-central-1')
         assert.strictEqual(result.stateMachineName, 'AccountTestMachine')
         assert.strictEqual(
