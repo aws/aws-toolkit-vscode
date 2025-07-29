@@ -255,7 +255,10 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
-        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        // there is a bug in VS Code, when hitting Enter, the context.triggerKind is Invoke (0)
+        // when hitting other keystrokes, the context.triggerKind is Automatic (1)
+        // we only mark option + C as manual trigger
+        const isAutoTrigger = performance.now() - vsCodeState.lastManualTriggerTime > 50
         if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
             // return early when suggestions are disabled with auto trigger
             return []
@@ -348,7 +351,10 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.languageClient,
                 document,
                 position,
-                context,
+                {
+                    triggerKind: isAutoTrigger ? 1 : 0,
+                    selectedCompletionInfo: context.selectedCompletionInfo,
+                },
                 token,
                 isAutoTrigger,
                 getAllRecommendationsOptions,

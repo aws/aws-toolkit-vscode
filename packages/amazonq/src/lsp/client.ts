@@ -23,6 +23,7 @@ import {
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -365,6 +366,7 @@ async function onLanguageServerReady(
             sessionManager.checkInlineSuggestionVisibility()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            vsCodeState.lastManualTriggerTime = performance.now()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
