@@ -119,12 +119,31 @@ export class LanguageClientAuth {
         return this.#stsCacheWatcher
     }
 
-    getSsoToken(
+    /**
+     * Encrypts an object
+     */
+    private async encrypt<T>(request: T): Promise<string> {
+        const payload = new TextEncoder().encode(JSON.stringify(request))
+        const encrypted = await new jose.CompactEncrypt(payload)
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .encrypt(this.encryptionKey)
+        return encrypted
+    }
+
+    /**
+     * Decrypts an object
+     */
+    private async decrypt<T>(request: string): Promise<T> {
+        const result = await jose.compactDecrypt(request, this.encryptionKey)
+        return JSON.parse(new TextDecoder().decode(result.plaintext)) as T
+    }
+
+    async getSsoToken(
         tokenSource: TokenSource,
         login: boolean = false,
         cancellationToken?: CancellationToken
     ): Promise<GetSsoTokenResult> {
-        return this.client.sendRequest(
+        const response: GetSsoTokenResult = await this.client.sendRequest(
             getSsoTokenRequestType.method,
             {
                 clientName: this.clientName,
@@ -136,14 +155,17 @@ export class LanguageClientAuth {
             } satisfies GetSsoTokenParams,
             cancellationToken
         )
+        // Decrypt the access token
+        response.ssoToken.accessToken = await this.decrypt(response.ssoToken.accessToken)
+        return response
     }
 
-    getIamCredential(
+    async getIamCredential(
         profileName: string,
         login: boolean = false,
         cancellationToken?: CancellationToken
     ): Promise<GetIamCredentialResult> {
-        return this.client.sendRequest(
+        const response: GetIamCredentialResult = await this.client.sendRequest(
             getIamCredentialRequestType.method,
             {
                 profileName: profileName,
@@ -153,16 +175,25 @@ export class LanguageClientAuth {
             } satisfies GetIamCredentialParams,
             cancellationToken
         )
+        // Decrypt the response credentials
+        const { accessKeyId, secretAccessKey, sessionToken, expiration } = response.credential.credentials
+        response.credential.credentials = {
+            accessKeyId: await this.decrypt(accessKeyId),
+            secretAccessKey: await this.decrypt(secretAccessKey),
+            sessionToken: sessionToken ? await this.decrypt(sessionToken) : undefined,
+            expiration: expiration,
+        }
+        return response
     }
 
-    updateSsoProfile(
+    async updateSsoProfile(
         profileName: string,
         startUrl: string,
         region: string,
         scopes: string[]
     ): Promise<UpdateProfileResult> {
         // Add SSO settings and delete credentials from profile
-        return this.client.sendRequest(updateProfileRequestType.method, {
+        const params = await this.encrypt({
             profile: {
                 kinds: [ProfileKind.SsoTokenProfile],
                 name: profileName,
@@ -182,10 +213,11 @@ export class LanguageClientAuth {
                     sso_registration_scopes: scopes,
                 },
             },
-        } satisfies UpdateProfileParams)
+        })
+        return this.client.sendRequest(updateProfileRequestType.method, params)
     }
 
-    updateIamProfile(
+    async updateIamProfile(
         profileName: string,
         accessKey: string,
         secretKey: string,
@@ -234,9 +266,8 @@ export class LanguageClientAuth {
                 },
             }
         }
-        return this.client.sendRequest(updateProfileRequestType.method, {
-            profile: profile,
-        } satisfies UpdateProfileParams)
+        const params = await this.encrypt({ profile: profile })
+        return this.client.sendRequest(updateProfileRequestType.method, params)
     }
 
     listProfiles() {
@@ -377,14 +408,6 @@ export abstract class BaseLogin {
             this.eventEmitter.fire({ id: this.profileName, state: this.connectionState })
         }
     }
-
-    /**
-     * Decrypts an encrypted string, removes its quotes, and returns the resulting string
-     */
-    protected async decrypt(encrypted: string): Promise<string> {
-        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
-        return decrypted.plaintext.toString().replaceAll('"', '')
-    }
 }
 
 /**
@@ -456,9 +479,8 @@ export class SsoLogin extends BaseLogin {
      */
     async getCredential() {
         const response = await this._getSsoToken(false)
-        const accessToken = await this.decrypt(response.ssoToken.accessToken)
         return {
-            credential: accessToken,
+            credential: response.ssoToken.accessToken,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
@@ -609,15 +631,8 @@ export class IamLogin extends BaseLogin {
      */
     async getCredential() {
         const response = await this._getIamCredential(false)
-        const credentials: IamCredentials = {
-            accessKeyId: await this.decrypt(response.credential.credentials.accessKeyId),
-            secretAccessKey: await this.decrypt(response.credential.credentials.secretAccessKey),
-            sessionToken: response.credential.credentials.sessionToken
-                ? await this.decrypt(response.credential.credentials.sessionToken)
-                : undefined,
-        }
         return {
-            credential: credentials,
+            credential: response.credential.credentials,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
