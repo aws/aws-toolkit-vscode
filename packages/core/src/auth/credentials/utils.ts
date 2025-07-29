@@ -116,7 +116,7 @@ export async function getMfaSerialFromUser(defaultSerial: string, profileName: s
         ignoreFocusOut: true,
         placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter mfaSerial Number Here'),
         title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
-        prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device', defaultSerial),
+        prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter Serial Number for MFA device', defaultSerial),
         value: defaultSerial, // Pre-fill with default value
     })
 
