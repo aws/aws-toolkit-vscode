@@ -12,8 +12,9 @@ import TkIconButton from '../../../shared/ux/tkIconButton.vue'
 import TkTable from '../../../shared/ux/tkTable.vue'
 import DownloadIcon from '../../../shared/ux/icons/downloadIcon.vue'
 import CloseIcon from '../../../shared/ux/icons/closeIcon.vue'
-import { jobs } from '../composables/useJobs'
+import { jobs, Job } from '../composables/useJobs'
 import { client } from '../composables/useClient'
+import { jobDetailPage, JobDetailPageMetadata, ViewJobsPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -60,10 +61,12 @@ const bannerMessage = computed(() => {
 // Lifecycle Hooks
 //-------------------------------------------------------------------------------------------------
 onBeforeMount(async () => {
-    state.newJob = await client.getNewJob()
+    const page = await client.getCurrentPage()
+    const metadata = page.metadata as ViewJobsPageMetadata
 
-    // Reset new job to ensure we don't keep showing banner once it has been shown
-    client.setNewJob(undefined)
+    if (metadata.newJob) {
+        state.newJob = metadata.newJob
+    }
 })
 
 //-------------------------------------------------------------------------------------------------
@@ -72,12 +75,20 @@ onBeforeMount(async () => {
 const itemsPerTablePage = 10
 const tableColumns = ['Job name', 'Input filename', 'Output files', 'Created at', 'Status', 'Action']
 
-function onPagination(page: number) {
-    state.paginatedPage = page
+async function onJobClick(job: Job): Promise<void> {
+    const metadata: JobDetailPageMetadata = {
+        jobId: job.id,
+    }
+
+    await client.setCurrentPage({ name: jobDetailPage, metadata })
 }
 
 function onReload(): void {
     // NOOP
+}
+
+function onPagination(page: number) {
+    state.paginatedPage = page
 }
 
 function onBannerDismiss(): void {
@@ -139,9 +150,7 @@ function resetJobToDelete(): void {
                 <template v-slot:body>
                     <tr v-for="(job, index) in jobsPerPage" :key="index">
                         <td>
-                            <a>
-                                {{ job.jobName }}
-                            </a>
+                            <a class="anchor-link" @click="onJobClick(job)">{{ job.name }}</a>
                         </td>
                         <td>{{ job.inputFilename }}</td>
                         <td>
@@ -168,7 +177,8 @@ function resetJobToDelete(): void {
 </template>
 
 <style scoped>
-.jobs-list {
+.jobs-list .anchor-link {
+    cursor: pointer;
 }
 
 .jobs-list .delete-confirm {

@@ -15,6 +15,7 @@ import PauseIcon from '../../../shared/ux/icons/pauseIcon.vue'
 import CloseIcon from '../../../shared/ux/icons/closeIcon.vue'
 import { jobDefinitions } from '../composables/useJobs'
 import { client } from '../composables/useClient'
+import { ViewJobsPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -61,10 +62,12 @@ const bannerMessage = computed(() => {
 // Lifecycle Hooks
 //-------------------------------------------------------------------------------------------------
 onBeforeMount(async () => {
-    state.newJobDefinition = await client.getNewJobDefinition()
+    const page = await client.getCurrentPage()
+    const metadata = page.metadata as ViewJobsPageMetadata
 
-    // Reset new job definition to ensure we don't keep showing banner once it has been shown
-    client.setNewJobDefinition(undefined)
+    if (metadata.newJobDefinition) {
+        state.newJobDefinition = metadata.newJobDefinition
+    }
 })
 
 //-------------------------------------------------------------------------------------------------

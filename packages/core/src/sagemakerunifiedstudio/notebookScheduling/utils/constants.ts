@@ -3,8 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** Frontend create notebook job page name. */
+export interface Page {
+    name: string
+    metadata: CreateJobPageMetadata | ViewJobsPageMetadata | JobDetailPageMetadata
+}
+
+export interface CreateJobPageMetadata {}
+
+export interface ViewJobsPageMetadata {
+    newJob?: string
+    newJobDefinition?: string
+}
+
+export interface JobDetailPageMetadata {
+    jobId: string
+}
+
 export const createJobPage: string = 'createJob'
 
-/** Frontend view notebook jobs page name. */
 export const viewJobsPage: string = 'viewJobs'
+
+export const jobDetailPage: string = 'jobDetailPage'

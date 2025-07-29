@@ -49,6 +49,10 @@ select:focus {
     padding: 2px 14px !important;
 }
 
+.tk-button_red {
+    background-color: var(--vscode-statusBarItem-errorBackground);
+}
+
 .tk-title {
     font-size: 26px;
     font-weight: 600;

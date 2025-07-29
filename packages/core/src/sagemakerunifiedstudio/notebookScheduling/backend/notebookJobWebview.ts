@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
-import { createJobPage } from '../utils/constants'
+import { createJobPage, Page } from '../utils/constants'
 
 /**
  * Webview class for managing SageMaker notebook job scheduling UI.
@@ -19,13 +19,13 @@ export class NotebookJobWebview extends VueWebview {
     public readonly id = 'notebookjob'
 
     /** Event emitter that fires when the page changes */
-    public readonly onShowPage = new vscode.EventEmitter<{ page: string }>()
+    public readonly onShowPage = new vscode.EventEmitter<{ page: Page }>()
+
+    // @ts-ignore
+    private webviewPanel?: vscode.WebviewPanel
 
     /** Tracks the currently displayed page */
-    private currentPage: string = createJobPage
-
-    private newJob?: string
-    private newJobDefinition?: string
+    private currentPage: Page = { name: createJobPage, metadata: {} }
 
     /**
      * Creates a new NotebookJobWebview instance
@@ -34,11 +34,15 @@ export class NotebookJobWebview extends VueWebview {
         super(NotebookJobWebview.sourcePath)
     }
 
+    public setWebviewPanel(newWebviewPanel: vscode.WebviewPanel): void {
+        this.webviewPanel = newWebviewPanel
+    }
+
     /**
      * Gets the currently displayed page
      * @returns The current page identifier
      */
-    public getCurrentPage(): string {
+    public getCurrentPage(): Page {
         return this.currentPage
     }
 
@@ -46,24 +50,8 @@ export class NotebookJobWebview extends VueWebview {
      * Sets the current page and emits a page change event
      * @param newPage - The identifier of the new page to display
      */
-    public setCurrentPage(newPage: string): void {
+    public setCurrentPage(newPage: Page): void {
         this.currentPage = newPage
         this.onShowPage.fire({ page: this.currentPage })
-    }
-
-    public getNewJob(): string | undefined {
-        return this.newJob
-    }
-
-    public setNewJob(newJob?: string): void {
-        this.newJob = newJob
-    }
-
-    public getNewJobDefinition(): string | undefined {
-        return this.newJobDefinition
-    }
-
-    public setNewJobDefinition(jobDefinition?: string): void {
-        this.newJobDefinition = jobDefinition
     }
 }

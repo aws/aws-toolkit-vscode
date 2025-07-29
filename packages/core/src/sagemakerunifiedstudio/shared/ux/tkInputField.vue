@@ -49,6 +49,7 @@ interface Props {
     optional?: boolean
     readOnly?: boolean
     validationMessage?: string
+    compact?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
     optional: false,
     readOnly: false,
     validationMessage: '',
+    compact: false,
 })
 
 //-------------------------------------------------------------------------------------------------
@@ -69,7 +71,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <tk-space-between size="xs">
+    <tk-space-between :size="props.compact ? 'none' : 'xs'">
         <tk-space-between size="xxxs">
             <tk-label :text="props.label" :optional="props.optional" />
             <div v-if="props.description.length > 0" class="tk-input-field-description">{{ props.description }}</div>

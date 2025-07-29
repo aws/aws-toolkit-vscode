@@ -4,37 +4,49 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import '../../shared/ux/styles.css'
+import { onBeforeMount, reactive } from 'vue'
 import TkFixedLayout from '../../shared/ux/tkFixedLayout.vue'
 import CreateJobPage from './views/createJobPage.vue'
 import ViewJobsPage from './views/viewJobsPage.vue'
-import { onBeforeMount, reactive } from 'vue'
-import { createJobPage, viewJobsPage } from '../utils/constants'
+import JobDetailPage from './views/jobDetailPage.vue'
 import { client } from './composables/useClient'
+import { createJobPage, viewJobsPage, jobDetailPage, Page } from '../utils/constants'
 
+import '../../shared/ux/styles.css'
+
+//-------------------------------------------------------------------------------------------------
+// State
+//-------------------------------------------------------------------------------------------------
 interface State {
-    showPage: string
+    page?: Page
 }
 const state: State = reactive({
-    showPage: '',
+    page: undefined,
 })
 
+//-------------------------------------------------------------------------------------------------
+// Lifecycle Hooks
+//-------------------------------------------------------------------------------------------------
 onBeforeMount(async () => {
-    state.showPage = await client.getCurrentPage()
+    state.page = await client.getCurrentPage()
 
-    client.onShowPage((payload: { page: string }) => {
-        state.showPage = payload.page
+    client.onShowPage((event: { page: Page }) => {
+        state.page = event.page
     })
 })
 </script>
 
 <template>
-    <tk-fixed-layout v-if="state.showPage === createJobPage" :width="628">
+    <tk-fixed-layout v-if="state.page?.name === createJobPage" :width="628">
         <create-job-page />
     </tk-fixed-layout>
 
-    <tk-fixed-layout v-else-if="state.showPage === viewJobsPage" :width="800" :center="false">
+    <tk-fixed-layout v-else-if="state.page?.name === viewJobsPage" :width="800" :center="false">
         <view-jobs-page />
+    </tk-fixed-layout>
+
+    <tk-fixed-layout v-else-if="state.page?.name === jobDetailPage" :width="800" :max-width="900" :center="false">
+        <job-detail-page />
     </tk-fixed-layout>
 
     <div v-else>Loading...</div>

@@ -9,6 +9,7 @@ import TkTabs, { Tab } from '../../../shared/ux/tkTabs.vue'
 import JobsList from '../components/jobsList.vue'
 import JobsDefinitions from '../components/jobsDefinitions.vue'
 import { client } from '../composables/useClient'
+import { ViewJobsPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -25,9 +26,10 @@ const state: State = reactive({
 // Lifecycle Hooks
 //-------------------------------------------------------------------------------------------------
 onBeforeMount(async () => {
-    const newJobDefinition = await client.getNewJobDefinition()
+    const page = await client.getCurrentPage()
+    const metadata = page.metadata as ViewJobsPageMetadata
 
-    if (newJobDefinition) {
+    if (metadata.newJobDefinition) {
         state.selectedTab = 1
     }
 })

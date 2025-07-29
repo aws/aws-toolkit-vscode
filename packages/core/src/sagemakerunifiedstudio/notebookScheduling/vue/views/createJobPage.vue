@@ -22,7 +22,7 @@ import { viewJobsPage } from '../../utils/constants'
 // State
 //-------------------------------------------------------------------------------------------------
 interface State {
-    scheduleName: string
+    jobName: string
     notebookFileName: string
     computeTypeList: Option[]
     imageList: Option[]
@@ -30,12 +30,12 @@ interface State {
     maxRetryAttempts: number
     maxRuntime: number
     isJobDefinition: boolean
-    scheduleNameErrorMessage: string
+    jobNameErrorMessage: string
     maxRetryAttemptsErrorMessage: string
     maxRuntimeErrorMessage: string
 }
 const state: State = reactive({
-    scheduleName: 'schedule-1',
+    jobName: 'schedule-1',
     notebookFileName: 'notebook1.ipynb',
     computeTypeList: [
         { text: 'First', value: 'first' },
@@ -47,7 +47,7 @@ const state: State = reactive({
     maxRetryAttempts: 1,
     maxRuntime: 172800,
     isJobDefinition: false,
-    scheduleNameErrorMessage: '',
+    jobNameErrorMessage: '',
     maxRetryAttemptsErrorMessage: '',
     maxRuntimeErrorMessage: '',
 })
@@ -57,12 +57,10 @@ const state: State = reactive({
 //-------------------------------------------------------------------------------------------------
 const onCreateClick = (event: MouseEvent) => {
     if (state.isJobDefinition) {
-        client.setNewJobDefinition('new-job-definition')
+        client.setCurrentPage({ name: viewJobsPage, metadata: { newJobDefinition: 'new-job-definition' } })
     } else {
-        client.setNewJob('new-job')
+        client.setCurrentPage({ name: viewJobsPage, metadata: { newJob: 'new-job' } })
     }
-
-    client.setCurrentPage(viewJobsPage)
 }
 
 const onScheduleChange = (schedule: ScheduleChange) => {
@@ -71,9 +69,9 @@ const onScheduleChange = (schedule: ScheduleChange) => {
     }
 }
 
-const onScheduleNameUpdate = (newValue: string | number) => {
-    state.scheduleName = newValue as string
-    state.scheduleNameErrorMessage = state.scheduleName.length > 0 ? '' : 'Schedule name is required.'
+const onJobNameUpdate = (newValue: string | number) => {
+    state.jobName = newValue as string
+    state.jobNameErrorMessage = state.jobName.length > 0 ? '' : 'Job name is required.'
 }
 
 const onMaxRetryAttemptsUpdate = (newValue: string | number) => {
@@ -98,9 +96,9 @@ const onMaxRuntimeUpdate = (newValue: string | number) => {
             <tk-highlight-container>
                 <tk-input-field
                     label="Job name"
-                    :value="state.scheduleName"
-                    :validation-message="state.scheduleNameErrorMessage"
-                    @update:value="onScheduleNameUpdate"
+                    :value="state.jobName"
+                    :validation-message="state.jobNameErrorMessage"
+                    @update:value="onJobNameUpdate"
                 />
             </tk-highlight-container>
 

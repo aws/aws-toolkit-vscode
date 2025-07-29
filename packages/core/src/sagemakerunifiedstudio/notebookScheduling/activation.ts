@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { Commands } from '../../shared/vscode/commands2'
 import { VueWebview } from '../../webviews/main'
-import { createJobPage, viewJobsPage } from './utils/constants'
+import { createJobPage, viewJobsPage, Page } from './utils/constants'
 import { NotebookJobWebview } from './backend/notebookJobWebview'
 
 const Panel = VueWebview.compilePanel(NotebookJobWebview)
@@ -27,15 +27,14 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
  */
 function registerCreateJobCommand(context: vscode.ExtensionContext): vscode.Disposable {
     return Commands.register('aws.smus.notebookscheduling.createjob', async () => {
-        const title = 'Create job'
+        const page: Page = { name: createJobPage, metadata: {} }
 
         if (activePanel && webviewPanel) {
             // Instruct frontend to show create job page
-            activePanel.server.setCurrentPage(createJobPage)
-            webviewPanel.title = title
+            activePanel.server.setCurrentPage(page)
             webviewPanel.reveal()
         } else {
-            await createWebview(context, createJobPage, title)
+            await createWebview(context, page)
         }
     })
 }
@@ -45,15 +44,14 @@ function registerCreateJobCommand(context: vscode.ExtensionContext): vscode.Disp
  */
 function registerViewJobsCommand(context: vscode.ExtensionContext): vscode.Disposable {
     return Commands.register('aws.smus.notebookscheduling.viewjobs', async () => {
-        const title = 'View notebook jobs'
+        const page: Page = { name: viewJobsPage, metadata: {} }
 
         if (activePanel && webviewPanel) {
             // Instruct frontend to show view notebook jobs page
-            activePanel.server.setCurrentPage(viewJobsPage)
-            webviewPanel.title = title
+            activePanel.server.setCurrentPage(page)
             webviewPanel.reveal()
         } else {
-            await createWebview(context, viewJobsPage, title)
+            await createWebview(context, page)
         }
     })
 }
@@ -61,14 +59,16 @@ function registerViewJobsCommand(context: vscode.ExtensionContext): vscode.Dispo
 /**
  * We are using single webview panel for frontend. Here we are creating this single instance of webview panel, and listening to its lifecycle events.
  */
-async function createWebview(context: vscode.ExtensionContext, page: string, title: string): Promise<void> {
+async function createWebview(context: vscode.ExtensionContext, page: Page): Promise<void> {
     activePanel = new Panel(context)
-    activePanel.server.setCurrentPage(page)
 
     webviewPanel = await activePanel.show({
-        title,
+        title: 'Notebook Jobs',
         viewColumn: vscode.ViewColumn.Active,
     })
+
+    activePanel.server.setWebviewPanel(webviewPanel)
+    activePanel.server.setCurrentPage(page)
 
     if (!subscriptions) {
         subscriptions = [

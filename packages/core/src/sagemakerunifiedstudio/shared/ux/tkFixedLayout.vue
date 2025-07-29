@@ -12,6 +12,7 @@
  *
  * ### Props
  * @prop {number} width - The fixed width (in pixels) applied to the content section.
+ * @prop {number} maxWidth - The max width (in pixels) applied to the content section.
  * @prop {boolean} [center=true] - If true, content section is center aligned, otherwise left aligned.
  *
  * ### Slots
@@ -32,10 +33,12 @@ import { computed } from 'vue'
 //-------------------------------------------------------------------------------------------------
 interface Props {
     width: number
+    maxWidth?: number
     center?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    maxWidth: Infinity,
     center: true,
 })
 
@@ -45,10 +48,17 @@ const props = withDefaults(defineProps<Props>(), {
 const widthValue = computed(() => {
     return `${props.width}px`
 })
+
+const maxWidthValue = computed(() => {
+    return `${props.maxWidth}px`
+})
 </script>
 
 <template>
-    <main class="tk-fixed-layout" :class="props.center ? 'tk-fixed-layout_center' : ''">
+    <main
+        class="tk-fixed-layout"
+        :class="{ 'tk-fixed-layout_center': props.center, 'tk-fixed-layout_max': props.maxWidth !== Infinity }"
+    >
         <section>
             <slot />
         </section>
@@ -62,6 +72,10 @@ const widthValue = computed(() => {
 
 .tk-fixed-layout > section {
     min-width: v-bind(widthValue);
+}
+
+.tk-fixed-layout.tk-fixed-layout_max > section {
+    max-width: v-bind(maxWidthValue);
 }
 
 .tk-fixed-layout.tk-fixed-layout_center > section {
