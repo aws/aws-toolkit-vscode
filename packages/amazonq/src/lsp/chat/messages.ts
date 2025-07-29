@@ -66,6 +66,8 @@ import {
     ShowOpenDialogParams,
     openFileDialogRequestType,
     OpenFileDialogResult,
+    subscriptionDetailsNotificationType,
+    subscriptionUpgradeNotificationType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -102,7 +104,7 @@ import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
-import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
+import { ChatMessage, SUBSCRIPTION_UPGRADE_NOTIFICATION_METHOD } from '@aws/language-server-runtimes/server-interface'
 import { CommentUtils } from 'aws-core-vscode/utils'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
@@ -253,6 +255,18 @@ export function registerMessageListeners(
                             `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
+                }
+                break
+            }
+            case SUBSCRIPTION_UPGRADE_NOTIFICATION_METHOD: {
+                languageClient.info('[VSCode Client] Subscription upgrade clicked')
+                try {
+                    // Forward the upgrade request to Flare
+                    languageClient.sendNotification(subscriptionUpgradeNotificationType.method, message.params)
+                } catch (e) {
+                    languageClient.error(
+                        `[VSCode Client] Failed to send subscription upgrade notification: ${(e as Error).message}`
+                    )
                 }
                 break
             }
@@ -704,6 +718,46 @@ export function registerMessageListeners(
             params: params,
         })
     })
+
+    // Handle subscription details response from Flare
+    languageClient.onNotification(subscriptionDetailsNotificationType.method, (params) => {
+        languageClient.info(`[VSCode Client] Received subscription details: ${JSON.stringify(params)}`)
+        // Forward the subscription details to the Chat UI
+        void provider.webview?.postMessage({
+            command: subscriptionDetailsNotificationType.method,
+            params: params,
+        })
+    })
+    // TODO: After implementing the "Upgrade" feature, test its functionality in the Account Details tab.
+    // Handle window/showDocument requests from Flare for subscription upgrade
+    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    languageClient.info(`[VSCode Client] Opening external URL for subscription upgrade: ${params.uri}`)
+                    // Open the URL in the external browser
+                    await vscode.env.openExternal(uri)
+
+                    // Return success to indicate the URL was opened
+                    return params
+                }
+
+                // If not external, handle as a regular document
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                languageClient.error(`[VSCode Client] Failed to open subscription upgrade URL: ${(e as Error).message}`)
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open subscription upgrade URL: ${(e as Error).message}`
+                )
+            }
+        }
+    )
 }
 
 function isServerEvent(command: string) {

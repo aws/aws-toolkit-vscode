@@ -17,6 +17,7 @@ import { activate as registerLegacyChatListeners } from '../../app/chat/activati
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import { pushConfigUpdate } from '../config'
+import { SUBSCRIPTION_SHOW_COMMAND_METHOD } from '@aws/language-server-runtimes/server-interface'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
@@ -88,6 +89,22 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
                 })
                 .catch((e) => {
                     getLogger('amazonqLsp').error('failed request: aws/chat/manageSubscription: %O', e)
+                })
+        }),
+        /* 
+            Forward the subscription details request to language server directly
+            This triggers the onShowSubscription() method in the language server
+        */
+        Commands.register('aws.amazonq.accountDetails', () => {
+            getLogger('amazonqLsp').info(
+                `[VSCode Client]: Sending subscription details [${SUBSCRIPTION_SHOW_COMMAND_METHOD}] event notification`
+            )
+            languageClient
+                .sendRequest('workspace/executeCommand', {
+                    command: SUBSCRIPTION_SHOW_COMMAND_METHOD,
+                })
+                .catch((e) => {
+                    getLogger('amazonqLsp').error('Failed to send subscription details request: : %O', e)
                 })
         }),
         globals.logOutputChannel.onDidChangeLogLevel((logLevel) => {

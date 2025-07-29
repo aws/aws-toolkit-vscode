@@ -354,6 +354,7 @@
     "AWS.amazonq.security": "Code Issues",
     "AWS.amazonq.login": "Login",
     "AWS.amazonq.learnMore": "Learn More About Amazon Q",
+    "AWS.amazonq.accountDetails": "Account details",
     "AWS.amazonq.welcomeWalkthrough": "Welcome Walkthrough",
     "AWS.amazonq.codewhisperer.title": "Amazon Q",
     "AWS.amazonq.toggleCodeSuggestion": "Toggle Auto-Suggestions",
