@@ -487,7 +487,7 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
  *
  * Returns default value of vscode appName or AmazonQ-For-SMUS-CE in case of a sagemaker unified studio environment
  */
-export function getClientName() {
+export function getClientName(): string {
     if (isSageMaker() && isSageMakerUnifiedStudio()) {
         return 'AmazonQ-For-SMUS-CE'
     }
