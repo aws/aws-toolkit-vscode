@@ -233,8 +233,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         const result = await runAuth()
         this.storeMetricMetadata({
             credentialSourceId: 'sharedCredentials',
-            authEnabledFeatures: 'codewhisperer',
+            featureId: 'codewhisperer',
             credentialType: credentialsType,
+            isReAuth: false,
+            isAggregated: false,
             ...this.getResultForMetrics(result),
         })
         this.emitAuthMetric()

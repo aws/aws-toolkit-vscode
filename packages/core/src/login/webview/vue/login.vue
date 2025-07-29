@@ -513,7 +513,7 @@ export default defineComponent({
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     // Emit telemetry when IAM Credentials option is selected and Continue is clicked
-                    void client.emitIamClick()
+                    void client.emitUiClick('auth_credentialsOption')
 
                     this.stage = 'AWS_PROFILE'
                     this.$nextTick(() => document.getElementById('profileName')!.focus())

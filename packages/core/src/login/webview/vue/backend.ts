@@ -231,12 +231,6 @@ export abstract class CommonAuthWebview extends VueWebview {
         } as AuthAddConnection)
     }
 
-    emitIamClick() {
-        telemetry.ui_click.emit({
-            elementId: 'Use with IAM Credentials',
-        })
-    }
-
     /**
      * Incrementally store auth metric data during vue, backend sign in logic,
      * and cancellation flows.
