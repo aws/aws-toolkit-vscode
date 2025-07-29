@@ -150,7 +150,7 @@ function createCloud9Properties(company: string): IdeProperties {
     }
 }
 
-function isSageMakerUnifiedStudio(): boolean {
+export function isSageMakerUnifiedStudio(): boolean {
     if (serviceName === notInitialized) {
         serviceName = process.env.SERVICE_NAME ?? ''
         isSMUS = serviceName === sageMakerUnifiedStudio
