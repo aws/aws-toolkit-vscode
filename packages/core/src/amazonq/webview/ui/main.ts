@@ -32,7 +32,6 @@ import { DiffTreeFileInfo } from './diffTree/types'
 import { FeatureContext } from '../../../shared/featureConfig'
 import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
-import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
@@ -781,19 +780,6 @@ export class WebviewUIHandler {
                         })
 
                         this.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
-                        return
-                    }
-                    case 'explore': {
-                        const newTabId = this.mynahUI?.updateStore('', agentWalkthroughDataModel)
-                        if (newTabId === undefined) {
-                            this.mynahUI?.notify({
-                                content: uiComponentsTexts.noMoreTabsTooltip,
-                                type: NotificationType.WARNING,
-                            })
-                            return
-                        }
-                        this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
-                        this.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
                         return
                     }
                     default: {

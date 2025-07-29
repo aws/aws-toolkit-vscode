@@ -39,6 +39,7 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
+    DevSettings,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -129,6 +130,15 @@ export async function startLanguageServer(
 
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
+    const endpointOverride = DevSettings.instance.get('codewhispererService', {}).endpoint ?? undefined
+    const textDocSection = {
+        inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
+    } as any
+
+    if (endpointOverride) {
+        textDocSection.endpointOverride = endpointOverride
+    }
+
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
@@ -174,12 +184,10 @@ export async function startLanguageServer(
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                        showLogs: true,
+                        showLogs: isSageMaker() ? false : true,
                     },
                     textDocument: {
-                        inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
-                        },
+                        inlineCompletionWithReferences: textDocSection,
                     },
                 },
                 contextConfiguration: {
@@ -351,6 +359,10 @@ async function onLanguageServerReady(
             await sessionManager.maybeRefreshSessionUx()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
             sessionManager.onNextSuggestion()
+        }),
+        // this is a workaround since handleDidShowCompletionItem is not public API
+        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+            sessionManager.checkInlineSuggestionVisibility()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
