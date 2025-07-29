@@ -113,8 +113,6 @@ export class InlineCompletionManager implements Disposable {
             try {
                 vsCodeState.isCodeWhispererEditing = true
                 const startLine = position.line
-                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                await handleExtraBrackets(editor, editor.selection.active, position)
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
                 const totalSessionDisplayTime = performance.now() - requestStartTime
@@ -123,6 +121,11 @@ export class InlineCompletionManager implements Disposable {
                     this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                     getDiagnosticsOfCurrentFile()
                 )
+                // try remove the extra } ) ' " if there is a new reported problem
+                // the extra } will cause syntax error
+                if (diagnosticDiff.added.length > 0) {
+                    await handleExtraBrackets(editor, editor.selection.active, position)
+                }
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: sessionId,
                     completionSessionResult: {
