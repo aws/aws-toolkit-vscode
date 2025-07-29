@@ -42,6 +42,10 @@ The test suite has the following categories of tests:
     -   Live in `src/testE2E`
     -   These tests are heavier than Integration tests.
     -   Some E2E tests have a more complicated architecture, described in [TEST_E2E](./TEST_E2E.md)
+-   UI E2E Tests: **slow** tests
+    -   Live in `packages/amazonq/test/e2e_new`
+    -   These tests target the UI testing aspect in an E2E sense.
+    -   Some E2E tests should be set up using pre-defined helpers and architecture, described in [UI_E2E_Test](./TUI_E2E_Test.md)
 -   Performance Tests: **slow** tests
     -   Live in `src/testInteg/perf`.
     -   A subset of integration tests focused on catching performance regressions.
