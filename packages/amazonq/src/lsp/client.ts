@@ -185,7 +185,7 @@ export async function startLanguageServer(
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                        showLogs: true,
+                        showLogs: isSageMaker() ? false : true,
                     },
                     textDocument: {
                         inlineCompletionWithReferences: textDocSection,
