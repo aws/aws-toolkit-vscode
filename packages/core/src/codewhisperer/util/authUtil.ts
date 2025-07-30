@@ -109,11 +109,11 @@ export class AuthUtil implements IAuthProvider {
     }
 
     isSsoSession(): boolean {
-        return this.session?.loginType === LoginTypes.SSO || this.session instanceof SsoLogin
+        return this.session instanceof SsoLogin
     }
 
     isIamSession(): boolean {
-        return this.session?.loginType === LoginTypes.IAM || this.session instanceof IamLogin
+        return this.session instanceof IamLogin
     }
 
     /**
@@ -176,11 +176,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using IAM or STS credentials
-    async loginIam(
-        accessKey: string,
-        secretKey: string,
-        sessionToken?: string
-    ): Promise<GetIamCredentialResult | undefined> {
+    async loginIam(accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<GetIamCredentialResult | undefined> {
         let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {

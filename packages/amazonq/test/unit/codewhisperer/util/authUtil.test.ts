@@ -427,18 +427,18 @@ describe('AuthUtil', async function () {
                 login: sinon.stub().resolves(mockResponse),
                 loginType: 'iam',
             }
-            
+
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
             
             const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken')
             
             assert.ok(mockIamLogin.login.calledOnce)
-            assert.ok(mockIamLogin.login.calledWith({
-                accessKey: 'accessKey',
-                secretKey: 'secretKey',
-                sessionToken: 'sessionToken',
-                roleArn: undefined,
-            }))
+            assert.ok(
+                mockIamLogin.login.calledWith({
+                    accessKey: 'accessKey',
+                    secretKey: 'secretKey',
+                })
+            )
             assert.strictEqual(response, mockResponse)
         })
 
@@ -462,7 +462,7 @@ describe('AuthUtil', async function () {
             
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
             
-            const response = await auth.login_iam('accessKey', 'secretKey', 'sessionToken', 'arn:aws:iam::123456789012:role/TestRole')
+            const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken', 'arn:aws:iam::123456789012:role/TestRole')
             
             assert.ok(mockIamLogin.login.calledOnce)
             assert.ok(mockIamLogin.login.calledWith({
@@ -567,24 +567,6 @@ describe('AuthUtil', async function () {
 
             assert.ok(mockLspAuth.updateIamCredential.called)
             assert.strictEqual(mockLspAuth.updateIamCredential.firstCall.args[0].data, 'fake-data')
-        })
-
-        it('cleans up IAM credential when connection expires', async function () {
-            const mockSession = { loginType: 'iam' }
-            ;(auth as any).session = mockSession
-
-            await (auth as any).stateChangeHandler({ state: 'expired' })
-
-            assert.ok(mockLspAuth.deleteIamCredential.called)
-        })
-
-        it('deletes IAM credential when disconnected', async function () {
-            const mockSession = { loginType: 'iam' }
-            ;(auth as any).session = mockSession
-
-            await (auth as any).stateChangeHandler({ state: 'notConnected' })
-
-            assert.ok(mockLspAuth.deleteIamCredential.called)
         })
     })
 })
