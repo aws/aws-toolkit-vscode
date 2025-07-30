@@ -20,7 +20,7 @@ import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile, vsCodeState } from '../../../../codewhisperer/models/model'
 import { randomUUID } from '../../../../shared/crypto'
 import globals from '../../../../shared/extensionGlobals'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { CredentialType, telemetry } from '../../../../shared/telemetry/telemetry'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 const className = 'AmazonQLoginWebview'
@@ -204,12 +204,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         // Defining separate auth function to emit telemetry before returning from this method
         await globals.globalState.update('recentIamKeys', { accessKey: accessKey })
         await globals.globalState.update('recentRoleArn', { roleArn: roleArn })
+        let credentialsType: CredentialType | undefined
+        if (!sessionToken && !roleArn) {
+            credentialsType = 'staticProfile'
+        } else if (roleArn) {
+            credentialsType = 'assumeRoleProfile'
+        } else {
+            credentialsType = 'staticSessionProfile'
+        }
+
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
                 await AuthUtil.instance.loginIam(accessKey, secretKey, sessionToken, roleArn)
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
-                const message = e instanceof Error ? e.message : e as string
+                const message = e instanceof Error ? e.message : (e as string)
                 return { id: this.id, text: message }
             }
             // Enable code suggestions
@@ -224,7 +233,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         const result = await runAuth()
         this.storeMetricMetadata({
             credentialSourceId: 'sharedCredentials',
-            authEnabledFeatures: 'codewhisperer',
+            featureId: 'codewhisperer',
+            credentialType: credentialsType,
+            isReAuth: false,
+            isAggregated: false,
             ...this.getResultForMetrics(result),
         })
         this.emitAuthMetric()

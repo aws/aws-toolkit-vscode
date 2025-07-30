@@ -512,6 +512,9 @@ export default defineComponent({
                         }
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
+                    // Emit telemetry when IAM Credentials option is selected and Continue is clicked
+                    void client.emitUiClick('auth_credentialsOption')
+
                     this.stage = 'AWS_PROFILE'
                     this.$nextTick(() => document.getElementById('profileName')!.focus())
                 }
@@ -533,7 +536,13 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey, this.sessionToken, this.roleArn)
+                const error = await client.startIamCredentialSetup(
+                    this.profileName,
+                    this.accessKey,
+                    this.secretKey,
+                    this.sessionToken,
+                    this.roleArn
+                )
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)

@@ -12,6 +12,6 @@ export { ChatTriggerType, PromptMessage, TriggerPayload } from './controllers/ch
 export { UserIntentRecognizer } from './controllers/chat/userIntent/userIntentRecognizer'
 export { EditorContextExtractor } from './editor/context/extractor'
 export { ChatSessionStorage } from './storages/chatSession'
-export { TriggerEventsStorage } from './storages/triggerEvents'
+export { TriggerEventsStorage, TriggerEvent } from './storages/triggerEvents'
 export { ReferenceLogController } from './view/messages/referenceLogController'
 export { extractLanguageNameFromFile } from './editor/context/file/languages'
