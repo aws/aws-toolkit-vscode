@@ -30,7 +30,16 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, stsCacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin, LoginTypes } from '../../auth/auth2'
+import {
+    AuthStateEvent,
+    cacheChangedEvent,
+    stsCacheChangedEvent,
+    LanguageClientAuth,
+    Login,
+    SsoLogin,
+    IamLogin,
+    LoginTypes,
+} from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -64,7 +73,13 @@ export interface IAuthProvider {
     getToken(): Promise<string>
     getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
-    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string }
+    readonly connection?: {
+        startUrl?: string
+        region?: string
+        accessKey?: string
+        secretKey?: string
+        sessionToken?: string
+    }
 }
 
 /**
@@ -176,13 +191,23 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using IAM or STS credentials
-    async loginIam(accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<GetIamCredentialResult | undefined> {
+    async loginIam(
+        accessKey: string,
+        secretKey: string,
+        sessionToken?: string,
+        roleArn?: string
+    ): Promise<GetIamCredentialResult | undefined> {
         let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, roleArn: roleArn })
+        response = await (this.session as IamLogin).login({
+            accessKey: accessKey,
+            secretKey: secretKey,
+            sessionToken: sessionToken,
+            roleArn: roleArn,
+        })
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -216,7 +241,7 @@ export class AuthUtil implements IAuthProvider {
         if (this.session) {
             const credential = (await this.session.getCredential()).credential
             if (typeof credential !== 'object') {
-                throw new ToolkitError('Cannot get token with SSO session')
+                throw new ToolkitError('Cannot get credential with SSO session')
             }
             return credential
         } else {

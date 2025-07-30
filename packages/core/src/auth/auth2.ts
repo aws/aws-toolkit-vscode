@@ -51,7 +51,6 @@ import {
     SsoSession,
     GetMfaCodeParams,
     getMfaCodeRequestType,
-
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
@@ -73,9 +72,7 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
-    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(
-        getMfaCodeRequestType.method
-    )
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -101,7 +98,10 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
-    readonly #stsCacheWatcher = getCacheFileWatcher(getStsCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
+    readonly #stsCacheWatcher = getCacheFileWatcher(
+        getStsCacheDir(),
+        getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq)
+    )
 
     constructor(
         private readonly client: LanguageClient,
@@ -279,7 +279,7 @@ export class LanguageClientAuth {
 
     invalidateStsCredential(tokenId: string) {
         return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-            profileName: tokenId,
+            iamCredentialId: tokenId,
         } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
     }
 
@@ -309,7 +309,9 @@ export abstract class BaseLogin {
     protected loginType: LoginType | undefined
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
-    protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string } | undefined
+    protected _data:
+        | { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string }
+        | undefined
 
     constructor(
         public readonly profileName: string,
@@ -536,7 +538,7 @@ export class IamLogin extends BaseLogin {
         )
     }
 
-    async login(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
+    async login(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -559,13 +561,27 @@ export class IamLogin extends BaseLogin {
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
+    async updateProfile(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
         if (opts.roleArn) {
             const sourceProfile = this.profileName + '-source'
-            await this.lspAuth.updateIamProfile(sourceProfile, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
+            await this.lspAuth.updateIamProfile(
+                sourceProfile,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
             await this.lspAuth.updateIamProfile(this.profileName, '', '', '', opts.roleArn, sourceProfile)
         } else {
-            await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
+            await this.lspAuth.updateIamProfile(
+                this.profileName,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
         }
     }
 
@@ -587,10 +603,10 @@ export class IamLogin extends BaseLogin {
     async getCredential() {
         const response = await this._getIamCredential(false)
         const credentials: IamCredentials = {
-            accessKeyId: await this.decrypt(response.credentials.accessKeyId),
-            secretAccessKey: await this.decrypt(response.credentials.secretAccessKey),
-            sessionToken: response.credentials.sessionToken
-                ? await this.decrypt(response.credentials.sessionToken)
+            accessKeyId: await this.decrypt(response.credential.credentials.accessKeyId),
+            secretAccessKey: await this.decrypt(response.credential.credentials.secretAccessKey),
+            sessionToken: response.credential.credentials.sessionToken
+                ? await this.decrypt(response.credential.credentials.sessionToken)
                 : undefined,
         }
         return {
@@ -629,13 +645,13 @@ export class IamLogin extends BaseLogin {
         }
 
         // Update cached credentials and credential ID
-        if (response.credentials.accessKeyId && response.credentials.secretAccessKey) {
+        if (response.credential.credentials.accessKeyId && response.credential.credentials.secretAccessKey) {
             this._data = {
-                accessKey: response.credentials.accessKeyId,
-                secretKey: response.credentials.secretAccessKey,
-                sessionToken: response.credentials.sessionToken,
+                accessKey: response.credential.credentials.accessKeyId,
+                secretKey: response.credential.credentials.secretAccessKey,
+                sessionToken: response.credential.credentials.sessionToken,
             }
-            this.iamCredentialId = response.id
+            this.iamCredentialId = response.credential.id
         }
         this.updateConnectionState('connected')
         return response
@@ -647,7 +663,7 @@ export class IamLogin extends BaseLogin {
                 this.updateConnectionState('expired')
                 return
             } else if (params.kind === StsCredentialChangedKind.Refreshed) {
-                this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+                this.eventEmitter.fire({ id: this.iamCredentialId, state: 'refreshed' })
             }
         }
     }

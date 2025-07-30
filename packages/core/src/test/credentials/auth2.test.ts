@@ -229,7 +229,9 @@ describe('LanguageClientAuth', () => {
             const result = await auth.invalidateStsCredential(profileName)
 
             sinon.assert.calledOnce(client.sendRequest)
-            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, { profileName: profileName })
+            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, {
+                profileName: profileName,
+            })
             sinon.assert.match(result, { success: true })
         })
     })
@@ -638,11 +640,14 @@ describe('IamLogin', () => {
     }
 
     const mockGetIamCredentialResponse: GetIamCredentialResult = {
-        id: 'test-credential-id',
-        credentials: {
-            accessKeyId: 'encrypted-access-key',
-            secretAccessKey: 'encrypted-secret-key',
-            sessionToken: 'encrypted-session-token',
+        credential: {
+            id: 'test-credential-id',
+            kinds: [],
+            credentials: {
+                accessKeyId: 'encrypted-access-key',
+                secretAccessKey: 'encrypted-secret-key',
+                sessionToken: 'encrypted-session-token',
+            },
         },
         updateCredentialsParams: {
             data: 'credential-data',
@@ -674,7 +679,7 @@ describe('IamLogin', () => {
             sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts.accessKey, loginOpts.secretKey)
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
         })
     })
 
@@ -697,7 +702,7 @@ describe('IamLogin', () => {
 
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
         })
     })
 
