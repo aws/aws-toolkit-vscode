@@ -64,35 +64,6 @@ export class ContextMenuProvider implements vscode.Disposable {
                 }
             )
         )
-
-        // Session management commands (less frequently used, at the end)
-        // Register "Start Auto Debug Session" command
-        this.disposables.push(
-            Commands.register(
-                {
-                    id: 'amazonq.05.startSession',
-                    name: 'Start Auto Debug Session',
-                    telemetryName: 'vscode_executeCommand',
-                },
-                async () => {
-                    await this.startAutoDebugSession()
-                }
-            )
-        )
-
-        // Register "End Auto Debug Session" command
-        this.disposables.push(
-            Commands.register(
-                {
-                    id: 'amazonq.06.endSession',
-                    name: 'End Auto Debug Session',
-                    telemetryName: 'vscode_executeCommand',
-                },
-                async () => {
-                    await this.endAutoDebugSession()
-                }
-            )
-        )
     }
 
     /**
@@ -193,36 +164,6 @@ export class ContextMenuProvider implements vscode.Disposable {
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error explaining problem: %s', error)
             void vscode.window.showErrorMessage('Failed to explain problem with Amazon Q')
-        }
-    }
-
-    /**
-     * Starts a new auto debug session
-     */
-    private async startAutoDebugSession(): Promise<void> {
-        try {
-            const session = await this.autoDebugController.startSession()
-            void vscode.window.showInformationMessage(
-                `Auto Debug session started (ID: ${session.id.substring(0, 8)}...)`
-            )
-        } catch (error) {
-            this.logger.error('ContextMenuProvider: Error starting auto debug session: %s', error)
-            void vscode.window.showErrorMessage('Failed to start Auto Debug session')
-        }
-    }
-
-    /**
-     * Ends the current auto debug session
-     */
-    private async endAutoDebugSession(): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Ending auto debug session')
-
-        try {
-            await this.autoDebugController.endSession()
-            void vscode.window.showInformationMessage('Auto Debug session ended')
-        } catch (error) {
-            this.logger.error('ContextMenuProvider: Error ending auto debug session: %s', error)
-            void vscode.window.showErrorMessage('Failed to end Auto Debug session')
         }
     }
 

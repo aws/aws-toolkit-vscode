@@ -105,8 +105,6 @@ export class AutoDebugLspClient {
 
             // Wait for panel to focus
             await new Promise((resolve) => setTimeout(resolve, 200))
-
-            // Send message using the same pattern as explainIssue command (which works)
             await amazonQChatViewProvider.webview.postMessage({
                 command: 'sendToPrompt',
                 params: {

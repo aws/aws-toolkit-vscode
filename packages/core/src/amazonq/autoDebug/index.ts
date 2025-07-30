@@ -50,7 +50,7 @@ export class AutoDebugFeature implements vscode.Disposable {
             this.contextMenuProvider = new ContextMenuProvider(this.autoDebugController)
             this.disposables.push(this.contextMenuProvider)
 
-            this.codeActionsProvider = new AutoDebugCodeActionsProvider(this.autoDebugController)
+            this.codeActionsProvider = new AutoDebugCodeActionsProvider()
             this.disposables.push(this.codeActionsProvider)
 
             // Register additional commands
@@ -59,15 +59,7 @@ export class AutoDebugFeature implements vscode.Disposable {
             // Set up event handlers
             this.setupEventHandlers()
 
-            // **CRITICAL FIX**: Start an auto debug session to enable diagnostic monitoring
-            // Without an active session, the AutoDebugController won't monitor diagnostic changes
-            if (this.autoDebugController.getConfig().enabled) {
-                this.logger.debug('AutoDebugFeature: Starting initial auto debug session')
-                await this.autoDebugController.startSession()
-                this.logger.debug('AutoDebugFeature: Initial auto debug session started successfully')
-            } else {
-                this.logger.debug('AutoDebugFeature: Auto debug is disabled, not starting session')
-            }
+            this.logger.debug('AutoDebugFeature: Auto debug feature components initialized')
 
             this.logger.debug('AutoDebugFeature: Auto debug feature activated successfully')
         } catch (error) {
@@ -99,24 +91,27 @@ export class AutoDebugFeature implements vscode.Disposable {
     }
 
     /**
-     * Manually triggers problem detection
+     * Manually triggers problem detection (simplified - just shows current file diagnostics)
      */
     public async detectProblems(): Promise<void> {
         this.logger.debug('AutoDebugFeature: Manual problem detection triggered')
 
-        if (!this.autoDebugController) {
-            this.logger.warn('AutoDebugFeature: Auto debug controller not initialized')
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            void vscode.window.showWarningMessage('No active editor found')
             return
         }
 
         try {
-            const problems = await this.autoDebugController.detectProblems()
+            const diagnostics = vscode.languages.getDiagnostics(editor.document.uri)
+            const errorCount = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length
+            const warningCount = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Warning).length
 
-            if (problems.length > 0) {
-                const message = `Found ${problems.length} problem${problems.length !== 1 ? 's' : ''} in your code`
+            if (errorCount > 0 || warningCount > 0) {
+                const message = `Found ${errorCount} error(s) and ${warningCount} warning(s) in current file`
                 void vscode.window.showInformationMessage(message)
             } else {
-                void vscode.window.showInformationMessage('No new problems detected')
+                void vscode.window.showInformationMessage('No problems detected in current file')
             }
         } catch (error) {
             this.logger.error('AutoDebugFeature: Error detecting problems: %s', error)
@@ -161,118 +156,11 @@ export class AutoDebugFeature implements vscode.Disposable {
                 await this.detectProblems()
             })
         )
-
-        // Register toggle command
-        this.disposables.push(
-            Commands.register('amazonq.autoDebug.toggle', async () => {
-                await this.toggleAutoDebug()
-            })
-        )
-
-        // Register status command
-        this.disposables.push(
-            Commands.register('amazonq.autoDebug.showStatus', async () => {
-                await this.showStatus()
-            })
-        )
     }
 
     private setupEventHandlers(): void {
-        this.logger.debug('AutoDebugFeature: Setting up event handlers')
-
-        if (!this.autoDebugController) {
-            return
-        }
-
-        // Listen for problems detected (logging only, no notifications)
-        this.disposables.push(
-            this.autoDebugController.onProblemsDetected.event((problems) => {
-                this.logger.debug('AutoDebugFeature: Problems detected event received: %d problems', problems.length)
-
-                const criticalProblems = problems.filter((p) => p.severity === 'error')
-                this.logger.debug('AutoDebugFeature: Critical problems detected: %d', criticalProblems.length)
-            })
-        )
-
-        // Listen for session events
-        this.disposables.push(
-            this.autoDebugController.onSessionStarted.event((session) => {
-                this.logger.debug('AutoDebugFeature: Auto debug session started: %s', session.id)
-            })
-        )
-
-        this.disposables.push(
-            this.autoDebugController.onSessionEnded.event((sessionId) => {
-                this.logger.debug('AutoDebugFeature: Auto debug session ended: %s', sessionId)
-            })
-        )
-    }
-
-    private async toggleAutoDebug(): Promise<void> {
-        this.logger.debug('AutoDebugFeature: Toggling auto debug')
-
-        if (!this.autoDebugController) {
-            void vscode.window.showErrorMessage('Auto Debug is not initialized')
-            return
-        }
-
-        const currentConfig = this.autoDebugController.getConfig()
-        const newEnabled = !currentConfig.enabled
-
-        this.autoDebugController.updateConfig({ enabled: newEnabled })
-
-        const status = newEnabled ? 'enabled' : 'disabled'
-        void vscode.window.showInformationMessage(`Amazon Q Auto Debug ${status}`)
-
-        this.logger.debug('AutoDebugFeature: Auto debug toggled to %s', status)
-    }
-
-    private async showStatus(): Promise<void> {
-        this.logger.debug('AutoDebugFeature: Showing auto debug status')
-
-        if (!this.autoDebugController) {
-            void vscode.window.showInformationMessage('Amazon Q Auto Debug: Not initialized')
-            return
-        }
-
-        const config = this.autoDebugController.getConfig()
-        const session = this.autoDebugController.getCurrentSession()
-        const categorizedProblems = this.autoDebugController.getCategorizedProblems()
-
-        const statusParts = [
-            `**Amazon Q Auto Debug Status**`,
-            ``,
-            `**Enabled:** ${config.enabled ? 'Yes' : 'No'}`,
-            `**Auto Report Threshold:** ${config.autoReportThreshold}`,
-            `**Severity Filter:** ${config.severityFilter.join(', ')}`,
-            ``,
-        ]
-
-        if (session) {
-            statusParts.push(`**Active Session:** ${session.id.substring(0, 8)}...`)
-            statusParts.push(`**Session Started:** ${new Date(session.startTime).toLocaleString()}`)
-            statusParts.push(`**Total Problems:** ${session.problems.length}`)
-        } else {
-            statusParts.push(`**Active Session:** None`)
-        }
-
-        if (categorizedProblems) {
-            statusParts.push(``)
-            statusParts.push(`**Current Problems:**`)
-            statusParts.push(`- Errors: ${categorizedProblems.errors.length}`)
-            statusParts.push(`- Warnings: ${categorizedProblems.warnings.length}`)
-            statusParts.push(`- Info: ${categorizedProblems.info.length}`)
-            statusParts.push(`- Hints: ${categorizedProblems.hints.length}`)
-        }
-
-        const statusMessage = statusParts.join('\n')
-
-        // Show in a new document for better readability
-        const doc = await vscode.workspace.openTextDocument({
-            content: statusMessage,
-            language: 'markdown',
-        })
-        await vscode.window.showTextDocument(doc)
+        this.logger.debug('AutoDebugFeature: Setting up event handlers (simplified)')
+        // No complex event handling needed for context menu/quick fix functionality
     }
 
     public dispose(): void {
@@ -284,8 +172,6 @@ export class AutoDebugFeature implements vscode.Disposable {
 // Export main components for external use
 export { AutoDebugController, AutoDebugConfig } from './autoDebugController'
 export { AutoDebugLspClient } from './lsp/autoDebugLspClient'
-export { DiagnosticsMonitor, DiagnosticCollection, DiagnosticSnapshot } from './diagnostics/diagnosticsMonitor'
-export { ProblemDetector, Problem, CategorizedProblems } from './diagnostics/problemDetector'
 export { ErrorContextFormatter, ErrorContext, FormattedErrorReport } from './diagnostics/errorContext'
 export { ContextMenuProvider } from './ide/contextMenuProvider'
 export { AutoDebugCodeActionsProvider } from './ide/codeActionsProvider'

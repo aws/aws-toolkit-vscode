@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../../shared/logger/logger'
-import { AutoDebugController } from '../autoDebugController'
 
 /**
  * Provides code actions for Amazon Q Auto Debug features.
@@ -17,7 +16,7 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
 
     public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix, vscode.CodeActionKind.Refactor]
 
-    constructor(private readonly autoDebugController: AutoDebugController) {
+    constructor() {
         this.registerProvider()
     }
 
@@ -63,14 +62,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
 
             // Add "Explain Problem" action
             actions.push(this.createExplainProblemAction(document, range, diagnostics))
-        }
-
-        // Always add session management actions
-        const currentSession = this.autoDebugController.getCurrentSession()
-        if (currentSession?.isActive) {
-            actions.push(this.createEndSessionAction())
-        } else {
-            actions.push(this.createStartSessionAction())
         }
 
         // Add "Detect Problems" action
@@ -125,28 +116,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         }
 
         action.diagnostics = diagnostics
-
-        return action
-    }
-
-    private createStartSessionAction(): vscode.CodeAction {
-        const action = new vscode.CodeAction('Start Auto Debug Session', vscode.CodeActionKind.Refactor)
-
-        action.command = {
-            command: 'amazonq.05.startSession',
-            title: 'Start Auto Debug Session',
-        }
-
-        return action
-    }
-
-    private createEndSessionAction(): vscode.CodeAction {
-        const action = new vscode.CodeAction('End Auto Debug Session', vscode.CodeActionKind.Refactor)
-
-        action.command = {
-            command: 'amazonq.06.endSession',
-            title: 'End Auto Debug Session',
-        }
 
         return action
     }
