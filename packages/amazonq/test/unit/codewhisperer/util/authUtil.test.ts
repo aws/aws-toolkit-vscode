@@ -449,28 +449,36 @@ describe('AuthUtil', async function () {
                     accessKeyId: 'encrypted-access-key',
                     secretAccessKey: 'encrypted-secret-key',
                     sessionToken: 'encrypted-session-token',
+                    roleArn: 'arn:aws:iam::123456789012:role/TestRole',
                 },
                 updateCredentialsParams: {
                     data: 'credential-data',
                 },
             }
-            
+
             const mockIamLogin = {
                 login: sinon.stub().resolves(mockResponse),
                 loginType: 'iam',
             }
-            
+
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
-            
-            const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken', 'arn:aws:iam::123456789012:role/TestRole')
-            
+
+            const response = await auth.loginIam(
+                'accessKey',
+                'secretKey',
+                'sessionToken',
+                'arn:aws:iam::123456789012:role/TestRole'
+            )
+
             assert.ok(mockIamLogin.login.calledOnce)
-            assert.ok(mockIamLogin.login.calledWith({
-                accessKey: 'accessKey',
-                secretKey: 'secretKey',
-                sessionToken: 'sessionToken',
-                roleArn: 'arn:aws:iam::123456789012:role/TestRole',
-            }))
+            assert.ok(
+                mockIamLogin.login.calledWith({
+                    accessKey: 'accessKey',
+                    secretKey: 'secretKey',
+                    sessionToken: 'sessionToken',
+                    roleArn: 'arn:aws:iam::123456789012:role/TestRole',
+                })
+            )
             assert.strictEqual(response, mockResponse)
         })
     })

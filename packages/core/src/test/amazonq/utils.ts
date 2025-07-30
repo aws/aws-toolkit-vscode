@@ -87,8 +87,8 @@ export async function sessionRegisterProvider(session: Session, uri: vscode.Uri,
 
 export function generateVirtualMemoryUri(uploadID: string, filePath: string, scheme: string) {
     const generationFilePath = path.join(uploadID, filePath)
-    const uri = vscode.Uri.from({ scheme, path: generationFilePath })
-    return uri
+    const uriNew = vscode.Uri.from({ scheme, path: generationFilePath })
+    return uriNew
 }
 
 export async function sessionWriteFile(session: Session, uri: vscode.Uri, encodedContent: Uint8Array) {

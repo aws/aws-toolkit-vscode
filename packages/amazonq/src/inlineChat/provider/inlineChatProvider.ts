@@ -74,15 +74,13 @@ export class InlineChatProvider {
         switch (triggerEvent?.type) {
             case 'editor_context_command':
                 return triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
-            case 'follow_up':
-            case 'chat_message':
             default:
                 return 'click'
         }
     }
 
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
-        const triggerInteraction = this.getTriggerInteractionFromTriggerEvent(
+        const triggerInteractionLSP = this.getTriggerInteractionFromTriggerEvent(
             this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
         )
         if (!AuthUtil.instance.isSsoSession()) {
@@ -91,7 +89,7 @@ export class InlineChatProvider {
                 cwsprChatConversationType: 'Chat',
                 cwsprChatRequestLength: message.message?.length ?? 0,
                 cwsprChatResponseCode: 401,
-                cwsprChatTriggerInteraction: triggerInteraction,
+                cwsprChatTriggerInteraction: triggerInteractionLSP,
                 reason: 'AuthenticationError',
                 reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
             })
