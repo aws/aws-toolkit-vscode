@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import {
     Command,
     Message,
@@ -19,10 +17,8 @@ import {
     handleUnsupportedMessage,
     apiCallMessageHandler,
 } from '../messageHandlers/handleMessageHelpers'
-import { parseExecutionArnForStateMachine, openWorkflowStudio } from '../utils'
-import { ExecuteStateMachineWebview } from '../vue/executeStateMachine/executeStateMachine'
-import { VueWebview } from '../../webviews/main'
-import globals from '../../shared/extensionGlobals'
+import { parseExecutionArnForStateMachine, openWorkflowStudio, showExecuteStateMachineWebview } from '../utils'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -88,25 +84,24 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
 }
 
 async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
-    // Parsing execution ARN to get state machine info
-    const parsedArn = parseExecutionArnForStateMachine(context.executionArn)
-    if (!parsedArn) {
-        throw new Error(`Invalid execution ARN format: ${context.executionArn}`)
+    const logger = getLogger('stepfunctions')
+    try {
+        // Parsing execution ARN to get state machine info
+        const parsedArn = parseExecutionArnForStateMachine(context.executionArn)
+        if (!parsedArn) {
+            throw new Error(`Invalid execution ARN format: ${context.executionArn}`)
+        }
+
+        const { region, stateMachineName, stateMachineArn } = parsedArn
+
+        await showExecuteStateMachineWebview({
+            arn: stateMachineArn,
+            name: stateMachineName,
+            region: region,
+        })
+    } catch (error) {
+        logger.error('Start execution failed: %O', error)
     }
-
-    const { region, stateMachineName, stateMachineArn } = parsedArn
-
-    const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
-    const wv = new Panel(globals.context, globals.outputChannel, {
-        arn: stateMachineArn,
-        name: stateMachineName,
-        region: region,
-    })
-
-    await wv.show({
-        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
-        cssFiles: ['executeStateMachine.css'],
-    })
 }
 
 async function editStateMachineMessageHandler(context: ExecutionDetailsContext) {

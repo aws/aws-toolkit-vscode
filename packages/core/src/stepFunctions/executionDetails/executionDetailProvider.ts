@@ -35,7 +35,7 @@ export class ExecutionDetailProvider {
         const panel = vscode.window.createWebviewPanel(
             ExecutionDetailProvider.viewType,
             `Execution: ${executionArn.split(':').pop() || executionArn}`,
-            vscode.ViewColumn.Beside,
+            vscode.ViewColumn.One,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,

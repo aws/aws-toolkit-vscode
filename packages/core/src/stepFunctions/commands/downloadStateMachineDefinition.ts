@@ -35,7 +35,10 @@ export async function downloadStateMachineDefinition(params: {
             })
 
         if (params.isPreviewAndRender) {
-            await openWorkflowStudioWithDefinition(stateMachineDetails.definition)
+            await openWorkflowStudioWithDefinition(stateMachineDetails.definition, {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            })
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath

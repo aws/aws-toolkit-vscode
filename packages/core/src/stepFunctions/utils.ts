@@ -18,6 +18,9 @@ import {
 import { fromExtensionManifest } from '../shared/settings'
 import { IamRole } from '../shared/clients/iam'
 import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
+import { VueWebview } from '../webviews/main'
+import { ExecuteStateMachineWebview } from './vue/executeStateMachine/executeStateMachine'
+import globals from '../shared/extensionGlobals'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -149,8 +152,15 @@ export const openWorkflowStudio = async (stateMachineArn: string, region: string
 /**
  * Opens a state machine definition in Workflow Studio using pre-fetched definition content
  * @param definition The state machine definition content
+ * @param options Optional webview configuration options
  */
-export const openWorkflowStudioWithDefinition = async (definition: string | undefined) => {
+export const openWorkflowStudioWithDefinition = async (
+    definition: string | undefined,
+    options?: {
+        preserveFocus?: boolean
+        viewColumn?: vscode.ViewColumn
+    }
+) => {
     const doc = await vscode.workspace.openTextDocument({
         language: 'asl',
         content: definition,
@@ -158,9 +168,36 @@ export const openWorkflowStudioWithDefinition = async (definition: string | unde
 
     const textEditor = await vscode.window.showTextDocument(doc)
     await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
-        preserveFocus: false,
-        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: options?.preserveFocus ?? false,
+        viewColumn: options?.viewColumn ?? vscode.ViewColumn.One,
     })
+}
+
+/**
+ * Shows the Execute State Machine webview with the provided state machine data
+ * @param extensionContext The extension context
+ * @param outputChannel The output channel for logging
+ * @param stateMachineData Object containing arn, name, and region of the state machine
+ * @returns The webview instance
+ */
+export const showExecuteStateMachineWebview = async (stateMachineData: {
+    arn: string
+    name: string
+    region: string
+}) => {
+    const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
+    const wv = new Panel(globals.context, globals.outputChannel, {
+        arn: stateMachineData.arn,
+        name: stateMachineData.name,
+        region: stateMachineData.region,
+    })
+
+    await wv.show({
+        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+        cssFiles: ['executeStateMachine.css'],
+    })
+
+    return wv
 }
 
 const isInvalidJson = (content: string): boolean => {

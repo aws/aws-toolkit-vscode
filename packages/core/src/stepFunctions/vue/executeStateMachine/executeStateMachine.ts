@@ -16,6 +16,7 @@ import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ExecutionDetailProvider } from '../../executionDetails/executionDetailProvider'
+import { showExecuteStateMachineWebview } from '../../utils'
 
 interface StateMachine {
     arn: string
@@ -88,18 +89,11 @@ export class ExecuteStateMachineWebview extends VueWebview {
     }
 }
 
-const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
-
 export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
-    const wv = new Panel(context.extensionContext, context.outputChannel, {
+    await showExecuteStateMachineWebview({
         arn: node.details.stateMachineArn || '',
         name: node.details.name || '',
         region: node.regionCode,
-    })
-
-    await wv.show({
-        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
-        cssFiles: ['executeStateMachine.css'],
     })
     telemetry.stepfunctions_executeStateMachineView.emit()
 }
