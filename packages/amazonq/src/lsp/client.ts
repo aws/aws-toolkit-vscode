@@ -351,7 +351,7 @@ async function postStartLanguageServer(
             }).mfaSerial
             let mfaSerial = await getMfaSerialFromUser(defaultMfaSerial, params.profileName)
             mfaSerial = mfaSerial.trim()
-            globals.globalState.update('recentMfaSerial', { mfaSerial: mfaSerial })
+            await globals.globalState.update('recentMfaSerial', { mfaSerial: mfaSerial })
             const mfaCode = await getMfaTokenFromUser(mfaSerial, params.profileName)
             return { code: mfaCode ?? '', mfaSerial: mfaSerial ?? '' }
         }

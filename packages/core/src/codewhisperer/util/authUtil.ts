@@ -38,7 +38,6 @@ import {
     Login,
     SsoLogin,
     IamLogin,
-    LoginTypes,
 } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
