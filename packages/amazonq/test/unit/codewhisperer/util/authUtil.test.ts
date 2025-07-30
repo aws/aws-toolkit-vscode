@@ -456,12 +456,12 @@ describe('AuthUtil', async function () {
                 },
             }
 
-            const mockIamLogin = {
+            const mockIamLoginArn = {
                 login: sinon.stub().resolves(mockResponse),
                 loginType: 'iam',
             }
 
-            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLoginArn as any)
 
             const response = await auth.loginIam(
                 'accessKey',
@@ -470,9 +470,9 @@ describe('AuthUtil', async function () {
                 'arn:aws:iam::123456789012:role/TestRole'
             )
 
-            assert.ok(mockIamLogin.login.calledOnce)
+            assert.ok(mockIamLoginArn.login.calledOnce)
             assert.ok(
-                mockIamLogin.login.calledWith({
+                mockIamLoginArn.login.calledWith({
                     accessKey: 'accessKey',
                     secretKey: 'secretKey',
                     sessionToken: 'sessionToken',
