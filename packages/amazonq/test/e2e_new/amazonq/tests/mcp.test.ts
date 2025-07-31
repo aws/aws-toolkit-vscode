@@ -5,8 +5,14 @@
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
+import {
+    clickMCPAddButton,
+    clickMCPCloseButton,
+    clickToolsButton,
+    configureMCPServer,
+    saveMCPServerConfiguration,
+} from '../helpers/mcpHelper'
 import { sleep } from '../utils/generalUtils'
-import { clickMCPCloseButton, clickToolsButton, dismissOverlay } from '../helpers/mcpHelper'
 
 describe('Amazon Q MCP Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -21,20 +27,18 @@ describe('Amazon Q MCP Functionality', function () {
 
     afterEach(async () => {})
 
-    it('MCP Server', async () => {
-        /**
-         * TO-DO
-         * Write a command to click the button DONE
-         *
-         * Close MCP Server
-         */
+    it('Test Amazon Q MCP Servers and Built-in Tools Access', async () => {
         await clickToolsButton(webviewView)
-        console.log('TOOLS BUTTON CLICKED')
-        await dismissOverlay(webviewView)
-        console.log('DISMISS OVERLAY')
-        sleep(5000)
         await clickMCPCloseButton(webviewView)
-        console.log('CLOSE BUTTON CLICKED')
-        await dismissOverlay(webviewView)
+    })
+
+    it('Add new MCP Server', async () => {
+        await clickToolsButton(webviewView)
+        await clickMCPAddButton(webviewView)
+        await configureMCPServer(webviewView)
+        await sleep(5000)
+        await saveMCPServerConfiguration(webviewView)
+        await sleep(5000)
+        await clickMCPCloseButton(webviewView)
     })
 })
