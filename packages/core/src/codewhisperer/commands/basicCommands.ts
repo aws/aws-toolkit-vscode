@@ -172,32 +172,6 @@ export const showLogs = Commands.declare(
     }
 )
 
-export const showExploreAgentsView = Commands.declare(
-    { id: 'aws.amazonq.exploreAgents', compositeKey: { 1: 'source' } },
-    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        if (_ !== placeholder) {
-            source = 'ellipsesMenu'
-        }
-
-        // Show warning message without buttons - just informational
-        void vscode.window.showWarningMessage(
-            'Log files may contain sensitive information such as account IDs, resource names, and other data. Be careful when sharing these logs.'
-        )
-
-        // Get the log directory path
-        const logFolderPath = globals.context.logUri?.fsPath
-        const path = require('path')
-        const logFilePath = path.join(logFolderPath, 'Amazon Q Logs.log')
-        if (logFilePath) {
-            // Open the log directory in the OS file explorer directly
-            await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logFilePath))
-        } else {
-            // Fallback: show error if log path is not available
-            void vscode.window.showErrorMessage('Log location not available.')
-        }
-    }
-)
-
 export const showIntroduction = Commands.declare('aws.amazonq.introduction', () => async () => {
     void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })

@@ -134,6 +134,12 @@ export class SessionManager {
         }
     }
 
+    public checkInlineSuggestionVisibility() {
+        if (this.activeSession) {
+            this.activeSession.displayed = true
+        }
+    }
+
     private clearReferenceInlineHintsAndImportHints() {
         ReferenceInlineProvider.instance.removeInlineReference()
         ImportAdderProvider.instance.clear()
