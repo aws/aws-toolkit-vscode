@@ -596,10 +596,6 @@ export class Connector {
                     this.cwChatConnector.onCustomFormAction(tabId, action)
                 }
                 break
-            case 'agentWalkthrough': {
-                this.amazonqCommonsConnector.onCustomFormAction(tabId, action)
-                break
-            }
         }
     }
 }
