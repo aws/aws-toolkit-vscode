@@ -8,11 +8,12 @@ import { testContext } from '../utils/testContext'
 import {
     clickMCPAddButton,
     clickMCPCloseButton,
+    clickMCPRefreshButton,
     clickToolsButton,
     configureMCPServer,
     saveMCPServerConfiguration,
 } from '../helpers/mcpHelper'
-import { sleep } from '../utils/generalUtils'
+import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q MCP Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -23,9 +24,9 @@ describe('Amazon Q MCP Functionality', function () {
         webviewView = testContext.webviewView
     })
 
-    after(async function () {})
-
-    afterEach(async () => {})
+    after(async function () {
+        await closeAllTabs(webviewView)
+    })
 
     it('Test Amazon Q MCP Servers and Built-in Tools Access', async () => {
         await clickToolsButton(webviewView)
@@ -36,9 +37,13 @@ describe('Amazon Q MCP Functionality', function () {
         await clickToolsButton(webviewView)
         await clickMCPAddButton(webviewView)
         await configureMCPServer(webviewView)
-        await sleep(5000)
         await saveMCPServerConfiguration(webviewView)
-        await sleep(5000)
+        await clickMCPCloseButton(webviewView)
+    })
+
+    it('Refresh MCP Server', async () => {
+        await clickToolsButton(webviewView)
+        await clickMCPRefreshButton(webviewView)
         await clickMCPCloseButton(webviewView)
     })
 })

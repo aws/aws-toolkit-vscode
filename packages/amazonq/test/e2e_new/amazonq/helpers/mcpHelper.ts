@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { WebviewView, By } from 'vscode-extension-tester'
+import { WebviewView, By, WebElement } from 'vscode-extension-tester'
 import { waitForElement } from '../utils/generalUtils'
 
 /**
@@ -57,7 +57,7 @@ export async function clickMCPAddButton(webviewView: WebviewView): Promise<boole
  * @param webviewView The WebviewView instance
  * @param config Configuration object with optional parameters
  * @returns Promise<boolean> True if configuration was successful, false otherwise
- * Note: I have the default settings in the config variable
+ * Note: I have the default settings in the defaultConfig
  */
 interface MCPServerConfig {
     scope?: 'global' | 'workspace'
@@ -69,135 +69,166 @@ interface MCPServerConfig {
     valueEnvironmentVariable?: string
     timeout?: number
 }
-export async function configureMCPServer(webviewView: WebviewView, config: MCPServerConfig = {}): Promise<boolean> {
-    const {
-        scope = 'workspace',
-        name = 'aws-documentation',
-        transport = 0,
-        command = 'uvx',
-        args = ['awslabs.aws-documentation-mcp-server@latest'],
-        nameEnvironmentVariable = 'hi',
-        valueEnvironmentVariable = 'hi',
-        timeout = 0,
-    } = config
+
+const defaultConfig: MCPServerConfig = {
+    scope: 'global',
+    name: 'aws-documentation',
+    transport: 0,
+    command: 'uvx',
+    args: ['awslabs.aws-documentation-mcp-server@latest'],
+    nameEnvironmentVariable: 'hi',
+    valueEnvironmentVariable: 'hi',
+    timeout: 0,
+}
+
+const formItemsMap = {
+    SCOPE: 0,
+    NAME: 1,
+    TRANSPORT: 2,
+    COMMAND: 3,
+    ARGS: 4,
+    ENV_VARS: 6,
+    TIMEOUT: 9,
+} as const
+
+type McpFormItem = keyof typeof formItemsMap
+
+async function selectScope(container: WebElement, scope: string) {
     try {
-        const a = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const b = await a.findElement(By.css('.mynah-sheet-body'))
-        const c = await b.findElement(By.css('.mynah-detailed-list-filters-wrapper'))
-        const d = await c.findElement(By.css('.mynah-chat-item-form-items-container'))
-        const items = await d.findElements(By.css('.mynah-form-input-wrapper'))
-        console.log('THERE ARE X ITEMS:', items.length) // returns 10 items
-        for (let i = 0; i < items.length; i++) {
-            switch (i) {
-                // select the scope
-                case 0:
-                    try {
-                        const scopeContainer = items[i]
-                        const a = await scopeContainer.findElements(
-                            By.css('.mynah-form-input-radio-label.mynah-ui-clickable-item')
-                        )
-                        if (scope === 'global') {
-                            const b = a[0]
-                            await b.click()
-                        } else {
-                            const b = a[1]
-                            await b.click()
-                        }
-                    } catch (e) {
-                        console.error('Error in case 0:', e)
-                        throw e
-                    }
-                    break
-                // input the name
-                case 1:
-                    try {
-                        const scopeContainer = items[i]
-                        const input = scopeContainer.findElement(By.css('.mynah-form-input'))
-                        await input.sendKeys(name)
-                    } catch (e) {
-                        console.error('Error in case 1:', e)
-                        throw e
-                    }
-                    break
-                // select the transport (must know the index of your selection)
-                case 2:
-                    try {
-                        const scopeContainer = items[i]
-                        const selectElement = await scopeContainer.findElement(By.css('select'))
-                        const options = await selectElement.findElements(By.css('option'))
-                        const optionIndex = transport
-                        await options[optionIndex].click()
-                    } catch (e) {
-                        console.error('Error in case 2:', e)
-                        throw e
-                    }
-                    break
-                // type the command
-                case 3:
-                    try {
-                        const scopeContainer = items[i]
-                        const input = scopeContainer.findElement(By.css('.mynah-form-input'))
-                        await input.sendKeys(command)
-                    } catch (e) {
-                        console.error('Error in case 3:', e)
-                        throw e
-                    }
-                    break
-                // add arguments (NOTE: I AM PURPOSELY SKIPPING CASE 5)
-                case 4:
-                    try {
-                        const scopeContainer = items[i]
-                        const input = scopeContainer.findElement(By.css('.mynah-form-input'))
-                        const addButton = scopeContainer.findElement(
-                            By.css(
-                                '.mynah-button.mynah-button-secondary.fill-state-always.mynah-form-item-list-row-remove-button.mynah-ui-clickable-item'
-                            )
-                        )
-                        for (let i = 0; i < args.length; i++) {
-                            await input.sendKeys(args[i])
-                            await addButton.click()
-                        }
-                    } catch (e) {
-                        console.error('Error in case 5:', e)
-                        throw e
-                    }
-                    break
-                // THE ISSUE IS THAT CASE 5 ENCOMPASSES ALL THE HTML ELEMENTS NEEDED
-                case 5:
-                    try {
-                        if (nameEnvironmentVariable && valueEnvironmentVariable) {
-                            const scopeContainer = items[i]
+        const a = await container.findElements(By.css('.mynah-form-input-radio-label.mynah-ui-clickable-item'))
+        if (scope === 'global') {
+            const b = a[0]
+            await b.click()
+        } else {
+            const b = a[1]
+            await b.click()
+        }
+    } catch (e) {
+        console.error('Error selecting the scope:', e)
+        throw e
+    }
+}
 
-                            const nameContainer = items[6]
-                            const inputName = nameContainer.findElement(By.css('.mynah-form-input'))
-                            await inputName.sendKeys(nameEnvironmentVariable)
+async function inputName(container: WebElement, name: string) {
+    try {
+        const input = container.findElement(By.css('.mynah-form-input'))
+        await input.sendKeys(name)
+    } catch (e) {
+        console.error('Error inputing the name:', e)
+        throw e
+    }
+}
 
-                            const valueContainer = items[7]
-                            const inputValue = valueContainer.findElement(By.css('.mynah-form-input'))
-                            await inputValue.sendKeys(valueEnvironmentVariable)
-                            const addButton = scopeContainer.findElement(
-                                By.css(
-                                    '.mynah-button.mynah-button-secondary.fill-state-always.mynah-form-item-list-row-remove-button.mynah-ui-clickable-item'
-                                )
-                            )
-                            await addButton.click()
-                        }
-                    } catch (e) {
-                        console.error('Error in case 5:', e)
-                        throw e
-                    }
-                    break
-                // this timeout container goes to the environment variable
-                case 9:
-                    try {
-                        const scopeContainer = items[i]
-                        const input = scopeContainer.findElement(By.css('.mynah-form-input'))
-                        await input.sendKeys(timeout)
-                    } catch (e) {
-                        console.error('Error in case 8:', e)
-                        throw e
-                    }
-                    break
+async function selectTransport(container: WebElement, transport: number) {
+    try {
+        const selectElement = await container.findElement(By.css('select'))
+        const options = await selectElement.findElements(By.css('option'))
+        const optionIndex = transport
+        await options[optionIndex].click()
+    } catch (e) {
+        console.error('Error selecting the transport:', e)
+        throw e
+    }
+}
+
+async function inputCommand(container: WebElement, command: string) {
+    try {
+        const input = container.findElement(By.css('.mynah-form-input'))
+        await input.sendKeys(command)
+    } catch (e) {
+        console.error('Error inputing the command:', e)
+        throw e
+    }
+}
+
+async function inputArgs(container: WebElement, args: string[]) {
+    try {
+        const input = container.findElement(By.css('.mynah-form-input'))
+        const addButton = container.findElement(
+            By.css(
+                '.mynah-button.mynah-button-secondary.fill-state-always.mynah-form-item-list-row-remove-button.mynah-ui-clickable-item'
+            )
+        )
+        for (let i = 0; i < args.length; i++) {
+            await input.sendKeys(args[i])
+            await addButton.click()
+        }
+    } catch (e) {
+        console.error('Error inputing the arguments:', e)
+        throw e
+    }
+}
+
+async function inputEnvironmentVariables(
+    container: WebElement,
+    nameEnvironmentVariable?: string,
+    valueEnvironmentVariable?: string
+) {
+    try {
+        if (nameEnvironmentVariable && valueEnvironmentVariable) {
+            const a = await container.findElements(By.css('.mynah-form-input'))
+            await a[0].sendKeys(nameEnvironmentVariable)
+            await a[1].sendKeys(valueEnvironmentVariable)
+            const addButton = await container.findElement(By.css('.mynah-form-item-list-add-button'))
+            await addButton.click()
+        } else {
+            console.log('No environmental variables for this configuration')
+        }
+    } catch (e) {
+        console.error('Error inputing the environment variables:', e)
+        throw e
+    }
+}
+
+async function inputTimeout(container: WebElement, timeout: number) {
+    try {
+        const input = container.findElement(By.css('.mynah-form-input'))
+        await input.clear()
+        await input.sendKeys(timeout)
+    } catch (e) {
+        console.error('Error inputing the timeout:', e)
+        throw e
+    }
+}
+
+async function processFormItems(mcpFormItem: McpFormItem, container: WebElement, config: MCPServerConfig) {
+    switch (mcpFormItem) {
+        case 'SCOPE':
+            await selectScope(container, config.scope!)
+            break
+        case 'NAME':
+            await inputName(container, config.name!)
+            break
+        case 'TRANSPORT':
+            await selectTransport(container, config.transport!)
+            break
+        case 'COMMAND':
+            await inputCommand(container, config.command!)
+            break
+        case 'ARGS':
+            await inputArgs(container, config.args!)
+            break
+        case 'ENV_VARS':
+            await inputEnvironmentVariables(container, config.nameEnvironmentVariable, config.valueEnvironmentVariable)
+            break
+        case 'TIMEOUT':
+            await inputTimeout(container, config.timeout!)
+            break
+    }
+}
+
+export async function configureMCPServer(webviewView: WebviewView, config: MCPServerConfig = {}): Promise<boolean> {
+    const mergedConfig = { ...defaultConfig, ...config }
+    try {
+        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
+        const sheetBody = await sheetWrapper.findElement(By.css('.mynah-sheet-body'))
+        const filtersWrapper = await sheetBody.findElement(By.css('.mynah-detailed-list-filters-wrapper'))
+        const formContainer = await filtersWrapper.findElement(By.css('.mynah-chat-item-form-items-container'))
+        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+
+        for (const [formItem, index] of Object.entries(formItemsMap)) {
+            if (index < items.length) {
+                await processFormItems(formItem as McpFormItem, items[index], mergedConfig)
             }
         }
         return true
