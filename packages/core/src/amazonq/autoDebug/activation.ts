@@ -41,10 +41,7 @@ export function getDefaultAutoDebugConfig(): Partial<AutoDebugConfig> {
 
     return {
         enabled: config.get<boolean>('enabled', true),
-        autoReportThreshold: config.get<number>('autoReportThreshold', 1),
-        includedSources: config.get<string[]>('includedSources', []),
         excludedSources: config.get<string[]>('excludedSources', ['spell-checker']),
-        severityFilter: config.get<('error' | 'warning' | 'info' | 'hint')[]>('severityFilter', ['error', 'warning']),
-        debounceMs: config.get<number>('debounceMs', 1000),
+        severityFilter: config.get<('error' | 'warning' | 'info' | 'hint')[]>('severityFilter', ['error']),
     }
 }
