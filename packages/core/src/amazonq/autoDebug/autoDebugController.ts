@@ -39,7 +39,7 @@ export class AutoDebugController implements vscode.Disposable {
     constructor(config?: Partial<AutoDebugConfig>, client?: any, encryptionKey?: Buffer) {
         this.config = {
             enabled: true,
-            excludedSources: ['spell-checker'], // Common sources to exclude
+            excludedSources: [], // No default exclusions - let users configure as needed
             severityFilter: ['error'], // Only auto-fix errors, not warnings
             ...config,
         }
