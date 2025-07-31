@@ -23,6 +23,7 @@ import {
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -39,6 +40,7 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
+    DevSettings,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -50,6 +52,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { codeReviewInChat } from '../app/amazonqScan/models/constants'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -129,6 +132,15 @@ export async function startLanguageServer(
 
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
+    const endpointOverride = DevSettings.instance.get('codewhispererService', {}).endpoint ?? undefined
+    const textDocSection = {
+        inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
+    } as any
+
+    if (endpointOverride) {
+        textDocSection.endpointOverride = endpointOverride
+    }
+
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
@@ -169,17 +181,15 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
-                        codeReviewInChat: false,
+                        codeReviewInChat: codeReviewInChat,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                        showLogs: true,
+                        showLogs: isSageMaker() ? false : true,
                     },
                     textDocument: {
-                        inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
-                        },
+                        inlineCompletionWithReferences: textDocSection,
                     },
                 },
                 contextConfiguration: {
@@ -352,7 +362,12 @@ async function onLanguageServerReady(
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
             sessionManager.onNextSuggestion()
         }),
+        // this is a workaround since handleDidShowCompletionItem is not public API
+        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+            sessionManager.checkInlineSuggestionVisibility()
+        }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            vsCodeState.lastManualTriggerTime = performance.now()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {

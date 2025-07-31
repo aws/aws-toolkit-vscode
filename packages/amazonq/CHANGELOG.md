@@ -1,3 +1,9 @@
+## 1.86.0 2025-07-30
+
+- **Bug Fix** Let Enter invoke auto completion more consistently
+- **Bug Fix** Faster and more responsive inline completion UX
+- **Bug Fix** Use documentChangeEvent as auto trigger condition
+
 ## 1.85.0 2025-07-19
 
 - Miscellaneous non-user-facing changes
