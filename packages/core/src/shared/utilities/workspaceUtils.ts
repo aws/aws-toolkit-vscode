@@ -19,7 +19,6 @@ import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
-import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -378,6 +377,8 @@ export async function collectFiles(
 
     const includeContent = options?.includeContent ?? true
     const maxFileSizeBytes = options?.maxFileSizeBytes ?? 1024 * 1024 * 10
+    // Max allowed size for file collection
+    const maxRepoSizeBytes = 200 * 1024 * 1024
     const excludeByGitIgnore = options?.excludeByGitIgnore ?? true
     const failOnLimit = options?.failOnLimit ?? true
     const inputExcludePatterns = options?.excludePatterns ?? defaultExcludePatterns
