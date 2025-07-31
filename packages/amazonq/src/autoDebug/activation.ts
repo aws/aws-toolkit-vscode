@@ -8,6 +8,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { AutoDebugCommands } from './commands'
 import { AutoDebugCodeActionsProvider } from './codeActionsProvider'
 import { AutoDebugController } from './controller'
+import { registerAutoDebugFeature } from '../lsp/client'
 
 /**
  * Auto Debug feature activation for Amazon Q
@@ -75,5 +76,9 @@ export class AutoDebugFeature implements vscode.Disposable {
 export async function activateAutoDebug(context: vscode.ExtensionContext): Promise<AutoDebugFeature> {
     const feature = new AutoDebugFeature(context)
     await feature.activate()
+
+    // Register the feature with the module-level registry
+    registerAutoDebugFeature(feature)
+
     return feature
 }

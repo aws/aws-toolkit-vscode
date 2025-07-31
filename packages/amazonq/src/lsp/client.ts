@@ -52,6 +52,17 @@ import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorial
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { AutoDebugFeature } from '../autoDebug'
 
+// Module-level registry for AutoDebug feature
+let registeredAutoDebugFeature: AutoDebugFeature | undefined
+
+export function registerAutoDebugFeature(feature: AutoDebugFeature) {
+    registeredAutoDebugFeature = feature
+}
+
+export function getRegisteredAutoDebugFeature(): AutoDebugFeature | undefined {
+    return registeredAutoDebugFeature
+}
+
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
 
@@ -299,9 +310,9 @@ async function onLanguageServerReady(
 
         await retryWithExponentialBackoff(
             () => {
-                const autoDebugFeature = (global as any).autoDebugFeature as AutoDebugFeature | undefined
+                const autoDebugFeature = getRegisteredAutoDebugFeature()
                 if (!autoDebugFeature) {
-                    throw new Error('AutoDebug feature not available')
+                    throw new Error('AutoDebug feature not registered')
                 }
                 const controller = autoDebugFeature.getController()
                 if (!controller) {
