@@ -97,7 +97,7 @@ import {
     ViewDiffMessage,
     referenceLogText,
 } from 'aws-core-vscode/amazonq'
-import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
@@ -144,10 +144,13 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
     languageClient.onTelemetry((e) => {
         const telemetryName: string = e.name
-
-        if (telemetryName in telemetry) {
-            languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
-            telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
+        languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+        try {
+            // Flare is now the source of truth for metrics instead of depending on each IDE client and toolkit-common
+            const metric = (telemetry as any).getMetric(telemetryName)
+            metric?.emit(e.data)
+        } catch (error) {
+            languageClient.warn(`[VSCode Telemetry] Failed to emit ${telemetryName}: ${error}`)
         }
     })
 }
