@@ -645,7 +645,7 @@ export class IamLogin extends BaseLogin {
         }
 
         // Update cached credentials and credential ID
-        if (response.credential.credentials.accessKeyId && response.credential.credentials.secretAccessKey) {
+        if (response.credential?.credentials?.accessKeyId && response.credential?.credentials?.secretAccessKey) {
             this._data = {
                 accessKey: response.credential.credentials.accessKeyId,
                 secretKey: response.credential.credentials.secretAccessKey,

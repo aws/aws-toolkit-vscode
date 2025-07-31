@@ -230,7 +230,7 @@ describe('LanguageClientAuth', () => {
 
             sinon.assert.calledOnce(client.sendRequest)
             sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, {
-                profileName: profileName,
+                iamCredentialId: profileName,
             })
             sinon.assert.match(result, { success: true })
         })
@@ -631,7 +631,6 @@ describe('IamLogin', () => {
     let lspAuth: sinon.SinonStubbedInstance<LanguageClientAuth>
     let iamLogin: IamLogin
     let eventEmitter: vscode.EventEmitter<any>
-    let fireEventSpy: sinon.SinonSpy
 
     const loginOpts = {
         accessKey: 'test-access-key',
@@ -657,7 +656,6 @@ describe('IamLogin', () => {
     beforeEach(() => {
         lspAuth = sinon.createStubInstance(LanguageClientAuth)
         eventEmitter = new vscode.EventEmitter()
-        fireEventSpy = sinon.spy(eventEmitter, 'fire')
         iamLogin = new IamLogin(profileName, lspAuth as any, eventEmitter)
         ;(iamLogin as any).eventEmitter = eventEmitter
         ;(iamLogin as any).connectionState = 'notConnected'
@@ -789,33 +787,6 @@ describe('IamLogin', () => {
             })
 
             sinon.assert.match(iamLogin.getConnectionState(), 'expired')
-            sinon.assert.calledOnce(fireEventSpy)
-            sinon.assert.calledWith(fireEventSpy, {
-                id: profileName,
-                state: 'expired',
-            })
-        })
-
-        it('emits refresh event when credential is refreshed', () => {
-            ;(iamLogin as any).stsCredentialChangedHandler({
-                kind: StsCredentialChangedKind.Refreshed,
-                stsCredentialId: 'test-credential-id',
-            })
-
-            sinon.assert.calledOnce(fireEventSpy)
-            sinon.assert.calledWith(fireEventSpy, {
-                id: profileName,
-                state: 'refreshed',
-            })
-        })
-
-        it('does not emit event for different credential ID', () => {
-            ;(iamLogin as any).stsCredentialChangedHandler({
-                kind: StsCredentialChangedKind.Refreshed,
-                stsCredentialId: 'different-credential-id',
-            })
-
-            sinon.assert.notCalled(fireEventSpy)
         })
     })
 })

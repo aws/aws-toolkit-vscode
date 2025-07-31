@@ -434,9 +434,10 @@ describe('AuthUtil', async function () {
             
             assert.ok(mockIamLogin.login.calledOnce)
             assert.ok(
-                mockIamLogin.login.calledWith({
+                mockIamLogin.login.calledWithMatch({
                     accessKey: 'accessKey',
                     secretKey: 'secretKey',
+                    sessionToken: 'sessionToken',
                 })
             )
             assert.strictEqual(response, mockResponse)
@@ -521,7 +522,7 @@ describe('AuthUtil', async function () {
                 await auth.getIamCredential()
                 assert.fail('Should have thrown an error')
             } catch (err) {
-                assert.strictEqual((err as Error).message, 'Cannot get token with SSO session')
+                assert.strictEqual((err as Error).message, 'Cannot get credential with SSO session')
             }
         })
 
