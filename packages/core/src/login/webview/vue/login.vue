@@ -124,6 +124,16 @@
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
+                    :itemId="LoginOption.IAM_CREDENTIAL"
+                    :itemText="''"
+                    :itemTitle="'Use with IAM Credentials'"
+                    :itemType="LoginOption.IAM_CREDENTIAL"
+                    class="selectable-item bottomMargin"
+                ></SelectableItem>
+                <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
@@ -220,7 +230,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                <div v-if="selectedLoginOption === LoginOption.IAM_CREDENTIAL" class="header bottomMargin">
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
@@ -238,17 +248,19 @@
                 </svg>
             </button>
             <div class="header">IAM Credentials:</div>
-            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div class="title topMargin">Profile Name</div>
-            <div class="hint">The identifier for these credentials</div>
-            <input
-                class="iamInput bottomMargin"
-                type="text"
-                id="profileName"
-                name="profileName"
-                v-model="profileName"
-                @keydown.enter="handleContinueClick()"
-            />
+            <div v-if="app === 'TOOLKIT'">
+                <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+                <div class="title topMargin">Profile Name</div>
+                <div class="hint">The identifier for these credentials</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="profileName"
+                    name="profileName"
+                    v-model="profileName"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <div class="title">Access Key</div>
             <input
                 class="iamInput bottomMargin"
@@ -261,12 +273,32 @@
             <div class="title">Secret Key</div>
             <input
                 class="iamInput bottomMargin"
-                type="text"
+                type="password"
                 id="secretKey"
                 name="secretKey"
                 v-model="secretKey"
                 @keydown.enter="handleContinueClick()"
             />
+            <div v-if="app === 'AMAZONQ'">
+                <div class="title">Session Token (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="sessionToken"
+                    name="sessionToken"
+                    v-model="sessionToken"
+                    @keydown.enter="handleContinueClick()"
+                />
+                <div class="title">Role ARN (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="roleArn"
+                    name="roleArn"
+                    v-model="roleArn"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
             </button>
@@ -318,6 +350,10 @@ interface ImportedLogin {
     type: number
     startUrl: string
     region: string
+    // Add IAM credential fields
+    profileName?: string
+    accessKey?: string
+    secretKey?: string // Note: storing secrets has security implications
 }
 
 export default defineComponent({
@@ -337,6 +373,7 @@ export default defineComponent({
     data() {
         return {
             existingStartUrls: [] as string[],
+            existingIamAccessKeys: [] as string[],
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
@@ -350,12 +387,18 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            sessionToken: '',
+            roleArn: '',
         }
     },
     async created() {
         const defaultSso = await this.getDefaultSso()
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
+        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        const defaultRoleArn = await this.getDefaultRoleArn()
+        this.accessKey = defaultIamAccessKey.accessKey
+        this.roleArn = defaultRoleArn.roleArn
         await this.emitUpdate('created')
     },
 
@@ -385,6 +428,10 @@ export default defineComponent({
             }
         },
         handleDocumentClick(event: any) {
+            // Only reset selection when in START stage to avoid clearing during authentication
+            if (this.stage !== 'START') {
+                return
+            }
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
             if (!isClickInsideSelectableItems) {
                 this.selectedLoginOption = 0
@@ -425,19 +472,49 @@ export default defineComponent({
                     const selectedConnection =
                         this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
-                    const error = await client.startEnterpriseSetup(
-                        selectedConnection.startUrl,
-                        selectedConnection.region,
-                        this.app
-                    )
-                    if (error) {
-                        this.stage = 'START'
-                        void client.errorNotification(error)
-                    } else {
-                        this.stage = 'CONNECTED'
+                    // // Imported connections cannot be Builder IDs, they are filtered out in the client.
+                    // const error = await client.startEnterpriseSetup(
+                    //     selectedConnection.startUrl,
+                    //     selectedConnection.region,
+                    //     this.app
+                    // )
+                    // if (error) {
+                    //     this.stage = 'START'
+                    //     void client.errorNotification(error)
+                    // } else {
+                    //     this.stage = 'CONNECTED'
+                    // }
+                    // Handle both SSO and IAM imported connections
+                    if (selectedConnection.type === LoginOption.ENTERPRISE_SSO) {
+                        const error = await client.startEnterpriseSetup(
+                            selectedConnection.startUrl,
+                            selectedConnection.region,
+                            this.app
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
+                    } else if (selectedConnection.type === LoginOption.IAM_CREDENTIAL) {
+                        // Use stored IAM credentials
+                        const error = await client.startIamCredentialSetup(
+                            selectedConnection.profileName || '',
+                            selectedConnection.accessKey || '',
+                            selectedConnection.secretKey || ''
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
+                    // Emit telemetry when IAM Credentials option is selected and Continue is clicked
+                    void client.emitUiClick('auth_credentialsOption')
+
                     this.stage = 'AWS_PROFILE'
                     this.$nextTick(() => document.getElementById('profileName')!.focus())
                 }
@@ -459,7 +536,13 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                const error = await client.startIamCredentialSetup(
+                    this.profileName,
+                    this.accessKey,
+                    this.secretKey,
+                    this.sessionToken,
+                    this.roleArn
+                )
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -569,6 +652,12 @@ export default defineComponent({
         async getDefaultSso() {
             return await client.getDefaultSsoProfile()
         },
+        async getDefaultIamAccessKey() {
+            return await client.getDefaultIamKeys()
+        },
+        async getDefaultRoleArn() {
+            return await client.getDefaultRoleArn()
+        },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
         },
@@ -587,7 +676,11 @@ export default defineComponent({
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
         },
         shouldDisableIamContinue() {
-            return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            if (this.app === 'TOOLKIT') {
+                return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            } else {
+                return this.accessKey.length <= 0 || this.secretKey.length <= 0
+            }
         },
     },
 })

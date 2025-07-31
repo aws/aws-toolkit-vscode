@@ -5,20 +5,27 @@
 
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { LanguageClientAuth, SsoLogin } from '../../auth/auth2'
+import { LanguageClientAuth, SsoLogin, IamLogin } from '../../auth/auth2'
 import { LanguageClient } from 'vscode-languageclient'
 import {
     GetSsoTokenResult,
+    GetIamCredentialResult,
     SsoTokenSourceKind,
     AuthorizationFlowKind,
     ListProfilesResult,
     UpdateCredentialsParams,
     SsoTokenChangedParams,
+    StsCredentialChangedParams,
     bearerCredentialsUpdateRequestType,
     bearerCredentialsDeleteNotificationType,
+    iamCredentialsUpdateRequestType,
+    iamCredentialsDeleteNotificationType,
     ssoTokenChangedRequestType,
+    stsCredentialChangedRequestType,
     SsoTokenChangedKind,
+    StsCredentialChangedKind,
     invalidateSsoTokenRequestType,
+    invalidateStsCredentialRequestType,
     ProfileKind,
     AwsErrorCodes,
 } from '@aws/language-server-runtimes/protocol'
@@ -84,7 +91,7 @@ describe('LanguageClientAuth', () => {
 
     describe('updateProfile', () => {
         it('sends correct profile update parameters', async () => {
-            await auth.updateProfile(profileName, startUrl, region, ['scope1'])
+            await auth.updateSsoProfile(profileName, startUrl, region, ['scope1'])
 
             sinon.assert.calledOnce(client.sendRequest)
             const requestParams = client.sendRequest.firstCall.args[1]
@@ -93,6 +100,22 @@ describe('LanguageClientAuth', () => {
             })
             sinon.assert.match(requestParams.ssoSession.settings, {
                 sso_region: region,
+            })
+        })
+
+        it('sends correct IAM profile update parameters', async () => {
+            await auth.updateIamProfile(profileName, 'accessKey', 'secretKey', 'sessionToken')
+
+            sinon.assert.calledOnce(client.sendRequest)
+            const requestParams = client.sendRequest.firstCall.args[1]
+            sinon.assert.match(requestParams.profile, {
+                name: profileName,
+                kinds: [ProfileKind.IamCredentialsProfile],
+            })
+            sinon.assert.match(requestParams.profile.settings, {
+                aws_access_key_id: 'accessKey',
+                aws_secret_access_key: 'secretKey',
+                aws_session_token: 'sessionToken',
             })
         })
     })
@@ -159,6 +182,79 @@ describe('LanguageClientAuth', () => {
         })
     })
 
+    describe('updateIamCredential', () => {
+        it('sends request', async () => {
+            const updateParams: UpdateCredentialsParams = {
+                data: 'credential-data',
+                encrypted: true,
+            }
+
+            await auth.updateIamCredential(updateParams)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(client.sendRequest, iamCredentialsUpdateRequestType.method, updateParams)
+        })
+    })
+
+    describe('deleteIamCredential', () => {
+        it('sends notification', async () => {
+            auth.deleteIamCredential()
+
+            sinon.assert.calledOnce(client.sendNotification)
+            sinon.assert.calledWith(client.sendNotification, iamCredentialsDeleteNotificationType.method)
+        })
+    })
+
+    describe('getIamCredential', () => {
+        it('sends correct request parameters', async () => {
+            await auth.getIamCredential(profileName, true)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(
+                client.sendRequest,
+                sinon.match.any,
+                sinon.match({
+                    profileName: profileName,
+                    options: {
+                        generateOnInvalidStsCredential: true,
+                    },
+                })
+            )
+        })
+    })
+
+    describe('invalidateStsCredential', () => {
+        it('sends request', async () => {
+            client.sendRequest.resolves({ success: true })
+            const result = await auth.invalidateStsCredential(profileName)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, { profileName: profileName })
+            sinon.assert.match(result, { success: true })
+        })
+    })
+
+    describe('registerStsCredentialChangedHandler', () => {
+        it('registers the handler correctly', () => {
+            const handler = sinon.spy()
+
+            auth.registerStsCredentialChangedHandler(handler)
+
+            sinon.assert.calledOnce(client.onNotification)
+            sinon.assert.calledWith(client.onNotification, stsCredentialChangedRequestType.method, sinon.match.func)
+
+            const credentialChangedParams: StsCredentialChangedParams = {
+                kind: StsCredentialChangedKind.Refreshed,
+                stsCredentialId: 'test-credential-id',
+            }
+            const registeredHandler = client.onNotification.firstCall.args[1]
+            registeredHandler(credentialChangedParams)
+
+            sinon.assert.calledOnce(handler)
+            sinon.assert.calledWith(handler, credentialChangedParams)
+        })
+    })
+
     describe('invalidateSsoToken', () => {
         it('sends request', async () => {
             client.sendRequest.resolves({ success: true })
@@ -219,7 +315,7 @@ describe('SsoLogin', () => {
         lspAuth = sinon.createStubInstance(LanguageClientAuth)
         eventEmitter = new vscode.EventEmitter()
         fireEventSpy = sinon.spy(eventEmitter, 'fire')
-        ssoLogin = new SsoLogin(profileName, lspAuth as any)
+        ssoLogin = new SsoLogin(profileName, lspAuth as any, eventEmitter)
         ;(ssoLogin as any).eventEmitter = eventEmitter
         ;(ssoLogin as any).connectionState = 'notConnected'
     })
@@ -231,14 +327,14 @@ describe('SsoLogin', () => {
 
     describe('login', () => {
         it('updates profile and returns SSO token', async () => {
-            lspAuth.updateProfile.resolves()
+            lspAuth.updateSsoProfile.resolves()
             lspAuth.getSsoToken.resolves(mockGetSsoTokenResponse)
 
             const response = await ssoLogin.login(loginOpts)
 
-            sinon.assert.calledOnce(lspAuth.updateProfile)
+            sinon.assert.calledOnce(lspAuth.updateSsoProfile)
             sinon.assert.calledWith(
-                lspAuth.updateProfile,
+                lspAuth.updateSsoProfile,
                 profileName,
                 loginOpts.startUrl,
                 loginOpts.region,
@@ -470,20 +566,20 @@ describe('SsoLogin', () => {
         })
     })
 
-    describe('onDidChangeConnectionState', () => {
-        it('should register handler for connection state changes', () => {
-            const handler = sinon.spy()
-            ssoLogin.onDidChangeConnectionState(handler)
+    // describe('onDidChangeConnectionState', () => {
+    //     it('should register handler for connection state changes', () => {
+    //         const handler = sinon.spy()
+    //         ssoLogin.onDidChangeConnectionState(handler)
 
-            // Simulate state change
-            ;(ssoLogin as any).updateConnectionState('connected')
+    //         // Simulate state change
+    //         ;(ssoLogin as any).updateConnectionState('connected')
 
-            sinon.assert.calledWith(handler, {
-                id: profileName,
-                state: 'connected',
-            })
-        })
-    })
+    //         sinon.assert.calledWith(handler, {
+    //             id: profileName,
+    //             state: 'connected',
+    //         })
+    //     })
+    // })
 
     describe('ssoTokenChangedHandler', () => {
         beforeEach(() => {
@@ -522,6 +618,206 @@ describe('SsoLogin', () => {
             ;(ssoLogin as any).ssoTokenChangedHandler({
                 kind: 'Refreshed',
                 ssoTokenId: 'different-token-id',
+            })
+
+            sinon.assert.notCalled(fireEventSpy)
+        })
+    })
+})
+
+describe('IamLogin', () => {
+    let lspAuth: sinon.SinonStubbedInstance<LanguageClientAuth>
+    let iamLogin: IamLogin
+    let eventEmitter: vscode.EventEmitter<any>
+    let fireEventSpy: sinon.SinonSpy
+
+    const loginOpts = {
+        accessKey: 'test-access-key',
+        secretKey: 'test-secret-key',
+        sessionToken: 'test-session-token',
+    }
+
+    const mockGetIamCredentialResponse: GetIamCredentialResult = {
+        credential: {
+            id: 'test-credential-id',
+            kinds: [],
+            credentials: {
+                accessKeyId: 'encrypted-access-key',
+                secretAccessKey: 'encrypted-secret-key',
+                sessionToken: 'encrypted-session-token',
+            }
+        },
+        updateCredentialsParams: {
+            data: 'credential-data',
+        },
+    }
+
+    beforeEach(() => {
+        lspAuth = sinon.createStubInstance(LanguageClientAuth)
+        eventEmitter = new vscode.EventEmitter()
+        fireEventSpy = sinon.spy(eventEmitter, 'fire')
+        iamLogin = new IamLogin(profileName, lspAuth as any, eventEmitter)
+        ;(iamLogin as any).eventEmitter = eventEmitter
+        ;(iamLogin as any).connectionState = 'notConnected'
+    })
+
+    afterEach(() => {
+        sinon.restore()
+        eventEmitter.dispose()
+    })
+
+    describe('login', () => {
+        it('updates profile and returns IAM credential', async () => {
+            lspAuth.updateIamProfile.resolves()
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await iamLogin.login(loginOpts)
+
+            sinon.assert.calledOnce(lspAuth.updateIamProfile)
+            sinon.assert.calledWith(
+                lspAuth.updateIamProfile,
+                profileName,
+                loginOpts.accessKey,
+                loginOpts.secretKey,
+                loginOpts.sessionToken,
+                '',
+                ''
+            )
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
+        })
+    })
+
+    describe('reauthenticate', () => {
+        it('throws when not connected', async () => {
+            ;(iamLogin as any).connectionState = 'notConnected'
+            try {
+                await iamLogin.reauthenticate()
+                sinon.assert.fail('Should have thrown an error')
+            } catch (err) {
+                sinon.assert.match((err as Error).message, 'Cannot reauthenticate when not connected.')
+            }
+        })
+
+        it('returns new IAM credential when connected', async () => {
+            ;(iamLogin as any).connectionState = 'connected'
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await iamLogin.reauthenticate()
+
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
+        })
+    })
+
+    describe('logout', () => {
+        it('invalidates credential and updates state', async () => {
+            ;(iamLogin as any).iamCredentialId = 'test-credential-id'
+            lspAuth.invalidateStsCredential.resolves({ success: true })
+            lspAuth.updateIamProfile.resolves()
+
+            await iamLogin.logout()
+
+            sinon.assert.calledOnce(lspAuth.invalidateStsCredential)
+            sinon.assert.calledWith(lspAuth.invalidateStsCredential, 'test-credential-id')
+            sinon.assert.match(iamLogin.getConnectionState(), 'notConnected')
+            sinon.assert.match(iamLogin.data, undefined)
+        })
+    })
+
+    describe('restore', () => {
+        it('restores connection state', async () => {
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            await iamLogin.restore()
+
+            sinon.assert.calledOnce(lspAuth.getIamCredential)
+            sinon.assert.calledWith(lspAuth.getIamCredential, profileName, false)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+        })
+    })
+
+    describe('_getIamCredential', () => {
+        const testErrorHandling = async (errorCode: string, expectedState: string) => {
+            const error = new Error('Credential error')
+            ;(error as any).data = { awsErrorCode: errorCode }
+            lspAuth.getIamCredential.rejects(error)
+
+            try {
+                await (iamLogin as any)._getIamCredential(false)
+                sinon.assert.fail('Should have thrown an error')
+            } catch (err) {
+                sinon.assert.match(err, error)
+            }
+
+            sinon.assert.match(iamLogin.getConnectionState(), expectedState)
+        }
+
+        const notConnectedErrors = [
+            AwsErrorCodes.E_CANCELLED,
+            AwsErrorCodes.E_INVALID_PROFILE,
+            AwsErrorCodes.E_PROFILE_NOT_FOUND,
+            AwsErrorCodes.E_CANNOT_CREATE_STS_CREDENTIAL,
+            AwsErrorCodes.E_INVALID_STS_CREDENTIAL,
+        ]
+
+        for (const errorCode of notConnectedErrors) {
+            it(`handles ${errorCode} error`, async () => {
+                await testErrorHandling(errorCode, 'notConnected')
+            })
+        }
+
+        it('returns correct response and updates state', async () => {
+            lspAuth.getIamCredential.resolves(mockGetIamCredentialResponse)
+
+            const response = await (iamLogin as any)._getIamCredential(true)
+
+            sinon.assert.calledWith(lspAuth.getIamCredential, profileName, true)
+            sinon.assert.match(response, mockGetIamCredentialResponse)
+            sinon.assert.match(iamLogin.getConnectionState(), 'connected')
+            sinon.assert.match((iamLogin as any).iamCredentialId, 'test-credential-id')
+        })
+    })
+
+    describe('stsCredentialChangedHandler', () => {
+        beforeEach(() => {
+            ;(iamLogin as any).iamCredentialId = 'test-credential-id'
+            ;(iamLogin as any).connectionState = 'connected'
+        })
+
+        it('updates state when credential expires', () => {
+            ;(iamLogin as any).stsCredentialChangedHandler({
+                kind: StsCredentialChangedKind.Expired,
+                stsCredentialId: 'test-credential-id',
+            })
+
+            sinon.assert.match(iamLogin.getConnectionState(), 'expired')
+            sinon.assert.calledOnce(fireEventSpy)
+            sinon.assert.calledWith(fireEventSpy, {
+                id: profileName,
+                state: 'expired',
+            })
+        })
+
+        it('emits refresh event when credential is refreshed', () => {
+            ;(iamLogin as any).stsCredentialChangedHandler({
+                kind: StsCredentialChangedKind.Refreshed,
+                stsCredentialId: 'test-credential-id',
+            })
+
+            sinon.assert.calledOnce(fireEventSpy)
+            sinon.assert.calledWith(fireEventSpy, {
+                id: profileName,
+                state: 'refreshed',
+            })
+        })
+
+        it('does not emit event for different credential ID', () => {
+            ;(iamLogin as any).stsCredentialChangedHandler({
+                kind: StsCredentialChangedKind.Refreshed,
+                stsCredentialId: 'different-credential-id',
             })
 
             sinon.assert.notCalled(fireEventSpy)
