@@ -65,7 +65,3 @@ export function createMynahUI(
 }
 
 export * from './commons/types'
-
-// AutoDebug feature exports
-export { AutoDebugFeature, AutoDebugController, AutoDebugConfig, AutoDebugLspClient } from './autoDebug/index'
-export { activateAutoDebug, getDefaultAutoDebugConfig } from './autoDebug/activation'

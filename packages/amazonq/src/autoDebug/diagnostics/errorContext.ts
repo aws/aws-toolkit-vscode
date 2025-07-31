@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger/logger'
+import { getLogger } from 'aws-core-vscode/shared'
 import { Problem } from './problemDetector'
 
 export interface ErrorContext {
@@ -35,7 +35,7 @@ export interface FormattedErrorReport {
  * Formats diagnostic errors into contextual information for AI debugging assistance.
  */
 export class ErrorContextFormatter {
-    private readonly logger = getLogger('amazonqLsp')
+    private readonly logger = getLogger()
 
     constructor() {
         this.logger.debug('ErrorContextFormatter: Initializing error context formatter')

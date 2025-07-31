@@ -50,7 +50,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
-import { AutoDebugFeature } from 'aws-core-vscode/amazonq'
+import { AutoDebugFeature } from '../autoDebug'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -303,7 +303,11 @@ async function onLanguageServerReady(
                 if (!autoDebugFeature) {
                     throw new Error('AutoDebug feature not available')
                 }
-                autoDebugFeature.setLanguageClient(client, encryptionKey)
+                const controller = autoDebugFeature.getController()
+                if (!controller) {
+                    throw new Error('AutoDebug controller not available')
+                }
+                controller.setLanguageClient(client)
                 getLogger('amazonqLsp').debug('AutoDebug feature connected successfully')
             },
             {

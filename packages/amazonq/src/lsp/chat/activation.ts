@@ -17,15 +17,15 @@ import { activate as registerLegacyChatListeners } from '../../app/chat/activati
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import { pushConfigUpdate } from '../config'
+import { AutoDebugLspClient } from '../../autoDebug/lsp/autoDebugLspClient'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
     const provider = new AmazonQChatViewProvider(mynahUIPath, languageClient)
 
-    // Store the provider and focusAmazonQPanel globally so AutoDebug can access them
-    ;(global as any).amazonQChatViewProvider = provider
-    ;(global as any).focusAmazonQPanel = focusAmazonQPanel
+    // Set the chat view provider for AutoDebug to use
+    AutoDebugLspClient.setChatViewProvider(provider)
 
     disposables.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {

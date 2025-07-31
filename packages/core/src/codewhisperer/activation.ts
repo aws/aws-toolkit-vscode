@@ -85,7 +85,6 @@ import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWeb
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 import { activateEditTracking } from './nextEditPrediction/activation'
 import { notifySelectDeveloperProfile } from './region/utils'
-import { activateAutoDebug } from '../amazonq/autoDebug/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -485,20 +484,6 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     activateEditTracking(context)
-
-    // Activate AutoDebug feature
-    try {
-        getLogger().debug('Starting AutoDebug feature activation')
-        const autoDebugFeature = await activateAutoDebug(context.extensionContext)
-        getLogger().info('AutoDebug feature activated successfully')
-
-        // Store the feature instance for later LSP connection
-        ;(global as any).autoDebugFeature = autoDebugFeature
-        // Add the feature to extension subscriptions for proper cleanup
-        context.extensionContext.subscriptions.push(autoDebugFeature)
-    } catch (error) {
-        getLogger().warn('Continuing extension activation despite AutoDebug feature failure')
-    }
 }
 
 export async function shutdown() {

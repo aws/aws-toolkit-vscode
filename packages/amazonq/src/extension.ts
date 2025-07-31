@@ -46,6 +46,7 @@ import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
 import { hasGlibcPatch } from './lsp/client'
+import { activateAutoDebug } from './autoDebug/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -143,6 +144,15 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // Amazon Q specific commands
     registerCommands(context)
+
+    // Activate Auto Debug feature
+    try {
+        const autoDebugFeature = await activateAutoDebug(context)
+        context.subscriptions.push(autoDebugFeature)
+        getLogger().info('Amazon Q Auto Debug feature activated successfully')
+    } catch (error) {
+        getLogger().error('Failed to activate Auto Debug feature: %s', error)
+    }
 
     // Handle Amazon Q Extension un-installation.
     setupUninstallHandler(VSCODE_EXTENSION_ID.amazonq, context.extension.packageJSON.version, context)

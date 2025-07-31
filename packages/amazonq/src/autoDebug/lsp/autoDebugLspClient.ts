@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../../shared/logger/logger'
+import { getLogger, placeholder } from 'aws-core-vscode/shared'
+import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { Problem } from '../diagnostics/problemDetector'
 import { ErrorContext } from '../diagnostics/errorContext'
 
@@ -67,11 +68,19 @@ export interface AutoDebugSuggestion {
 }
 
 export class AutoDebugLspClient {
-    private readonly logger = getLogger('amazonqLsp')
+    private readonly logger = getLogger()
     private languageClient: any // LanguageClient from vscode-languageclient
+    private static chatViewProvider: any // AmazonQChatViewProvider instance
 
     constructor(client?: any, encryptionKey?: Buffer) {
         this.languageClient = client
+    }
+
+    /**
+     * Sets the chat view provider instance (called during activation)
+     */
+    public static setChatViewProvider(provider: any): void {
+        AutoDebugLspClient.chatViewProvider = provider
     }
 
     /**
@@ -89,19 +98,16 @@ export class AutoDebugLspClient {
 
     public async sendChatMessage(params: { message: string; triggerType: string; eventId: string }): Promise<boolean> {
         try {
-            // Get the webview provider (stored globally during activation)
-            const amazonQChatViewProvider = (global as any).amazonQChatViewProvider
+            // Get the webview provider from the static reference
+            const amazonQChatViewProvider = AutoDebugLspClient.chatViewProvider
 
             if (!amazonQChatViewProvider?.webview) {
                 this.logger.error('AutoDebugLspClient: Amazon Q Chat View Provider not available')
                 return false
             }
 
-            // Focus Amazon Q panel first
-            const focusAmazonQPanel = (global as any).focusAmazonQPanel
-            if (focusAmazonQPanel) {
-                await focusAmazonQPanel()
-            }
+            // Focus Amazon Q panel first using the imported function
+            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
 
             // Wait for panel to focus
             await new Promise((resolve) => setTimeout(resolve, 200))
@@ -135,11 +141,8 @@ export class AutoDebugLspClient {
                 )
 
                 if (choice === 'Copy & Send Manually') {
-                    // Try to focus the panel
-                    const focusAmazonQPanel = (global as any).focusAmazonQPanel
-                    if (focusAmazonQPanel) {
-                        await focusAmazonQPanel()
-                    }
+                    // Try to focus the panel using the imported function
+                    await focusAmazonQPanel.execute(placeholder, 'autoDebug')
                     vscode.window.showInformationMessage(
                         'AutoDebug message copied to clipboard. Please paste it in Amazon Q chat and press Enter.'
                     )

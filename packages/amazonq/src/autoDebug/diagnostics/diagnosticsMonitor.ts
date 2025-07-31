@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger/logger'
-import { ToolkitError } from '../../../shared/errors'
+import { getLogger } from 'aws-core-vscode/shared'
+import { ToolkitError } from 'aws-core-vscode/shared'
 
 export interface DiagnosticCollection {
     readonly diagnostics: [vscode.Uri, vscode.Diagnostic[]][]
@@ -28,7 +28,7 @@ export interface FileDiagnostics {
  * Implements smart filtering and debounced event handling to avoid excessive API calls.
  */
 export class DiagnosticsMonitor implements vscode.Disposable {
-    private readonly logger = getLogger('amazonqLsp')
+    private readonly logger = getLogger()
     private readonly diagnosticsChangeEmitter = new vscode.EventEmitter<DiagnosticCollection>()
     private readonly disposables: vscode.Disposable[] = []
     private lastDiagnostics: DiagnosticCollection | undefined
