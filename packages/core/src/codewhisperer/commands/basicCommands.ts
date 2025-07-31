@@ -60,7 +60,6 @@ import { SecurityIssueProvider } from '../service/securityIssueProvider'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { closeDiff, getPatchedCode } from '../../shared/utilities/diffUtils'
 import { insertCommentAboveLine } from '../../shared/utilities/commentUtils'
-import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
@@ -170,20 +169,6 @@ export const showLogs = Commands.declare(
             // Fallback: show error if log path is not available
             void vscode.window.showErrorMessage('Log location not available.')
         }
-    }
-)
-
-export const showExploreAgentsView = Commands.declare(
-    { id: 'aws.amazonq.exploreAgents', compositeKey: { 1: 'source' } },
-    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        if (_ !== placeholder) {
-            source = 'ellipsesMenu'
-        }
-
-        DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
-            sender: 'amazonqCore',
-            command: 'showExploreAgentsView',
-        })
     }
 )
 
