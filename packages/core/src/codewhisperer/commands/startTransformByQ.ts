@@ -749,15 +749,14 @@ export async function postTransformationJob() {
             })
     }
 
+    // delete original upload ZIP at very end of transformation
+    fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
+
     if (
         transformByQState.isSucceeded() ||
         transformByQState.isPartiallySucceeded() ||
         transformByQState.isCancelled()
     ) {
-        if (transformByQState.getPayloadFilePath()) {
-            // delete original upload ZIP at very end of transformation
-            fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
-        }
         // delete the copy of the upload ZIP
         fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
         // delete transformation job metadata file (no longer needed)
@@ -801,7 +800,7 @@ export async function postTransformationJob() {
         ]
 
         const jobDetails = fields.join('\t') + '\n'
-        fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' })
+        fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' }) // 'a' flag used to append to file
         await vscode.commands.executeCommand(
             'aws.amazonq.transformationHub.updateContent',
             'job history',

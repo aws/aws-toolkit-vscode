@@ -1157,6 +1157,7 @@ export class TransformByQState {
         this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
+        this.jobHistoryPath = ''
     }
 }
 
