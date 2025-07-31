@@ -1,3 +1,7 @@
+## 1.87.0 2025-07-31
+
+- Miscellaneous non-user-facing changes
+
 ## 1.86.0 2025-07-30
 
 - **Bug Fix** Let Enter invoke auto completion more consistently
