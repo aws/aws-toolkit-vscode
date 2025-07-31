@@ -11,6 +11,12 @@ type Range = { line: number; start: number; end: number }
 
 const logger = getLogger('nextEditPrediction')
 export const imageVerticalOffset = 1
+export const emptyDiffSvg = {
+    svgImage: vscode.Uri.parse(''),
+    startLine: 0,
+    newCode: '',
+    originalCodeHighlightRange: [],
+}
 
 export class SvgGenerationService {
     /**
@@ -27,7 +33,7 @@ export class SvgGenerationService {
         svgImage: vscode.Uri
         startLine: number
         newCode: string
-        origionalCodeHighlightRange: Range[]
+        originalCodeHighlightRange: Range[]
     }> {
         const textDoc = await vscode.workspace.openTextDocument(filePath)
         const originalCode = textDoc.getText().replaceAll('\r\n', '\n')
@@ -52,6 +58,21 @@ export class SvgGenerationService {
 
         // Get edit diffs with highlight
         const { addedLines, removedLines } = this.getEditedLinesFromDiff(udiff)
+
+        // Calculate dimensions based on code content
+        const { offset, editStartLine, isPositionValid } = this.calculatePosition(
+            originalCode.split('\n'),
+            newCode.split('\n'),
+            addedLines,
+            currentTheme
+        )
+
+        // if the position for the EDITS suggestion is not valid (there is no difference between new
+        // and current code content), return EMPTY_DIFF_SVG and skip the suggestion.
+        if (!isPositionValid) {
+            return emptyDiffSvg
+        }
+
         const highlightRanges = this.generateHighlightRanges(removedLines, addedLines, modifiedLines)
         const diffAddedWithHighlight = this.getHighlightEdit(addedLines, highlightRanges.addedRanges)
 
@@ -61,13 +82,6 @@ export class SvgGenerationService {
         registerWindow(window, document)
         const draw = SVG(document.documentElement) as any
 
-        // Calculate dimensions based on code content
-        const { offset, editStartLine } = this.calculatePosition(
-            originalCode.split('\n'),
-            newCode.split('\n'),
-            addedLines,
-            currentTheme
-        )
         const { width, height } = this.calculateDimensions(addedLines, currentTheme)
         draw.size(width + offset, height)
 
@@ -86,7 +100,7 @@ export class SvgGenerationService {
             svgImage: vscode.Uri.parse(svgResult),
             startLine: editStartLine,
             newCode: newCode,
-            origionalCodeHighlightRange: highlightRanges.removedRanges,
+            originalCodeHighlightRange: highlightRanges.removedRanges,
         }
     }
 
@@ -356,12 +370,23 @@ export class SvgGenerationService {
         newLines: string[],
         diffLines: string[],
         theme: editorThemeInfo
-    ): { offset: number; editStartLine: number } {
+    ): { offset: number; editStartLine: number; isPositionValid: boolean } {
         // Determine the starting line of the edit in the original file
         let editStartLineInOldFile = 0
         const maxLength = Math.min(originalLines.length, newLines.length)
 
         for (let i = 0; i <= maxLength; i++) {
+            // if there is no difference between the original lines and the new lines, skip calculating for the start position.
+            if (i === maxLength && originalLines[i] === newLines[i] && originalLines.length === newLines.length) {
+                logger.info(
+                    'There is no difference between current and new code suggestion. Skip calculating for start position.'
+                )
+                return {
+                    offset: 0,
+                    editStartLine: 0,
+                    isPositionValid: false,
+                }
+            }
             if (originalLines[i] !== newLines[i] || i === maxLength) {
                 editStartLineInOldFile = i
                 break
@@ -386,7 +411,7 @@ export class SvgGenerationService {
         const startLineLength = originalLines[startLine]?.length || 0
         const offset = (maxLineLength - startLineLength) * theme.fontSize * 0.7 + 10 // padding
 
-        return { offset, editStartLine: editStartLineInOldFile }
+        return { offset, editStartLine: editStartLineInOldFile, isPositionValid: true }
     }
 
     private escapeHtml(text: string): string {
