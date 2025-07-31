@@ -1221,6 +1221,42 @@
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "languageServer_setup",
+            "description": "Sets up a language server",
+            "unit": "Milliseconds",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "languageServerSetupStage",
+                    "required": true
+                },
+                {
+                    "type": "languageServerLocation",
+                    "required": false
+                },
+                {
+                    "type": "languageServerVersion",
+                    "required": false
+                },
+                {
+                    "type": "manifestLocation",
+                    "required": false
+                },
+                {
+                    "type": "manifestSchemaVersion",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
         }
     ]
 }
