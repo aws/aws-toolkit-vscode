@@ -191,13 +191,8 @@ export class GumbyController {
 
     private async transformInitiated(message: any) {
         // check if any jobs potentially still in progress on backend
-        const history = readHistoryFile()
-        let numInProgress = 0
-        history.forEach((job) => {
-            if (job.status === 'FAILED') {
-                numInProgress += 1
-            }
-        })
+        const history = await readHistoryFile()
+        const numInProgress = history.filter((job) => job.status === 'FAILED').length
         this.messenger.sendViewHistoryMessage(message.tabID, numInProgress)
         if (transformByQState.isRefreshInProgress()) {
             this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')

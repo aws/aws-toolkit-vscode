@@ -12,7 +12,8 @@ import {
     TransformationHubViewProvider,
     readHistoryFile,
 } from '../../codewhisperer/service/transformByQ/transformationHubViewProvider'
-import fs from 'fs'
+import fs from '../../shared/fs/fs'
+import nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import { postTransformationJob } from '../../codewhisperer/commands/startTransformByQ'
 import * as transformApiHandler from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import * as vscode from 'vscode'
@@ -20,14 +21,70 @@ import * as vscode from 'vscode'
 describe('Transformation Job History', function () {
     let transformationHub: TransformationHubViewProvider
 
-    interface HistoryObject {
-        startTime: string
-        projectName: string
-        status: string
-        duration: string
-        diffPath: string
-        summaryPath: string
-        jobId: string
+    // Mock job objects
+    const mockJobs = {
+        completed: {
+            startTime: '07/14/25, 09:00 AM',
+            projectName: 'old-project',
+            status: 'COMPLETED',
+            duration: '3 min',
+            diffPath: '/path/to/diff.patch',
+            summaryPath: '/path/to/summary.md',
+            jobId: 'old-job-456',
+        } as CodeWhispererConstants.HistoryObject,
+
+        transforming: {
+            startTime: '07/14/25, 10:00 AM',
+            projectName: 'incomplete-project',
+            status: 'TRANSFORMING',
+            duration: '3 min',
+            diffPath: '',
+            summaryPath: '',
+            jobId: 'inc-100',
+        } as CodeWhispererConstants.HistoryObject,
+
+        failed: {
+            startTime: '07/14/25, 09:00 AM',
+            projectName: 'old-project',
+            status: 'FAILED',
+            duration: '3 min',
+            diffPath: '',
+            summaryPath: '',
+            jobId: 'fail-100',
+        } as CodeWhispererConstants.HistoryObject,
+
+        failedBE: {
+            startTime: '07/10/25, 10:00 AM',
+            projectName: 'failed-project',
+            status: 'FAILED_BE',
+            duration: '3 min',
+            diffPath: '',
+            summaryPath: '',
+            jobId: 'failbe-300',
+        } as CodeWhispererConstants.HistoryObject,
+
+        stopped: {
+            startTime: '07/14/25, 10:00 AM',
+            projectName: 'cancelled-project',
+            status: 'STOPPED',
+            duration: '3 min',
+            diffPath: '',
+            summaryPath: '',
+            jobId: 'stop-200',
+        } as CodeWhispererConstants.HistoryObject,
+    }
+
+    // setup function helpers
+    function setupRunningJob(jobId = 'running-job-123') {
+        sinon.stub(transformByQState, 'isRunning').returns(true)
+        sinon.stub(transformByQState, 'getJobId').returns(jobId)
+        sessionJobHistory[jobId] = {
+            startTime: '07/14/25, 11:00 AM',
+            projectName: 'running-project',
+            status: 'TRANSFORMING',
+            duration: '2 min',
+        }
+        return jobId
     }
 
     beforeEach(function () {
@@ -50,37 +107,7 @@ describe('Transformation Job History', function () {
         })
 
         it('Can see previously run jobs', function () {
-            const mockHistory: HistoryObject[] = [
-                {
-                    startTime: '07/14/25, 09:00 AM',
-                    projectName: 'old-project',
-                    status: 'COMPLETED',
-                    duration: '3 min',
-                    diffPath: '/path/to/diff.patch',
-                    summaryPath: '/path/to/summary.md',
-                    jobId: 'old-job-456',
-                },
-                {
-                    startTime: '07/14/25, 10:00 AM',
-                    projectName: 'incomplete-project',
-                    status: 'TRANSFORMING',
-                    duration: '3 min',
-                    diffPath: '',
-                    summaryPath: '',
-                    jobId: 'inc-100',
-                },
-                {
-                    startTime: '07/10/25, 10:00 AM',
-                    projectName: 'failed-project',
-                    status: 'FAILED_BE',
-                    duration: '3 min',
-                    diffPath: '',
-                    summaryPath: '',
-                    jobId: 'fail-300',
-                },
-            ]
-
-            transformationHub['transformationHistory'] = mockHistory
+            transformationHub['transformationHistory'] = [mockJobs.completed, mockJobs.transforming, mockJobs.failedBE]
             sinon.stub(transformByQState, 'isRunning').returns(false)
 
             const result = transformationHub['showJobHistory']()
@@ -96,34 +123,15 @@ describe('Transformation Job History', function () {
         })
 
         it('Can see running job at top of table', function () {
-            const mockHistory: HistoryObject[] = [
-                {
-                    startTime: '07/14/25, 09:00 AM',
-                    projectName: 'old-project',
-                    status: 'COMPLETED',
-                    duration: '3 min',
-                    diffPath: '/path/to/diff.patch',
-                    summaryPath: '/path/to/summary.md',
-                    jobId: 'old-job-456',
-                },
-            ]
-            transformationHub['transformationHistory'] = mockHistory
-
-            sinon.stub(transformByQState, 'isRunning').returns(true)
-            sinon.stub(transformByQState, 'getJobId').returns('running-job-123')
-            sessionJobHistory['running-job-123'] = {
-                startTime: '07/14/25, 11:00 AM',
-                projectName: 'running-project',
-                status: 'TRANSFORMING',
-                duration: '2 min',
-            }
+            transformationHub['transformationHistory'] = [mockJobs.completed]
+            const runningJobId = setupRunningJob()
 
             const result = transformationHub['showJobHistory']()
 
             const runningIndex = result.indexOf('running-project')
             const oldIndex = result.indexOf('old-project')
             assert(runningIndex < oldIndex, 'Running job should appear before completed jobs')
-            assert(result.includes('row-id="running-job-123"'))
+            assert(result.includes(`row-id="${runningJobId}"`))
             assert(result.includes('old-job-456'))
         })
     })
@@ -131,27 +139,26 @@ describe('Transformation Job History', function () {
     describe('Job history file operations', function () {
         let fsExistsStub: sinon.SinonStub
         let fsReadStub: sinon.SinonStub
-        let fsWriteStub: sinon.SinonStub
+        let nodeFsWriteStub: sinon.SinonStub
 
         beforeEach(function () {
-            fsExistsStub = sinon.stub(fs, 'existsSync')
-            fsReadStub = sinon.stub(fs, 'readFileSync')
-            fsWriteStub = sinon.stub(fs, 'writeFileSync')
+            fsExistsStub = sinon.stub(fs, 'existsFile')
+            fsReadStub = sinon.stub(fs, 'readFileText')
         })
 
         describe('Reading history file', function () {
-            it('Returns empty array when history file does not exist', function () {
-                fsExistsStub.returns(false)
+            it('Returns empty array when history file does not exist', async function () {
+                fsExistsStub.resolves(false)
 
-                const result = (transformationHub['transformationHistory'] = readHistoryFile())
+                const result = (transformationHub['transformationHistory'] = await readHistoryFile())
 
                 assert.strictEqual(result.length, 0, 'Should return empty array when file does not exist')
                 sinon.assert.calledOnce(fsExistsStub)
                 sinon.assert.notCalled(fsReadStub)
             })
 
-            it('Only includes jobs within 30 days', function () {
-                fsExistsStub.returns(true)
+            it('Only includes jobs within 30 days', async function () {
+                fsExistsStub.resolves(true)
 
                 const recentDate = new Date()
                 const oldDate = new Date(recentDate.getDate() - 40) // 40 days ago
@@ -177,15 +184,15 @@ describe('Transformation Job History', function () {
                     `${recentDateStr}\trecent-project\tCOMPLETED\t3 min\t/path/diff.patch\t/path/summary.md\tjob-123\n` +
                     `${oldDateStr}\told-project\tCOMPLETED\t5 min\t/path/diff.patch\t/path/summary.md\tjob-456\n`
 
-                fsReadStub.returns(mockHistoryContent)
+                fsReadStub.resolves(mockHistoryContent)
 
-                const result = readHistoryFile()
+                const result = await readHistoryFile()
                 assert.strictEqual(result.length, 1, 'Should only include jobs within 30 days')
                 assert.strictEqual(result[0].projectName, 'recent-project')
             })
 
-            it('Limits history to 10 most recent jobs', function () {
-                fsExistsStub.returns(true)
+            it('Limits history to 10 most recent jobs', async function () {
+                fsExistsStub.resolves(true)
 
                 // Create 15 job entries
                 let mockHistoryContent = 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'
@@ -193,9 +200,9 @@ describe('Transformation Job History', function () {
                     mockHistoryContent += `07/${i}/25, 09:00 AM\tproject-${i}\tCOMPLETED\t3 min\t/path/diff.patch\t/path/summary.md\tjob-${i}\n`
                 }
 
-                fsReadStub.returns(mockHistoryContent)
+                fsReadStub.resolves(mockHistoryContent)
 
-                const result = readHistoryFile()
+                const result = await readHistoryFile()
 
                 assert.strictEqual(result.length, 10, 'Should limit to 10 jobs')
                 // Should have the most recent jobs (highest numbers)
@@ -219,20 +226,21 @@ describe('Transformation Job History', function () {
                     duration: '4 min',
                 }
 
-                fsExistsStub.returns(false) // Assuming history file doesn't exist yet
+                nodeFsWriteStub = sinon.stub(nodeFs, 'writeFileSync')
+                sinon.stub(nodeFs, 'existsSync').returns(false) // Assuming history file doesn't exist yet
                 const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
                 sinon.stub(transformApiHandler, 'updateJobHistory')
 
                 await postTransformationJob()
 
                 sinon.assert.calledWith(
-                    fsWriteStub.firstCall,
+                    nodeFsWriteStub.firstCall,
                     sinon.match(/transformation_history\.tsv$/),
                     'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'
                 )
 
                 sinon.assert.calledWith(
-                    fsWriteStub.secondCall,
+                    nodeFsWriteStub.secondCall,
                     sinon.match(/transformation_history\.tsv$/),
                     sinon.match(/test-project.*COMPLETED.*4 min.*diff\.patch.*summary\.md.*completed-job-123/),
                     { flag: 'a' }
@@ -251,70 +259,24 @@ describe('Transformation Job History', function () {
 
     describe('Refresh button logic', function () {
         it('Cannot click refresh button when a job is running', function () {
-            const mockHistory: HistoryObject[] = [
-                {
-                    startTime: '07/14/25, 09:00 AM',
-                    projectName: 'old-project',
-                    status: 'COMPLETED',
-                    duration: '3 min',
-                    diffPath: '/path/to/diff.patch',
-                    summaryPath: '/path/to/summary.md',
-                    jobId: 'old-job-456',
-                },
-                {
-                    startTime: '07/14/25, 10:00 AM',
-                    projectName: 'incomplete-project',
-                    status: 'FAILED',
-                    duration: '3 min',
-                    diffPath: '',
-                    summaryPath: '',
-                    jobId: 'inc-100',
-                },
-            ]
-            transformationHub['transformationHistory'] = mockHistory
-
-            sinon.stub(transformByQState, 'isRunning').returns(true)
-            sinon.stub(transformByQState, 'getJobId').returns('running-job-123')
-            sessionJobHistory['running-job-123'] = {
-                startTime: '07/14/25, 11:00 AM',
-                projectName: 'running-project',
-                status: 'TRANSFORMING',
-                duration: '2 min',
-            }
+            transformationHub['transformationHistory'] = [mockJobs.completed, mockJobs.failed]
+            const runningJobId = setupRunningJob()
 
             const result = transformationHub['showJobHistory']()
 
-            const runningJobButtonRegex = new RegExp(`row-id="running-job-123"[^>]*disabled`, 'i')
-            const incompleteJobButtonRegex = new RegExp(`row-id="inc-100"[^>]*disabled`, 'i')
+            const runningJobButtonRegex = new RegExp(`row-id="${runningJobId}"[^>]*disabled`, 'i')
+            const incompleteJobButtonRegex = new RegExp(`row-id="fail-100"[^>]*disabled`, 'i')
             const completedJobButtonRegex = new RegExp(`row-id="old-job-456"[^>]*disabled`, 'i')
             assert(
-                runningJobButtonRegex.test(result) && incompleteJobButtonRegex && completedJobButtonRegex.test(result),
+                runningJobButtonRegex.test(result) &&
+                    incompleteJobButtonRegex.test(result) &&
+                    completedJobButtonRegex.test(result),
                 "All jobs' refresh buttons should be disabled"
             )
         })
 
         it('Cannot click refresh button of STOPPED jobs', function () {
-            const mockHistory: HistoryObject[] = [
-                {
-                    startTime: '07/14/25, 09:00 AM',
-                    projectName: 'old-project',
-                    status: 'COMPLETED',
-                    duration: '3 min',
-                    diffPath: '/path/to/diff.patch',
-                    summaryPath: '/path/to/summary.md',
-                    jobId: 'old-job-456',
-                },
-                {
-                    startTime: '07/14/25, 10:00 AM',
-                    projectName: 'cancelled-project',
-                    status: 'STOPPED',
-                    duration: '3 min',
-                    diffPath: '',
-                    summaryPath: '',
-                    jobId: 'stop-200',
-                },
-            ]
-            transformationHub['transformationHistory'] = mockHistory
+            transformationHub['transformationHistory'] = [mockJobs.completed, mockJobs.stopped]
 
             sinon.stub(transformByQState, 'isRunning').returns(false)
 
@@ -325,35 +287,15 @@ describe('Transformation Job History', function () {
         })
 
         it('Cannot click refresh button of jobs that failed on backend', function () {
-            const mockHistory: HistoryObject[] = [
-                {
-                    startTime: '07/14/25, 09:00 AM',
-                    projectName: 'old-project',
-                    status: 'FAILED',
-                    duration: '3 min',
-                    diffPath: '/path/to/diff.patch',
-                    summaryPath: '/path/to/summary.md',
-                    jobId: 'old-job-456',
-                },
-                {
-                    startTime: '07/14/25, 10:00 AM',
-                    projectName: 'failed-project',
-                    status: 'FAILED_BE',
-                    duration: '3 min',
-                    diffPath: '',
-                    summaryPath: '',
-                    jobId: 'fail-100',
-                },
-            ]
-            transformationHub['transformationHistory'] = mockHistory
+            transformationHub['transformationHistory'] = [mockJobs.failed, mockJobs.failedBE]
 
             sinon.stub(transformByQState, 'isRunning').returns(false)
 
             const result = transformationHub['showJobHistory']()
 
-            const runningJobButtonRegex = new RegExp(`row-id="fail-100"[^>]*disabled`, 'i')
+            const runningJobButtonRegex = new RegExp(`row-id="failbe-300"[^>]*disabled`, 'i')
             assert(runningJobButtonRegex.test(result), "FAILED_BE job's refresh button should be disabled")
-            const completedJobButtonRegex = new RegExp(`row-id="old-job-456"[^>]*disabled`, 'i')
+            const completedJobButtonRegex = new RegExp(`row-id="fail-100"[^>]*disabled`, 'i')
             assert(!completedJobButtonRegex.test(result), "Incomplete (FAILED) job's refresh button should be enabled")
         })
     })
@@ -367,7 +309,7 @@ describe('Transformation Job History', function () {
             })
 
             it('Does not fetch status for already completed jobs', async function () {
-                sinon.stub(transformationHub as any, 'retrieveArtifacts').resolves('')
+                sinon.stub(transformationHub as any, 'retrieveArtifacts').resolves('') // TODO: refactor TransformationHubViewProvider and extract private methods
                 sinon.stub(transformationHub as any, 'updateHistoryFile').resolves()
 
                 await transformationHub['refreshJob']('job-123', 'COMPLETED', 'test-project')
@@ -396,14 +338,14 @@ describe('Transformation Job History', function () {
 
         describe('Downloading artifacts', function () {
             it('Does not download artifacts when diff patch already exists', async function () {
-                const fsExistsStub = sinon.stub(fs, 'existsSync').returns(true)
+                const fsExistsStub = sinon.stub(fs, 'existsFile').resolves(true)
                 const jobHistoryPath = await transformationHub['retrieveArtifacts']('job-123', 'test-project')
 
                 sinon.assert.called(fsExistsStub)
                 assert.strictEqual(jobHistoryPath, '', 'Should return empty string when diff already exists')
             })
 
-            it('Does not call attempt to download artifacts for FAILED/STOPPED jobs', async function () {
+            it('Does not attempt to download artifacts for FAILED/STOPPED jobs', async function () {
                 const mockResponse = {
                     transformationJob: {
                         status: 'STOPPED',
@@ -426,41 +368,48 @@ describe('Transformation Job History', function () {
 
         describe('Updating history file', function () {
             let fsWriteStub: sinon.SinonStub
-            let fsReadStub: sinon.SinonStub
-            let fsExistsStub: sinon.SinonStub
+            let fsAppendStub: sinon.SinonStub
 
-            beforeEach(function () {
-                fsWriteStub = sinon.stub(fs, 'writeFileSync')
-                fsReadStub = sinon.stub(fs, 'readFileSync')
-                fsExistsStub = sinon.stub(fs, 'existsSync')
-            })
+            // mocks and setup
+            const mockHistoryContent =
+                'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n' +
+                '07/14/25, 09:00 AM\ttest-project\tFAILED\t5 min\t\t\tjob-123\n' +
+                '07/14/25, 10:00 AM\tother-project\tCOMPLETED\t3 min\t/path/diff.patch\t/path/summary.md\tjob-456\n'
 
-            it('Updates existing job entry in history file', async function () {
-                const mockHistoryContent =
-                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n' +
-                    '07/14/25, 09:00 AM\ttest-project\tFAILED\t5 min\t\t\tjob-123\n' +
-                    '07/14/25, 10:00 AM\tother-project\tCOMPLETED\t3 min\t/path/diff.patch\t/path/summary.md\tjob-456\n'
-
-                fsExistsStub.returns(true)
-                fsReadStub.returns(mockHistoryContent)
-
-                const mockResponse = {
+            function createMockTransformationResponse(status: string, timeOffset = 300000) {
+                return {
                     transformationJob: {
-                        status: 'STOPPED',
+                        status,
                         endExecutionTime: new Date(),
-                        creationTime: new Date(Date.now() - 300000),
+                        creationTime: new Date(Date.now() - timeOffset),
                     },
                 } as any
+            }
 
+            function setupRefreshJobTest(mockResponse: any) {
                 const codeWhispererClientStub = sinon
                     .stub(codeWhispererClient, 'codeModernizerGetCodeTransformation')
                     .resolves(mockResponse)
                 const retrieveArtifactsStub = sinon.stub(transformationHub as any, 'retrieveArtifacts').resolves('')
 
+                return { codeWhispererClientStub, retrieveArtifactsStub }
+            }
+
+            beforeEach(function () {
+                fsWriteStub = sinon.stub(fs, 'writeFile').resolves()
+                fsAppendStub = sinon.stub(fs, 'appendFile').resolves()
+                sinon.stub(fs, 'readFileText').resolves(mockHistoryContent)
+                sinon.stub(fs, 'existsFile').resolves(true)
+            })
+
+            it('Updates existing job entry in history file', async function () {
+                const mockResponse = createMockTransformationResponse('STOPPED')
+                const { codeWhispererClientStub, retrieveArtifactsStub } = setupRefreshJobTest(mockResponse)
+
                 await transformationHub['refreshJob']('job-123', 'FAILED', 'test-project')
 
-                sinon.assert.calledTwice(fsWriteStub)
-                const writtenContent = fsWriteStub.args[1][1]
+                sinon.assert.called(fsAppendStub)
+                const writtenContent = fsAppendStub.args[0][1]
                 const updatedJobLine = writtenContent.split('\n').find((line: string) => line.includes('job-123'))
                 assert(updatedJobLine.includes('STOPPED'), 'Status should be updated to STOPPED')
                 assert(updatedJobLine.includes('5 min'), 'Duration should remain 5 min')
@@ -471,31 +420,14 @@ describe('Transformation Job History', function () {
             })
 
             it('Updates history file when job FAILED on backend', async function () {
-                const mockHistoryContent =
-                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n' +
-                    '07/14/25, 09:00 AM\ttest-project\tFAILED\t5 min\t\t\tjob-123\n' +
-                    '07/14/25, 10:00 AM\tother-project\tCOMPLETED\t3 min\t/path/diff.patch\t/path/summary.md\tjob-456\n'
-
-                fsExistsStub.returns(true)
-                fsReadStub.returns(mockHistoryContent)
-
-                const mockResponse = {
-                    transformationJob: {
-                        status: 'FAILED',
-                        endExecutionTime: new Date(),
-                        creationTime: new Date(Date.now() - 300000),
-                    },
-                } as any
-
-                const codeWhispererClientStub = sinon
-                    .stub(codeWhispererClient, 'codeModernizerGetCodeTransformation')
-                    .resolves(mockResponse)
-                const retrieveArtifactsStub = sinon.stub(transformationHub as any, 'retrieveArtifacts').resolves('')
+                const mockResponse = createMockTransformationResponse('FAILED')
+                const { codeWhispererClientStub, retrieveArtifactsStub } = setupRefreshJobTest(mockResponse)
 
                 await transformationHub['refreshJob']('job-123', 'FAILED', 'test-project')
 
-                sinon.assert.calledTwice(fsWriteStub)
-                const writtenContent = fsWriteStub.args[1][1]
+                sinon.assert.called(fsWriteStub)
+                sinon.assert.called(fsAppendStub)
+                const writtenContent = fsAppendStub.args[0][1]
                 const updatedJobLine = writtenContent.split('\n').find((line: string) => line.includes('job-123'))
                 assert(updatedJobLine.includes('FAILED_BE'), 'Status should be updated to FAILED_BE')
                 assert(updatedJobLine.includes('5 min'), 'Duration should remain 5 min')
@@ -525,13 +457,6 @@ describe('Transformation Job History', function () {
             })
 
             it('Updates content in the UI after updating history file', async function () {
-                const mockHistoryContent =
-                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n' +
-                    '07/14/25, 09:00 AM\ttest-project\tPLANNING\t2 min\t\t\tjob-123\n'
-
-                fsExistsStub.returns(true)
-                fsReadStub.returns(mockHistoryContent)
-
                 const updateContentStub = sinon.stub(transformationHub, 'updateContent').resolves()
                 await transformationHub['updateHistoryFile']('COMPLETED', '5 min', '/new/path', 'job-123')
                 sinon.assert.calledWith(updateContentStub, 'job history', undefined, true)

@@ -812,7 +812,8 @@ export const viewHistoryMessage = (numInProgress: number) =>
         : 'View previous transformations run from the IDE'
 
 export const transformationHistoryTableDescription =
-    'This table lists the most recent jobs that you have run in the past 30 days. To open the diff patch and summary files, click the provided links. Jobs with a status of FAILED may still be in progress. Resume them within 12 hours of starting the job to get an updated job status and artifacts. Click the refresh icon to do so. The diff patch and summary will appear once they are available.'
+    'This table lists the most recent jobs that you have run in the past 30 days. To open the diff patch and summary files, click the provided links. To get an updated job status, click the refresh icon. The diff patch and summary will appear once they are available.<br><br>' +
+    'Jobs with a status of FAILED may still be in progress. Resume these jobs within 12 hours of starting the job to get an updated job status and artifacts.'
 
 export const refreshErrorChatMessage =
     "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
@@ -939,3 +940,14 @@ export const codeReviewFindingsSuffix = '_codeReviewFindings'
 export const displayFindingsSuffix = '_displayFindings'
 
 export const displayFindingsDetectorName = 'DisplayFindings'
+export const findingsSuffix = '_codeReviewFindings'
+
+export interface HistoryObject {
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    diffPath: string
+    summaryPath: string
+    jobId: string
+}

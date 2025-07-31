@@ -451,10 +451,16 @@ export class ProposedTransformationExplorer {
                     transformByQState.getSummaryFilePath(),
                     path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
                 )
-                fs.copyFileSync(
-                    path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log'),
-                    path.join(transformByQState.getJobHistoryPath(), 'summary', 'buildCommandOutput.log')
-                )
+                if (
+                    fs.existsSync(
+                        path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log')
+                    )
+                ) {
+                    fs.copyFileSync(
+                        path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log'),
+                        path.join(transformByQState.getJobHistoryPath(), 'summary', 'buildCommandOutput.log')
+                    )
+                }
 
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)

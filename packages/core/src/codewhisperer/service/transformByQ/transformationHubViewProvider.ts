@@ -26,36 +26,19 @@ import { startInterval, pollTransformationStatusUntilComplete } from '../../comm
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { convertToTimeString, isWithin30Days } from '../../../shared/datetime'
 import { AuthUtil } from '../../util/authUtil'
-import fs from 'fs'
+import fs from '../../../shared/fs/fs'
 import path from 'path'
 import os from 'os'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { setMaven } from './transformFileHandler'
-
-interface HistoryObject {
-    startTime: string
-    projectName: string
-    status: string
-    duration: string
-    diffPath: string
-    summaryPath: string
-    jobId: string
-}
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
     private _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
-    private transformationHistory: HistoryObject[] = []
-    constructor() {
-        vscode.commands.registerCommand(
-            'aws.amazonq.transformationHub.updateContent',
-            (button: 'job history' | 'plan progress', startTime?: number, historyFileUpdated?: boolean) => {
-                return this.updateContent(button, startTime, historyFileUpdated)
-            }
-        )
-    }
+    private transformationHistory: CodeWhispererConstants.HistoryObject[] = []
+    constructor() {}
     static #instance: TransformationHubViewProvider
 
     public async updateContent(
@@ -65,7 +48,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     ) {
         this.lastClickedButton = button
         if (historyFileUpdated) {
-            this.transformationHistory = readHistoryFile()
+            this.transformationHistory = await readHistoryFile()
         }
         if (this._view) {
             if (this.lastClickedButton === 'job history') {
@@ -91,23 +74,23 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         return (this.#instance ??= new this())
     }
 
-    public resolveWebviewView(
+    public async resolveWebviewView(
         webviewView: vscode.WebviewView,
         context: vscode.WebviewViewResolveContext<unknown>,
         token: vscode.CancellationToken
-    ): void | Thenable<void> {
+    ) {
         this._view = webviewView
 
         this._view.webview.onDidReceiveMessage((message) => {
             switch (message.command) {
                 case 'refreshJob':
-                    this.refreshJob(message.jobId, message.currentStatus, message.projectName)
+                    void this.refreshJob(message.jobId, message.currentStatus, message.projectName)
                     break
                 case 'openSummaryPreview':
-                    vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(message.filePath))
+                    void vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(message.filePath))
                     break
                 case 'openDiffFile':
-                    vscode.commands.executeCommand('vscode.open', vscode.Uri.file(message.filePath))
+                    void vscode.commands.executeCommand('vscode.open', vscode.Uri.file(message.filePath))
                     break
             }
         })
@@ -117,7 +100,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             localResourceRoots: [this._extensionUri],
         }
 
-        this.transformationHistory = readHistoryFile()
+        this.transformationHistory = await readHistoryFile()
         if (this.lastClickedButton === 'job history') {
             this._view!.webview.html = this.showJobHistory()
         } else {
@@ -132,7 +115,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private showJobHistory(): string {
-        const jobsToDisplay: HistoryObject[] = [...this.transformationHistory]
+        const jobsToDisplay: CodeWhispererConstants.HistoryObject[] = [...this.transformationHistory]
         if (transformByQState.isRunning()) {
             const current = sessionJobHistory[transformByQState.getJobId()]
             jobsToDisplay.unshift({
@@ -160,7 +143,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             <p>${CodeWhispererConstants.transformationHistoryTableDescription}</p>
             ${
                 jobsToDisplay.length === 0
-                    ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
+                    ? `<p><br>${CodeWhispererConstants.nothingToShowMessage}</p>`
                     : this.getTableMarkup(jobsToDisplay)
             }
             <script>
@@ -202,7 +185,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
-    private getTableMarkup(history: HistoryObject[]) {
+    private getTableMarkup(history: CodeWhispererConstants.HistoryObject[]) {
         return `
             <style>
             .refresh-btn {
@@ -286,7 +269,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     transformationJobId: jobId,
                     profileArn: undefined,
                 })
-                status = response.transformationJob.status!
+                status = response.transformationJob.status ?? currentStatus
                 if (response.transformationJob.endExecutionTime && response.transformationJob.creationTime) {
                     duration = convertToTimeString(
                         response.transformationJob.endExecutionTime.getTime() -
@@ -294,8 +277,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     )
                 }
 
-                getLogger().info(
-                    'Code Transformation: Job Id: %s\nFetched status: %s\nDuration: %s',
+                getLogger().debug(
+                    'Code Transformation: Job refresh - Fetched status for job id: %s\n{Status: %s; Duration: %s}',
                     jobId,
                     status,
                     duration
@@ -317,8 +300,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobHistoryPath = await this.retrieveArtifacts(jobId, projectName)
 
             // delete metadata and zipped code files, if they exist
-            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), { force: true })
-            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
+            await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), {
+                force: true,
+            })
+            await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
                 force: true,
             })
         } else if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
@@ -333,94 +318,34 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             }
             transformByQState.setRefreshInProgress(true)
             const messenger = transformByQState.getChatMessenger()
-            if (messenger) {
-                messenger.sendJobRefreshInProgressMessage(ChatSessionManager.Instance.getSession().tabID!, jobId)
-            }
+            const tabID = ChatSessionManager.Instance.getSession().tabID
+            messenger?.sendJobRefreshInProgressMessage(tabID!, jobId)
+            void this.updateContent('job history') // refreshing the table disables all jobs' refresh buttons while this one is resuming
 
-            // set state to prepare to resume job
-            transformByQState.setJobId(jobId)
-            transformByQState.setPolledJobStatus(status)
+            // resume job and bring to completion
             try {
-                transformByQState.setJobHistoryPath(path.join(os.homedir(), '.aws', 'transform', projectName, jobId))
-                const metadataFile = fs.readFileSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), {
-                    encoding: 'utf8',
-                    flag: 'r',
-                })
-                const metadata = metadataFile.split('\t')
-                transformByQState.setTransformationType(metadata[1] as TransformationType)
-                transformByQState.setSourceJDKVersion(metadata[2] as JDKVersion)
-                transformByQState.setTargetJDKVersion(metadata[3] as JDKVersion)
-                transformByQState.setCustomDependencyVersionFilePath(metadata[4])
-                transformByQState.setPayloadFilePath(
-                    path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip')
-                )
-                setMaven()
-                transformByQState.setCustomBuildCommand(metadata[5])
-                transformByQState.setTargetJavaHome(metadata[6])
-                transformByQState.setProjectPath(metadata[7])
-                transformByQState.setStartTime(metadata[8])
-            } catch (e: any) {
-                // reaching this means there was most likely a problem with the metadata file
-                getLogger().error('Code Transformation: Error setting job state: %s', (e as Error).message)
-                transformByQState.setJobDefaults()
-                if (messenger) {
-                    messenger.sendJobFinishedMessage(
-                        ChatSessionManager.Instance.getSession().tabID!,
-                        CodeWhispererConstants.refreshErrorChatMessage
-                    )
-                }
-                void vscode.window.showErrorMessage(CodeWhispererConstants.refreshErrorNotification(jobId))
-                return
-            }
-
-            // resume polling job
-            try {
-                this.updateContent('job history') // refreshing the table disables all jobs' refresh buttons while this one is polling
-                status = await pollTransformationStatusUntilComplete(
-                    jobId,
-                    AuthUtil.instance.regionProfileManager.activeRegionProfile
-                )
-                if (
-                    CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(status) &&
-                    !CodeWhispererConstants.failureStates.includes(status)
-                ) {
-                    duration = convertToTimeString(
-                        new Date().getTime() - new Date(transformByQState.getStartTime()).getTime()
-                    )
-                    jobHistoryPath = await this.retrieveArtifacts(jobId, projectName)
-                    // delete payload and metadata files
-                    if (transformByQState.getPayloadFilePath()) {
-                        fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
-                    }
-                    fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
-                    // delete temporary build logs file
-                    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-                    if (fs.existsSync(logFilePath)) {
-                        fs.rmSync(logFilePath, { force: true })
-                    }
-                }
+                status = await this.resumeJob(jobId, projectName, status)
             } catch (e: any) {
                 getLogger().error('Code Transformation: Error resuming job (id: %s): %s', jobId, (e as Error).message)
                 transformByQState.setJobDefaults()
-                if (messenger) {
-                    messenger.sendJobFinishedMessage(
-                        ChatSessionManager.Instance.getSession().tabID!,
-                        CodeWhispererConstants.refreshErrorChatMessage
-                    )
-                }
+                messenger?.sendJobFinishedMessage(tabID!, CodeWhispererConstants.refreshErrorChatMessage)
                 void vscode.window.showErrorMessage(CodeWhispererConstants.refreshErrorNotification(jobId))
-                this.updateContent('job history') // re-enable refresh buttons
+                void this.updateContent('job history')
                 return
+            }
+
+            // download artifacts if available
+            if (
+                CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(status) &&
+                !CodeWhispererConstants.failureStates.includes(status)
+            ) {
+                duration = convertToTimeString(Date.now() - new Date(transformByQState.getStartTime()).getTime())
+                jobHistoryPath = await this.retrieveArtifacts(jobId, projectName)
             }
 
             // reset state
             transformByQState.setJobDefaults()
-            if (messenger) {
-                messenger.sendJobFinishedMessage(
-                    ChatSessionManager.Instance.getSession().tabID!,
-                    CodeWhispererConstants.refreshCompletedChatMessage
-                )
-            }
+            messenger?.sendJobFinishedMessage(tabID!, CodeWhispererConstants.refreshCompletedChatMessage)
         } else {
             // FAILED or STOPPED job
             getLogger().info('Code Transformation: No artifacts available to download (job status = %s)', status)
@@ -429,8 +354,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 status = 'FAILED_BE' // this will be truncated to just 'FAILED' in the table
             }
             // delete metadata and zipped code files, if they exist
-            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), { force: true })
-            fs.rmSync(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
+            await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), {
+                force: true,
+            })
+            await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
                 force: true,
             })
         }
@@ -450,32 +377,32 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         const resultsPath = path.join(os.homedir(), '.aws', 'transform', projectName, 'results') // temporary directory for extraction
         let jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', projectName, jobId)
 
-        if (fs.existsSync(path.join(jobHistoryPath, 'diff.patch'))) {
+        if (await fs.existsFile(path.join(jobHistoryPath, 'diff.patch'))) {
             getLogger().info('Code Transformation: Diff patch already exists for job id: %s', jobId)
             jobHistoryPath = ''
         } else {
             try {
                 await downloadAndExtractResultArchive(jobId, resultsPath)
 
-                if (!fs.existsSync(path.join(jobHistoryPath, 'summary'))) {
-                    fs.mkdirSync(path.join(jobHistoryPath, 'summary'), { recursive: true })
+                if (!(await fs.existsDir(path.join(jobHistoryPath, 'summary')))) {
+                    await fs.mkdir(path.join(jobHistoryPath, 'summary'))
                 }
-                fs.copyFileSync(path.join(resultsPath, 'patch', 'diff.patch'), path.join(jobHistoryPath, 'diff.patch'))
-                fs.copyFileSync(
+                await fs.copy(path.join(resultsPath, 'patch', 'diff.patch'), path.join(jobHistoryPath, 'diff.patch'))
+                await fs.copy(
                     path.join(resultsPath, 'summary', 'summary.md'),
                     path.join(jobHistoryPath, 'summary', 'summary.md')
                 )
-                fs.copyFileSync(
-                    path.join(resultsPath, 'summary', 'buildCommandOutput.log'),
-                    path.join(jobHistoryPath, 'summary', 'buildCommandOutput.log')
-                )
+                if (await fs.existsFile(path.join(resultsPath, 'summary', 'buildCommandOutput.log'))) {
+                    await fs.copy(
+                        path.join(resultsPath, 'summary', 'buildCommandOutput.log'),
+                        path.join(jobHistoryPath, 'summary', 'buildCommandOutput.log')
+                    )
+                }
             } catch (error) {
                 jobHistoryPath = ''
             } finally {
-                if (fs.existsSync(resultsPath)) {
-                    fs.rmSync(resultsPath, { recursive: true, force: true })
-                }
-                getLogger().info('Code Transformation: Deleted temporary extraction directory')
+                // delete temporary extraction directory
+                await fs.delete(resultsPath, { recursive: true, force: true })
             }
         }
         return jobHistoryPath
@@ -484,12 +411,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     private async updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
         const history: string[][] = []
         const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
-        if (fs.existsSync(historyLogFilePath)) {
-            const historyFile = fs.readFileSync(historyLogFilePath, { encoding: 'utf8', flag: 'r' })
+        if (await fs.existsFile(historyLogFilePath)) {
+            const historyFile = await fs.readFileText(historyLogFilePath)
             const jobs = historyFile.split('\n')
             jobs.shift() // removes headers
             if (jobs.length > 0) {
-                jobs.forEach((job) => {
+                for (const job of jobs) {
                     if (job) {
                         const jobInfo = job.split('\t')
                         // startTime: jobInfo[0], projectName: jobInfo[1], status: jobInfo[2], duration: jobInfo[3], diffPath: jobInfo[4], summaryPath: jobInfo[5], jobId: jobInfo[6]
@@ -506,18 +433,62 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         }
                         history.push(jobInfo)
                     }
-                })
+                }
             }
         }
-        if (history.length > 0) {
-            // rewrite file
-            fs.writeFileSync(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
-            const tsvContent = history.map((row) => row.join('\t')).join('\n') + '\n'
-            fs.writeFileSync(historyLogFilePath, tsvContent, { flag: 'a' })
 
-            // update table content
-            await this.updateContent('job history', undefined, true)
+        if (history.length === 0) {
+            return
         }
+
+        // rewrite file
+        await fs.writeFile(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
+        const tsvContent = history.map((row) => row.join('\t')).join('\n') + '\n'
+        await fs.appendFile(historyLogFilePath, tsvContent)
+
+        // update table content
+        await this.updateContent('job history', undefined, true)
+    }
+
+    private async resumeJob(jobId: string, projectName: string, status: string) {
+        // set state to prepare to resume job
+        await this.setupTransformationState(jobId, projectName, status)
+        // resume polling the job
+        return await this.pollAndCompleteTransformation(jobId)
+    }
+
+    private async setupTransformationState(jobId: string, projectName: string, status: string) {
+        transformByQState.setJobId(jobId)
+        transformByQState.setPolledJobStatus(status)
+        transformByQState.setJobHistoryPath(path.join(os.homedir(), '.aws', 'transform', projectName, jobId))
+        const metadataFile = await fs.readFileText(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'))
+        const metadata = metadataFile.split('\t')
+        transformByQState.setTransformationType(metadata[1] as TransformationType)
+        transformByQState.setSourceJDKVersion(metadata[2] as JDKVersion)
+        transformByQState.setTargetJDKVersion(metadata[3] as JDKVersion)
+        transformByQState.setCustomDependencyVersionFilePath(metadata[4])
+        transformByQState.setPayloadFilePath(
+            path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip')
+        )
+        setMaven()
+        transformByQState.setCustomBuildCommand(metadata[5])
+        transformByQState.setTargetJavaHome(metadata[6])
+        transformByQState.setProjectPath(metadata[7])
+        transformByQState.setStartTime(metadata[8])
+    }
+
+    private async pollAndCompleteTransformation(jobId: string) {
+        const status = await pollTransformationStatusUntilComplete(
+            jobId,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
+        )
+        // delete payload and metadata files
+        await fs.delete(transformByQState.getPayloadFilePath(), { force: true })
+        await fs.delete(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
+        // delete temporary build logs file
+        const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
+        await fs.delete(logFilePath, { force: true })
+        return status
     }
 
     private generateTransformationStepMarkup(
@@ -928,29 +899,32 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 }
 
-export function readHistoryFile(): HistoryObject[] {
-    const history: HistoryObject[] = []
+export async function readHistoryFile(): Promise<CodeWhispererConstants.HistoryObject[]> {
+    const history: CodeWhispererConstants.HistoryObject[] = []
     const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
-    if (fs.existsSync(jobHistoryFilePath)) {
-        const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
-        const jobs = historyFile.split('\n')
-        jobs.shift() // removes headers
 
-        // Process from end, stop at 10 valid entries
-        for (let i = jobs.length - 1; i >= 0 && history.length < 10; i--) {
-            const job = jobs[i]
-            if (job && isWithin30Days(job.split('\t')[0])) {
-                const jobInfo = job.split('\t')
-                history.push({
-                    startTime: jobInfo[0],
-                    projectName: jobInfo[1],
-                    status: jobInfo[2],
-                    duration: jobInfo[3],
-                    diffPath: jobInfo[4],
-                    summaryPath: jobInfo[5],
-                    jobId: jobInfo[6],
-                })
-            }
+    if (!(await fs.existsFile(jobHistoryFilePath))) {
+        return history
+    }
+
+    const historyFile = await fs.readFileText(jobHistoryFilePath)
+    const jobs = historyFile.split('\n')
+    jobs.shift() // removes headers
+
+    // Process from end, stop at 10 valid entries
+    for (let i = jobs.length - 1; i >= 0 && history.length < 10; i--) {
+        const job = jobs[i]
+        if (job && isWithin30Days(job.split('\t')[0])) {
+            const jobInfo = job.split('\t')
+            history.push({
+                startTime: jobInfo[0],
+                projectName: jobInfo[1],
+                status: jobInfo[2],
+                duration: jobInfo[3],
+                diffPath: jobInfo[4],
+                summaryPath: jobInfo[5],
+                jobId: jobInfo[6],
+            })
         }
     }
     return history

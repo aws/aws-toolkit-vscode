@@ -72,6 +72,13 @@ export async function activate(context: ExtContext) {
             )
         }),
 
+        Commands.register(
+            'aws.amazonq.transformationHub.updateContent',
+            async (button, startTime, historyFileUpdated) => {
+                await transformationHubViewProvider.updateContent(button, startTime, historyFileUpdated)
+            }
+        ),
+
         workspaceChangeEvent
     )
 }
