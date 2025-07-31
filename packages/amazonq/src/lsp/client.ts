@@ -182,6 +182,7 @@ export async function startLanguageServer(
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                         codeReviewInChat: codeReviewInChat,
+                        displayFindings: true,
                     },
                     window: {
                         notifications: true,
