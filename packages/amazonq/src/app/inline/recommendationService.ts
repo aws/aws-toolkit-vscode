@@ -2,33 +2,32 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
+    TextDocumentContentChangeEvent,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
-import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { globals, getLogger } from 'aws-core-vscode/shared'
+import { getLogger } from 'aws-core-vscode/shared'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
     showUi?: boolean
+    editsStreakToken?: number | string
 }
 
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
-        private readonly inlineGeneratingMessage: InlineGeneratingMessage,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
-
     /**
      * Set the recommendation service
      */
@@ -42,19 +41,34 @@ export class RecommendationService {
         position: Position,
         context: InlineCompletionContext,
         token: CancellationToken,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
+        isAutoTrigger: boolean,
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
+        documentChangeEvent?: vscode.TextDocumentChangeEvent
     ) {
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
+        const documentChangeParams = documentChangeEvent
+            ? {
+                  textDocument: {
+                      uri: document.uri.toString(),
+                      version: document.version,
+                  },
+                  contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
+              }
+            : undefined
 
-        const request: InlineCompletionWithReferencesParams = {
+        let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
             },
             position,
             context,
+            documentChangeParams: documentChangeParams,
         }
-        const requestStartTime = globals.clock.Date.now()
+        if (options.editsStreakToken) {
+            request = { ...request, partialResultToken: options.editsStreakToken }
+        }
+        const requestStartTime = performance.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -65,7 +79,6 @@ export class RecommendationService {
         try {
             // Show UI indicators only if UI is enabled
             if (options.showUi) {
-                await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
                 await statusBar.setLoading()
             }
 
@@ -76,15 +89,18 @@ export class RecommendationService {
                     textDocument: request.textDocument,
                     position: request.position,
                     context: request.context,
+                    nextToken: request.partialResultToken,
                 },
             })
-            let result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+            const t0 = performance.now()
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
-            getLogger().info('Received inline completion response: %O', {
+            getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
+                latency: performance.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -103,7 +119,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
+            const firstCompletionDisplayLatency = performance.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
@@ -112,34 +128,78 @@ export class RecommendationService {
                 firstCompletionDisplayLatency
             )
 
-            // If there are more results to fetch, handle them in the background
-            try {
-                while (result.partialResultToken) {
-                    const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
-                    result = await languageClient.sendRequest(
-                        inlineCompletionWithReferencesRequestType.method,
-                        paginatedRequest,
-                        token
-                    )
-                    this.sessionManager.updateSessionSuggestions(result.items)
-                }
-            } catch (error) {
-                languageClient.warn(`Error when getting suggestions: ${error}`)
-            }
+            const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 
-            // Close session and finalize telemetry regardless of pagination path
-            this.sessionManager.closeSession()
-            TelemetryHelper.instance.setAllPaginationEndTime()
-            options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
-        } catch (error) {
+            // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
+            if (result.partialResultToken) {
+                if (!isInlineEdit) {
+                    // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
+                    getLogger().info(
+                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
+                    )
+                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
+                        languageClient.warn(`Error when getting suggestions: ${error}`)
+                    })
+                } else {
+                    // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
+                    // suggestions when the user start to accept a suggesion.
+                    // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
+                    getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                    this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
+                }
+            }
+        } catch (error: any) {
             getLogger().error('Error getting recommendations: %O', error)
+            // bearer token expired
+            if (error.data && error.data.awsErrorCode === 'E_AMAZON_Q_CONNECTION_EXPIRED') {
+                // ref: https://github.com/aws/aws-toolkit-vscode/blob/amazonq/v1.74.0/packages/core/src/codewhisperer/service/inlineCompletionService.ts#L104
+                // show re-auth once if connection expired
+                if (AuthUtil.instance.isConnectionExpired()) {
+                    await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
+                } else {
+                    // get a new bearer token, if this failed, the connection will be marked as expired.
+                    // new tokens will be synced per 10 seconds in auth.startTokenRefreshInterval
+                    await AuthUtil.instance.getBearerToken()
+                }
+            }
             return []
         } finally {
             // Remove all UI indicators if UI is enabled
             if (options.showUi) {
-                this.inlineGeneratingMessage.hideGenerating()
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
+    }
+
+    private async processRemainingRequests(
+        languageClient: LanguageClient,
+        initialRequest: InlineCompletionWithReferencesParams,
+        firstResult: InlineCompletionListWithReferences,
+        token: CancellationToken
+    ): Promise<void> {
+        let nextToken = firstResult.partialResultToken
+        while (nextToken) {
+            const request = { ...initialRequest, partialResultToken: nextToken }
+
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+                inlineCompletionWithReferencesRequestType.method,
+                request,
+                token
+            )
+            // when pagination is in progress, but user has already accepted or rejected an inline completion
+            // then stop pagination
+            if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
+                break
+            }
+            this.sessionManager.updateSessionSuggestions(result.items)
+            nextToken = result.partialResultToken
+        }
+
+        this.sessionManager.closeSession()
+
+        // refresh inline completion items to render paginated responses
+        // All pagination requests completed
+        TelemetryHelper.instance.setAllPaginationEndTime()
+        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }

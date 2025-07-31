@@ -570,6 +570,47 @@ describe('Auth', function () {
             assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
         })
 
+        it('shows a second quickPick for linked IAM profiles when selecting an SSO connection', async function () {
+            let quickPickCount = 0
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                await picker.untilReady()
+                quickPickCount++
+
+                if (quickPickCount === 1) {
+                    // First picker: select the SSO connection
+                    const connItem = picker.findItemOrThrow(/IAM Identity Center/)
+                    picker.acceptItem(connItem)
+                } else if (quickPickCount === 2) {
+                    // Second picker: select the linked IAM profile
+                    const linkedItem = picker.findItemOrThrow(/TestRole/)
+                    picker.acceptItem(linkedItem)
+                }
+            })
+
+            const linkedSsoProfile = createSsoProfile({ scopes: scopesSsoAccountAccess })
+            const conn = await auth.createConnection(linkedSsoProfile)
+
+            // Mock the SSOClient to return account roles
+            auth.ssoClient.listAccounts.returns(
+                toCollection(async function* () {
+                    yield [{ accountId: '123456789012' }]
+                })
+            )
+            auth.ssoClient.listAccountRoles.callsFake(() =>
+                toCollection(async function* () {
+                    yield [{ accountId: '123456789012', roleName: 'TestRole' }]
+                })
+            )
+
+            // Should get a linked IAM profile back, not the SSO connection
+            const result = await promptForConnection(auth)
+            assert.ok(isIamConnection(result || undefined), 'Expected an IAM connection to be returned')
+            assert.ok(
+                result?.id.startsWith(`sso:${conn.id}#`),
+                'Expected the IAM connection to be linked to the SSO connection'
+            )
+        })
+
         it('refreshes when clicking the refresh button', async function () {
             getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()

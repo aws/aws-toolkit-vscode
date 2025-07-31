@@ -57,7 +57,7 @@ describe('EditDecorationManager', function () {
         sandbox.restore()
     })
 
-    it('should display SVG decorations in the editor', function () {
+    it('should display SVG decorations in the editor', async function () {
         // Create a fake SVG image URI
         const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
 
@@ -69,7 +69,7 @@ describe('EditDecorationManager', function () {
         editorStub.setDecorations.reset()
 
         // Call displayEditSuggestion
-        manager.displayEditSuggestion(
+        await manager.displayEditSuggestion(
             editorStub as unknown as vscode.TextEditor,
             svgUri,
             0,
@@ -94,7 +94,7 @@ describe('EditDecorationManager', function () {
     })
 
     // Helper function to setup edit suggestion test
-    function setupEditSuggestionTest() {
+    async function setupEditSuggestionTest() {
         // Create a fake SVG image URI
         const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
 
@@ -103,7 +103,7 @@ describe('EditDecorationManager', function () {
         const rejectHandler = sandbox.stub()
 
         // Display the edit suggestion
-        manager.displayEditSuggestion(
+        await manager.displayEditSuggestion(
             editorStub as unknown as vscode.TextEditor,
             svgUri,
             0,
@@ -117,8 +117,8 @@ describe('EditDecorationManager', function () {
         return { acceptHandler, rejectHandler }
     }
 
-    it('should trigger accept handler when command is executed', function () {
-        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
+    it('should trigger accept handler when command is executed', async function () {
+        const { acceptHandler, rejectHandler } = await setupEditSuggestionTest()
 
         // Find the command handler that was registered for accept
         const acceptCommandArgs = commandsStub.registerCommand.args.find(
@@ -138,8 +138,8 @@ describe('EditDecorationManager', function () {
         }
     })
 
-    it('should trigger reject handler when command is executed', function () {
-        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
+    it('should trigger reject handler when command is executed', async function () {
+        const { acceptHandler, rejectHandler } = await setupEditSuggestionTest()
 
         // Find the command handler that was registered for reject
         const rejectCommandArgs = commandsStub.registerCommand.args.find(
@@ -159,12 +159,12 @@ describe('EditDecorationManager', function () {
         }
     })
 
-    it('should clear decorations when requested', function () {
+    it('should clear decorations when requested', async function () {
         // Reset the setDecorations stub to clear any previous calls
         editorStub.setDecorations.reset()
 
         // Call clearDecorations
-        manager.clearDecorations(editorStub as unknown as vscode.TextEditor)
+        await manager.clearDecorations(editorStub as unknown as vscode.TextEditor)
 
         // Verify decorations were cleared
         assert.strictEqual(editorStub.setDecorations.callCount, 2)

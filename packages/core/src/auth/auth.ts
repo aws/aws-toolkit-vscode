@@ -182,6 +182,10 @@ export class Auth implements AuthService, ConnectionManager {
         return Object.values(this._declaredConnections)
     }
 
+    public getCurrentProfileId() {
+        return this.store.getCurrentProfileId()
+    }
+
     @withTelemetryContext({ name: 'restorePreviousSession', class: authClassName })
     public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
@@ -1026,6 +1030,16 @@ export class Auth implements AuthService, ConnectionManager {
                         getLogger().warn('CredentialsSettings.delete("profile") failed: %s', (e as Error).message)
                     })
                 }
+            }
+        }
+
+        // Add conditional auto-login logic for SageMaker (jmkeyes@ guidance)
+        if (hasVendedIamCredentials() && isSageMaker()) {
+            // SageMaker auto-login logic - use 'ec2' source since SageMaker uses EC2-like instance credentials
+            const sagemakerProfileId = asString({ credentialSource: 'ec2', credentialTypeId: 'sagemaker-instance' })
+            if ((await tryConnection(sagemakerProfileId)) === true) {
+                getLogger().info(`auth: automatically connected with SageMaker credentials`)
+                return
             }
         }
     }

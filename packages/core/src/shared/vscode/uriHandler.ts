@@ -46,7 +46,8 @@ export class UriHandler implements vscode.UriHandler {
         const { handler, parser } = this.handlers.get(uri.path)!
         let parsedQuery: Parameters<typeof handler>[0]
 
-        const url = new URL(uri.toString(true))
+        // Ensure '+' is treated as a literal plus sign, not a space, by encoding it as '%2B'
+        const url = new URL(uri.toString(true).replace(/\+/g, '%2B'))
         const params = new SearchParams(url.searchParams)
 
         try {

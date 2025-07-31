@@ -12,17 +12,18 @@ import {
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
-    DidSaveTextDocumentParams,
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
     WorkspaceFolder,
+    ConnectionMetadata,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -38,6 +39,7 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
+    DevSettings,
     Experiments,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
@@ -50,6 +52,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { codeReviewInChat } from '../app/amazonqScan/models/constants'
 import { AutoDebugFeature } from '../autoDebug'
 
 // Module-level registry for AutoDebug feature
@@ -182,6 +185,15 @@ export async function startLanguageServer(
 
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
+    const endpointOverride = DevSettings.instance.get('codewhispererService', {}).endpoint ?? undefined
+    const textDocSection = {
+        inlineEditSupport: Experiments.instance.get('amazonqLSPNEP', true),
+    } as any
+
+    if (endpointOverride) {
+        textDocSection.endpointOverride = endpointOverride
+    }
+
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
@@ -216,26 +228,31 @@ export async function startLanguageServer(
                     q: {
                         developerProfiles: true,
                         pinnedContextEnabled: true,
+                        imageContextEnabled: true,
                         mcp: true,
+                        shortcut: true,
+                        reroute: true,
+                        modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        codeReviewInChat: codeReviewInChat,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
+                        showLogs: isSageMaker() ? false : true,
                     },
                     textDocument: {
-                        inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
-                        },
+                        inlineCompletionWithReferences: textDocSection,
                     },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,
                 },
-                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
+                logLevel: isSageMaker() ? 'debug' : toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
+                providesIam: isSageMaker(), // Enable IAM credentials for SageMaker environments
             },
         },
         /**
@@ -261,6 +278,32 @@ export async function startLanguageServer(
     toDispose.push(disposable)
     await client.onReady()
 
+    // Set up connection metadata handler
+    client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
+        // For IAM auth, provide a default startUrl
+        if (process.env.USE_IAM_AUTH === 'true') {
+            getLogger().info(
+                `[SageMaker Debug] Connection metadata requested - returning hardcoded startUrl for IAM auth`
+            )
+            return {
+                sso: {
+                    // TODO P261194666 Replace with correct startUrl once identified
+                    startUrl: 'https://amzn.awsapps.com/start', // Default for IAM auth
+                },
+            }
+        }
+
+        // For SSO auth, use the actual startUrl
+        getLogger().info(
+            `[SageMaker Debug] Connection metadata requested - returning actual startUrl for SSO auth: ${AuthUtil.instance.auth.startUrl}`
+        )
+        return {
+            sso: {
+                startUrl: AuthUtil.instance.auth.startUrl,
+            },
+        }
+    })
+
     const auth = await initializeAuth(client)
 
     await onLanguageServerReady(extensionContext, auth, client, resourcePaths, toDispose)
@@ -272,6 +315,59 @@ async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
     const auth = new AmazonQLspAuth(client)
     await auth.refreshConnection(true)
     return auth
+}
+
+// jscpd:ignore-start
+async function initializeLanguageServerConfiguration(client: LanguageClient, context: string = 'startup') {
+    const logger = getLogger('amazonqLsp')
+
+    if (AuthUtil.instance.isConnectionValid()) {
+        logger.info(`[${context}] Initializing language server configuration`)
+        // jscpd:ignore-end
+
+        try {
+            // Send profile configuration
+            logger.debug(`[${context}] Sending profile configuration to language server`)
+            await sendProfileToLsp(client)
+            logger.debug(`[${context}] Profile configuration sent successfully`)
+
+            // Send customization configuration
+            logger.debug(`[${context}] Sending customization configuration to language server`)
+            await pushConfigUpdate(client, {
+                type: 'customization',
+                customization: getSelectedCustomization(),
+            })
+            logger.debug(`[${context}] Customization configuration sent successfully`)
+
+            logger.info(`[${context}] Language server configuration completed successfully`)
+        } catch (error) {
+            logger.error(`[${context}] Failed to initialize language server configuration: ${error}`)
+            throw error
+        }
+    } else {
+        logger.warn(
+            `[${context}] Connection invalid, skipping language server configuration - this will cause authentication failures`
+        )
+        const activeConnection = AuthUtil.instance.auth.activeConnection
+        const connectionState = activeConnection
+            ? AuthUtil.instance.auth.getConnectionState(activeConnection)
+            : 'no-connection'
+        logger.warn(`[${context}] Connection state: ${connectionState}`)
+    }
+}
+
+async function sendProfileToLsp(client: LanguageClient) {
+    const logger = getLogger('amazonqLsp')
+    const profileArn = AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn
+
+    logger.debug(`Sending profile to LSP: ${profileArn || 'undefined'}`)
+
+    await pushConfigUpdate(client, {
+        type: 'profile',
+        profileArn: profileArn,
+    })
+
+    logger.debug(`Profile sent to LSP successfully`)
 }
 
 async function onLanguageServerReady(
@@ -353,18 +449,26 @@ async function onLanguageServerReady(
     // We manually push the cached values the first time since event handlers, which should push, may not have been setup yet.
     // Execution order is weird and should be fixed in the flare implementation.
     // TODO: Revisit if we need this if we setup the event handlers properly
-    if (AuthUtil.instance.isConnectionValid()) {
-        await sendProfileToLsp(client)
-
-        await pushConfigUpdate(client, {
-            type: 'customization',
-            customization: getSelectedCustomization(),
-        })
-    }
+    await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
         inlineManager,
+        Commands.register('aws.amazonq.showPrev', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+            sessionManager.onPrevSuggestion()
+        }),
+        Commands.register('aws.amazonq.showNext', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+            sessionManager.onNextSuggestion()
+        }),
+        // this is a workaround since handleDidShowCompletionItem is not public API
+        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+            sessionManager.checkInlineSuggestionVisibility()
+        }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            vsCodeState.lastManualTriggerTime = performance.now()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
@@ -432,13 +536,6 @@ async function onLanguageServerReady(
                 }),
             } as RenameFilesParams)
         }),
-        vscode.workspace.onDidSaveTextDocument((e) => {
-            client.sendNotification('workspace/didSaveTextDocument', {
-                textDocument: {
-                    uri: e.uri.fsPath,
-                },
-            } as DidSaveTextDocumentParams)
-        }),
         vscode.workspace.onDidChangeWorkspaceFolders((e) => {
             client.sendNotification('workspace/didChangeWorkspaceFolder', {
                 event: {
@@ -461,13 +558,6 @@ async function onLanguageServerReady(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client, auth)
     )
-
-    async function sendProfileToLsp(client: LanguageClient) {
-        await pushConfigUpdate(client, {
-            type: 'profile',
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        })
-    }
 }
 
 /**
@@ -487,8 +577,21 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
         // TODO: Port this metric override to common definitions
         telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
 
-        // Need to set the auth token in the again
-        await auth.refreshConnection(true)
+        const logger = getLogger('amazonqLsp')
+        logger.info('[crash-recovery] Language server crash detected, reinitializing authentication')
+
+        try {
+            // Send bearer token
+            logger.debug('[crash-recovery] Refreshing connection and sending bearer token')
+            await auth.refreshConnection(true)
+            logger.debug('[crash-recovery] Bearer token sent successfully')
+
+            // Send profile and customization configuration
+            await initializeLanguageServerConfiguration(client, 'crash-recovery')
+            logger.info('[crash-recovery] Authentication reinitialized successfully')
+        } catch (error) {
+            logger.error(`[crash-recovery] Failed to reinitialize after crash: ${error}`)
+        }
     })
 }
 

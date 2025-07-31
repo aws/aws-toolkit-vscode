@@ -18,7 +18,6 @@ import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
 import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
-import { TestChatControllerEventEmitters } from '../../amazonqTest/chat/controller/controller'
 import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -43,6 +42,8 @@ interface VsCodeState {
     lastUserModificationTime: number
 
     isFreeTierLimitReached: boolean
+
+    lastManualTriggerTime: number
 }
 
 export const vsCodeState: VsCodeState = {
@@ -53,6 +54,7 @@ export const vsCodeState: VsCodeState = {
     isRecommendationsActive: false,
     lastUserModificationTime: 0,
     isFreeTierLimitReached: false,
+    lastManualTriggerTime: 0,
 }
 
 export interface CodeWhispererConfig {
@@ -371,55 +373,6 @@ export interface CodeLine {
     content: string
     number: number
 }
-
-/**
- * Unit Test Generation
- */
-enum TestGenStatus {
-    NotStarted,
-    Running,
-    Cancelling,
-}
-// TODO: Refactor model of /scan and /test
-export class TestGenState {
-    // Define a constructor for this class
-    private testGenState: TestGenStatus = TestGenStatus.NotStarted
-
-    protected chatControllers: TestChatControllerEventEmitters | undefined = undefined
-
-    public isNotStarted() {
-        return this.testGenState === TestGenStatus.NotStarted
-    }
-
-    public isRunning() {
-        return this.testGenState === TestGenStatus.Running
-    }
-
-    public isCancelling() {
-        return this.testGenState === TestGenStatus.Cancelling
-    }
-
-    public setToNotStarted() {
-        this.testGenState = TestGenStatus.NotStarted
-    }
-
-    public setToCancelling() {
-        this.testGenState = TestGenStatus.Cancelling
-    }
-
-    public setToRunning() {
-        this.testGenState = TestGenStatus.Running
-    }
-
-    public setChatControllers(controllers: TestChatControllerEventEmitters) {
-        this.chatControllers = controllers
-    }
-    public getChatControllers() {
-        return this.chatControllers
-    }
-}
-
-export const testGenState: TestGenState = new TestGenState()
 
 enum CodeFixStatus {
     NotStarted,
@@ -754,6 +707,8 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion | undefined = undefined
 
+    private jdkVersionToPath: Map<JDKVersion, string> = new Map()
+
     private customBuildCommand: string = ''
 
     private sourceDB: DB | undefined = undefined
@@ -874,6 +829,14 @@ export class TransformByQState {
         return this.targetJDKVersion
     }
 
+    public getPathFromJdkVersion(version: JDKVersion | undefined) {
+        if (version) {
+            return this.jdkVersionToPath.get(version)
+        } else {
+            return undefined
+        }
+    }
+
     public getSourceDB() {
         return this.sourceDB
     }
@@ -952,6 +915,12 @@ export class TransformByQState {
 
     public getTargetJavaHome() {
         return this.targetJavaHome
+    }
+
+    public setJdkVersionToPath(jdkVersion: JDKVersion | undefined, path: string) {
+        if (jdkVersion) {
+            this.jdkVersionToPath.set(jdkVersion, path)
+        }
     }
 
     public getChatControllers() {

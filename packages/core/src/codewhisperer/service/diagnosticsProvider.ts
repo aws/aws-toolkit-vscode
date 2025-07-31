@@ -25,7 +25,6 @@ export const securityScanRender: SecurityScanRender = {
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext,
     editor: vscode.TextEditor | undefined,
     scope: CodeAnalysisScope
 ) {

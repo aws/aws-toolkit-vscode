@@ -242,6 +242,42 @@
     ],
     "metrics": [
         {
+            "name": "sagemaker_openRemoteConnection",
+            "description": "Perform a connection to a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_stopSpace",
+            "description": "Stop a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_filterSpaces",
+            "description": "Filter SageMaker Spaces",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_deeplinkConnect",
+            "description": "Connect to SageMake Space via a deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
             "name": "amazonq_didSelectProfile",
             "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
             "metadata": [
@@ -1110,6 +1146,117 @@
         {
             "name": "docdb_addRegion",
             "description": "User clicked on add region command"
+        },
+        {
+            "name": "appbuilder_lambda2sam",
+            "description": "User click Convert a lambda function to SAM project"
+        },
+        {
+            "name": "lambda_remoteDebugStop",
+            "description": "user stop remote debugging",
+            "metadata": [
+                {
+                    "type": "sessionDuration",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugStart",
+            "description": "user start remote debugging",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugPrecheck",
+            "description": "user click remote debug checkbox",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_invokeRemote",
+            "description": "Called when invoking lambdas remotely",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "runtime",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "languageServer_setup",
+            "description": "Sets up a language server",
+            "unit": "Milliseconds",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "languageServerSetupStage",
+                    "required": true
+                },
+                {
+                    "type": "languageServerLocation",
+                    "required": false
+                },
+                {
+                    "type": "languageServerVersion",
+                    "required": false
+                },
+                {
+                    "type": "manifestLocation",
+                    "required": false
+                },
+                {
+                    "type": "manifestSchemaVersion",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
         }
     ]
 }

@@ -16,6 +16,10 @@ import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
 export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
 export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
+export const LAMBDA_LAYER_TYPE = 'AWS::Lambda::LayerVersion' // eslint-disable-line @typescript-eslint/naming-convention
+export const LAMBDA_URL_TYPE = 'AWS::Lambda::Url' // eslint-disable-line @typescript-eslint/naming-convention
+export const SERVERLESS_LAYER_TYPE = 'AWS::Serverless::LayerVersion' // eslint-disable-line @typescript-eslint/naming-convention
+
 export const serverlessTableType = 'AWS::Serverless::SimpleTable'
 export const s3BucketType = 'AWS::S3::Bucket'
 export const appRunnerType = 'AWS::AppRunner::Service'

@@ -82,6 +82,16 @@ describe('VscodeRemoteSshConfig', async function () {
             const command = result.unwrap()
             assert.strictEqual(command, testProxyCommand)
         })
+
+        it('uses %n token for sagemaker_connect to preserve hostname case', async function () {
+            const sagemakerConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'sagemaker_connect')
+            sagemakerConfig.testIsWin = false
+
+            const result = await sagemakerConfig.getProxyCommandWrapper('sagemaker_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.strictEqual(command, `'sagemaker_connect' '%n'`)
+        })
     })
 
     describe('matchSshSection', async function () {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { diffChars } from 'diff'
+import { diffWordsWithSpace } from 'diff'
 import * as vscode from 'vscode'
 import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
@@ -11,6 +11,12 @@ type Range = { line: number; start: number; end: number }
 
 const logger = getLogger('nextEditPrediction')
 export const imageVerticalOffset = 1
+export const emptyDiffSvg = {
+    svgImage: vscode.Uri.parse(''),
+    startLine: 0,
+    newCode: '',
+    originalCodeHighlightRange: [],
+}
 
 export class SvgGenerationService {
     /**
@@ -27,10 +33,10 @@ export class SvgGenerationService {
         svgImage: vscode.Uri
         startLine: number
         newCode: string
-        origionalCodeHighlightRange: Range[]
+        originalCodeHighlightRange: Range[]
     }> {
         const textDoc = await vscode.workspace.openTextDocument(filePath)
-        const originalCode = textDoc.getText()
+        const originalCode = textDoc.getText().replaceAll('\r\n', '\n')
         if (originalCode === '') {
             logger.error(`udiff format error`)
             throw new ToolkitError('udiff format error')
@@ -52,6 +58,21 @@ export class SvgGenerationService {
 
         // Get edit diffs with highlight
         const { addedLines, removedLines } = this.getEditedLinesFromDiff(udiff)
+
+        // Calculate dimensions based on code content
+        const { offset, editStartLine, isPositionValid } = this.calculatePosition(
+            originalCode.split('\n'),
+            newCode.split('\n'),
+            addedLines,
+            currentTheme
+        )
+
+        // if the position for the EDITS suggestion is not valid (there is no difference between new
+        // and current code content), return EMPTY_DIFF_SVG and skip the suggestion.
+        if (!isPositionValid) {
+            return emptyDiffSvg
+        }
+
         const highlightRanges = this.generateHighlightRanges(removedLines, addedLines, modifiedLines)
         const diffAddedWithHighlight = this.getHighlightEdit(addedLines, highlightRanges.addedRanges)
 
@@ -61,13 +82,6 @@ export class SvgGenerationService {
         registerWindow(window, document)
         const draw = SVG(document.documentElement) as any
 
-        // Calculate dimensions based on code content
-        const { offset, editStartLine } = this.calculatePosition(
-            originalCode.split('\n'),
-            newCode.split('\n'),
-            addedLines,
-            currentTheme
-        )
         const { width, height } = this.calculateDimensions(addedLines, currentTheme)
         draw.size(width + offset, height)
 
@@ -86,7 +100,7 @@ export class SvgGenerationService {
             svgImage: vscode.Uri.parse(svgResult),
             startLine: editStartLine,
             newCode: newCode,
-            origionalCodeHighlightRange: highlightRanges.removedRanges,
+            originalCodeHighlightRange: highlightRanges.removedRanges,
         }
     }
 
@@ -356,12 +370,23 @@ export class SvgGenerationService {
         newLines: string[],
         diffLines: string[],
         theme: editorThemeInfo
-    ): { offset: number; editStartLine: number } {
+    ): { offset: number; editStartLine: number; isPositionValid: boolean } {
         // Determine the starting line of the edit in the original file
         let editStartLineInOldFile = 0
         const maxLength = Math.min(originalLines.length, newLines.length)
 
         for (let i = 0; i <= maxLength; i++) {
+            // if there is no difference between the original lines and the new lines, skip calculating for the start position.
+            if (i === maxLength && originalLines[i] === newLines[i] && originalLines.length === newLines.length) {
+                logger.info(
+                    'There is no difference between current and new code suggestion. Skip calculating for start position.'
+                )
+                return {
+                    offset: 0,
+                    editStartLine: 0,
+                    isPositionValid: false,
+                }
+            }
             if (originalLines[i] !== newLines[i] || i === maxLength) {
                 editStartLineInOldFile = i
                 break
@@ -386,7 +411,7 @@ export class SvgGenerationService {
         const startLineLength = originalLines[startLine]?.length || 0
         const offset = (maxLineLength - startLineLength) * theme.fontSize * 0.7 + 10 // padding
 
-        return { offset, editStartLine: editStartLineInOldFile }
+        return { offset, editStartLine: editStartLineInOldFile, isPositionValid: true }
     }
 
     private escapeHtml(text: string): string {
@@ -413,45 +438,6 @@ export class SvgGenerationService {
         const originalRanges: Range[] = []
         const afterRanges: Range[] = []
 
-        /**
-         * Merges ranges on the same line that are separated by only one character
-         */
-        const mergeAdjacentRanges = (ranges: Range[]): Range[] => {
-            const sortedRanges = [...ranges].sort((a, b) => {
-                if (a.line !== b.line) {
-                    return a.line - b.line
-                }
-                return a.start - b.start
-            })
-
-            const result: Range[] = []
-
-            // Process all ranges
-            for (let i = 0; i < sortedRanges.length; i++) {
-                const current = sortedRanges[i]
-
-                // If this is the last range or ranges are on different lines, add it directly
-                if (i === sortedRanges.length - 1 || current.line !== sortedRanges[i + 1].line) {
-                    result.push(current)
-                    continue
-                }
-
-                // Check if current range and next range can be merged
-                const next = sortedRanges[i + 1]
-                if (current.line === next.line && next.start - current.end <= 1) {
-                    sortedRanges[i + 1] = {
-                        line: current.line,
-                        start: current.start,
-                        end: Math.max(current.end, next.end),
-                    }
-                } else {
-                    result.push(current)
-                }
-            }
-
-            return result
-        }
-
         // Create reverse mapping for quicker lookups
         const reverseMap = new Map<string, string>()
         for (const [original, modified] of modifiedLines.entries()) {
@@ -465,7 +451,7 @@ export class SvgGenerationService {
             // If line exists in modifiedLines as a key, process character diffs
             if (Array.from(modifiedLines.keys()).includes(line)) {
                 const modifiedLine = modifiedLines.get(line)!
-                const changes = diffChars(line, modifiedLine)
+                const changes = diffWordsWithSpace(line, modifiedLine)
 
                 let charPos = 0
                 for (const part of changes) {
@@ -497,7 +483,7 @@ export class SvgGenerationService {
 
             if (reverseMap.has(line)) {
                 const originalLine = reverseMap.get(line)!
-                const changes = diffChars(originalLine, line)
+                const changes = diffWordsWithSpace(originalLine, line)
 
                 let charPos = 0
                 for (const part of changes) {
@@ -522,12 +508,9 @@ export class SvgGenerationService {
             }
         }
 
-        const mergedOriginalRanges = mergeAdjacentRanges(originalRanges)
-        const mergedAfterRanges = mergeAdjacentRanges(afterRanges)
-
         return {
-            removedRanges: mergedOriginalRanges,
-            addedRanges: mergedAfterRanges,
+            removedRanges: originalRanges,
+            addedRanges: afterRanges,
         }
     }
 }

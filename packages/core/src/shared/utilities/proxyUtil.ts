@@ -5,9 +5,6 @@
 
 import vscode from 'vscode'
 import { getLogger } from '../logger/logger'
-import { tmpdir } from 'os'
-import { join } from 'path'
-import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 interface ProxyConfig {
     proxyUrl: string | undefined
@@ -101,41 +98,6 @@ export class ProxyUtil {
             process.env.NODE_EXTRA_CA_CERTS = config.certificateAuthority
             process.env.AWS_CA_BUNDLE = config.certificateAuthority
             this.logger.debug(`Set certificate bundle path: ${config.certificateAuthority}`)
-        } else {
-            // Fallback to system certificates if no custom CA is configured
-            await this.setSystemCertificates()
-        }
-    }
-
-    /**
-     * Sets system certificates as fallback when no custom CA is configured
-     */
-    private static async setSystemCertificates(): Promise<void> {
-        try {
-            const tls = await import('tls')
-            // @ts-ignore Get system certificates
-            const systemCerts = tls.getCACertificates('system')
-            // @ts-ignore Get any existing extra certificates
-            const extraCerts = tls.getCACertificates('extra')
-            const allCerts = [...systemCerts, ...extraCerts]
-            if (allCerts && allCerts.length > 0) {
-                this.logger.debug(`Found ${allCerts.length} certificates in system's trust store`)
-
-                const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
-                if (!nodefs.existsSync(tempDir)) {
-                    nodefs.mkdirSync(tempDir, { recursive: true })
-                }
-
-                const certPath = join(tempDir, 'vscode-ca-certs.pem')
-                const certContent = allCerts.join('\n')
-
-                nodefs.writeFileSync(certPath, certContent)
-                process.env.NODE_EXTRA_CA_CERTS = certPath
-                process.env.AWS_CA_BUNDLE = certPath
-                this.logger.debug(`Set system certificate bundle path: ${certPath}`)
-            }
-        } catch (err) {
-            this.logger.error(`Failed to extract system certificates: ${err}`)
         }
     }
 }

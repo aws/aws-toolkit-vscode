@@ -37,7 +37,7 @@ export enum GumbyCommands {
 
 export default class MessengerUtils {
     static createJavaHomePrompt = (jdkVersion: JDKVersion | undefined): string => {
-        let javaHomePrompt = `${CodeWhispererConstants.enterJavaHomeChatMessage} ${jdkVersion}. \n`
+        let javaHomePrompt = `${CodeWhispererConstants.enterJavaHomeChatMessage} ${jdkVersion}.\n\n`
         if (os.platform() === 'win32') {
             javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage
         } else if (os.platform() === 'darwin') {

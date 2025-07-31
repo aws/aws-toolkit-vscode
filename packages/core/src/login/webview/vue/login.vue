@@ -239,6 +239,11 @@
             </button>
             <div class="header">IAM Credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+            <a
+                class="hint"
+                href="https://docs.aws.amazon.com/sdkref/latest/guide/access-iam-users.html#step1authIamUser"
+                >Learn More</a
+            >
             <div class="title topMargin">Profile Name</div>
             <div class="hint">The identifier for these credentials</div>
             <input
