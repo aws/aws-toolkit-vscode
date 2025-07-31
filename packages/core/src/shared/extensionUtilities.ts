@@ -159,6 +159,15 @@ export function isSageMakerUnifiedStudio(): boolean {
 }
 
 /**
+ * Reset cached SageMaker state - for testing purposes only
+ * @internal
+ */
+export function resetSageMakerState(): void {
+    serviceName = notInitialized
+    isSMUS = false
+}
+
+/**
  * Decides if the current system is (the specified flavor of) Cloud9.
  */
 export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): boolean {
@@ -177,17 +186,17 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
  */
 export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
     // Check for SageMaker-specific environment variables first
+    let hasSMEnvVars: boolean = false
     if (hasSageMakerEnvVars()) {
         getLogger().debug('SageMaker environment detected via environment variables')
-        return true
+        hasSMEnvVars = true
     }
 
-    // Fall back to app name checks
     switch (appName) {
         case 'SMAI':
-            return vscode.env.appName === sageMakerAppname
+            return vscode.env.appName === sageMakerAppname && hasSMEnvVars
         case 'SMUS':
-            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio()
+            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
         default:
             return false
     }

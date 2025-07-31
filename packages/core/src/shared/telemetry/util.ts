@@ -23,7 +23,7 @@ import { mapMetadata, MetadataObj } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
-import { isAmazonQ, isCloud9, isSageMaker, isSageMakerUnifiedStudio } from '../../shared/extensionUtilities'
+import { isAmazonQ, isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { isUuid, randomUUID } from '../crypto'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { asStringifiedStack, FunctionEntry } from './spans'
@@ -488,7 +488,7 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
  * Returns default value of vscode appName or AmazonQ-For-SMUS-CE in case of a sagemaker unified studio environment
  */
 export function getClientName(): string {
-    if (isSageMaker() && isSageMakerUnifiedStudio()) {
+    if (isSageMaker('SMUS')) {
         return 'AmazonQ-For-SMUS-CE'
     }
     return env.appName
