@@ -16,7 +16,7 @@ import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-v
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { getLogger } from 'aws-core-vscode/shared'
-import { getOpenFilesInWindow } from '../../../../core/dist/src/shared/utilities/editorUtilities'
+import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
