@@ -12,11 +12,17 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-vscode/codewhisperer'
+import {
+    AuthUtil,
+    CodeWhispererConstants,
+    CodeWhispererStatusBarManager,
+    vsCodeState,
+} from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { getLogger, sleep } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from './documentEventListener'
+import { asyncCallWithTimeout } from '../../util/timeoutUtil'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -34,6 +40,23 @@ export class RecommendationService {
      */
     public setCursorUpdateRecorder(recorder: ICursorUpdateRecorder): void {
         this.cursorUpdateRecorder = recorder
+    }
+
+    async getRecommendationsWithTimeout(
+        languageClient: LanguageClient,
+        request: InlineCompletionWithReferencesParams,
+        token: CancellationToken
+    ) {
+        const resultPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            inlineCompletionWithReferencesRequestType.method,
+            request,
+            token
+        )
+        return await asyncCallWithTimeout<InlineCompletionListWithReferences>(
+            resultPromise,
+            `${inlineCompletionWithReferencesRequestType.method} time out`,
+            CodeWhispererConstants.promiseTimeoutLimit * 1000
+        )
     }
 
     async getAllRecommendations(
@@ -209,11 +232,7 @@ export class RecommendationService {
         while (nextToken) {
             const request = { ...initialRequest, partialResultToken: nextToken }
 
-            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
-                request,
-                token
-            )
+            const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
             // when pagination is in progress, but user has already accepted or rejected an inline completion
             // then stop pagination
             if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {

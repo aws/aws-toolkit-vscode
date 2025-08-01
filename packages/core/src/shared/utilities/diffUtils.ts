@@ -152,24 +152,12 @@ export function getDiffCharsAndLines(
 }
 
 /**
- * Extracts modified lines from a unified diff string.
- * @param unifiedDiff The unified diff patch as a string.
+ * Extracts modified lines by comparing added and removed lines.
+ * @param addedLines The array of added lines.
+ * @param removedLines The array of removed lines.
  * @returns A Map where keys are removed lines and values are the corresponding modified (added) lines.
  */
-export function getModifiedLinesFromUnifiedDiff(unifiedDiff: string): Map<string, string> {
-    const removedLines: string[] = []
-    const addedLines: string[] = []
-
-    // Parse the unified diff to extract removed and added lines
-    const lines = unifiedDiff.split('\n')
-    for (const line of lines) {
-        if (line.startsWith('-') && !line.startsWith('---')) {
-            removedLines.push(line.slice(1))
-        } else if (line.startsWith('+') && !line.startsWith('+++')) {
-            addedLines.push(line.slice(1))
-        }
-    }
-
+export function getModifiedLinesFromCode(addedLines: string[], removedLines: string[]): Map<string, string> {
     const modifiedMap = new Map<string, string>()
     let addedIndex = 0
 
