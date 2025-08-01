@@ -16,6 +16,7 @@ import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-v
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { getLogger } from 'aws-core-vscode/shared'
+import { getOpenFilesInWindow } from '../../../../core/dist/src/shared/utilities/editorUtilities'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -56,7 +57,7 @@ export class RecommendationService {
                   contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
               }
             : undefined
-
+        const openTabs = await getOpenFilesInWindow()
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -64,6 +65,7 @@ export class RecommendationService {
             position,
             context,
             documentChangeParams: documentChangeParams,
+            openTabFilepaths: openTabs,
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
