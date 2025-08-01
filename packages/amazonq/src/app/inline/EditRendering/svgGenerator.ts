@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { diffWordsWithSpace } from 'diff'
+import { diffWordsWithSpace, diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
@@ -42,10 +42,6 @@ export class SvgGenerationService {
             throw new ToolkitError('udiff format error')
         }
         const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
-        const modifiedLines = diffUtilities.getModifiedLinesFromUnifiedDiff(udiff)
-        // TODO remove
-        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
-        logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
 
         const { createSVGWindow } = await import('svgdom')
 
@@ -57,7 +53,12 @@ export class SvgGenerationService {
         const currentTheme = this.getEditorTheme()
 
         // Get edit diffs with highlight
-        const { addedLines, removedLines } = this.getEditedLinesFromDiff(udiff)
+        const { addedLines, removedLines } = this.getEditedLinesFromCode(originalCode, newCode)
+
+        const modifiedLines = diffUtilities.getModifiedLinesFromCode(addedLines, removedLines)
+        // TODO remove
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
 
         // Calculate dimensions based on code content
         const { offset, editStartLine, isPositionValid } = this.calculatePosition(
@@ -175,43 +176,25 @@ export class SvgGenerationService {
     }
 
     /**
-     * Extract added and removed lines from the unified diff
-     * @param unifiedDiff The unified diff string
+     * Extract added and removed lines by comparing original and new code
+     * @param originalCode The original code string
+     * @param newCode The new code string
      * @returns Object containing arrays of added and removed lines
      */
-    private getEditedLinesFromDiff(unifiedDiff: string): { addedLines: string[]; removedLines: string[] } {
+    private getEditedLinesFromCode(
+        originalCode: string,
+        newCode: string
+    ): { addedLines: string[]; removedLines: string[] } {
         const addedLines: string[] = []
         const removedLines: string[] = []
-        const diffLines = unifiedDiff.split('\n')
 
-        // Find all hunks in the diff
-        const hunkStarts = diffLines
-            .map((line, index) => (line.startsWith('@@ ') ? index : -1))
-            .filter((index) => index !== -1)
+        const changes = diffLines(originalCode, newCode)
 
-        // Process each hunk to find added and removed lines
-        for (const hunkStart of hunkStarts) {
-            const hunkHeader = diffLines[hunkStart]
-            const match = hunkHeader.match(/@@ -(\d+),(\d+) \+(\d+),(\d+) @@/)
-
-            if (!match) {
-                continue
-            }
-
-            // Extract the content lines for this hunk
-            let i = hunkStart + 1
-            while (i < diffLines.length && !diffLines[i].startsWith('@@')) {
-                // Include lines that were added (start with '+')
-                if (diffLines[i].startsWith('+') && !diffLines[i].startsWith('+++')) {
-                    const lineContent = diffLines[i].substring(1)
-                    addedLines.push(lineContent)
-                }
-                // Include lines that were removed (start with '-')
-                else if (diffLines[i].startsWith('-') && !diffLines[i].startsWith('---')) {
-                    const lineContent = diffLines[i].substring(1)
-                    removedLines.push(lineContent)
-                }
-                i++
+        for (const change of changes) {
+            if (change.added) {
+                addedLines.push(...change.value.split('\n').filter((line) => line.length > 0))
+            } else if (change.removed) {
+                removedLines.push(...change.value.split('\n').filter((line) => line.length > 0))
             }
         }
 
