@@ -12,7 +12,6 @@ import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-ru
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 export class EditDecorationManager {
@@ -281,8 +280,7 @@ export async function displaySvgDecoration(
     originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
     languageClient: LanguageClient,
-    item: InlineCompletionItemWithReferences,
-    inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
+    item: InlineCompletionItemWithReferences
 ) {
     const originalCode = editor.document.getText()
 
@@ -325,19 +323,6 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
-            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
-            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-            //     await inlineCompletionProvider.provideInlineCompletionItems(
-            //         editor.document,
-            //         endPosition,
-            //         {
-            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-            //             selectedCompletionInfo: undefined,
-            //         },
-            //         new vscode.CancellationTokenSource().token,
-            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-            //     )
-            // }
         },
         async () => {
             // Handle reject

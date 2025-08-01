@@ -10,17 +10,23 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
 
+/*
+ * Method to render the edit suggestion as an SVG image
+ * @param item - The edit suggestion
+ * @param editor - The active text editor
+ * @param session - The current session
+ * @param languageClient - The language client
+ * @returns A promise that resolves to true if the image is rendered successfully, false otherwise
+ */
 export async function showEdits(
     item: InlineCompletionItemWithReferences,
     editor: vscode.TextEditor | undefined,
     session: CodeWhispererSession,
-    languageClient: LanguageClient,
-    inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
-) {
+    languageClient: LanguageClient
+): Promise<boolean> {
     if (!editor) {
-        return
+        return false
     }
     try {
         const svgGenerationService = new SvgGenerationService()
@@ -34,7 +40,7 @@ export async function showEdits(
         // TODO: To investigate why it fails and patch [generateDiffSvg]
         if (newCode.length === 0) {
             getLogger('nextEditPrediction').warn('not able to apply provided edit suggestion, skip rendering')
-            return
+            return false
         }
 
         if (svgImage) {
@@ -47,13 +53,15 @@ export async function showEdits(
                 originalCodeHighlightRange,
                 session,
                 languageClient,
-                item,
-                inlineCompletionProvider
+                item
             )
+            return true
         } else {
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')
+            return false
         }
     } catch (error) {
         getLogger('nextEditPrediction').error(`Error generating SVG image: ${error}`)
+        return false
     }
 }

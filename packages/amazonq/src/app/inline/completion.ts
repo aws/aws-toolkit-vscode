@@ -439,7 +439,11 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
-                        await showEdits(item, editor, session, this.languageClient, this)
+                        const editShown = await showEdits(item, editor, session, this.languageClient)
+                        // check if the EDITS suggestion is shown and update the session manager state accordingly
+                        if (editShown) {
+                            this.sessionManager.checkInlineSuggestionVisibility()
+                        }
                         logstr += `- duration between trigger to edits suggestion is displayed: ${performance.now() - t0}ms`
                     }
                     return []
