@@ -54,6 +54,7 @@ import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorial
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { codeReviewInChat } from '../app/amazonqScan/models/constants'
 import { AutoDebugFeature } from '../autoDebug'
+import { autoDebugRetryConfig } from '../autoDebug/constants'
 
 // Module-level registry for AutoDebug feature
 let registeredAutoDebugFeature: AutoDebugFeature | undefined
@@ -418,10 +419,10 @@ async function onLanguageServerReady(
                 getLogger('amazonqLsp').debug('AutoDebug feature connected successfully')
             },
             {
-                maxAttempts: 5,
-                initialDelayMs: 1000,
-                maxDelayMs: 10000,
-                backoffMultiplier: 2,
+                maxAttempts: autoDebugRetryConfig.maxAttempts,
+                initialDelayMs: autoDebugRetryConfig.initialDelayMs,
+                maxDelayMs: autoDebugRetryConfig.maxDelayMs,
+                backoffMultiplier: autoDebugRetryConfig.backoffMultiplier,
                 onRetry: (attempt, error) => {
                     getLogger('amazonqLsp').debug(
                         'AutoDebug connection attempt %d failed: %s. Retrying...',
