@@ -63,9 +63,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
             // Add "Explain Problem" action
             actions.push(this.createExplainProblemAction(document, range, diagnostics))
         }
-
-        // Add "Detect Problems" action
-        actions.push(this.createDetectProblemsAction(document, range))
         return actions
     }
 
@@ -120,19 +117,7 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         return action
     }
 
-    private createDetectProblemsAction(document: vscode.TextDocument, range: vscode.Range): vscode.CodeAction {
-        const action = new vscode.CodeAction('Detect Problems with Amazon Q', vscode.CodeActionKind.Refactor)
-
-        action.command = {
-            command: 'amazonq.autoDebug.detectProblems',
-            title: 'Detect Problems with Amazon Q',
-        }
-
-        return action
-    }
-
     public dispose(): void {
-        this.logger.debug('AutoDebugCodeActionsProvider: Disposing code actions provider')
         vscode.Disposable.from(...this.disposables).dispose()
     }
 }

@@ -32,24 +32,31 @@ export class AutoDebugContextMenuProvider implements vscode.Disposable {
             return false
         }
 
-        // Show for common programming languages
-        const supportedLanguages = [
-            'typescript',
-            'javascript',
-            'python',
-            'java',
-            'csharp',
-            'cpp',
-            'c',
-            'go',
-            'rust',
-            'php',
-            'ruby',
-            'swift',
-            'kotlin',
+        // Exclude only non-programming file types that don't benefit from debugging
+        const excludedLanguages = [
+            'plaintext',
+            'markdown',
+            'json',
+            'xml',
+            'yaml',
+            'yml',
+            'csv',
+            'log',
+            'txt',
+            'md',
+            'html',
+            'css',
+            'scss',
+            'sass',
+            'less',
+            'svg',
+            'pdf',
+            'image',
+            'binary',
         ]
 
-        return supportedLanguages.includes(document.languageId)
+        // Show auto debug items for all languages except the excluded ones
+        return !excludedLanguages.includes(document.languageId)
     }
 
     /**

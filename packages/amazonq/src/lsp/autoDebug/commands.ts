@@ -60,12 +60,7 @@ export class AutoDebugCommands implements vscode.Disposable {
                 async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
                     await this.explainProblem(range, diagnostics)
                 }
-            ),
-
-            // Detect Problems command
-            Commands.register('amazonq.autoDebug.detectProblems', async () => {
-                await this.detectProblems()
-            })
+            )
         )
 
         // Add all disposables to context
@@ -139,26 +134,6 @@ export class AutoDebugCommands implements vscode.Disposable {
             void vscode.window.showErrorMessage(
                 'Amazon Q was not able to fix or explain the problem. Try again shortly'
             )
-        }
-    }
-
-    /**
-     * Manually triggers problem detection
-     */
-    private async detectProblems(): Promise<void> {
-        try {
-            this.logger.debug('AutoDebugCommands: Manual problem detection triggered')
-
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                return
-            }
-
-            // Use the controller to detect problems
-            await this.controller.detectProblems()
-        } catch (error) {
-            this.logger.error('AutoDebugCommands: Error detecting problems: %s', error)
-            void vscode.window.showErrorMessage('Failed to detect problems')
         }
     }
 
