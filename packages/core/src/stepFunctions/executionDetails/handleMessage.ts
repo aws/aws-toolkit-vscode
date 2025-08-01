@@ -17,6 +17,8 @@ import {
     handleUnsupportedMessage,
     apiCallMessageHandler,
 } from '../messageHandlers/handleMessageHelpers'
+import { parseExecutionArnForStateMachine, openWorkflowStudio, showExecuteStateMachineWebview } from '../utils'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -33,6 +35,12 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
                 break
             case Command.API_CALL:
                 void apiCallMessageHandler(message as ApiCallRequestMessage, context)
+                break
+            case Command.START_EXECUTION:
+                void startExecutionMessageHandler(context)
+                break
+            case Command.EDIT_STATE_MACHINE:
+                void editStateMachineMessageHandler(context)
                 break
             default:
                 void handleUnsupportedMessage(context, message)
@@ -73,4 +81,30 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
             failureReason: (e as Error).message,
         } as InitResponseMessage)
     }
+}
+
+async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
+    const logger = getLogger('stepfunctions')
+    try {
+        // Parsing execution ARN to get state machine info
+        const parsedArn = parseExecutionArnForStateMachine(context.executionArn)
+        if (!parsedArn) {
+            throw new Error(`Invalid execution ARN format: ${context.executionArn}`)
+        }
+
+        const { region, stateMachineName, stateMachineArn } = parsedArn
+
+        await showExecuteStateMachineWebview({
+            arn: stateMachineArn,
+            name: stateMachineName,
+            region: region,
+        })
+    } catch (error) {
+        logger.error('Start execution failed: %O', error)
+    }
+}
+
+async function editStateMachineMessageHandler(context: ExecutionDetailsContext) {
+    const params = parseExecutionArnForStateMachine(context.executionArn)
+    await openWorkflowStudio(params!.stateMachineArn, params!.region)
 }
