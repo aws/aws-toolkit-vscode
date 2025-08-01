@@ -54,7 +54,6 @@ export class AutoDebugController implements vscode.Disposable {
     async initialize(): Promise<void> {
         try {
             this.logger.info('AutoDebugController: Initializing auto debug controller')
-            this.logger.info('AutoDebugController: Controller initialized successfully')
         } catch (error) {
             this.logger.error('AutoDebugController: Failed to initialize controller: %s', error)
             throw error
@@ -119,8 +118,6 @@ export class AutoDebugController implements vscode.Disposable {
      */
     async fixSpecificProblems(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            this.logger.debug('AutoDebugController: Fixing specific problems')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 throw new Error('No active editor found')
@@ -217,8 +214,6 @@ export class AutoDebugController implements vscode.Disposable {
      */
     async explainProblems(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            this.logger.debug('AutoDebugController: Explaining problems')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 throw new Error('No active editor found')
@@ -234,7 +229,6 @@ export class AutoDebugController implements vscode.Disposable {
             }
 
             if (!targetDiagnostics || targetDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage('No problems found to explain')
                 return
             }
 
@@ -261,21 +255,17 @@ export class AutoDebugController implements vscode.Disposable {
      */
     async detectProblems(): Promise<void> {
         try {
-            this.logger.debug('AutoDebugController: Detecting problems')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 throw new Error('No active editor found')
             }
 
             const filePath = editor.document.uri.fsPath
-            const fileName = editor.document.fileName
 
             // Get all diagnostics for the current file
             const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
 
             if (allDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage(`✅ No problems detected in ${fileName}`)
                 return
             }
 
@@ -385,7 +375,6 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     public dispose(): void {
-        this.logger.debug('AutoDebugController: Disposing auto debug controller')
         vscode.Disposable.from(...this.disposables).dispose()
     }
 }

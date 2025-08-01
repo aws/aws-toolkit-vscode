@@ -10,7 +10,7 @@ export const autoDebugRetryConfig = {
     /**
      * Maximum number of attempts to connect AutoDebug feature to language client
      */
-    maxAttempts: 5,
+    maxAttempts: 3,
 
     /**
      * Initial delay in milliseconds before first retry attempt
