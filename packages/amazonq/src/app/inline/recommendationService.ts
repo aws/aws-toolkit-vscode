@@ -8,6 +8,7 @@ import {
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
+    editCompletionRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
@@ -15,7 +16,8 @@ import { SessionManager } from './sessionManager'
 import { AuthUtil, CodeWhispererStatusBarManager, vsCodeState } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger, sleep } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from './documentEventListener'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -43,8 +45,10 @@ export class RecommendationService {
         token: CancellationToken,
         isAutoTrigger: boolean,
         options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
-        documentChangeEvent?: vscode.TextDocumentChangeEvent
+        documentEventListener: DocumentEventListener
     ) {
+        const documentChangeEvent = documentEventListener?.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
         const documentChangeParams = documentChangeEvent
@@ -93,11 +97,36 @@ export class RecommendationService {
                 },
             })
             const t0 = performance.now()
-            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+
+            // yield event loop to let the document listen catch updates
+            await sleep(1)
+            // prevent user deletion invoking auto trigger
+            // this is a best effort estimate of deletion
+            const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
+
+            const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
+
+            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                editCompletionRequestType.method,
+                request,
+                token
+            )
+
+            const p = isTriggerByDeletion ? [editPromise] : [completionPromise, editPromise]
+            getLogger().debug('Skip auto trigger of completion when deleting code')
+
+            let result = await Promise.race(p)
+            // const result = await editPromise
+            if (p.length > 1 && result.items.length === 0) {
+                result = await editPromise
+            }
+
+            // const result = await editPromise
+
             getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
                 latency: performance.now() - t0,

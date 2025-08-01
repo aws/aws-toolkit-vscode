@@ -261,15 +261,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
-        // yield event loop to let the document listen catch updates
-        await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
-            return []
-        }
-
         let logstr = `GenerateCompletion metadata:\\n`
         try {
             const t0 = performance.now()
@@ -352,7 +343,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 token,
                 isAutoTrigger,
                 getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -385,7 +376,7 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
+            if (position.isAfter(editor.selection.active) && items.length > 0 && !items[0].isInlineEdit) {
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -398,7 +389,7 @@ ${itemLog}
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
+                logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
                 return []
             }
 
