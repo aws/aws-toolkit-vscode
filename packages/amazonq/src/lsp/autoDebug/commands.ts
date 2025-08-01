@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Commands, getLogger } from 'aws-core-vscode/shared'
+import { Commands, getLogger, messages } from 'aws-core-vscode/shared'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { placeholder } from 'aws-core-vscode/shared'
 import { AutoDebugController } from './controller'
@@ -31,7 +31,6 @@ export class AutoDebugCommands implements vscode.Disposable {
                 {
                     id: 'amazonq.01.fixWithQ',
                     name: 'Amazon Q: Fix Problem',
-                    telemetryName: 'amazonq_openChat',
                 },
                 async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
                     await this.fixWithAmazonQ(range, diagnostics)
@@ -43,7 +42,6 @@ export class AutoDebugCommands implements vscode.Disposable {
                 {
                     id: 'amazonq.02.fixAllWithQ',
                     name: 'Amazon Q: Fix All Errors',
-                    telemetryName: 'amazonq_openChat',
                 },
                 async () => {
                     await this.fixAllWithAmazonQ()
@@ -55,7 +53,6 @@ export class AutoDebugCommands implements vscode.Disposable {
                 {
                     id: 'amazonq.03.explainProblem',
                     name: 'Amazon Q: Explain Problem',
-                    telemetryName: 'amazonq_openChat',
                 },
                 async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
                     await this.explainProblem(range, diagnostics)
@@ -84,9 +81,7 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.fixSpecificProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage(
-                'Amazon Q was not able to fix or explain the problem. Try again shortly'
-            )
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
         }
     }
 
@@ -107,9 +102,7 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix All with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage(
-                'Amazon Q was not able to fix or explain the problem. Try again shortly'
-            )
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
         }
     }
 
@@ -131,9 +124,7 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.explainProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error explaining problem: %s', error)
-            void vscode.window.showErrorMessage(
-                'Amazon Q was not able to fix or explain the problem. Try again shortly'
-            )
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
         }
     }
 

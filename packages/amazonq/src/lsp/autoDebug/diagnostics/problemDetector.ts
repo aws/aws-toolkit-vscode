@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { DiagnosticCollection, DiagnosticSnapshot } from './diagnosticsMonitor'
+import { DiagnosticCollection } from './diagnosticsMonitor'
 import { mapDiagnosticSeverity } from '../shared/diagnosticUtils'
 
 export interface Problem {
@@ -27,25 +27,6 @@ export interface CategorizedProblems {
  * Detects new problems by comparing diagnostic snapshots and filtering relevant issues.
  */
 export class ProblemDetector {
-    /**
-     * Detects new problems by comparing baseline and current diagnostics
-     */
-    public detectNewProblems(baseline: DiagnosticSnapshot, current: DiagnosticSnapshot): Problem[] {
-        const newProblems: Problem[] = []
-        const baselineMap = this.createDiagnosticMap(baseline.diagnostics)
-
-        for (const [uri, currentDiagnostics] of current.diagnostics.diagnostics) {
-            const baselineDiagnostics = baselineMap.get(uri.toString()) || []
-
-            for (const diagnostic of currentDiagnostics) {
-                if (!this.isDiagnosticInBaseline(diagnostic, baselineDiagnostics)) {
-                    newProblems.push(this.createProblem(uri, diagnostic, true))
-                }
-            }
-        }
-        return newProblems
-    }
-
     /**
      * Filters problems to only include those relevant to changed files
      */
@@ -122,51 +103,6 @@ export class ProblemDetector {
         return problems.filter((problem) => problem.severity === 'error')
     }
 
-    /**
-     * Checks if two diagnostic snapshots have the same problems
-     */
-    public areProblemsEqual(a: DiagnosticSnapshot, b: DiagnosticSnapshot): boolean {
-        const problemsA = this.getAllProblems(a.diagnostics)
-        const problemsB = this.getAllProblems(b.diagnostics)
-
-        if (problemsA.length !== problemsB.length) {
-            return false
-        }
-
-        // Simple comparison - could be optimized
-        const sigA = this.createProblemSignature(problemsA)
-        const sigB = this.createProblemSignature(problemsB)
-
-        return sigA === sigB
-    }
-
-    private createDiagnosticMap(diagnostics: DiagnosticCollection): Map<string, vscode.Diagnostic[]> {
-        const map = new Map<string, vscode.Diagnostic[]>()
-
-        for (const [uri, fileDiagnostics] of diagnostics.diagnostics) {
-            map.set(uri.toString(), fileDiagnostics)
-        }
-
-        return map
-    }
-
-    private isDiagnosticInBaseline(diagnostic: vscode.Diagnostic, baselineDiagnostics: vscode.Diagnostic[]): boolean {
-        return baselineDiagnostics.some((baseline) => this.areDiagnosticsEqual(diagnostic, baseline))
-    }
-
-    private areDiagnosticsEqual(a: vscode.Diagnostic, b: vscode.Diagnostic): boolean {
-        return (
-            a.message === b.message &&
-            a.severity === b.severity &&
-            a.source === b.source &&
-            a.code === b.code &&
-            a.range.start.line === b.range.start.line &&
-            a.range.start.character === b.range.start.character &&
-            a.range.end.line === b.range.end.line &&
-            a.range.end.character === b.range.end.character
-        )
-    }
-
     private createProblem(uri: vscode.Uri, diagnostic: vscode.Diagnostic, isNew: boolean): Problem {
         return {
             uri,
@@ -197,16 +133,5 @@ export class ProblemDetector {
         }
 
         return false
-    }
-
-    private createProblemSignature(problems: Problem[]): string {
-        const signatures = problems
-            .map(
-                (problem) =>
-                    `${problem.uri.toString()}:${problem.diagnostic.range.start.line}:${problem.diagnostic.range.start.character}:${problem.diagnostic.message}:${problem.severity}`
-            )
-            .sort()
-
-        return signatures.join('|')
     }
 }

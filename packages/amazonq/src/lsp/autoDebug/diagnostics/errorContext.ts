@@ -36,11 +36,6 @@ export interface FormattedErrorReport {
  */
 export class ErrorContextFormatter {
     private readonly logger = getLogger()
-
-    constructor() {
-        this.logger.debug('ErrorContextFormatter: Initializing error context formatter')
-    }
-
     /**
      * Converts a Problem to detailed ErrorContext
      */

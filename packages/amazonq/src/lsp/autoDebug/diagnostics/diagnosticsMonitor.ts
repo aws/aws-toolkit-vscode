@@ -31,14 +31,12 @@ export class DiagnosticsMonitor implements vscode.Disposable {
     private readonly logger = getLogger()
     private readonly diagnosticsChangeEmitter = new vscode.EventEmitter<DiagnosticCollection>()
     private readonly disposables: vscode.Disposable[] = []
-    private lastDiagnostics: DiagnosticCollection | undefined
     private debounceTimer: NodeJS.Timeout | undefined
     private readonly debounceDelayMs = 500
 
     public readonly onDiagnosticsChanged = this.diagnosticsChangeEmitter.event
 
     constructor() {
-        // Monitor diagnostic changes from all language servers
         this.disposables.push(
             vscode.languages.onDidChangeDiagnostics((event) => {
                 this.handleDiagnosticChange(event)
@@ -55,13 +53,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
         const currentDiagnostics = this.collectAllDiagnostics()
 
         if (!shouldWaitForChanges) {
-            this.lastDiagnostics = currentDiagnostics
-            return currentDiagnostics
-        }
-
-        // Check if diagnostics have changed since last collection
-        if (!this.lastDiagnostics || !this.areDiagnosticsEqual(this.lastDiagnostics, currentDiagnostics)) {
-            this.lastDiagnostics = currentDiagnostics
             return currentDiagnostics
         }
 
@@ -124,13 +115,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
             captureTime: Date.now(),
             id: this.generateSnapshotId(),
         }
-
-        this.logger.debug(
-            'DiagnosticsMonitor: Captured baseline with %d files, id=%s',
-            diagnostics.diagnostics.length,
-            snapshot.id
-        )
-
         return snapshot
     }
 
@@ -161,13 +145,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
 
     private processDiagnosticChange(event: vscode.DiagnosticChangeEvent): void {
         try {
-            const currentDiagnostics = this.collectAllDiagnostics()
-
-            // Only emit if diagnostics actually changed
-            if (!this.lastDiagnostics || !this.areDiagnosticsEqual(this.lastDiagnostics, currentDiagnostics)) {
-                this.lastDiagnostics = currentDiagnostics
-                this.diagnosticsChangeEmitter.fire(currentDiagnostics)
-            }
         } catch (error) {
             this.logger.error('DiagnosticsMonitor: Error processing diagnostic change: %s', error)
         }
@@ -208,19 +185,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
             })
         })
     }
-
-    private areDiagnosticsEqual(a: DiagnosticCollection, b: DiagnosticCollection): boolean {
-        if (a.diagnostics.length !== b.diagnostics.length) {
-            return false
-        }
-
-        // Simple comparison - could be optimized for performance
-        const aStr = JSON.stringify(a.diagnostics.map(([uri, diags]) => [uri.toString(), diags]))
-        const bStr = JSON.stringify(b.diagnostics.map(([uri, diags]) => [uri.toString(), diags]))
-
-        return aStr === bStr
-    }
-
     private generateSnapshotId(): string {
         return `snapshot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     }

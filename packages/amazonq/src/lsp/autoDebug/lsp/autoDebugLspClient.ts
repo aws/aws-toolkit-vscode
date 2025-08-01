@@ -123,8 +123,6 @@ export class AutoDebugLspClient {
                     autoSubmit: true, // Automatically submit the message
                 },
             })
-
-            this.logger.debug('AutoDebugLspClient: Successfully sent message via webview postMessage')
             return true
         } catch (error) {
             this.logger.error('AutoDebugLspClient: Error sending message via webview: %s', error)
