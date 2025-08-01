@@ -406,12 +406,28 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     `auth: Profile ${this.profileName} is missing source_profile for role assumption`
                 )
             }
-            // Use source profile to assume IAM role based on role ARN provided.
+
+            // Check if we already have resolved credentials from patchSourceCredentials
             const sourceProfile = iniData[profile.source_profile!]
-            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', {
-                accessKeyId: sourceProfile.aws_access_key_id!,
-                secretAccessKey: sourceProfile.aws_secret_access_key!,
-            })
+            let sourceCredentials: AWS.Credentials
+
+            if (sourceProfile.aws_access_key_id && sourceProfile.aws_secret_access_key) {
+                // Source credentials have already been resolved
+                sourceCredentials = {
+                    accessKeyId: sourceProfile.aws_access_key_id,
+                    secretAccessKey: sourceProfile.aws_secret_access_key,
+                    sessionToken: sourceProfile.aws_session_token,
+                }
+            } else {
+                // Source profile needs credential resolution - this should have been handled by patchSourceCredentials
+                // but if not, we need to resolve it here
+                const sourceProvider = new SharedCredentialsProvider(profile.source_profile!, this.sections)
+                sourceCredentials = await sourceProvider.getCredentials()
+            }
+
+            // Use source credentials to assume IAM role based on role ARN provided.
+            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', sourceCredentials)
+
             // Prompt for MFA Token if needed.
             const assumeRoleReq = {
                 RoleArn: profile.role_arn,

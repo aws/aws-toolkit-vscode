@@ -42,6 +42,8 @@ interface VsCodeState {
     lastUserModificationTime: number
 
     isFreeTierLimitReached: boolean
+
+    lastManualTriggerTime: number
 }
 
 export const vsCodeState: VsCodeState = {
@@ -52,6 +54,7 @@ export const vsCodeState: VsCodeState = {
     isRecommendationsActive: false,
     lastUserModificationTime: 0,
     isFreeTierLimitReached: false,
+    lastManualTriggerTime: 0,
 }
 
 export interface CodeWhispererConfig {
