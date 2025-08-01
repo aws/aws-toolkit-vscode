@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, MynahUI } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { TabDataGenerator } from '../tabs/generator'
+import { uiComponentsTexts } from '../texts/constants'
 import { MynahUIRef } from '../../../commons/types'
-import { TabCreationUtils } from './tabCreationUtils'
 
 export interface MessageControllerProps {
     mynahUIRef: MynahUIRef
@@ -48,8 +48,15 @@ export class MessageController {
             ['featuredev', 'gumby', 'review', 'testgen', 'doc'].includes(selectedTab.type)
         ) {
             // Create a new tab if there's none
-            const newTabID = TabCreationUtils.createNewTab(this.mynahUI, this.tabDataGenerator, 'cwc')
+            const newTabID: string | undefined = this.mynahUI.updateStore(
+                '',
+                this.tabDataGenerator.getTabData('cwc', false)
+            )
             if (newTabID === undefined) {
+                this.mynahUI.notify({
+                    content: uiComponentsTexts.noMoreTabsTooltip,
+                    type: NotificationType.WARNING,
+                })
                 return undefined
             }
             this.tabsStorage.addTab({
@@ -72,8 +79,6 @@ export class MessageController {
             return
         }
 
-        let targetTabId: string
-
         if (
             selectedTab !== undefined &&
             [tabType, 'unknown'].includes(selectedTab.type) &&
@@ -94,13 +99,20 @@ export class MessageController {
                 body: '',
             })
 
-            targetTabId = selectedTab.id
-        } else {
-            const newTabID = TabCreationUtils.createNewTab(this.mynahUI, this.tabDataGenerator, 'cwc')
-            if (newTabID === undefined) {
-                return undefined
-            }
+            return selectedTab.id
+        }
 
+        const newTabID: string | undefined = this.mynahUI.updateStore(
+            '',
+            this.tabDataGenerator.getTabData('cwc', false)
+        )
+        if (newTabID === undefined) {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+            return undefined
+        } else {
             this.tabsStorage.updateTabLastCommand(newTabID, command)
             this.mynahUI.addChatItem(newTabID, message)
             this.mynahUI.addChatItem(newTabID, {
@@ -128,10 +140,8 @@ export class MessageController {
             this.connector.onUpdateTabType(newTabID)
             this.tabsStorage.updateTabStatus(newTabID, 'busy')
 
-            targetTabId = newTabID
+            return newTabID
         }
-
-        return targetTabId
     }
 
     private get mynahUI(): MynahUI | undefined {
