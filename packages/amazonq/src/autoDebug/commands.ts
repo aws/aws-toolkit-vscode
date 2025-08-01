@@ -25,8 +25,6 @@ export class AutoDebugCommands implements vscode.Disposable {
      * Register all auto debug commands
      */
     registerCommands(context: vscode.ExtensionContext): void {
-        this.logger.debug('AutoDebugCommands: Registering auto debug commands')
-
         this.disposables.push(
             // Fix with Amazon Q command
             Commands.register(
@@ -72,8 +70,6 @@ export class AutoDebugCommands implements vscode.Disposable {
 
         // Add all disposables to context
         context.subscriptions.push(...this.disposables)
-
-        this.logger.debug('AutoDebugCommands: All auto debug commands registered successfully')
     }
 
     /**
@@ -81,12 +77,8 @@ export class AutoDebugCommands implements vscode.Disposable {
      */
     private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            this.logger.debug('AutoDebugCommands: Fix with Amazon Q triggered')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
-                this.logger.warn('AutoDebugCommands: No active editor for fixWithAmazonQ')
-                void vscode.window.showWarningMessage('No active editor found')
                 return
             }
 
@@ -97,7 +89,9 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.fixSpecificProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage('Failed to fix problems with Amazon Q')
+            void vscode.window.showErrorMessage(
+                'Amazon Q was not able to fix or explain the problem. Try again shortly'
+            )
         }
     }
 
@@ -106,11 +100,8 @@ export class AutoDebugCommands implements vscode.Disposable {
      */
     private async fixAllWithAmazonQ(): Promise<void> {
         try {
-            this.logger.debug('AutoDebugCommands: Fix All with Amazon Q triggered')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
-                void vscode.window.showWarningMessage('No active editor found')
                 return
             }
 
@@ -121,7 +112,9 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix All with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage('Failed to fix all problems with Amazon Q')
+            void vscode.window.showErrorMessage(
+                'Amazon Q was not able to fix or explain the problem. Try again shortly'
+            )
         }
     }
 
@@ -130,8 +123,6 @@ export class AutoDebugCommands implements vscode.Disposable {
      */
     private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            this.logger.debug('AutoDebugCommands: Explain Problem triggered')
-
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 this.logger.warn('AutoDebugCommands: No active editor for explainProblem')
@@ -145,7 +136,9 @@ export class AutoDebugCommands implements vscode.Disposable {
             await this.controller.explainProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error explaining problem: %s', error)
-            void vscode.window.showErrorMessage('Failed to explain problem with Amazon Q')
+            void vscode.window.showErrorMessage(
+                'Amazon Q was not able to fix or explain the problem. Try again shortly'
+            )
         }
     }
 
@@ -158,7 +151,6 @@ export class AutoDebugCommands implements vscode.Disposable {
 
             const editor = vscode.window.activeTextEditor
             if (!editor) {
-                void vscode.window.showWarningMessage('No active editor found')
                 return
             }
 
@@ -174,7 +166,6 @@ export class AutoDebugCommands implements vscode.Disposable {
      * Dispose of all resources
      */
     dispose(): void {
-        this.logger.debug('AutoDebugCommands: Disposing auto debug commands')
         vscode.Disposable.from(...this.disposables).dispose()
     }
 }

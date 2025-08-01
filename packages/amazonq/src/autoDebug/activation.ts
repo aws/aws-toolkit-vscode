@@ -29,11 +29,8 @@ export class AutoDebugFeature implements vscode.Disposable {
      */
     async activate(): Promise<void> {
         try {
-            this.logger.info('AutoDebugFeature: Activating auto debug feature')
-
             // Initialize the controller first
             this.controller = new AutoDebugController()
-            await this.controller.initialize()
 
             // Initialize commands and pass the controller
             this.autoDebugCommands = new AutoDebugCommands(this.controller)
@@ -45,7 +42,6 @@ export class AutoDebugFeature implements vscode.Disposable {
 
             // Add all to disposables
             this.disposables.push(this.controller, this.autoDebugCommands, this.codeActionsProvider)
-
             this.logger.info('AutoDebugFeature: Auto debug feature activated successfully')
         } catch (error) {
             this.logger.error('AutoDebugFeature: Failed to activate auto debug feature: %s', error)
@@ -64,7 +60,6 @@ export class AutoDebugFeature implements vscode.Disposable {
      * Dispose of all resources
      */
     dispose(): void {
-        this.logger.debug('AutoDebugFeature: Disposing auto debug feature')
         vscode.Disposable.from(...this.disposables).dispose()
     }
 }

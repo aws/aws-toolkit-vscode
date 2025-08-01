@@ -12,6 +12,9 @@
         {
             "path": "packages/amazonq",
         },
+        {
+            "path": "../language-servers",
+        },
     ],
     "settings": {
         "typescript.tsdk": "node_modules/typescript/lib",

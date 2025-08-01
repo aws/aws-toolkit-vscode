@@ -49,18 +49,6 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     /**
-     * Initialize the controller
-     */
-    async initialize(): Promise<void> {
-        try {
-            this.logger.info('AutoDebugController: Initializing auto debug controller')
-        } catch (error) {
-            this.logger.error('AutoDebugController: Failed to initialize controller: %s', error)
-            throw error
-        }
-    }
-
-    /**
      * Creates formatted error contexts for AI debugging
      */
     public async createErrorContexts(problems: Problem[]): Promise<ErrorContext[]> {
@@ -133,7 +121,6 @@ export class AutoDebugController implements vscode.Disposable {
             }
 
             if (!targetDiagnostics || targetDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage('No problems found in the selected range')
                 return
             }
 
@@ -166,7 +153,6 @@ export class AutoDebugController implements vscode.Disposable {
         }
 
         const filePath = editor.document.uri.fsPath
-        const fileName = editor.document.fileName
 
         try {
             // Get all diagnostics for the current file
@@ -185,7 +171,6 @@ export class AutoDebugController implements vscode.Disposable {
             })
 
             if (errorDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage(`✅ No errors found in ${fileName}`)
                 return
             }
 
