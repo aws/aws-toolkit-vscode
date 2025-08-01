@@ -8,7 +8,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { AutoDebugCommands } from './commands'
 import { AutoDebugCodeActionsProvider } from './codeActionsProvider'
 import { AutoDebugController } from './controller'
-import { registerAutoDebugFeature } from '../lsp/client'
+import { registerAutoDebugFeature } from '../client'
 
 /**
  * Auto Debug feature activation for Amazon Q

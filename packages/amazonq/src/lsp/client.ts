@@ -53,8 +53,8 @@ import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { codeReviewInChat } from '../app/amazonqScan/models/constants'
-import { AutoDebugFeature } from '../autoDebug'
-import { autoDebugRetryConfig } from '../autoDebug/constants'
+import { AutoDebugFeature } from '../lsp/autoDebug'
+import { autoDebugRetryConfig } from '../lsp/autoDebug/constants'
 
 // Module-level registry for AutoDebug feature
 let registeredAutoDebugFeature: AutoDebugFeature | undefined

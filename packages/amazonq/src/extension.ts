@@ -45,7 +45,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { hasGlibcPatch } from './lsp/client'
-import { activateAutoDebug } from './autoDebug/activation'
+import { activateAutoDebug } from './lsp/autoDebug/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
