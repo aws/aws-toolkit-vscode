@@ -197,7 +197,9 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     private createExplainMessage(filePath: string, problems: Problem[]): string {
-        const parts = [`Please explain the following problems in ${filePath}`]
+        const parts = [
+            `Please explain the following problems in ${filePath}. DO NOT edit files. ONLY provide explanation`,
+        ]
 
         for (const problem of problems) {
             const line = problem.diagnostic.range.start.line + 1

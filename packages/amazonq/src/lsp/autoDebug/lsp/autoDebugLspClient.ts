@@ -126,31 +126,8 @@ export class AutoDebugLspClient {
             return true
         } catch (error) {
             this.logger.error('AutoDebugLspClient: Error sending message via webview: %s', error)
-
+            return false
             // Fallback: Copy to clipboard and show notification
-            try {
-                const vscode = require('vscode')
-                await vscode.env.clipboard.writeText(params.message)
-
-                const choice = await vscode.window.showInformationMessage(
-                    `🔧 AutoDebug detected errors and wants to send this message to Amazon Q:\n\n${params.message.substring(0, 200)}...`,
-                    'Copy & Send Manually',
-                    'Cancel'
-                )
-
-                if (choice === 'Copy & Send Manually') {
-                    // Try to focus the panel using the imported function
-                    await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-                    vscode.window.showInformationMessage(
-                        'AutoDebug message copied to clipboard. Please paste it in Amazon Q chat and press Enter.'
-                    )
-                }
-
-                return true // Consider fallback as success
-            } catch (fallbackError) {
-                this.logger.error('AutoDebugLspClient: Fallback also failed: %s', fallbackError)
-                return false
-            }
         }
     }
 

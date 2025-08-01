@@ -4,14 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from 'aws-core-vscode/shared'
 
 /**
  * Provides code actions for Amazon Q Auto Debug features.
  * Integrates with VS Code's quick fix system to offer debugging assistance.
  */
 export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, vscode.Disposable {
-    private readonly logger = getLogger()
     private readonly disposables: vscode.Disposable[] = []
 
     public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix, vscode.CodeActionKind.Refactor]
@@ -21,8 +19,6 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
     }
 
     private registerProvider(): void {
-        this.logger.debug('AutoDebugCodeActionsProvider: Registering code actions provider')
-
         // Register for all file types
         const selector: vscode.DocumentSelector = [{ scheme: 'file' }]
 
