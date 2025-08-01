@@ -423,21 +423,61 @@ describe('AuthUtil', async function () {
                     data: 'credential-data',
                 },
             }
-
             const mockIamLogin = {
                 login: sinon.stub().resolves(mockResponse),
                 loginType: 'iam',
             }
 
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
-
+            
             const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken')
-
+            
             assert.ok(mockIamLogin.login.calledOnce)
             assert.ok(
-                mockIamLogin.login.calledWith({
+                mockIamLogin.login.calledWithMatch({
                     accessKey: 'accessKey',
                     secretKey: 'secretKey',
+                    sessionToken: 'sessionToken',
+                })
+            )
+            assert.strictEqual(response, mockResponse)
+        })
+
+        it('creates IAM session with role ARN', async function () {
+            const mockResponse = {
+                id: 'test-credential-id',
+                credentials: {
+                    accessKeyId: 'encrypted-access-key',
+                    secretAccessKey: 'encrypted-secret-key',
+                    sessionToken: 'encrypted-session-token',
+                    roleArn: 'arn:aws:iam::123456789012:role/TestRole',
+                },
+                updateCredentialsParams: {
+                    data: 'credential-data',
+                },
+            }
+
+            const mockIamLoginArn = {
+                login: sinon.stub().resolves(mockResponse),
+                loginType: 'iam',
+            }
+
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLoginArn as any)
+
+            const response = await auth.loginIam(
+                'accessKey',
+                'secretKey',
+                'sessionToken',
+                'arn:aws:iam::123456789012:role/TestRole'
+            )
+
+            assert.ok(mockIamLoginArn.login.calledOnce)
+            assert.ok(
+                mockIamLoginArn.login.calledWith({
+                    accessKey: 'accessKey',
+                    secretKey: 'secretKey',
+                    sessionToken: 'sessionToken',
+                    roleArn: 'arn:aws:iam::123456789012:role/TestRole',
                 })
             )
             assert.strictEqual(response, mockResponse)
@@ -451,7 +491,6 @@ describe('AuthUtil', async function () {
                 secretAccessKey: 'test-secret-key',
                 sessionToken: 'test-session-token',
             }
-
             const mockSession = {
                 getCredential: sinon.stub().resolves({
                     credential: mockCredentials,
@@ -483,13 +522,12 @@ describe('AuthUtil', async function () {
                 await auth.getIamCredential()
                 assert.fail('Should have thrown an error')
             } catch (err) {
-                assert.strictEqual((err as Error).message, 'Cannot get token with SSO session')
+                assert.strictEqual((err as Error).message, 'Cannot get credential with SSO session')
             }
         })
 
         it('throws error when not logged in', async function () {
             ;(auth as any).session = undefined
-
             try {
                 await auth.getIamCredential()
                 assert.fail('Should have thrown an error')
@@ -510,13 +548,11 @@ describe('AuthUtil', async function () {
         it('returns false for SSO session', function () {
             const mockSession = { loginType: 'sso' }
             ;(auth as any).session = mockSession
-
             assert.strictEqual(auth.isIamSession(), false)
         })
 
         it('returns false when no session', function () {
             ;(auth as any).session = undefined
-
             assert.strictEqual(auth.isIamSession(), false)
         })
     })

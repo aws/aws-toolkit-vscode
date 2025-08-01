@@ -73,12 +73,12 @@ export async function createSession({
 
     const client = sinon.createStubInstance(FeatureDevClient)
     client.createConversation.resolves(conversationID)
-    const session = new Session(sessionConfig, messenger, tabID, sessionState, client)
+    const sessionNew = new Session(sessionConfig, messenger, tabID, sessionState, client)
 
-    sinon.stub(session, 'conversationId').get(() => conversationID)
-    sinon.stub(session, 'uploadId').get(() => uploadID)
+    sinon.stub(sessionNew, 'conversationId').get(() => conversationID)
+    sinon.stub(sessionNew, 'uploadId').get(() => uploadID)
 
-    return session
+    return sessionNew
 }
 
 export async function sessionRegisterProvider(session: Session, uri: vscode.Uri, fileContents: Uint8Array) {
@@ -86,9 +86,9 @@ export async function sessionRegisterProvider(session: Session, uri: vscode.Uri,
 }
 
 export function generateVirtualMemoryUri(uploadID: string, filePath: string, scheme: string) {
-    const generationFilePath = path.join(uploadID, filePath)
-    const uri = vscode.Uri.from({ scheme, path: generationFilePath })
-    return uri
+    const generationFilePathNew = path.join(uploadID, filePath)
+    const uriNew = vscode.Uri.from({ scheme, path: generationFilePathNew })
+    return uriNew
 }
 
 export async function sessionWriteFile(session: Session, uri: vscode.Uri, encodedContent: Uint8Array) {
