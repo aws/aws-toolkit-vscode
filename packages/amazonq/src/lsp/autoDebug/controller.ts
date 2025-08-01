@@ -4,10 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from 'aws-core-vscode/shared'
-import { ErrorContextFormatter, ErrorContext } from './diagnostics/errorContext'
+import { getLogger, randomUUID } from 'aws-core-vscode/shared'
 import { AutoDebugLspClient } from './lsp/autoDebugLspClient'
-import { randomUUID } from 'aws-core-vscode/shared'
 import { mapDiagnosticSeverity } from './shared/diagnosticUtils'
 
 export interface AutoDebugConfig {
@@ -21,7 +19,6 @@ export interface Problem {
     readonly diagnostic: vscode.Diagnostic
     readonly severity: 'error' | 'warning' | 'info' | 'hint'
     readonly source: string
-    readonly isNew: boolean
 }
 
 /**
@@ -30,7 +27,6 @@ export interface Problem {
  */
 export class AutoDebugController implements vscode.Disposable {
     private readonly logger = getLogger()
-    private readonly errorFormatter: ErrorContextFormatter
     private readonly lspClient: AutoDebugLspClient
     private readonly disposables: vscode.Disposable[] = []
 
@@ -44,47 +40,7 @@ export class AutoDebugController implements vscode.Disposable {
             ...config,
         }
 
-        this.errorFormatter = new ErrorContextFormatter()
         this.lspClient = new AutoDebugLspClient(client, encryptionKey)
-    }
-
-    /**
-     * Creates formatted error contexts for AI debugging
-     */
-    public async createErrorContexts(problems: Problem[]): Promise<ErrorContext[]> {
-        const contexts: ErrorContext[] = []
-
-        for (const problem of problems) {
-            try {
-                const context = await this.errorFormatter.createErrorContext(problem)
-                contexts.push(context)
-            } catch (error) {
-                this.logger.warn('AutoDebugController: Failed to create context for problem: %s', error)
-            }
-        }
-        return contexts
-    }
-
-    /**
-     * Formats problems for display or AI consumption
-     */
-    public formatProblemsForChat(problems: Problem[]): string {
-        const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd()
-        return this.errorFormatter.formatProblemsString(problems, cwd)
-    }
-
-    /**
-     * Gets the current configuration
-     */
-    public getConfig(): AutoDebugConfig {
-        return this.config
-    }
-
-    /**
-     * Updates the configuration
-     */
-    public updateConfig(newConfig: Partial<AutoDebugConfig>): void {
-        this.config = { ...this.config, ...newConfig }
     }
 
     /**
@@ -92,13 +48,6 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public setLanguageClient(client: any): void {
         this.lspClient.setLanguageClient(client)
-    }
-
-    /**
-     * Sends a chat message through the LSP client (public interface)
-     */
-    public async sendChatMessage(message: string, source: string): Promise<void> {
-        await this.sendMessageToChat(message)
     }
 
     /**
@@ -130,12 +79,11 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
-                isNew: false,
             }))
 
             // Create fix message
             const fixMessage = this.createFixMessage(filePath, problems)
-            await this.sendChatMessage(fixMessage, 'specificFix')
+            await this.sendMessageToChat(fixMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error fixing specific problems: %s', error)
             throw error
@@ -183,12 +131,11 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
-                isNew: false,
             }))
 
             // Create fix message
             const fixMessage = this.createFixMessage(filePath, problems)
-            await this.sendChatMessage(fixMessage, 'singleFix')
+            await this.sendMessageToChat(fixMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error in fix process: %s', error)
         }
@@ -223,51 +170,13 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
-                isNew: false,
             }))
 
             // Create explanation message
             const explainMessage = this.createExplainMessage(filePath, problems)
-            await this.sendChatMessage(explainMessage, 'explain')
+            await this.sendMessageToChat(explainMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error explaining problems: %s', error)
-            throw error
-        }
-    }
-
-    /**
-     * Detect problems in the current file
-     */
-    async detectProblems(): Promise<void> {
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                throw new Error('No active editor found')
-            }
-
-            const filePath = editor.document.uri.fsPath
-
-            // Get all diagnostics for the current file
-            const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
-
-            if (allDiagnostics.length === 0) {
-                return
-            }
-
-            // Convert diagnostics to problems
-            const problems = allDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
-
-            // Create detection message
-            const detectMessage = this.createDetectMessage(filePath, problems)
-            await this.sendChatMessage(detectMessage, 'detect')
-        } catch (error) {
-            this.logger.error('AutoDebugController: Error detecting problems: %s', error)
             throw error
         }
     }
@@ -297,35 +206,6 @@ export class AutoDebugController implements vscode.Disposable {
             parts.push(
                 `${problem.severity.toUpperCase()}: ${problem.diagnostic.message} Location: Line ${line}, Column ${column} Source: ${source}`
             )
-        }
-
-        return parts.join('\n')
-    }
-
-    private createDetectMessage(filePath: string, problems: Problem[]): string {
-        const errorCount = problems.filter((p) => p.severity === 'error').length
-        const warningCount = problems.filter((p) => p.severity === 'warning').length
-
-        const parts = [`I detected ${problems.length} problems in ${filePath}:`]
-
-        if (errorCount > 0) {
-            parts.push(`- ${errorCount} errors`)
-        }
-        if (warningCount > 0) {
-            parts.push(`- ${warningCount} warnings`)
-        }
-
-        parts.push('\nHere are the details:')
-
-        for (const problem of problems.slice(0, 10)) {
-            // Limit to first 10
-            const line = problem.diagnostic.range.start.line + 1
-            const source = problem.source !== 'unknown' ? problem.source : 'Unknown'
-            parts.push(`${problem.severity.toUpperCase()}: ${problem.diagnostic.message} (Line ${line}, ${source})`)
-        }
-
-        if (problems.length > 10) {
-            parts.push(`... and ${problems.length - 10} more problems`)
         }
 
         return parts.join('\n')
