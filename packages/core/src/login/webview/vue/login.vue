@@ -230,7 +230,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                <div v-if="selectedLoginOption === LoginOption.IAM_CREDENTIAL" class="header bottomMargin">
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
@@ -273,7 +273,7 @@
             <div class="title">Secret Access Key</div>
             <input
                 class="iamInput bottomMargin"
-                type="text"
+                type="password"
                 id="secretKey"
                 name="secretKey"
                 v-model="secretKey"
@@ -330,6 +330,10 @@ interface ImportedLogin {
     type: number
     startUrl: string
     region: string
+    // Add IAM credential fields
+    profileName?: string
+    accessKey?: string
+    secretKey?: string // Note: storing secrets has security implications
 }
 
 export default defineComponent({
@@ -349,6 +353,7 @@ export default defineComponent({
     data() {
         return {
             existingStartUrls: [] as string[],
+            existingIamAccessKeys: [] as string[],
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
@@ -368,6 +373,8 @@ export default defineComponent({
         const defaultSso = await this.getDefaultSso()
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
+        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        this.accessKey = defaultIamAccessKey.accessKey
         await this.emitUpdate('created')
     },
 
@@ -397,6 +404,10 @@ export default defineComponent({
             }
         },
         handleDocumentClick(event: any) {
+            // Only reset selection when in START stage to avoid clearing during authentication
+            if (this.stage !== 'START') {
+                return
+            }
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
             if (!isClickInsideSelectableItems) {
                 this.selectedLoginOption = 0
@@ -437,17 +448,32 @@ export default defineComponent({
                     const selectedConnection =
                         this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
-                    const error = await client.startEnterpriseSetup(
-                        selectedConnection.startUrl,
-                        selectedConnection.region,
-                        this.app
-                    )
-                    if (error) {
-                        this.stage = 'START'
-                        void client.errorNotification(error)
-                    } else {
-                        this.stage = 'CONNECTED'
+                    // Handle both SSO and IAM imported connections
+                    if (selectedConnection.type === LoginOption.ENTERPRISE_SSO) {
+                        const error = await client.startEnterpriseSetup(
+                            selectedConnection.startUrl,
+                            selectedConnection.region,
+                            this.app
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
+                    } else if (selectedConnection.type === LoginOption.IAM_CREDENTIAL) {
+                        // Use stored IAM credentials
+                        const error = await client.startIamCredentialSetup(
+                            selectedConnection.profileName || '',
+                            selectedConnection.accessKey || '',
+                            selectedConnection.secretKey || ''
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
@@ -580,6 +606,9 @@ export default defineComponent({
         },
         async getDefaultSso() {
             return await client.getDefaultSsoProfile()
+        },
+        async getDefaultIamAccessKey() {
+            return await client.getDefaultIamKeys()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
