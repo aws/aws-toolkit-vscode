@@ -13,17 +13,6 @@ import { getLogger } from 'aws-core-vscode/shared'
 export class AutoDebugContextMenuProvider implements vscode.Disposable {
     private readonly logger = getLogger()
     private readonly disposables: vscode.Disposable[] = []
-
-    constructor() {
-        this.registerMenuItems()
-    }
-
-    private registerMenuItems(): void {
-        // Context menu items are registered via package.json contributions
-        // This class can be used to handle dynamic menu item visibility or other logic
-        this.logger.debug('AutoDebugContextMenuProvider: Context menu provider initialized')
-    }
-
     /**
      * Determines if auto debug menu items should be visible
      */
@@ -31,32 +20,7 @@ export class AutoDebugContextMenuProvider implements vscode.Disposable {
         if (!document) {
             return false
         }
-
-        // Exclude only non-programming file types that don't benefit from debugging
-        const excludedLanguages = [
-            'plaintext',
-            'markdown',
-            'json',
-            'xml',
-            'yaml',
-            'yml',
-            'csv',
-            'log',
-            'txt',
-            'md',
-            'html',
-            'css',
-            'scss',
-            'sass',
-            'less',
-            'svg',
-            'pdf',
-            'image',
-            'binary',
-        ]
-
-        // Show auto debug items for all languages except the excluded ones
-        return !excludedLanguages.includes(document.languageId)
+        return true
     }
 
     /**
