@@ -344,8 +344,13 @@ export abstract class BaseLogin {
      * Decrypts an encrypted string, removes its quotes, and returns the resulting string
      */
     protected async decrypt(encrypted: string): Promise<string> {
-        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
-        return decrypted.plaintext.toString().replaceAll('"', '')
+        try {
+            const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
+            return decrypted.plaintext.toString().replaceAll('"', '')
+        } catch (e) {
+            getLogger().error(`Failed to decrypt: ${encrypted}`)
+            return encrypted
+        }
     }
 }
 
