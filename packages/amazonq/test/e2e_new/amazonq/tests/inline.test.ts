@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { Workbench, EditorView, InputBox, TextEditor, WebviewView, Key } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { pressKey, createNewTextFile, writeToTextEditor } from '../utils/generalUtils'
+import { createNewTextFile, writeToTextEditor, sleep } from '../utils/generalUtils'
 import assert from 'assert'
 
 describe('Amazon Q Inline Completion / Chat Functionality', function () {
@@ -20,25 +20,32 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         webviewView = testContext.webviewView
         await webviewView.switchBack()
         workbench = testContext.workbench
-
         editorView = new EditorView()
         testContext.editorView = editorView
-
         textEditor = await createNewTextFile(workbench, editorView)
     })
-
-    it('Inline Test', async () => {
-        await writeToTextEditor(textEditor, 'Select Me')
+    after(async function () {
+        // Switch back to Webview Iframe when dealing with external webviews from Amazon Q.
+        await editorView.closeAllEditors()
+        await webviewView.switchToFrame()
+        testContext.webviewView = webviewView
+    })
+    it('Inline Test Shortcut', async () => {
+        await writeToTextEditor(textEditor, 'def factorial(n):')
         const text = await textEditor.getText()
-        assert.equal(text, 'Select Me')
+        assert.equal(text, 'def factorial(n): ')
         await textEditor.clearText()
 
+        const textBefore = await textEditor.getText()
         await workbench.executeCommand('Amazon Q: Inline Chat')
         const input = new InputBox()
-        await input.sendKeys('Write a simple sentece')
+        await input.sendKeys('Generate the fibonacci sequence through iteration')
         await input.sendKeys(Key.ENTER)
-        const driver = textEditor.getDriver()
-        await pressKey(driver, 'ENTER')
-        await pressKey(driver, 'TAB')
+        await sleep(8000)
+
+        const textAfter = await textEditor.getText()
+        assert(textAfter.length > textBefore.length, 'Amazon Q should have generated code')
+        assert(textAfter.includes('fibonacci'), 'Generated code should contain fibonacci logic')
+        await textEditor.clearText()
     })
 })
