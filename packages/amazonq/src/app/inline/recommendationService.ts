@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
@@ -104,11 +103,11 @@ export class RecommendationService {
             // this is a best effort estimate of deletion
             const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
 
-            const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
-                request,
-                token
-            )
+            // const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            //     inlineCompletionWithReferencesRequestType.method,
+            //     request,
+            //     token
+            // )
 
             const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
                 editCompletionRequestType.method,
@@ -116,14 +115,14 @@ export class RecommendationService {
                 token
             )
 
-            const p = isTriggerByDeletion ? [editPromise] : [completionPromise, editPromise]
+            const p = isTriggerByDeletion ? [editPromise] : [editPromise]
             getLogger().debug('Skip auto trigger of completion when deleting code')
 
-            let result = await Promise.race(p)
+            const result = await Promise.race(p)
             // const result = await editPromise
-            if (p.length > 1 && result.items.length === 0) {
-                result = await editPromise
-            }
+            // if (p.length > 1 && result.items.length === 0) {
+            //     result = await editPromise
+            // }
 
             // const result = await editPromise
 
