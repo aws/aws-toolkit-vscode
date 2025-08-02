@@ -114,7 +114,7 @@ export class ErrorContextFormatter {
     }
 
     /**
-     * Creates a problems string similar to the reference implementation
+     * Creates a problems string with Markdown formatting for better readability
      */
     public formatProblemsString(problems: Problem[], cwd: string): string {
         let result = ''
@@ -122,14 +122,16 @@ export class ErrorContextFormatter {
 
         for (const [filePath, fileProblems] of fileGroups.entries()) {
             if (fileProblems.length > 0) {
-                result += `\n\n${path.relative(cwd, filePath)}`
+                result += `\n\n**${path.relative(cwd, filePath)}**\n\n`
 
+                // Group problems into a code block for better formatting
+                result += '```\n'
                 for (const problem of fileProblems) {
-                    const label = this.getSeverityLabel(problem.severity)
                     const line = problem.diagnostic.range.start.line + 1
-                    const source = problem.source ? `${problem.source} ` : ''
-                    result += `\n- [${source}${label}] Line ${line}: ${problem.diagnostic.message}`
+                    const source = problem.source ? `${problem.source}` : 'Unknown'
+                    result += `[${source}] Line ${line}: ${problem.diagnostic.message}\n`
                 }
+                result += '```'
             }
         }
 
@@ -247,20 +249,5 @@ export class ErrorContextFormatter {
         }
 
         return groups
-    }
-
-    private getSeverityLabel(severity: string): string {
-        switch (severity) {
-            case 'error':
-                return 'ERROR'
-            case 'warning':
-                return 'WARN'
-            case 'info':
-                return 'INFO'
-            case 'hint':
-                return 'HINT'
-            default:
-                return 'UNKNOWN'
-        }
     }
 }

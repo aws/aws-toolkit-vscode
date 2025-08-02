@@ -7,18 +7,13 @@ import * as vscode from 'vscode'
 import { getLogger, randomUUID } from 'aws-core-vscode/shared'
 import { AutoDebugLspClient } from './lsp/autoDebugLspClient'
 import { mapDiagnosticSeverity } from './shared/diagnosticUtils'
+import { ErrorContextFormatter } from './diagnostics/errorContext'
+import { Problem } from './diagnostics/problemDetector'
 
 export interface AutoDebugConfig {
     readonly enabled: boolean
     readonly excludedSources: string[]
     readonly severityFilter: ('error' | 'warning' | 'info' | 'hint')[]
-}
-
-export interface Problem {
-    readonly uri: vscode.Uri
-    readonly diagnostic: vscode.Diagnostic
-    readonly severity: 'error' | 'warning' | 'info' | 'hint'
-    readonly source: string
 }
 
 /**
@@ -28,6 +23,7 @@ export interface Problem {
 export class AutoDebugController implements vscode.Disposable {
     private readonly logger = getLogger()
     private readonly lspClient: AutoDebugLspClient
+    private readonly errorFormatter: ErrorContextFormatter
     private readonly disposables: vscode.Disposable[] = []
 
     private config: AutoDebugConfig
@@ -41,6 +37,7 @@ export class AutoDebugController implements vscode.Disposable {
         }
 
         this.lspClient = new AutoDebugLspClient(client, encryptionKey)
+        this.errorFormatter = new ErrorContextFormatter()
     }
 
     /**
@@ -79,6 +76,7 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
+                isNew: false,
             }))
 
             // Create fix message
@@ -131,6 +129,7 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
+                isNew: false,
             }))
 
             // Create fix message
@@ -170,6 +169,7 @@ export class AutoDebugController implements vscode.Disposable {
                 diagnostic,
                 severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
+                isNew: false,
             }))
 
             // Create explanation message
@@ -182,35 +182,17 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     private createFixMessage(filePath: string, problems: Problem[]): string {
-        const parts = [`Please help me fix the following errors in ${filePath}`]
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''
+        const formattedProblems = this.errorFormatter.formatProblemsString(problems, workspaceRoot)
 
-        for (const problem of problems) {
-            const line = problem.diagnostic.range.start.line + 1
-            const column = problem.diagnostic.range.start.character + 1
-            const source = problem.source !== 'unknown' ? problem.source : 'Unknown'
-            parts.push(
-                `ERROR: ${problem.diagnostic.message} Location: Line ${line}, Column ${column} Source: ${source}`
-            )
-        }
-
-        return parts.join('\n')
+        return `Please help me fix the following errors in ${filePath}:${formattedProblems}`
     }
 
     private createExplainMessage(filePath: string, problems: Problem[]): string {
-        const parts = [
-            `Please explain the following problems in ${filePath}. DO NOT edit files. ONLY provide explanation`,
-        ]
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''
+        const formattedProblems = this.errorFormatter.formatProblemsString(problems, workspaceRoot)
 
-        for (const problem of problems) {
-            const line = problem.diagnostic.range.start.line + 1
-            const column = problem.diagnostic.range.start.character + 1
-            const source = problem.source !== 'unknown' ? problem.source : 'Unknown'
-            parts.push(
-                `${problem.severity.toUpperCase()}: ${problem.diagnostic.message} Location: Line ${line}, Column ${column} Source: ${source}`
-            )
-        }
-
-        return parts.join('\n')
+        return `Please explain the following problems in ${filePath}. DO NOT edit files. ONLY provide explanation:${formattedProblems}`
     }
 
     /**
