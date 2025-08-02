@@ -182,6 +182,8 @@ export async function startLanguageServer(
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                         codeReviewInChat: codeReviewInChat,
+                        // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
+                        displayFindings: true,
                     },
                     window: {
                         notifications: true,
