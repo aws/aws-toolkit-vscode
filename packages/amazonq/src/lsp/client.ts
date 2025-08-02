@@ -392,13 +392,8 @@ async function onLanguageServerReady(
     const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
     inlineManager.registerInlineCompletion()
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
-    // Always activate chat LSP - remove experiment flag dependency
-    try {
+    if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activate(client, encryptionKey, resourcePaths.ui)
-        getLogger('amazonqLsp').info('Amazon Q Chat LSP activated successfully')
-    } catch (error) {
-        getLogger('amazonqLsp').error('Failed to activate Amazon Q Chat LSP: %s', error)
-        throw error
     }
 
     // Connect AutoDebug feature to the language client
