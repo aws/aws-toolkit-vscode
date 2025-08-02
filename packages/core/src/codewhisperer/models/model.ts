@@ -730,6 +730,7 @@ export class TransformByQState {
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
+    private jobHistoryPath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -761,6 +762,8 @@ export class TransformByQState {
 
     private intervalId: NodeJS.Timeout | undefined = undefined
 
+    private refreshInProgress: boolean = false
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -783,6 +786,10 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public isRefreshInProgress() {
+        return this.refreshInProgress
     }
 
     public getHasSeenTransforming() {
@@ -881,6 +888,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getJobHistoryPath() {
+        return this.jobHistoryPath
+    }
+
     public getResultArchiveFilePath() {
         return this.resultArchiveFilePath
     }
@@ -975,6 +986,10 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setRefreshInProgress(inProgress: boolean) {
+        this.refreshInProgress = inProgress
+    }
+
     public setHasSeenTransforming(hasSeen: boolean) {
         this.hasSeenTransforming = hasSeen
     }
@@ -1055,6 +1070,10 @@ export class TransformByQState {
         this.summaryFilePath = filePath
     }
 
+    public setJobHistoryPath(filePath: string) {
+        this.jobHistoryPath = filePath
+    }
+
     public setResultArchiveFilePath(filePath: string) {
         this.resultArchiveFilePath = filePath
     }
@@ -1121,6 +1140,7 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.refreshInProgress = false
         this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
@@ -1137,6 +1157,7 @@ export class TransformByQState {
         this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
+        this.jobHistoryPath = ''
     }
 }
 
