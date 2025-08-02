@@ -1,0 +1,124 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { Commands, getLogger, messages } from 'aws-core-vscode/shared'
+import { AutoDebugController } from './controller'
+
+/**
+ * Auto Debug commands for Amazon Q
+ * Handles all command registrations and implementations
+ */
+export class AutoDebugCommands implements vscode.Disposable {
+    private readonly logger = getLogger()
+    private readonly disposables: vscode.Disposable[] = []
+
+    constructor(private readonly controller: AutoDebugController) {
+        this.logger.debug('AutoDebugCommands: Initializing auto debug commands')
+    }
+
+    /**
+     * Register all auto debug commands
+     */
+    registerCommands(context: vscode.ExtensionContext): void {
+        this.disposables.push(
+            // Fix with Amazon Q command
+            Commands.register(
+                {
+                    id: 'amazonq.01.fixWithQ',
+                    name: 'Amazon Q: Fix Problem',
+                },
+                async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
+                    await this.fixWithAmazonQ(range, diagnostics)
+                }
+            ),
+
+            // Fix All with Amazon Q command
+            Commands.register(
+                {
+                    id: 'amazonq.02.fixAllWithQ',
+                    name: 'Amazon Q: Fix All Errors',
+                },
+                async () => {
+                    await this.fixAllWithAmazonQ()
+                }
+            ),
+
+            // Explain Problem with Amazon Q command
+            Commands.register(
+                {
+                    id: 'amazonq.03.explainProblem',
+                    name: 'Amazon Q: Explain Problem',
+                },
+                async (range?: vscode.Range, diagnostics?: vscode.Diagnostic[]) => {
+                    await this.explainProblem(range, diagnostics)
+                }
+            )
+        )
+
+        // Add all disposables to context
+        context.subscriptions.push(...this.disposables)
+    }
+
+    /**
+     * Fix with Amazon Q - fixes only the specific issues the user selected
+     */
+    private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
+        try {
+            const editor = vscode.window.activeTextEditor
+            if (!editor) {
+                return
+            }
+
+            // Controller handles panel focusing and message sending
+            await this.controller.fixSpecificProblems(range, diagnostics)
+        } catch (error) {
+            this.logger.error('AutoDebugCommands: Error in Fix with Amazon Q: %s', error)
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
+        }
+    }
+
+    /**
+     * Fix All with Amazon Q - processes all errors in the current file
+     */
+    private async fixAllWithAmazonQ(): Promise<void> {
+        try {
+            const editor = vscode.window.activeTextEditor
+            if (!editor) {
+                return
+            }
+
+            await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
+        } catch (error) {
+            this.logger.error('AutoDebugCommands: Error in Fix All with Amazon Q: %s', error)
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
+        }
+    }
+
+    /**
+     * Explains the problem using Amazon Q
+     */
+    private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
+        try {
+            const editor = vscode.window.activeTextEditor
+            if (!editor) {
+                this.logger.warn('AutoDebugCommands: No active editor for explainProblem')
+                return
+            }
+
+            await this.controller.explainProblems(range, diagnostics)
+        } catch (error) {
+            this.logger.error('AutoDebugCommands: Error explaining problem: %s', error)
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
+        }
+    }
+
+    /**
+     * Dispose of all resources
+     */
+    dispose(): void {
+        vscode.Disposable.from(...this.disposables).dispose()
+    }
+}
