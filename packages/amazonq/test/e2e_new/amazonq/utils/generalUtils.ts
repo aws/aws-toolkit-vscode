@@ -157,9 +157,11 @@ export async function createNewTextFile(workbench: Workbench, editorView: Editor
  * @returns Promise<void>
  */
 export async function writeToTextEditor(textEditor: TextEditor, text: string): Promise<void> {
+    // We require a "dummy" space to be written such that we can properly index the
+    // number of lines to register the textEditor.
+    await textEditor.typeTextAt(1, 1, ' ')
     const currentLines = await textEditor.getNumberOfLines()
-    const nextLine = currentLines + 1
-    await textEditor.typeTextAt(nextLine, 1, text)
+    await textEditor.typeTextAt(currentLines, 1, text)
 }
 
 /**
