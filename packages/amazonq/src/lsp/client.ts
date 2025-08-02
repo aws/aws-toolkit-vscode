@@ -53,63 +53,10 @@ import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { codeReviewInChat } from '../app/amazonqScan/models/constants'
-import { AutoDebugFeature } from '../lsp/autoDebug'
-import { autoDebugRetryConfig } from '../lsp/autoDebug/constants'
-
-// Module-level registry for AutoDebug feature
-let registeredAutoDebugFeature: AutoDebugFeature | undefined
-
-export function registerAutoDebugFeature(feature: AutoDebugFeature) {
-    registeredAutoDebugFeature = feature
-}
-
-export function getRegisteredAutoDebugFeature(): AutoDebugFeature | undefined {
-    return registeredAutoDebugFeature
-}
+import { activateAutoDebug } from './autoDebug/activation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
-
-interface RetryOptions {
-    maxAttempts: number
-    initialDelayMs: number
-    maxDelayMs: number
-    backoffMultiplier: number
-    onRetry?: (attempt: number, error: Error) => void
-    onFailure?: (attempts: number, lastError: Error) => void
-}
-
-/**
- * Retry a function with exponential backoff
- */
-async function retryWithExponentialBackoff<T>(fn: () => T | Promise<T>, options: RetryOptions): Promise<T> {
-    const { maxAttempts, initialDelayMs, maxDelayMs, backoffMultiplier, onRetry, onFailure } = options
-
-    let lastError: Error
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            return await fn()
-        } catch (error) {
-            lastError = error instanceof Error ? error : new Error(String(error))
-
-            if (attempt === maxAttempts) {
-                onFailure?.(attempt, lastError)
-                throw lastError
-            }
-
-            onRetry?.(attempt, lastError)
-
-            // Calculate delay with exponential backoff
-            const delay = Math.min(initialDelayMs * Math.pow(backoffMultiplier, attempt - 1), maxDelayMs)
-
-            await new Promise((resolve) => setTimeout(resolve, delay))
-        }
-    }
-
-    // This should never be reached, but TypeScript requires it
-    throw lastError!
-}
 
 export function hasGlibcPatch(): boolean {
     // Skip GLIBC patching for SageMaker environments
@@ -396,48 +343,12 @@ async function onLanguageServerReady(
         await activate(client, encryptionKey, resourcePaths.ui)
     }
 
-    // Connect AutoDebug feature to the language client
+    // Activate AutoDebug feature with direct LSP client connection
     try {
-        getLogger('amazonqLsp').debug('Attempting to connect AutoDebug feature to language client')
-
-        await retryWithExponentialBackoff(
-            () => {
-                const autoDebugFeature = getRegisteredAutoDebugFeature()
-                if (!autoDebugFeature) {
-                    throw new Error('AutoDebug feature not registered')
-                }
-                const controller = autoDebugFeature.getController()
-                if (!controller) {
-                    throw new Error('AutoDebug controller not available')
-                }
-                controller.setLanguageClient(client)
-                getLogger('amazonqLsp').debug('AutoDebug feature connected successfully')
-            },
-            {
-                maxAttempts: autoDebugRetryConfig.maxAttempts,
-                initialDelayMs: autoDebugRetryConfig.initialDelayMs,
-                maxDelayMs: autoDebugRetryConfig.maxDelayMs,
-                backoffMultiplier: autoDebugRetryConfig.backoffMultiplier,
-                onRetry: (attempt, error) => {
-                    getLogger('amazonqLsp').debug(
-                        'AutoDebug connection attempt %d failed: %s. Retrying...',
-                        attempt,
-                        error.message
-                    )
-                },
-                onFailure: (attempts, lastError) => {
-                    getLogger('amazonqLsp').error(
-                        'AutoDebug feature not found after %d attempts - integration will not work. ' +
-                            'This may indicate that the AutoDebug feature failed to activate or there is a timing issue. ' +
-                            'Last error: %s',
-                        attempts,
-                        lastError.message
-                    )
-                },
-            }
-        )
+        const autoDebugFeature = await activateAutoDebug(extensionContext, client, encryptionKey)
+        toDispose.push(autoDebugFeature)
     } catch (error) {
-        getLogger('amazonqLsp').error('Failed to connect AutoDebug feature to language client: %s', error)
+        getLogger('amazonqLsp').error('Failed to activate AutoDebug feature: %s', error)
     }
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
