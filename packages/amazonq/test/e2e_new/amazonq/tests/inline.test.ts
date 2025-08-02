@@ -28,7 +28,6 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         // Switch back to Webview Iframe when dealing with external webviews from Amazon Q.
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
-        testContext.webviewView = webviewView
     })
     it('Inline Test Shortcut', async () => {
         await writeToTextEditor(textEditor, 'def factorial(n):')
