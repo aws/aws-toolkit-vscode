@@ -150,6 +150,10 @@ function createCloud9Properties(company: string): IdeProperties {
     }
 }
 
+/**
+ * export method - for testing purposes only
+ * @internal
+ */
 export function isSageMakerUnifiedStudio(): boolean {
     if (serviceName === notInitialized) {
         serviceName = process.env.SERVICE_NAME ?? ''
