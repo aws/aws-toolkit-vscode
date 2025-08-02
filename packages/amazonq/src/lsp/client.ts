@@ -29,6 +29,7 @@ import {
     Settings,
     createServerOptions,
     globals,
+    Experiments,
     Commands,
     oneSecond,
     validateNodeExe,
@@ -40,7 +41,6 @@ import {
     extensionVersion,
     isSageMaker,
     DevSettings,
-    Experiments,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
