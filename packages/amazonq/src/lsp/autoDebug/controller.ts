@@ -4,12 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, randomUUID } from 'aws-core-vscode/shared'
+import { getLogger, randomUUID, messages } from 'aws-core-vscode/shared'
 import { AutoDebugLspClient } from './lsp/autoDebugLspClient'
 import { mapDiagnosticSeverity } from './shared/diagnosticUtils'
 import { ErrorContextFormatter } from './diagnostics/errorContext'
 import { Problem } from './diagnostics/problemDetector'
-
 export interface AutoDebugConfig {
     readonly enabled: boolean
     readonly excludedSources: string[]
@@ -87,7 +86,7 @@ export class AutoDebugController implements vscode.Disposable {
     public async fixAllProblemsInFile(maxProblems: number = 15): Promise<void> {
         const editor = vscode.window.activeTextEditor
         if (!editor) {
-            void vscode.window.showWarningMessage('No active editor found')
+            void messages.showMessage('warn', 'No active editor found')
             return
         }
 
