@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import { Commands, getLogger, messages } from 'aws-core-vscode/shared'
-import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
-import { placeholder } from 'aws-core-vscode/shared'
 import { AutoDebugController } from './controller'
 
 /**
@@ -74,10 +72,7 @@ export class AutoDebugCommands implements vscode.Disposable {
                 return
             }
 
-            // Focus Amazon Q panel first
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-
-            // Use the controller to handle the fix
+            // Controller handles panel focusing and message sending
             await this.controller.fixSpecificProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix with Amazon Q: %s', error)
@@ -95,10 +90,6 @@ export class AutoDebugCommands implements vscode.Disposable {
                 return
             }
 
-            // Focus Amazon Q panel first
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-
-            // Use the enhanced fix-all-problems method
             await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error in Fix All with Amazon Q: %s', error)
@@ -117,10 +108,6 @@ export class AutoDebugCommands implements vscode.Disposable {
                 return
             }
 
-            // Focus Amazon Q panel first
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-
-            // Use the controller to handle the explanation
             await this.controller.explainProblems(range, diagnostics)
         } catch (error) {
             this.logger.error('AutoDebugCommands: Error explaining problem: %s', error)

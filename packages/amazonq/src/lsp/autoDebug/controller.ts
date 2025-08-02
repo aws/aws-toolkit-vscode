@@ -28,7 +28,7 @@ export class AutoDebugController implements vscode.Disposable {
 
     private config: AutoDebugConfig
 
-    constructor(config?: Partial<AutoDebugConfig>, client?: any, encryptionKey?: Buffer) {
+    constructor(config?: Partial<AutoDebugConfig>) {
         this.config = {
             enabled: true,
             excludedSources: [], // No default exclusions - let users configure as needed
@@ -36,15 +36,8 @@ export class AutoDebugController implements vscode.Disposable {
             ...config,
         }
 
-        this.lspClient = new AutoDebugLspClient(client, encryptionKey)
+        this.lspClient = new AutoDebugLspClient()
         this.errorFormatter = new ErrorContextFormatter()
-    }
-
-    /**
-     * Sets the language client for LSP communication
-     */
-    public setLanguageClient(client: any): void {
-        this.lspClient.setLanguageClient(client)
     }
 
     /**

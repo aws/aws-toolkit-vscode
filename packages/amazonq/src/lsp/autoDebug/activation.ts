@@ -75,13 +75,5 @@ export async function activateAutoDebug(
     const feature = new AutoDebugFeature(context)
     await feature.activate()
 
-    // If LSP client is provided, connect it immediately
-    if (client) {
-        const controller = feature.getController()
-        if (controller) {
-            controller.setLanguageClient(client)
-        }
-    }
-
     return feature
 }
