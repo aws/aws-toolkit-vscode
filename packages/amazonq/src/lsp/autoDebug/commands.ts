@@ -14,15 +14,13 @@ import { AutoDebugController } from './controller'
 export class AutoDebugCommands implements vscode.Disposable {
     private readonly logger = getLogger()
     private readonly disposables: vscode.Disposable[] = []
-
-    constructor(private readonly controller: AutoDebugController) {
-        this.logger.debug('AutoDebugCommands: Initializing auto debug commands')
-    }
+    private controller!: AutoDebugController
 
     /**
      * Register all auto debug commands
      */
-    registerCommands(context: vscode.ExtensionContext): void {
+    registerCommands(context: vscode.ExtensionContext, controller: AutoDebugController): void {
+        this.controller = controller
         this.disposables.push(
             // Fix with Amazon Q command
             Commands.register(
