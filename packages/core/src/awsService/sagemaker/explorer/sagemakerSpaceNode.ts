@@ -162,15 +162,17 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
 
     public async refreshNode(): Promise<void> {
         await this.updateSpaceAppStatus()
-        await tryRefreshNode(this)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }
 
 export async function tryRefreshNode(node?: SagemakerSpaceNode) {
     if (node) {
-        const n = node instanceof SagemakerSpaceNode ? node.parent : node
         try {
-            await n.refreshNode()
+            // For SageMaker spaces, refresh just the individual space node to avoid expensive
+            // operation of refreshing all spaces in the domain
+            await node.updateSpaceAppStatus()
+            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
         } catch (e) {
             getLogger().error('refreshNode failed: %s', (e as Error).message)
         }

@@ -5,8 +5,9 @@
 
 import { fs } from '../../shared/fs/fs'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
-import { parseRegionFromArn, RemoteAppMetadata } from './utils'
+import { RemoteAppMetadata } from './utils'
 import { getLogger } from '../../shared/logger/logger'
+import { parseArn } from './detached-server/utils'
 
 export async function getRemoteAppMetadata(): Promise<RemoteAppMetadata> {
     try {
@@ -21,7 +22,7 @@ export async function getRemoteAppMetadata(): Promise<RemoteAppMetadata> {
             throw new Error('DomainId or SpaceName not found in metadata file')
         }
 
-        const region = parseRegionFromArn(metadata.ResourceArn)
+        const { region } = parseArn(metadata.ResourceArn)
 
         const client = new SagemakerClient(region)
         const spaceDetails = await client.describeSpace({ DomainId: domainId, SpaceName: spaceName })

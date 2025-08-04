@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Use documentChangeEvent as auto trigger condition"
+}

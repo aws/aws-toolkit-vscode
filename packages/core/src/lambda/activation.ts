@@ -13,7 +13,6 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { downloadLambdaCommand, openLambdaFile } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
-import { ExtContext } from '../shared/extensions'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
@@ -42,6 +41,8 @@ import { registerLambdaUriHandler } from './uriHandlers'
 import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
+import { activateRemoteDebugging } from './remoteDebugging/ldkController'
+import { ExtContext } from '../shared/extensions'
 
 async function openReadme() {
     const readmeUri = vscode.Uri.file(await getReadme())
@@ -263,4 +264,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
         registerLambdaUriHandler()
     )
+
+    void activateRemoteDebugging()
 }

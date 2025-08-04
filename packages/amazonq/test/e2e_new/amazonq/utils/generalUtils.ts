@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { By, WebviewView, WebElement } from 'vscode-extension-tester'
-import { until } from 'selenium-webdriver'
+import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor, Key } from 'vscode-extension-tester'
+import { until, WebDriver } from 'selenium-webdriver'
 
 /**
  * General sleep function to wait for a specified amount of time
@@ -37,6 +37,35 @@ export async function waitForElements(webview: WebviewView, locator: By, timeout
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElements(locator)
+}
+
+/**
+ * Presses a single key globally
+ * @param driver The WebDriver instance
+ * @param key The key to press
+ */
+export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promise<void> {
+    await driver.actions().sendKeys(key).perform()
+}
+
+/**
+ * Presses a keyboard shortcut with modifier keys
+ * @param driver The WebDriver instance
+ * @param key The keys to press
+ *
+ * Examples:
+ * Ctrl + C | await pressShortcut(driver, Key.CONTROL, 'c')
+ * Ctrl + Shift + T | await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 't')
+ */
+export async function pressShortcut(driver: WebDriver, ...keys: (keyof typeof Key)[]): Promise<void> {
+    const actions = driver.actions()
+    for (const key of keys) {
+        actions.keyDown(key)
+    }
+    for (const key of keys.reverse()) {
+        actions.keyUp(key)
+    }
+    await actions.perform()
 }
 
 /**
@@ -102,6 +131,37 @@ export async function clearChat(webview: WebviewView): Promise<boolean> {
         console.error('Error clearing chat input:', e)
         return false
     }
+}
+
+/**
+ * Creates a new text file and returns the editor
+ * @param workbench The Workbench instance
+ * @returns Promise<TextEditor> The text editor for the new file
+ */
+export async function createNewTextFile(workbench: Workbench, editorView: EditorView): Promise<TextEditor> {
+    await workbench.executeCommand('Create: New File...')
+    await (await InputBox.create()).selectQuickPick('Text File')
+    await sleep(1000)
+    const editor = await editorView.openEditor('Untitled-1')
+    if (!editor || !(editor instanceof TextEditor)) {
+        throw new Error('Failed to open text editor')
+    }
+    const textEditor = editor as TextEditor
+    return textEditor
+}
+
+/**
+ * Writes the given string in the textEditor in the next empty line
+ * @param textEditor The TextEditor instance
+ * @param text The text the user wants to type
+ * @returns Promise<void>
+ */
+export async function writeToTextEditor(textEditor: TextEditor, text: string): Promise<void> {
+    // We require a "dummy" space to be written such that we can properly index the
+    // number of lines to register the textEditor.
+    await textEditor.typeTextAt(1, 1, ' ')
+    const currentLines = await textEditor.getNumberOfLines()
+    await textEditor.typeTextAt(currentLines, 1, text)
 }
 
 /**

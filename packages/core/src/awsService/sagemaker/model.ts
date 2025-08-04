@@ -121,7 +121,7 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
     const errLog = path.join(storagePath, 'sagemaker-local-server.err.log')
     const infoFilePath = path.join(storagePath, 'sagemaker-local-server-info.json')
 
-    logger.info(`local server logs at ${storagePath}/sagemaker-local-server.*.log`)
+    logger.info(`sagemaker-local-server.*.log at ${storagePath}`)
 
     const customEndpoint = DevSettings.instance.get('endpoints', {})['sagemaker']
 

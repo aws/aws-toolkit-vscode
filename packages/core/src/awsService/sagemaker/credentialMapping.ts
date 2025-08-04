@@ -10,9 +10,9 @@ import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { Auth } from '../../auth/auth'
-import { parseRegionFromArn } from './utils'
 import { SpaceMappings, SsmConnectionInfo } from './types'
 import { getLogger } from '../../shared/logger/logger'
+import { parseArn } from './detached-server/utils'
 
 const mappingFileName = '.sagemaker-space-profiles'
 const mappingFilePath = path.join(os.homedir(), '.aws', mappingFileName)
@@ -81,8 +81,13 @@ export async function persistSSMConnection(
     wsUrl?: string,
     token?: string
 ): Promise<void> {
-    const region = parseRegionFromArn(appArn)
+    const { region } = parseArn(appArn)
     const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
+
+    // TODO: Hardcoded to 'jupyterlab' due to a bug in Studio that only supports refreshing
+    // the token for both CodeEditor and JupyterLab Apps in the jupyterlab subdomain.
+    // This will be fixed shortly after NYSummit launch to support refresh URL in CodeEditor subdomain.
+    const appSubDomain = 'jupyterlab'
 
     let envSubdomain: string
 
@@ -101,8 +106,7 @@ export async function persistSSMConnection(
             ? `studio.${region}.sagemaker.aws`
             : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
 
-    const refreshUrl = `https://studio-${domain}.${baseDomain}/api/remoteaccess/token`
-
+    const refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
     await setSpaceCredentials(appArn, refreshUrl, {
         sessionId: session ?? '-',
         url: wsUrl ?? '-',

@@ -60,7 +60,6 @@ import { SecurityIssueProvider } from '../service/securityIssueProvider'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { closeDiff, getPatchedCode } from '../../shared/utilities/diffUtils'
 import { insertCommentAboveLine } from '../../shared/utilities/commentUtils'
-import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
@@ -147,17 +146,29 @@ export const showReferenceLog = Commands.declare(
     }
 )
 
-export const showExploreAgentsView = Commands.declare(
-    { id: 'aws.amazonq.exploreAgents', compositeKey: { 1: 'source' } },
+export const showLogs = Commands.declare(
+    { id: 'aws.amazonq.showLogs', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         if (_ !== placeholder) {
             source = 'ellipsesMenu'
         }
 
-        DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
-            sender: 'amazonqCore',
-            command: 'showExploreAgentsView',
-        })
+        // Show warning message without buttons - just informational
+        void vscode.window.showWarningMessage(
+            'Log files may contain sensitive information such as account IDs, resource names, and other data. Be careful when sharing these logs.'
+        )
+
+        // Get the log directory path
+        const logFolderPath = globals.context.logUri?.fsPath
+        const path = require('path')
+        const logFilePath = path.join(logFolderPath, 'Amazon Q Logs.log')
+        if (logFilePath) {
+            // Open the log directory in the OS file explorer directly
+            await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(logFilePath))
+        } else {
+            // Fallback: show error if log path is not available
+            void vscode.window.showErrorMessage('Log location not available.')
+        }
     }
 )
 
@@ -634,6 +645,12 @@ const registerToolkitApiCallbackOnce = once(() => {
 export const registerToolkitApiCallback = Commands.declare(
     { id: 'aws.amazonq.refreshConnectionCallback' },
     () => async (toolkitApi?: any) => {
+        // Early return if already registered to avoid duplicate work
+        if (_toolkitApi) {
+            getLogger().debug('Toolkit API callback already registered, skipping')
+            return
+        }
+
         // While the Q/CW exposes an API for the Toolkit to register callbacks on auth changes,
         // we need to do it manually here because the Toolkit would have been unable to call
         // this API if the Q/CW extension started afterwards (and this code block is running).
