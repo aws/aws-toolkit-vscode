@@ -75,7 +75,6 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
-    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
