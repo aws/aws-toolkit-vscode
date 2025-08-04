@@ -61,56 +61,81 @@ export class AutoDebugCommands implements vscode.Disposable {
     }
 
     /**
+     * Generic error handling wrapper for command execution
+     */
+    private async executeWithErrorHandling<T>(
+        action: () => Promise<T>,
+        errorMessage: string,
+        logContext: string
+    ): Promise<T | void> {
+        try {
+            return await action()
+        } catch (error) {
+            this.logger.error(`AutoDebugCommands: Error in ${logContext}: %s`, error)
+            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
+        }
+    }
+
+    /**
+     * Check if there's an active editor and log warning if not
+     */
+    private checkActiveEditor(): vscode.TextEditor | undefined {
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            this.logger.warn('AutoDebugCommands: No active editor found')
+        }
+        return editor
+    }
+
+    /**
      * Fix with Amazon Q - fixes only the specific issues the user selected
      */
     private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                return
-            }
-
-            // Controller handles panel focusing and message sending
-            await this.controller.fixSpecificProblems(range, diagnostics)
-        } catch (error) {
-            this.logger.error('AutoDebugCommands: Error in Fix with Amazon Q: %s', error)
-            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
-        }
+        await this.executeWithErrorHandling(
+            async () => {
+                const editor = this.checkActiveEditor()
+                if (!editor) {
+                    return
+                }
+                await this.controller.fixSpecificProblems(range, diagnostics)
+            },
+            'Fix with Amazon Q',
+            'fixWithAmazonQ'
+        )
     }
 
     /**
      * Fix All with Amazon Q - processes all errors in the current file
      */
     private async fixAllWithAmazonQ(): Promise<void> {
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                return
-            }
-
-            await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
-        } catch (error) {
-            this.logger.error('AutoDebugCommands: Error in Fix All with Amazon Q: %s', error)
-            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
-        }
+        await this.executeWithErrorHandling(
+            async () => {
+                const editor = this.checkActiveEditor()
+                if (!editor) {
+                    return
+                }
+                await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
+            },
+            'Fix All with Amazon Q',
+            'fixAllWithAmazonQ'
+        )
     }
 
     /**
      * Explains the problem using Amazon Q
      */
     private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                this.logger.warn('AutoDebugCommands: No active editor for explainProblem')
-                return
-            }
-
-            await this.controller.explainProblems(range, diagnostics)
-        } catch (error) {
-            this.logger.error('AutoDebugCommands: Error explaining problem: %s', error)
-            void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
-        }
+        await this.executeWithErrorHandling(
+            async () => {
+                const editor = this.checkActiveEditor()
+                if (!editor) {
+                    return
+                }
+                await this.controller.explainProblems(range, diagnostics)
+            },
+            'Explain Problem',
+            'explainProblem'
+        )
     }
 
     /**

@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { getLogger, placeholder } from 'aws-core-vscode/shared'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 
@@ -19,11 +18,16 @@ export class AutoDebugLspClient {
 
     public async sendChatMessage(params: { message: string; triggerType: string; eventId: string }): Promise<boolean> {
         try {
+            // Ensure the chat view provider and webview are available
+            await this.ensureWebviewReady()
+
             // Get the webview provider from the static reference
             const amazonQChatViewProvider = AutoDebugLspClient.chatViewProvider
 
             if (!amazonQChatViewProvider?.webview) {
-                this.logger.error('AutoDebugLspClient: Amazon Q Chat View Provider not available')
+                this.logger.error(
+                    'AutoDebugLspClient: Amazon Q Chat View Provider webview not available after initialization'
+                )
                 return false
             }
 
@@ -48,6 +52,20 @@ export class AutoDebugLspClient {
         } catch (error) {
             this.logger.error('AutoDebugLspClient: Error sending message via webview: %s', error)
             return false
+        }
+    }
+
+    /**
+     * Ensures that the chat view provider and its webview are ready for use
+     */
+    private async ensureWebviewReady(): Promise<void> {
+        if (!AutoDebugLspClient.chatViewProvider) {
+            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
+        }
+
+        // Now ensure the webview is created
+        if (!AutoDebugLspClient.chatViewProvider.webview) {
+            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
         }
     }
 }

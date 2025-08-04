@@ -53,7 +53,6 @@ import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { codeReviewInChat } from '../app/amazonqScan/models/constants'
-import { activateAutoDebug } from './autoDebug/activation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -341,14 +340,6 @@ async function onLanguageServerReady(
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activate(client, encryptionKey, resourcePaths.ui)
-    }
-
-    // Activate AutoDebug feature with direct LSP client connection
-    try {
-        const autoDebugFeature = await activateAutoDebug(extensionContext, client, encryptionKey)
-        toDispose.push(autoDebugFeature)
-    } catch (error) {
-        getLogger('amazonqLsp').error('Failed to activate AutoDebug feature: %s', error)
     }
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
