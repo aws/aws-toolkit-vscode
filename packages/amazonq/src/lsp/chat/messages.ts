@@ -77,12 +77,21 @@ import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { focusAmazonQPanel } from './commands'
-import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { EditorContentController, ViewDiffMessage } from 'aws-core-vscode/amazonq'
+import { amazonQDiffScheme } from 'aws-core-vscode/shared'
 import { getLogger } from 'aws-core-vscode/shared'
 import { getCursorState } from '../utils'
+import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
 
-// Create a singleton instance of DiffAnimationHandler
+// Create a singleton instance of DiffAnimationHandler for streaming functionality
 let diffAnimationHandler: DiffAnimationHandler | undefined
+
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -130,16 +139,6 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         }
     })
 }
-
-// Initialize DiffAnimationHandler on first use
-function getDiffAnimationHandler(): DiffAnimationHandler {
-    if (!diffAnimationHandler) {
-        diffAnimationHandler = new DiffAnimationHandler()
-    }
-    return diffAnimationHandler
-}
-
-// Helper function to clean up temp files - eliminates code duplication
 async function cleanupTempFiles(context: string): Promise<void> {
     try {
         const animationHandler = getDiffAnimationHandler()
@@ -152,7 +151,6 @@ async function cleanupTempFiles(context: string): Promise<void> {
         getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files ${context}: ${error}`)
     }
 }
-
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
@@ -627,54 +625,31 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        // Normalize the file path
-        const normalizedPath = params.originalFileUri.startsWith('file://')
-            ? vscode.Uri.parse(params.originalFileUri).fsPath
-            : params.originalFileUri
-
-        const originalContent = params.originalFileContent || ''
-        const newContent = params.fileContent || ''
-
-        getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
-        getLogger().info(
-            `[VSCode Client] Original content length: ${originalContent.length}, New content length: ${newContent.length}`
+        const ecc = new EditorContentController()
+        const uri = params.originalFileUri
+        const doc = await vscode.workspace.openTextDocument(uri)
+        const entireDocumentSelection = new vscode.Selection(
+            new vscode.Position(0, 0),
+            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
         )
-
-        // **CRITICAL FIX**: Check if this is a streaming-related notification
-        // Streaming notifications often have special markers or identical content
-        const animationHandler = getDiffAnimationHandler()
-
-        // Check if the content is identical (which often indicates redundant notification from streaming)
-        if (originalContent === newContent) {
-            getLogger().info(
-                '[VSCode Client] 🚫 Skipping redundant diff view - content is identical (likely from streaming)'
-            )
-            return
+        const viewDiffMessage: ViewDiffMessage = {
+            context: {
+                activeFileContext: {
+                    filePath: params.originalFileUri,
+                    fileText: params.originalFileContent ?? '',
+                    fileLanguage: undefined,
+                    matchPolicy: undefined,
+                },
+                focusAreaContext: {
+                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
+                    codeBlock: '',
+                    extendedCodeBlock: '',
+                    names: undefined,
+                },
+            },
+            code: params.fileContent ?? '',
         }
-
-        // **CRITICAL FIX**: Check if this notification contains streaming markers
-        // The streaming system sends notifications with special content markers
-        if (newContent.includes('<!-- STREAMING_DIFF_START:') || newContent.includes('STREAMING_DIFF_START')) {
-            getLogger().info('[VSCode Client] 🌊 Skipping streaming marker notification - handled by streaming system')
-            return
-        }
-
-        // **CRITICAL FIX**: Check if both contents are empty or very small (likely streaming initialization)
-        if (originalContent.length === 0 && newContent.length < 100) {
-            getLogger().info('[VSCode Client] 🚫 Skipping likely streaming initialization notification')
-            return
-        }
-
-        // For legitimate file tab clicks from chat, we should show the static diff view
-        getLogger().info('[VSCode Client] File tab clicked from chat, showing static diff view')
-
-        // Use processFileDiff with isFromChatClick=true, which will trigger showVSCodeDiff
-        await animationHandler.processFileDiff({
-            originalFileUri: params.originalFileUri,
-            originalFileContent: originalContent,
-            fileContent: newContent,
-            isFromChatClick: true, // This ensures it goes to showVSCodeDiff
-        })
+        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {

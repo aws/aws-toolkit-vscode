@@ -427,7 +427,7 @@ export class StreamingDiffController implements vscode.Disposable {
                             `[StreamingDiffController] ⚠️ Failed to auto-cleanup temp file ${session.tempFilePath}: ${error}`
                         )
                     }
-                }, 2000) // 2 seconds delay
+                }, 500) //
             }
         } catch (error) {
             getLogger().error(
