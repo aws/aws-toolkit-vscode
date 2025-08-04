@@ -19,7 +19,6 @@ import {
     invalidateSsoTokenRequestType,
     invalidateStsCredentialRequestType,
     ProfileKind,
-    UpdateProfileParams,
     updateProfileRequestType,
     SsoTokenChangedParams,
     StsCredentialChangedParams,

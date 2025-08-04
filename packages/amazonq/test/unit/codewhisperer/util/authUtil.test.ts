@@ -524,7 +524,7 @@ describe('AuthUtil', async function () {
                 await auth.getIamCredential()
                 assert.fail('Should have thrown an error')
             } catch (err) {
-                assert.strictEqual((err as Error).message, 'Cannot get token with SSO session')
+                assert.strictEqual((err as Error).message, 'Cannot get credential without logging in with IAM.')
             }
         })
 
@@ -535,7 +535,7 @@ describe('AuthUtil', async function () {
                 await auth.getIamCredential()
                 assert.fail('Should have thrown an error')
             } catch (err) {
-                assert.strictEqual((err as Error).message, 'Cannot get credential without logging in.')
+                assert.strictEqual((err as Error).message, 'Cannot get credential without logging in with IAM.')
             }
         })
     })

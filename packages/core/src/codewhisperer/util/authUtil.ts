@@ -38,6 +38,7 @@ import {
     Login,
     SsoLogin,
     IamLogin,
+    AuthState,
     LoginTypes,
 } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
@@ -125,11 +126,11 @@ export class AuthUtil implements IAuthProvider {
     }
 
     isSsoSession(): boolean {
-        return this.session?.loginType === LoginTypes.SSO || this.session instanceof SsoLogin
+        return this.session?.loginType === LoginTypes.SSO
     }
 
     isIamSession(): boolean {
-        return this.session?.loginType === LoginTypes.IAM || this.session instanceof IamLogin
+        return this.session?.loginType === LoginTypes.IAM
     }
 
     /**
@@ -226,26 +227,20 @@ export class AuthUtil implements IAuthProvider {
     }
 
     async getToken() {
-        if (this.session) {
-            const token = (await this.session.getCredential()).credential
-            if (typeof token !== 'string') {
-                throw new ToolkitError('Cannot get token with IAM session')
-            }
-            return token
+        if (this.isSsoSession()) {
+            const response = await this.session!.getCredential()
+            return response.credential as string
         } else {
-            throw new ToolkitError('Cannot get credential without logging in.')
+            throw new ToolkitError('Cannot get credential without logging in with SSO.')
         }
     }
 
     async getIamCredential() {
-        if (this.session) {
-            const credential = (await this.session.getCredential()).credential
-            if (typeof credential !== 'object') {
-                throw new ToolkitError('Cannot get credential with SSO session')
-            }
-            return credential
+        if (this.isIamSession()) {
+            const response = await this.session!.getCredential()
+            return response.credential as IamCredentials
         } else {
-            throw new ToolkitError('Cannot get credential without logging in.')
+            throw new ToolkitError('Cannot get credential without logging in with IAM.')
         }
     }
 
@@ -253,9 +248,10 @@ export class AuthUtil implements IAuthProvider {
         return this.session?.data
     }
 
-    getAuthState() {
-        if (this.session) {
-            return this.session.getConnectionState()
+    getAuthState(): AuthState {
+        // Check if getConnectionState exists in case of type casts
+        if (typeof this.session?.getConnectionState === 'function') {
+            return this.session!.getConnectionState()
         } else {
             return 'notConnected'
         }
@@ -275,10 +271,6 @@ export class AuthUtil implements IAuthProvider {
 
     isIdcConnection() {
         return Boolean(this.connection?.startUrl && this.connection?.startUrl !== builderIdStartUrl)
-    }
-
-    isIamConnection() {
-        return Boolean(this.connection?.accessKey && this.connection?.secretKey)
     }
 
     isInternalAmazonUser(): boolean {
@@ -391,11 +383,12 @@ export class AuthUtil implements IAuthProvider {
 
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
-            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
             if (this.isSsoSession()) {
-                await this.lspAuth.updateBearerToken(params)
+                const params = await this.session!.getCredential()
+                await this.lspAuth.updateBearerToken(params.updateCredentialsParams)
             } else if (this.isIamSession()) {
-                await this.lspAuth.updateIamCredential(params)
+                const params = await this.session!.getCredential()
+                await this.lspAuth.updateIamCredential(params.updateCredentialsParams)
             }
         } else {
             this.logger.info(`codewhisperer: connection changed to ${e.state}`)
@@ -418,11 +411,12 @@ export class AuthUtil implements IAuthProvider {
             this.session = undefined
         }
         if (state === 'connected') {
-            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
             if (this.isSsoSession()) {
-                await this.lspAuth.updateBearerToken(params)
+                const params = await this.session!.getCredential()
+                await this.lspAuth.updateBearerToken(params.updateCredentialsParams)
             } else if (this.isIamSession()) {
-                await this.lspAuth.updateIamCredential(params)
+                const params = await this.session!.getCredential()
+                await this.lspAuth.updateIamCredential(params.updateCredentialsParams)
             }
 
             if (this.isIdcConnection()) {
