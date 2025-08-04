@@ -180,6 +180,7 @@ export async function startLanguageServer(
                         shortcut: true,
                         reroute: true,
                         modelSelection: true,
+                        diffAnimation: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                         codeReviewInChat: codeReviewInChat,
                     },
