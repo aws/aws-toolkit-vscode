@@ -112,7 +112,7 @@ export class StreamingDiffController implements vscode.Disposable {
                     'vscode.diff',
                     originalUri,
                     tempFileUri,
-                    `${fileName}: Original ↔ Amazon Q Changes (Animation Preview)`,
+                    `${fileName}: Original ↔ Amazon Q Changes`,
                     {
                         preserveFocus: true,
                         preview: false,
