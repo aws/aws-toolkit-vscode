@@ -732,7 +732,11 @@ async function handlePartialResult<T extends ChatResult>(
     // This is to filter out the message containing findings from CodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
-            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+            !(
+                message.messageId !== undefined &&
+                (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                    message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+            )
     )
 
     if (decryptedMessage.body !== undefined) {
@@ -784,7 +788,11 @@ async function handleSecurityFindings(
     }
     for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
         const message = decryptedMessage.additionalMessages[i]
-        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+        if (
+            message.messageId !== undefined &&
+            (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+        ) {
             if (message.body !== undefined) {
                 try {
                     const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
@@ -803,7 +811,12 @@ async function handleSecurityFindings(
                             issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
                         }
                     }
-                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    initSecurityScanRender(
+                        aggregatedCodeScanIssues,
+                        undefined,
+                        CodeAnalysisScope.AGENTIC,
+                        message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix)
+                    )
                     SecurityIssueTreeViewProvider.focus()
                 } catch (e) {
                     languageClient.info('Failed to parse findings')
