@@ -50,3 +50,14 @@ export interface ScanPlan {
         preAdded?: boolean
     }>
 }
+
+export interface FsWriteParams {
+    command?: string
+    insertLine?: number
+    oldStr?: string
+    newStr?: string
+    fileText?: string
+    explanation?: string
+    pairIndex?: number
+    totalPairs?: number
+}

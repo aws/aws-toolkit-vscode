@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from 'aws-core-vscode/shared'
+import { FsWriteParams } from './types'
 
 export const diffViewUriScheme = 'amazonq-diff'
 
@@ -24,16 +25,7 @@ export class StreamingDiffController implements vscode.Disposable {
             activeLineController: DecorationController
             streamedLines: string[]
             disposed: boolean
-            fsWriteParams?: {
-                command?: string
-                insertLine?: number
-                oldStr?: string
-                newStr?: string
-                fileText?: string
-                explanation?: string
-                pairIndex?: number
-                totalPairs?: number
-            }
+            fsWriteParams?: FsWriteParams
         }
     >()
 
@@ -55,7 +47,7 @@ export class StreamingDiffController implements vscode.Disposable {
         vscode.workspace.registerTextDocumentContentProvider(diffViewUriScheme, this.contentProvider)
     }
 
-    updateFsWriteParams(toolUseId: string, fsWriteParams: any): void {
+    updateFsWriteParams(toolUseId: string, fsWriteParams: FsWriteParams): void {
         const session = this.activeStreamingSessions.get(toolUseId)
         if (session) {
             session.fsWriteParams = fsWriteParams
