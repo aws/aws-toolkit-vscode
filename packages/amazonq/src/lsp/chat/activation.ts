@@ -17,7 +17,7 @@ import { activate as registerLegacyChatListeners } from '../../app/chat/activati
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import { pushConfigUpdate } from '../config'
-import { AutoDebugLspClient } from '../autoDebug/lsp/autoDebugLspClient'
+import { AutoDebugLspClient } from './autoDebug/lsp/autoDebugLspClient'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
