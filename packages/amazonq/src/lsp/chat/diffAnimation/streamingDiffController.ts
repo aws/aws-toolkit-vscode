@@ -190,7 +190,10 @@ export class StreamingDiffController implements vscode.Disposable {
             const document = diffEditor.document
 
             if (!diffEditor || !document) {
-                throw new Error('User closed text editor, unable to edit file...')
+                getLogger().warn(
+                    `[StreamingDiffController] Diff editor or document unavailable for ${toolUseId}, skipping animation update`
+                )
+                return
             }
 
             const beginningOfDocument = new vscode.Position(0, 0)
@@ -262,7 +265,10 @@ export class StreamingDiffController implements vscode.Disposable {
             const document = diffEditor.document
 
             if (!diffEditor || !document) {
-                throw new Error('User closed text editor, unable to edit file...')
+                getLogger().warn(
+                    `[StreamingDiffController] Diff editor or document unavailable for fsReplace diffPair, skipping operation`
+                )
+                return
             }
             await new Promise((resolve) => setTimeout(resolve, 10))
 
