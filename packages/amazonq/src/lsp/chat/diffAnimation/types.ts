@@ -5,31 +5,6 @@
 
 import * as vscode from 'vscode'
 
-export interface PendingFileWrite {
-    filePath: string
-    originalContent: string
-    toolUseId: string
-    timestamp: number
-    changeLocation?: {
-        startLine: number
-        endLine: number
-        startChar?: number
-        endChar?: number
-    }
-}
-
-export interface QueuedAnimation {
-    originalContent: string
-    newContent: string
-    toolUseId: string
-    changeLocation?: {
-        startLine: number
-        endLine: number
-        startChar?: number
-        endChar?: number
-    }
-}
-
 export interface DiffAnimation {
     uri: vscode.Uri
     originalContent: string
@@ -74,15 +49,4 @@ export interface ScanPlan {
         rightLine?: DiffLine & { index: number }
         preAdded?: boolean
     }>
-}
-
-export interface WebviewMessage {
-    command: string
-    [key: string]: any
-}
-
-export interface AnimationHistory {
-    lastAnimatedContent: string
-    animationCount: number
-    isCurrentlyAnimating: boolean
 }
