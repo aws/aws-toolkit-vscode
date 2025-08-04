@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import vscode, { env, version } from 'vscode'
+import vscode, { version } from 'vscode'
 import * as nls from 'vscode-nls'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
@@ -38,6 +38,7 @@ import {
     getOptOutPreference,
     isAmazonLinux2,
     getClientId,
+    getClientName,
     extensionVersion,
     isSageMaker,
     DevSettings,
@@ -163,7 +164,7 @@ export async function startLanguageServer(
         initializationOptions: {
             aws: {
                 clientInfo: {
-                    name: env.appName,
+                    name: getClientName(),
                     version: version,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
@@ -182,6 +183,8 @@ export async function startLanguageServer(
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                         codeReviewInChat: codeReviewInChat,
+                        // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
+                        displayFindings: true,
                     },
                     window: {
                         notifications: true,
