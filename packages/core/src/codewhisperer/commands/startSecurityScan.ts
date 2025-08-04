@@ -108,6 +108,9 @@ export async function startSecurityScan(
     zipUtil: ZipUtil = new ZipUtil(),
     scanUuid?: string
 ) {
+    if (scope === CodeAnalysisScope.AGENTIC) {
+        throw new CreateCodeScanFailedError('Cannot use Agentic scope')
+    }
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     const logger = getLoggerForScope(scope)
     /**
