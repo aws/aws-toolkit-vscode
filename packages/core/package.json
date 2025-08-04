@@ -539,6 +539,7 @@
         "@aws-sdk/client-cloudwatch-logs": "<3.731.0",
         "@aws-sdk/client-codecatalyst": "<3.731.0",
         "@aws-sdk/client-cognito-identity": "<3.731.0",
+        "@aws-sdk/client-datazone": "^3.848.0",
         "@aws-sdk/client-docdb": "<3.731.0",
         "@aws-sdk/client-docdb-elastic": "<3.731.0",
         "@aws-sdk/client-ec2": "<3.731.0",

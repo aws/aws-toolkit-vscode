@@ -91,7 +91,7 @@ describe('SageMaker Unified Studio explorer activation', function () {
         await activate(mockContext)
 
         // Verify subscriptions were added (retry command, tree view, refresh command, project view command, DataZoneClient disposable, sign in command, learn more command)
-        assert.strictEqual(mockContext.subscriptions.length, 7)
+        assert.strictEqual(mockContext.subscriptions.length, 8)
     })
 
     it('registers DataZoneClient disposal', async function () {

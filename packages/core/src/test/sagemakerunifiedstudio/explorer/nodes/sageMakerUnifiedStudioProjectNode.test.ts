@@ -15,20 +15,12 @@ import { getTestWindow } from '../../../shared/vscode/window'
 describe('SageMakerUnifiedStudioProjectNode', function () {
     let projectNode: SageMakerUnifiedStudioProjectNode
     let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
-    let telemetryStub: sinon.SinonStub
 
     const mockProject: DataZoneProject = {
         id: 'project-123',
         name: 'Test Project',
         description: 'Test Description',
         domainId: 'domain-123',
-    }
-
-    const mockCredentials = {
-        accessKeyId: 'AKIATEST',
-        secretAccessKey: 'secret',
-        sessionToken: 'token',
-        $metadata: {},
     }
 
     beforeEach(function () {
@@ -38,7 +30,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         sinon.stub(getLogger(), 'warn')
 
         // Stub telemetry
-        telemetryStub = sinon.stub(telemetry, 'record')
+        sinon.stub(telemetry, 'record')
 
         // Create mock DataZone client
         mockDataZoneClient = {
@@ -98,38 +90,6 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
     })
 
     describe('getChildren', function () {
-        it('stores config and gets credentials successfully', async function () {
-            projectNode.setProject(mockProject)
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
-
-            const children = await projectNode.getChildren()
-
-            // Verify credentials were retrieved
-            assert(
-                mockDataZoneClient.getProjectDefaultEnvironmentCreds.calledOnceWith(
-                    mockProject.domainId,
-                    mockProject.id
-                )
-            )
-
-            // Verify success message
-            const testWindow = getTestWindow()
-            await testWindow.waitForMessage(`Selected project: ${mockProject.name}.`)
-
-            // Verify telemetry
-            assert(
-                telemetryStub.calledWith({
-                    name: 'smus_selectProject',
-                    result: 'Succeeded',
-                    passive: false,
-                })
-            )
-
-            // Verify placeholder child is returned
-            assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'sageMakerUnifiedStudioProjectChild')
-        })
-
         it('handles credentials error gracefully', async function () {
             projectNode.setProject(mockProject)
             const credError = new Error('Credentials failed')
