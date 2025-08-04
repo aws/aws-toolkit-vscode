@@ -269,8 +269,9 @@ export class LanguageClientAuth {
         return this.client.sendRequest(updateProfileRequestType.method, params)
     }
 
-    listProfiles() {
-        return this.client.sendRequest(listProfilesRequestType.method, {}) as Promise<ListProfilesResult>
+    async listProfiles() {
+        const response: string = await this.client.sendRequest(listProfilesRequestType.method, {})
+        return await this.decrypt<ListProfilesResult>(response)
     }
 
     /**
