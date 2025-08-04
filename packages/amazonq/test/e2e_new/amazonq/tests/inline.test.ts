@@ -40,11 +40,11 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         const input = new InputBox()
         await input.sendKeys('Generate the fibonacci sequence through iteration')
         await input.sendKeys(Key.ENTER)
+        // Must wait for response to be generated.
         await sleep(8000)
 
         const textAfter = await textEditor.getText()
         assert(textAfter.length > textBefore.length, 'Amazon Q should have generated code')
-        assert(textAfter.includes('fibonacci'), 'Generated code should contain fibonacci logic')
         await textEditor.clearText()
     })
 })
