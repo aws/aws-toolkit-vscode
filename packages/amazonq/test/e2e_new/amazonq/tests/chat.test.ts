@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { WebviewView, By } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { waitForChatResponse, writeToChat, clearChat } from '../utils/generalUtils'
+import { waitForChatResponse, writeToChat, clearChatInput } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Chat Basic Functionality', function () {
@@ -18,7 +18,7 @@ describe('Amazon Q Chat Basic Functionality', function () {
     })
 
     afterEach(async function () {
-        await clearChat(webviewView)
+        await clearChatInput(webviewView)
         await closeAllTabs(webviewView)
     })
 
