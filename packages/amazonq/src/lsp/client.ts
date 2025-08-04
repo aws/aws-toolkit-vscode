@@ -338,6 +338,7 @@ async function onLanguageServerReady(
     const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
     inlineManager.registerInlineCompletion()
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
+
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activate(client, encryptionKey, resourcePaths.ui)
     }

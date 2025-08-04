@@ -61,11 +61,15 @@ export class AutoDebugLspClient {
     private async ensureWebviewReady(): Promise<void> {
         if (!AutoDebugLspClient.chatViewProvider) {
             await focusAmazonQPanel.execute(placeholder, 'autoDebug')
+            // wait 1 second for focusAmazonQPanel to finish
+            await new Promise((resolve) => setTimeout(resolve, 500))
         }
 
         // Now ensure the webview is created
         if (!AutoDebugLspClient.chatViewProvider.webview) {
             await focusAmazonQPanel.execute(placeholder, 'autoDebug')
+            // wait 1 second for webview to be created
+            await new Promise((resolve) => setTimeout(resolve, 500))
         }
     }
 }
