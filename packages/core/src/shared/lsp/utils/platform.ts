@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ToolkitError } from '../../errors'
+import { getErrorMsg, ToolkitError } from '../../errors'
 import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
@@ -111,6 +111,10 @@ export function createServerOptions({
         // Set USE_IAM_AUTH environment variable for SageMaker environments based on cookie detection
         // This tells the language server to use IAM authentication mode instead of SSO mode
         const env = { ...process.env }
+
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        getLogger().debug(`[yueny debug] vars in env: ${JSON.stringify(env)}`)
+
         if (isSageMaker()) {
             try {
                 // The command `sagemaker.parseCookies` is registered in VS Code SageMaker environment
@@ -125,7 +129,13 @@ export function createServerOptions({
                 }
             } catch (err) {
                 getLogger().warn(`[SageMaker Debug] Failed to parse SageMaker cookies, defaulting to IAM auth: ${err}`)
-                env.USE_IAM_AUTH = 'true'
+                const errMsg = getErrorMsg(err as Error)
+                if (errMsg?.includes("command 'sagemaker.parseCookies' not found")) {
+                    getLogger().warn('[yueny debug] SageMaker cookies not found, set env.USE_IAM_AUTH as false')
+                    env.USE_IAM_AUTH = 'false'
+                } else {
+                    env.USE_IAM_AUTH = 'true'
+                }
             }
 
             // Log important environment variables for debugging
