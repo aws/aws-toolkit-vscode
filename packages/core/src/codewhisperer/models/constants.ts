@@ -841,6 +841,7 @@ export enum CodeAnalysisScope {
     FILE_AUTO = 'FILE_AUTO',
     FILE_ON_DEMAND = 'FILE_ON_DEMAND',
     PROJECT = 'PROJECT',
+    AGENTIC = 'AGENTIC',
 }
 
 export enum TestGenerationJobStatus {
@@ -907,4 +908,7 @@ export const predictionTrackerDefaultConfig = {
     maxSupplementalContext: 15,
 }
 
-export const findingsSuffix = '_codeReviewFindings'
+export const codeReviewFindingsSuffix = '_codeReviewFindings'
+export const displayFindingsSuffix = '_displayFindings'
+
+export const displayFindingsDetectorName = 'DisplayFindings'
