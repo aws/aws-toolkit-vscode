@@ -6,25 +6,31 @@
 
 import { computed, reactive, onBeforeMount } from 'vue'
 import TkInputField from '../../../shared/ux/tkInputField.vue'
-import TkContainer from '../../../shared/ux/tkContainer.vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import TkBox from '../../../shared/ux/tkBox.vue'
-import TkLabel from '../../../shared/ux/tkLabel.vue'
+import TkContainer from '../../../shared/ux/tkContainer.vue'
 import TkKeyValue from '../../../shared/ux/tkKeyValue.vue'
+import TkLabel from '../../../shared/ux/tkLabel.vue'
+import JobsList from '../components/jobsList.vue'
 import Breadcrumbs, { BreadcrumbItem } from '../components/breadcrumbs.vue'
 import { client } from '../composables/useClient'
-import { jobs, Job } from '../composables/useJobs'
-import { viewJobsPage, JobDetailPageMetadata } from '../../utils/constants'
+import { jobDefinitions, JobDefinition } from '../composables/useJobs'
+import {
+    viewJobsPage,
+    JobDefinitionDetailPageMetadata,
+    editJobDefinitionPage,
+    EditJobDefinitionPageMetadata,
+} from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
 //-------------------------------------------------------------------------------------------------
 interface State {
-    job?: Job
+    jobDefinition?: JobDefinition
 }
 
 const state: State = reactive({
-    job: undefined,
+    jobDefinition: undefined,
 })
 
 //-------------------------------------------------------------------------------------------------
@@ -33,14 +39,14 @@ const state: State = reactive({
 const breadcrumbItems = computed(() => {
     const items: BreadcrumbItem[] = [
         {
-            text: 'Notebook Jobs',
+            text: 'Notebook Job Definitions',
             page: viewJobsPage,
-            metadata: {},
+            metadata: { showJobDefinitions: true },
         },
     ]
 
-    if (state.job) {
-        items.push({ text: state.job.name })
+    if (state.jobDefinition) {
+        items.push({ text: state.jobDefinition.name })
     }
 
     return items
@@ -51,42 +57,54 @@ const breadcrumbItems = computed(() => {
 //-------------------------------------------------------------------------------------------------
 onBeforeMount(async () => {
     const page = await client.getCurrentPage()
-    const metadata = page.metadata as JobDetailPageMetadata
-    state.job = jobs.value.find((job) => job.id === metadata.jobId)
+    const metadata = page.metadata as JobDefinitionDetailPageMetadata
+    state.jobDefinition = jobDefinitions.value.find((jobDefinition) => jobDefinition.id === metadata.jobDefinitionId)
 })
 
 //-------------------------------------------------------------------------------------------------
 // Variables & Methods
 //-------------------------------------------------------------------------------------------------
-function onDeleteJob() {
+async function onEdit() {
+    const metadata: EditJobDefinitionPageMetadata = {
+        jobDefinitionId: state.jobDefinition?.id!,
+    }
+
+    await client.setCurrentPage({ name: editJobDefinitionPage, metadata })
+}
+
+function onReload() {
     // NOOP
 }
 
-function onDownloadJob() {
+function onRunJob() {
     // NOOP
 }
 
-function onReloadJob() {
+function onPause() {
+    // NOOP
+}
+
+function onDelete() {
     // NOOP
 }
 </script>
 
 <template>
-    <div v-if="state.job" class="job-detail-page">
+    <div v-if="state.jobDefinition" class="job-definition-detail-page">
         <div class="tk-page-head">
             <breadcrumbs :items="breadcrumbItems" />
-            <h1 class="tk-title">Job Details</h1>
+            <h1 class="tk-title">Job Definition</h1>
         </div>
 
-        <div class="job-detail-page-content">
+        <div class="job-definition-detail-page-content">
             <tk-space-between>
                 <tk-box float="right">
                     <tk-space-between direction="horizontal" size="xs">
-                        <button class="tk-button" @click="onReloadJob">Reload Job</button>
-                        <button class="tk-button button-theme-secondary" @click="onDownloadJob">
-                            Download Job Files
-                        </button>
-                        <button class="tk-button tk-button_red" @click="onDeleteJob">Delete Job</button>
+                        <button class="tk-button" @click="onReload">Reload Job Definition</button>
+                        <button class="tk-button button-theme-secondary" @click="onRunJob">Run Job</button>
+                        <button class="tk-button button-theme-secondary" @click="onPause">Pause</button>
+                        <button class="tk-button button-theme-secondary" @click="onEdit">Edit Job Definition</button>
+                        <button class="tk-button tk-button_red" @click="onDelete">Delete Job Definition</button>
                     </tk-space-between>
                 </tk-box>
 
@@ -94,87 +112,91 @@ function onReloadJob() {
                     <tk-container>
                         <div class="detail-content-info">
                             <tk-input-field
-                                label="Job name"
-                                :value="state.job?.name"
+                                label="Name"
+                                :value="state.jobDefinition?.name"
                                 :read-only="true"
                                 :compact="true"
                             />
-                            <tk-input-field label="Job ID" :value="state.job?.id" :read-only="true" :compact="true" />
                             <tk-input-field
                                 label="Input file"
-                                :value="state.job?.inputFilename"
+                                :value="state.jobDefinition?.inputFilename"
+                                :read-only="true"
+                                :compact="true"
+                            />
+                            <tk-input-field
+                                label="Output directory"
+                                :value="state.jobDefinition?.outputDirectory"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Environment"
-                                :value="state.job?.environment"
+                                :value="state.jobDefinition?.environment"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Status"
-                                :value="state.job?.status"
+                                :value="state.jobDefinition?.status"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Created at"
-                                :value="state.job?.createdAt"
+                                :value="state.jobDefinition?.createdAt"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Updated at"
-                                :value="state.job?.updatedAt"
+                                :value="state.jobDefinition?.updatedAt"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
-                                label="Start time"
-                                :value="state.job?.startTime"
+                                label="Schedule"
+                                :value="state.jobDefinition?.schedule"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
-                                label="End time"
-                                :value="state.job?.endTime"
+                                label="Time zone"
+                                :value="state.jobDefinition?.timeZone"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Ran with input folder"
-                                :value="state.job?.ranWithInputFolder ? 'Yes' : 'No'"
+                                :value="state.jobDefinition?.ranWithInputFolder ? 'Yes' : 'No'"
                                 :read-only="true"
                                 :compact="true"
                             />
                         </div>
                     </tk-container>
 
-                    <tk-container header="Parameters">
-                        <tk-key-value
-                            v-if="state.job.parameters"
-                            :items="state.job.parameters"
-                            key-label="Parameter name"
-                            value-label="Parameter value"
-                        />
-                        <div v-else>-</div>
+                    <tk-container>
+                        <jobs-list :job-definition-id="state.jobDefinition.id" :hide-heading="true" />
                     </tk-container>
 
                     <tk-container header="Advanced Options">
                         <tk-space-between>
-                            <tk-input-field label="Image" :value="state.job?.image" :read-only="true" :compact="true" />
+                            <tk-input-field
+                                label="Image"
+                                :value="state.jobDefinition?.image"
+                                :read-only="true"
+                                :compact="true"
+                            />
                             <tk-input-field
                                 label="Kernel"
-                                :value="state.job?.kernel"
+                                :value="state.jobDefinition?.kernel"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <div>
                                 <tk-label text="Environment variables" :optional="true" />
                                 <tk-key-value
-                                    v-if="state.job.envVariables"
-                                    :items="state.job.envVariables"
+                                    v-if="state.jobDefinition.envVariables"
+                                    :items="state.jobDefinition.envVariables"
                                     key-label="Variable name"
                                     value-label="Variable value"
                                 />
@@ -182,13 +204,13 @@ function onReloadJob() {
                             </div>
                             <tk-input-field
                                 label="Max retry attempts"
-                                :value="state.job?.maxRetryAttempts"
+                                :value="state.jobDefinition?.maxRetryAttempts"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Max run time (in seconds)"
-                                :value="state.job?.maxRunTime"
+                                :value="state.jobDefinition?.maxRunTime"
                                 :read-only="true"
                                 :compact="true"
                             />
@@ -199,15 +221,15 @@ function onReloadJob() {
         </div>
     </div>
 
-    <div v-else class="job-detail-page">Loading...</div>
+    <div v-else class="job-definition-detail-page">Loading...</div>
 </template>
 
-<style scoped>
-.job-detail-page-head a {
+<style scope>
+.job-definition-detail-page-head a {
     cursor: pointer;
 }
 
-.job-detail-page-content .detail-content-info {
+.job-definition-detail-page-content .detail-content-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-gap: 20px;

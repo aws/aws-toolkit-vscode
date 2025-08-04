@@ -9,8 +9,17 @@ import TkFixedLayout from '../../shared/ux/tkFixedLayout.vue'
 import CreateJobPage from './views/createJobPage.vue'
 import ViewJobsPage from './views/viewJobsPage.vue'
 import JobDetailPage from './views/jobDetailPage.vue'
+import JobDefinitionDetailPage from './views/jobDefinitionDetailPage.vue'
+import EditJobDefinitionPage from './views/editJobDefinitionPage.vue'
 import { client } from './composables/useClient'
-import { createJobPage, viewJobsPage, jobDetailPage, Page } from '../utils/constants'
+import {
+    createJobPage,
+    viewJobsPage,
+    jobDetailPage,
+    jobDefinitionDetailPage,
+    editJobDefinitionPage,
+    Page,
+} from '../utils/constants'
 
 import '../../shared/ux/styles.css'
 
@@ -37,7 +46,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-    <tk-fixed-layout v-if="state.page?.name === createJobPage" :width="628">
+    <tk-fixed-layout v-if="state.page?.name === createJobPage" :width="628" :max-width="700" :center="false">
         <create-job-page />
     </tk-fixed-layout>
 
@@ -47,6 +56,24 @@ onBeforeMount(async () => {
 
     <tk-fixed-layout v-else-if="state.page?.name === jobDetailPage" :width="800" :max-width="900" :center="false">
         <job-detail-page />
+    </tk-fixed-layout>
+
+    <tk-fixed-layout
+        v-else-if="state.page?.name === jobDefinitionDetailPage"
+        :width="800"
+        :max-width="900"
+        :center="false"
+    >
+        <job-definition-detail-page />
+    </tk-fixed-layout>
+
+    <tk-fixed-layout
+        v-else-if="state.page?.name === editJobDefinitionPage"
+        :width="628"
+        :max-width="700"
+        :center="false"
+    >
+        <edit-job-definition-page />
     </tk-fixed-layout>
 
     <div v-else>Loading...</div>

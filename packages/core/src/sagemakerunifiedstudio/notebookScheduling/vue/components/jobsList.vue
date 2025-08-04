@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { computed, reactive, onBeforeMount } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import TkBox from '../../../shared/ux/tkBox.vue'
 import TkBanner from '../../../shared/ux/tkBanner.vue'
@@ -14,7 +14,21 @@ import DownloadIcon from '../../../shared/ux/icons/downloadIcon.vue'
 import CloseIcon from '../../../shared/ux/icons/closeIcon.vue'
 import { jobs, Job } from '../composables/useJobs'
 import { client } from '../composables/useClient'
-import { jobDetailPage, JobDetailPageMetadata, ViewJobsPageMetadata } from '../../utils/constants'
+import { newJob } from '../composables/useViewJobs'
+import { jobDetailPage, JobDetailPageMetadata } from '../../utils/constants'
+
+//-------------------------------------------------------------------------------------------------
+// Props
+//-------------------------------------------------------------------------------------------------
+interface Props {
+    jobDefinitionId?: string
+    hideHeading?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    jobDefinitionId: undefined,
+    hideHeading: false,
+})
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -34,18 +48,27 @@ const state: State = reactive({
 //-------------------------------------------------------------------------------------------------
 // Computed Properties
 //-------------------------------------------------------------------------------------------------
+const allowedJobs = computed(() => {
+    if (props.jobDefinitionId) {
+        const jobsForDefinition = jobs.value.filter((job) => job.jobDefinitionId === props.jobDefinitionId)
+        return jobsForDefinition
+    } else {
+        return [...jobs.value]
+    }
+})
+
 const jobsPerPage = computed(() => {
     const items = []
 
     const startIndex = state.paginatedPage * itemsPerTablePage
     let endIndex = startIndex + itemsPerTablePage
 
-    if (endIndex > jobs.value.length) {
-        endIndex = jobs.value.length
+    if (endIndex > allowedJobs.value.length) {
+        endIndex = allowedJobs.value.length
     }
 
     for (let index = startIndex; index < endIndex; index++) {
-        items.push(jobs.value[index])
+        items.push(allowedJobs.value[index])
     }
 
     return items
@@ -58,14 +81,12 @@ const bannerMessage = computed(() => {
 })
 
 //-------------------------------------------------------------------------------------------------
-// Lifecycle Hooks
+// Watchers
 //-------------------------------------------------------------------------------------------------
-onBeforeMount(async () => {
-    const page = await client.getCurrentPage()
-    const metadata = page.metadata as ViewJobsPageMetadata
-
-    if (metadata.newJob) {
-        state.newJob = metadata.newJob
+watch(newJob, (newVal, _oldVal) => {
+    if (newVal) {
+        state.newJob = newVal
+        newJob.value = undefined
     }
 })
 
@@ -100,8 +121,8 @@ function onDelete(index: number): void {
 
     const jobIndex = state.paginatedPage * itemsPerTablePage + index
 
-    if (jobIndex < jobs.value.length) {
-        jobs.value[jobIndex].delete = true
+    if (jobIndex < allowedJobs.value.length) {
+        allowedJobs.value[jobIndex].delete = true
         state.jobToDeleteIndex = jobIndex
     }
 }
@@ -115,8 +136,8 @@ function onDownload(index: number): void {
 }
 
 function resetJobToDelete(): void {
-    if (state.jobToDeleteIndex !== undefined && state.jobToDeleteIndex < jobs.value.length) {
-        jobs.value[state.jobToDeleteIndex].delete = false
+    if (state.jobToDeleteIndex !== undefined && state.jobToDeleteIndex < allowedJobs.value.length) {
+        allowedJobs.value[state.jobToDeleteIndex].delete = false
         state.jobToDeleteIndex = undefined
     }
 }
@@ -125,7 +146,7 @@ function resetJobToDelete(): void {
 <template>
     <div class="jobs-list">
         <tk-space-between>
-            <h1>Notebook Jobs</h1>
+            <h1 v-if="!props.hideHeading">Notebook Jobs</h1>
 
             <tk-banner v-if="state.newJob" :content="bannerMessage" @dismiss="onBannerDismiss" />
 
@@ -133,15 +154,18 @@ function resetJobToDelete(): void {
                 <button class="tk-button" @click="onReload">Reload</button>
             </tk-box>
 
-            <div v-if="jobs.length === 0">
+            <div v-if="props.jobDefinitionId && allowedJobs.length === 0">
+                No notebook jobs associated with this job definition.
+            </div>
+            <div v-else-if="allowedJobs.length === 0">
                 There are no notebook jobs. Notebook jobs run files in the background, immediately or on a schedule. To
                 create a notebook job, right-click on a notebook in the file browser and select "Create Notebook Job".
             </div>
 
             <tk-table
-                v-if="jobs.length > 0"
+                v-if="allowedJobs.length > 0"
                 :items-per-page="itemsPerTablePage"
-                :total-items="jobs.length"
+                :total-items="allowedJobs.length"
                 @pagination="onPagination"
             >
                 <template v-slot:head>

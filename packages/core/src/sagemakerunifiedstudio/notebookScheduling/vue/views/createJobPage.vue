@@ -16,7 +16,7 @@ import TkHighlightContainer from '../../../shared/ux/tkHighlightContainer.vue'
 import CronSchedule, { ScheduleChange } from '../components/cronSchedule.vue'
 import ScheduleParameters from '../components/scheduleParameters.vue'
 import { client } from '../composables/useClient'
-import { viewJobsPage } from '../../utils/constants'
+import { viewJobsPage, ViewJobsPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -35,7 +35,7 @@ interface State {
     maxRuntimeErrorMessage: string
 }
 const state: State = reactive({
-    jobName: 'schedule-1',
+    jobName: 'job-1',
     notebookFileName: 'notebook1.ipynb',
     computeTypeList: [
         { text: 'First', value: 'first' },
@@ -55,12 +55,21 @@ const state: State = reactive({
 //-------------------------------------------------------------------------------------------------
 // Variables & Methods
 //-------------------------------------------------------------------------------------------------
-const onCreateClick = (event: MouseEvent) => {
+function onCreate() {
+    const metadata: ViewJobsPageMetadata = {}
+
     if (state.isJobDefinition) {
-        client.setCurrentPage({ name: viewJobsPage, metadata: { newJobDefinition: 'new-job-definition' } })
+        metadata.newJobDefinition = 'new-job-definition'
     } else {
-        client.setCurrentPage({ name: viewJobsPage, metadata: { newJob: 'new-job' } })
+        metadata.newJob = 'new-job'
     }
+
+    client.setCurrentPage({ name: viewJobsPage, metadata })
+}
+
+function onCancel() {
+    const metadata: ViewJobsPageMetadata = {}
+    client.setCurrentPage({ name: viewJobsPage, metadata })
 }
 
 const onScheduleChange = (schedule: ScheduleChange) => {
@@ -90,9 +99,11 @@ const onMaxRuntimeUpdate = (newValue: string | number) => {
 
 <template>
     <div class="create-schedule-page">
-        <h1 class="tk-title create-schedule-page-title">Create Job</h1>
+        <div class="create-schedule-page-head">
+            <h1 class="tk-title create-schedule-page-title">Create Job</h1>
+        </div>
 
-        <div>
+        <div class="create-schedule-page-content">
             <tk-highlight-container>
                 <tk-input-field
                     label="Job name"
@@ -187,8 +198,8 @@ const onMaxRuntimeUpdate = (newValue: string | number) => {
             <tk-highlight-container>
                 <tk-box float="right">
                     <tk-space-between direction="horizontal">
-                        <button class="tk-button button-theme-secondary">Cancel</button>
-                        <button class="tk-button button-theme-primary" @click="onCreateClick">Create</button>
+                        <button class="tk-button button-theme-secondary" @click="onCancel">Cancel</button>
+                        <button class="tk-button button-theme-primary" @click="onCreate">Create</button>
                     </tk-space-between>
                 </tk-box>
             </tk-highlight-container>

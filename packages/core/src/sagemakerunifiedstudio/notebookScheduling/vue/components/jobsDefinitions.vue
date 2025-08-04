@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { reactive, computed, onBeforeMount } from 'vue'
+import { reactive, computed, watch } from 'vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
 import TkBox from '../../../shared/ux/tkBox.vue'
 import TkTable from '../../../shared/ux/tkTable.vue'
@@ -13,9 +13,10 @@ import TkBanner from '../../../shared/ux/tkBanner.vue'
 import PlayIcon from '../../../shared/ux/icons/playIcon.vue'
 import PauseIcon from '../../../shared/ux/icons/pauseIcon.vue'
 import CloseIcon from '../../../shared/ux/icons/closeIcon.vue'
-import { jobDefinitions } from '../composables/useJobs'
+import { jobDefinitions, JobDefinition } from '../composables/useJobs'
+import { newJobDefinition } from '../composables/useViewJobs'
 import { client } from '../composables/useClient'
-import { ViewJobsPageMetadata } from '../../utils/constants'
+import { jobDefinitionDetailPage, JobDefinitionDetailPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
@@ -59,14 +60,12 @@ const bannerMessage = computed(() => {
 })
 
 //-------------------------------------------------------------------------------------------------
-// Lifecycle Hooks
+// Watchers
 //-------------------------------------------------------------------------------------------------
-onBeforeMount(async () => {
-    const page = await client.getCurrentPage()
-    const metadata = page.metadata as ViewJobsPageMetadata
-
-    if (metadata.newJobDefinition) {
-        state.newJobDefinition = metadata.newJobDefinition
+watch(newJobDefinition, (newVal, _oldVal) => {
+    if (newVal) {
+        state.newJobDefinition = newVal
+        newJobDefinition.value = undefined
     }
 })
 
@@ -75,6 +74,14 @@ onBeforeMount(async () => {
 //-------------------------------------------------------------------------------------------------
 const itemsPerTablePage = 10
 const tableColumns = ['Job definition name', 'Input filename', 'Created at', 'Schedule', 'Status', 'Actions']
+
+async function onJobDefinition(jobDefinition: JobDefinition): Promise<void> {
+    const metadata: JobDefinitionDetailPageMetadata = {
+        jobDefinitionId: jobDefinition.id,
+    }
+
+    await client.setCurrentPage({ name: jobDefinitionDetailPage, metadata })
+}
 
 function onPagination(page: number) {
     state.paginatedPage = page
@@ -150,7 +157,7 @@ function resetJobDefinitionToDelete(): void {
                 <template v-slot:body>
                     <tr v-for="(jobDefinition, index) in jobsDefinitionsPerPage" :key="index">
                         <td>
-                            <a>
+                            <a class="anchor-link" @click="onJobDefinition(jobDefinition)">
                                 {{ jobDefinition.name }}
                             </a>
                         </td>
@@ -189,7 +196,8 @@ function resetJobDefinitionToDelete(): void {
 </template>
 
 <style scoped>
-.jobs-definitions {
+.jobs-definitions .anchor-link {
+    cursor: pointer;
 }
 
 .jobs-definitions .delete-confirm {
