@@ -221,32 +221,35 @@ export class StreamingDiffController implements vscode.Disposable {
             }
             session.streamedLines = accumulatedLines
 
-            if (isFinal) {
-                if (session.streamedLines.length < document.lineCount) {
-                    const edit = new vscode.WorkspaceEdit()
-                    edit.delete(document.uri, new vscode.Range(session.streamedLines.length, 0, document.lineCount, 0))
-                    await vscode.workspace.applyEdit(edit)
-                }
-
-                try {
-                    await document.save()
-                } catch (saveError) {
-                    getLogger().error(`Failed to save temp file ${session.tempFilePath}: ${saveError}`)
-                }
-
-                session.fadedOverlayController.clear()
-                session.activeLineController.clear()
-
-                setTimeout(async () => {
-                    try {
-                        await this.cleanupTempFile(session.tempFilePath)
-                        session.disposed = true
-                        this.activeStreamingSessions.delete(toolUseId)
-                    } catch (error) {
-                        getLogger().warn(`Failed to auto-cleanup temp file ${session.tempFilePath}: ${error}`)
-                    }
-                }, 500)
+            if (!isFinal) {
+                return
             }
+
+            // Final cleanup when streaming is complete
+            if (session.streamedLines.length < document.lineCount) {
+                const edit = new vscode.WorkspaceEdit()
+                edit.delete(document.uri, new vscode.Range(session.streamedLines.length, 0, document.lineCount, 0))
+                await vscode.workspace.applyEdit(edit)
+            }
+
+            try {
+                await document.save()
+            } catch (saveError) {
+                getLogger().error(`Failed to save temp file ${session.tempFilePath}: ${saveError}`)
+            }
+
+            session.fadedOverlayController.clear()
+            session.activeLineController.clear()
+
+            setTimeout(async () => {
+                try {
+                    await this.cleanupTempFile(session.tempFilePath)
+                    session.disposed = true
+                    this.activeStreamingSessions.delete(toolUseId)
+                } catch (error) {
+                    getLogger().warn(`Failed to auto-cleanup temp file ${session.tempFilePath}: ${error}`)
+                }
+            }, 500)
         } catch (error) {
             getLogger().error(
                 `[StreamingDiffController] ❌ Failed to stream animation update for ${toolUseId}: ${error}`
@@ -334,9 +337,10 @@ export class StreamingDiffController implements vscode.Disposable {
                     `[StreamingDiffController] ❌ Failed to save fsReplace diffPair temp file: ${saveError}`
                 )
             }
-            if (isFinal) {
-                await this.handleFsReplaceCompletion(session, pairIndex || 0, totalPairs || 1)
+            if (!isFinal) {
+                return
             }
+            await this.handleFsReplaceCompletion(session, pairIndex || 0, totalPairs || 1)
         } catch (error) {
             getLogger().error(`[StreamingDiffController] ❌ Failed to handle fsReplace diffPair: ${error}`)
         }
