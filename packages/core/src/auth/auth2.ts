@@ -376,8 +376,13 @@ export abstract class BaseLogin {
      * Decrypts an encrypted string, removes its quotes, and returns the resulting string
      */
     protected async decrypt(encrypted: string): Promise<string> {
-        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
-        return decrypted.plaintext.toString().replaceAll('"', '')
+        try {
+            const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
+            return decrypted.plaintext.toString().replaceAll('"', '')
+        } catch (e) {
+            getLogger().error(`Failed to decrypt: ${encrypted}`)
+            return encrypted
+        }
     }
 }
 
@@ -589,6 +594,14 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
+        const sessionData = await this.getProfile()
+        const credentials = sessionData?.profile?.settings
+        if (credentials?.aws_access_key_id && credentials?.aws_secret_access_key) {
+            this._data = {
+                accessKey: credentials.aws_access_key_id,
+                secretKey: credentials.aws_secret_access_key,
+            }
+        }
         try {
             await this._getIamCredential(false)
         } catch (err) {

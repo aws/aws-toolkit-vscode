@@ -26,16 +26,27 @@ export async function createTestAuthUtil() {
         },
     }
 
+    const fakeCredential = {
+        credential: {
+            id: 'fake-id',
+            kinds: [],
+            credentials: {
+                accessKeyId: 'fake-access-key-id',
+                secretAccessKey: 'fake-secret-access-key',
+                sessionToken: 'fake-session-token',
+            },
+        },
+        updateCredentialsParams: {
+            data: 'fake-data',
+        },
+    }
+
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
         registerStsCredentialChangedHandler: sinon.stub().resolves(),
         updateSsoProfile: sinon.stub().resolves(),
         getSsoToken: sinon.stub().resolves(fakeToken),
-        getIamCredential: sinon.stub().resolves({
-            accessKeyId: 'fake-access-key-id',
-            secretAccessKey: 'fake-secret-access-key',
-            sessionToken: 'fake-session-token',
-        }),
+        getIamCredential: sinon.stub().resolves(fakeCredential),
         getProfile: sinon.stub().resolves({
             sso_registration_scopes: ['codewhisperer'],
         }),
