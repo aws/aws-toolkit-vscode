@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import '../utils/setup'
-import { WebviewView } from 'vscode-extension-tester'
+import { WebviewView, By } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { clearChat, waitForChatResponse, writeToChat } from '../utils/generalUtils'
+import { waitForChatResponse, writeToChat, clearChat } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Chat Basic Functionality', function () {
@@ -17,12 +17,9 @@ describe('Amazon Q Chat Basic Functionality', function () {
         webviewView = testContext.webviewView
     })
 
-    after(async function () {
-        await closeAllTabs(webviewView)
-    })
-
-    afterEach(async () => {
+    afterEach(async function () {
         await clearChat(webviewView)
+        await closeAllTabs(webviewView)
     })
 
     it('Chat Prompt Test', async () => {
@@ -32,5 +29,12 @@ describe('Amazon Q Chat Basic Functionality', function () {
             throw new Error('Chat response not received within timeout')
         }
         console.log('Chat response detected successfully')
+    })
+    it('Multiple Chat Test', async () => {
+        console.log('Starting Multiple Chat Test')
+        for (let i = 0; i < 3; i++) {
+            const addChat = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-plus'))
+            await addChat.click()
+        }
     })
 })
