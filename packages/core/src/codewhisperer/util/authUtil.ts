@@ -33,6 +33,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     AuthStateEvent,
     cacheChangedEvent,
+    stsCacheChangedEvent,
     LanguageClientAuth,
     Login,
     SsoLogin,
@@ -73,7 +74,13 @@ export interface IAuthProvider {
     getToken(): Promise<string>
     getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
-    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
+    readonly connection?: {
+        startUrl?: string
+        region?: string
+        accessKey?: string
+        secretKey?: string
+        sessionToken?: string
+    }
 }
 
 /**
@@ -109,6 +116,7 @@ export class AuthUtil implements IAuthProvider {
             await this.setVscodeContextProps()
         })
         lspAuth.registerCacheWatcher(async (event: cacheChangedEvent) => await this.cacheChangedHandler(event))
+        lspAuth.registerStsCacheWatcher(async (event: stsCacheChangedEvent) => await this.stsCacheChangedHandler(event))
     }
 
     // Do NOT use this in production code, only used for testing
@@ -141,12 +149,13 @@ export class AuthUtil implements IAuthProvider {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             await this.session.restore()
             if (!this.isConnected()) {
+                await this.session?.logout()
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
                 await this.session.restore()
                 if (!this.isConnected()) {
                     // If both fail, reset the session
-                    this.session = undefined
+                    await this.session?.logout()
                 }
             }
         }
@@ -186,15 +195,19 @@ export class AuthUtil implements IAuthProvider {
     async loginIam(
         accessKey: string,
         secretKey: string,
-        sessionToken?: string
+        sessionToken?: string,
+        roleArn?: string
     ): Promise<GetIamCredentialResult | undefined> {
-        let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        // eslint-disable-next-line prefer-const
-        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey })
+        const response = await (this.session as IamLogin).login({
+            accessKey: accessKey,
+            secretKey: secretKey,
+            sessionToken: sessionToken,
+            roleArn: roleArn,
+        })
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -257,10 +270,6 @@ export class AuthUtil implements IAuthProvider {
 
     isIdcConnection() {
         return Boolean(this.connection?.startUrl && this.connection?.startUrl !== builderIdStartUrl)
-    }
-
-    isIamConnection() {
-        return Boolean(this.connection?.accessKey && this.connection?.secretKey)
     }
 
     isInternalAmazonUser(): boolean {
@@ -355,6 +364,15 @@ export class AuthUtil implements IAuthProvider {
 
     private async cacheChangedHandler(event: cacheChangedEvent) {
         this.logger.debug(`Cache change event received: ${event}`)
+        if (event === 'delete') {
+            await this.logout()
+        } else if (event === 'create') {
+            await this.restore()
+        }
+    }
+
+    private async stsCacheChangedHandler(event: stsCacheChangedEvent) {
+        this.logger.debug(`Sts Cache change event received: ${event}`)
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {

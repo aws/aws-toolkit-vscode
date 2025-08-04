@@ -12,16 +12,20 @@ import {
     GetIamCredentialParams,
     getIamCredentialRequestType,
     GetIamCredentialResult,
+    InvalidateStsCredentialResult,
     IamIdentityCenterSsoTokenSource,
     InvalidateSsoTokenParams,
+    InvalidateStsCredentialParams,
     invalidateSsoTokenRequestType,
+    invalidateStsCredentialRequestType,
     ProfileKind,
     UpdateProfileParams,
     updateProfileRequestType,
     SsoTokenChangedParams,
-    // StsCredentialChangedParams,
+    StsCredentialChangedParams,
+    StsCredentialChangedKind,
     ssoTokenChangedRequestType,
-    // stsCredentialChangedRequestType,
+    stsCredentialChangedRequestType,
     AwsBuilderIdSsoTokenSource,
     UpdateCredentialsParams,
     AwsErrorCodes,
@@ -36,6 +40,7 @@ import {
     iamCredentialsDeleteNotificationType,
     bearerCredentialsDeleteNotificationType,
     bearerCredentialsUpdateRequestType,
+    SsoTokenChangedKind,
     RequestType,
     ResponseMessage,
     NotificationType,
@@ -44,16 +49,14 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
-    SsoTokenChangedKind,
-    // invalidateStsCredentialRequestType,
-    // InvalidateStsCredentialParams,
-    // InvalidateStsCredentialResult,
+    GetMfaCodeParams,
+    getMfaCodeRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
-import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
+import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName, getStsCacheDir } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { IamCredentials } from '@aws/language-server-runtimes-types'
 
@@ -69,6 +72,7 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -83,6 +87,8 @@ export type LoginType = (typeof LoginTypes)[keyof typeof LoginTypes]
 
 export type cacheChangedEvent = 'delete' | 'create'
 
+export type stsCacheChangedEvent = 'delete' | 'create'
+
 export type Login = SsoLogin | IamLogin
 
 export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
@@ -92,6 +98,10 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
+    readonly #stsCacheWatcher = getCacheFileWatcher(
+        getStsCacheDir(),
+        getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq)
+    )
 
     constructor(
         private readonly client: LanguageClient,
@@ -101,6 +111,10 @@ export class LanguageClientAuth {
 
     public get cacheWatcher() {
         return this.#ssoCacheWatcher
+    }
+
+    public get stsCacheWatcher() {
+        return this.#stsCacheWatcher
     }
 
     getSsoToken(
@@ -155,6 +169,7 @@ export class LanguageClientAuth {
                     sso_session: profileName,
                     aws_access_key_id: '',
                     aws_secret_access_key: '',
+                    role_arn: '',
                 },
             },
             ssoSession: {
@@ -262,13 +277,28 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
+    invalidateStsCredential(tokenId: string) {
+        return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
+            iamCredentialId: tokenId,
+        } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
+    }
+
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
+    }
+
+    registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
+        this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
     }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
         this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
+    }
+
+    registerStsCacheWatcher(stsCacheChangedHandler: (event: stsCacheChangedEvent) => any) {
+        this.stsCacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
+        this.stsCacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
     }
 }
 
@@ -279,7 +309,9 @@ export abstract class BaseLogin {
     protected loginType: LoginType | undefined
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
-    protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string } | undefined
+    protected _data:
+        | { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string }
+        | undefined
 
     constructor(
         public readonly profileName: string,
@@ -344,13 +376,8 @@ export abstract class BaseLogin {
      * Decrypts an encrypted string, removes its quotes, and returns the resulting string
      */
     protected async decrypt(encrypted: string): Promise<string> {
-        try {
-            const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
-            return decrypted.plaintext.toString().replaceAll('"', '')
-        } catch (e) {
-            getLogger().error(`Failed to decrypt: ${encrypted}`)
-            return encrypted
-        }
+        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
+        return decrypted.plaintext.toString().replaceAll('"', '')
     }
 }
 
@@ -502,16 +529,16 @@ export class SsoLogin extends BaseLogin {
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
     override readonly loginType = LoginTypes.IAM
-    // private iamCredentialId: string | undefined
+    private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
         super(profileName, lspAuth, eventEmitter)
-        // lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
-        //     this.stsCredentialChangedHandler(params)
-        // )
+        lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
+            this.stsCredentialChangedHandler(params)
+        )
     }
 
-    async login(opts: { accessKey: string; secretKey: string }) {
+    async login(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -524,9 +551,9 @@ export class IamLogin extends BaseLogin {
     }
 
     async logout() {
-        // if (this.iamCredentialId) {
-        //     await this.lspAuth.invalidateIamCredential(this.iamCredentialId)
-        // }
+        if (this.iamCredentialId) {
+            await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
+        }
         await this.lspAuth.updateIamProfile(this.profileName, '', '', '', '', '')
         await this.lspAuth.updateIamProfile(this.profileName + '-source', '', '', '', '', '')
         this.updateConnectionState('notConnected')
@@ -534,11 +561,27 @@ export class IamLogin extends BaseLogin {
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string }) {
-        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey)
-        this._data = {
-            accessKey: opts.accessKey,
-            secretKey: opts.secretKey,
+    async updateProfile(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
+        if (opts.roleArn) {
+            const sourceProfile = this.profileName + '-source'
+            await this.lspAuth.updateIamProfile(
+                sourceProfile,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
+            await this.lspAuth.updateIamProfile(this.profileName, '', '', '', opts.roleArn, sourceProfile)
+        } else {
+            await this.lspAuth.updateIamProfile(
+                this.profileName,
+                opts.accessKey,
+                opts.secretKey,
+                opts.sessionToken,
+                '',
+                ''
+            )
         }
     }
 
@@ -546,14 +589,6 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        const sessionData = await this.getProfile()
-        const credentials = sessionData?.profile?.settings
-        if (credentials?.aws_access_key_id && credentials?.aws_secret_access_key) {
-            this._data = {
-                accessKey: credentials.aws_access_key_id,
-                secretKey: credentials.aws_secret_access_key,
-            }
-        }
         try {
             await this._getIamCredential(false)
         } catch (err) {
@@ -568,10 +603,10 @@ export class IamLogin extends BaseLogin {
     async getCredential() {
         const response = await this._getIamCredential(false)
         const credentials: IamCredentials = {
-            accessKeyId: await this.decrypt(response.credentials.accessKeyId),
-            secretAccessKey: await this.decrypt(response.credentials.secretAccessKey),
-            sessionToken: response.credentials.sessionToken
-                ? await this.decrypt(response.credentials.sessionToken)
+            accessKeyId: await this.decrypt(response.credential.credentials.accessKeyId),
+            secretAccessKey: await this.decrypt(response.credential.credentials.secretAccessKey),
+            sessionToken: response.credential.credentials.sessionToken
+                ? await this.decrypt(response.credential.credentials.sessionToken)
                 : undefined,
         }
         return {
@@ -593,8 +628,10 @@ export class IamLogin extends BaseLogin {
         } catch (err: any) {
             switch (err.data?.awsErrorCode) {
                 case AwsErrorCodes.E_CANCELLED:
-                case AwsErrorCodes.E_SSO_SESSION_NOT_FOUND:
+                case AwsErrorCodes.E_INVALID_PROFILE:
                 case AwsErrorCodes.E_PROFILE_NOT_FOUND:
+                case AwsErrorCodes.E_CANNOT_CREATE_STS_CREDENTIAL:
+                case AwsErrorCodes.E_INVALID_STS_CREDENTIAL:
                     this.updateConnectionState('notConnected')
                     break
                 default:
@@ -607,19 +644,27 @@ export class IamLogin extends BaseLogin {
             this.cancellationToken = undefined
         }
 
-        // this.iamCredentialId = response.id
+        // Update cached credentials and credential ID
+        if (response.credential?.credentials?.accessKeyId && response.credential?.credentials?.secretAccessKey) {
+            this._data = {
+                accessKey: response.credential.credentials.accessKeyId,
+                secretKey: response.credential.credentials.secretAccessKey,
+                sessionToken: response.credential.credentials.sessionToken,
+            }
+            this.iamCredentialId = response.credential.id
+        }
         this.updateConnectionState('connected')
         return response
     }
 
-    // private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
-    //     if (params.stsCredentialId === this.iamCredentialId) {
-    //         if (params.kind === CredentialChangedKind.Expired) {
-    //             this.updateConnectionState('expired')
-    //             return
-    //         } else if (params.kind === CredentialChangedKind.Refreshed) {
-    //             this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
-    //         }
-    //     }
-    // }
+    private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
+        if (params.stsCredentialId === this.iamCredentialId) {
+            if (params.kind === StsCredentialChangedKind.Expired) {
+                this.updateConnectionState('expired')
+                return
+            } else if (params.kind === StsCredentialChangedKind.Refreshed) {
+                this.eventEmitter.fire({ id: this.iamCredentialId, state: 'refreshed' })
+            }
+        }
+    }
 }

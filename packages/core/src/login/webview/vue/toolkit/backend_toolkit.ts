@@ -9,6 +9,7 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
+    IamProfile,
     SsoConnection,
     TelemetryMetadata,
     createSsoProfile,
@@ -155,6 +156,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
     async listSsoConnections(): Promise<SsoConnection[]> {
         return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
+    }
+
+    async listIamCredentialProfiles(): Promise<IamProfile[]> {
+        return []
     }
 
     override reauthenticateConnection(): Promise<undefined> {

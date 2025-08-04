@@ -279,6 +279,26 @@
                 v-model="secretKey"
                 @keydown.enter="handleContinueClick()"
             />
+            <div v-if="app === 'AMAZONQ'">
+                <div class="title">Session Token (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="sessionToken"
+                    name="sessionToken"
+                    v-model="sessionToken"
+                    @keydown.enter="handleContinueClick()"
+                />
+                <div class="title">Role ARN (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="roleArn"
+                    name="roleArn"
+                    v-model="roleArn"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
             </button>
@@ -367,6 +387,8 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            sessionToken: '',
+            roleArn: '',
         }
     },
     async created() {
@@ -374,7 +396,9 @@ export default defineComponent({
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
         const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        const defaultRoleArn = await this.getDefaultRoleArn()
         this.accessKey = defaultIamAccessKey.accessKey
+        this.roleArn = defaultRoleArn.roleArn
         await this.emitUpdate('created')
     },
 
@@ -497,7 +521,13 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                const error = await client.startIamCredentialSetup(
+                    this.profileName,
+                    this.accessKey,
+                    this.secretKey,
+                    this.sessionToken,
+                    this.roleArn
+                )
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -609,6 +639,9 @@ export default defineComponent({
         },
         async getDefaultIamAccessKey() {
             return await client.getDefaultIamKeys()
+        },
+        async getDefaultRoleArn() {
+            return await client.getDefaultRoleArn()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')

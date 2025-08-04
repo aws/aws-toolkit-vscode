@@ -779,6 +779,7 @@ const devSettings = {
     amazonqLsp: Record(String, String),
     amazonqWorkspaceLsp: Record(String, String),
     ssoCacheDirectory: String,
+    stsCacheDirectory: String,
     autofillStartUrl: String,
     autofillAccessKey: String,
     webAuth: Boolean,
