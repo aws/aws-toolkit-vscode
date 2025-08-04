@@ -40,39 +40,66 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     /**
+     * Extract common logic for getting problems from diagnostics
+     */
+    private async getProblemsFromDiagnostics(
+        range?: vscode.Range,
+        diagnostics?: vscode.Diagnostic[]
+    ): Promise<{ editor: vscode.TextEditor; problems: Problem[] } | undefined> {
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            throw new Error('No active editor found')
+        }
+
+        // Use provided diagnostics or get diagnostics for the range
+        let targetDiagnostics = diagnostics
+        if (!targetDiagnostics && range) {
+            const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
+            targetDiagnostics = allDiagnostics.filter((d) => d.range.intersection(range) !== undefined)
+        }
+
+        if (!targetDiagnostics || targetDiagnostics.length === 0) {
+            return undefined
+        }
+
+        // Convert diagnostics to problems
+        const problems = targetDiagnostics.map((diagnostic) => ({
+            uri: editor.document.uri,
+            diagnostic,
+            severity: mapDiagnosticSeverity(diagnostic.severity),
+            source: diagnostic.source || 'unknown',
+            isNew: false,
+        }))
+
+        return { editor, problems }
+    }
+
+    /**
+     * Filter diagnostics to only errors and apply source filtering
+     */
+    private filterErrorDiagnostics(diagnostics: vscode.Diagnostic[]): vscode.Diagnostic[] {
+        return diagnostics.filter((d) => {
+            if (d.severity !== vscode.DiagnosticSeverity.Error) {
+                return false
+            }
+            // Apply source filtering
+            if (this.config.excludedSources.length > 0 && d.source) {
+                return !this.config.excludedSources.includes(d.source)
+            }
+            return true
+        })
+    }
+
+    /**
      * Fix specific problems in the code
      */
     async fixSpecificProblems(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                throw new Error('No active editor found')
-            }
-
-            const filePath = editor.document.uri.fsPath
-
-            // Use provided diagnostics or get diagnostics for the range
-            let targetDiagnostics = diagnostics
-            if (!targetDiagnostics && range) {
-                const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
-                targetDiagnostics = allDiagnostics.filter((d) => d.range.intersection(range) !== undefined)
-            }
-
-            if (!targetDiagnostics || targetDiagnostics.length === 0) {
+            const result = await this.getProblemsFromDiagnostics(range, diagnostics)
+            if (!result) {
                 return
             }
-
-            // Convert diagnostics to problems
-            const problems = targetDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
-
-            // Create fix message
-            const fixMessage = this.createFixMessage(filePath, problems)
+            const fixMessage = this.createFixMessage(result.editor.document.uri.fsPath, result.problems)
             await this.sendMessageToChat(fixMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error fixing specific problems: %s', error)
@@ -84,48 +111,28 @@ export class AutoDebugController implements vscode.Disposable {
      * Fix with Amazon Q - sends up to 15 error messages one time when user clicks the button
      */
     public async fixAllProblemsInFile(maxProblems: number = 15): Promise<void> {
-        const editor = vscode.window.activeTextEditor
-        if (!editor) {
-            void messages.showMessage('warn', 'No active editor found')
-            return
-        }
-
-        const filePath = editor.document.uri.fsPath
-
         try {
+            const editor = vscode.window.activeTextEditor
+            if (!editor) {
+                void messages.showMessage('warn', 'No active editor found')
+                return
+            }
+
             // Get all diagnostics for the current file
             const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
-
-            // Filter to only errors (not warnings/info) and apply source filtering
-            const errorDiagnostics = allDiagnostics.filter((d) => {
-                if (d.severity !== vscode.DiagnosticSeverity.Error) {
-                    return false
-                }
-                // Apply source filtering
-                if (this.config.excludedSources.length > 0 && d.source) {
-                    return !this.config.excludedSources.includes(d.source)
-                }
-                return true
-            })
-
+            const errorDiagnostics = this.filterErrorDiagnostics(allDiagnostics)
             if (errorDiagnostics.length === 0) {
                 return
             }
 
             // Take up to maxProblems errors (15 by default)
             const diagnosticsToFix = errorDiagnostics.slice(0, maxProblems)
+            const result = await this.getProblemsFromDiagnostics(undefined, diagnosticsToFix)
+            if (!result) {
+                return
+            }
 
-            // Convert diagnostics to problems
-            const problems = diagnosticsToFix.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
-
-            // Create fix message
-            const fixMessage = this.createFixMessage(filePath, problems)
+            const fixMessage = this.createFixMessage(result.editor.document.uri.fsPath, result.problems)
             await this.sendMessageToChat(fixMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error in fix process: %s', error)
@@ -137,35 +144,11 @@ export class AutoDebugController implements vscode.Disposable {
      */
     async explainProblems(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                throw new Error('No active editor found')
-            }
-
-            const filePath = editor.document.uri.fsPath
-
-            // Use provided diagnostics or get diagnostics for the range
-            let targetDiagnostics = diagnostics
-            if (!targetDiagnostics && range) {
-                const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
-                targetDiagnostics = allDiagnostics.filter((d) => d.range.intersection(range) !== undefined)
-            }
-
-            if (!targetDiagnostics || targetDiagnostics.length === 0) {
+            const result = await this.getProblemsFromDiagnostics(range, diagnostics)
+            if (!result) {
                 return
             }
-
-            // Convert diagnostics to problems
-            const problems = targetDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
-
-            // Create explanation message
-            const explainMessage = this.createExplainMessage(filePath, problems)
+            const explainMessage = this.createExplainMessage(result.editor.document.uri.fsPath, result.problems)
             await this.sendMessageToChat(explainMessage)
         } catch (error) {
             this.logger.error('AutoDebugController: Error explaining problems: %s', error)
