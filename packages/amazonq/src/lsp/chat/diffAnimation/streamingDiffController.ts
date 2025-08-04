@@ -10,24 +10,23 @@ import { FsWriteParams } from './types'
 
 export const diffViewUriScheme = 'amazonq-diff'
 
+type StreamingSession = {
+    filePath: string
+    tempFilePath: string
+    originalContent: string
+    activeDiffEditor: vscode.TextEditor
+    fadedOverlayController: DecorationController
+    activeLineController: DecorationController
+    streamedLines: string[]
+    disposed: boolean
+    fsWriteParams?: FsWriteParams
+}
+
 /**
  * Streaming Diff Controller using temporary files for animations
  */
 export class StreamingDiffController implements vscode.Disposable {
-    private activeStreamingSessions = new Map<
-        string,
-        {
-            filePath: string
-            tempFilePath: string
-            originalContent: string
-            activeDiffEditor: vscode.TextEditor
-            fadedOverlayController: DecorationController
-            activeLineController: DecorationController
-            streamedLines: string[]
-            disposed: boolean
-            fsWriteParams?: FsWriteParams
-        }
-    >()
+    private activeStreamingSessions = new Map<string, StreamingSession>()
 
     private fsReplaceSessionsByFile = new Map<
         string,
@@ -257,11 +256,7 @@ export class StreamingDiffController implements vscode.Disposable {
         }
     }
 
-    /**
-     * Handle fsReplace diffPair phase - individual diff pair animation (like Cline's SEARCH/REPLACE blocks)
-     * **RACE CONDITION FIX**: Ensures the same temp file is reused for all diff pairs from the same toolUseId
-     */
-    async handleFsReplaceDiffPair(session: any, partialContent: string, isFinal: boolean): Promise<void> {
+    async handleFsReplaceDiffPair(session: StreamingSession, partialContent: string, isFinal: boolean): Promise<void> {
         try {
             const diffEditor = session.activeDiffEditor
             const document = diffEditor.document
@@ -278,24 +273,22 @@ export class StreamingDiffController implements vscode.Disposable {
                 return
             }
             const currentContent = document.getText()
-
-            if (document.uri.fsPath !== session.tempFilePath) {
-                try {
-                    const correctDocument = await vscode.workspace.openTextDocument(
-                        vscode.Uri.file(session.tempFilePath)
+            if (document.uri.fsPath === session.tempFilePath) {
+                return
+            }
+            try {
+                const correctDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(session.tempFilePath))
+                if (correctDocument) {
+                    const correctEditor = vscode.window.visibleTextEditors.find(
+                        (editor) => editor.document.uri.fsPath === session.tempFilePath
                     )
-                    if (correctDocument) {
-                        const correctEditor = vscode.window.visibleTextEditors.find(
-                            (editor) => editor.document.uri.fsPath === session.tempFilePath
-                        )
-                        if (correctEditor) {
-                            session.activeDiffEditor = correctEditor
-                        }
+                    if (correctEditor) {
+                        session.activeDiffEditor = correctEditor
                     }
-                } catch (error) {
-                    getLogger().error(`[StreamingDiffController] ❌ Failed to correct document path: ${error}`)
-                    return
                 }
+            } catch (error) {
+                getLogger().error(`[StreamingDiffController] ❌ Failed to correct document path: ${error}`)
+                return
             }
 
             // Find the location of oldStr in the current content
@@ -324,8 +317,11 @@ export class StreamingDiffController implements vscode.Disposable {
             for (let lineNum = startLineNumber; lineNum <= newEndLineNumber; lineNum++) {
                 session.activeLineController.setActiveLine(lineNum)
                 session.fadedOverlayController.updateOverlayAfterLine(lineNum, document.lineCount)
+                // Small delay to create smooth line-by-line animation effect for visual feedback
                 await new Promise((resolve) => setTimeout(resolve, 20))
             }
+            // Clear active line highlighting after a brief delay to allow user to see the final result
+            // before moving to the next diff pair or completing the animation
             setTimeout(() => {
                 session.activeLineController.clear()
             }, 500)
@@ -378,9 +374,6 @@ export class StreamingDiffController implements vscode.Disposable {
         }
     }
 
-    /**
-     * Scroll editor to line like Cline
-     */
     private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
         const scrollLine = line
         editor.revealRange(new vscode.Range(scrollLine, 0, scrollLine, 0), vscode.TextEditorRevealType.InCenter)
@@ -436,7 +429,7 @@ export class StreamingDiffController implements vscode.Disposable {
     /**
      * Handle fsReplace completion signal from parser - triggers immediate cleanup
      */
-    private async handleFsReplaceCompletionSignal(session: any): Promise<void> {
+    private async handleFsReplaceCompletionSignal(session: StreamingSession): Promise<void> {
         const filePath = session.filePath
         try {
             // Clear decorations immediately
@@ -453,6 +446,8 @@ export class StreamingDiffController implements vscode.Disposable {
                     getLogger().error(`[StreamingDiffController] ❌ Failed to save fsReplace temp file: ${saveError}`)
                 }
             }
+            // Delay cleanup to allow final UI updates and user to see completion state
+            // before removing visual elements and cleaning up resources
             setTimeout(async () => {
                 try {
                     await this.cleanupTempFile(session.tempFilePath)
@@ -481,9 +476,26 @@ export class StreamingDiffController implements vscode.Disposable {
     }
 
     /**
+     * Clean up multiple streaming sessions by their tool use IDs
+     */
+    private async cleanupSessions(toolUseIds: Set<string>): Promise<void> {
+        for (const toolUseId of toolUseIds) {
+            const sessionToCleanup = this.activeStreamingSessions.get(toolUseId)
+            if (sessionToCleanup) {
+                sessionToCleanup.disposed = true
+                this.activeStreamingSessions.delete(toolUseId)
+            }
+        }
+    }
+
+    /**
      * Handle fsReplace completion - properly track and cleanup when all diff pairs for a file are done
      */
-    private async handleFsReplaceCompletion(session: any, pairIndex: number, totalPairs: number): Promise<void> {
+    private async handleFsReplaceCompletion(
+        session: StreamingSession,
+        pairIndex: number,
+        totalPairs: number
+    ): Promise<void> {
         const filePath = session.filePath
         const fsReplaceSession = this.fsReplaceSessionsByFile.get(filePath)
 
@@ -501,13 +513,7 @@ export class StreamingDiffController implements vscode.Disposable {
             setTimeout(async () => {
                 try {
                     await this.cleanupTempFile(fsReplaceSession.tempFilePath)
-                    for (const toolUseId of fsReplaceSession.toolUseIds) {
-                        const sessionToCleanup = this.activeStreamingSessions.get(toolUseId)
-                        if (sessionToCleanup) {
-                            sessionToCleanup.disposed = true
-                            this.activeStreamingSessions.delete(toolUseId)
-                        }
-                    }
+                    await this.cleanupSessions(fsReplaceSession.toolUseIds)
                     this.fsReplaceSessionsByFile.delete(filePath)
                 } catch (error) {
                     getLogger().warn(
@@ -522,18 +528,23 @@ export class StreamingDiffController implements vscode.Disposable {
      * Clean up all temporary files for a chat session
      */
     async cleanupChatSession(): Promise<void> {
-        const tempFilesToCleanup: string[] = []
-        for (const [, session] of this.activeStreamingSessions.entries()) {
+        const tempFilePaths: string[] = []
+
+        // Collect from active streaming sessions
+        for (const session of this.activeStreamingSessions.values()) {
             if (session.tempFilePath) {
-                tempFilesToCleanup.push(session.tempFilePath)
+                tempFilePaths.push(session.tempFilePath)
             }
         }
-        for (const [, fsReplaceSession] of this.fsReplaceSessionsByFile.entries()) {
-            if (fsReplaceSession.tempFilePath) {
-                tempFilesToCleanup.push(fsReplaceSession.tempFilePath)
+
+        // Collect from fs replace sessions
+        for (const session of this.fsReplaceSessionsByFile.values()) {
+            if (session.tempFilePath) {
+                tempFilePaths.push(session.tempFilePath)
             }
         }
-        for (const tempFilePath of tempFilesToCleanup) {
+
+        for (const tempFilePath of tempFilePaths) {
             try {
                 await this.cleanupTempFile(tempFilePath)
             } catch (error) {
