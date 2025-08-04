@@ -30,6 +30,8 @@ import {
     ResponseError,
     LSPErrorCodes,
     updateConfigurationRequestType,
+    GetMfaCodeParams,
+    GetMfaCodeResult,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
@@ -56,7 +58,7 @@ import { processUtils } from 'aws-core-vscode/shared'
 import { activate as activateChat } from './chat/activation'
 import { activate as activeInlineChat } from '../inlineChat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
-import { auth2 } from 'aws-core-vscode/auth'
+import { auth2, getMfaTokenFromUser, getMfaSerialFromUser } from 'aws-core-vscode/auth'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { SessionManager } from '../app/inline/sessionManager'
@@ -334,6 +336,24 @@ async function postStartLanguageServer(
                     `Failed to process ShowDocumentRequest: ${(e as Error).message}`
                 )
             }
+        }
+    )
+
+    // Handler for when Flare needs to assume a role with MFA code
+    client.onRequest(
+        auth2.notificationTypes.getMfaCode.method,
+        async (params: GetMfaCodeParams): Promise<GetMfaCodeResult> => {
+            if (params.mfaSerial) {
+                globals.globalState.update('recentMfaSerial', { mfaSerial: params.mfaSerial })
+            }
+            const defaultMfaSerial = globals.globalState.tryGet('recentMfaSerial', Object, {
+                mfaSerial: '',
+            }).mfaSerial
+            let mfaSerial = await getMfaSerialFromUser(defaultMfaSerial, params.profileName)
+            mfaSerial = mfaSerial.trim()
+            await globals.globalState.update('recentMfaSerial', { mfaSerial: mfaSerial })
+            const mfaCode = await getMfaTokenFromUser(mfaSerial, params.profileName)
+            return { code: mfaCode ?? '', mfaSerial: mfaSerial ?? '' }
         }
     )
 

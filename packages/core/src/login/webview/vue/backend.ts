@@ -187,7 +187,7 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
     async errorNotification(e: AuthError) {
-        await showMessage('error', e.text)
+        showMessage('error', e.text)
     }
 
     abstract quitLoginScreen(): Promise<void>

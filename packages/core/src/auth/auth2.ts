@@ -57,7 +57,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
-import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
+import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName, getStsCacheDir } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { IamCredentials } from '@aws/language-server-runtimes-types'
 import globals from '../shared/extensionGlobals'
@@ -75,6 +75,7 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
+    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -88,6 +89,8 @@ export const LoginTypes = {
 export type LoginType = (typeof LoginTypes)[keyof typeof LoginTypes]
 
 export type cacheChangedEvent = 'delete' | 'create'
+
+export type stsCacheChangedEvent = 'delete' | 'create'
 
 export type Login = SsoLogin | IamLogin
 
@@ -114,6 +117,10 @@ const IamProfileOptionsDefaults = {
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
+    readonly #stsCacheWatcher = getCacheFileWatcher(
+        getStsCacheDir(),
+        getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq)
+    )
 
     constructor(
         private readonly client: LanguageClient,
@@ -123,6 +130,10 @@ export class LanguageClientAuth {
 
     public get cacheWatcher() {
         return this.#ssoCacheWatcher
+    }
+
+    public get stsCacheWatcher() {
+        return this.#stsCacheWatcher
     }
 
     getSsoToken(
@@ -281,6 +292,11 @@ export class LanguageClientAuth {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
         this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
     }
+
+    registerStsCacheWatcher(stsCacheChangedHandler: (event: stsCacheChangedEvent) => any) {
+        this.stsCacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
+        this.stsCacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
+    }
 }
 
 /**
@@ -357,13 +373,8 @@ export abstract class BaseLogin {
      * Decrypts an encrypted string, removes its quotes, and returns the resulting string
      */
     protected async decrypt(encrypted: string): Promise<string> {
-        try {
-            const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
-            return decrypted.plaintext.toString().replaceAll('"', '')
-        } catch (e) {
-            getLogger().error(`Failed to decrypt: ${encrypted}`)
-            return encrypted
-        }
+        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
+        return decrypted.plaintext.toString().replaceAll('"', '')
     }
 }
 
@@ -575,14 +586,6 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        const sessionData = await this.getProfile()
-        const credentials = sessionData?.profile?.settings
-        if (credentials?.aws_access_key_id && credentials?.aws_secret_access_key) {
-            this._data = {
-                accessKey: credentials.aws_access_key_id,
-                secretKey: credentials.aws_secret_access_key,
-            }
-        }
         try {
             await this._getIamCredential(false)
         } catch (err) {
