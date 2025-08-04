@@ -50,6 +50,7 @@ import {
     Profile,
     SsoSession,
     GetMfaCodeParams,
+    GetMfaCodeResult,
     getMfaCodeRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
@@ -59,6 +60,8 @@ import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
 import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName, getStsCacheDir } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { IamCredentials } from '@aws/language-server-runtimes-types'
+import globals from '../shared/extensionGlobals'
+import { getMfaSerialFromUser, getMfaTokenFromUser } from './credentials/utils'
 
 export const notificationTypes = {
     updateIamCredential: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
@@ -72,7 +75,6 @@ export const notificationTypes = {
     getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
         getConnectionMetadataRequestType.method
     ),
-    getMfaCode: new RequestType<GetMfaCodeParams, ResponseMessage, Error>(getMfaCodeRequestType.method),
 }
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
@@ -289,6 +291,10 @@ export class LanguageClientAuth {
 
     registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
         this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
+    }
+
+    registerGetMfaCodeHandler(getMfaCodeHandler: (params: GetMfaCodeParams) => Promise<GetMfaCodeResult>) {
+        this.client.onRequest(getMfaCodeRequestType.method, getMfaCodeHandler)
     }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
@@ -541,6 +547,7 @@ export class IamLogin extends BaseLogin {
         lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
             this.stsCredentialChangedHandler(params)
         )
+        lspAuth.registerGetMfaCodeHandler((params: GetMfaCodeParams) => this.getMfaCodeHandler(params))
     }
 
     async login(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
@@ -679,5 +686,19 @@ export class IamLogin extends BaseLogin {
                 this.eventEmitter.fire({ id: this.iamCredentialId, state: 'refreshed' })
             }
         }
+    }
+
+    private async getMfaCodeHandler(params: GetMfaCodeParams): Promise<GetMfaCodeResult> {
+        if (params.mfaSerial) {
+            await globals.globalState.update('recentMfaSerial', { mfaSerial: params.mfaSerial })
+        }
+        const defaultMfaSerial = globals.globalState.tryGet('recentMfaSerial', Object, {
+            mfaSerial: '',
+        }).mfaSerial
+        let mfaSerial = await getMfaSerialFromUser(defaultMfaSerial, params.profileName)
+        mfaSerial = mfaSerial.trim()
+        await globals.globalState.update('recentMfaSerial', { mfaSerial: mfaSerial })
+        const mfaCode = await getMfaTokenFromUser(mfaSerial, params.profileName)
+        return { code: mfaCode ?? '', mfaSerial: mfaSerial ?? '' }
     }
 }
