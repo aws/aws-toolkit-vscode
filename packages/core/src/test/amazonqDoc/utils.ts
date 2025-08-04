@@ -108,6 +108,7 @@ export function createMockAuthUtil(sandbox: sinon.SinonSandbox) {
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
         registerStsCredentialChangedHandler: sinon.stub().resolves(),
+        registerGetMfaCodeHandler: sinon.stub().resolves(),
     }
     AuthUtil.create(mockLspAuth as LanguageClientAuth)
     sandbox.stub(AuthUtil.instance.regionProfileManager, 'onDidChangeRegionProfile').resolves()
