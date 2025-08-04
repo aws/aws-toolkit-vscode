@@ -61,6 +61,7 @@ import {
     ruleClickRequestType,
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
+    listAvailableModelsRequestType,
     ShowOpenDialogRequestType,
     ShowOpenDialogParams,
     openFileDialogRequestType,
@@ -70,18 +71,41 @@ import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
-import { AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
-import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
-import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import {
+    AggregatedCodeScanIssue,
+    AuthUtil,
+    CodeAnalysisScope,
+    CodeWhispererSettings,
+    initSecurityScanRender,
+    ReferenceLogViewProvider,
+    SecurityIssueTreeViewProvider,
+    CodeWhispererConstants,
+} from 'aws-core-vscode/codewhisperer'
+import {
+    amazonQDiffScheme,
+    AmazonQPromptSettings,
+    messages,
+    openUrl,
+    isTextEditor,
+    globals,
+    setContext,
+} from 'aws-core-vscode/shared'
+import {
+    DefaultAmazonQAppInitContext,
+    messageDispatcher,
+    EditorContentController,
+    ViewDiffMessage,
+    referenceLogText,
+} from 'aws-core-vscode/amazonq'
+import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
-import { focusAmazonQPanel } from './commands'
-import { EditorContentController, ViewDiffMessage } from 'aws-core-vscode/amazonq'
-import { amazonQDiffScheme } from 'aws-core-vscode/shared'
-import { getLogger } from 'aws-core-vscode/shared'
 import { getCursorState } from '../utils'
+import { focusAmazonQPanel } from './commands'
+import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
+import { CommentUtils } from 'aws-core-vscode/utils'
 import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
 
 // Create a singleton instance of DiffAnimationHandler for streaming functionality
 let diffAnimationHandler: DiffAnimationHandler | undefined
@@ -167,7 +191,10 @@ export function registerMessageListeners(
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
     provider.webview?.onDidReceiveMessage(async (message) => {
+        languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
+
         if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
+            // handle the mynah ui -> agent legacy flow
             messageDispatcher.handleWebviewEvent(
                 message,
                 DefaultAmazonQAppInitContext.instance.getWebViewToAppsMessagePublishers()
@@ -178,7 +205,9 @@ export function registerMessageListeners(
         const webview = provider.webview
 
         switch (message.command) {
+            // Handle "aws/chat/ready" event
             case READY_NOTIFICATION_METHOD:
+                languageClient.info(`[VSCode Client] "aws/chat/ready" event is received, sending chat options`)
                 if (webview && pendingChatOptions) {
                     try {
                         await webview.postMessage({
@@ -186,19 +215,27 @@ export function registerMessageListeners(
                             params: pendingChatOptions,
                         })
 
+                        // Display a more readable representation of quick actions
+                        const quickActionCommands =
+                            pendingChatOptions?.quickActions?.quickActionsCommandGroups?.[0]?.commands || []
+                        const quickActionsDisplay = quickActionCommands.map((cmd: any) => cmd.command).join(', ')
+                        languageClient.info(
+                            `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
+                        )
                         languageClient.sendNotification(message.command, message.params)
                     } catch (err) {
                         languageClient.error(
-                            `Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
+                            `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
                         )
                     }
                 }
                 break
             case COPY_TO_CLIPBOARD:
+                languageClient.info('[VSCode Client] Copy to clipboard event received')
                 try {
                     await messages.copyToClipboard(message.params.code)
                 } catch (e) {
-                    languageClient.error(`Failed to copy to clipboard: ${(e as Error).message}`)
+                    languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
                 }
                 break
             case INSERT_TO_CURSOR_POSITION: {
@@ -218,6 +255,7 @@ export function registerMessageListeners(
                 break
             }
             case AUTH_FOLLOW_UP_CLICKED: {
+                languageClient.info('[VSCode Client] AuthFollowUp clicked')
                 const authType = message.params.authFollowupType
                 const reAuthTypes: AuthFollowUpType[] = ['re-auth', 'missing_scopes']
                 const fullAuthTypes: AuthFollowUpType[] = ['full-auth', 'use-supported-auth']
@@ -227,7 +265,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.reauthenticate()
                     } catch (e) {
                         languageClient.error(
-                            `Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }
@@ -237,7 +275,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.secondaryAuth.deleteConnection()
                     } catch (e) {
                         languageClient.error(
-                            `Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }
@@ -276,21 +314,16 @@ export function registerMessageListeners(
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
+                let lastPartialResult: ChatResult | undefined
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                await cleanupTempFiles()
-
-                const chatDisposable = languageClient.onProgress(
-                    chatRequestType,
-                    partialResultToken,
-                    async (partialResult) => {
-                        if (typeof partialResult === 'string' && encryptionKey) {
-                        } else {
+                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                        (result) => {
+                            lastPartialResult = result
                         }
-
-                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
-                    }
+                    )
                 )
 
                 const editor =
@@ -319,6 +352,11 @@ export function registerMessageListeners(
                         chatDisposable
                     )
                 } catch (e) {
+                    const errorMsg = `Error occurred during chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
                     if (!isValidResponseError(e)) {
                         throw e
                     }
@@ -335,6 +373,8 @@ export function registerMessageListeners(
                 break
             }
             case OPEN_FILE_DIALOG: {
+                // openFileDialog is the event emitted from webView to open
+                // file system
                 const result = await languageClient.sendRequest<OpenFileDialogResult>(
                     openFileDialogRequestType.method,
                     message.params
@@ -393,7 +433,9 @@ export function registerMessageListeners(
                     message.params
                 )
                 if (!buttonResult.success) {
-                    languageClient.error(`Failed to execute button action: ${buttonResult.failureReason}`)
+                    languageClient.error(
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
+                    )
                 }
                 break
             }
@@ -501,7 +543,7 @@ export function registerMessageListeners(
             const urisString = uris?.map((uri) => uri.fsPath)
             return { uris: urisString || [] }
         } catch (err) {
-            languageClient.error(`Failed to open file dialog: ${(err as Error).message}`)
+            languageClient.error(`[VSCode Client] Failed to open file dialog: ${(err as Error).message}`)
             return { uris: [] }
         }
     })
@@ -509,7 +551,7 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`focusAmazonQPanel() failed`))
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
 
             try {
                 const uri = vscode.Uri.parse(params.uri)
