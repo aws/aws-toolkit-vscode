@@ -99,6 +99,16 @@ const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.Ruby, 'ruby3.3'],
 ])
 
+export const mapFamilyToDebugType = ImmutableMap<RuntimeFamily, string>([
+    [RuntimeFamily.NodeJS, 'node'],
+    [RuntimeFamily.Python, 'python'],
+    [RuntimeFamily.DotNet, 'csharp'],
+    [RuntimeFamily.Go, 'go'],
+    [RuntimeFamily.Java, 'java'],
+    [RuntimeFamily.Ruby, 'ruby'],
+    [RuntimeFamily.Unknown, 'unknown'],
+])
+
 export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     nodeJsRuntimes,
     pythonRuntimes,

@@ -27,9 +27,33 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared/fs/fs'
 import { LambdaFunction } from './uploadLambda'
+import globals from '../../shared/extensionGlobals'
+
+// Workspace state key for Lambda function ARN to local path cache
+const LAMBDA_ARN_CACHE_KEY = 'aws.lambda.functionArnToLocalPathCache' // eslint-disable-line @typescript-eslint/naming-convention
+
+async function setLambdaArnCache(functionArn: string, localPath: string): Promise<void> {
+    try {
+        const cache: Record<string, string> = globals.context.workspaceState.get(LAMBDA_ARN_CACHE_KEY, {})
+        cache[functionArn] = localPath
+        await globals.context.workspaceState.update(LAMBDA_ARN_CACHE_KEY, cache)
+        getLogger().debug(`lambda: cached local path for function ARN: ${functionArn} -> ${localPath}`)
+    } catch (error) {
+        getLogger().error(`lambda: failed to cache local path for function ARN: ${functionArn}`, error)
+    }
+}
+
+export function getCachedLocalPath(functionArn: string): string | undefined {
+    const cache: Record<string, string> = globals.context.workspaceState.get(LAMBDA_ARN_CACHE_KEY, {})
+    return cache[functionArn]
+}
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)
+    // check if result is Result
+    if (result instanceof vscode.Uri) {
+        return
+    }
 
     telemetry.lambda_import.emit({
         result,
@@ -37,7 +61,10 @@ export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     })
 }
 
-async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Result> {
+export async function runDownloadLambda(
+    functionNode: LambdaFunctionNode,
+    returnDir: boolean = false
+): Promise<Result | vscode.Uri> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
@@ -74,6 +101,9 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
             getLogger().info('DownloadLambda cancelled')
             return 'Cancelled'
         }
+
+        // customer accepted, we should make sure the target dir is clean
+        await fs.delete(downloadLocation, { recursive: true })
     }
 
     return await downloadLambdaInLocation(
@@ -81,7 +111,8 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
         downloadLocationName,
         downloadLocation,
         workspaceFolders,
-        selectedUri
+        selectedUri,
+        returnDir
     )
 }
 
@@ -90,9 +121,10 @@ export async function downloadLambdaInLocation(
     downloadLocationName: string,
     downloadLocation: string,
     workspaceFolders?: readonly vscode.WorkspaceFolder[],
-    selectedUri?: vscode.Uri
-): Promise<Result> {
-    return await vscode.window.withProgress<Result>(
+    selectedUri?: vscode.Uri,
+    returnDir: boolean = false
+): Promise<Result | vscode.Uri> {
+    const result = await vscode.window.withProgress<Result>(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -107,8 +139,22 @@ export async function downloadLambdaInLocation(
             let lambdaLocation: string
 
             try {
-                lambdaLocation = path.join(downloadLocation, getLambdaDetails(lambda.configuration!).fileName)
                 await downloadAndUnzipLambda(progress, lambda, downloadLocation)
+                // Cache the mapping of function ARN to downloaded location
+                if (lambda.configuration?.FunctionArn) {
+                    await setLambdaArnCache(lambda.configuration.FunctionArn, downloadLocation)
+                }
+                lambdaLocation = path.join(downloadLocation, getLambdaDetails(lambda.configuration!).fileName)
+                if (!(await fs.exists(lambdaLocation))) {
+                    // if file ext is mjs, change to js or vice versa
+                    const currentExt = path.extname(lambdaLocation)
+                    const alternativeExt = currentExt === '.mjs' ? '.js' : '.mjs'
+                    const alternativePath = lambdaLocation.replace(currentExt, alternativeExt)
+
+                    if (await fs.exists(alternativePath)) {
+                        lambdaLocation = alternativePath
+                    }
+                }
             } catch (e) {
                 // initial download failed or runtime is unsupported.
                 // show error and return a failure
@@ -127,6 +173,7 @@ export async function downloadLambdaInLocation(
             }
 
             try {
+                await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
                 await openLambdaFile(lambdaLocation)
                 if (workspaceFolders) {
                     if (
@@ -148,6 +195,12 @@ export async function downloadLambdaInLocation(
             }
         }
     )
+
+    if (returnDir) {
+        return vscode.Uri.file(downloadLocation)
+    } else {
+        return result
+    }
 }
 
 async function downloadAndUnzipLambda(
@@ -194,7 +247,7 @@ async function downloadAndUnzipLambda(
     }
 }
 
-export async function openLambdaFile(lambdaLocation: string): Promise<void> {
+export async function openLambdaFile(lambdaLocation: string, viewColumn?: vscode.ViewColumn): Promise<void> {
     if (!(await fs.exists(lambdaLocation))) {
         const warning = localize(
             'AWS.lambda.download.fileNotFound',
@@ -205,8 +258,9 @@ export async function openLambdaFile(lambdaLocation: string): Promise<void> {
         void vscode.window.showWarningMessage(warning)
         throw new Error()
     }
+    await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(lambdaLocation))
-    await vscode.window.showTextDocument(doc)
+    await vscode.window.showTextDocument(doc, viewColumn)
 }
 
 async function addLaunchConfigEntry(

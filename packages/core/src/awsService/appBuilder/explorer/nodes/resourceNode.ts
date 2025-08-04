@@ -60,7 +60,8 @@ export class ResourceNode implements TreeNode {
                 this.deployedResource,
                 this.region,
                 this.stackName,
-                this.resourceTreeEntity
+                this.resourceTreeEntity,
+                this.location.projectRoot
             )
         }
         if (this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE) {

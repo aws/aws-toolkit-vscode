@@ -40,6 +40,9 @@ export class SshConfig {
     }
 
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
+        // Use %n for SageMaker to preserve original hostname case (avoids SSH canonicalization lowercasing and DNS lookup)
+        const hostnameToken = this.scriptPrefix === 'sagemaker_connect' ? '%n' : '%h'
+
         if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
             const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
@@ -47,9 +50,9 @@ export class SshConfig {
             if (r.exitCode !== 0) {
                 return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
             }
-            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" %h`)
+            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" ${hostnameToken}`)
         } else {
-            return Result.ok(`'${command}' '%h'`)
+            return Result.ok(`'${command}' '${hostnameToken}'`)
         }
     }
 
