@@ -213,9 +213,10 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
         const formContainer = await filtersWrapper.findElement(By.css('.mynah-chat-item-form-items-container'))
         const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
 
-        for (const [formItem, index] of Object.entries(formItemsMap)) {
+        for (const formItem of Object.keys(formItemsMap) as McpFormItem[]) {
+            const index = formItemsMap[formItem]
             if (index < items.length) {
-                await processFormItem(formItem as McpFormItem, items[index], mergedConfig)
+                await processFormItem(formItem, items[index], mergedConfig)
             }
         }
     } catch (e) {
