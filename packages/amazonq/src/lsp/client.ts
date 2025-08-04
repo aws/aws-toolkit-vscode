@@ -344,7 +344,7 @@ async function postStartLanguageServer(
         auth2.notificationTypes.getMfaCode.method,
         async (params: GetMfaCodeParams): Promise<GetMfaCodeResult> => {
             if (params.mfaSerial) {
-                globals.globalState.update('recentMfaSerial', { mfaSerial: params.mfaSerial })
+                await globals.globalState.update('recentMfaSerial', { mfaSerial: params.mfaSerial })
             }
             const defaultMfaSerial = globals.globalState.tryGet('recentMfaSerial', Object, {
                 mfaSerial: '',
