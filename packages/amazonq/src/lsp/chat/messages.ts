@@ -139,16 +139,15 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         }
     })
 }
-async function cleanupTempFiles(context: string): Promise<void> {
+async function cleanupTempFiles(): Promise<void> {
     try {
         const animationHandler = getDiffAnimationHandler()
         const streamingController = (animationHandler as any).streamingDiffController
         if (streamingController && streamingController.cleanupChatSession) {
             await streamingController.cleanupChatSession()
-            getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files ${context}`)
         }
     } catch (error) {
-        getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files ${context}: ${error}`)
+        getLogger().warn(`Failed to cleanup temp files: ${error}`)
     }
 }
 export function registerMessageListeners(
@@ -158,23 +157,17 @@ export function registerMessageListeners(
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
 
-    // **FIXED**: Track streaming sessions by file path to handle fsReplace correctly
     const initializingStreamsByFile = new Map<string, Set<string>>() // filePath -> Set of toolUseIds
 
-    // **IMPROVED**: Track processed chunks with better deduplication logic
     const processedChunks = new Map<string, Set<string>>() // toolUseId -> Set of content hashes
 
     // Initialize DiffAnimationHandler
-    const animationHandler = getDiffAnimationHandler()
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
     provider.webview?.onDidReceiveMessage(async (message) => {
-        languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
-
         if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
-            // handle the mynah ui -> agent legacy flow
             messageDispatcher.handleWebviewEvent(
                 message,
                 DefaultAmazonQAppInitContext.instance.getWebViewToAppsMessagePublishers()
@@ -185,9 +178,7 @@ export function registerMessageListeners(
         const webview = provider.webview
 
         switch (message.command) {
-            // Handle "aws/chat/ready" event
             case READY_NOTIFICATION_METHOD:
-                languageClient.info(`[VSCode Client] "aws/chat/ready" event is received, sending chat options`)
                 if (webview && pendingChatOptions) {
                     try {
                         await webview.postMessage({
@@ -195,27 +186,19 @@ export function registerMessageListeners(
                             params: pendingChatOptions,
                         })
 
-                        // Display a more readable representation of quick actions
-                        const quickActionCommands =
-                            pendingChatOptions?.quickActions?.quickActionsCommandGroups?.[0]?.commands || []
-                        const quickActionsDisplay = quickActionCommands.map((cmd: any) => cmd.command).join(', ')
-                        languageClient.info(
-                            `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
-                        )
                         languageClient.sendNotification(message.command, message.params)
                     } catch (err) {
                         languageClient.error(
-                            `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
+                            `Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
                         )
                     }
                 }
                 break
             case COPY_TO_CLIPBOARD:
-                languageClient.info('[VSCode Client] Copy to clipboard event received')
                 try {
                     await messages.copyToClipboard(message.params.code)
                 } catch (e) {
-                    languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
+                    languageClient.error(`Failed to copy to clipboard: ${(e as Error).message}`)
                 }
                 break
             case INSERT_TO_CURSOR_POSITION: {
@@ -235,7 +218,6 @@ export function registerMessageListeners(
                 break
             }
             case AUTH_FOLLOW_UP_CLICKED: {
-                languageClient.info('[VSCode Client] AuthFollowUp clicked')
                 const authType = message.params.authFollowupType
                 const reAuthTypes: AuthFollowUpType[] = ['re-auth', 'missing_scopes']
                 const fullAuthTypes: AuthFollowUpType[] = ['full-auth', 'use-supported-auth']
@@ -245,7 +227,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.reauthenticate()
                     } catch (e) {
                         languageClient.error(
-                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                            `Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }
@@ -255,7 +237,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.secondaryAuth.deleteConnection()
                     } catch (e) {
                         languageClient.error(
-                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                            `Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }
@@ -287,49 +269,24 @@ export function registerMessageListeners(
                 token?.dispose()
                 chatStreamTokens.delete(tabId)
 
-                // **RACE CONDITION FIX**: Clear any pending initialization locks
                 initializingStreamsByFile.clear()
-
-                // **CRITICAL FIX**: Clean up temp files when chat is stopped
-                // This ensures temp files are cleaned up when users stop ongoing operations
-                await cleanupTempFiles('after stopping chat')
+                await cleanupTempFiles()
                 break
             }
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
-                let lastPartialResult: ChatResult | undefined
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                // **CRITICAL FIX**: Clean up temp files from previous chat sessions
-                // This ensures temp files don't accumulate when users start new conversations
-                await cleanupTempFiles('before starting new chat')
+                await cleanupTempFiles()
 
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
                     async (partialResult) => {
-                        // Store the latest partial result
                         if (typeof partialResult === 'string' && encryptionKey) {
-                            const decoded = await decryptResponse<ChatResult>(partialResult, encryptionKey)
-                            lastPartialResult = decoded
-
-                            // Process partial results for diff animations
-                            try {
-                                await animationHandler.processChatResult(decoded, chatParams.tabId, true)
-                            } catch (error) {
-                                getLogger().error(`Failed to process partial result for animations: ${error}`)
-                            }
                         } else {
-                            lastPartialResult = partialResult as ChatResult
-
-                            // Process partial results for diff animations
-                            try {
-                                await animationHandler.processChatResult(lastPartialResult, chatParams.tabId, true)
-                            } catch (error) {
-                                getLogger().error(`Failed to process partial result for animations: ${error}`)
-                            }
                         }
 
                         void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
@@ -361,23 +318,7 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
-
-                    // Process final result for animations
-                    const finalResult =
-                        typeof chatResult === 'string' && encryptionKey
-                            ? await decryptResponse<ChatResult>(chatResult, encryptionKey)
-                            : (chatResult as ChatResult)
-                    try {
-                        await animationHandler.processChatResult(finalResult, chatParams.tabId, false)
-                    } catch (error) {
-                        getLogger().error(`Failed to process final result for animations: ${error}`)
-                    }
                 } catch (e) {
-                    const errorMsg = `Error occurred during chat request: ${e}`
-                    languageClient.info(errorMsg)
-                    languageClient.info(
-                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
-                    )
                     if (!isValidResponseError(e)) {
                         throw e
                     }
@@ -394,8 +335,6 @@ export function registerMessageListeners(
                 break
             }
             case OPEN_FILE_DIALOG: {
-                // openFileDialog is the event emitted from webView to open
-                // file system
                 const result = await languageClient.sendRequest<OpenFileDialogResult>(
                     openFileDialogRequestType.method,
                     message.params
@@ -454,9 +393,7 @@ export function registerMessageListeners(
                     message.params
                 )
                 if (!buttonResult.success) {
-                    languageClient.error(
-                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
-                    )
+                    languageClient.error(`Failed to execute button action: ${buttonResult.failureReason}`)
                 }
                 break
             }
@@ -564,7 +501,7 @@ export function registerMessageListeners(
             const urisString = uris?.map((uri) => uri.fsPath)
             return { uris: urisString || [] }
         } catch (err) {
-            languageClient.error(`[VSCode Client] Failed to open file dialog: ${(err as Error).message}`)
+            languageClient.error(`Failed to open file dialog: ${(err as Error).message}`)
             return { uris: [] }
         }
     })
@@ -572,7 +509,7 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+            focusAmazonQPanel().catch((e) => languageClient.error(`focusAmazonQPanel() failed`))
 
             try {
                 const uri = vscode.Uri.parse(params.uri)
@@ -653,47 +590,12 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
-        // Process fsReplace complete events for line-by-line diff animation
-        // if ((params.data as any)?.fsReplaceComplete) {
-        //     const fsReplaceComplete = (params.data as any).fsReplaceComplete
-        //     try {
-        //         getLogger().info(
-        //             `[VSCode Client] 🔄 Received fsReplace complete for ${fsReplaceComplete.toolUseId}: ${fsReplaceComplete.diffString?.length || 0} chars`
-        //         )
-
-        //         // Process fsReplace complete with StreamingDiffController
-        //         const animationHandler = getDiffAnimationHandler()
-        //         const streamingController = (animationHandler as any).streamingDiffController
-        //         if (streamingController && streamingController.processFsReplaceComplete) {
-        //             await streamingController.processFsReplaceComplete(fsReplaceComplete)
-        //         } else {
-        //             getLogger().warn(
-        //                 `[VSCode Client] ⚠️ StreamingDiffController not available for fsReplace processing`
-        //             )
-        //         }
-
-        //         getLogger().info(`[VSCode Client] ✅ fsReplace complete processed successfully`)
-        //     } catch (error) {
-        //         getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace complete: ${error}`)
-        //     }
-        //     // Don't forward fsReplaceComplete to the webview - it's handled by the animation
-        //     return
-        // }
-
-        // Process streaming chunks for real-time diff animations (fsWrite and fsReplace)
         if ((params.data as any)?.streamingChunk) {
             const streamingChunk = (params.data as any).streamingChunk
 
-            // **NEW: Handle fsReplace streaming chunks separately**
+            // Handle fsReplace streaming chunks separately
             if (streamingChunk.toolName === 'fsReplace') {
                 try {
-                    getLogger().info(
-                        `[VSCode Client] 🔄 Received fsReplace streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete}) command: ${streamingChunk.fsWriteParams?.command}`
-                    )
-
-                    // **CORRECTED FIX**: Only deduplicate truly identical chunks, not progressive streaming
-                    // For fsReplace_diffPair, each chunk should be processed as they represent different stages
-                    // Only skip if we get the EXACT same content hash multiple times in rapid succession
                     const contentHash = streamingChunk.content
                         ? `${streamingChunk.content.substring(0, 50)}-${streamingChunk.content.length}`
                         : 'empty'
@@ -705,48 +607,21 @@ export function registerMessageListeners(
 
                     const toolChunks = processedChunks.get(streamingChunk.toolUseId)!
 
-                    // **CRITICAL FIX**: For fsReplace_diffPair, only skip if we get identical content + completion state
-                    // This allows progressive streaming while preventing true duplicates
                     if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
-                        // For diff pairs, only skip if we get the exact same content AND completion state
                         if (toolChunks.has(chunkHash)) {
-                            getLogger().info(
-                                `[VSCode Client] 🚫 Skipping duplicate fsReplace diffPair chunk for ${streamingChunk.toolUseId}: ${chunkHash}`
-                            )
                             return
                         }
                     } else {
-                        // For regular streaming, use the original logic but be more permissive
                         const simpleHash = `${streamingChunk.toolUseId}-${streamingChunk.content?.length || 0}`
                         if (toolChunks.has(simpleHash) && streamingChunk.isComplete) {
-                            getLogger().info(
-                                `[VSCode Client] 🚫 Skipping duplicate final chunk for ${streamingChunk.toolUseId}: ${simpleHash}`
-                            )
                             return
                         }
                         toolChunks.add(simpleHash)
                     }
 
-                    // Mark this chunk as processed
                     toolChunks.add(chunkHash)
 
-                    // **CRITICAL DEBUG**: Log the exact payload received
-                    getLogger().info(`[VSCode Client] 📥 RECEIVED DIFF CHUNK PAYLOAD:`)
-                    getLogger().info(`[VSCode Client]   toolUseId: ${streamingChunk.toolUseId}`)
-                    getLogger().info(`[VSCode Client]   toolName: ${streamingChunk.toolName}`)
-                    getLogger().info(`[VSCode Client]   filePath: ${streamingChunk.filePath}`)
-                    getLogger().info(
-                        `[VSCode Client]   content: "${streamingChunk.content?.substring(0, 100)}${streamingChunk.content && streamingChunk.content.length > 100 ? '...' : ''}"`
-                    )
-                    getLogger().info(`[VSCode Client]   isComplete: ${streamingChunk.isComplete}`)
-                    getLogger().info('[VSCode Client]   fsWriteParams: %O', streamingChunk.fsWriteParams)
-                    getLogger().info(`[VSCode Client]   chunkHash: ${chunkHash}`)
-
-                    // Process fsReplace streaming chunk with DiffAnimationHandler
                     const animationHandler = getDiffAnimationHandler()
-
-                    // **CRITICAL FIX**: Use the same mechanism as fsWrite to prevent race conditions
-                    // fsWrite uses a try/finally pattern to ensure initialization locks are always cleaned up
                     const filePath = streamingChunk.filePath
                     const isAlreadyInitializing =
                         filePath &&
@@ -758,32 +633,18 @@ export function registerMessageListeners(
                         filePath &&
                         !isAlreadyInitializing
                     ) {
-                        // Mark as initializing IMMEDIATELY to prevent race condition
                         if (!initializingStreamsByFile.has(filePath)) {
                             initializingStreamsByFile.set(filePath, new Set())
                         }
                         initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
 
                         try {
-                            getLogger().info(
-                                `[VSCode Client] 🎬 Initializing fsReplace streaming session for ${streamingChunk.toolUseId} at ${filePath}`
-                            )
                             await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
-                            getLogger().info(
-                                `[VSCode Client] ✅ Successfully initialized fsReplace streaming session for ${streamingChunk.toolUseId}`
-                            )
                         } catch (error) {
                             getLogger().error(
-                                `[VSCode Client] ❌ Failed to initialize fsReplace streaming session for ${streamingChunk.toolUseId}: ${error}`
-                            )
-                            // **CRITICAL**: Don't throw error - continue processing the chunk
-                            // The animation might still work even if initialization had issues
-                            getLogger().warn(
-                                `[VSCode Client] ⚠️ Continuing fsReplace processing despite initialization error`
+                                `Failed to initialize fsReplace streaming session for ${streamingChunk.toolUseId}: ${error}`
                             )
                         } finally {
-                            // **CRITICAL FIX**: Always remove the lock, even if initialization failed
-                            // This matches the fsWrite pattern and prevents deadlocks
                             if (filePath && initializingStreamsByFile.has(filePath)) {
                                 const toolUseIds = initializingStreamsByFile.get(filePath)!
                                 toolUseIds.delete(streamingChunk.toolUseId)
@@ -792,18 +653,9 @@ export function registerMessageListeners(
                                 }
                             }
                         }
-                    } else if (isAlreadyInitializing) {
-                        getLogger().info(
-                            `[VSCode Client] 🚫 Skipping duplicate fsReplace streaming session initialization for ${streamingChunk.toolUseId} (already initializing)`
-                        )
                     }
 
-                    // **ALWAYS UPDATE PARAMS**: Pass fsReplace parameters to streaming controller for correct phase handling
                     if (streamingChunk.fsWriteParams) {
-                        getLogger().info(
-                            `[VSCode Client] 📝 Updating fsReplace params for ${streamingChunk.toolUseId}: command=${streamingChunk.fsWriteParams.command}, pairIndex=${streamingChunk.fsWriteParams.pairIndex}, totalPairs=${streamingChunk.fsWriteParams.totalPairs}`
-                        )
-                        // Access the streaming controller directly to update fsWrite params
                         const streamingController = (animationHandler as any).streamingDiffController
                         if (streamingController && streamingController.updateFsWriteParams) {
                             streamingController.updateFsWriteParams(
@@ -813,52 +665,13 @@ export function registerMessageListeners(
                         }
                     }
 
-                    // **CRITICAL FIX**: Handle fsReplace diff pairs differently from progressive streaming
-                    // fsReplace sends complete diff pairs that should trigger immediate animations
-                    if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
-                        getLogger().info(
-                            `[VSCode Client] 🎬 Processing fsReplace diff pair ${streamingChunk.fsWriteParams.pairIndex + 1}/${streamingChunk.fsWriteParams.totalPairs}`
-                        )
+                    await animationHandler.streamContentUpdate(
+                        streamingChunk.toolUseId,
+                        streamingChunk.content || '',
+                        streamingChunk.isComplete || false
+                    )
 
-                        // **CRITICAL FIX**: Use the public streamContentUpdate method instead of accessing private fields
-                        // The streamingDiffController.streamContentUpdate method already handles fsReplace_diffPair commands
-                        await animationHandler.streamContentUpdate(
-                            streamingChunk.toolUseId,
-                            streamingChunk.content || '',
-                            streamingChunk.isComplete || false
-                        )
-                    } else {
-                        // **EXISTING**: Handle progressive streaming (fsWrite style)
-                        await animationHandler.streamContentUpdate(
-                            streamingChunk.toolUseId,
-                            streamingChunk.content || '',
-                            streamingChunk.isComplete || false
-                        )
-                    }
-
-                    // **CRITICAL FIX**: The problem is that each diff pair gets a different toolUseId
-                    // But they're all part of the same fsReplace operation on the same file
-                    // We need to track completion by FILE PATH, not by individual toolUseId
                     if (streamingChunk.isComplete) {
-                        const { pairIndex = 0, totalPairs = 1 } = streamingChunk.fsWriteParams || {}
-
-                        getLogger().info(`[VSCode Client] 🔍 CRITICAL DEBUG: fsReplace chunk analysis:`)
-                        getLogger().info(`[VSCode Client]   toolUseId: ${streamingChunk.toolUseId}`)
-                        getLogger().info(`[VSCode Client]   filePath: ${streamingChunk.filePath}`)
-                        getLogger().info(`[VSCode Client]   pairIndex: ${pairIndex}`)
-                        getLogger().info(`[VSCode Client]   totalPairs: ${totalPairs}`)
-                        getLogger().info(`[VSCode Client]   isComplete: ${streamingChunk.isComplete}`)
-
-                        // **CRITICAL INSIGHT**: Each diff pair has totalPairs=1 because they're separate operations
-                        // The real issue is that the LSP is sending separate fsReplace operations instead of batched diff pairs
-                        // For now, treat each complete chunk as individual operations (don't wait for more pairs)
-
-                        getLogger().info(
-                            `[VSCode Client] ✅ Individual fsReplace operation complete for ${streamingChunk.toolUseId} (${pairIndex + 1}/${totalPairs}) - treating as standalone operation`
-                        )
-
-                        // **RACE CONDITION FIX**: Clean up initialization lock for this specific toolUseId
-                        // Since each diff pair is a separate operation with its own toolUseId
                         const filePath = streamingChunk.filePath
                         if (filePath && initializingStreamsByFile.has(filePath)) {
                             const toolUseIds = initializingStreamsByFile.get(filePath)!
@@ -867,30 +680,16 @@ export function registerMessageListeners(
                                 initializingStreamsByFile.delete(filePath)
                             }
                         }
-                    } else {
-                        getLogger().debug(
-                            `[VSCode Client] ⚡ Partial fsReplace streaming chunk processed for ${streamingChunk.toolUseId}`
-                        )
                     }
                 } catch (error) {
-                    getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace streaming chunk: ${error}`)
-                    // **CRITICAL**: Clean up initialization lock on error to prevent deadlock
+                    getLogger().error(`Failed to process fsReplace streaming chunk: ${error}`)
                     initializingStreamsByFile.delete(streamingChunk.toolUseId)
                 }
-                // Don't forward fsReplace streaming chunks to the webview - they're handled by the animation handler
                 return
             }
 
-            // **EXISTING: Handle fsWrite streaming chunks**
             try {
-                getLogger().info(
-                    `[VSCode Client] 🌊 Received fsWrite streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete})`
-                )
-
-                // Process streaming chunk with DiffAnimationHandler
                 const animationHandler = getDiffAnimationHandler()
-
-                // **RACE CONDITION FIX**: Atomic check-and-create to prevent duplicate initialization
                 const filePath = streamingChunk.filePath
                 const isAlreadyInitializing =
                     filePath &&
@@ -902,27 +701,19 @@ export function registerMessageListeners(
                     filePath &&
                     !isAlreadyInitializing
                 ) {
-                    // Mark as initializing IMMEDIATELY to prevent race condition
                     if (!initializingStreamsByFile.has(filePath)) {
                         initializingStreamsByFile.set(filePath, new Set())
                     }
                     initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
 
                     try {
-                        getLogger().info(
-                            `[VSCode Client] 🎬 Initializing streaming session for ${streamingChunk.toolUseId} at ${filePath}`
-                        )
                         await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
-                        getLogger().info(
-                            `[VSCode Client] ✅ Successfully initialized streaming session for ${streamingChunk.toolUseId}`
-                        )
                     } catch (error) {
                         getLogger().error(
-                            `[VSCode Client] ❌ Failed to initialize streaming session for ${streamingChunk.toolUseId}: ${error}`
+                            `Failed to initialize streaming session for ${streamingChunk.toolUseId}: ${error}`
                         )
                         throw error
                     } finally {
-                        // Always remove the lock, even if initialization failed
                         if (filePath && initializingStreamsByFile.has(filePath)) {
                             const toolUseIds = initializingStreamsByFile.get(filePath)!
                             toolUseIds.delete(streamingChunk.toolUseId)
@@ -931,18 +722,9 @@ export function registerMessageListeners(
                             }
                         }
                     }
-                } else if (isAlreadyInitializing) {
-                    getLogger().info(
-                        `[VSCode Client] 🚫 Skipping duplicate streaming session initialization for ${streamingChunk.toolUseId} (already initializing)`
-                    )
                 }
 
-                // Pass fsWrite parameters to streaming controller for correct region animation
                 if (streamingChunk.fsWriteParams) {
-                    getLogger().info(
-                        `[VSCode Client] 📝 Updating fsWrite params for ${streamingChunk.toolUseId}: command=${streamingChunk.fsWriteParams.command}`
-                    )
-                    // Access the streaming controller directly to update fsWrite params
                     const streamingController = (animationHandler as any).streamingDiffController
                     if (streamingController && streamingController.updateFsWriteParams) {
                         streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
@@ -955,13 +737,7 @@ export function registerMessageListeners(
                     streamingChunk.isComplete || false
                 )
 
-                // **CRITICAL FIX**: Add explicit logging for final chunks
                 if (streamingChunk.isComplete) {
-                    getLogger().info(
-                        `[VSCode Client] ✅ FINAL streaming chunk processed for ${streamingChunk.toolUseId} - cleanup should be triggered`
-                    )
-                    // **RACE CONDITION FIX**: Clean up initialization lock when streaming completes
-                    // Note: For fsWrite, we use a simple Set approach since each toolUseId maps to one file
                     const filePath = streamingChunk.filePath
                     if (filePath && initializingStreamsByFile.has(filePath)) {
                         const toolUseIds = initializingStreamsByFile.get(filePath)!
@@ -970,23 +746,12 @@ export function registerMessageListeners(
                             initializingStreamsByFile.delete(filePath)
                         }
                     }
-                } else {
-                    getLogger().debug(
-                        `[VSCode Client] ⚡ Partial streaming chunk processed for ${streamingChunk.toolUseId}`
-                    )
                 }
             } catch (error) {
-                getLogger().error(`[VSCode Client] ❌ Failed to process streaming chunk: ${error}`)
+                getLogger().error(`Failed to process streaming chunk: ${error}`)
             }
-            // Don't forward streaming chunks to the webview - they're handled by the animation handler
             return
         }
-
-        // **FIX: Don't process chat updates for diff animations here**
-        // This was causing duplicate streaming session creation attempts
-        // The chatRequestType.method handler already processes partial and final results
-        // Only streaming chunks should be processed here, not regular chat messages
-        getLogger().debug(`[VSCode Client] 📨 Chat update received (not processing for animations to avoid duplicates)`)
 
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
