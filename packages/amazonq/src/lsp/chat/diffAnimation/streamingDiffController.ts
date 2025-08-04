@@ -373,7 +373,9 @@ export class StreamingDiffController implements vscode.Disposable {
             getLogger().warn(`[StreamingDiffController] ⚠️ Failed to cleanup temp file ${tempFilePath}: ${error}`)
         }
     }
-
+    /**
+     * Scroll editor to line
+     */
     private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
         const scrollLine = line
         editor.revealRange(new vscode.Range(scrollLine, 0, scrollLine, 0), vscode.TextEditorRevealType.InCenter)
@@ -447,7 +449,6 @@ export class StreamingDiffController implements vscode.Disposable {
                 }
             }
             // Delay cleanup to allow final UI updates and user to see completion state
-            // before removing visual elements and cleaning up resources
             setTimeout(async () => {
                 try {
                     await this.cleanupTempFile(session.tempFilePath)
