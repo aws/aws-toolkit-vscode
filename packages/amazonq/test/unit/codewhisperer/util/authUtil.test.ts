@@ -414,44 +414,6 @@ describe('AuthUtil', async function () {
     describe('loginIam', function () {
         it('creates IAM session and logs in', async function () {
             const mockResponse = {
-                id: 'test-credential-id',
-                credentials: {
-                    accessKeyId: 'encrypted-access-key',
-                    secretAccessKey: 'encrypted-secret-key',
-                    sessionToken: 'encrypted-session-token',
-                },
-                updateCredentialsParams: {
-                    data: 'credential-data',
-                },
-            }
-
-            const mockIamLogin = {
-                login: sinon.stub().resolves(mockResponse),
-                loginType: 'iam',
-            }
-
-            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
-
-            const response = await auth.loginIam({
-                accessKey: 'accessKey',
-                secretKey: 'secretKey',
-                sessionToken: 'sessionToken',
-            })
-
-            assert.ok(mockIamLogin.login.calledOnce)
-            assert.ok(
-                mockIamLogin.login.calledWith({
-                    accessKey: 'accessKey',
-                    secretKey: 'secretKey',
-                    sessionToken: 'sessionToken',
-                    roleArn: undefined,
-                })
-            )
-            assert.strictEqual(response, mockResponse)
-        })
-
-        it('creates IAM session with role ARN', async function () {
-            const mockResponse: GetIamCredentialResult = {
                 credential: {
                     id: 'test-credential-id',
                     kinds: [],
@@ -464,7 +426,48 @@ describe('AuthUtil', async function () {
                 updateCredentialsParams: {
                     data: 'credential-data',
                 },
+            } satisfies GetIamCredentialResult
+
+            const mockIamLogin = {
+                login: sinon.stub().resolves(mockResponse),
+                loginType: 'iam',
             }
+
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
+
+            const response = await auth.loginIam({
+                accessKey: 'testAccessKey',
+                secretKey: 'testSecretKey',
+                sessionToken: 'testSessionToken',
+            })
+
+            assert.ok(mockIamLogin.login.calledOnce)
+            assert.ok(
+                mockIamLogin.login.calledWith({
+                    accessKey: 'testAccessKey',
+                    secretKey: 'testSecretKey',
+                    sessionToken: 'testSessionToken',
+                    roleArn: undefined,
+                })
+            )
+            assert.strictEqual(response, mockResponse)
+        })
+
+        it('creates IAM session with role ARN', async function () {
+            const mockResponse = {
+                credential: {
+                    id: 'test-credential-id',
+                    kinds: [],
+                    credentials: {
+                        accessKeyId: 'encrypted-access-key',
+                        secretAccessKey: 'encrypted-secret-key',
+                        sessionToken: 'encrypted-session-token',
+                    },
+                },
+                updateCredentialsParams: {
+                    data: 'credential-data',
+                },
+            } satisfies GetIamCredentialResult
 
             const mockIamLogin = {
                 login: sinon.stub().resolves(mockResponse),
@@ -474,10 +477,10 @@ describe('AuthUtil', async function () {
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
 
             const opts: auth2.IamProfileOptions = {
-                accessKey: 'myAccessKey',
-                secretKey: 'mySecretKey',
-                sessionToken: 'mySessionToken',
-                roleArn: 'arn:aws:iam::123456789012:role/MyTestRole',
+                accessKey: 'testAccessKey',
+                secretKey: 'testSecretKey',
+                sessionToken: 'testSessionToken',
+                roleArn: 'arn:aws:iam::123456789012:role/TestRole',
             }
 
             const response = await auth.loginIam(opts)
