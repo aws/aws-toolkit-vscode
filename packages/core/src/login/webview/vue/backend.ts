@@ -177,7 +177,8 @@ export abstract class CommonAuthWebview extends VueWebview {
         accessKey: string,
         secretKey: string,
         sessionToken?: string,
-        roleArn?: string
+        roleArn?: string,
+        process?: string
     ): Promise<AuthError | undefined>
 
     async showResourceExplorer(): Promise<void> {

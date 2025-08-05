@@ -198,7 +198,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         accessKey: string,
         secretKey: string,
         sessionToken?: string,
-        roleArn?: string
+        roleArn?: string,
+        process?: string
     ): Promise<AuthError | undefined> {
         getLogger().debug(`called startIamCredentialSetup()`)
         // Defining separate auth function to emit telemetry before returning from this method
@@ -215,7 +216,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
-                await AuthUtil.instance.loginIam({ accessKey, secretKey, sessionToken, roleArn })
+                await AuthUtil.instance.loginIam({ accessKey, secretKey, sessionToken, roleArn, process })
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
                 const message = e instanceof Error ? e.message : (e as string)

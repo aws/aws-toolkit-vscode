@@ -298,6 +298,15 @@
                     v-model="roleArn"
                     @keydown.enter="handleContinueClick()"
                 />
+                <div class="title">Credentials Process (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="process"
+                    name="process"
+                    v-model="process"
+                    @keydown.enter="handleContinueClick()"
+                />
             </div>
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
@@ -389,6 +398,7 @@ export default defineComponent({
             secretKey: '',
             sessionToken: '',
             roleArn: '',
+            process: '',
         }
     },
     async created() {
@@ -541,7 +551,8 @@ export default defineComponent({
                     this.accessKey,
                     this.secretKey,
                     this.sessionToken,
-                    this.roleArn
+                    this.roleArn,
+                    this.process
                 )
                 if (error) {
                     this.stage = 'START'
@@ -679,7 +690,7 @@ export default defineComponent({
             if (this.app === 'TOOLKIT') {
                 return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
             } else {
-                return this.accessKey.length <= 0 || this.secretKey.length <= 0
+                return (this.accessKey.length <= 0 || this.secretKey.length <= 0) && this.process.length <= 0
             }
         },
     },

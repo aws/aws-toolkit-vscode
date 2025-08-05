@@ -98,6 +98,7 @@ export type IamProfileOptions = {
     sessionToken?: string
     roleArn?: string
     sourceProfile?: string
+    process?: string
 }
 
 const IamProfileOptionsDefaults = {
@@ -106,6 +107,7 @@ const IamProfileOptionsDefaults = {
     sessionToken: '',
     roleArn: '',
     sourceProfile: '',
+    process: '',
 } satisfies IamProfileOptions
 
 /**
@@ -208,6 +210,7 @@ export class LanguageClientAuth {
                     aws_access_key_id: '',
                     aws_secret_access_key: '',
                     role_arn: '',
+                    credential_process: '',
                 },
             },
             ssoSession: {
@@ -227,7 +230,9 @@ export class LanguageClientAuth {
         const fields = { ...IamProfileOptionsDefaults, ...opts }
         // Get the profile kind matching the provided fields
         let kind: ProfileKind
-        if (fields.roleArn && fields.sourceProfile) {
+        if (fields.process) {
+            kind = ProfileKind.IamCredentialProcessProfile
+        } else if (fields.roleArn && fields.sourceProfile) {
             kind = ProfileKind.IamSourceProfileProfile
         } else if (fields.accessKey && fields.secretKey) {
             kind = ProfileKind.IamCredentialsProfile
@@ -245,6 +250,7 @@ export class LanguageClientAuth {
                     aws_session_token: fields.sessionToken,
                     role_arn: fields.roleArn,
                     source_profile: fields.sourceProfile,
+                    credential_process: fields.process,
                 },
             },
         })
@@ -568,7 +574,12 @@ export class IamLogin extends BaseLogin {
     }
 
     async updateProfile(opts: IamProfileOptions) {
-        if (opts.roleArn) {
+        if (opts.process) {
+            // Create the process profile
+            await this.lspAuth.updateIamProfile(this.profileName, {
+                process: opts.process,
+            })
+        } else if (opts.roleArn) {
             // Create the source and target profiles
             const sourceProfile = this.profileName + '-source'
             await this.lspAuth.updateIamProfile(sourceProfile, {
@@ -581,7 +592,7 @@ export class IamLogin extends BaseLogin {
                 sourceProfile: sourceProfile,
             })
         } else {
-            // Create the target profile
+            // Create the credentials profile
             await this.lspAuth.updateIamProfile(this.profileName, {
                 accessKey: opts.accessKey,
                 secretKey: opts.secretKey,
