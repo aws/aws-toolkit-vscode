@@ -20,6 +20,7 @@ import {
     TransformationType,
     TransformationCandidateProject,
     RegionProfile,
+    sessionJobHistory,
 } from '../models/model'
 import {
     createZipManifest,
@@ -474,6 +475,30 @@ export async function startTransformationJob(
                 codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
             })
         })
+
+        // create local history folder(s) and store metadata
+        const jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', transformByQState.getProjectName(), jobId)
+        if (!fs.existsSync(jobHistoryPath)) {
+            fs.mkdirSync(jobHistoryPath, { recursive: true })
+        }
+        transformByQState.setJobHistoryPath(jobHistoryPath)
+        // save a copy of the upload zip
+        fs.copyFileSync(transformByQState.getPayloadFilePath(), path.join(jobHistoryPath, 'zipped-code.zip'))
+
+        const fields = [
+            jobId,
+            transformByQState.getTransformationType(),
+            transformByQState.getSourceJDKVersion(),
+            transformByQState.getTargetJDKVersion(),
+            transformByQState.getCustomDependencyVersionFilePath(),
+            transformByQState.getCustomBuildCommand(),
+            transformByQState.getTargetJavaHome(),
+            transformByQState.getProjectPath(),
+            transformByQState.getStartTime(),
+        ]
+
+        const jobDetails = fields.join('\t')
+        fs.writeFileSync(path.join(jobHistoryPath, 'metadata.txt'), jobDetails)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message.toLowerCase()
@@ -724,9 +749,18 @@ export async function postTransformationJob() {
             })
     }
 
-    if (transformByQState.getPayloadFilePath()) {
-        // delete original upload ZIP at very end of transformation
-        fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
+    // delete original upload ZIP at very end of transformation
+    fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
+
+    if (
+        transformByQState.isSucceeded() ||
+        transformByQState.isPartiallySucceeded() ||
+        transformByQState.isCancelled()
+    ) {
+        // delete the copy of the upload ZIP
+        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
+        // delete transformation job metadata file (no longer needed)
+        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
     }
     // delete temporary build logs file
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
@@ -739,31 +773,52 @@ export async function postTransformationJob() {
     if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
         await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
     }
+
+    // store job details and diff path locally (history)
+    // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
+    if (!transformByQState.isCancelled()) {
+        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
+        // create transform folder if necessary
+        if (!fs.existsSync(historyLogFilePath)) {
+            fs.mkdirSync(path.dirname(historyLogFilePath), { recursive: true })
+            // create headers of new transformation history file
+            fs.writeFileSync(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
+        }
+        const latest = sessionJobHistory[transformByQState.getJobId()]
+        const fields = [
+            latest.startTime,
+            latest.projectName,
+            latest.status,
+            latest.duration,
+            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
+                ? path.join(transformByQState.getJobHistoryPath(), 'diff.patch')
+                : '',
+            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
+                ? path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
+                : '',
+            transformByQState.getJobId(),
+        ]
+
+        const jobDetails = fields.join('\t') + '\n'
+        fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' }) // 'a' flag used to append to file
+        await vscode.commands.executeCommand(
+            'aws.amazonq.transformationHub.updateContent',
+            'job history',
+            undefined,
+            true
+        )
+    }
 }
 
 export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
-        await stopJob(transformByQState.getJobId())
         transformByQState.setToFailed()
         transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
-        const displayedErrorMessage =
-            transformByQState.getJobFailureErrorNotification() ?? CodeWhispererConstants.failedToCompleteJobNotification
         transformByQState.setJobFailureErrorChatMessage(
             transformByQState.getJobFailureErrorChatMessage() ?? CodeWhispererConstants.failedToCompleteJobChatMessage
         )
-        void vscode.window
-            .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
-            .then((choice) => {
-                if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback(
-                        placeholder,
-                        CodeWhispererConstants.amazonQFeedbackKey,
-                        getFeedbackCommentData()
-                    )
-                }
-            })
     } else {
         transformByQState.setToCancelled()
         transformByQState.setPolledJobStatus('CANCELLED')

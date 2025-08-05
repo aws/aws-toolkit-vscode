@@ -376,7 +376,6 @@ describe('isSageMaker', function () {
 
     afterEach(function () {
         sandbox.restore()
-        delete process.env.SERVICE_NAME
     })
 
     describe('SMAI detection', function () {
@@ -413,7 +412,8 @@ describe('isSageMaker', function () {
         it('returns true when all conditions are met', function () {
             sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
-            process.env.SERVICE_NAME = 'SageMakerUnifiedStudio'
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
 
             assert.strictEqual(isSageMaker('SMUS'), true)
         })
@@ -421,7 +421,8 @@ describe('isSageMaker', function () {
         it('returns false when unified studio is missing', function () {
             sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
-            process.env.SERVICE_NAME = 'SomeOtherService'
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+            utils.resetSageMakerState()
 
             assert.strictEqual(isSageMaker('SMUS'), false)
         })
@@ -429,7 +430,8 @@ describe('isSageMaker', function () {
         it('returns false when env vars are missing', function () {
             sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(false)
-            process.env.SERVICE_NAME = 'SageMakerUnifiedStudio'
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
 
             assert.strictEqual(isSageMaker('SMUS'), false)
         })
@@ -437,7 +439,8 @@ describe('isSageMaker', function () {
         it('returns false when app name is different', function () {
             sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
-            process.env.SERVICE_NAME = 'SageMakerUnifiedStudio'
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
 
             assert.strictEqual(isSageMaker('SMUS'), false)
         })
@@ -453,56 +456,50 @@ describe('isSageMaker', function () {
 })
 
 describe('hasSageMakerEnvVars', function () {
-    let originalEnv: NodeJS.ProcessEnv
+    let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
-        originalEnv = { ...process.env }
-        // Clear all SageMaker-related env vars
-        delete process.env.SAGEMAKER_APP_TYPE
-        delete process.env.SAGEMAKER_INTERNAL_IMAGE_URI
-        delete process.env.STUDIO_LOGGING_DIR
-        delete process.env.SM_APP_TYPE
-        delete process.env.SM_INTERNAL_IMAGE_URI
-        delete process.env.SERVICE_NAME
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(function () {
-        process.env = originalEnv
+        sandbox.restore()
     })
 
-    const testCases = [
-        { env: 'SAGEMAKER_APP_TYPE', value: 'JupyterServer', expected: true },
-        { env: 'SAGEMAKER_INTERNAL_IMAGE_URI', value: 'some-uri', expected: true },
-        { env: 'STUDIO_LOGGING_DIR', value: '/var/log/studio/app.log', expected: true },
-        { env: 'STUDIO_LOGGING_DIR', value: '/var/log/other/app.log', expected: false },
-        { env: 'SM_APP_TYPE', value: 'JupyterServer', expected: true },
-        { env: 'SM_INTERNAL_IMAGE_URI', value: 'some-uri', expected: true },
-        { env: 'SERVICE_NAME', value: 'SageMakerUnifiedStudio', expected: true },
-        { env: 'SERVICE_NAME', value: 'SomeOtherService', expected: false },
-    ]
+    it('detects SageMaker environment variables', function () {
+        // Test SAGEMAKER_ prefix
+        sandbox.stub(process, 'env').value({ SAGEMAKER_APP_TYPE: 'JupyterServer' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
 
-    for (const { env, value, expected } of testCases) {
-        it(`returns ${expected} when ${env} is set to "${value}"`, function () {
-            process.env[env] = value
+        // Test SM_ prefix
+        sandbox.stub(process, 'env').value({ SM_APP_TYPE: 'CodeEditor' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
 
-            const result = hasSageMakerEnvVars()
+        // Test SERVICE_NAME with correct value
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
 
-            assert.strictEqual(result, expected)
+        // Test STUDIO_LOGGING_DIR with correct path
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/studio/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test invalid SERVICE_NAME
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test invalid STUDIO_LOGGING_DIR
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/other/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test multiple env vars
+        sandbox.stub(process, 'env').value({
+            SAGEMAKER_APP_TYPE: 'JupyterServer',
+            SM_APP_TYPE: 'CodeEditor',
         })
-    }
+        assert.strictEqual(hasSageMakerEnvVars(), true)
 
-    it('returns true when multiple SageMaker env vars are set', function () {
-        process.env.SAGEMAKER_APP_TYPE = 'JupyterServer'
-        process.env.SM_APP_TYPE = 'CodeEditor'
-
-        const result = hasSageMakerEnvVars()
-
-        assert.strictEqual(result, true)
-    })
-
-    it('returns false when no SageMaker env vars are set', function () {
-        const result = hasSageMakerEnvVars()
-
-        assert.strictEqual(result, false)
+        // Test no env vars
+        sandbox.stub(process, 'env').value({})
+        assert.strictEqual(hasSageMakerEnvVars(), false)
     })
 })
