@@ -22,6 +22,7 @@ import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { getLogger, sleep } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from './documentEventListener'
+import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 import { asyncCallWithTimeout } from '../../util/timeoutUtil'
 
 export interface GetAllRecommendationsOptions {
@@ -82,7 +83,7 @@ export class RecommendationService {
                   contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
               }
             : undefined
-
+        const openTabs = await getOpenFilesInWindow()
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -90,6 +91,7 @@ export class RecommendationService {
             position,
             context,
             documentChangeParams: documentChangeParams,
+            openTabFilepaths: openTabs,
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
