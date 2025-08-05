@@ -10,7 +10,7 @@ export class AutoDebugLspClient {
     private static chatViewProvider: any // AmazonQChatViewProvider instance
 
     /**
-     * Sets the chat view provider instance (called during activation)
+     * Sets the chat view provider instance
      */
     public static setChatViewProvider(provider: any): void {
         AutoDebugLspClient.chatViewProvider = provider
