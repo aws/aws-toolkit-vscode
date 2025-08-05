@@ -40,6 +40,7 @@ export async function createTestAuthUtil() {
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
         registerStsCredentialChangedHandler: sinon.stub().resolves(),
+        registerGetMfaCodeHandler: sinon.stub().resolves(),
         updateSsoProfile: sinon.stub().resolves(),
         getSsoToken: sinon.stub().resolves(fakeToken),
         getIamCredential: sinon.stub().resolves(fakeCredential),
