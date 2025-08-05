@@ -33,7 +33,6 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import {
     AuthStateEvent,
     cacheChangedEvent,
-    stsCacheChangedEvent,
     LanguageClientAuth,
     Login,
     SsoLogin,
@@ -117,7 +116,6 @@ export class AuthUtil implements IAuthProvider {
             await this.setVscodeContextProps()
         })
         lspAuth.registerCacheWatcher(async (event: cacheChangedEvent) => await this.cacheChangedHandler(event))
-        lspAuth.registerStsCacheWatcher(async (event: stsCacheChangedEvent) => await this.stsCacheChangedHandler(event))
     }
 
     // Do NOT use this in production code, only used for testing
@@ -356,15 +354,6 @@ export class AuthUtil implements IAuthProvider {
 
     private async cacheChangedHandler(event: cacheChangedEvent) {
         this.logger.debug(`Cache change event received: ${event}`)
-        if (event === 'delete') {
-            await this.logout()
-        } else if (event === 'create') {
-            await this.restore()
-        }
-    }
-
-    private async stsCacheChangedHandler(event: stsCacheChangedEvent) {
-        this.logger.debug(`Sts Cache change event received: ${event}`)
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {
