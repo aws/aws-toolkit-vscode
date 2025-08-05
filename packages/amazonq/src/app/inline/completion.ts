@@ -170,10 +170,11 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                if (this.sessionManager.getActiveSession() === undefined) {
+                const session = this.sessionManager.getActiveSession()
+                if (session === undefined) {
                     return
                 }
-                const requestStartTime = this.sessionManager.getActiveSession()!.requestStartTime
+                const requestStartTime = session.requestStartTime
                 const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
@@ -182,9 +183,9 @@ export class InlineCompletionManager implements Disposable {
                     CodeWhispererConstants.platformLanguageIds,
                     this.inlineCompletionProvider
                 )
-                const sessionId = this.sessionManager.getActiveSession()?.sessionId
+                const sessionId = session.sessionId
                 const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-                if (!sessionId || !itemId) {
+                if (!itemId) {
                     return
                 }
                 const params: LogInlineCompletionSessionResultsParams = {
@@ -196,6 +197,7 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
+                    firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -343,6 +345,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
