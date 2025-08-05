@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { WebviewView, By } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { waitForChatResponse, writeToChat, clearChatInput } from '../utils/generalUtils'
+import { waitForChatResponse, writeToChat, waitForElement } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Chat Basic Functionality', function () {
@@ -18,7 +18,6 @@ describe('Amazon Q Chat Basic Functionality', function () {
     })
 
     afterEach(async function () {
-        await clearChatInput(webviewView)
         await closeAllTabs(webviewView)
     })
 
@@ -36,5 +35,14 @@ describe('Amazon Q Chat Basic Functionality', function () {
             const addChat = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-plus'))
             await addChat.click()
         }
+    })
+    it('View History', async () => {
+        console.log('Starting View History Test')
+        const viewHistory = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-history'))
+        await viewHistory.click()
+        await waitForElement(webviewView, By.css('.mynah-detailed-list-item-groups-wrapper'))
+        console.log('History wrapper found successfully')
+        const closeHistory = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-cancel'))
+        await closeHistory.click()
     })
 })
