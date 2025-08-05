@@ -11,6 +11,7 @@ import { createTestAuthUtil, TestFolder } from 'aws-core-vscode/test'
 import { constants, cache } from 'aws-core-vscode/auth'
 import { auth2 } from 'aws-core-vscode/auth'
 import { mementoUtils, fs } from 'aws-core-vscode/shared'
+import { GetIamCredentialResult } from '@aws/language-server-runtimes/protocol'
 
 describe('AuthUtil', async function () {
     let auth: any
@@ -413,16 +414,19 @@ describe('AuthUtil', async function () {
     describe('loginIam', function () {
         it('creates IAM session and logs in', async function () {
             const mockResponse = {
-                id: 'test-credential-id',
-                credentials: {
-                    accessKeyId: 'encrypted-access-key',
-                    secretAccessKey: 'encrypted-secret-key',
-                    sessionToken: 'encrypted-session-token',
+                credential: {
+                    id: 'test-credential-id',
+                    kinds: [],
+                    credentials: {
+                        accessKeyId: 'encrypted-access-key',
+                        secretAccessKey: 'encrypted-secret-key',
+                        sessionToken: 'encrypted-session-token',
+                    },
                 },
                 updateCredentialsParams: {
                     data: 'credential-data',
                 },
-            }
+            } satisfies GetIamCredentialResult
 
             const mockIamLogin = {
                 login: sinon.stub().resolves(mockResponse),
@@ -431,14 +435,14 @@ describe('AuthUtil', async function () {
 
             sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
 
-            const response = await auth.loginIam('accessKey', 'secretKey', 'sessionToken')
+            const response = await auth.loginIam('testAccessKey', 'testSecretKey', 'testSessionToken')
 
             assert.ok(mockIamLogin.login.calledOnce)
             assert.ok(
                 mockIamLogin.login.calledWithMatch({
-                    accessKey: 'accessKey',
-                    secretKey: 'secretKey',
-                    sessionToken: 'sessionToken',
+                    accessKey: 'testAccessKey',
+                    secretKey: 'testSecretKey',
+                    sessionToken: 'testSessionToken',
                 })
             )
             assert.strictEqual(response, mockResponse)
@@ -446,17 +450,19 @@ describe('AuthUtil', async function () {
 
         it('creates IAM session with role ARN', async function () {
             const mockResponse = {
-                id: 'test-credential-id',
-                credentials: {
-                    accessKeyId: 'encrypted-access-key',
-                    secretAccessKey: 'encrypted-secret-key',
-                    sessionToken: 'encrypted-session-token',
-                    roleArn: 'arn:aws:iam::123456789012:role/TestRole',
+                credential: {
+                    id: 'test-credential-id',
+                    kinds: [],
+                    credentials: {
+                        accessKeyId: 'encrypted-access-key',
+                        secretAccessKey: 'encrypted-secret-key',
+                        sessionToken: 'encrypted-session-token',
+                    },
                 },
                 updateCredentialsParams: {
                     data: 'credential-data',
                 },
-            }
+            } satisfies GetIamCredentialResult
 
             const mockIamLoginArn = {
                 login: sinon.stub().resolves(mockResponse),
@@ -466,18 +472,18 @@ describe('AuthUtil', async function () {
             sinon.stub(auth2, 'IamLogin').returns(mockIamLoginArn as any)
 
             const response = await auth.loginIam(
-                'accessKey',
-                'secretKey',
-                'sessionToken',
+                'testAccessKey',
+                'testSecretKey',
+                'testSessionToken',
                 'arn:aws:iam::123456789012:role/TestRole'
             )
 
             assert.ok(mockIamLoginArn.login.calledOnce)
             assert.ok(
                 mockIamLoginArn.login.calledWith({
-                    accessKey: 'accessKey',
-                    secretKey: 'secretKey',
-                    sessionToken: 'sessionToken',
+                    accessKey: 'testAccessKey',
+                    secretKey: 'testSecretKey',
+                    sessionToken: 'testSessionToken',
                     roleArn: 'arn:aws:iam::123456789012:role/TestRole',
                 })
             )

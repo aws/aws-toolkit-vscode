@@ -105,11 +105,10 @@ const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User 
 /**
  * @description Prompts user for MFA serial number
  *
- * Entered token is passed to the callback.
- * If user cancels out, the callback is passed an error with a fixed message string.
- *
- * @param profileName Name of Credentials profile we are asking an MFA Token for
- * @param callback tokens/errors are passed through here
+ * @param defaultSerial Default MFA serial number to pre-fill
+ * @param profileName Name of Credentials profile we are asking an MFA serial for
+ * @returns Promise that resolves to the entered MFA serial number
+ * @throws Error if user cancels the input
  */
 export async function getMfaSerialFromUser(defaultSerial: string, profileName: string): Promise<string> {
     const inputBox = createInputBox({
