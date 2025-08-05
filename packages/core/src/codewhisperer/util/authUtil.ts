@@ -153,7 +153,7 @@ export class AuthUtil implements IAuthProvider {
                 await this.session.restore()
                 if (!this.isConnected()) {
                     // If both fail, reset the session
-                    this.session = undefined
+                    await this.session?.logout()
                 }
             }
         }
