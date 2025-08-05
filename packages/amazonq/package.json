@@ -746,7 +746,7 @@
             },
             {
                 "command": "aws.amazonq.showHistoryInHub",
-                "title": "%AWS.command.q.transform.viewJobStatus%"
+                "title": "%AWS.command.q.transform.viewJobHistory%"
             },
             {
                 "command": "aws.amazonq.selectCustomization",

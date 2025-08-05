@@ -799,6 +799,34 @@ export const formattedStringMap = new Map([
     ['numChangedFiles', 'Files to be changed'],
 ])
 
+export const refreshInProgressChatMessage = 'A job refresh is currently in progress. Please wait for it to complete.'
+
+export const refreshingJobChatMessage = (jobId: string) =>
+    `I am now resuming your job (id: ${jobId}). This can take 10 to 30 minutes to complete.`
+
+export const jobHistoryButtonText = 'Open job history'
+
+export const viewHistoryMessage = (numInProgress: number) =>
+    numInProgress > 0
+        ? `You have ${numInProgress} job${numInProgress > 1 ? 's' : ''} in progress. You can resume ${numInProgress > 1 ? 'them' : 'it'} in the transformation history table.`
+        : 'View previous transformations run from the IDE'
+
+export const transformationHistoryTableDescription =
+    'This table lists the most recent jobs that you have run in the past 30 days. To open the diff patch and summary files, click the provided links. To get an updated job status, click the refresh icon. The diff patch and summary will appear once they are available.<br><br>' +
+    'Jobs with a status of FAILED may still be in progress. Resume these jobs within 12 hours of starting the job to get an updated job status and artifacts.'
+
+export const refreshErrorChatMessage =
+    "Sorry, I couldn't refresh the job. Please try again or start a new transformation."
+
+export const refreshErrorNotification = (jobId: string) => `There was an error refreshing this job. Job Id: ${jobId}`
+
+export const refreshCompletedChatMessage =
+    'Job refresh completed. Please see the transformation history table for the updated status and artifacts.'
+
+export const refreshCompletedNotification = (jobId: string) => `Job refresh completed. (Job Id: ${jobId})`
+
+export const refreshNoUpdatesNotification = (jobId: string) => `No updates. (Job Id: ${jobId})`
+
 // end of QCT Strings
 
 export enum UserGroup {
@@ -912,3 +940,14 @@ export const codeReviewFindingsSuffix = '_codeReviewFindings'
 export const displayFindingsSuffix = '_displayFindings'
 
 export const displayFindingsDetectorName = 'DisplayFindings'
+export const findingsSuffix = '_codeReviewFindings'
+
+export interface HistoryObject {
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    diffPath: string
+    summaryPath: string
+    jobId: string
+}
