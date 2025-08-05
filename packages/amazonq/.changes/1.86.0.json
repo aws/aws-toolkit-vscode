@@ -1,0 +1,18 @@
+{
+	"date": "2025-07-30",
+	"version": "1.86.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Let Enter invoke auto completion more consistently"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Faster and more responsive inline completion UX"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Use documentChangeEvent as auto trigger condition"
+		}
+	]
+}

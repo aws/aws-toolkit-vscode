@@ -8,7 +8,7 @@ import { ToolkitError } from '../../errors'
 import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
-import { isDebugInstance } from '../../vscode/env'
+import { isDebugInstance, isRemoteWorkspace } from '../../vscode/env'
 import { isSageMaker } from '../../extensionUtilities'
 import { getLogger } from '../../logger/logger'
 
@@ -124,8 +124,16 @@ export function createServerOptions({
                     getLogger().info(`[SageMaker Debug] Using SSO auth mode, not setting USE_IAM_AUTH`)
                 }
             } catch (err) {
-                getLogger().warn(`[SageMaker Debug] Failed to parse SageMaker cookies, defaulting to IAM auth: ${err}`)
-                env.USE_IAM_AUTH = 'true'
+                if (isRemoteWorkspace() && env.SERVICE_NAME !== 'SageMakerUnifiedStudio') {
+                    getLogger().warn(
+                        `[SageMaker Debug] Failed to parse SageMaker cookies in remote space, not SMUS env, not defaulting to IAM auth: ${err}`
+                    )
+                } else {
+                    getLogger().warn(
+                        `[SageMaker Debug] Failed to parse SageMaker cookies, defaulting to IAM auth: ${err}`
+                    )
+                    env.USE_IAM_AUTH = 'true'
+                }
             }
 
             // Log important environment variables for debugging

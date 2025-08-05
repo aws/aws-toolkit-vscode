@@ -23,6 +23,7 @@ import {
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -51,6 +52,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { codeReviewInChat } from '../app/amazonqScan/models/constants'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -179,7 +181,9 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
-                        codeReviewInChat: false,
+                        codeReviewInChat: codeReviewInChat,
+                        // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
+                        displayFindings: true,
                     },
                     window: {
                         notifications: true,
@@ -365,6 +369,7 @@ async function onLanguageServerReady(
             sessionManager.checkInlineSuggestionVisibility()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            vsCodeState.lastManualTriggerTime = performance.now()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {

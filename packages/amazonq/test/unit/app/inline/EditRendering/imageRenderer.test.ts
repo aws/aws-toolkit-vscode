@@ -30,7 +30,7 @@ describe('showEdits', function () {
             svgImage: vscode.Uri.file('/path/to/generated.svg'),
             startLine: 5,
             newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
+            originalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
             ...overrides,
         }
     }
@@ -167,7 +167,7 @@ describe('showEdits', function () {
             mockSvgResult.svgImage,
             mockSvgResult.startLine,
             mockSvgResult.newCode,
-            mockSvgResult.origionalCodeHighlightRange,
+            mockSvgResult.originalCodeHighlightRange,
             sessionStub,
             languageClientStub,
             itemStub

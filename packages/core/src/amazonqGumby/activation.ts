@@ -21,7 +21,7 @@ import { setContext } from '../shared/vscode/setContext'
 export async function activate(context: ExtContext) {
     void setContext('gumby.wasQCodeTransformationUsed', false)
 
-    const transformationHubViewProvider = new TransformationHubViewProvider()
+    const transformationHubViewProvider = TransformationHubViewProvider.instance
     new ProposedTransformationExplorer(context.extensionContext)
     // Register an activation event listener to determine when the IDE opens, closes or users
     // select to open a new workspace
@@ -71,6 +71,13 @@ export async function activate(context: ExtContext) {
                 vscode.Uri.file(transformByQState.getPlanFilePath())
             )
         }),
+
+        Commands.register(
+            'aws.amazonq.transformationHub.updateContent',
+            async (button, startTime, historyFileUpdated) => {
+                await transformationHubViewProvider.updateContent(button, startTime, historyFileUpdated)
+            }
+        ),
 
         workspaceChangeEvent
     )

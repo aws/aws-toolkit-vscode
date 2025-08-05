@@ -17,6 +17,7 @@ import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getComputeEnvType, getSessionId } from './util'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export const accountMetadataKey = 'awsAccount'
 export const regionKey = 'awsRegion'
@@ -112,6 +113,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                         ParentProduct: vscode.env.appName,
                         ParentProductVersion: vscode.version,
                         MetricData: batch,
+                        CredentialStartUrl: AuthUtil.instance.startUrl ?? 'Undefined',
                     })
                     .promise()
                 this.logger.info(`telemetry: sent batch (size=${batch.length})`)

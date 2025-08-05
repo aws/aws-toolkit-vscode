@@ -1,3 +1,7 @@
+## 3.70.0 2025-07-30
+
+- **Feature** Improved connection actions for SSO
+
 ## 3.69.0 2025-07-16
 
 - **Bug Fix** SageMaker: Enable per-region manual filtering of Spaces
