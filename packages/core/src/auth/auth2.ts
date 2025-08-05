@@ -94,6 +94,22 @@ export type Login = SsoLogin | IamLogin
 
 export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
 
+export type IamProfileOptions = {
+    accessKey?: string
+    secretKey?: string
+    sessionToken?: string
+    roleArn?: string
+    sourceProfile?: string
+}
+
+const IamProfileOptionsDefaults = {
+    accessKey: '',
+    secretKey: '',
+    sessionToken: '',
+    roleArn: '',
+    sourceProfile: '',
+} satisfies IamProfileOptions
+
 /**
  * Handles auth requests to the Identity Server in the Amazon Q LSP.
  */
@@ -216,56 +232,32 @@ export class LanguageClientAuth {
         return this.client.sendRequest(updateProfileRequestType.method, params)
     }
 
-    async updateIamProfile(
-        profileName: string,
-        accessKey: string,
-        secretKey: string,
-        sessionToken?: string,
-        roleArn?: string,
-        sourceProfile?: string
-    ): Promise<UpdateProfileResult> {
-        // Add credentials and delete SSO settings from profile
-        let profile: Profile
-        if (roleArn && sourceProfile) {
-            profile = {
-                kinds: [ProfileKind.IamSourceProfileProfile],
-                name: profileName,
-                settings: {
-                    sso_session: '',
-                    aws_access_key_id: '',
-                    aws_secret_access_key: '',
-                    aws_session_token: '',
-                    role_arn: roleArn,
-                    source_profile: sourceProfile,
-                },
-            }
-        } else if (accessKey && secretKey) {
-            profile = {
-                kinds: [ProfileKind.IamCredentialsProfile],
-                name: profileName,
-                settings: {
-                    sso_session: '',
-                    aws_access_key_id: accessKey,
-                    aws_secret_access_key: secretKey,
-                    aws_session_token: sessionToken,
-                    role_arn: '',
-                    source_profile: '',
-                },
-            }
+    async updateIamProfile(profileName: string, opts: IamProfileOptions): Promise<UpdateProfileResult> {
+        // Substitute missing fields for defaults
+        const fields = { ...IamProfileOptionsDefaults, ...opts }
+        // Get the profile kind matching the provided fields
+        let kind: ProfileKind
+        if (fields.roleArn && fields.sourceProfile) {
+            kind = ProfileKind.IamSourceProfileProfile
+        } else if (fields.accessKey && fields.secretKey) {
+            kind = ProfileKind.IamCredentialsProfile
         } else {
-            profile = {
-                kinds: [ProfileKind.Unknown],
+            kind = ProfileKind.Unknown
+        }
+
+        const params = await this.encrypt({
+            profile: {
+                kinds: [kind],
                 name: profileName,
                 settings: {
-                    aws_access_key_id: '',
-                    aws_secret_access_key: '',
-                    aws_session_token: '',
-                    role_arn: '',
-                    source_profile: '',
+                    aws_access_key_id: fields.accessKey,
+                    aws_secret_access_key: fields.secretKey,
+                    aws_session_token: fields.sessionToken,
+                    role_arn: fields.roleArn,
+                    source_profile: fields.sourceProfile,
                 },
-            }
-        }
-        const params = await this.encrypt({ profile: profile })
+            },
+        })
         return this.client.sendRequest(updateProfileRequestType.method, params)
     }
 
@@ -567,7 +559,7 @@ export class IamLogin extends BaseLogin {
         lspAuth.registerGetMfaCodeHandler((params: GetMfaCodeParams) => this.getMfaCodeHandler(params))
     }
 
-    async login(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
+    async login(opts: IamProfileOptions) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -583,34 +575,33 @@ export class IamLogin extends BaseLogin {
         if (this.iamCredentialId) {
             await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
         }
-        await this.lspAuth.updateIamProfile(this.profileName, '', '', '', '', '')
-        await this.lspAuth.updateIamProfile(this.profileName + '-source', '', '', '', '', '')
+        await this.lspAuth.updateIamProfile(this.profileName, {})
+        await this.lspAuth.updateIamProfile(this.profileName + '-source', {})
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string; sessionToken?: string; roleArn?: string }) {
+    async updateProfile(opts: IamProfileOptions) {
         if (opts.roleArn) {
+            // Create the source and target profiles
             const sourceProfile = this.profileName + '-source'
-            await this.lspAuth.updateIamProfile(
-                sourceProfile,
-                opts.accessKey,
-                opts.secretKey,
-                opts.sessionToken,
-                '',
-                ''
-            )
-            await this.lspAuth.updateIamProfile(this.profileName, '', '', '', opts.roleArn, sourceProfile)
+            await this.lspAuth.updateIamProfile(sourceProfile, {
+                accessKey: opts.accessKey,
+                secretKey: opts.secretKey,
+                sessionToken: opts.sessionToken,
+            })
+            await this.lspAuth.updateIamProfile(this.profileName, {
+                roleArn: opts.roleArn,
+                sourceProfile: sourceProfile,
+            })
         } else {
-            await this.lspAuth.updateIamProfile(
-                this.profileName,
-                opts.accessKey,
-                opts.secretKey,
-                opts.sessionToken,
-                '',
-                ''
-            )
+            // Create the target profile
+            await this.lspAuth.updateIamProfile(this.profileName, {
+                accessKey: opts.accessKey,
+                secretKey: opts.secretKey,
+                sessionToken: opts.sessionToken,
+            })
         }
     }
 
