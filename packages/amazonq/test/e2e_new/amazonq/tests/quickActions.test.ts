@@ -7,7 +7,7 @@ import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import { clickQuickActionsCommand } from '../helpers/quickActionsHelper'
-import { clearChat } from '../utils/generalUtils'
+import { clearChatInput } from '../utils/generalUtils'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -25,7 +25,7 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     afterEach(async () => {
         // before closing the tabs, make sure that any overlays have been dismissed
         await dismissOverlayIfPresent(webviewView)
-        await clearChat(webviewView)
+        await clearChatInput(webviewView)
     })
 
     it('Quick Actions Test', async () => {
