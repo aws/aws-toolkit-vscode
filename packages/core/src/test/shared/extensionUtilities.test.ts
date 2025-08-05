@@ -18,6 +18,8 @@ import globals from '../../shared/extensionGlobals'
 import { maybeShowMinVscodeWarning } from '../../shared/extensionStartup'
 import { getTestWindow } from './vscode/window'
 import { assertTelemetry } from '../testUtil'
+import { isSageMaker } from '../../shared/extensionUtilities'
+import { hasSageMakerEnvVars } from '../../shared/vscode/env'
 
 describe('extensionUtilities', function () {
     it('maybeShowMinVscodeWarning', async () => {
@@ -360,4 +362,144 @@ describe('UserActivity', function () {
         globals.clock.setTimeout(() => event.fire(), millisUntilFire)
         return event.event
     }
+})
+
+describe('isSageMaker', function () {
+    let sandbox: sinon.SinonSandbox
+    const env = require('../../shared/vscode/env')
+    const utils = require('../../shared/extensionUtilities')
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        utils.resetSageMakerState()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    describe('SMAI detection', function () {
+        it('returns true when both app name and env vars match', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker('SMAI'), true)
+        })
+
+        it('returns false when app name is different', function () {
+            sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker('SMAI'), false)
+        })
+
+        it('returns false when env vars are missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(false)
+
+            assert.strictEqual(isSageMaker('SMAI'), false)
+        })
+
+        it('defaults to SMAI when no parameter provided', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker(), true)
+        })
+    })
+
+    describe('SMUS detection', function () {
+        it('returns true when all conditions are met', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), true)
+        })
+
+        it('returns false when unified studio is missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+
+        it('returns false when env vars are missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(false)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+
+        it('returns false when app name is different', function () {
+            sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+    })
+
+    it('returns false for invalid appName parameter', function () {
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+        sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+        // @ts-ignore - Testing invalid input
+        assert.strictEqual(isSageMaker('INVALID'), false)
+    })
+})
+
+describe('hasSageMakerEnvVars', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('detects SageMaker environment variables', function () {
+        // Test SAGEMAKER_ prefix
+        sandbox.stub(process, 'env').value({ SAGEMAKER_APP_TYPE: 'JupyterServer' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test SM_ prefix
+        sandbox.stub(process, 'env').value({ SM_APP_TYPE: 'CodeEditor' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test SERVICE_NAME with correct value
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test STUDIO_LOGGING_DIR with correct path
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/studio/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test invalid SERVICE_NAME
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test invalid STUDIO_LOGGING_DIR
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/other/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test multiple env vars
+        sandbox.stub(process, 'env').value({
+            SAGEMAKER_APP_TYPE: 'JupyterServer',
+            SM_APP_TYPE: 'CodeEditor',
+        })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test no env vars
+        sandbox.stub(process, 'env').value({})
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+    })
 })
