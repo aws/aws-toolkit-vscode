@@ -229,7 +229,9 @@ describe('LanguageClientAuth', () => {
             const result = await auth.invalidateStsCredential(profileName)
 
             sinon.assert.calledOnce(client.sendRequest)
-            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, { profileName: profileName })
+            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, {
+                profileName: profileName,
+            })
             sinon.assert.match(result, { success: true })
         })
     })
@@ -645,7 +647,7 @@ describe('IamLogin', () => {
                 accessKeyId: 'encrypted-access-key',
                 secretAccessKey: 'encrypted-secret-key',
                 sessionToken: 'encrypted-session-token',
-            }
+            },
         },
         updateCredentialsParams: {
             data: 'credential-data',

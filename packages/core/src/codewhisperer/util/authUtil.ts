@@ -150,13 +150,13 @@ export class AuthUtil implements IAuthProvider {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             await this.session.restore()
             if (!this.isConnected()) {
-                this.session?.logout()
+                await this.session?.logout()
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
                 await this.session.restore()
                 if (!this.isConnected()) {
                     // If both fail, reset the session
-                    this.session?.logout()
+                    await this.session?.logout()
                 }
             }
         }
@@ -181,12 +181,15 @@ export class AuthUtil implements IAuthProvider {
 
     // Log in using SSO
     async loginSso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
-        let response: GetSsoTokenResult | undefined
         // Create SSO login session
         if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
+        const response = await (this.session as SsoLogin).login({
+            startUrl: startUrl,
+            region: region,
+            scopes: amazonQScopes,
+        })
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -198,12 +201,11 @@ export class AuthUtil implements IAuthProvider {
         sessionToken?: string,
         roleArn?: string
     ): Promise<GetIamCredentialResult | undefined> {
-        let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        response = await (this.session as IamLogin).login({
+        const response = await (this.session as IamLogin).login({
             accessKey: accessKey,
             secretKey: secretKey,
             sessionToken: sessionToken,
@@ -554,9 +556,10 @@ export class AuthUtil implements IAuthProvider {
                 scopes: amazonQScopes,
             }
 
-            if (this.session instanceof SsoLogin) {
-                await this.session.updateProfile(registrationKey)
+            if (!this.isSsoSession()) {
+                this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             }
+            await (this.session as SsoLogin).updateProfile(registrationKey)
 
             const cacheDir = getCacheDir()
 
