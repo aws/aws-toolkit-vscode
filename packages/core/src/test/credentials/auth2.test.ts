@@ -104,7 +104,11 @@ describe('LanguageClientAuth', () => {
         })
 
         it('sends correct IAM profile update parameters', async () => {
-            await auth.updateIamProfile(profileName, 'accessKey', 'secretKey', 'sessionToken')
+            await auth.updateIamProfile(profileName, {
+                accessKey: 'myAccessKey',
+                secretKey: 'mySecretKey',
+                sessionToken: 'mySessionToken',
+            })
 
             sinon.assert.calledOnce(client.sendRequest)
             const requestParams = client.sendRequest.firstCall.args[1]
@@ -113,9 +117,11 @@ describe('LanguageClientAuth', () => {
                 kinds: [ProfileKind.IamCredentialsProfile],
             })
             sinon.assert.match(requestParams.profile.settings, {
-                aws_access_key_id: 'accessKey',
-                aws_secret_access_key: 'secretKey',
-                aws_session_token: 'sessionToken',
+                aws_access_key_id: 'myAccessKey',
+                aws_secret_access_key: 'mySecretKey',
+                aws_session_token: 'mySessionToken',
+                role_arn: '',
+                source_profile: '',
             })
         })
     })
@@ -674,7 +680,7 @@ describe('IamLogin', () => {
             const response = await iamLogin.login(loginOpts)
 
             sinon.assert.calledOnce(lspAuth.updateIamProfile)
-            sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts.accessKey, loginOpts.secretKey)
+            sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts)
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
             sinon.assert.match(response.credential.id, 'test-credential-id')
