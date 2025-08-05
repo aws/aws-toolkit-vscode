@@ -150,7 +150,6 @@ export class AuthUtil implements IAuthProvider {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             await this.session.restore()
             if (!this.isConnected()) {
-                await this.session?.logout()
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
                 await this.session.restore()
