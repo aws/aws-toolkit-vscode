@@ -149,7 +149,6 @@ export class AuthUtil implements IAuthProvider {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             await this.session.restore()
             if (!this.isConnected()) {
-                await this.session?.logout()
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
                 await this.session.restore()
@@ -180,13 +179,15 @@ export class AuthUtil implements IAuthProvider {
 
     // Log in using SSO
     async loginSso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
-        let response: GetSsoTokenResult | undefined
         // Create SSO login session
         if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        // eslint-disable-next-line prefer-const
-        response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
+        const response = await (this.session as SsoLogin).login({
+            startUrl: startUrl,
+            region: region,
+            scopes: amazonQScopes,
+        })
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -553,9 +554,10 @@ export class AuthUtil implements IAuthProvider {
                 scopes: amazonQScopes,
             }
 
-            if (this.session instanceof SsoLogin) {
-                await this.session.updateProfile(registrationKey)
+            if (!this.isSsoSession()) {
+                this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             }
+            await (this.session as SsoLogin).updateProfile(registrationKey)
 
             const cacheDir = getCacheDir()
 
