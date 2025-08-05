@@ -53,7 +53,6 @@ export async function createTestAuthUtil() {
         updateIamCredential: sinon.stub().resolves(),
         invalidateSsoToken: sinon.stub().resolves(),
         registerCacheWatcher: sinon.stub().resolves(),
-        registerStsCacheWatcher: sinon.stub().resolves(),
         encryptionKey,
     }
 

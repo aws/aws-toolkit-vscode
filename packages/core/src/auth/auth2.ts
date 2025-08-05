@@ -56,7 +56,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
-import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName, getStsCacheDir } from './sso/cache'
+import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { IamCredentials } from '@aws/language-server-runtimes-types'
 import globals from '../shared/extensionGlobals'
@@ -88,8 +88,6 @@ export type LoginType = (typeof LoginTypes)[keyof typeof LoginTypes]
 
 export type cacheChangedEvent = 'delete' | 'create'
 
-export type stsCacheChangedEvent = 'delete' | 'create'
-
 export type Login = SsoLogin | IamLogin
 
 export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
@@ -115,10 +113,6 @@ const IamProfileOptionsDefaults = {
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
-    readonly #stsCacheWatcher = getCacheFileWatcher(
-        getStsCacheDir(),
-        getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq)
-    )
 
     constructor(
         private readonly client: LanguageClient,
@@ -128,10 +122,6 @@ export class LanguageClientAuth {
 
     public get cacheWatcher() {
         return this.#ssoCacheWatcher
-    }
-
-    public get stsCacheWatcher() {
-        return this.#stsCacheWatcher
     }
 
     /**
@@ -323,11 +313,6 @@ export class LanguageClientAuth {
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
         this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
-    }
-
-    registerStsCacheWatcher(stsCacheChangedHandler: (event: stsCacheChangedEvent) => any) {
-        this.stsCacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
-        this.stsCacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
     }
 }
 
