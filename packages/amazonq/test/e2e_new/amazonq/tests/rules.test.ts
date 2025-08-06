@@ -48,6 +48,7 @@ describe('Amazon Q Rules Functionality', function () {
 
     after(async function () {
         await closeAllTabs(webviewView)
+        await VSBrowser.instance.quit()
     })
 
     it('Rules Option Test', async () => {
