@@ -70,33 +70,8 @@ export class InlineChatProvider {
         }
     }
 
-    private getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
-        switch (triggerEvent?.type) {
-            case 'editor_context_command':
-                return triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
-            case 'follow_up':
-            case 'chat_message':
-            default:
-                return 'click'
-        }
-    }
-
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
-        const triggerInteraction = this.getTriggerInteractionFromTriggerEvent(
-            this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
-        )
-        if (!AuthUtil.instance.isSsoSession()) {
-            telemetry.amazonq_messageResponseError.emit({
-                result: 'Failed',
-                cwsprChatConversationType: 'Chat',
-                cwsprChatRequestLength: message.message?.length ?? 0,
-                cwsprChatResponseCode: 401,
-                cwsprChatTriggerInteraction: triggerInteraction,
-                reason: 'AuthenticationError',
-                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
-            })
-            throw new ToolkitError('Inline chat is only available with SSO authentication')
-        }
+        this.throwOnIamSession(message)
 
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
@@ -112,22 +87,7 @@ export class InlineChatProvider {
 
     // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
-        const triggerInteraction = this.getTriggerInteractionFromTriggerEvent(
-            this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
-        )
-        if (!AuthUtil.instance.isSsoSession()) {
-            telemetry.amazonq_messageResponseError.emit({
-                result: 'Failed',
-                cwsprChatConversationType: 'Chat',
-                cwsprChatRequestLength: message.message?.length ?? 0,
-                cwsprChatResponseCode: 401,
-                cwsprChatTriggerInteraction: triggerInteraction,
-                reason: 'AuthenticationError',
-                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
-                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
-            })
-            throw new ToolkitError('Inline chat is only available with SSO authentication')
-        }
+        this.throwOnIamSession(message)
 
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
@@ -269,6 +229,34 @@ export class InlineChatProvider {
                 requestID,
             },
         })
+    }
+
+    private throwOnIamSession(message: PromptMessage) {
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
+        let triggerInteraction: CwsprChatTriggerInteraction
+        switch (triggerEvent?.type) {
+            case 'editor_context_command':
+                triggerInteraction = triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
+                break
+            case 'follow_up':
+            case 'chat_message':
+            default:
+                triggerInteraction = 'click'
+                break
+        }
+
+        if (!AuthUtil.instance.isSsoSession()) {
+            telemetry.amazonq_messageResponseError.emit({
+                result: 'Failed',
+                cwsprChatConversationType: 'Chat',
+                cwsprChatRequestLength: message.message?.length ?? 0,
+                cwsprChatResponseCode: 401,
+                cwsprChatTriggerInteraction: triggerInteraction,
+                reason: 'AuthenticationError',
+                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
+            })
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
     }
 
     public sendTelemetryEvent(inlineChatEvent: InlineChatEvent, currentTask?: InlineTask) {
