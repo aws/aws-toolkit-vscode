@@ -44,6 +44,7 @@ describe('SageMaker URI handler', function () {
             ws_url: 'wss://example.com',
             'cell-number': '4',
             token: 'my-token',
+            app_type: 'jupyterlab',
         }
 
         const uri = createConnectUri(params)
