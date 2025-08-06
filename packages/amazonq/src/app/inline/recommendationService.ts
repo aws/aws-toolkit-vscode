@@ -67,8 +67,8 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken,
         isAutoTrigger: boolean,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
-        documentEventListener: DocumentEventListener
+        documentEventListener: DocumentEventListener,
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
     ) {
         const documentChangeEvent = documentEventListener?.getLastDocumentChangeEvent(document.uri.fsPath)?.event
 

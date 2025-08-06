@@ -395,6 +395,7 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
+            // Edit suggestion works differently than completion suggestion, so even when it's a deletion and cause cursor to move back, we still allow the request to go through
             if (position.isAfter(editor.selection.active) && items.length > 0 && !items[0].isInlineEdit) {
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,

@@ -14,6 +14,7 @@ import { createMockDocument } from 'aws-core-vscode/test'
 import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateManager'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
@@ -28,6 +29,10 @@ describe('RecommendationService', () => {
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: InlineCompletionTriggerKind.Automatic, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
+    const mockDocumentEventListener = {
+        isLastEventDeletion: (filepath: string) => false,
+        getLastDocumentChangeEvent: (filepath: string) => undefined,
+    } as DocumentEventListener
     const mockInlineCompletionItemOne = {
         insertText: 'ItemOne',
     } as InlineCompletionItem
@@ -134,7 +139,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
@@ -177,7 +183,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
@@ -218,7 +225,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify recordCompletionRequest was called
@@ -235,6 +243,7 @@ describe('RecommendationService', () => {
                 mockContext,
                 mockToken,
                 true,
+                mockDocumentEventListener,
                 {
                     showUi: false,
                     emitTelemetry: true,
@@ -254,7 +263,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify UI methods were called
@@ -286,6 +296,7 @@ describe('RecommendationService', () => {
                     mockContext,
                     mockToken,
                     true,
+                    mockDocumentEventListener,
                     options
                 )
 
