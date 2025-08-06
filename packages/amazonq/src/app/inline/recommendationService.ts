@@ -143,14 +143,15 @@ export class RecommendationService {
                 ps.push(completionPromise)
             }
 
+            /**
+             * Though Edit request is sent on keystrokes everytime, the language server will execute the request in a debounced manner so that it won't be immediately executed.
+             */
             const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
                 editCompletionRequestType.method,
                 request,
                 token
             )
             ps.push(editPromise)
-
-            getLogger().debug('Skip auto trigger of completion when deleting code')
 
             let result = await Promise.race(ps)
             if (ps.length > 1 && result.items.length === 0) {
