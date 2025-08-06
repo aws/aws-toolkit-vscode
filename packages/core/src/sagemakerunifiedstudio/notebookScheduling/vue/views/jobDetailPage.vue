@@ -5,6 +5,7 @@
  */
 
 import { computed, reactive, onBeforeMount } from 'vue'
+import { TrainingJob } from '@aws-sdk/client-sagemaker'
 import TkInputField from '../../../shared/ux/tkInputField.vue'
 import TkContainer from '../../../shared/ux/tkContainer.vue'
 import TkSpaceBetween from '../../../shared/ux/tkSpaceBetween.vue'
@@ -13,19 +14,34 @@ import TkLabel from '../../../shared/ux/tkLabel.vue'
 import TkKeyValue from '../../../shared/ux/tkKeyValue.vue'
 import Breadcrumbs, { BreadcrumbItem } from '../components/breadcrumbs.vue'
 import { client } from '../composables/useClient'
-import { jobs, Job } from '../composables/useJobs'
+import { useJobs } from '../composables/useJobs'
+import {
+    getJobName,
+    getJobInputNotebookName,
+    getJobEnvironmentName,
+    getJobParameters,
+    getJobEnvironmentParameters,
+    getFormattedDateTime,
+    getJobRanWithInputFolder,
+    getJobKernelName,
+} from '../../utils/helpers'
 import { viewJobsPage, JobDetailPageMetadata } from '../../utils/constants'
 
 //-------------------------------------------------------------------------------------------------
 // State
 //-------------------------------------------------------------------------------------------------
 interface State {
-    job?: Job
+    job?: TrainingJob
 }
 
 const state: State = reactive({
     job: undefined,
 })
+
+//-------------------------------------------------------------------------------------------------
+// Composables
+//-------------------------------------------------------------------------------------------------
+const { jobs } = useJobs()
 
 //-------------------------------------------------------------------------------------------------
 // Computed
@@ -40,7 +56,7 @@ const breadcrumbItems = computed(() => {
     ]
 
     if (state.job) {
-        items.push({ text: state.job.name })
+        items.push({ text: getJobName(state.job) as string })
     }
 
     return items
@@ -52,7 +68,7 @@ const breadcrumbItems = computed(() => {
 onBeforeMount(async () => {
     const page = await client.getCurrentPage()
     const metadata = page.metadata as JobDetailPageMetadata
-    state.job = jobs.value.find((job) => job.id === metadata.jobId)
+    state.job = jobs.value.find((job) => job.TrainingJobName === metadata.jobId)
 })
 
 //-------------------------------------------------------------------------------------------------
@@ -95,56 +111,61 @@ function onReloadJob() {
                         <div class="detail-content-info">
                             <tk-input-field
                                 label="Job name"
-                                :value="state.job?.name"
+                                :value="getJobName(state.job)"
                                 :read-only="true"
                                 :compact="true"
                             />
-                            <tk-input-field label="Job ID" :value="state.job?.id" :read-only="true" :compact="true" />
+                            <tk-input-field
+                                label="Job ID"
+                                :value="state.job?.TrainingJobName"
+                                :read-only="true"
+                                :compact="true"
+                            />
                             <tk-input-field
                                 label="Input file"
-                                :value="state.job?.inputFilename"
+                                :value="getJobInputNotebookName(state.job)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Environment"
-                                :value="state.job?.environment"
+                                :value="getJobEnvironmentName(state.job)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Status"
-                                :value="state.job?.status"
+                                :value="state.job?.TrainingJobStatus"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Created at"
-                                :value="state.job?.createdAt"
+                                :value="getFormattedDateTime(state.job?.CreationTime as unknown as string)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Updated at"
-                                :value="state.job?.updatedAt"
+                                :value="getFormattedDateTime(state.job?.LastModifiedTime as unknown as string)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Start time"
-                                :value="state.job?.startTime"
+                                :value="getFormattedDateTime(state.job?.TrainingStartTime as unknown as string)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="End time"
-                                :value="state.job?.endTime"
+                                :value="getFormattedDateTime(state.job?.TrainingEndTime as unknown as string)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Ran with input folder"
-                                :value="state.job?.ranWithInputFolder ? 'Yes' : 'No'"
+                                :value="getJobRanWithInputFolder(state.job) ? 'Yes' : 'No'"
                                 :read-only="true"
                                 :compact="true"
                             />
@@ -153,8 +174,8 @@ function onReloadJob() {
 
                     <tk-container header="Parameters">
                         <tk-key-value
-                            v-if="state.job.parameters"
-                            :items="state.job.parameters"
+                            v-if="getJobParameters(state.job)"
+                            :items="getJobParameters(state.job)!"
                             key-label="Parameter name"
                             value-label="Parameter value"
                         />
@@ -163,18 +184,23 @@ function onReloadJob() {
 
                     <tk-container header="Advanced Options">
                         <tk-space-between>
-                            <tk-input-field label="Image" :value="state.job?.image" :read-only="true" :compact="true" />
+                            <tk-input-field
+                                label="Image"
+                                value="SageMaker Distribution"
+                                :read-only="true"
+                                :compact="true"
+                            />
                             <tk-input-field
                                 label="Kernel"
-                                :value="state.job?.kernel"
+                                :value="getJobKernelName(state.job)"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <div>
                                 <tk-label text="Environment variables" :optional="true" />
                                 <tk-key-value
-                                    v-if="state.job.envVariables"
-                                    :items="state.job.envVariables"
+                                    v-if="getJobEnvironmentParameters(state.job)"
+                                    :items="getJobEnvironmentParameters(state.job)!"
                                     key-label="Variable name"
                                     value-label="Variable value"
                                 />
@@ -182,13 +208,13 @@ function onReloadJob() {
                             </div>
                             <tk-input-field
                                 label="Max retry attempts"
-                                :value="state.job?.maxRetryAttempts"
+                                :value="state.job?.RetryStrategy?.MaximumRetryAttempts"
                                 :read-only="true"
                                 :compact="true"
                             />
                             <tk-input-field
                                 label="Max run time (in seconds)"
-                                :value="state.job?.maxRunTime"
+                                :value="state.job?.StoppingCondition?.MaxRuntimeInSeconds"
                                 :read-only="true"
                                 :compact="true"
                             />

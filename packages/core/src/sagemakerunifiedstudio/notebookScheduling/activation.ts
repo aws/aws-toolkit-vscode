@@ -67,6 +67,8 @@ async function createWebview(context: vscode.ExtensionContext, page: Page): Prom
         viewColumn: vscode.ViewColumn.Active,
     })
 
+    // This is temporary setup for now.
+    activePanel.server.initSdkClient('us-east-2', 'd95hwmylut2ai1')
     activePanel.server.setWebviewPanel(webviewPanel)
     activePanel.server.setCurrentPage(page)
 

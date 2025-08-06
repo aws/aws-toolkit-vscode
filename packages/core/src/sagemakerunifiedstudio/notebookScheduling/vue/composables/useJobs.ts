@@ -3,29 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ref, Ref } from 'vue'
-
-export interface Job {
-    id: string
-    jobDefinitionId?: string
-    name: string
-    inputFilename: string
-    outputFiles: string
-    status: string
-    createdAt: string
-    updatedAt: string
-    startTime: string
-    endTime: string
-    environment: string
-    ranWithInputFolder: boolean
-    image: string
-    kernel: string
-    maxRetryAttempts: number
-    maxRunTime: number
-    parameters?: { key: string; value: string }[]
-    envVariables?: { key: string; value: string }[]
-    delete: boolean
-}
+import { ref, Ref, onBeforeMount } from 'vue'
+import { TrainingJob } from '@aws-sdk/client-sagemaker'
+import { client } from './useClient'
 
 export interface JobDefinition {
     id: string
@@ -46,438 +26,6 @@ export interface JobDefinition {
     envVariables?: { key: string; value: string }[]
     delete: boolean
 }
-
-export const jobs: Ref<Job[]> = ref([
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-26',
-        jobDefinitionId: '1',
-        name: 'notebook-job-1',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'conference-transcript.json',
-        createdAt: '7/4/2025, 9:53:26 PM',
-        updatedAt: '7/4/2025, 9:56:59 PM',
-        startTime: '7/4/2025, 9:54:04 PM',
-        endTime: '7/4/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        parameters: [{ key: 'foo', value: 'bar' }],
-        envVariables: [{ key: 'foo', value: 'bar' }],
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-27',
-        jobDefinitionId: '1',
-        name: 'notebook-job-2',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'podcast-transcript.json',
-        createdAt: '7/5/2025, 9:53:26 PM',
-        updatedAt: '7/5/2025, 9:56:59 PM',
-        startTime: '7/5/2025, 9:54:04 PM',
-        endTime: '7/5/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        parameters: [
-            { key: 'foo', value: 'bar' },
-            { key: 'hello', value: 'world' },
-        ],
-        envVariables: [
-            { key: 'foo', value: 'bar' },
-            { key: 'hello', value: 'world' },
-        ],
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-28',
-        jobDefinitionId: '1',
-        name: 'notebook-job-3',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'voicemail-transcript.json',
-        createdAt: '7/6/2025, 9:53:26 PM',
-        updatedAt: '7/6/2025, 9:56:59 PM',
-        startTime: '7/6/2025, 9:54:04 PM',
-        endTime: '7/6/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-29',
-        jobDefinitionId: '2',
-        name: 'notebook-job-4',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'presentation-transcript.json',
-        createdAt: '7/7/2025, 9:53:26 PM',
-        updatedAt: '7/7/2025, 9:56:59 PM',
-        startTime: '7/7/2025, 9:54:04 PM',
-        endTime: '7/7/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'FAILED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-30',
-        jobDefinitionId: '2',
-        name: 'notebook-job-5',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'training-transcript.json',
-        createdAt: '7/8/2025, 9:53:26 PM',
-        updatedAt: '7/8/2025, 9:56:59 PM',
-        startTime: '7/8/2025, 9:54:04 PM',
-        endTime: '7/8/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-25',
-        name: 'notebook-job-6',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'customer-transcript.json',
-        createdAt: '7/9/2025, 9:53:26 PM',
-        updatedAt: '7/9/2025, 9:56:59 PM',
-        startTime: '7/9/2025, 9:54:04 PM',
-        endTime: '7/9/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-31',
-        name: 'notebook-job-7',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'webinar-transcript.json',
-        createdAt: '7/10/2025, 9:53:26 PM',
-        updatedAt: '7/10/2025, 9:56:59 PM',
-        startTime: '7/10/2025, 9:54:04 PM',
-        endTime: '7/10/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-32',
-        name: 'notebook-job-8',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'meeting-transcript.json',
-        createdAt: '7/11/2025, 9:53:26 PM',
-        updatedAt: '7/11/2025, 9:56:59 PM',
-        startTime: '7/11/2025, 9:54:04 PM',
-        endTime: '7/11/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'FAILED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-33',
-        name: 'notebook-job-9',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'interview2-transcript.json',
-        createdAt: '7/12/2025, 9:53:26 PM',
-        updatedAt: '7/12/2025, 9:56:59 PM',
-        startTime: '7/12/2025, 9:54:04 PM',
-        endTime: '7/12/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-34',
-        name: 'notebook-job-10',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'workshop-transcript.json',
-        createdAt: '7/13/2025, 9:53:26 PM',
-        updatedAt: '7/13/2025, 9:56:59 PM',
-        startTime: '7/13/2025, 9:54:04 PM',
-        endTime: '7/13/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-35',
-        name: 'notebook-job-111',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'speech-transcript.json',
-        createdAt: '7/14/2025, 9:53:26 PM',
-        updatedAt: '7/14/2025, 9:56:59 PM',
-        startTime: '7/14/2025, 9:54:04 PM',
-        endTime: '7/14/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-36',
-        name: 'notebook-job-12',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'lecture2-transcript.json',
-        createdAt: '7/15/2025, 9:53:26 PM',
-        updatedAt: '7/15/2025, 9:56:59 PM',
-        startTime: '7/15/2025, 9:54:04 PM',
-        endTime: '7/15/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'FAILED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-37',
-        name: 'notebook-job-13',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'seminar-transcript.json',
-        createdAt: '7/16/2025, 9:53:26 PM',
-        updatedAt: '7/16/2025, 9:56:59 PM',
-        startTime: '7/16/2025, 9:54:04 PM',
-        endTime: '7/16/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-38',
-        name: 'notebook-job-14',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'notes-transcript.json',
-        createdAt: '7/17/2025, 9:53:26 PM',
-        updatedAt: '7/17/2025, 9:56:59 PM',
-        startTime: '7/17/2025, 9:54:04 PM',
-        endTime: '7/17/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-39',
-        name: 'notebook-job-15',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'conference2-transcript.json',
-        createdAt: '7/18/2025, 9:53:26 PM',
-        updatedAt: '7/18/2025, 9:56:59 PM',
-        startTime: '7/18/2025, 9:54:04 PM',
-        endTime: '7/18/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-40',
-        name: 'notebook-job-16',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'meeting-transcript.json',
-        createdAt: '7/19/2025, 9:53:26 PM',
-        updatedAt: '7/19/2025, 9:56:59 PM',
-        startTime: '7/19/2025, 9:54:04 PM',
-        endTime: '7/19/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-41',
-        name: 'notebook-job-17',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'interview-transcript.json',
-        createdAt: '7/20/2025, 9:53:26 PM',
-        updatedAt: '7/20/2025, 9:56:59 PM',
-        startTime: '7/20/2025, 9:54:04 PM',
-        endTime: '7/20/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-42',
-        name: 'notebook-job-18',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'lecture-transcript.json',
-        createdAt: '7/21/2025, 9:53:26 PM',
-        updatedAt: '7/21/2025, 9:56:59 PM',
-        startTime: '7/21/2025, 9:54:04 PM',
-        endTime: '7/21/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'FAILED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-43',
-        name: 'notebook-job-19',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'workshop-transcript.json',
-        createdAt: '7/22/2025, 9:53:26 PM',
-        updatedAt: '7/22/2025, 9:56:59 PM',
-        startTime: '7/22/2025, 9:54:04 PM',
-        endTime: '7/22/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-44',
-        name: 'notebook-job-20',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'speech-transcript.json',
-        createdAt: '7/23/2025, 9:53:26 PM',
-        updatedAt: '7/23/2025, 9:56:59 PM',
-        startTime: '7/23/2025, 9:54:04 PM',
-        endTime: '7/23/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-45',
-        name: 'notebook-job-21',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'lecture2-transcript.json',
-        createdAt: '7/24/2025, 9:53:26 PM',
-        updatedAt: '7/24/2025, 9:56:59 PM',
-        startTime: '7/24/2025, 9:54:04 PM',
-        endTime: '7/24/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'FAILED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-46',
-        name: 'notebook-job-22',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'seminar-transcript.json',
-        createdAt: '7/25/2025, 9:53:26 PM',
-        updatedAt: '7/25/2025, 9:56:59 PM',
-        startTime: '7/25/2025, 9:54:04 PM',
-        endTime: '7/25/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'COMPLETED',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-    {
-        id: 'notebook1-d305f07c-2025-07-25-04-53-47',
-        name: 'notebook-job-23',
-        inputFilename: 'notebook-1.ipynb',
-        outputFiles: 'notes-transcript.json',
-        createdAt: '7/26/2025, 9:53:26 PM',
-        updatedAt: '7/26/2025, 9:56:59 PM',
-        startTime: '7/26/2025, 9:54:04 PM',
-        endTime: '7/26/2025, 9:56:59 PM',
-        environment: 'sagemaker-default-env',
-        ranWithInputFolder: false,
-        status: 'IN_PROGRESS',
-        image: 'SageMaker Distribution',
-        kernel: 'python3',
-        maxRetryAttempts: 1,
-        maxRunTime: 172800,
-        delete: false,
-    },
-])
 
 export const jobDefinitions: Ref<JobDefinition[]> = ref([
     {
@@ -703,3 +251,57 @@ export const jobDefinitions: Ref<JobDefinition[]> = ref([
         delete: false,
     },
 ])
+
+// Reactive states for tracking useJobs hook status
+export const jobs: Ref<TrainingJob[]> = ref([])
+const isLoadingTrainingJobs: Ref<boolean> = ref(true)
+const isErrorTrainingJobs: Ref<boolean> = ref(false)
+const errorMessageTrainingJobs: Ref<string | undefined> = ref(undefined)
+
+let hasFetchedTrainingJobs = false
+
+export function useJobs(config: { refetch?: boolean } = { refetch: false }): {
+    jobs: Ref<TrainingJob[]>
+    isLoading: Ref<boolean>
+    isError: Ref<boolean>
+    errorMessage: Ref<string | undefined>
+} {
+    async function fetchTrainingJobs(): Promise<void> {
+        if (hasFetchedTrainingJobs && !config.refetch) {
+            return
+        }
+
+        hasFetchedTrainingJobs = true
+        isLoadingTrainingJobs.value = true
+        isErrorTrainingJobs.value = false
+        errorMessageTrainingJobs.value = undefined
+
+        const result = await client.listJobs()
+
+        jobs.value.length = 0
+
+        if (result.jobs) {
+            for (const job of result.jobs) {
+                jobs.value.push(job)
+            }
+        } else {
+            isErrorTrainingJobs.value = true
+            errorMessageTrainingJobs.value = result.error
+        }
+
+        isLoadingTrainingJobs.value = false
+    }
+
+    if (config.refetch) {
+        void fetchTrainingJobs()
+    } else {
+        onBeforeMount(fetchTrainingJobs)
+    }
+
+    return {
+        jobs: jobs,
+        isLoading: isLoadingTrainingJobs,
+        isError: isErrorTrainingJobs,
+        errorMessage: errorMessageTrainingJobs,
+    }
+}

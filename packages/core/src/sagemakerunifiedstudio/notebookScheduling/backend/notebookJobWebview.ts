@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
 import { createJobPage, Page } from '../utils/constants'
+import { SageMakerClient, ListJobsResponse } from '../client/sageMakerClient'
 
 /**
  * Webview class for managing SageMaker notebook job scheduling UI.
@@ -27,11 +28,17 @@ export class NotebookJobWebview extends VueWebview {
     /** Tracks the currently displayed page */
     private currentPage: Page = { name: createJobPage, metadata: {} }
 
+    private sageMakerClient?: SageMakerClient
+
     /**
      * Creates a new NotebookJobWebview instance
      */
     public constructor() {
         super(NotebookJobWebview.sourcePath)
+    }
+
+    public initSdkClient(regionCode: string, projectId: string): void {
+        this.sageMakerClient = new SageMakerClient(regionCode, projectId)
     }
 
     public setWebviewPanel(newWebviewPanel: vscode.WebviewPanel): void {
@@ -53,5 +60,13 @@ export class NotebookJobWebview extends VueWebview {
     public setCurrentPage(newPage: Page): void {
         this.currentPage = newPage
         this.onShowPage.fire({ page: this.currentPage })
+    }
+
+    public async listJobs(): Promise<ListJobsResponse> {
+        if (!this.sageMakerClient) {
+            throw 'SageMakerClient is not initialized'
+        }
+
+        return this.sageMakerClient.listJobs()
     }
 }

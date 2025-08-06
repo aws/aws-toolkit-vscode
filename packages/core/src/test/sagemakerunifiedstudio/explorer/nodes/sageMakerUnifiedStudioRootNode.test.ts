@@ -98,7 +98,7 @@ describe('SmusRootNode', function () {
             const mockAuthProvider = {
                 isConnected: sinon.stub().returns(false),
                 isConnectionValid: sinon.stub().returns(false),
-                activeConnection: null,
+                activeConnection: undefined,
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
@@ -119,7 +119,7 @@ describe('SmusRootNode', function () {
             const mockAuthProvider = {
                 isConnected: sinon.stub().returns(false),
                 isConnectionValid: sinon.stub().returns(false),
-                activeConnection: null,
+                activeConnection: undefined,
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
