@@ -20,7 +20,7 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
         const menuItems = await waitForElements(
             webview,
             By.css('.mynah-detailed-list-item.mynah-ui-clickable-item.target-command'),
-            10000
+            100
         )
 
         const menuTexts = []
