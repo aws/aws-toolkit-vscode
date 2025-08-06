@@ -22,7 +22,7 @@ export async function clickPinContextButton(webview: WebviewView): Promise<boole
             const label = await button.findElement(By.css('.mynah-button-label'))
             const labelText = await label.getText()
             console.log('THE BUTTON TEXT LABEL IS:', labelText)
-            if (labelText === '@Pin Context') {
+            if (labelText === '@Pin Context' || labelText === '@') {
                 console.log('Found Pin Context button, clicking...')
                 await button.click()
                 return true
@@ -81,6 +81,7 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
         const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
         await sleep(3000)
         const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
+        console.log('Searching for context item:', itemName)
         for (const item of menuListItems) {
             try {
                 const textWrapper = await item.findElement(By.css('.mynah-detailed-list-item-text'))

@@ -43,7 +43,7 @@ export async function signInToAmazonQ(): Promise<void> {
     await UrlContinue.click()
 
     console.log('Waiting for manual authentication...')
-    await sleep(12000)
+    await sleep(20000)
     console.log('Manual authentication should be done')
     await webviewView.switchBack()
 
@@ -60,4 +60,12 @@ export async function signInToAmazonQ(): Promise<void> {
 you've already logged in before. */
 export async function signOutFromAmazonQ(workbench: Workbench): Promise<void> {
     await workbench.executeCommand('Amazon Q: Sign Out')
+    const webviewView = new WebviewView()
+    await webviewView.switchToFrame()
+
+    // const moreOptionButton = await webviewView.findWebElement(By.css('#action-label codicon codicon-toolbar-more'))
+    // await moreOptionButton.click()
+
+    // const moreOptionButton = await webviewView.findWebElement(By.css('#action-label codicon codicon-toolbar-more'))
+    // await moreOptionButton.click()
 }

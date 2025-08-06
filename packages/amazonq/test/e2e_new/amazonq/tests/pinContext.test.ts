@@ -7,15 +7,16 @@ import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from '../helpers/pinContextHelper'
-import { clearChat } from '../utils/generalUtils'
+import { clearChat, sleep } from '../utils/generalUtils'
 
 describe('Amazon Q Pin Context Functionality', function () {
     // this timeout is the general timeout for the entire test suite
-    this.timeout(150000)
+    this.timeout(50000)
     let webviewView: WebviewView
 
-    before(async function () {
+    beforeEach(async function () {
         webviewView = testContext.webviewView
+        await sleep(5000)
     })
 
     after(async function () {
@@ -27,9 +28,34 @@ describe('Amazon Q Pin Context Functionality', function () {
         await clearChat(webviewView)
     })
 
-    it('Pin Context Test', async () => {
+    it('Pin Context Test @workspace', async () => {
         await clickPinContextButton(webviewView)
         await getPinContextMenuItems(webviewView)
         await clickPinContextMenuItem(webviewView, '@workspace')
+    })
+    it('Pin Context Test Folders', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Folders')
+    })
+    it('Pin Context Test Files', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Files')
+    })
+    it('Pin Context Test Code', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Code')
+    })
+    it('Pin Context Test Prompts', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Prompts')
+    })
+    it('Pin Context Test Image', async () => {
+        await clickPinContextButton(webviewView)
+        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Image')
     })
 })

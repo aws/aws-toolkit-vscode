@@ -10,7 +10,7 @@ import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Switch Model Functionality', function () {
     // this timeout is the general timeout for the entire test suite
-    this.timeout(150000)
+    this.timeout(50000)
     let webviewView: WebviewView
 
     before(async function () {
@@ -24,5 +24,10 @@ describe('Amazon Q Switch Model Functionality', function () {
     it('Switch Model Test', async () => {
         await listModels(webviewView)
         await selectModel(webviewView, 'Claude Sonnet 3.7')
+    })
+
+    it('Switch Model Test', async () => {
+        await listModels(webviewView)
+        await selectModel(webviewView, 'Claude Sonnet 4')
     })
 })

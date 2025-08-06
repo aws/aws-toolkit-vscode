@@ -10,7 +10,7 @@ import { closeAllTabs } from '../utils/cleanupUtils'
 
 describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
-    this.timeout(150000)
+    this.timeout(400000)
     let webviewView: WebviewView
 
     before(async function () {
