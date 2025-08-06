@@ -14,43 +14,6 @@ export interface DiffAnimation {
     isFromChatClick?: boolean
 }
 
-export interface PartialUpdateOptions {
-    changeLocation?: {
-        startLine: number
-        endLine: number
-        startChar?: number
-        endChar?: number
-    }
-    searchContent?: string
-    isPartialUpdate?: boolean
-}
-
-export interface DiffLine {
-    type: 'unchanged' | 'added' | 'removed'
-    content: string
-    lineNumber: number
-    oldLineNumber?: number
-    newLineNumber?: number
-}
-
-export interface ChangedRegion {
-    startLine: number
-    endLine: number
-    totalLines: number
-}
-
-export interface ScanPlan {
-    leftLines: Array<DiffLine & { index: number }>
-    rightLines: Array<DiffLine & { index: number }>
-    scanPlan: Array<{
-        leftIndex: number | undefined
-        rightIndex: number | undefined
-        leftLine?: DiffLine & { index: number }
-        rightLine?: DiffLine & { index: number }
-        preAdded?: boolean
-    }>
-}
-
 export interface FsWriteParams {
     command?: string
     insertLine?: number

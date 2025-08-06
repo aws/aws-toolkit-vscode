@@ -46,6 +46,16 @@ export class StreamingDiffController implements vscode.Disposable {
         vscode.workspace.registerTextDocumentContentProvider(diffViewUriScheme, this.contentProvider)
     }
 
+    private disposeSession(session: StreamingSession): void {
+        session.disposed = true
+        session.fadedOverlayController.clear()
+        session.activeLineController.clear()
+    }
+
+    private logError(context: string, toolUseId: string, error: any): void {
+        getLogger().error(`[StreamingDiffController] ❌ ${context} for ${toolUseId}: ${error}`)
+    }
+
     updateFsWriteParams(toolUseId: string, fsWriteParams: FsWriteParams): void {
         const session = this.activeStreamingSessions.get(toolUseId)
         if (session) {
@@ -246,7 +256,7 @@ export class StreamingDiffController implements vscode.Disposable {
             setTimeout(async () => {
                 try {
                     await this.cleanupTempFile(session.tempFilePath)
-                    session.disposed = true
+                    this.disposeSession(session)
                     this.activeStreamingSessions.delete(toolUseId)
                 } catch (error) {
                     getLogger().warn(`Failed to auto-cleanup temp file ${session.tempFilePath}: ${error}`)
@@ -279,7 +289,7 @@ export class StreamingDiffController implements vscode.Disposable {
                 return
             }
             const currentContent = document.getText()
-            if (document.uri.fsPath === session.tempFilePath) {
+            if (document.uri.fsPath !== session.tempFilePath) {
                 return
             }
             try {
@@ -417,9 +427,7 @@ export class StreamingDiffController implements vscode.Disposable {
         }
 
         try {
-            session.disposed = true
-            session.fadedOverlayController.clear()
-            session.activeLineController.clear()
+            this.disposeSession(session)
 
             // Clean up temp file immediately when session is closed
             if (session.tempFilePath) {
@@ -428,9 +436,7 @@ export class StreamingDiffController implements vscode.Disposable {
 
             this.activeStreamingSessions.delete(toolUseId)
         } catch (error) {
-            getLogger().error(
-                `[StreamingDiffController] ❌ Failed to close streaming session for ${toolUseId}: ${error}`
-            )
+            this.logError('Failed to close streaming session', toolUseId, error)
         }
     }
 
@@ -569,11 +575,9 @@ export class StreamingDiffController implements vscode.Disposable {
 
         for (const [toolUseId, session] of this.activeStreamingSessions.entries()) {
             try {
-                session.disposed = true
-                session.fadedOverlayController.clear()
-                session.activeLineController.clear()
+                this.disposeSession(session)
             } catch (error) {
-                getLogger().error(`[StreamingDiffController] ❌ Error disposing session ${toolUseId}: ${error}`)
+                this.logError('Error disposing session', toolUseId, error)
             }
         }
 
