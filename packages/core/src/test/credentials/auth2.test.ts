@@ -15,13 +15,17 @@ import {
     ListProfilesResult,
     UpdateCredentialsParams,
     SsoTokenChangedParams,
+    StsCredentialChangedParams,
     bearerCredentialsUpdateRequestType,
     bearerCredentialsDeleteNotificationType,
     iamCredentialsUpdateRequestType,
     iamCredentialsDeleteNotificationType,
     ssoTokenChangedRequestType,
+    stsCredentialChangedRequestType,
     SsoTokenChangedKind,
+    StsCredentialChangedKind,
     invalidateSsoTokenRequestType,
+    invalidateStsCredentialRequestType,
     ProfileKind,
     AwsErrorCodes,
 } from '@aws/language-server-runtimes/protocol'
@@ -100,7 +104,11 @@ describe('LanguageClientAuth', () => {
         })
 
         it('sends correct IAM profile update parameters', async () => {
-            await auth.updateIamProfile(profileName, 'accessKey', 'secretKey', 'sessionToken')
+            await auth.updateIamProfile(profileName, {
+                accessKey: 'myAccessKey',
+                secretKey: 'mySecretKey',
+                sessionToken: 'mySessionToken',
+            })
 
             sinon.assert.calledOnce(client.sendRequest)
             const requestParams = client.sendRequest.firstCall.args[1]
@@ -109,9 +117,11 @@ describe('LanguageClientAuth', () => {
                 kinds: [ProfileKind.IamCredentialsProfile],
             })
             sinon.assert.match(requestParams.profile.settings, {
-                aws_access_key_id: 'accessKey',
-                aws_secret_access_key: 'secretKey',
-                aws_session_token: 'sessionToken',
+                aws_access_key_id: 'myAccessKey',
+                aws_secret_access_key: 'mySecretKey',
+                aws_session_token: 'mySessionToken',
+                role_arn: '',
+                source_profile: '',
             })
         })
     })
@@ -216,6 +226,40 @@ describe('LanguageClientAuth', () => {
                     },
                 })
             )
+        })
+    })
+
+    describe('invalidateStsCredential', () => {
+        it('sends request', async () => {
+            client.sendRequest.resolves({ success: true })
+            const result = await auth.invalidateStsCredential(profileName)
+
+            sinon.assert.calledOnce(client.sendRequest)
+            sinon.assert.calledWith(client.sendRequest, invalidateStsCredentialRequestType.method, {
+                iamCredentialId: profileName,
+            })
+            sinon.assert.match(result, { success: true })
+        })
+    })
+
+    describe('registerStsCredentialChangedHandler', () => {
+        it('registers the handler correctly', () => {
+            const handler = sinon.spy()
+
+            auth.registerStsCredentialChangedHandler(handler)
+
+            sinon.assert.calledOnce(client.onNotification)
+            sinon.assert.calledWith(client.onNotification, stsCredentialChangedRequestType.method, sinon.match.func)
+
+            const credentialChangedParams: StsCredentialChangedParams = {
+                kind: StsCredentialChangedKind.Refreshed,
+                stsCredentialId: 'test-credential-id',
+            }
+            const registeredHandler = client.onNotification.firstCall.args[1]
+            registeredHandler(credentialChangedParams)
+
+            sinon.assert.calledOnce(handler)
+            sinon.assert.calledWith(handler, credentialChangedParams)
         })
     })
 
@@ -601,11 +645,14 @@ describe('IamLogin', () => {
     }
 
     const mockGetIamCredentialResponse: GetIamCredentialResult = {
-        id: 'test-credential-id',
-        credentials: {
-            accessKeyId: 'encrypted-access-key',
-            secretAccessKey: 'encrypted-secret-key',
-            sessionToken: 'encrypted-session-token',
+        credential: {
+            id: 'test-credential-id',
+            kinds: [],
+            credentials: {
+                accessKeyId: 'encrypted-access-key',
+                secretAccessKey: 'encrypted-secret-key',
+                sessionToken: 'encrypted-session-token',
+            },
         },
         updateCredentialsParams: {
             data: 'credential-data',
@@ -633,10 +680,10 @@ describe('IamLogin', () => {
             const response = await iamLogin.login(loginOpts)
 
             sinon.assert.calledOnce(lspAuth.updateIamProfile)
-            sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts.accessKey, loginOpts.secretKey)
+            sinon.assert.calledWith(lspAuth.updateIamProfile, profileName, loginOpts)
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
         })
     })
 
@@ -659,7 +706,22 @@ describe('IamLogin', () => {
 
             sinon.assert.calledOnce(lspAuth.getIamCredential)
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
-            sinon.assert.match(response.id, 'test-credential-id')
+            sinon.assert.match(response.credential.id, 'test-credential-id')
+        })
+    })
+
+    describe('logout', () => {
+        it('invalidates credential and updates state', async () => {
+            ;(iamLogin as any).iamCredentialId = 'test-credential-id'
+            lspAuth.invalidateStsCredential.resolves({ success: true })
+            lspAuth.updateIamProfile.resolves()
+
+            await iamLogin.logout()
+
+            sinon.assert.calledOnce(lspAuth.invalidateStsCredential)
+            sinon.assert.calledWith(lspAuth.invalidateStsCredential, 'test-credential-id')
+            sinon.assert.match(iamLogin.getConnectionState(), 'notConnected')
+            sinon.assert.match(iamLogin.data, undefined)
         })
     })
 
@@ -715,6 +777,22 @@ describe('IamLogin', () => {
             sinon.assert.match(iamLogin.getConnectionState(), 'connected')
             // Note: iamCredentialId is commented out in the implementation
             // sinon.assert.match((iamLogin as any).iamCredentialId, 'test-credential-id')
+        })
+    })
+
+    describe('stsCredentialChangedHandler', () => {
+        beforeEach(() => {
+            ;(iamLogin as any).iamCredentialId = 'test-credential-id'
+            ;(iamLogin as any).connectionState = 'connected'
+        })
+
+        it('updates state when credential expires', () => {
+            ;(iamLogin as any).stsCredentialChangedHandler({
+                kind: StsCredentialChangedKind.Expired,
+                stsCredentialId: 'test-credential-id',
+            })
+
+            sinon.assert.match(iamLogin.getConnectionState(), 'expired')
         })
     })
 })

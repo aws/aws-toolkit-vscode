@@ -27,10 +27,14 @@ export async function createTestAuthUtil() {
     }
 
     const fakeCredential = {
-        credentials: {
-            accessKeyId: 'fake-access-key-id',
-            secretAccessKey: 'fake-secret-access-key',
-            sessionToken: 'fake-session-token',
+        credential: {
+            id: 'fake-id',
+            kinds: [],
+            credentials: {
+                accessKeyId: 'fake-access-key-id',
+                secretAccessKey: 'fake-secret-access-key',
+                sessionToken: 'fake-session-token',
+            },
         },
         updateCredentialsParams: {
             data: 'fake-data',
@@ -39,6 +43,8 @@ export async function createTestAuthUtil() {
 
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
+        registerStsCredentialChangedHandler: sinon.stub().resolves(),
+        registerGetMfaCodeHandler: sinon.stub().resolves(),
         updateSsoProfile: sinon.stub().resolves(),
         getSsoToken: sinon.stub().resolves(fakeToken),
         getIamCredential: sinon.stub().resolves(fakeCredential),

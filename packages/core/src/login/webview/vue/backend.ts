@@ -19,6 +19,7 @@ import {
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    IamProfile,
     TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
@@ -174,7 +175,9 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract startIamCredentialSetup(
         profileName: string,
         accessKey: string,
-        secretKey: string
+        secretKey: string,
+        sessionToken?: string,
+        roleArn?: string
     ): Promise<AuthError | undefined>
 
     async showResourceExplorer(): Promise<void> {
@@ -207,6 +210,8 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract listSsoConnections(): Promise<SsoConnection[]>
 
     abstract listRegionProfiles(): Promise<RegionProfile[] | string>
+
+    abstract listIamCredentialProfiles(): Promise<IamProfile[]>
 
     abstract selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void>
 
@@ -304,6 +309,10 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         return globals.globalState.tryGet('recentIamKeys', Object, { accessKey: '' })
+    }
+
+    getDefaultRoleArn(): { roleArn: string } {
+        return globals.globalState.tryGet('recentRoleArn', Object, { roleArn: '' })
     }
 
     cancelAuthFlow() {

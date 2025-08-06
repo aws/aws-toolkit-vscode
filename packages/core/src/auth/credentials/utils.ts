@@ -103,14 +103,35 @@ export class CredentialsSettings extends fromExtensionManifest('aws', { profile:
 const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User cancelled entering authentication code')
 
 /**
- * @description Prompts user for MFA token
+ * @description Prompts user for MFA serial number
  *
- * Entered token is passed to the callback.
- * If user cancels out, the callback is passed an error with a fixed message string.
+ * @param defaultSerial Default MFA serial number to pre-fill
+ * @param profileName Name of Credentials profile we are asking an MFA serial for
+ */
+export async function getMfaSerialFromUser(defaultSerial: string, profileName: string): Promise<string> {
+    const inputBox = createInputBox({
+        ignoreFocusOut: true,
+        placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter mfaSerial Number Here'),
+        title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
+        prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter Serial Number for MFA device', defaultSerial),
+        value: defaultSerial, // Pre-fill with default value
+    })
+
+    const token = await inputBox.prompt()
+
+    // Distinguish user cancel vs code entry issues with the error message
+    if (!isValidResponse(token)) {
+        throw new Error(errorMessageUserCancelled)
+    }
+
+    return token
+}
+
+/**
+ * @description Prompts user for MFA token
  *
  * @param mfaSerial Serial arn of MFA device
  * @param profileName Name of Credentials profile we are asking an MFA Token for
- * @param callback tokens/errors are passed through here
  */
 export async function getMfaTokenFromUser(mfaSerial: string, profileName: string): Promise<string> {
     const inputBox = createInputBox({

@@ -39,6 +39,7 @@ import {
     IamLogin,
     AuthState,
     LoginTypes,
+    IamProfileOptions,
 } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
@@ -73,7 +74,13 @@ export interface IAuthProvider {
     getToken(): Promise<string>
     getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
-    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
+    readonly connection?: {
+        startUrl?: string
+        region?: string
+        accessKey?: string
+        secretKey?: string
+        sessionToken?: string
+    }
 }
 
 /**
@@ -171,30 +178,26 @@ export class AuthUtil implements IAuthProvider {
 
     // Log in using SSO
     async loginSso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
-        let response: GetSsoTokenResult | undefined
         // Create SSO login session
         if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        // eslint-disable-next-line prefer-const
-        response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
+        const response = await (this.session as SsoLogin).login({
+            startUrl: startUrl,
+            region: region,
+            scopes: amazonQScopes,
+        })
         await showAmazonQWalkthroughOnce()
         return response
     }
 
     // Log in using IAM or STS credentials
-    async loginIam(
-        accessKey: string,
-        secretKey: string,
-        sessionToken?: string
-    ): Promise<GetIamCredentialResult | undefined> {
-        let response: GetIamCredentialResult | undefined
+    async loginIam(opts: IamProfileOptions): Promise<GetIamCredentialResult | undefined> {
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        // eslint-disable-next-line prefer-const
-        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey })
+        const response = await (this.session as IamLogin).login(opts)
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -531,9 +534,10 @@ export class AuthUtil implements IAuthProvider {
                 scopes: amazonQScopes,
             }
 
-            if (this.session instanceof SsoLogin) {
-                await this.session.updateProfile(registrationKey)
+            if (!this.isSsoSession()) {
+                this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             }
+            await (this.session as SsoLogin).updateProfile(registrationKey)
 
             const cacheDir = getCacheDir()
 
