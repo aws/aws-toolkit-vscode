@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import vscode, { env, version } from 'vscode'
+import vscode, { version } from 'vscode'
 import * as nls from 'vscode-nls'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
@@ -23,6 +23,7 @@ import {
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -37,6 +38,7 @@ import {
     getOptOutPreference,
     isAmazonLinux2,
     getClientId,
+    getClientName,
     extensionVersion,
     isSageMaker,
     DevSettings,
@@ -51,6 +53,7 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { codeReviewInChat } from '../app/amazonqScan/models/constants'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -161,7 +164,7 @@ export async function startLanguageServer(
         initializationOptions: {
             aws: {
                 clientInfo: {
-                    name: env.appName,
+                    name: getClientName(),
                     version: version,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
@@ -179,12 +182,14 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
-                        codeReviewInChat: false,
+                        codeReviewInChat: codeReviewInChat,
+                        // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
+                        displayFindings: true,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                        showLogs: true,
+                        showLogs: isSageMaker() ? false : true,
                     },
                     textDocument: {
                         inlineCompletionWithReferences: textDocSection,
@@ -365,6 +370,7 @@ async function onLanguageServerReady(
             sessionManager.checkInlineSuggestionVisibility()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            vsCodeState.lastManualTriggerTime = performance.now()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {

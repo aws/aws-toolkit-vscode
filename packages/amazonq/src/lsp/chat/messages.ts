@@ -97,7 +97,7 @@ import {
     ViewDiffMessage,
     referenceLogText,
 } from 'aws-core-vscode/amazonq'
-import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
@@ -144,10 +144,13 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
     languageClient.onTelemetry((e) => {
         const telemetryName: string = e.name
-
-        if (telemetryName in telemetry) {
-            languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
-            telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
+        languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+        try {
+            // Flare is now the source of truth for metrics instead of depending on each IDE client and toolkit-common
+            const metric = (telemetry as any).getMetric(telemetryName)
+            metric?.emit(e.data)
+        } catch (error) {
+            languageClient.warn(`[VSCode Telemetry] Failed to emit ${telemetryName}: ${error}`)
         }
     })
 }
@@ -729,7 +732,11 @@ async function handlePartialResult<T extends ChatResult>(
     // This is to filter out the message containing findings from CodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
-            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+            !(
+                message.messageId !== undefined &&
+                (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                    message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+            )
     )
 
     if (decryptedMessage.body !== undefined) {
@@ -781,7 +788,11 @@ async function handleSecurityFindings(
     }
     for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
         const message = decryptedMessage.additionalMessages[i]
-        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+        if (
+            message.messageId !== undefined &&
+            (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+        ) {
             if (message.body !== undefined) {
                 try {
                     const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
@@ -800,7 +811,12 @@ async function handleSecurityFindings(
                             issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
                         }
                     }
-                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    initSecurityScanRender(
+                        aggregatedCodeScanIssues,
+                        undefined,
+                        CodeAnalysisScope.AGENTIC,
+                        message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix)
+                    )
                     SecurityIssueTreeViewProvider.focus()
                 } catch (e) {
                     languageClient.info('Failed to parse findings')
