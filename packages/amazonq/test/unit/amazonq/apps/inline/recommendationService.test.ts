@@ -16,6 +16,9 @@ import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
 
+const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
+const editApi = 'aws/textDocument/editCompletion'
+
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
     let sendRequestStub: sinon.SinonStub
@@ -144,8 +147,14 @@ describe('RecommendationService', () => {
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledOnce)
-            const requestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 2)
+            assert.strictEqual(completionCalls.length, 1)
+            assert.strictEqual(editCalls.length, 1)
+
+            const requestArgs = completionCalls[0].args[1]
             assert.deepStrictEqual(requestArgs, {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -188,8 +197,14 @@ describe('RecommendationService', () => {
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledTwice)
-            const firstRequestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 3)
+            assert.strictEqual(completionCalls.length, 2)
+            assert.strictEqual(editCalls.length, 1)
+
+            const firstRequestArgs = completionCalls[0].args[1]
             const expectedRequestArgs = {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -199,7 +214,7 @@ describe('RecommendationService', () => {
                 documentChangeParams: undefined,
                 openTabFilepaths: [],
             }
-            const secondRequestArgs = sendRequestStub.secondCall.args[1]
+            const secondRequestArgs = completionCalls[1].args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)
             assert.deepStrictEqual(secondRequestArgs, {
                 ...expectedRequestArgs,

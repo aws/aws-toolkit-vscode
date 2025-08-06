@@ -361,8 +361,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()

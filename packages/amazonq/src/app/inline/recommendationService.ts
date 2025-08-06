@@ -128,24 +128,27 @@ export class RecommendationService {
             // this is a best effort estimate of deletion
             const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
 
-            const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
-                request,
-                token
-            )
+            const ps: Promise<InlineCompletionListWithReferences>[] = []
+            if (!isTriggerByDeletion && !request.partialResultToken) {
+                const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                    inlineCompletionWithReferencesRequestType.method,
+                    request,
+                    token
+                )
+                ps.push(completionPromise)
+            }
 
             const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
                 editCompletionRequestType.method,
                 request,
                 token
             )
-
-            const p = isTriggerByDeletion ? [editPromise] : [editPromise, completionPromise]
+            ps.push(editPromise)
 
             getLogger().debug('Skip auto trigger of completion when deleting code')
 
-            let result = await Promise.race(p)
-            if (p.length > 1 && result.items.length === 0) {
+            let result = await Promise.race(ps)
+            if (ps.length > 1 && result.items.length === 0) {
                 result = await editPromise
             }
 
