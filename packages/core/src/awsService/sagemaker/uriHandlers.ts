@@ -18,7 +18,8 @@ export function register(ctx: ExtContext) {
                 params.session,
                 `${params.ws_url}&cell-number=${params['cell-number']}`,
                 params.token,
-                params.domain
+                params.domain,
+                params.app_type
             )
         })
     }
@@ -34,7 +35,8 @@ export function parseConnectParams(query: SearchParams) {
         'session',
         'ws_url',
         'cell-number',
-        'token'
+        'token',
+        'app_type'
     )
     return params
 }
