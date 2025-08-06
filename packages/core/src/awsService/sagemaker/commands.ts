@@ -86,7 +86,7 @@ export async function deeplinkConnect(
     wsUrl: string,
     token: string,
     domain: string,
-    appType: string
+    appType?: string
 ) {
     getLogger().debug(
         `sm:deeplinkConnect: connectionIdentifier: ${connectionIdentifier} session: ${session} wsUrl: ${wsUrl} token: ${token}`

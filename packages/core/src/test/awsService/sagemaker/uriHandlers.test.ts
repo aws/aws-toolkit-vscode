@@ -56,5 +56,29 @@ describe('SageMaker URI handler', function () {
         assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[3], 'wss://example.com&cell-number=4')
         assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[4], 'my-token')
         assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[5], 'my-domain')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[6], 'jupyterlab')
+    })
+
+    it('calls deeplinkConnect with undefined app_type when not provided', async function () {
+        const params = {
+            connection_identifier: 'abc123',
+            domain: 'my-domain',
+            user_profile: 'me',
+            session: 'sess-xyz',
+            ws_url: 'wss://example.com',
+            'cell-number': '4',
+            token: 'my-token',
+        }
+
+        const uri = createConnectUri(params)
+        await handler.handleUri(uri)
+
+        assert.ok(deeplinkConnectStub.calledOnce)
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[1], 'abc123')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[2], 'sess-xyz')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[3], 'wss://example.com&cell-number=4')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[4], 'my-token')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[5], 'my-domain')
+        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[6], undefined)
     })
 })

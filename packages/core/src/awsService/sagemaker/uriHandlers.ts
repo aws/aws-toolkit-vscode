@@ -28,15 +28,16 @@ export function register(ctx: ExtContext) {
 }
 
 export function parseConnectParams(query: SearchParams) {
-    const params = query.getFromKeysOrThrow(
+    const requiredParams = query.getFromKeysOrThrow(
         'connection_identifier',
         'domain',
         'user_profile',
         'session',
         'ws_url',
         'cell-number',
-        'token',
-        'app_type'
+        'token'
     )
-    return params
+    const optionalParams = query.getFromKeys('app_type')
+
+    return { ...requiredParams, ...optionalParams }
 }
