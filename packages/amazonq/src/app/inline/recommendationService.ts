@@ -126,13 +126,13 @@ export class RecommendationService {
             await sleep(1)
             // prevent user deletion invoking auto trigger
             // this is a best effort estimate of deletion
-            // const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
+            const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
 
-            // const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-            //     inlineCompletionWithReferencesRequestType.method,
-            //     request,
-            //     token
-            // )
+            const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                inlineCompletionWithReferencesRequestType.method,
+                request,
+                token
+            )
 
             const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
                 editCompletionRequestType.method,
@@ -140,17 +140,14 @@ export class RecommendationService {
                 token
             )
 
-            // const p = isTriggerByDeletion ? [editPromise] : [editPromise, completionPromise]
-            const p = [editPromise]
+            const p = isTriggerByDeletion ? [editPromise] : [editPromise, completionPromise]
+
             getLogger().debug('Skip auto trigger of completion when deleting code')
 
             let result = await Promise.race(p)
-            // const result = await editPromise
-            // if (p.length > 1 && result.items.length === 0) {
-            //     result = await editPromise
-            // }
-
-            // const result = await editPromise
+            if (p.length > 1 && result.items.length === 0) {
+                result = await editPromise
+            }
 
             getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
