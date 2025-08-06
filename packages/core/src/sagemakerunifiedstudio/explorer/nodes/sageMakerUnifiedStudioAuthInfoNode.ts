@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { SmusAuthenticationProvider } from '../../auth/smusAuthenticationProvider'
 
 /**
  * Node representing the SageMaker Unified Studio authentication information
@@ -13,26 +13,73 @@ import { DataZoneClient } from '../../shared/client/datazoneClient'
 export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
     public readonly id = 'smusAuthInfoNode'
     public readonly resource = {}
+    private readonly authProvider: SmusAuthenticationProvider
 
-    constructor() {}
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+
+    constructor() {
+        this.authProvider = SmusAuthenticationProvider.fromContext()
+
+        // Subscribe to auth provider connection changes to refresh the node
+        this.authProvider.onDidChange(() => {
+            this.onDidChangeEmitter.fire()
+        })
+    }
 
     public getTreeItem(): vscode.TreeItem {
-        // Get the domain ID and region from DataZoneClient
-        const datazoneClient = DataZoneClient.getInstance()
-        const domainId = datazoneClient.getDomainId() || 'Unknown'
-        const region = datazoneClient.getRegion() || 'Unknown'
+        // Use the cached authentication provider to check connection status
+        const isConnected = this.authProvider.isConnected()
+        const isValid = this.authProvider.isConnectionValid()
 
-        // Create a more concise display
-        const item = new vscode.TreeItem(`Domain: ${domainId}`, vscode.TreeItemCollapsibleState.None)
+        // Get the domain ID and region from auth provider
+        let domainId = 'Unknown'
+        let region = 'Unknown'
 
-        // Add region as description (appears to the right)
-        item.description = `Region: ${region}`
+        if (isConnected && this.authProvider.activeConnection) {
+            const conn = this.authProvider.activeConnection
+            domainId = conn.domainId || 'Unknown'
+            region = conn.ssoRegion || 'Unknown'
+        }
 
-        // Add full information as tooltip
-        item.tooltip = `Connected to SageMaker Unified Studio\nDomain ID: ${domainId}\nRegion: ${region}`
+        // Create display based on connection status
+        let label: string
+        let iconPath: vscode.ThemeIcon
+        let tooltip: string
 
+        if (isConnected && isValid) {
+            label = `Domain: ${domainId}`
+            iconPath = new vscode.ThemeIcon('key', new vscode.ThemeColor('charts.green'))
+            tooltip = `Connected to SageMaker Unified Studio\nDomain ID: ${domainId}\nRegion: ${region}\nStatus: Connected`
+        } else if (isConnected && !isValid) {
+            label = `Domain: ${domainId} (Expired) - Click to reauthenticate`
+            iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
+            tooltip = `Connection to SageMaker Unified Studio has expired\nDomain ID: ${domainId}\nRegion: ${region}\nStatus: Expired - Click to reauthenticate`
+        } else {
+            label = 'Not Connected'
+            iconPath = new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('charts.red'))
+            tooltip = 'Not connected to SageMaker Unified Studio\nPlease sign in to access your projects'
+        }
+
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None)
+
+        // Add region as description (appears to the right) if connected
+        if (isConnected) {
+            item.description = region
+        }
+
+        // Add command for reauthentication when connection is expired
+        if (isConnected && !isValid) {
+            item.command = {
+                command: 'aws.smus.reauthenticate',
+                title: 'Reauthenticate',
+                arguments: [this.authProvider.activeConnection],
+            }
+        }
+
+        item.tooltip = tooltip
         item.contextValue = 'smusAuthInfo'
-        item.iconPath = new vscode.ThemeIcon('key')
+        item.iconPath = iconPath
         return item
     }
 

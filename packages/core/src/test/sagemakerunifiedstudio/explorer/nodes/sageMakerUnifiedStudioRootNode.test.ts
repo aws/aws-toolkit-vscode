@@ -18,6 +18,7 @@ import {
     resetDefaultDatazoneDomainId,
 } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/smusAuthenticationProvider'
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 
 describe('SmusRootNode', function () {
@@ -33,7 +34,15 @@ describe('SmusRootNode', function () {
     }
 
     beforeEach(function () {
-        rootNode = new SageMakerUnifiedStudioRootNode()
+        // Create a mock auth provider
+        const mockAuthProvider = {
+            isConnected: sinon.stub().returns(true),
+            isConnectionValid: sinon.stub().returns(true),
+            activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+        } as any
+
+        rootNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
 
         // Set mock domain ID
         setDefaultDatazoneDomainId(testDomainId)
@@ -55,7 +64,15 @@ describe('SmusRootNode', function () {
 
     describe('constructor', function () {
         it('should initialize id and resource properties', function () {
-            const node = new SageMakerUnifiedStudioRootNode()
+            // Create a mock auth provider
+            const mockAuthProvider = {
+                isConnected: sinon.stub().returns(true),
+                isConnectionValid: sinon.stub().returns(true),
+                activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+            } as any
+
+            const node = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
             assert.strictEqual(node.id, 'smusRootNode')
             assert.strictEqual(node.resource, node)
             assert.ok(node.getAuthInfoNode() instanceof SageMakerUnifiedStudioAuthInfoNode)
@@ -71,16 +88,22 @@ describe('SmusRootNode', function () {
 
             assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
-            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot')
+            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot.authenticated')
             assert.strictEqual(treeItem.description, 'Connected')
             assert.ok(treeItem.iconPath)
         })
 
         it('returns correct tree item when not authenticated', async function () {
-            // Mock empty domain ID to simulate unauthenticated state
-            mockDataZoneClient.getDomainId.returns('')
+            // Create a mock auth provider for unauthenticated state
+            const mockAuthProvider = {
+                isConnected: sinon.stub().returns(false),
+                isConnectionValid: sinon.stub().returns(false),
+                activeConnection: null,
+                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+            } as any
 
-            const treeItem = rootNode.getTreeItem()
+            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const treeItem = unauthenticatedNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
@@ -92,10 +115,16 @@ describe('SmusRootNode', function () {
 
     describe('getChildren', function () {
         it('returns login node when not authenticated (empty domain ID)', async function () {
-            // Mock empty domain ID to simulate unauthenticated state
-            mockDataZoneClient.getDomainId.returns('')
+            // Create a mock auth provider for unauthenticated state
+            const mockAuthProvider = {
+                isConnected: sinon.stub().returns(false),
+                isConnectionValid: sinon.stub().returns(false),
+                activeConnection: null,
+                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+            } as any
 
-            const children = await rootNode.getChildren()
+            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const children = await unauthenticatedNode.getChildren()
 
             assert.strictEqual(children.length, 2)
             assert.strictEqual(children[0].id, 'smusLogin')
@@ -121,11 +150,16 @@ describe('SmusRootNode', function () {
         })
 
         it('returns login node when DataZone client throws error', async function () {
-            // Restore the existing stub and create a new one that throws
-            sinon.restore()
-            sinon.stub(DataZoneClient, 'getInstance').throws(new Error('Client initialization failed'))
+            // Create a mock auth provider that throws an error
+            const mockAuthProvider = {
+                isConnected: sinon.stub().throws(new Error('Auth provider error')),
+                isConnectionValid: sinon.stub().returns(false),
+                activeConnection: undefined,
+                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+            } as any
 
-            const children = await rootNode.getChildren()
+            const errorNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const children = await errorNode.getChildren()
 
             assert.strictEqual(children.length, 2)
             assert.strictEqual(children[0].id, 'smusLogin')
@@ -224,6 +258,13 @@ describe('SelectSMUSProject', function () {
 
         // Stub DataZoneClient static methods
         sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+
+        // Stub SmusAuthenticationProvider
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            isConnected: sinon.stub().returns(true),
+            isConnectionValid: sinon.stub().returns(true),
+            activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+        } as any)
 
         // Stub quickPick
         const mockQuickPick = {

@@ -15,6 +15,8 @@ import {
     S3PropertiesOutput,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
+import { ToolkitError } from '../../../shared/errors'
+import fetch from 'node-fetch'
 
 /**
  * Represents a DataZone project
@@ -76,6 +78,23 @@ export interface DataZoneConnection {
         awsAccountId?: string
         iamConnectionId?: string
     }
+}
+
+/**
+ * Represents SSO instance information retrieved from DataZone
+ */
+export interface SsoInstanceInfo {
+    issuerUrl: string
+    ssoInstanceId: string
+    clientId: string
+    region: string
+}
+
+/**
+ * Response from DataZone /sso/login endpoint
+ */
+interface DataZoneSsoLoginResponse {
+    redirectUrl: string
 }
 
 // Default values, input your domain id here
@@ -226,6 +245,104 @@ export class DataZoneClient {
     }
 
     /**
+     * Makes HTTP call to DataZone /sso/login endpoint
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @param domainId The extracted domain ID
+     * @returns Promise resolving to the login response
+     * @throws ToolkitError if the API call fails
+     */
+    private async callDataZoneLogin(domainUrl: string, domainId: string): Promise<DataZoneSsoLoginResponse> {
+        const loginUrl = new URL('/sso/login', domainUrl)
+        const requestBody = {
+            domainId: domainId,
+        }
+
+        const response = await fetch(loginUrl.toString(), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'User-Agent': 'aws-toolkit-vscode',
+            },
+            body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+            throw new ToolkitError(`DataZone login failed: ${response.status} ${response.statusText}`, {
+                code: 'DataZoneLoginFailed',
+            })
+        }
+
+        return (await response.json()) as DataZoneSsoLoginResponse
+    }
+
+    /**
+     * Gets SSO instance information by calling DataZone /sso/login endpoint
+     * This extracts the proper SSO instance ID and issuer URL needed for OAuth client registration
+     *
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns Promise resolving to SSO instance information
+     * @throws ToolkitError if the API call fails or response is invalid
+     */
+    public async getSsoInstanceInfo(domainUrl: string): Promise<SsoInstanceInfo> {
+        try {
+            this.logger.info(`SMUS Auth: Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
+            // Extract domain ID from the domain URL
+            const domainId = this.extractDomainIdFromUrl(domainUrl)
+            if (!domainId) {
+                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+            }
+
+            // Call DataZone /sso/login endpoint to get redirect URL with SSO instance info
+            const loginData = await this.callDataZoneLogin(domainUrl, domainId)
+            if (!loginData.redirectUrl) {
+                throw new ToolkitError('No redirect URL received from DataZone login', { code: 'InvalidLoginResponse' })
+            }
+
+            // Parse the redirect URL to extract SSO instance information
+            const redirectUrl = new URL(loginData.redirectUrl)
+            const clientIdParam = redirectUrl.searchParams.get('client_id')
+            if (!clientIdParam) {
+                throw new ToolkitError('No client_id found in DataZone redirect URL', { code: 'InvalidRedirectUrl' })
+            }
+
+            // Decode the client_id ARN: arn:aws:sso::1234567890:application/ssoins-instanceid/abc-12ab34de
+            const decodedClientId = decodeURIComponent(clientIdParam)
+            const arnParts = decodedClientId.split('/')
+            if (arnParts.length < 2) {
+                throw new ToolkitError('Invalid client_id ARN format', { code: 'InvalidArnFormat' })
+            }
+
+            const ssoInstanceId = arnParts[1] // Extract ssoins-6684636af7e1a207
+            const issuerUrl = `https://identitycenter.amazonaws.com/${ssoInstanceId}`
+
+            // Extract region from domain URL
+            const region = this.extractRegionFromUrl(domainUrl)
+
+            this.logger.info('SMUS Auth: Extracted SSO instance info: %s', ssoInstanceId)
+
+            return {
+                issuerUrl,
+                ssoInstanceId,
+                clientId: decodedClientId,
+                region,
+            }
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+            this.logger.error('SMUS Auth: Failed to get SSO instance info: %s', errorMsg)
+
+            if (error instanceof ToolkitError) {
+                throw error
+            }
+
+            throw new ToolkitError(`Failed to get SSO instance info: ${errorMsg}`, {
+                code: 'SsoInstanceInfoFailed',
+                cause: error instanceof Error ? error : undefined,
+            })
+        }
+    }
+
+    /**
      * Gets the default tooling environment credentials for a DataZone project
      * @param domainId The DataZone domain identifier
      * @param projectId The DataZone project identifier
@@ -307,6 +424,97 @@ export class DataZoneClient {
             }
         }
         return this.datazoneClient
+    }
+
+    /**
+     * Extracts the domain ID from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns The extracted domain ID or undefined if not found
+     */
+    private extractDomainIdFromUrl(domainUrl: string): string | undefined {
+        try {
+            // Domain URL format: https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
+            const url = new URL(domainUrl)
+            const hostname = url.hostname
+
+            // Extract domain ID from hostname (dzd_d3hr1nfjbtwui1 or dzd-d3hr1nfjbtwui1)
+            const domainIdMatch = hostname.match(/^(dzd[-_][a-zA-Z0-9_-]{1,36})\./)
+            return domainIdMatch?.[1]
+        } catch (error) {
+            this.logger.error('Failed to extract domain ID from URL: %s', error as Error)
+            return undefined
+        }
+    }
+
+    /**
+     * Extracts the AWS region from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns The extracted AWS region or the default region if not found
+     */
+    private extractRegionFromUrl(domainUrl: string): string {
+        try {
+            // Domain URL format: https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
+            const url = new URL(domainUrl)
+            const hostname = url.hostname
+
+            // Extract region from hostname (us-east-2)
+            const regionMatch = hostname.match(/\.sagemaker\.([a-z0-9-]+)\.on\.aws$/)
+            return regionMatch?.[1] || this.region
+        } catch (error) {
+            this.logger.error('Failed to extract region from URL: %s', error as Error)
+            return this.region
+        }
+    }
+
+    /**
+     * Extracts both domain ID and region from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns Object containing domainId and region
+     */
+    public extractDomainInfoFromUrl(domainUrl: string): { domainId: string | undefined; region: string } {
+        return {
+            domainId: this.extractDomainIdFromUrl(domainUrl),
+            region: this.extractRegionFromUrl(domainUrl),
+        }
+    }
+
+    /**
+     * Validates the domain URL format for SageMaker Unified Studio
+     * @param value The URL to validate
+     * @returns Error message if invalid, undefined if valid
+     */
+    public validateDomainUrl(value: string): string | undefined {
+        if (!value || value.trim() === '') {
+            return 'Domain URL is required'
+        }
+
+        const trimmedValue = value.trim()
+
+        // Check HTTPS requirement
+        if (!trimmedValue.startsWith('https://')) {
+            return 'Domain URL must use HTTPS (https://)'
+        }
+
+        // Check basic URL format
+        try {
+            const url = new URL(trimmedValue)
+
+            // Check if it looks like a SageMaker Unified Studio domain
+            if (!url.hostname.includes('sagemaker') || !url.hostname.includes('on.aws')) {
+                return 'URL must be a valid SageMaker Unified Studio domain (e.g., https://dzd_xxxxxxxxx.sagemaker.us-east-1.on.aws)'
+            }
+
+            // Extract domain ID to validate
+            const domainId = this.extractDomainIdFromUrl(trimmedValue)
+
+            if (!domainId) {
+                return 'URL must contain a valid domain ID (starting with dzd- or dzd_)'
+            }
+
+            return undefined // Valid
+        } catch (err) {
+            return 'Invalid URL format'
+        }
     }
 
     /**

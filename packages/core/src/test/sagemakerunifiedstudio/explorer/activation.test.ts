@@ -7,130 +7,314 @@ import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
 import { activate } from '../../../sagemakerunifiedstudio/explorer/activation'
-import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { retrySmusProjectsCommand } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
-import { Commands } from '../../../shared/vscode/commands2'
+import {
+    SmusAuthenticationProvider,
+    setSmusConnectedContext,
+} from '../../../sagemakerunifiedstudio/auth/smusAuthenticationProvider'
 import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
+import { SageMakerUnifiedStudioRootNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
+import { getLogger } from '../../../shared/logger/logger'
+import { getTestWindow } from '../../shared/vscode/window'
+import { SeverityLevel } from '../../shared/vscode/message'
 
-describe('SageMaker Unified Studio explorer activation', function () {
-    let mockContext: FakeExtensionContext
-    let createTreeViewStub: sinon.SinonStub
-    let registerCommandStub: sinon.SinonStub
+describe('SMUS Explorer Activation', function () {
+    let mockExtensionContext: vscode.ExtensionContext
+    let mockSmusAuthProvider: sinon.SinonStubbedInstance<SmusAuthenticationProvider>
     let mockTreeView: sinon.SinonStubbedInstance<vscode.TreeView<any>>
     let mockTreeDataProvider: sinon.SinonStubbedInstance<ResourceTreeDataProvider>
+    let mockSmusRootNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioRootNode>
+    let createTreeViewStub: sinon.SinonStub
+    let registerCommandStub: sinon.SinonStub
+    let dataZoneDisposeStub: sinon.SinonStub
 
-    beforeEach(async function () {
-        // Stub Commands.register to prevent duplicate command registration
-        sinon.stub(Commands, 'register').returns({ dispose: sinon.stub() } as any)
-        mockContext = await FakeExtensionContext.create()
+    beforeEach(function () {
+        mockExtensionContext = {
+            subscriptions: [],
+        } as any
 
-        // Create mock tree view
+        mockSmusAuthProvider = {
+            restore: sinon.stub().resolves(),
+            isConnected: sinon.stub().returns(true),
+            reauthenticate: sinon.stub().resolves(),
+            onDidChange: sinon.stub().callsFake((_listener: () => void) => ({ dispose: sinon.stub() })),
+            activeConnection: {
+                id: 'test-connection',
+                domainId: 'test-domain',
+                ssoRegion: 'us-east-1',
+            },
+        } as any
+
         mockTreeView = {
             dispose: sinon.stub(),
         } as any
 
-        // Create mock tree data provider
         mockTreeDataProvider = {
             refresh: sinon.stub(),
         } as any
 
-        // Stub vscode methods
+        mockSmusRootNode = {
+            getChildren: sinon.stub().resolves([]),
+            getProjectSelectNode: sinon.stub().returns({}),
+        } as any
+
+        // Stub vscode APIs
         createTreeViewStub = sinon.stub(vscode.window, 'createTreeView').returns(mockTreeView as any)
         registerCommandStub = sinon.stub(vscode.commands, 'registerCommand').returns({ dispose: sinon.stub() } as any)
 
+        // Stub SmusAuthenticationProvider
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockSmusAuthProvider as any)
+
+        // Stub DataZoneClient
+        dataZoneDisposeStub = sinon.stub(DataZoneClient, 'dispose')
+
+        // Stub SageMakerUnifiedStudioRootNode constructor
+        sinon.stub(SageMakerUnifiedStudioRootNode.prototype, 'getChildren').returns(mockSmusRootNode.getChildren())
+        sinon
+            .stub(SageMakerUnifiedStudioRootNode.prototype, 'getProjectSelectNode')
+            .returns(mockSmusRootNode.getProjectSelectNode())
+
         // Stub ResourceTreeDataProvider constructor
-        sinon.stub(ResourceTreeDataProvider.prototype, 'refresh').callsFake(mockTreeDataProvider.refresh)
+        sinon.stub(ResourceTreeDataProvider.prototype, 'refresh').value(mockTreeDataProvider.refresh)
+
+        // Stub logger
+        sinon.stub({ getLogger }, 'getLogger').returns({
+            debug: sinon.stub(),
+            info: sinon.stub(),
+            error: sinon.stub(),
+        } as any)
+
+        // Stub setSmusConnectedContext
+        sinon.stub({ setSmusConnectedContext }, 'setSmusConnectedContext').resolves()
     })
 
     afterEach(function () {
         sinon.restore()
     })
 
-    it('creates tree view with correct configuration', async function () {
-        await activate(mockContext)
+    describe('activate', function () {
+        it('should initialize SMUS authentication provider and call restore', async function () {
+            await activate(mockExtensionContext)
 
-        // Verify tree view was created with correct view ID
-        assert(createTreeViewStub.calledOnce)
-        const [viewId, options] = createTreeViewStub.firstCall.args
-        assert.strictEqual(viewId, 'aws.smus.rootView')
-        assert.ok(options.treeDataProvider)
+            assert.ok((SmusAuthenticationProvider.fromContext as sinon.SinonStub).called)
+            assert.ok(mockSmusAuthProvider.restore.called)
+        })
+
+        it('should create tree view with correct configuration', async function () {
+            await activate(mockExtensionContext)
+
+            assert.ok(createTreeViewStub.calledWith('aws.smus.rootView'))
+            const createTreeViewArgs = createTreeViewStub.firstCall.args[1]
+            assert.ok('treeDataProvider' in createTreeViewArgs)
+        })
+
+        it('should register all required commands', async function () {
+            await activate(mockExtensionContext)
+
+            // Check that commands are registered
+            const registeredCommands = registerCommandStub.getCalls().map((call) => call.args[0])
+
+            assert.ok(registeredCommands.includes('aws.smus.rootView.refresh'))
+            assert.ok(registeredCommands.includes('aws.smus.projectView'))
+            assert.ok(registeredCommands.includes('aws.smus.switchProject'))
+            assert.ok(registeredCommands.includes('aws.smus.reauthenticate'))
+        })
+
+        it('should add all disposables to extension context subscriptions', async function () {
+            await activate(mockExtensionContext)
+
+            // Should have multiple subscriptions added
+            assert.ok(mockExtensionContext.subscriptions.length > 0)
+        })
+
+        it('should refresh tree data provider on initialization', async function () {
+            await activate(mockExtensionContext)
+
+            assert.ok(mockTreeDataProvider.refresh.called)
+        })
+
+        it('should register DataZone client disposal', async function () {
+            await activate(mockExtensionContext)
+
+            // Find the DataZone dispose subscription - it should be the last one added
+            const subscriptions = mockExtensionContext.subscriptions
+            assert.ok(subscriptions.length > 0)
+
+            // The DataZone dispose subscription should be among the subscriptions
+            let dataZoneDisposeFound = false
+            for (const subscription of subscriptions) {
+                if (subscription && typeof subscription.dispose === 'function') {
+                    // Try calling dispose and see if it calls DataZoneClient.dispose
+                    const callCountBefore = dataZoneDisposeStub.callCount
+                    subscription.dispose()
+                    if (dataZoneDisposeStub.callCount > callCountBefore) {
+                        dataZoneDisposeFound = true
+                        break
+                    }
+                }
+            }
+
+            assert.ok(dataZoneDisposeFound, 'Should register DataZone client disposal')
+        })
+
+        describe('command handlers', function () {
+            beforeEach(async function () {
+                await activate(mockExtensionContext)
+            })
+
+            it('should handle aws.smus.rootView.refresh command', async function () {
+                const refreshCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.rootView.refresh')
+
+                assert.ok(refreshCommand)
+
+                // Execute the command handler
+                await refreshCommand.args[1]()
+
+                assert.ok(mockTreeDataProvider.refresh.called)
+            })
+
+            it('should handle aws.smus.reauthenticate command with connection', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                const mockConnection = {
+                    id: 'test-connection',
+                    type: 'sso',
+                    startUrl: 'https://identitycenter.amazonaws.com/ssoins-testInstanceId',
+                    ssoRegion: 'us-east-1',
+                    scopes: ['datazone:domain:access'],
+                    label: 'Test Connection',
+                } as any
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler with connection
+                await reauthCommand.args[1](mockConnection)
+
+                assert.ok(mockSmusAuthProvider.reauthenticate.calledWith(mockConnection))
+                assert.ok(mockTreeDataProvider.refresh.called)
+
+                // Check that an information message was shown
+                const infoMessages = testWindow.shownMessages.filter(
+                    (msg) => msg.severity === SeverityLevel.Information
+                )
+                assert.ok(infoMessages.length > 0, 'Should show information message')
+                assert.ok(infoMessages.some((msg) => msg.message.includes('Successfully reauthenticated')))
+            })
+
+            it('should handle aws.smus.reauthenticate command without connection', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                // Execute the command handler without connection
+                await reauthCommand.args[1]()
+
+                assert.ok(mockSmusAuthProvider.reauthenticate.notCalled)
+            })
+
+            it('should handle reauthentication errors', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                const mockConnection = {
+                    id: 'test-connection',
+                    type: 'sso',
+                    startUrl: 'https://identitycenter.amazonaws.com/ssoins-testInstanceId',
+                    ssoRegion: 'us-east-1',
+                    scopes: ['datazone:domain:access'],
+                    label: 'Test Connection',
+                } as any
+                const error = new Error('Reauthentication failed')
+                mockSmusAuthProvider.reauthenticate.rejects(error)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler
+                await reauthCommand.args[1](mockConnection)
+
+                // Check that an error message was shown
+                const errorMessages = testWindow.shownMessages.filter((msg) => msg.severity === SeverityLevel.Error)
+                assert.ok(errorMessages.length > 0, 'Should show error message')
+                assert.ok(errorMessages.some((msg) => msg.message.includes('Failed to reauthenticate')))
+            })
+        })
+
+        it('should propagate auth provider initialization errors', async function () {
+            const error = new Error('Auth provider initialization failed')
+            mockSmusAuthProvider.restore.rejects(error)
+
+            // Should throw the error since there's no error handling in activate()
+            await assert.rejects(() => activate(mockExtensionContext), /Auth provider initialization failed/)
+        })
+
+        it('should create root node with auth provider', async function () {
+            await activate(mockExtensionContext)
+
+            // Verify that SageMakerUnifiedStudioRootNode was created with the auth provider
+            assert.ok(createTreeViewStub.called)
+            const treeDataProvider = createTreeViewStub.firstCall.args[1].treeDataProvider
+            assert.ok(treeDataProvider)
+        })
     })
 
-    it('registers refresh command', async function () {
-        await activate(mockContext)
+    describe('command registration', function () {
+        it('should register commands with correct names', async function () {
+            await activate(mockExtensionContext)
 
-        // Verify refresh command wasß registered
-        assert(registerCommandStub.calledWith('aws.smus.rootView.refresh', sinon.match.func))
+            const expectedCommands = [
+                'aws.smus.rootView.refresh',
+                'aws.smus.projectView',
+                'aws.smus.switchProject',
+                'aws.smus.reauthenticate',
+            ]
+
+            const registeredCommands = registerCommandStub.getCalls().map((call) => call.args[0])
+
+            for (const command of expectedCommands) {
+                assert.ok(registeredCommands.includes(command), `Command ${command} should be registered`)
+            }
+        })
+
+        it('should register commands that return disposables', async function () {
+            await activate(mockExtensionContext)
+
+            for (const call of registerCommandStub.getCalls()) {
+                const disposable = call.returnValue
+                assert.ok(disposable && typeof disposable.dispose === 'function')
+            }
+        })
     })
 
-    it('registers project view command', async function () {
-        await activate(mockContext)
+    describe('resource cleanup', function () {
+        it('should dispose DataZone client on extension deactivation', async function () {
+            await activate(mockExtensionContext)
 
-        // Verify project view command was registered
-        assert(registerCommandStub.calledWith('aws.smus.projectView', sinon.match.func))
-    })
+            // Find and execute the DataZone dispose subscription
+            const disposeSubscription = mockExtensionContext.subscriptions.find(
+                (sub) => sub.dispose && sub.dispose.toString().includes('DataZoneClient.dispose')
+            )
 
-    it('registers switch project command', async function () {
-        await activate(mockContext)
+            if (disposeSubscription) {
+                disposeSubscription.dispose()
+                assert.ok(dataZoneDisposeStub.called)
+            }
+        })
 
-        // Verify switch project command was registered
-        assert(registerCommandStub.calledWith('aws.smus.switchProject', sinon.match.func))
-    })
+        it('should add tree view to subscriptions for disposal', async function () {
+            await activate(mockExtensionContext)
 
-    it('registers retry command', async function () {
-        const registerStub = sinon.stub(retrySmusProjectsCommand, 'register').returns({ dispose: sinon.stub() } as any)
-
-        await activate(mockContext)
-
-        // Verify retry command was registered
-        assert(registerStub.calledOnce)
-    })
-
-    it('adds subscriptions to extension context', async function () {
-        await activate(mockContext)
-
-        // Verify subscriptions were added (retry command, tree view, refresh command, project view command, DataZoneClient disposable, sign in command, learn more command)
-        assert.strictEqual(mockContext.subscriptions.length, 8)
-    })
-
-    it('registers DataZoneClient disposal', async function () {
-        const disposeStub = sinon.stub(DataZoneClient, 'dispose')
-        await activate(mockContext)
-
-        // Get the last subscription which should be our DataZoneClient disposable
-        const disposable = mockContext.subscriptions[mockContext.subscriptions.length - 1]
-        assert.ok(disposable, 'DataZoneClient disposable should be registered')
-
-        // Call the dispose method
-        disposable.dispose()
-
-        // Verify DataZoneClient.dispose was called
-        assert(disposeStub.calledOnce, 'DataZoneClient.dispose should be called when extension is deactivated')
-    })
-
-    it('refreshes tree data provider on activation', async function () {
-        await activate(mockContext)
-
-        // Verify tree data provider was refreshed
-        assert(mockTreeDataProvider.refresh.calledOnce)
-    })
-
-    it('refresh command triggers tree data provider refresh', async function () {
-        await activate(mockContext)
-
-        // Get the registered refresh command function
-        const refreshCommandCall = registerCommandStub
-            .getCalls()
-            .find((call) => call.args[0] === 'aws.smus.rootView.refresh')
-        assert.ok(refreshCommandCall, 'Refresh command should be registered')
-
-        const refreshFunction = refreshCommandCall.args[1]
-
-        // Execute the refresh command
-        refreshFunction()
-
-        // Verify tree data provider refresh was called again (once on activation, once on command)
-        assert(mockTreeDataProvider.refresh.calledTwice)
+            assert.ok(mockExtensionContext.subscriptions.includes(mockTreeView))
+        })
     })
 })

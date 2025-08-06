@@ -7,16 +7,13 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
-import {
-    DataZoneClient,
-    setDefaultDatazoneDomainId,
-    setDefaultDataZoneRegion,
-} from '../../shared/client/datazoneClient'
+import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
+import { SmusAuthenticationProvider } from '../../auth/smusAuthenticationProvider'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -35,9 +32,14 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
-    constructor() {
+    public constructor(private readonly authProvider: SmusAuthenticationProvider) {
         this.authInfoNode = new SageMakerUnifiedStudioAuthInfoNode()
         this.projectNode = new SageMakerUnifiedStudioProjectNode()
+
+        // Subscribe to auth provider connection changes to refresh the node
+        this.authProvider.onDidChange(() => {
+            this.onDidChangeEmitter.fire()
+        })
     }
 
     public getProjectSelectNode(): SageMakerUnifiedStudioProjectNode {
@@ -53,24 +55,47 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
     }
 
     /**
-     * Checks if the user is authenticated to SageMaker Unified Studio
-     * Currently checks if domain ID is configured - will be enhanced in later tasks
+     * Checks if the user has authenticated to SageMaker Unified Studio
+     * This is validated by checking existing Connections for SMUS.
      */
     private isAuthenticated(): boolean {
         try {
-            const datazoneClient = DataZoneClient.getInstance()
-            const domainId = datazoneClient.getDomainId()
-            // For now, consider authenticated if domain ID is set
-            // This will be replaced with proper authentication state detection in later tasks
-            return Boolean(domainId && domainId.trim() !== '')
+            // Check if the connection is valid using the authentication provider
+            const result = this.authProvider.isConnectionValid()
+            getLogger().debug(`SMUS Root Node: Authentication check result: ${result}`)
+            return result
         } catch (err) {
-            getLogger().debug('Authentication check failed: %s', (err as Error).message)
+            getLogger().error('Authentication check failed: %s', (err as Error).message)
+            return false
+        }
+    }
+
+    private hasExpiredConnection(): boolean {
+        try {
+            // Check if there's an active connection but it's expired
+            const hasExpiredConnection = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
+
+            if (hasExpiredConnection) {
+                // Show reauthentication prompt to user
+                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection!)
+                return true
+            }
+
+            return false
+        } catch (err) {
+            getLogger().error('Failed to check expired connection: %s', (err as Error).message)
             return false
         }
     }
 
     public async getChildren(): Promise<TreeNode[]> {
-        // Check authentication state first
+        // Check for expired connection first
+        if (this.hasExpiredConnection()) {
+            // Show auth info node with expired indication
+            return [this.authInfoNode] // This will show expired connection info
+        }
+
+        // Check authentication state
         if (!this.isAuthenticated()) {
             // Show login option and learn more link when not authenticated
             return [
@@ -116,16 +141,23 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             ]
         }
 
+        // When authenticated, show auth info and projects
         return [this.authInfoNode, this.projectNode]
     }
 
     public getTreeItem(): vscode.TreeItem {
         const item = new vscode.TreeItem('SageMaker Unified Studio', vscode.TreeItemCollapsibleState.Expanded)
-        item.contextValue = contextValueSmusRoot
+        const isAuth = this.isAuthenticated()
+        const hasExpired = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
+
+        // Set context value based on authentication state for context menu
+        item.contextValue = isAuth ? `${contextValueSmusRoot}.authenticated` : contextValueSmusRoot
         item.iconPath = getIcon('vscode-database')
 
         // Set description based on authentication state
-        if (!this.isAuthenticated()) {
+        if (hasExpired) {
+            item.description = 'Connection expired'
+        } else if (!isAuth) {
             item.description = 'Not authenticated'
         } else {
             item.description = 'Connected'
@@ -168,12 +200,15 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
 export const smusLoginCommand = Commands.declare('aws.smus.login', () => async () => {
     const logger = getLogger()
     try {
+        // Get DataZoneClient instance for URL validation
+        const dataZoneClient = DataZoneClient.getInstance()
+
         // Show domain URL input dialog
         const domainUrl = await vscode.window.showInputBox({
             title: 'SageMaker Unified Studio Authentication',
             prompt: 'Enter your SageMaker Unified Studio Domain URL',
             placeHolder: 'https://<dzd_xxxxxxxxx>.sagemaker.<region>.on.aws',
-            validateInput: validateDomainUrl,
+            validateInput: (value) => dataZoneClient.validateDomainUrl(value),
         })
 
         if (!domainUrl) {
@@ -182,31 +217,47 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
             return
         }
 
-        // Extract domain ID and region from the URL
-        const { domainId, region } = extractDomainInfoFromUrl(domainUrl)
+        // Show a simple status bar message instead of progress dialog
+        vscode.window.setStatusBarMessage('Connecting to SageMaker Unified Studio...', 10000)
 
-        if (!domainId) {
-            void vscode.window.showErrorMessage('Failed to extract domain ID from URL')
-            return
-        }
-
-        logger.info(`Setting domain ID to ${domainId} and region to ${region}`)
-
-        // Set domain ID to simulate authentication
-        setDefaultDatazoneDomainId(domainId)
-        setDefaultDataZoneRegion(region)
-
-        // Show success message
-        void vscode.window.showInformationMessage(
-            `Successfully connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`
-        )
-
-        // Refresh the tree view to show authenticated state
         try {
-            // Try to refresh the tree view using the command
-            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-        } catch (refreshErr) {
-            logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+            // Get the authentication provider instance
+            const authProvider = SmusAuthenticationProvider.fromContext()
+
+            // Connect to SMUS using the authentication provider
+            const connection = await authProvider.connectToSmus(domainUrl)
+
+            if (!connection) {
+                throw new Error('Failed to establish connection')
+            }
+
+            // Extract domain ID and region for logging
+            const domainId = connection.domainId
+            const region = connection.ssoRegion
+
+            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+
+            // Show success message
+            void vscode.window.showInformationMessage(
+                `Successfully connected to SageMaker Unified Studio domain: ${domainId}`
+            )
+
+            // Clear the status bar message
+            vscode.window.setStatusBarMessage('Connected to SageMaker Unified Studio', 3000)
+
+            // Immediately refresh the tree view to show authenticated state
+            try {
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            } catch (refreshErr) {
+                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+            }
+        } catch (connectionErr) {
+            // Clear the status bar message
+            vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
+
+            // Log the error and re-throw to be handled by the outer catch block
+            logger.error('Connection failed: %s', (connectionErr as Error).message)
+            throw connectionErr
         }
 
         // Log telemetry
@@ -226,6 +277,67 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
             name: 'smus_loginAttempted',
             result: 'Failed',
             passive: false,
+        })
+    }
+})
+
+/**
+ * Command to sign out from SageMaker Unified Studio
+ */
+export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => async () => {
+    const logger = getLogger()
+    try {
+        // Get the authentication provider instance
+        const authProvider = SmusAuthenticationProvider.fromContext()
+
+        // Check if there's an active connection to sign out from
+        if (!authProvider.isConnected()) {
+            void vscode.window.showInformationMessage('No active SageMaker Unified Studio connection to sign out from.')
+            return
+        }
+
+        // Get connection details for logging
+        const activeConnection = authProvider.activeConnection
+        const domainId = activeConnection?.domainId
+
+        // Show status message
+        vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
+
+        // Delete the connection (this will also invalidate tokens and clear cache)
+        if (activeConnection) {
+            await authProvider.secondaryAuth.deleteConnection()
+            logger.info(`Signed out from SageMaker Unified Studio${domainId}`)
+        }
+
+        // Show success message
+        void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
+
+        // Clear the status bar message
+        vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
+
+        // Refresh the tree view to show the sign-in state
+        try {
+            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+        } catch (refreshErr) {
+            logger.debug(`Failed to refresh views after sign out: ${(refreshErr as Error).message}`)
+        }
+
+        // Log telemetry
+        telemetry.record({
+            name: 'smus_signOut',
+            result: 'Succeeded',
+            passive: false,
+        })
+    } catch (err) {
+        void vscode.window.showErrorMessage(`SageMaker Unified Studio: Failed to sign out: ${(err as Error).message}`)
+        logger.error('Failed to sign out: %s', (err as Error).message)
+
+        // Log failure telemetry
+        telemetry.record({
+            name: 'smus_signOut',
+            result: 'Failed',
+            passive: false,
+            reason: (err as Error).message,
         })
     }
 })
@@ -278,7 +390,14 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
     getLogger().info('Listing SMUS projects in the domain')
     try {
         const datazoneClient = DataZoneClient.getInstance()
-        const domainId = smusDomainId ? smusDomainId : datazoneClient.getDomainId()
+        const authProvider = SmusAuthenticationProvider.fromContext()
+        const activeConnection = authProvider.activeConnection
+        if (!activeConnection) {
+            logger.error('There is no active connection to display project view')
+            return
+        }
+
+        const domainId = activeConnection.domainId
 
         // Fetching all projects in the specified domain as we have to sort them by updatedAt
         const smusProjects = await datazoneClient.fetchAllProjects({
@@ -321,67 +440,5 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
     } catch (err) {
         logger.error('Failed to select project: %s', (err as Error).message)
         void vscode.window.showErrorMessage(`Failed to select project: ${(err as Error).message}`)
-    }
-}
-/**
- * TODO : Move to helper/utils or auth credential provider.
- * Validates the domain URL format
- * @param value The URL to validate
- * @returns Error message if invalid, undefined if valid
- */
-function validateDomainUrl(value: string): string | undefined {
-    if (!value || value.trim() === '') {
-        return 'Domain URL is required'
-    }
-
-    const trimmedValue = value.trim()
-
-    // Check HTTPS requirement
-    if (!trimmedValue.startsWith('https://')) {
-        return 'Domain URL must use HTTPS (https://)'
-    }
-
-    // Check basic URL format
-    try {
-        const url = new URL(trimmedValue)
-
-        // Check if it looks like a SageMaker Unified Studio domain
-        if (!url.hostname.includes('sagemaker') || !url.hostname.includes('on.aws')) {
-            return 'URL must be a valid SageMaker Unified Studio domain (e.g., https://dzd_xxxxxxxxx.sagemaker.us-east-1.on.aws)'
-        }
-
-        // Check for domain ID pattern in hostname
-        const domainIdMatch = url.hostname.match(/^dzd[-_][a-zA-Z0-9_-]{1,36}/)
-        if (!domainIdMatch) {
-            return 'URL must contain a valid domain ID (starting with dzd- or dzd_)'
-        }
-
-        return undefined // Valid
-    } catch (err) {
-        return 'Invalid URL format'
-    }
-}
-
-/**
- * TODO : Move to helper/utils or auth credential provider.
- * Extracts the domain ID and region from a SageMaker Unified Studio domain URL
- * @param domainUrl The domain URL
- * @returns Object containing domainId and region
- */
-function extractDomainInfoFromUrl(domainUrl: string): { domainId: string; region: string } {
-    try {
-        const url = new URL(domainUrl.trim())
-
-        // Extract domain ID (e.g., dzd_d3hr1nfjbtwui1 or dzd-d3hr1nfjbtwui1)
-        const domainIdMatch = url.hostname.match(/^(dzd[-_][a-zA-Z0-9_-]{1,36})/)
-        const domainId = domainIdMatch ? domainIdMatch[1] : ''
-        // Extract region (e.g., us-east-2)
-        const regionMatch = url.hostname.match(/sagemaker\.([-a-z0-9]+)\.on\.aws/)
-        const region = regionMatch ? regionMatch[1] : 'us-east-1'
-
-        return { domainId, region }
-    } catch (err) {
-        getLogger().debug('Failed to extract domain info from URL: %s', (err as Error).message)
-        return { domainId: '', region: 'us-east-1' } // Return default values instead of empty object
     }
 }

@@ -1334,6 +1334,11 @@
                     "group": "smus@0"
                 },
                 {
+                    "command": "aws.smus.signOut",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "group": "smus@1"
+                },
+                {
                     "command": "aws.toolkit.submitFeedback",
                     "when": "view == aws.explorer && !aws.isWebExtHost",
                     "group": "navigation@6"
@@ -2683,6 +2688,18 @@
                 "title": "%AWS.command.smus.switchProject%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.signOut",
+                "title": "%AWS.command.smus.signOut%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(sign-out)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
