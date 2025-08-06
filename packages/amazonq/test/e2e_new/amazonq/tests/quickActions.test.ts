@@ -28,7 +28,19 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
         await clearChat(webviewView)
     })
 
-    it('Quick Actions Test', async () => {
+    it('/dev Test', async () => {
         await clickQuickActionsCommand(webviewView, 'dev')
+    })
+    it('/doc Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'doc')
+    })
+    it('/transform Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'transform')
+    })
+    it('/test Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'test')
+    })
+    it('/review Test', async () => {
+        await clickQuickActionsCommand(webviewView, 'review')
     })
 })
