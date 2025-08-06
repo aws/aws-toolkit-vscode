@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "add Amazon Q error fix/explain on hover/right-click for VSCode error indicators and messages"
+	"description": "Amazon Q Chat provides error explanations and fixes when hovering or right-clicking on error indicators and messages"
 }
