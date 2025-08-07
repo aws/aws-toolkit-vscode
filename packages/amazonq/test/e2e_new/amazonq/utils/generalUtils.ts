@@ -165,6 +165,34 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
 }
 
 /**
+ * Waits for editor content to stabilize by checking if line count stops changing
+ * @param editor The TextEditor instance
+ * @param timeout Maximum time to wait in milliseconds (default: 15000)
+ * @returns Promise<void>
+ */
+export async function waitForEditorStabilization(editor: TextEditor, timeout = 15000): Promise<void> {
+    const startTime = Date.now()
+    let previousLines = await editor.getNumberOfLines()
+    let stableCount = 0
+
+    while (Date.now() - startTime < timeout) {
+        await sleep(1000)
+        const currentLines = await editor.getNumberOfLines()
+
+        if (currentLines === previousLines) {
+            stableCount++
+            if (stableCount >= 2) {
+                return
+            }
+        } else {
+            stableCount = 0
+        }
+
+        previousLines = currentLines
+    }
+}
+
+/**
  * Finds an item based on the text
  * @param items WebElement array to search
  * @param text The text of the item
