@@ -50,7 +50,8 @@ export async function prepareDevEnvConnection(
     session?: string,
     wsUrl?: string,
     token?: string,
-    domain?: string
+    domain?: string,
+    appType?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -72,7 +73,7 @@ export async function prepareDevEnvConnection(
     if (connectionType === 'sm_lc') {
         await persistLocalCredentials(appArn)
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(appArn, domain ?? '', session, wsUrl, token)
+        await persistSSMConnection(appArn, domain ?? '', session, wsUrl, token, appType)
     }
 
     await startLocalServer(ctx)
