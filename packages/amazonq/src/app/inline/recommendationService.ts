@@ -155,7 +155,12 @@ export class RecommendationService {
 
             let result = await Promise.race(ps)
             if (ps.length > 1 && result.items.length === 0) {
-                result = await editPromise
+                for (const p of ps) {
+                    const r = await p
+                    if (r.items.length > 0) {
+                        result = r
+                    }
+                }
             }
 
             getLogger().info('Received inline completion response from LSP: %O', {
