@@ -153,6 +153,13 @@ export class RecommendationService {
             )
             ps.push(editPromise)
 
+            /**
+             * First come first serve, ideally we should simply return the first response returned. However there are some caviar here because either
+             * (1) promise might be returned early without going through service
+             * (2) some users are not enabled with edits suggestion, therefore service will return empty result without passing through the model
+             * With the scenarios listed above or others, it's possible that 1 promise will ALWAYS win the race and users will NOT get any suggestion back.
+             * This is the hack to return first "NON-EMPTY" response
+             */
             let result = await Promise.race(ps)
             if (ps.length > 1 && result.items.length === 0) {
                 for (const p of ps) {
