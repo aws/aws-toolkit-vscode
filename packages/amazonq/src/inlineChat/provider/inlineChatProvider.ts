@@ -247,7 +247,7 @@ export class InlineChatProvider {
         if (!AuthUtil.instance.isSsoSession()) {
             telemetry.amazonq_messageResponseError.emit({
                 result: 'Failed',
-                cwsprChatConversationType: 'Chat',
+                cwsprChatConversationType: 'InlineChat',
                 cwsprChatRequestLength: message.message?.length ?? 0,
                 cwsprChatResponseCode: 401,
                 cwsprChatTriggerInteraction: triggerInteraction,
