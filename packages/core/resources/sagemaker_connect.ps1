@@ -54,7 +54,7 @@ function Get-SSMSessionInfoAsync {
     $url = "http://localhost:$LocalEndpointPort/get_session_async?connection_identifier=$AwsResourceArn&credentials_type=$CredentialsType&request_id=$requestId"
     Write-Host "Calling Get-SSMSessionInfoAsync with URL: $url"
 
-    $maxRetries = 60
+    $maxRetries = 8
     $retryInterval = 5
 
     for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
