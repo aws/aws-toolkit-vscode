@@ -276,12 +276,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // yield event loop to let the document listen catch updates
         await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
-            return []
-        }
 
         let logstr = `GenerateCompletion metadata:\\n`
         try {
@@ -370,8 +364,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -404,21 +398,24 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
-                    },
+                    }
+                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    this.sessionManager.clear()
+                    logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
+                    return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing
