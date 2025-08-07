@@ -261,7 +261,7 @@
                     @keydown.enter="handleContinueClick()"
                 />
             </div>
-            <div class="title">Access Key</div>
+            <div class="title">Access Key ID</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -270,7 +270,7 @@
                 v-model="accessKey"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Secret Key</div>
+            <div class="title">Secret Access Key</div>
             <input
                 class="iamInput bottomMargin"
                 type="password"
@@ -482,18 +482,6 @@ export default defineComponent({
                     const selectedConnection =
                         this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // // Imported connections cannot be Builder IDs, they are filtered out in the client.
-                    // const error = await client.startEnterpriseSetup(
-                    //     selectedConnection.startUrl,
-                    //     selectedConnection.region,
-                    //     this.app
-                    // )
-                    // if (error) {
-                    //     this.stage = 'START'
-                    //     void client.errorNotification(error)
-                    // } else {
-                    //     this.stage = 'CONNECTED'
-                    // }
                     // Handle both SSO and IAM imported connections
                     if (selectedConnection.type === LoginOption.ENTERPRISE_SSO) {
                         const error = await client.startEnterpriseSetup(
