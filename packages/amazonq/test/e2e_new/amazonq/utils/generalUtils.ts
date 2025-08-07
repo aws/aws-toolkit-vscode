@@ -187,3 +187,23 @@ export async function findItemByText(items: WebElement[], text: string) {
     }
     throw new Error(`Item with text "${text}" not found`)
 }
+
+/**
+ * Prints the HTML content of a web element for debugging purposes
+ * @param element The WebElement to print HTML for
+ */
+export async function printElementHTML(element: WebElement): Promise<void> {
+    const htmlContent = await element.getAttribute('outerHTML')
+
+    const formattedHTML = htmlContent
+        .replace(/></g, '>\n<')
+        .replace(/\s+/g, ' ')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join('\n')
+
+    console.log(`=== HTML CONTENT ===`)
+    console.log(formattedHTML)
+    console.log('=== END HTML ===')
+}

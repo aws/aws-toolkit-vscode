@@ -3,56 +3,48 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import '../utils/setup'
-import {
-    WebviewView,
-    VSBrowser,
-    DefaultTreeSection,
-    ActivityBar,
-    SideBarView,
-    ViewContent,
-    Workbench,
-} from 'vscode-extension-tester'
-import { closeAllTabs } from '../utils/cleanupUtils'
+import { WebviewView, ActivityBar, DefaultTreeSection, SideBarView, VSBrowser } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import * as path from 'path'
-import { clickRulesButton, createRule } from '../helpers/rulesHelper'
+import { createNewRule } from '../helpers/rulesHelper'
+import path from 'path'
+import { sleep } from '../utils/generalUtils'
 
 describe('Amazon Q Rules Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
-    let tree: DefaultTreeSection
-    let content: ViewContent
-    let workbench: Workbench
 
     before(async function () {
-        // switch out of the webview (we assume that the last test was a webview test)
+        // we assume that we've left off on a webview from a previous test
         webviewView = testContext.webviewView
         await webviewView.switchBack()
 
-        // in order to access rules you must have at least 1 folder
+        // the "rules" menu won't show unless we have a folder open
         await VSBrowser.instance.openResources(path.join('..', 'utils', 'resources', 'testFolder'))
         ;(await new ActivityBar().getViewControl('Explorer'))?.openView()
         const view = new SideBarView()
-        content = view.getContent()
-        tree = (await content.getSection('testFolder')) as DefaultTreeSection
+        const content = view.getContent()
+        const tree = (await content.getSection('testFolder')) as DefaultTreeSection
         await tree.openItem('test-folder')
-
-        // once the folder is opened, we switch back to the amazonQ webview
-        workbench = testContext.workbench
+        const workbench = testContext.workbench
         await workbench.executeCommand('Amazon Q: Open Chat')
+
+        // sleep is needed because the workbench needs some time to load
+        await sleep(5000)
+        const activityBar = new ActivityBar()
+        const amazonQControl = await activityBar.getViewControl('Amazon Q')
+        await amazonQControl?.openView()
+
+        // sleep is needed because it takes time to switch to the AmazonQ webview
+        await sleep(5000)
         webviewView = new WebviewView()
         await webviewView.switchToFrame()
         testContext.webviewView = webviewView
     })
 
-    after(async function () {
-        await closeAllTabs(webviewView)
-        await VSBrowser.instance.quit()
-    })
+    after(async function () {})
 
     it('Rules Option Test', async () => {
-        await clickRulesButton(webviewView)
-        await createRule(webviewView)
+        await createNewRule(webviewView, 'testRule')
     })
 })

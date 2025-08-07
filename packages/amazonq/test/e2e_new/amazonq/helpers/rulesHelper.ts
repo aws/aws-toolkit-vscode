@@ -3,56 +3,111 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By } from 'vscode-extension-tester'
-import { waitForElement } from '../utils/generalUtils'
+import { printElementHTML, sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Clicks the Rules button in the top bar
- * @param webviewView The WebviewView instance
+ * @param webview The WebviewView instance
  */
-export async function clickRulesButton(webviewView: WebviewView): Promise<void> {
-    const wrapper = await webviewView.findElement(By.css('.mynah-chat-prompt-wrapper'))
-    const topBar = await wrapper.findElement(By.css('.mynah-prompt-input-top-bar'))
-    console.log('THIS WORKS 1')
-    const buttons = await topBar.findElement(By.css('[data-testid="prompt-input-top-bar-button"]'))
-    console.log('THIS WORKS 2')
-    const button = await buttons.findElement(By.css('*'))
-    console.log('THIS WORKS 3')
-    await button.click()
+export async function clickRulesButton(webview: WebviewView): Promise<void> {
+    const body = await webview.findWebElement(By.css('body'))
+    await printElementHTML(body)
+
+    const chatPromptWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-wrapper'))
+    const topBar = await chatPromptWrapper.findElement(By.css('[data-testid="prompt-input-top-bar"]'))
+    const buttons = await topBar.findElements(By.css('.mynah-button.mynah-button-secondary'))
+
+    for (const button of buttons) {
+        try {
+            const labelElement = await button.findElement(By.css('.mynah-button-label'))
+            const text = await labelElement.getText()
+            if (text.trim() === 'Rules') {
+                await button.click()
+                return
+            }
+        } catch (e) {
+            continue
+        }
+    }
+    throw new Error('Rules button not found')
 }
 
 /**
- * Creates a new rule with the specified name
- * @param webviewView The WebviewView instance
- * @param ruleName The name of the rule to create (defaults to "testRule")
+ * Clicks on "Create a new rule" option from the rules menu
+ * @param webview The WebviewView instance
  */
-export async function createRule(webviewView: WebviewView, ruleName: string = 'testRule'): Promise<void> {
-    const overlay = await waitForElement(webviewView, By.css('[data-testid="prompt-input-top-bar-action-overlay"]'))
-    const create = overlay.findElement(By.css('[data-testid="prompt-input-quick-pick-item"]'))
-    await create.click()
-    const anotheroverlay = await waitForElement(webviewView, By.css('[data-testid="sheet-wrapper"]'))
-    const input = await anotheroverlay.findElement(By.css('[data-testid="chat-item-form-item-text-input"]'))
-    await input.sendKeys(ruleName)
-    await clickCreateRule(webviewView)
+export async function clickCreateNewRuleOption(webview: WebviewView): Promise<void> {
+    // needs a bit of time because the overlay has to load
+    await sleep(1000)
+    const overlayContainer = await waitForElement(webview, By.css('.mynah-overlay-container'))
+    const quickPickItems = await overlayContainer.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
+
+    if (quickPickItems.length === 0) {
+        throw new Error('No quick pick items found')
+    }
+    const lastItem = quickPickItems[quickPickItems.length - 1]
+    const bdiElement = await lastItem.findElement(By.css('.mynah-detailed-list-item-description.ltr bdi'))
+    const text = await bdiElement.getText()
+
+    if (text.trim() !== 'Create a new rule') {
+        throw new Error(`Expected "Create a new rule" but found "${text}"`)
+    }
+    await lastItem.click()
 }
 
 /**
- * Clicks the Create button in the rule creation dialog
- * @param webviewView The WebviewView instance
+ * Enters a rule name in the rule creation form
+ * @param webview The WebviewView instance
+ * @param ruleName The name of the rule
  */
-export async function clickCreateRule(webviewView: WebviewView): Promise<void> {
-    const anotheroverlay = await waitForElement(webviewView, By.css('[data-testid="sheet-wrapper"]'))
-    const buttonsContainer = await anotheroverlay.findElement(By.css('[data-testid="chat-item-buttons-wrapper"]'))
-    const button = await buttonsContainer.findElements(By.css('[data-testid="chat-item-action-button"]'))
-    await button[1].click()
+export async function enterRuleName(webview: WebviewView, ruleName: string): Promise<void> {
+    // needs a bit of time because the overlay has to load
+    await sleep(1000)
+    const sheetWrapper = await waitForElement(webview, By.css('[data-testid="sheet-wrapper"]'))
+    const ruleNameInput = await sheetWrapper.findElement(By.css('[data-testid="chat-item-form-item-text-input"]'))
+
+    await ruleNameInput.clear()
+    await ruleNameInput.sendKeys(ruleName)
 }
 
 /**
- * Clicks the Cancel button in the rule creation dialog
- * @param webviewView The WebviewView instance
+ * Clicks the Create button in the rule creation form
+ * @param webview The WebviewView instance
  */
-export async function clickCancelRule(webviewView: WebviewView): Promise<void> {
-    const anotheroverlay = await waitForElement(webviewView, By.css('[data-testid="sheet-wrapper"]'))
-    const buttonsContainer = await anotheroverlay.findElement(By.css('[data-testid="chat-item-buttons-wrapper"]'))
-    const button = await buttonsContainer.findElements(By.css('[data-testid="chat-item-action-button"]'))
-    await button[0].click()
+export async function clickCreateButton(webview: WebviewView): Promise<void> {
+    const sheetWrapper = await waitForElement(webview, By.css('[data-testid="sheet-wrapper"]'))
+    const createButton = await sheetWrapper.findElement(By.xpath('.//button[@action-id="submit-create-rule"]'))
+
+    await webview.getDriver().wait(
+        async () => {
+            const isDisabled = await createButton.getAttribute('disabled')
+            return isDisabled === null
+        },
+        5000,
+        'Create button did not become enabled'
+    )
+
+    await createButton.click()
+}
+
+/**
+ * Clicks the Cancel button in the rule creation form
+ * @param webview The WebviewView instance
+ */
+export async function clickCancelButton(webview: WebviewView): Promise<void> {
+    const sheetWrapper = await waitForElement(webview, By.css('[data-testid="sheet-wrapper"]'))
+    const cancelButton = await sheetWrapper.findElement(By.xpath('.//button[@action-id="cancel-create-rule"]'))
+    await cancelButton.click()
+}
+
+/**
+ * Creates a new rule with the specified name (complete workflow)
+ * @param webview The WebviewView instance
+ * @param ruleName The name of the rule to create
+ */
+export async function createNewRule(webview: WebviewView, ruleName: string): Promise<void> {
+    await clickRulesButton(webview)
+    await clickCreateNewRuleOption(webview)
+    await enterRuleName(webview, ruleName)
+    await clickCreateButton(webview)
 }
