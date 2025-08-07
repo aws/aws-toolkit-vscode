@@ -6,9 +6,17 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from 'aws-core-vscode/shared'
-import { FsWriteParams } from './types'
-
 export const diffViewUriScheme = 'amazonq-diff'
+interface FsWriteParams {
+    command?: string
+    insertLine?: number
+    oldStr?: string
+    newStr?: string
+    fileText?: string
+    explanation?: string
+    pairIndex?: number
+    totalPairs?: number
+}
 
 type StreamingSession = {
     filePath: string
@@ -393,8 +401,7 @@ export class StreamingDiffController implements vscode.Disposable {
      * Scroll editor to line
      */
     private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
-        const scrollLine = line
-        editor.revealRange(new vscode.Range(scrollLine, 0, scrollLine, 0), vscode.TextEditorRevealType.InCenter)
+        editor.revealRange(new vscode.Range(line, 0, line, 0), vscode.TextEditorRevealType.InCenter)
     }
 
     isStreamingActive(toolUseId: string): boolean {
@@ -449,10 +456,7 @@ export class StreamingDiffController implements vscode.Disposable {
             // Clear decorations immediately
             session.fadedOverlayController.clear()
             session.activeLineController.clear()
-
-            // Save the temp file one final time
-            const diffEditor = session.activeDiffEditor
-            const document = diffEditor?.document
+            const document = session.activeDiffEditor?.document
             if (document) {
                 try {
                     await document.save()
@@ -494,10 +498,11 @@ export class StreamingDiffController implements vscode.Disposable {
     private async cleanupSessions(toolUseIds: Set<string>): Promise<void> {
         for (const toolUseId of toolUseIds) {
             const sessionToCleanup = this.activeStreamingSessions.get(toolUseId)
-            if (sessionToCleanup) {
-                sessionToCleanup.disposed = true
-                this.activeStreamingSessions.delete(toolUseId)
+            if (!sessionToCleanup) {
+                continue
             }
+            sessionToCleanup.disposed = true
+            this.activeStreamingSessions.delete(toolUseId)
         }
     }
 
