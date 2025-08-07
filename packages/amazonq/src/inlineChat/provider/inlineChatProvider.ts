@@ -16,7 +16,6 @@ import {
     ChatTriggerType,
     EditorContextExtractor,
     PromptMessage,
-    TriggerEvent,
     TriggerEventsStorage,
     TriggerPayload,
     triggerPayloadToChatRequest,
