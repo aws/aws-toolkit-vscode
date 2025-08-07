@@ -286,6 +286,27 @@ export async function displaySvgDecoration(
 ) {
     const originalCode = editor.document.getText()
 
+    // Check if a completion suggestion is currently active - if so, discard edit suggestion
+    if (inlineCompletionProvider && inlineCompletionProvider.isCompletionActive()) {
+        // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
+        const params: LogInlineCompletionSessionResultsParams = {
+            sessionId: session.sessionId,
+            completionSessionResult: {
+                [item.itemId]: {
+                    seen: false,
+                    accepted: false,
+                    discarded: true,
+                },
+            },
+            totalSessionDisplayTime: Date.now() - session.requestStartTime,
+            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+            isInlineEdit: true,
+        }
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        getLogger().info('Edit suggestion discarded due to active completion suggestion')
+        return
+    }
+
     await decorationManager.displayEditSuggestion(
         editor,
         svgImage,

@@ -419,6 +419,125 @@ describe('InlineCompletionManager', () => {
                     assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(1, 26))
                 })
             })
+
+            it('should return empty array and emit telemetry when edit suggestion is active', async () => {
+                provider = new AmazonQInlineCompletionItemProvider(
+                    languageClient,
+                    recommendationService,
+                    mockSessionManager,
+                    inlineTutorialAnnotation,
+                    documentEventListener
+                )
+
+                // Stub the private method to return true (following existing pattern)
+                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+
+                const result = await provider.provideInlineCompletionItems(
+                    mockDocument,
+                    mockPosition,
+                    mockContext,
+                    mockToken
+                )
+
+                // Should return empty array
+                assert.deepStrictEqual(result, [])
+
+                // Should emit telemetry for each completion suggestion
+                assert.strictEqual(sendNotificationStub.callCount, 2) // For both mockSuggestions
+
+                // Verify telemetry parameters for first call
+                const firstCall = sendNotificationStub.getCall(0)
+                assert.strictEqual(firstCall.args[0], 'aws/logInlineCompletionSessionResults')
+                const sessionResult = Object.values(firstCall.args[1].completionSessionResult)[0] as any
+                assert.strictEqual(sessionResult.seen, false)
+                assert.strictEqual(sessionResult.accepted, false)
+                assert.strictEqual(sessionResult.discarded, true)
+            })
+
+            it('should only emit telemetry for non-inline-edit items when edit is active', async () => {
+                provider = new AmazonQInlineCompletionItemProvider(
+                    languageClient,
+                    recommendationService,
+                    mockSessionManager,
+                    inlineTutorialAnnotation,
+                    documentEventListener
+                )
+
+                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+
+                // Mix of inline edits and completions
+                const mixedSuggestions = [
+                    { itemId: 'edit1', insertText: 'diff', isInlineEdit: true },
+                    { itemId: 'completion1', insertText: 'code', isInlineEdit: false },
+                ]
+                getActiveRecommendationStub.returns(mixedSuggestions)
+
+                const result = await provider.provideInlineCompletionItems(
+                    mockDocument,
+                    mockPosition,
+                    mockContext,
+                    mockToken
+                )
+
+                // Should return empty array
+                assert.deepStrictEqual(result, [])
+
+                // Should only emit telemetry for completion, not inline edit
+                assert.strictEqual(sendNotificationStub.callCount, 1)
+                const call = sendNotificationStub.getCall(0)
+                assert(call.args[1].completionSessionResult['completion1'])
+                assert(!call.args[1].completionSessionResult['edit1'])
+            })
+
+            it('should not emit telemetry for items without itemId when edit is active', async () => {
+                provider = new AmazonQInlineCompletionItemProvider(
+                    languageClient,
+                    recommendationService,
+                    mockSessionManager,
+                    inlineTutorialAnnotation,
+                    documentEventListener
+                )
+
+                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+
+                // Set up suggestions where some don't have itemId
+                const suggestionsWithoutId = [
+                    { insertText: 'code', isInlineEdit: false }, // No itemId
+                    { itemId: 'completion1', insertText: 'code', isInlineEdit: false },
+                ]
+                getActiveRecommendationStub.returns(suggestionsWithoutId)
+
+                const result = await provider.provideInlineCompletionItems(
+                    mockDocument,
+                    mockPosition,
+                    mockContext,
+                    mockToken
+                )
+
+                // Should return empty array
+                assert.deepStrictEqual(result, [])
+
+                // Should only emit telemetry for the item with itemId
+                assert.strictEqual(sendNotificationStub.callCount, 1)
+                const call = sendNotificationStub.getCall(0)
+                assert(call.args[1].completionSessionResult['completion1'])
+            })
+
+            describe('isEditSuggestionActive', () => {
+                it('should return false when no edit suggestion is active', () => {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        documentEventListener
+                    )
+
+                    // Since getContext returns undefined by default, this should return false
+                    const result = (provider as any).isEditSuggestionActive()
+                    assert.strictEqual(result, false)
+                })
+            })
         })
     })
 })
