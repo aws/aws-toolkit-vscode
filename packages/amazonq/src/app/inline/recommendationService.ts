@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import {
+    editCompletionRequestType,
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
@@ -119,7 +120,27 @@ export class RecommendationService {
             })
             const t0 = performance.now()
 
-            const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
+            const ps: Promise<InlineCompletionListWithReferences>[] = []
+
+            const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                inlineCompletionWithReferencesRequestType.method,
+                request,
+                token
+            )
+            ps.push(completionPromise)
+
+            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                editCompletionRequestType.method,
+                request,
+                token
+            )
+            ps.push(editPromise)
+
+            let result = await Promise.race(ps)
+
+            if (ps.length > 1 && result.items.length === 0) {
+                result = await editPromise
+            }
 
             getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,

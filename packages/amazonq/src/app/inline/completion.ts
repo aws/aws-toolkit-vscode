@@ -41,7 +41,7 @@ import {
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
+import { Experiments, getContext, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
@@ -235,6 +235,21 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await sleep(10)
         // run the command to detect if inline suggestion is really shown or not
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
+    }
+
+    /**
+     * Check if a completion suggestion is currently active/displayed
+     */
+    public isCompletionActive(): boolean {
+        const session = this.sessionManager.getActiveSession()
+        return session !== undefined && session.displayed && !session.suggestions.some((item) => item.isInlineEdit)
+    }
+
+    /**
+     * Check if an edit suggestion is currently active
+     */
+    private isEditSuggestionActive(): boolean {
+        return getContext('aws.amazonq.editSuggestionActive') || false
     }
 
     // this method is automatically invoked by VS Code as user types
@@ -437,6 +452,31 @@ ${itemLog}
 
             // the user typed characters from invoking suggestion cursor position to receiving suggestion position
             const typeahead = document.getText(new Range(position, editor.selection.active))
+
+            // Check if an edit suggestion is currently active - if so, discard completion suggestions
+            if (this.isEditSuggestionActive()) {
+                // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
+                for (const item of items) {
+                    if (!item.isInlineEdit && item.itemId) {
+                        const params: LogInlineCompletionSessionResultsParams = {
+                            sessionId: session.sessionId,
+                            completionSessionResult: {
+                                [item.itemId]: {
+                                    seen: false,
+                                    accepted: false,
+                                    discarded: true,
+                                },
+                            },
+                            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                            totalSessionDisplayTime: performance.now() - session.requestStartTime,
+                        }
+                        this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    }
+                }
+                this.sessionManager.clear()
+                logstr += `- completion suggestions discarded due to active edit suggestion`
+                return []
+            }
 
             const itemsMatchingTypeahead = []
 
