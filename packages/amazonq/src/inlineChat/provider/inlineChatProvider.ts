@@ -30,6 +30,7 @@ import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
 import { InlineChatParams, InlineChatResult } from '@aws/language-server-runtimes-types'
 import { decryptResponse, encryptRequest } from '../../lsp/encryption'
 import { getCursorState } from '../../lsp/utils'
+import { CwsprChatTriggerInteraction, telemetry } from 'aws-core-vscode/telemetry'
 
 export class InlineChatProvider {
     private readonly editorContextExtractor: EditorContextExtractor
@@ -69,6 +70,8 @@ export class InlineChatProvider {
     }
 
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        this.throwOnIamSession(message)
+
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
@@ -83,6 +86,8 @@ export class InlineChatProvider {
 
     // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
+        this.throwOnIamSession(message)
+
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then((context) => {
@@ -223,6 +228,34 @@ export class InlineChatProvider {
                 requestID,
             },
         })
+    }
+
+    private throwOnIamSession(message: PromptMessage) {
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
+        let triggerInteraction: CwsprChatTriggerInteraction
+        switch (triggerEvent?.type) {
+            case 'editor_context_command':
+                triggerInteraction = triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
+                break
+            case 'follow_up':
+            case 'chat_message':
+            default:
+                triggerInteraction = 'click'
+                break
+        }
+
+        if (!AuthUtil.instance.isSsoSession()) {
+            telemetry.amazonq_messageResponseError.emit({
+                result: 'Failed',
+                cwsprChatConversationType: 'InlineChat',
+                cwsprChatRequestLength: message.message?.length ?? 0,
+                cwsprChatResponseCode: 401,
+                cwsprChatTriggerInteraction: triggerInteraction,
+                reason: 'AuthenticationError',
+                reasonDesc: 'Inline chat requires SSO authentication, but current session is not',
+            })
+            throw new ToolkitError('Inline chat is only available with SSO authentication')
+        }
     }
 
     public sendTelemetryEvent(inlineChatEvent: InlineChatEvent, currentTask?: InlineTask) {
