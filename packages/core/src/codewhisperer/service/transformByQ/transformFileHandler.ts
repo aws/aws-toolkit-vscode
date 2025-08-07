@@ -117,15 +117,16 @@ export async function parseBuildFile() {
     return undefined
 }
 
+// return the first missing key in the custom versions file, or undefined if all required keys are present
 export async function validateCustomVersionsFile(fileContents: string) {
-    const requiredKeys = ['dependencyManagement:', 'identifier:', 'targetVersion:']
+    const requiredKeys = ['dependencyManagement', 'identifier', 'targetVersion', 'originType']
     for (const key of requiredKeys) {
         if (!fileContents.includes(key)) {
             getLogger().info(`CodeTransformation: .YAML file is missing required key: ${key}`)
-            return false
+            return key
         }
     }
-    return true
+    return undefined
 }
 
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
