@@ -170,10 +170,11 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                if (this.sessionManager.getActiveSession() === undefined) {
+                const session = this.sessionManager.getActiveSession()
+                if (session === undefined) {
                     return
                 }
-                const requestStartTime = this.sessionManager.getActiveSession()!.requestStartTime
+                const requestStartTime = session.requestStartTime
                 const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
@@ -182,9 +183,9 @@ export class InlineCompletionManager implements Disposable {
                     CodeWhispererConstants.platformLanguageIds,
                     this.inlineCompletionProvider
                 )
-                const sessionId = this.sessionManager.getActiveSession()?.sessionId
+                const sessionId = session.sessionId
                 const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-                if (!sessionId || !itemId) {
+                if (!itemId) {
                     return
                 }
                 const params: LogInlineCompletionSessionResultsParams = {
@@ -196,6 +197,7 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
+                    firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -274,12 +276,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // yield event loop to let the document listen catch updates
         await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
-            return []
-        }
 
         let logstr = `GenerateCompletion metadata:\\n`
         try {
@@ -290,14 +286,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const prevSessionId = prevSession?.sessionId
             const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const prevStartPosition = prevSession?.startPosition
-            if (prevSession?.triggerOnAcceptance) {
+            const editsTriggerOnAcceptance = prevSession?.triggerOnAcceptance
+            if (editsTriggerOnAcceptance) {
                 getAllRecommendationsOptions = {
                     ...getAllRecommendationsOptions,
                     editsStreakToken: prevSession?.editsStreakPartialResultToken,
                 }
             }
             const editor = window.activeTextEditor
-            if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
+            // Skip prefix matching for Edits suggestions that trigger on acceptance.
+            if (prevSession && prevSessionId && prevItemId && prevStartPosition && !editsTriggerOnAcceptance) {
                 const prefix = document.getText(new Range(prevStartPosition, position))
                 const prevItemMatchingPrefix = []
                 for (const item of this.sessionManager.getActiveRecommendation()) {
@@ -341,6 +339,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -365,8 +364,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -399,21 +398,24 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
-                    },
+                    }
+                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    this.sessionManager.clear()
+                    logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
+                    return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing
