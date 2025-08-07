@@ -20,7 +20,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { getLogger, sleep } from 'aws-core-vscode/shared'
+import { getLogger } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from './documentEventListener'
 import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 import { asyncCallWithTimeout } from '../../util/timeoutUtil'
