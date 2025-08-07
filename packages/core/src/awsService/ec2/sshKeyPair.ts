@@ -81,7 +81,7 @@ export class SshKeyPair {
         }
         return await tryRun(
             'ssh-keygen',
-            ['-t', keyType, '-N', '', '-q', '-f', keyPath],
+            ['-t', keyType, '-N', '', '-q', '-f', concat('"', keyPath, '"')],
             'yes',
             /^(?!.*Unknown key type).*/i,
             {
