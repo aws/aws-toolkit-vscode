@@ -169,6 +169,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
  * @param editor The TextEditor instance
  * @param timeout Maximum time to wait in milliseconds (default: 15000)
  * @returns Promise<void>
+ * @throws Error if timeout is exceeded
  */
 export async function waitForEditorStabilization(editor: TextEditor, timeout = 15000): Promise<void> {
     const startTime = Date.now()
@@ -190,6 +191,8 @@ export async function waitForEditorStabilization(editor: TextEditor, timeout = 1
 
         previousLines = currentLines
     }
+
+    throw new Error(`Editor stabilization timed out after ${timeout}ms`)
 }
 
 /**
