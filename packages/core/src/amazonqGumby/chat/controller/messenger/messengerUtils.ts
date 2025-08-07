@@ -13,6 +13,7 @@ import DependencyVersions from '../../../models/dependencies'
 export enum ButtonActions {
     STOP_TRANSFORMATION_JOB = 'gumbyStopTransformationJob',
     VIEW_TRANSFORMATION_HUB = 'gumbyViewTransformationHub',
+    VIEW_JOB_HISTORY = 'gumbyViewJobHistory',
     VIEW_SUMMARY = 'gumbyViewSummary',
     CONFIRM_LANGUAGE_UPGRADE_TRANSFORMATION_FORM = 'gumbyLanguageUpgradeTransformFormConfirm',
     CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM = 'gumbySQLConversionTransformFormConfirm',
@@ -33,6 +34,7 @@ export enum GumbyCommands {
     CLEAR_CHAT = 'aws.awsq.clearchat',
     START_TRANSFORMATION_FLOW = 'aws.awsq.transform',
     FOCUS_TRANSFORMATION_HUB = 'aws.amazonq.showTransformationHub',
+    FOCUS_JOB_HISTORY = 'aws.amazonq.showHistoryInHub',
 }
 
 export default class MessengerUtils {

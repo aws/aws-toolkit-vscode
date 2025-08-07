@@ -1,8 +1,8 @@
 {
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
-    "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.86.0-SNAPSHOT",
+    "description": "The most capable generative AI–powered assistant for software development.",
+    "version": "1.88.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -743,7 +743,7 @@
             },
             {
                 "command": "aws.amazonq.showHistoryInHub",
-                "title": "%AWS.command.q.transform.viewJobStatus%"
+                "title": "%AWS.command.q.transform.viewJobHistory%"
             },
             {
                 "command": "aws.amazonq.selectCustomization",
@@ -849,15 +849,21 @@
             },
             {
                 "command": "aws.amazonq.inline.acceptEdit",
-                "title": "%aws.amazonq.inline.acceptEdit%"
+                "title": "%AWS.amazonq.inline.acceptEdit%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.inline.rejectEdit",
-                "title": "%aws.amazonq.inline.rejectEdit%"
+                "title": "%AWS.amazonq.inline.rejectEdit%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.toggleNextEditPredictionPanel",
-                "title": "%aws.amazonq.toggleNextEditPredictionPanel%"
+                "title": "%AWS.amazonq.toggleNextEditPredictionPanel%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
             }
         ],
         "keybindings": [
