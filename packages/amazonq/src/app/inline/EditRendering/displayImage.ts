@@ -352,6 +352,8 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)

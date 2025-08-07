@@ -14,6 +14,10 @@ import { createMockDocument } from 'aws-core-vscode/test'
 import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateManager'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
+
+const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
+const editApi = 'aws/textDocument/editCompletion'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
@@ -28,6 +32,10 @@ describe('RecommendationService', () => {
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: InlineCompletionTriggerKind.Automatic, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
+    const mockDocumentEventListener = {
+        isLastEventDeletion: (filepath: string) => false,
+        getLastDocumentChangeEvent: (filepath: string) => undefined,
+    } as DocumentEventListener
     const mockInlineCompletionItemOne = {
         insertText: 'ItemOne',
     } as InlineCompletionItem
@@ -134,12 +142,19 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledOnce)
-            const requestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 2)
+            assert.strictEqual(completionCalls.length, 1)
+            assert.strictEqual(editCalls.length, 1)
+
+            const requestArgs = completionCalls[0].args[1]
             assert.deepStrictEqual(requestArgs, {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -147,6 +162,7 @@ describe('RecommendationService', () => {
                 position: mockPosition,
                 context: mockContext,
                 documentChangeParams: undefined,
+                openTabFilepaths: [],
             })
 
             // Verify session management
@@ -176,12 +192,19 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledTwice)
-            const firstRequestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 3)
+            assert.strictEqual(completionCalls.length, 2)
+            assert.strictEqual(editCalls.length, 1)
+
+            const firstRequestArgs = completionCalls[0].args[1]
             const expectedRequestArgs = {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -189,8 +212,9 @@ describe('RecommendationService', () => {
                 position: mockPosition,
                 context: mockContext,
                 documentChangeParams: undefined,
+                openTabFilepaths: [],
             }
-            const secondRequestArgs = sendRequestStub.secondCall.args[1]
+            const secondRequestArgs = completionCalls[1].args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)
             assert.deepStrictEqual(secondRequestArgs, {
                 ...expectedRequestArgs,
@@ -216,7 +240,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify recordCompletionRequest was called
@@ -233,6 +258,7 @@ describe('RecommendationService', () => {
                 mockContext,
                 mockToken,
                 true,
+                mockDocumentEventListener,
                 {
                     showUi: false,
                     emitTelemetry: true,
@@ -252,7 +278,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify UI methods were called
@@ -284,6 +311,7 @@ describe('RecommendationService', () => {
                     mockContext,
                     mockToken,
                     true,
+                    mockDocumentEventListener,
                     options
                 )
 
