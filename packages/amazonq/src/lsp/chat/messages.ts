@@ -104,6 +104,18 @@ import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 import { CommentUtils } from 'aws-core-vscode/utils'
+import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
+
+// Create a singleton instance of DiffAnimationHandler for streaming functionality
+let diffAnimationHandler: DiffAnimationHandler | undefined
+
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -154,13 +166,191 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         }
     })
 }
+async function cleanupTempFiles(): Promise<void> {
+    try {
+        const animationHandler = getDiffAnimationHandler()
+        const streamingController = (animationHandler as any).streamingDiffController
+        if (streamingController && streamingController.cleanupChatSession) {
+            await streamingController.cleanupChatSession()
+        }
+    } catch (error) {
+        getLogger().warn(`Failed to cleanup temp files: ${error}`)
+    }
+}
 
+/**
+ * Handle streaming chunk processing for diff animations
+ */
+async function handleStreamingChunk(
+    streamingChunk: any,
+    initializingStreamsByFile: Map<string, Set<string>>,
+    processedChunks: Map<string, Set<string>>
+): Promise<void> {
+    // Handle fsReplace streaming chunks separately
+    if (streamingChunk.toolName === 'fsReplace') {
+        try {
+            const contentHash = streamingChunk.content
+                ? `${streamingChunk.content.substring(0, 50)}-${streamingChunk.content.length}`
+                : 'empty'
+            const chunkHash = `${streamingChunk.toolUseId}-${contentHash}-${streamingChunk.fsWriteParams?.pairIndex || 0}-${streamingChunk.isComplete}`
+
+            if (!processedChunks.has(streamingChunk.toolUseId)) {
+                processedChunks.set(streamingChunk.toolUseId, new Set())
+            }
+
+            const toolChunks = processedChunks.get(streamingChunk.toolUseId)!
+
+            if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
+                if (toolChunks.has(chunkHash)) {
+                    return
+                }
+            } else {
+                const simpleHash = `${streamingChunk.toolUseId}-${streamingChunk.content?.length || 0}`
+                if (toolChunks.has(simpleHash) && streamingChunk.isComplete) {
+                    return
+                }
+                toolChunks.add(simpleHash)
+            }
+
+            toolChunks.add(chunkHash)
+
+            const animationHandler = getDiffAnimationHandler()
+            const filePath = streamingChunk.filePath
+            const isAlreadyInitializing =
+                filePath &&
+                initializingStreamsByFile.has(filePath) &&
+                initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
+
+            if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && filePath && !isAlreadyInitializing) {
+                if (!initializingStreamsByFile.has(filePath)) {
+                    initializingStreamsByFile.set(filePath, new Set())
+                }
+                initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
+
+                try {
+                    await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
+                } catch (error) {
+                    getLogger().error(
+                        `Failed to initialize fsReplace streaming session for ${streamingChunk.toolUseId}: ${error}`
+                    )
+                } finally {
+                    if (filePath && initializingStreamsByFile.has(filePath)) {
+                        const toolUseIds = initializingStreamsByFile.get(filePath)!
+                        toolUseIds.delete(streamingChunk.toolUseId)
+                        if (toolUseIds.size === 0) {
+                            initializingStreamsByFile.delete(filePath)
+                        }
+                    }
+                }
+            }
+
+            if (streamingChunk.fsWriteParams) {
+                const streamingController = (animationHandler as any).streamingDiffController
+                if (streamingController && streamingController.updateFsWriteParams) {
+                    streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
+                }
+            }
+
+            await animationHandler.streamContentUpdate(
+                streamingChunk.toolUseId,
+                streamingChunk.content || '',
+                streamingChunk.isComplete || false
+            )
+
+            if (!streamingChunk.isComplete || !streamingChunk.filePath) {
+                return
+            }
+
+            const toolUseIds = initializingStreamsByFile.get(streamingChunk.filePath)
+            if (!toolUseIds) {
+                return
+            }
+
+            toolUseIds.delete(streamingChunk.toolUseId)
+
+            if (toolUseIds.size === 0) {
+                initializingStreamsByFile.delete(streamingChunk.filePath)
+            }
+        } catch (error) {
+            getLogger().error(`Failed to process fsReplace streaming chunk: ${error}`)
+            initializingStreamsByFile.delete(streamingChunk.toolUseId)
+        }
+        return
+    }
+
+    try {
+        const animationHandler = getDiffAnimationHandler()
+        const filePath = streamingChunk.filePath
+        const isAlreadyInitializing =
+            filePath &&
+            initializingStreamsByFile.has(filePath) &&
+            initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
+
+        if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && filePath && !isAlreadyInitializing) {
+            if (!initializingStreamsByFile.has(filePath)) {
+                initializingStreamsByFile.set(filePath, new Set())
+            }
+            initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
+
+            try {
+                await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
+            } catch (error) {
+                getLogger().error(`Failed to initialize streaming session for ${streamingChunk.toolUseId}: ${error}`)
+                throw error
+            } finally {
+                if (filePath && initializingStreamsByFile.has(filePath)) {
+                    const toolUseIds = initializingStreamsByFile.get(filePath)!
+                    toolUseIds.delete(streamingChunk.toolUseId)
+                    if (toolUseIds.size === 0) {
+                        initializingStreamsByFile.delete(filePath)
+                    }
+                }
+            }
+        }
+
+        if (streamingChunk.fsWriteParams) {
+            const streamingController = (animationHandler as any).streamingDiffController
+            if (streamingController && streamingController.updateFsWriteParams) {
+                streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
+            }
+        }
+
+        await animationHandler.streamContentUpdate(
+            streamingChunk.toolUseId,
+            streamingChunk.content || '',
+            streamingChunk.isComplete || false
+        )
+
+        if (!streamingChunk.isComplete || !streamingChunk.filePath) {
+            return
+        }
+
+        const toolUseIds = initializingStreamsByFile.get(streamingChunk.filePath)
+        if (!toolUseIds) {
+            return
+        }
+
+        toolUseIds.delete(streamingChunk.toolUseId)
+
+        if (toolUseIds.size === 0) {
+            initializingStreamsByFile.delete(streamingChunk.filePath)
+        }
+    } catch (error) {
+        getLogger().error(`Failed to process streaming chunk: ${error}`)
+    }
+}
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    const initializingStreamsByFile = new Map<string, Set<string>>() // filePath -> Set of toolUseIds
+
+    const processedChunks = new Map<string, Set<string>>() // toolUseId -> Set of content hashes
+
+    // Initialize DiffAnimationHandler
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
@@ -281,6 +471,9 @@ export function registerMessageListeners(
                 token?.cancel()
                 token?.dispose()
                 chatStreamTokens.delete(tabId)
+
+                initializingStreamsByFile.clear()
+                await cleanupTempFiles()
                 break
             }
             case chatRequestType.method: {
@@ -691,7 +884,12 @@ export function registerMessageListeners(
         await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
-    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+    languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        if ((params.data as any)?.streamingChunk) {
+            await handleStreamingChunk((params.data as any).streamingChunk, initializingStreamsByFile, processedChunks)
+            return
+        }
+
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
             params: params,
@@ -704,6 +902,14 @@ export function registerMessageListeners(
             params: params,
         })
     })
+}
+
+// Clean up on extension deactivation
+export function dispose() {
+    if (diffAnimationHandler) {
+        void diffAnimationHandler.dispose()
+        diffAnimationHandler = undefined
+    }
 }
 
 function isServerEvent(command: string) {

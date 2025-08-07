@@ -181,6 +181,7 @@ export async function startLanguageServer(
                         shortcut: true,
                         reroute: true,
                         modelSelection: true,
+                        diffAnimation: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                         codeReviewInChat: codeReviewInChat,
                         // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
