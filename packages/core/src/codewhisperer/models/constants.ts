@@ -941,13 +941,3 @@ export const displayFindingsSuffix = '_displayFindings'
 
 export const displayFindingsDetectorName = 'DisplayFindings'
 export const findingsSuffix = '_codeReviewFindings'
-
-export interface HistoryObject {
-    startTime: string
-    projectName: string
-    status: string
-    duration: string
-    diffPath: string
-    summaryPath: string
-    jobId: string
-}

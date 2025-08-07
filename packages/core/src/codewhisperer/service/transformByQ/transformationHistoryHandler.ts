@@ -17,9 +17,39 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { AuthUtil } from '../../util/authUtil'
 import { setMaven } from './transformFileHandler'
 import { convertToTimeString, isWithin30Days } from '../../../shared/datetime'
+import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
+import { isFileNotFoundError } from '../../../shared/errors'
 
-export async function readHistoryFile(): Promise<CodeWhispererConstants.HistoryObject[]> {
-    const history: CodeWhispererConstants.HistoryObject[] = []
+export interface HistoryObject {
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    diffPath: string
+    summaryPath: string
+    jobId: string
+}
+
+export interface JobMetadata {
+    jobId: string
+    projectName: string
+    transformationType: TransformationType
+    sourceJDKVersion: JDKVersion
+    targetJDKVersion: JDKVersion
+    customDependencyVersionFilePath: string
+    customBuildCommand: string
+    targetJavaHome: string
+    projectPath: string
+    startTime: string
+}
+
+/**
+ * Reads 'transformation_history.tsv' (history) file
+ *
+ * @returns history array of 10 most recent jobs from within past 30 days
+ */
+export async function readHistoryFile(): Promise<HistoryObject[]> {
+    const history: HistoryObject[] = []
     const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
 
     if (!(await fs.existsFile(jobHistoryFilePath))) {
@@ -47,6 +77,141 @@ export async function readHistoryFile(): Promise<CodeWhispererConstants.HistoryO
         }
     }
     return history
+}
+
+/**
+ * Creates temporary metadata JSON file with transformation config info and saves a copy of upload zip
+ *
+ * These files are used when a job is resumed after interruption
+ *
+ * @param payloadFilePath path to upload zip
+ * @param metadata
+ * @returns
+ */
+export async function createMetadataFile(payloadFilePath: string, metadata: JobMetadata): Promise<string> {
+    const jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', metadata.projectName, metadata.jobId)
+
+    // create job history folders
+    await fs.mkdir(jobHistoryPath)
+
+    // save a copy of the upload zip
+    try {
+        await fs.copy(payloadFilePath, path.join(jobHistoryPath, 'zipped-code.zip'))
+    } catch (error) {
+        getLogger().error('Code Transformation: error saving copy of upload zip: %s', (error as Error).message)
+    }
+
+    // create metadata file with transformation config info
+    try {
+        await fs.writeFile(path.join(jobHistoryPath, 'metadata.json'), JSON.stringify(metadata))
+    } catch (error) {
+        getLogger().error('Code Transformation: error creating metadata file: %s', (error as Error).message)
+    }
+
+    return jobHistoryPath
+}
+
+/**
+ * Saves a copy of the diff patch, summary, and build logs (if any) locally
+ *
+ * @param pathToArchiveDir path to the archive directory where the artifacts are unzipped
+ * @param pathToDestinationDir destination directory (will create directories if path doesn't exist already)
+ */
+export async function copyArtifacts(pathToArchiveDir: string, pathToDestinationDir: string) {
+    // create destination path if doesn't exist already
+    // mkdir() will not raise an error if path exists
+    await fs.mkdir(pathToDestinationDir)
+
+    const diffPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToDiffPatch)
+    const summaryPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToSummary)
+
+    try {
+        await fs.copy(diffPath, path.join(pathToDestinationDir, 'diff.patch'))
+        // make summary directory if needed
+        await fs.mkdir(path.join(pathToDestinationDir, 'summary'))
+        await fs.copy(summaryPath, path.join(pathToDestinationDir, 'summary', 'summary.md'))
+    } catch (error) {
+        getLogger().error('Code Transformation: Error saving local copy of artifacts: %s', (error as Error).message)
+    }
+
+    const buildLogsPath = path.join(summaryPath, 'buildCommandOutput.log')
+    try {
+        await fs.copy(buildLogsPath, path.join(pathToDestinationDir, 'summary', 'buildCommandOutput.log'))
+    } catch (error) {
+        // build logs won't exist for SQL conversions (not an error)
+        if (!isFileNotFoundError(error)) {
+            getLogger().error(
+                'Code Transformation: Error saving local copy of build logs: %s',
+                (error as Error).message
+            )
+        }
+    }
+}
+
+/**
+ * Writes job details to history file
+ *
+ * @param startTime job start timestamp (ex. "01/01/23, 12:00 AM")
+ * @param projectName
+ * @param status
+ * @param duration job duration in hr / min / sec format (ex. "1 hr 15 min")
+ * @param jobId
+ * @param jobHistoryPath path to where job's history details are stored (ex. "~/.aws/transform/proj_name/job_id")
+ */
+export async function writeToHistoryFile(
+    startTime: string,
+    projectName: string,
+    status: string,
+    duration: string,
+    jobId: string,
+    jobHistoryPath: string
+) {
+    const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
+    // create transform folder if necessary
+    if (!(await fs.existsFile(historyLogFilePath))) {
+        await fs.mkdir(path.dirname(historyLogFilePath))
+        // create headers of new transformation history file
+        await fs.writeFile(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
+    }
+    const artifactsExist = status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED'
+    const fields = [
+        startTime,
+        projectName,
+        status,
+        duration,
+        artifactsExist ? path.join(jobHistoryPath, 'diff.patch') : '',
+        artifactsExist ? path.join(jobHistoryPath, 'summary', 'summary.md') : '',
+        jobId,
+    ]
+
+    const jobDetails = fields.join('\t') + '\n'
+    await fs.appendFile(historyLogFilePath, jobDetails)
+
+    // update Transformation Hub table
+    await vscode.commands.executeCommand('aws.amazonq.transformationHub.updateContent', 'job history', undefined, true)
+}
+
+/**
+ * Delete temporary files at the end of a transformation
+ *
+ * @param jobHistoryPath path to history directory for this job
+ * @param jobStatus final transformation status
+ * @param payloadFilePath path to original upload zip; providing this param will also delete any temp build logs
+ */
+export async function cleanupTempJobFiles(jobHistoryPath: string, jobStatus: string, payloadFilePath?: string) {
+    if (payloadFilePath) {
+        // delete original upload ZIP
+        await fs.delete(payloadFilePath, { force: true })
+        // delete temporary build logs file
+        const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
+        await fs.delete(logFilePath, { force: true })
+    }
+
+    // delete metadata file and upload zip copy if no longer need them (i.e. will not be resuming)
+    if (jobStatus !== 'FAILED') {
+        await fs.delete(path.join(jobHistoryPath, 'metadata.json'), { force: true })
+        await fs.delete(path.join(jobHistoryPath, 'zipped-code.zip'), { force: true })
+    }
 }
 
 /* Job refresh-related functions */
@@ -79,12 +244,15 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
                 duration
             )
         } catch (error) {
-            getLogger().error(
-                'Code Transformation: Error fetching status (job id: %s): %s',
-                jobId,
-                (error as Error).message
-            )
-            return
+            const errorMessage = (error as Error).message
+            getLogger().error('Code Transformation: Error fetching status (job id: %s): %s', jobId, errorMessage)
+            if (errorMessage.includes('not authorized to make this call')) {
+                // job not available on backend
+                status = 'FAILED'
+            } else {
+                // some other error (e.g. network error)
+                return
+            }
         }
     }
 
@@ -94,13 +262,7 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
         // artifacts should be available to download
         jobHistoryPath = await retrieveArtifacts(jobId, projectName)
 
-        // delete metadata and zipped code files, if they exist
-        await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), {
-            force: true,
-        })
-        await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
-            force: true,
-        })
+        await cleanupTempJobFiles(path.join(os.homedir(), '.aws', 'transform', projectName, jobId), status)
     } else if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
         // still in progress on server side
         if (transformByQState.isRunning()) {
@@ -120,8 +282,8 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
         // resume job and bring to completion
         try {
             status = await resumeJob(jobId, projectName, status)
-        } catch (e: any) {
-            getLogger().error('Code Transformation: Error resuming job (id: %s): %s', jobId, (e as Error).message)
+        } catch (error) {
+            getLogger().error('Code Transformation: Error resuming job (id: %s): %s', jobId, (error as Error).message)
             transformByQState.setJobDefaults()
             messenger?.sendJobFinishedMessage(tabID!, CodeWhispererConstants.refreshErrorChatMessage)
             void vscode.window.showErrorMessage(CodeWhispererConstants.refreshErrorNotification(jobId))
@@ -148,13 +310,7 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
             // if job failed on backend, mark it to disable the refresh button
             status = 'FAILED_BE' // this will be truncated to just 'FAILED' in the table
         }
-        // delete metadata and zipped code files, if they exist
-        await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'metadata.txt'), {
-            force: true,
-        })
-        await fs.delete(path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip'), {
-            force: true,
-        })
+        await cleanupTempJobFiles(path.join(os.homedir(), '.aws', 'transform', projectName, jobId), status)
     }
 
     if (status === currentStatus && !jobHistoryPath) {
@@ -169,7 +325,7 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
     await updateHistoryFile(status, duration, jobHistoryPath, jobId)
 }
 
-export async function retrieveArtifacts(jobId: string, projectName: string) {
+async function retrieveArtifacts(jobId: string, projectName: string) {
     const resultsPath = path.join(os.homedir(), '.aws', 'transform', projectName, 'results') // temporary directory for extraction
     let jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', projectName, jobId)
 
@@ -179,21 +335,7 @@ export async function retrieveArtifacts(jobId: string, projectName: string) {
     } else {
         try {
             await downloadAndExtractResultArchive(jobId, resultsPath)
-
-            if (!(await fs.existsDir(path.join(jobHistoryPath, 'summary')))) {
-                await fs.mkdir(path.join(jobHistoryPath, 'summary'))
-            }
-            await fs.copy(path.join(resultsPath, 'patch', 'diff.patch'), path.join(jobHistoryPath, 'diff.patch'))
-            await fs.copy(
-                path.join(resultsPath, 'summary', 'summary.md'),
-                path.join(jobHistoryPath, 'summary', 'summary.md')
-            )
-            if (await fs.existsFile(path.join(resultsPath, 'summary', 'buildCommandOutput.log'))) {
-                await fs.copy(
-                    path.join(resultsPath, 'summary', 'buildCommandOutput.log'),
-                    path.join(jobHistoryPath, 'summary', 'buildCommandOutput.log')
-                )
-            }
+            await copyArtifacts(resultsPath, jobHistoryPath)
         } catch (error) {
             jobHistoryPath = ''
         } finally {
@@ -204,7 +346,7 @@ export async function retrieveArtifacts(jobId: string, projectName: string) {
     return jobHistoryPath
 }
 
-export async function updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
+async function updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
     const history: string[][] = []
     const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
     if (await fs.existsFile(historyLogFilePath)) {
@@ -257,20 +399,22 @@ async function setupTransformationState(jobId: string, projectName: string, stat
     transformByQState.setJobId(jobId)
     transformByQState.setPolledJobStatus(status)
     transformByQState.setJobHistoryPath(path.join(os.homedir(), '.aws', 'transform', projectName, jobId))
-    const metadataFile = await fs.readFileText(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'))
-    const metadata = metadataFile.split('\t')
-    transformByQState.setTransformationType(metadata[1] as TransformationType)
-    transformByQState.setSourceJDKVersion(metadata[2] as JDKVersion)
-    transformByQState.setTargetJDKVersion(metadata[3] as JDKVersion)
-    transformByQState.setCustomDependencyVersionFilePath(metadata[4])
+
+    const metadata: JobMetadata = JSON.parse(
+        await fs.readFileText(path.join(transformByQState.getJobHistoryPath(), 'metadata.json'))
+    )
+    transformByQState.setTransformationType(metadata.transformationType)
+    transformByQState.setSourceJDKVersion(metadata.sourceJDKVersion)
+    transformByQState.setTargetJDKVersion(metadata.targetJDKVersion)
+    transformByQState.setCustomDependencyVersionFilePath(metadata.customDependencyVersionFilePath)
     transformByQState.setPayloadFilePath(
         path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip')
     )
     setMaven()
-    transformByQState.setCustomBuildCommand(metadata[5])
-    transformByQState.setTargetJavaHome(metadata[6])
-    transformByQState.setProjectPath(metadata[7])
-    transformByQState.setStartTime(metadata[8])
+    transformByQState.setCustomBuildCommand(metadata.customBuildCommand)
+    transformByQState.setTargetJavaHome(metadata.targetJavaHome)
+    transformByQState.setProjectPath(metadata.projectPath)
+    transformByQState.setStartTime(metadata.startTime)
 }
 
 async function pollAndCompleteTransformation(jobId: string) {
@@ -278,11 +422,6 @@ async function pollAndCompleteTransformation(jobId: string) {
         jobId,
         AuthUtil.instance.regionProfileManager.activeRegionProfile
     )
-    // delete payload and metadata files
-    await fs.delete(transformByQState.getPayloadFilePath(), { force: true })
-    await fs.delete(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
-    // delete temporary build logs file
-    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    await fs.delete(logFilePath, { force: true })
+    await cleanupTempJobFiles(transformByQState.getJobHistoryPath(), status, transformByQState.getPayloadFilePath())
     return status
 }

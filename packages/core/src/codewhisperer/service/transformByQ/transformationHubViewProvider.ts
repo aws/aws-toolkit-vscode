@@ -24,14 +24,14 @@ import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { convertToTimeString } from '../../../shared/datetime'
 import { AuthUtil } from '../../util/authUtil'
-import { refreshJob, readHistoryFile } from './transformationHistoryHandler'
+import { refreshJob, readHistoryFile, HistoryObject } from './transformationHistoryHandler'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
     private _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
-    private transformationHistory: CodeWhispererConstants.HistoryObject[] = []
+    private transformationHistory: HistoryObject[] = []
     constructor() {}
     static #instance: TransformationHubViewProvider
 
@@ -109,7 +109,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private showJobHistory(): string {
-        const jobsToDisplay: CodeWhispererConstants.HistoryObject[] = [...this.transformationHistory]
+        const jobsToDisplay: HistoryObject[] = [...this.transformationHistory]
         if (transformByQState.isRunning()) {
             const current = sessionJobHistory[transformByQState.getJobId()]
             jobsToDisplay.unshift({
@@ -179,7 +179,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
-    private getTableMarkup(history: CodeWhispererConstants.HistoryObject[]) {
+    private getTableMarkup(history: HistoryObject[]) {
         return `
             <style>
             .refresh-btn {
