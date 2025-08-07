@@ -395,22 +395,24 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            // Edit suggestion works differently than completion suggestion, so even when it's a deletion and cause cursor to move back, we still allow the request to go through
-            if (position.isAfter(editor.selection.active) && items.length > 0 && !items[0].isInlineEdit) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
-                    },
+                    }
+                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    this.sessionManager.clear()
+                    logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
+                    return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing
