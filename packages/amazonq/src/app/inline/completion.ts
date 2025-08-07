@@ -274,6 +274,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        // yield event loop to let the document listen catch updates
+        await sleep(1)
+
         let logstr = `GenerateCompletion metadata:\\n`
         try {
             const t0 = performance.now()

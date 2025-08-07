@@ -122,8 +122,6 @@ export class RecommendationService {
             })
             const t0 = performance.now()
 
-            // Yield event loop to let the document listen catch updates
-            await sleep(1)
             // Best effort estimate of deletion
             const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
 
