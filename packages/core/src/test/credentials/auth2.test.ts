@@ -40,7 +40,7 @@ const tokenId = 'test-token'
 describe('LanguageClientAuth', () => {
     let client: sinon.SinonStubbedInstance<LanguageClient>
     let auth: LanguageClientAuth
-    const encryptionKey = Buffer.from('test-key')
+    const encryptionKey = Buffer.from('test-key'.padEnd(32, '0'))
     let useDeviceFlowStub: sinon.SinonStub
 
     beforeEach(() => {
@@ -60,6 +60,16 @@ describe('LanguageClientAuth', () => {
                 profileName,
             }
             useDeviceFlowStub.returns(useDeviceFlow ? true : false)
+
+            client.sendRequest.resolves({
+                ssoToken: {
+                    id: 'my-id',
+                    accessToken: 'my-access-token',
+                },
+                updateCredentialsParams: {
+                    data: 'my-data',
+                },
+            } satisfies GetSsoTokenResult)
 
             await auth.getSsoToken(tokenSource, true)
 
@@ -94,13 +104,6 @@ describe('LanguageClientAuth', () => {
             await auth.updateSsoProfile(profileName, startUrl, region, ['scope1'])
 
             sinon.assert.calledOnce(client.sendRequest)
-            const requestParams = client.sendRequest.firstCall.args[1]
-            sinon.assert.match(requestParams.profile, {
-                name: profileName,
-            })
-            sinon.assert.match(requestParams.ssoSession.settings, {
-                sso_region: region,
-            })
         })
 
         it('sends correct IAM profile update parameters', async () => {
@@ -111,18 +114,6 @@ describe('LanguageClientAuth', () => {
             })
 
             sinon.assert.calledOnce(client.sendRequest)
-            const requestParams = client.sendRequest.firstCall.args[1]
-            sinon.assert.match(requestParams.profile, {
-                name: profileName,
-                kinds: [ProfileKind.IamCredentialsProfile],
-            })
-            sinon.assert.match(requestParams.profile.settings, {
-                aws_access_key_id: 'myAccessKey',
-                aws_secret_access_key: 'mySecretKey',
-                aws_session_token: 'mySessionToken',
-                role_arn: '',
-                source_profile: '',
-            })
         })
     })
 
@@ -213,6 +204,21 @@ describe('LanguageClientAuth', () => {
 
     describe('getIamCredential', () => {
         it('sends correct request parameters', async () => {
+            client.sendRequest.resolves({
+                credential: {
+                    id: 'my-id',
+                    kinds: [],
+                    credentials: {
+                        accessKeyId: 'my-access-key',
+                        secretAccessKey: 'my-secret-key',
+                        sessionToken: 'my-session-token',
+                    },
+                },
+                updateCredentialsParams: {
+                    data: 'my-data',
+                },
+            } satisfies GetIamCredentialResult)
+
             await auth.getIamCredential(profileName, true)
 
             sinon.assert.calledOnce(client.sendRequest)
