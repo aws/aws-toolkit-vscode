@@ -189,6 +189,14 @@ export const amazonQHelpUrl = 'https://aws.amazon.com/q/'
 export const amazonQVscodeMarketplace =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode'
 
+// URLs for Amazon EventBridge Scheduler
+export const eventBridgeSchedulerCreateScheduleUrl: string =
+    'https://docs.aws.amazon.com/scheduler/latest/UserGuide/schedule-types.html'
+export const eventBridgeSchedulerApiGatewayUrl: string = 
+    'https://docs.aws.amazon.com/scheduler/latest/UserGuide/managing-schedule.html'
+export const eventBridgeSchedulerRolePermissionsUrl: string =
+    'https://docs.aws.amazon.com/scheduler/latest/UserGuide/setting-up.html'
+
 /**
  * Names of directories relevant to the crash reporting functionality.
  *
