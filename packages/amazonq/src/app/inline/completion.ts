@@ -246,6 +246,37 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     }
 
     /**
+     * Batch discard telemetry for completion suggestions when edit suggestion is active
+     */
+    public batchDiscardTelemetryForEditSuggestion(items: any[], session: any): void {
+        // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
+        const completionSessionResult: {
+            [key: string]: { seen: boolean; accepted: boolean; discarded: boolean }
+        } = {}
+
+        for (const item of items) {
+            if (!item.isInlineEdit && item.itemId) {
+                completionSessionResult[item.itemId] = {
+                    seen: false,
+                    accepted: false,
+                    discarded: true,
+                }
+            }
+        }
+
+        // Send single telemetry event for all discarded items
+        if (Object.keys(completionSessionResult).length > 0) {
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                totalSessionDisplayTime: performance.now() - session.requestStartTime,
+            }
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+        }
+    }
+
+    /**
      * Check if an edit suggestion is currently active
      */
     private isEditSuggestionActive(): boolean {
@@ -452,24 +483,7 @@ ${itemLog}
 
             // Check if an edit suggestion is currently active - if so, discard completion suggestions
             if (this.isEditSuggestionActive()) {
-                // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
-                for (const item of items) {
-                    if (!item.isInlineEdit && item.itemId) {
-                        const params: LogInlineCompletionSessionResultsParams = {
-                            sessionId: session.sessionId,
-                            completionSessionResult: {
-                                [item.itemId]: {
-                                    seen: false,
-                                    accepted: false,
-                                    discarded: true,
-                                },
-                            },
-                            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                            totalSessionDisplayTime: performance.now() - session.requestStartTime,
-                        }
-                        this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                    }
-                }
+                this.batchDiscardTelemetryForEditSuggestion(items, session)
                 this.sessionManager.clear()
                 logstr += `- completion suggestions discarded due to active edit suggestion`
                 return []
