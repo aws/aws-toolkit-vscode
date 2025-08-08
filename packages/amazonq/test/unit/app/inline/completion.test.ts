@@ -117,4 +117,88 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             assert.strictEqual(mockLanguageClient.sendNotification.callCount, 0)
         })
     })
+
+    describe('isCompletionActive', function () {
+        let mockSessionManager: any
+        let mockVscodeCommands: any
+
+        beforeEach(function () {
+            mockSessionManager = {
+                getActiveSession: sandbox.stub(),
+            }
+
+            // Mock vscode.commands.executeCommand
+            mockVscodeCommands = sandbox.stub(require('vscode').commands, 'executeCommand')
+
+            // Create provider with mocked session manager
+            provider = new AmazonQInlineCompletionItemProvider(
+                mockLanguageClient,
+                {} as any, // recommendationService
+                mockSessionManager,
+                {} as any, // inlineTutorialAnnotation
+                {} as any // documentEventListener
+            )
+        })
+
+        it('should return false when no active session', async function () {
+            mockSessionManager.getActiveSession.returns(undefined)
+
+            const result = await provider.isCompletionActive()
+
+            assert.strictEqual(result, false)
+            assert.strictEqual(mockVscodeCommands.callCount, 0)
+        })
+
+        it('should return false when session not displayed', async function () {
+            mockSessionManager.getActiveSession.returns({
+                displayed: false,
+                suggestions: [{ isInlineEdit: false }],
+            })
+
+            const result = await provider.isCompletionActive()
+
+            assert.strictEqual(result, false)
+            assert.strictEqual(mockVscodeCommands.callCount, 0)
+        })
+
+        it('should return false when session has inline edit suggestions', async function () {
+            mockSessionManager.getActiveSession.returns({
+                displayed: true,
+                suggestions: [{ isInlineEdit: true }],
+            })
+
+            const result = await provider.isCompletionActive()
+
+            assert.strictEqual(result, false)
+            assert.strictEqual(mockVscodeCommands.callCount, 0)
+        })
+
+        it('should return true when VS Code command executes successfully', async function () {
+            mockSessionManager.getActiveSession.returns({
+                displayed: true,
+                suggestions: [{ isInlineEdit: false }],
+            })
+            mockVscodeCommands.resolves()
+
+            const result = await provider.isCompletionActive()
+
+            assert.strictEqual(result, true)
+            assert.strictEqual(mockVscodeCommands.callCount, 1)
+            assert.strictEqual(mockVscodeCommands.getCall(0).args[0], 'aws.amazonq.checkInlineSuggestionVisibility')
+        })
+
+        it('should return false when VS Code command fails', async function () {
+            mockSessionManager.getActiveSession.returns({
+                displayed: true,
+                suggestions: [{ isInlineEdit: false }],
+            })
+            mockVscodeCommands.rejects(new Error('Command failed'))
+
+            const result = await provider.isCompletionActive()
+
+            assert.strictEqual(result, false)
+            assert.strictEqual(mockVscodeCommands.callCount, 1)
+            assert.strictEqual(mockVscodeCommands.getCall(0).args[0], 'aws.amazonq.checkInlineSuggestionVisibility')
+        })
+    })
 })

@@ -240,9 +240,20 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     /**
      * Check if a completion suggestion is currently active/displayed
      */
-    public isCompletionActive(): boolean {
+    public async isCompletionActive(): Promise<boolean> {
         const session = this.sessionManager.getActiveSession()
-        return session !== undefined && session.displayed && !session.suggestions.some((item) => item.isInlineEdit)
+        if (session === undefined || !session.displayed || session.suggestions.some((item) => item.isInlineEdit)) {
+            return false
+        }
+
+        // Use VS Code command to check if inline suggestion is actually visible on screen
+        // This command only executes when inlineSuggestionVisible context is true
+        try {
+            await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
+            return true
+        } catch {
+            return false
+        }
     }
 
     /**

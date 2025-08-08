@@ -287,7 +287,7 @@ export async function displaySvgDecoration(
     const originalCode = editor.document.getText()
 
     // Check if a completion suggestion is currently active - if so, discard edit suggestion
-    if (inlineCompletionProvider && inlineCompletionProvider.isCompletionActive()) {
+    if (inlineCompletionProvider && (await inlineCompletionProvider.isCompletionActive())) {
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params: LogInlineCompletionSessionResultsParams = {
             sessionId: session.sessionId,
