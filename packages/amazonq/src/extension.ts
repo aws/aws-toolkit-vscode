@@ -45,6 +45,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { hasGlibcPatch } from './lsp/client'
+import { activateAutoDebug } from './lsp/chat/autoDebug/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -129,6 +130,14 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     if (!isAmazonLinux2() || hasGlibcPatch()) {
         // Activate Amazon Q LSP for everyone unless they're using AL2 without the glibc patch
         await activateAmazonqLsp(context)
+    }
+
+    // Activate AutoDebug feature at extension level
+    try {
+        const autoDebugFeature = await activateAutoDebug(context)
+        context.subscriptions.push(autoDebugFeature)
+    } catch (error) {
+        getLogger().error('Failed to activate AutoDebug feature at extension level: %s', error)
     }
 
     // Generic extension commands

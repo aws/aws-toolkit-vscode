@@ -17,6 +17,7 @@ import nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import { postTransformationJob } from '../../codewhisperer/commands/startTransformByQ'
 import * as transformApiHandler from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import * as vscode from 'vscode'
+import * as datetime from '../../shared/datetime'
 
 describe('Transformation Job History', function () {
     let transformationHub: TransformationHubViewProvider
@@ -193,6 +194,7 @@ describe('Transformation Job History', function () {
 
             it('Limits history to 10 most recent jobs', async function () {
                 fsExistsStub.resolves(true)
+                sinon.stub(datetime, 'isWithin30Days').returns(true)
 
                 // Create 15 job entries
                 let mockHistoryContent = 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'

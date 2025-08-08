@@ -50,7 +50,6 @@ export type UnrecoverableErrorType =
     | 'job-start-failed'
     | 'unsupported-source-db'
     | 'unsupported-target-db'
-    | 'invalid-custom-versions-file'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
     | 'invalid-from-to-jdk'
@@ -452,9 +451,6 @@ export class Messenger {
                 break
             case 'unsupported-target-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
-                break
-            case 'invalid-custom-versions-file':
-                message = CodeWhispererConstants.invalidCustomVersionsFileMessage
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
