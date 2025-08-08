@@ -321,7 +321,7 @@ export async function displaySvgDecoration(
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
-            vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
     await decorationManager.displayEditSuggestion(
