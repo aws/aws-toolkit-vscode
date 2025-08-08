@@ -22,7 +22,7 @@ import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
-import { copyArtifacts } from './transformationHistoryHandler'
+import { copyArtifacts } from './transformFileHandler'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string

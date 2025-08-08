@@ -11,14 +11,12 @@ import * as CodeWhispererConstants from '../../models/constants'
 import { JDKVersion, TransformationType, transformByQState } from '../../models/model'
 import { getLogger } from '../../../shared/logger/logger'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import { pollTransformationStatusUntilComplete } from '../../commands/startTransformByQ'
-import { downloadAndExtractResultArchive } from './transformApiHandler'
+import { downloadAndExtractResultArchive, pollTransformationJob } from './transformApiHandler'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AuthUtil } from '../../util/authUtil'
 import { setMaven } from './transformFileHandler'
 import { convertToTimeString, isWithin30Days } from '../../../shared/datetime'
-import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
-import { isFileNotFoundError } from '../../../shared/errors'
+import { copyArtifacts } from './transformFileHandler'
 
 export interface HistoryObject {
     startTime: string
@@ -109,43 +107,6 @@ export async function createMetadataFile(payloadFilePath: string, metadata: JobM
     }
 
     return jobHistoryPath
-}
-
-/**
- * Saves a copy of the diff patch, summary, and build logs (if any) locally
- *
- * @param pathToArchiveDir path to the archive directory where the artifacts are unzipped
- * @param pathToDestinationDir destination directory (will create directories if path doesn't exist already)
- */
-export async function copyArtifacts(pathToArchiveDir: string, pathToDestinationDir: string) {
-    // create destination path if doesn't exist already
-    // mkdir() will not raise an error if path exists
-    await fs.mkdir(pathToDestinationDir)
-
-    const diffPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToDiffPatch)
-    const summaryPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToSummary)
-
-    try {
-        await fs.copy(diffPath, path.join(pathToDestinationDir, 'diff.patch'))
-        // make summary directory if needed
-        await fs.mkdir(path.join(pathToDestinationDir, 'summary'))
-        await fs.copy(summaryPath, path.join(pathToDestinationDir, 'summary', 'summary.md'))
-    } catch (error) {
-        getLogger().error('Code Transformation: Error saving local copy of artifacts: %s', (error as Error).message)
-    }
-
-    const buildLogsPath = path.join(summaryPath, 'buildCommandOutput.log')
-    try {
-        await fs.copy(buildLogsPath, path.join(pathToDestinationDir, 'summary', 'buildCommandOutput.log'))
-    } catch (error) {
-        // build logs won't exist for SQL conversions (not an error)
-        if (!isFileNotFoundError(error)) {
-            getLogger().error(
-                'Code Transformation: Error saving local copy of build logs: %s',
-                (error as Error).message
-            )
-        }
-    }
 }
 
 /**
@@ -248,7 +209,7 @@ export async function refreshJob(jobId: string, currentStatus: string, projectNa
             getLogger().error('Code Transformation: Error fetching status (job id: %s): %s', jobId, errorMessage)
             if (errorMessage.includes('not authorized to make this call')) {
                 // job not available on backend
-                status = 'FAILED'
+                status = 'FAILED' // won't allow retries for this job
             } else {
                 // some other error (e.g. network error)
                 return
@@ -418,8 +379,9 @@ async function setupTransformationState(jobId: string, projectName: string, stat
 }
 
 async function pollAndCompleteTransformation(jobId: string) {
-    const status = await pollTransformationStatusUntilComplete(
+    const status = await pollTransformationJob(
         jobId,
+        CodeWhispererConstants.validStatesForCheckingDownloadUrl,
         AuthUtil.instance.regionProfileManager.activeRegionProfile
     )
     await cleanupTempJobFiles(transformByQState.getJobHistoryPath(), status, transformByQState.getPayloadFilePath())

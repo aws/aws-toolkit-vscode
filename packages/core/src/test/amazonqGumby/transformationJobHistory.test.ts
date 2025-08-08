@@ -15,16 +15,37 @@ import {
     readHistoryFile,
     writeToHistoryFile,
     createMetadataFile,
-    copyArtifacts,
     cleanupTempJobFiles,
     refreshJob,
     JobMetadata,
 } from '../../codewhisperer/service/transformByQ/transformationHistoryHandler'
+import { copyArtifacts } from '../../codewhisperer/service/transformByQ/transformFileHandler'
 import * as transformApiHandler from '../../codewhisperer/service/transformByQ/transformApiHandler'
 import { ExportResultArchiveStructure } from '../../shared/utilities/download'
 import { JDKVersion, TransformationType } from '../../codewhisperer'
 
 describe('Transformation History Handler', function () {
+    function setupFileSystemMocks() {
+        const createdFiles = new Map<string, string>()
+        const createdDirs = new Set<string>()
+
+        // Mock file operations to track what gets created
+        sinon.stub(fs, 'mkdir').callsFake(async (dirPath: any) => {
+            createdDirs.add(dirPath.toString())
+        })
+        sinon.stub(fs, 'copy').callsFake(async (src: any, dest: any) => {
+            createdFiles.set(dest.toString(), `copied from ${src.toString()}`)
+        })
+        sinon.stub(fs, 'writeFile').callsFake(async (filePath: any, content: any) => {
+            createdFiles.set(filePath.toString(), content.toString())
+        })
+        sinon.stub(fs, 'delete').callsFake(async (filePath: any) => {
+            createdFiles.delete(filePath.toString())
+        })
+
+        return { createdFiles, createdDirs }
+    }
+
     afterEach(function () {
         sinon.restore()
     })
@@ -86,7 +107,7 @@ describe('Transformation History Handler', function () {
             assert(fileContent.includes('date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'))
             assert(
                 fileContent.includes(
-                    '01/01/25, 10:00 AM\ttest-project\tCOMPLETED\t5 min\t/job/path/diff.patch\t/job/path/summary/summary.md\tjob-123\n'
+                    `01/01/25, 10:00 AM\ttest-project\tCOMPLETED\t5 min\t${path.join('/job/path', 'diff.patch')}\t${path.join('/job/path', 'summary', 'summary.md')}\tjob-123\n`
                 )
             )
         })
@@ -157,22 +178,9 @@ describe('Transformation History Handler', function () {
         }
 
         beforeEach(function () {
-            createdFiles = new Map()
-            createdDirs = new Set()
-
-            // Mock file operations to track what gets created
-            sinon.stub(fs, 'mkdir').callsFake(async (dirPath: any) => {
-                createdDirs.add(dirPath.toString())
-            })
-            sinon.stub(fs, 'copy').callsFake(async (src: any, dest: any) => {
-                createdFiles.set(dest.toString(), `copied from ${src.toString()}`)
-            })
-            sinon.stub(fs, 'writeFile').callsFake(async (filePath: any, content: any) => {
-                createdFiles.set(filePath.toString(), content.toString())
-            })
-            sinon.stub(fs, 'delete').callsFake(async (filePath: any) => {
-                createdFiles.delete(filePath.toString())
-            })
+            const mocks = setupFileSystemMocks()
+            createdFiles = mocks.createdFiles
+            createdDirs = mocks.createdDirs
         })
 
         it('Creates job history directory and metadata files', async function () {
@@ -199,28 +207,28 @@ describe('Transformation History Handler', function () {
             // Pre-populate files that would exist
             createdFiles.set('/payload.zip', 'payload content')
             createdFiles.set(path.join(os.tmpdir(), 'build-logs.txt'), 'build logs')
-            createdFiles.set('/job/path/metadata.json', 'metadata')
-            createdFiles.set('/job/path/zipped-code.zip', 'zip content')
+            createdFiles.set(path.join('/job/path', 'metadata.json'), 'metadata')
+            createdFiles.set(path.join('/job/path', 'zipped-code.zip'), 'zip content')
 
             await cleanupTempJobFiles('/job/path', 'COMPLETED', '/payload.zip')
 
             // Verify files were deleted (no longer exist in createdFiles)
             assert(!createdFiles.has('/payload.zip'))
             assert(!createdFiles.has(path.join(os.tmpdir(), 'build-logs.txt')))
-            assert(!createdFiles.has('/job/path/metadata.json'))
-            assert(!createdFiles.has('/job/path/zipped-code.zip'))
+            assert(!createdFiles.has(path.join('/job/path', 'metadata.json')))
+            assert(!createdFiles.has(path.join('/job/path', 'zipped-code.zip')))
         })
 
         it('Preserves metadata for failed jobs', async function () {
             // Pre-populate files that would exist
-            createdFiles.set('/job/path/metadata.json', 'metadata')
-            createdFiles.set('/job/path/zipped-code.zip', 'zip content')
+            createdFiles.set(path.join('/job/path', 'metadata.json'), 'metadata')
+            createdFiles.set(path.join('/job/path', 'zipped-code.zip'), 'zip content')
 
             await cleanupTempJobFiles('/job/path', 'FAILED')
 
             // Verify metadata files still exist (were NOT deleted)
-            assert(createdFiles.has('/job/path/metadata.json'))
-            assert(createdFiles.has('/job/path/zipped-code.zip'))
+            assert(createdFiles.has(path.join('/job/path', 'metadata.json')))
+            assert(createdFiles.has(path.join('/job/path', 'zipped-code.zip')))
         })
     })
 
@@ -229,34 +237,27 @@ describe('Transformation History Handler', function () {
         let createdDirs: Set<string>
 
         beforeEach(function () {
-            createdFiles = new Map()
-            createdDirs = new Set()
-
-            // Mock file operations to track what gets created
-            sinon.stub(fs, 'mkdir').callsFake(async (dirPath: any) => {
-                createdDirs.add(dirPath.toString())
-            })
-            sinon.stub(fs, 'copy').callsFake(async (src: any, dest: any) => {
-                createdFiles.set(dest.toString(), `copied from ${src.toString()}`)
-            })
+            const mocks = setupFileSystemMocks()
+            createdFiles = mocks.createdFiles
+            createdDirs = mocks.createdDirs
         })
 
         it('Copies diff patch and summary files to destination', async function () {
-            await copyArtifacts('/archive/path', '/destination/path')
+            await copyArtifacts(path.join('archive', 'path'), path.join('destination', 'path'))
 
             // Verify directories were created
-            assert(createdDirs.has('/destination/path'))
-            assert(createdDirs.has('/destination/path/summary'))
+            assert(createdDirs.has(path.join('destination', 'path')))
+            assert(createdDirs.has(path.join('destination', 'path', 'summary')))
 
             // Verify files were copied to correct locations
-            assert(createdFiles.has('/destination/path/diff.patch'))
-            assert(createdFiles.has('/destination/path/summary/summary.md'))
+            assert(createdFiles.has(path.join('destination', 'path', 'diff.patch')))
+            assert(createdFiles.has(path.join('destination', 'path', 'summary', 'summary.md')))
 
             // Verify source paths are correct
-            const diffSource = createdFiles.get('/destination/path/diff.patch')
-            const summarySource = createdFiles.get('/destination/path/summary/summary.md')
-            assert(diffSource?.includes(ExportResultArchiveStructure.PathToDiffPatch))
-            assert(summarySource?.includes(ExportResultArchiveStructure.PathToSummary))
+            const diffSource = createdFiles.get(path.join('destination', 'path', 'diff.patch'))
+            const summarySource = createdFiles.get(path.join('destination', 'path', 'summary', 'summary.md'))
+            assert(diffSource?.includes(path.normalize(ExportResultArchiveStructure.PathToDiffPatch)))
+            assert(summarySource?.includes(path.normalize(ExportResultArchiveStructure.PathToSummary)))
         })
     })
 
