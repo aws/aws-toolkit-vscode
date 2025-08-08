@@ -306,10 +306,18 @@ export async function displaySvgDecoration(
         return
     }
     const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
-        if (e.contentChanges.length <= 0) return
-        if (e.document !== editor.document) return
-        if (vsCodeState.isCodeWhispererEditing) return
-        if (getContext('aws.amazonq.editSuggestionActive') === false) return
+        if (e.contentChanges.length <= 0) {
+            return
+        }
+        if (e.document !== editor.document) {
+            return
+        }
+        if (vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        if (getContext('aws.amazonq.editSuggestionActive') === false) {
+            return
+        }
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
