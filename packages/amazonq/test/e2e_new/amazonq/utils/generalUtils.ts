@@ -20,7 +20,7 @@ export async function sleep(timeout: number) {
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement> Returns the element found
  */
-export async function waitForElement(webview: WebviewView, locator: By, timeout: number = 8000): Promise<WebElement> {
+export async function waitForElement(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElement(locator)
@@ -33,11 +33,7 @@ export async function waitForElement(webview: WebviewView, locator: By, timeout:
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement[]> Returns an array of elements found
  */
-export async function waitForElements(
-    webview: WebviewView,
-    locator: By,
-    timeout: number = 8000
-): Promise<WebElement[]> {
+export async function waitForElements(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement[]> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElements(locator)

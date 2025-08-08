@@ -1,0 +1,105 @@
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+body {
+    margin: 0;
+    padding: 0 1em;
+    height: 100vh;
+}
+
+.wrapper {
+    height: 100%;
+    display: flex;
+}
+
+.spinner {
+    display: inline-block;
+    animation: spin 1s infinite;
+}
+
+.column--container,
+.substep-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.column {
+    flex-grow: 1;
+}
+
+.substep-container p {
+    margin: 0.5em 0;
+}
+
+.step,
+.simple-step {
+    padding: 0.5em 0 0.5em 0;
+    margin: 0;
+}
+
+.step {
+    padding-left: 20px;
+}
+
+.step:hover,
+.step.active {
+    color: var(--vscode-editor-selectionForeground, inherit);
+    background-color: var(--vscode-editor-selectionBackground, aliceblue);
+}
+
+#stepdetails {
+    width: 40%;
+    padding: 0 20px;
+    border-left: solid rgba(230, 230, 230, 0.5);
+    min-height: 100vh;
+    display: block;
+}
+
+#progress {
+    width: 60%;
+}
+
+.status-PENDING {
+    color: grey;
+}
+
+.status-COMPLETED {
+    color: green;
+}
+
+.status-FAILED {
+    color: grey;
+}
+
+.substep {
+    display: none;
+}
+
+.substep-icon {
+    padding: 0 1em;
+}
+
+.visible {
+    display: block;
+}
+
+.center {
+    position: absolute;
+    top: 50%;
+    transform: translate(0, -50%);
+}
+
+.center-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#step-duration {
+    color: grey;
+}

@@ -1,0 +1,17 @@
+body,
+html {
+    background-color: var(--mynah-color-bg);
+    color: var(--mynah-color-text-default);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+    --mynah-color-light: rgba(255, 255, 255, 0.05);
+    --mynah-color-highlight: rgba(0, 137, 255, 0.2);
+    --mynah-color-highlight-text: rgba(0, 137, 255, 1);
+}
