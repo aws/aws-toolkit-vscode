@@ -187,6 +187,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 background: none;
                 cursor: pointer;
                 font-size: 16px;
+                color: inherit;
             }
             .refresh-btn:disabled {
                 opacity: 0.3;
