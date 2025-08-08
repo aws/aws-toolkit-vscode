@@ -571,14 +571,14 @@ dependencyManagement:
     })
 
     it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, async function () {
-        const isValidFile = await validateCustomVersionsFile(validCustomVersionsFile)
-        assert.strictEqual(isValidFile, true)
+        const missingKey = await validateCustomVersionsFile(validCustomVersionsFile)
+        assert.strictEqual(missingKey, undefined)
     })
 
     it(`WHEN validateCustomVersionsFile on invalid .yaml file THEN fails validation`, async function () {
         const invalidFile = validCustomVersionsFile.replace('dependencyManagement', 'invalidKey')
-        const isValidFile = await validateCustomVersionsFile(invalidFile)
-        assert.strictEqual(isValidFile, false)
+        const missingKey = await validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(missingKey, 'dependencyManagement')
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
