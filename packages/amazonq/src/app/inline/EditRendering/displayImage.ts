@@ -12,7 +12,8 @@ import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-ru
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
+import { EditSuggestionState } from '../editSuggestionState'
+import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 export class EditDecorationManager {
@@ -136,6 +137,7 @@ export class EditDecorationManager {
         await this.clearDecorations(editor)
 
         await setContext('aws.amazonq.editSuggestionActive' as any, true)
+        EditSuggestionState.setEditSuggestionActive(true)
 
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -166,6 +168,7 @@ export class EditDecorationManager {
         this.acceptHandler = undefined
         this.rejectHandler = undefined
         await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
     }
 
     /**

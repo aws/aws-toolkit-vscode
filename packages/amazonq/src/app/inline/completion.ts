@@ -41,9 +41,10 @@ import {
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getContext, getLogger, sleep } from 'aws-core-vscode/shared'
+import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
+import { EditSuggestionState } from './editSuggestionState'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { DocumentEventListener } from './documentEventListener'
 
@@ -291,7 +292,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
      * Check if an edit suggestion is currently active
      */
     private isEditSuggestionActive(): boolean {
-        return getContext('aws.amazonq.editSuggestionActive') || false
+        return EditSuggestionState.isEditSuggestionActive()
     }
 
     // this method is automatically invoked by VS Code as user types

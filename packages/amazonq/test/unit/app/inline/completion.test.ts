@@ -102,7 +102,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
         it('should not send notification when no valid items', function () {
             const items = [
                 { itemId: 'item1', isInlineEdit: true }, // Filtered out
-                { itemId: null, isInlineEdit: false }, // No itemId
+                { itemId: undefined, isInlineEdit: false }, // No itemId
             ]
 
             const session = {

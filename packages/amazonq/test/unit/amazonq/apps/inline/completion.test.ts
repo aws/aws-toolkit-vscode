@@ -17,6 +17,7 @@ import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
 import { StringValue } from 'vscode-languageserver-types'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
+import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument, createMockTextEditor, getTestWindow, installFakeClock } from 'aws-core-vscode/test'
@@ -429,8 +430,8 @@ describe('InlineCompletionManager', () => {
                     documentEventListener
                 )
 
-                // Stub the private method to return true (following existing pattern)
-                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+                // Set edit suggestion active to trigger discard behavior
+                EditSuggestionState.setEditSuggestionActive(true)
 
                 const result = await provider.provideInlineCompletionItems(
                     mockDocument,
@@ -463,7 +464,7 @@ describe('InlineCompletionManager', () => {
                     documentEventListener
                 )
 
-                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+                EditSuggestionState.setEditSuggestionActive(true)
 
                 // Mix of inline edits and completions
                 const mixedSuggestions = [
@@ -498,7 +499,7 @@ describe('InlineCompletionManager', () => {
                     documentEventListener
                 )
 
-                sandbox.stub(provider as any, 'isEditSuggestionActive').returns(true)
+                EditSuggestionState.setEditSuggestionActive(true)
 
                 // Set up suggestions where some don't have itemId
                 const suggestionsWithoutId = [
@@ -533,9 +534,27 @@ describe('InlineCompletionManager', () => {
                         documentEventListener
                     )
 
-                    // Since getContext returns undefined by default, this should return false
+                    // Set the static property to false
+                    EditSuggestionState.setEditSuggestionActive(false)
+
                     const result = (provider as any).isEditSuggestionActive()
                     assert.strictEqual(result, false)
+                })
+
+                it('should return true when edit suggestion is active', () => {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        documentEventListener
+                    )
+
+                    // Set the static property to true
+                    EditSuggestionState.setEditSuggestionActive(true)
+
+                    const result = (provider as any).isEditSuggestionActive()
+                    assert.strictEqual(result, true)
                 })
             })
         })
