@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, setContext } from 'aws-core-vscode/shared'
+import { getContext, getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
-import { diffLines } from 'diff'
+import { applyPatch, diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
@@ -286,6 +286,36 @@ export async function displaySvgDecoration(
 ) {
     const originalCode = editor.document.getText()
 
+    const isPatchValid = applyPatch(editor.document.getText(), item.insertText as string)
+    if (!isPatchValid) {
+        const params: LogInlineCompletionSessionResultsParams = {
+            sessionId: session.sessionId,
+            completionSessionResult: {
+                [item.itemId]: {
+                    seen: false,
+                    accepted: false,
+                    discarded: true,
+                },
+            },
+            totalSessionDisplayTime: Date.now() - session.requestStartTime,
+            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+            isInlineEdit: true,
+        }
+        // TODO: this session is closed on flare side hence discarded is not emitted in flare
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        return
+    }
+    const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
+        if (e.contentChanges.length <= 0) return
+        if (e.document !== editor.document) return
+        if (vsCodeState.isCodeWhispererEditing) return
+        if (getContext('aws.amazonq.editSuggestionActive') === false) return
+
+        const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
+        if (!isPatchValid) {
+            vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
     await decorationManager.displayEditSuggestion(
         editor,
         svgImage,
@@ -310,6 +340,7 @@ export async function displaySvgDecoration(
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
             await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
@@ -343,6 +374,7 @@ export async function displaySvgDecoration(
             // Handle reject
             getLogger().info('Edit suggestion rejected')
             await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
