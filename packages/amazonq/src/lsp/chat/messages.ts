@@ -66,6 +66,10 @@ import {
     ShowOpenDialogParams,
     openFileDialogRequestType,
     OpenFileDialogResult,
+    CheckDiagnosticsRequestType,
+    CheckDiagnosticsParams,
+    openWorkspaceFileRequestType,
+    OpenWorkspaceFileParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -559,6 +563,58 @@ export function registerMessageListeners(
 
     registerHandlerWithResponseRouter(openTabRequestType.method)
     registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
+    // Register diagnostic check handler
+    languageClient.onRequest(CheckDiagnosticsRequestType.method, async (params: CheckDiagnosticsParams) => {
+        const result: Record<string, any> = {}
+
+        for (const [filePath, diagnosticJson] of Object.entries(params.filePaths)) {
+            try {
+                const uri = vscode.Uri.file(filePath)
+                const diagnostics = vscode.languages.getDiagnostics(uri)
+
+                if (diagnostics && diagnostics.length > 0) {
+                    // Convert VSCode diagnostics to JSON format
+                    const diagnosticsJson = diagnostics.map((diagnostic) => ({
+                        range: {
+                            start: {
+                                line: diagnostic.range.start.line,
+                                character: diagnostic.range.start.character,
+                            },
+                            end: { line: diagnostic.range.end.line, character: diagnostic.range.end.character },
+                        },
+                        severity: diagnostic.severity,
+                        message: diagnostic.message,
+                        source: diagnostic.source,
+                        code: diagnostic.code,
+                    }))
+                    result[filePath] = diagnosticsJson
+                } else {
+                    // No diagnostics found, return the original or empty
+                    result[filePath] = diagnosticJson || []
+                }
+            } catch (error) {
+                languageClient.error(`Failed to get diagnostics for ${filePath}: ${error}`)
+                result[filePath] = diagnosticJson || []
+            }
+        }
+        return { filePaths: result }
+    })
+
+    // Register openWorkspaceFile handler
+    languageClient.onRequest(openWorkspaceFileRequestType.method, async (params: OpenWorkspaceFileParams) => {
+        try {
+            const uri = vscode.Uri.file(params.filePath)
+            const doc = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(doc, { preview: false })
+            if (params.makeActive) {
+                await vscode.window.showTextDocument(doc, { preview: false, preserveFocus: false })
+            }
+            return { success: true }
+        } catch (error) {
+            languageClient.error(`Failed to open workspace file ${params.filePath}: ${error}`)
+            return { success: false }
+        }
+    })
 
     languageClient.onRequest(ShowSaveFileDialogRequestType.method, async (params: ShowSaveFileDialogParams) => {
         const filters: Record<string, string[]> = {}
