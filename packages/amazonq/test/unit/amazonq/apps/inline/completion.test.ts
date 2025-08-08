@@ -443,16 +443,20 @@ describe('InlineCompletionManager', () => {
                 // Should return empty array
                 assert.deepStrictEqual(result, [])
 
-                // Should emit telemetry for each completion suggestion
-                assert.strictEqual(sendNotificationStub.callCount, 2) // For both mockSuggestions
+                // Should emit single batched telemetry for both completion suggestions
+                assert.strictEqual(sendNotificationStub.callCount, 1)
 
-                // Verify telemetry parameters for first call
-                const firstCall = sendNotificationStub.getCall(0)
-                assert.strictEqual(firstCall.args[0], 'aws/logInlineCompletionSessionResults')
-                const sessionResult = Object.values(firstCall.args[1].completionSessionResult)[0] as any
-                assert.strictEqual(sessionResult.seen, false)
-                assert.strictEqual(sessionResult.accepted, false)
-                assert.strictEqual(sessionResult.discarded, true)
+                // Verify telemetry parameters
+                const call = sendNotificationStub.getCall(0)
+                assert.strictEqual(call.args[0], 'aws/logInlineCompletionSessionResults')
+                const completionSessionResult = call.args[1].completionSessionResult
+                const sessionResults = Object.values(completionSessionResult) as any[]
+                assert.strictEqual(sessionResults.length, 2) // Both mockSuggestions should be included
+                sessionResults.forEach((result) => {
+                    assert.strictEqual(result.seen, false)
+                    assert.strictEqual(result.accepted, false)
+                    assert.strictEqual(result.discarded, true)
+                })
             })
 
             it('should only emit telemetry for non-inline-edit items when edit is active', async () => {
