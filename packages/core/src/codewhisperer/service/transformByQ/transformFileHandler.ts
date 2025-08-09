@@ -17,6 +17,8 @@ import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
 import { IManifestFile } from './humanInTheLoopManager'
+import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
+import { isFileNotFoundError } from '../../../shared/errors'
 
 export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -347,4 +349,41 @@ export async function parseVersionsListFromPomFile(xmlString: string): Promise<I
     const status = report.status?.[0]
 
     return { latestVersion, majorVersions, minorVersions, status }
+}
+
+/**
+ * Saves a copy of the diff patch, summary, and build logs (if any) locally
+ *
+ * @param pathToArchiveDir path to the archive directory where the artifacts are unzipped
+ * @param pathToDestinationDir destination directory (will create directories if path doesn't exist already)
+ */
+export async function copyArtifacts(pathToArchiveDir: string, pathToDestinationDir: string) {
+    // create destination path if doesn't exist already
+    // mkdir() will not raise an error if path exists
+    await fs.mkdir(pathToDestinationDir)
+
+    const diffPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToDiffPatch)
+    const summaryPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToSummary)
+
+    try {
+        await fs.copy(diffPath, path.join(pathToDestinationDir, 'diff.patch'))
+        // make summary directory if needed
+        await fs.mkdir(path.join(pathToDestinationDir, 'summary'))
+        await fs.copy(summaryPath, path.join(pathToDestinationDir, 'summary', 'summary.md'))
+    } catch (error) {
+        getLogger().error('Code Transformation: Error saving local copy of artifacts: %s', (error as Error).message)
+    }
+
+    const buildLogsPath = path.join(path.dirname(summaryPath), 'buildCommandOutput.log')
+    try {
+        await fs.copy(buildLogsPath, path.join(pathToDestinationDir, 'summary', 'buildCommandOutput.log'))
+    } catch (error) {
+        // build logs won't exist for SQL conversions (not an error)
+        if (!isFileNotFoundError(error)) {
+            getLogger().error(
+                'Code Transformation: Error saving local copy of build logs: %s',
+                (error as Error).message
+            )
+        }
+    }
 }

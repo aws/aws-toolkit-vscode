@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import os from 'os'
 import path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
@@ -79,6 +78,12 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
+import {
+    cleanupTempJobFiles,
+    createMetadataFile,
+    JobMetadata,
+    writeToHistoryFile,
+} from '../service/transformByQ/transformationHistoryHandler'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -477,28 +482,21 @@ export async function startTransformationJob(
         })
 
         // create local history folder(s) and store metadata
-        const jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', transformByQState.getProjectName(), jobId)
-        if (!fs.existsSync(jobHistoryPath)) {
-            fs.mkdirSync(jobHistoryPath, { recursive: true })
+        const metadata: JobMetadata = {
+            jobId: jobId,
+            projectName: transformByQState.getProjectName(),
+            transformationType: transformByQState.getTransformationType() ?? TransformationType.LANGUAGE_UPGRADE,
+            sourceJDKVersion: transformByQState.getSourceJDKVersion() ?? JDKVersion.JDK8,
+            targetJDKVersion: transformByQState.getTargetJDKVersion() ?? JDKVersion.JDK17,
+            customDependencyVersionFilePath: transformByQState.getCustomDependencyVersionFilePath(),
+            customBuildCommand: transformByQState.getCustomBuildCommand(),
+            targetJavaHome: transformByQState.getTargetJavaHome() ?? '',
+            projectPath: transformByQState.getProjectPath(),
+            startTime: transformByQState.getStartTime(),
         }
+
+        const jobHistoryPath = await createMetadataFile(transformByQState.getPayloadFilePath(), metadata)
         transformByQState.setJobHistoryPath(jobHistoryPath)
-        // save a copy of the upload zip
-        fs.copyFileSync(transformByQState.getPayloadFilePath(), path.join(jobHistoryPath, 'zipped-code.zip'))
-
-        const fields = [
-            jobId,
-            transformByQState.getTransformationType(),
-            transformByQState.getSourceJDKVersion(),
-            transformByQState.getTargetJDKVersion(),
-            transformByQState.getCustomDependencyVersionFilePath(),
-            transformByQState.getCustomBuildCommand(),
-            transformByQState.getTargetJavaHome(),
-            transformByQState.getProjectPath(),
-            transformByQState.getStartTime(),
-        ]
-
-        const jobDetails = fields.join('\t')
-        fs.writeFileSync(path.join(jobHistoryPath, 'metadata.txt'), jobDetails)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message.toLowerCase()
@@ -749,24 +747,11 @@ export async function postTransformationJob() {
             })
     }
 
-    // delete original upload ZIP at very end of transformation
-    fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
-
-    if (
-        transformByQState.isSucceeded() ||
-        transformByQState.isPartiallySucceeded() ||
-        transformByQState.isCancelled()
-    ) {
-        // delete the copy of the upload ZIP
-        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
-        // delete transformation job metadata file (no longer needed)
-        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
-    }
-    // delete temporary build logs file
-    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    if (fs.existsSync(logFilePath)) {
-        fs.rmSync(logFilePath, { force: true })
-    }
+    await cleanupTempJobFiles(
+        transformByQState.getJobHistoryPath(),
+        transformByQState.getPolledJobStatus(),
+        transformByQState.getPayloadFilePath()
+    )
 
     // attempt download for user
     // TODO: refactor as explained here https://github.com/aws/aws-toolkit-vscode/pull/6519/files#r1946873107
@@ -777,35 +762,14 @@ export async function postTransformationJob() {
     // store job details and diff path locally (history)
     // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
     if (!transformByQState.isCancelled()) {
-        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
-        // create transform folder if necessary
-        if (!fs.existsSync(historyLogFilePath)) {
-            fs.mkdirSync(path.dirname(historyLogFilePath), { recursive: true })
-            // create headers of new transformation history file
-            fs.writeFileSync(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
-        }
         const latest = sessionJobHistory[transformByQState.getJobId()]
-        const fields = [
+        await writeToHistoryFile(
             latest.startTime,
             latest.projectName,
             latest.status,
             latest.duration,
-            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
-                ? path.join(transformByQState.getJobHistoryPath(), 'diff.patch')
-                : '',
-            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
-                ? path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
-                : '',
             transformByQState.getJobId(),
-        ]
-
-        const jobDetails = fields.join('\t') + '\n'
-        fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' }) // 'a' flag used to append to file
-        await vscode.commands.executeCommand(
-            'aws.amazonq.transformationHub.updateContent',
-            'job history',
-            undefined,
-            true
+            transformByQState.getJobHistoryPath()
         )
     }
 }
