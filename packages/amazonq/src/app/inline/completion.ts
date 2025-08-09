@@ -249,12 +249,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // Use VS Code command to check if inline suggestion is actually visible on screen
         // This command only executes when inlineSuggestionVisible context is true
-        try {
-            await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
-            return true
-        } catch {
-            return false
-        }
+        await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
+        const isInlineSuggestionVisible = performance.now() - session.lastVisibleTime < 50
+        return isInlineSuggestionVisible
     }
 
     /**
