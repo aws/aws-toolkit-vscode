@@ -26,6 +26,8 @@ export interface CodeWhispererSession {
     triggerOnAcceptance?: boolean
     // whether any suggestion in this session was displayed on screen
     displayed: boolean
+    // timestamp when the suggestion was last visible
+    lastVisibleTime: number
 }
 
 export class SessionManager {
@@ -52,6 +54,7 @@ export class SessionManager {
             firstCompletionDisplayLatency,
             diagnosticsBeforeAccept,
             displayed: false,
+            lastVisibleTime: 0,
         }
         this._currentSuggestionIndex = 0
     }
@@ -134,6 +137,7 @@ export class SessionManager {
     public checkInlineSuggestionVisibility() {
         if (this.activeSession) {
             this.activeSession.displayed = true
+            this.activeSession.lastVisibleTime = performance.now()
         }
     }
 

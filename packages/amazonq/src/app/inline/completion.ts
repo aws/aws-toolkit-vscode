@@ -237,6 +237,53 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
     }
 
+    /**
+     * Check if a completion suggestion is currently active/displayed
+     */
+    public async isCompletionActive(): Promise<boolean> {
+        const session = this.sessionManager.getActiveSession()
+        if (session === undefined || !session.displayed || session.suggestions.some((item) => item.isInlineEdit)) {
+            return false
+        }
+
+        // Use VS Code command to check if inline suggestion is actually visible on screen
+        // This command only executes when inlineSuggestionVisible context is true
+        await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
+        const isInlineSuggestionVisible = performance.now() - session.lastVisibleTime < 50
+        return isInlineSuggestionVisible
+    }
+
+    /**
+     * Batch discard telemetry for completion suggestions when edit suggestion is active
+     */
+    public batchDiscardTelemetryForEditSuggestion(items: any[], session: any): void {
+        // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
+        const completionSessionResult: {
+            [key: string]: { seen: boolean; accepted: boolean; discarded: boolean }
+        } = {}
+
+        for (const item of items) {
+            if (!item.isInlineEdit && item.itemId) {
+                completionSessionResult[item.itemId] = {
+                    seen: false,
+                    accepted: false,
+                    discarded: true,
+                }
+            }
+        }
+
+        // Send single telemetry event for all discarded items
+        if (Object.keys(completionSessionResult).length > 0) {
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                totalSessionDisplayTime: performance.now() - session.requestStartTime,
+            }
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+        }
+    }
+
     // this method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,

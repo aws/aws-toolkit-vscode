@@ -547,7 +547,7 @@ export const noChangesMadeMessage = "I didn't make any changes for this transfor
 
 export const noOngoingJobMessage = 'No ongoing job.'
 
-export const nothingToShowMessage = 'Nothing to show'
+export const noJobHistoryMessage = 'No job history'
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
@@ -941,13 +941,3 @@ export const displayFindingsSuffix = '_displayFindings'
 
 export const displayFindingsDetectorName = 'DisplayFindings'
 export const findingsSuffix = '_codeReviewFindings'
-
-export interface HistoryObject {
-    startTime: string
-    projectName: string
-    status: string
-    duration: string
-    diffPath: string
-    summaryPath: string
-    jobId: string
-}
