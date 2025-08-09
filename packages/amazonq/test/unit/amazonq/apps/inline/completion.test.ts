@@ -452,11 +452,11 @@ describe('InlineCompletionManager', () => {
                 const completionSessionResult = call.args[1].completionSessionResult
                 const sessionResults = Object.values(completionSessionResult) as any[]
                 assert.strictEqual(sessionResults.length, 2) // Both mockSuggestions should be included
-                sessionResults.forEach((result) => {
+                for (const result of sessionResults) {
                     assert.strictEqual(result.seen, false)
                     assert.strictEqual(result.accepted, false)
                     assert.strictEqual(result.discarded, true)
-                })
+                }
             })
 
             it('should only emit telemetry for non-inline-edit items when edit is active', async () => {
