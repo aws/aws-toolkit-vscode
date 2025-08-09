@@ -274,6 +274,28 @@ function getEndOfEditPosition(originalCode: string, newCode: string): vscode.Pos
 }
 
 /**
+ * Helper function to create discard telemetry params
+ */
+function createDiscardTelemetryParams(
+    session: CodeWhispererSession,
+    item: InlineCompletionItemWithReferences
+): LogInlineCompletionSessionResultsParams {
+    return {
+        sessionId: session.sessionId,
+        completionSessionResult: {
+            [item.itemId]: {
+                seen: false,
+                accepted: false,
+                discarded: true,
+            },
+        },
+        totalSessionDisplayTime: Date.now() - session.requestStartTime,
+        firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+        isInlineEdit: true,
+    }
+}
+
+/**
  * Helper function to display SVG decorations
  */
 export async function displaySvgDecoration(
@@ -292,19 +314,7 @@ export async function displaySvgDecoration(
     // Check if a completion suggestion is currently active - if so, discard edit suggestion
     if (inlineCompletionProvider && (await inlineCompletionProvider.isCompletionActive())) {
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
-        const params: LogInlineCompletionSessionResultsParams = {
-            sessionId: session.sessionId,
-            completionSessionResult: {
-                [item.itemId]: {
-                    seen: false,
-                    accepted: false,
-                    discarded: true,
-                },
-            },
-            totalSessionDisplayTime: Date.now() - session.requestStartTime,
-            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-            isInlineEdit: true,
-        }
+        const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         getLogger().info('Edit suggestion discarded due to active completion suggestion')
         return
@@ -312,19 +322,7 @@ export async function displaySvgDecoration(
 
     const isPatchValid = applyPatch(editor.document.getText(), item.insertText as string)
     if (!isPatchValid) {
-        const params: LogInlineCompletionSessionResultsParams = {
-            sessionId: session.sessionId,
-            completionSessionResult: {
-                [item.itemId]: {
-                    seen: false,
-                    accepted: false,
-                    discarded: true,
-                },
-            },
-            totalSessionDisplayTime: Date.now() - session.requestStartTime,
-            firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-            isInlineEdit: true,
-        }
+        const params = createDiscardTelemetryParams(session, item)
         // TODO: this session is closed on flare side hence discarded is not emitted in flare
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         return
