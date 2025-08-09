@@ -153,6 +153,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             mockSessionManager.getActiveSession.returns({
                 displayed: false,
                 suggestions: [{ isInlineEdit: false }],
+                lastVisibleTime: 0,
             })
 
             const result = await provider.isCompletionActive()
@@ -165,6 +166,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: true }],
+                lastVisibleTime: performance.now(),
             })
 
             const result = await provider.isCompletionActive()
@@ -174,9 +176,11 @@ describe('AmazonQInlineCompletionItemProvider', function () {
         })
 
         it('should return true when VS Code command executes successfully', async function () {
+            const currentTime = performance.now()
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: false }],
+                lastVisibleTime: currentTime, // Recent timestamp
             })
             mockVscodeCommands.resolves()
 
@@ -188,11 +192,13 @@ describe('AmazonQInlineCompletionItemProvider', function () {
         })
 
         it('should return false when VS Code command fails', async function () {
+            const oldTime = performance.now() - 100 // Old timestamp (>50ms ago)
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: false }],
+                lastVisibleTime: oldTime,
             })
-            mockVscodeCommands.rejects(new Error('Command failed'))
+            mockVscodeCommands.resolves() // Command doesn't fail, but timestamp is old
 
             const result = await provider.isCompletionActive()
 
