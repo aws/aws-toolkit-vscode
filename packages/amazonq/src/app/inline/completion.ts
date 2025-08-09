@@ -44,7 +44,6 @@ import { TelemetryHelper } from './telemetryHelper'
 import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
-import { EditSuggestionState } from './editSuggestionState'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { DocumentEventListener } from './documentEventListener'
 
@@ -285,13 +284,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         }
     }
 
-    /**
-     * Check if an edit suggestion is currently active
-     */
-    private isEditSuggestionActive(): boolean {
-        return EditSuggestionState.isEditSuggestionActive()
-    }
-
     // this method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,
@@ -489,14 +481,6 @@ ${itemLog}
 
             // the user typed characters from invoking suggestion cursor position to receiving suggestion position
             const typeahead = document.getText(new Range(position, editor.selection.active))
-
-            // Check if an edit suggestion is currently active - if so, discard completion suggestions
-            if (this.isEditSuggestionActive()) {
-                this.batchDiscardTelemetryForEditSuggestion(items, session)
-                this.sessionManager.clear()
-                logstr += `- completion suggestions discarded due to active edit suggestion`
-                return []
-            }
 
             const itemsMatchingTypeahead = []
 
