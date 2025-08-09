@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { Commands, getLogger, messages } from 'aws-core-vscode/shared'
 import { AutoDebugController } from './controller'
+import { autoDebugTelemetry } from './telemetry'
 
 /**
  * Auto Debug commands for Amazon Q
@@ -72,6 +73,16 @@ export class AutoDebugCommands implements vscode.Disposable {
             return await action()
         } catch (error) {
             this.logger.error(`AutoDebugCommands: Error in ${logContext}: %s`, error)
+
+            // Record telemetry failure based on context
+            const commandType =
+                logContext === 'fixWithAmazonQ'
+                    ? 'fixWithQ'
+                    : logContext === 'fixAllWithAmazonQ'
+                      ? 'fixAllWithQ'
+                      : 'explainProblem'
+            autoDebugTelemetry.recordCommandFailure(commandType, String(error))
+
             void messages.showMessage('error', 'Amazon Q was not able to fix or explain the problem. Try again shortly')
         }
     }
@@ -91,6 +102,9 @@ export class AutoDebugCommands implements vscode.Disposable {
      * Fix with Amazon Q - fixes only the specific issues the user selected
      */
     private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
+        const problemCount = diagnostics?.length
+        autoDebugTelemetry.recordCommandInvocation('fixWithQ', problemCount)
+
         await this.executeWithErrorHandling(
             async () => {
                 const editor = this.checkActiveEditor()
@@ -98,6 +112,7 @@ export class AutoDebugCommands implements vscode.Disposable {
                     return
                 }
                 await this.controller.fixSpecificProblems(range, diagnostics)
+                autoDebugTelemetry.recordCommandSuccess('fixWithQ', problemCount)
             },
             'Fix with Amazon Q',
             'fixWithAmazonQ'
@@ -108,13 +123,16 @@ export class AutoDebugCommands implements vscode.Disposable {
      * Fix All with Amazon Q - processes all errors in the current file
      */
     private async fixAllWithAmazonQ(): Promise<void> {
+        autoDebugTelemetry.recordCommandInvocation('fixAllWithQ')
+
         await this.executeWithErrorHandling(
             async () => {
                 const editor = this.checkActiveEditor()
                 if (!editor) {
                     return
                 }
-                await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
+                const problemCount = await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
+                autoDebugTelemetry.recordCommandSuccess('fixAllWithQ', problemCount)
             },
             'Fix All with Amazon Q',
             'fixAllWithAmazonQ'
@@ -125,6 +143,9 @@ export class AutoDebugCommands implements vscode.Disposable {
      * Explains the problem using Amazon Q
      */
     private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
+        const problemCount = diagnostics?.length
+        autoDebugTelemetry.recordCommandInvocation('explainProblem', problemCount)
+
         await this.executeWithErrorHandling(
             async () => {
                 const editor = this.checkActiveEditor()
@@ -132,6 +153,7 @@ export class AutoDebugCommands implements vscode.Disposable {
                     return
                 }
                 await this.controller.explainProblems(range, diagnostics)
+                autoDebugTelemetry.recordCommandSuccess('explainProblem', problemCount)
             },
             'Explain Problem',
             'explainProblem'
