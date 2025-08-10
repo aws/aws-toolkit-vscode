@@ -21,7 +21,8 @@ describe('Amazon Q Rules Functionality', function () {
 
         // the "rules" menu won't show unless we have a folder open
         await VSBrowser.instance.openResources(path.join('..', 'utils', 'resources', 'testFolder'))
-        ;(await new ActivityBar().getViewControl('Explorer'))?.openView()
+        const explorerControl = await new ActivityBar().getViewControl('Explorer')
+        await explorerControl?.openView()
         const view = new SideBarView()
         const content = view.getContent()
         const tree = (await content.getSection('testFolder')) as DefaultTreeSection
@@ -29,7 +30,7 @@ describe('Amazon Q Rules Functionality', function () {
         const workbench = testContext.workbench
         await workbench.executeCommand('Amazon Q: Open Chat')
 
-        // sleep is needed because the workbench needs some time to load
+        // sleep is needed                  because the workbench needs some time to load
         await sleep(5000)
         const activityBar = new ActivityBar()
         const amazonQControl = await activityBar.getViewControl('Amazon Q')
