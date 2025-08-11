@@ -25,7 +25,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         textEditor = await createNewTextFile(workbench, editorView)
     })
     afterEach(async function () {
-        // Switch back to Webview Iframe when dealing with external webviews from Amazon Q.
+        // Switch back to iframe when dealing with external webviews from Amazon Q.
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
     })

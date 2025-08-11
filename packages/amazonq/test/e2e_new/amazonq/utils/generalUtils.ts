@@ -165,11 +165,14 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
 }
 
 /**
- * Waits for Inline Generation by Amazon Q by checking if line count stops changing
+ * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
+ * The function checks for a "stable state" by monitoring the number of lines in the editor.
+ * A stable state is achieved when the line count remains unchanged for 3 consecutive checks (3 seconds).
+ * Checks are performed every 1 second.
  * @param editor The TextEditor instance
- * @param timeout Maximum time to wait in milliseconds (default: 15000)
+ * @param timeout Maximum time to wait in milliseconds (default: 15000). Function will throw an error if generation takes longer than this timeout.
  * @returns Promise<void>
- * @throws Error if timeout is exceeded
+ * @throws Error if timeout is exceeded before a stable state is reached
  */
 export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
     const startTime = Date.now()
