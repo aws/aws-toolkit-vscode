@@ -57,7 +57,7 @@ export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promis
  * Ctrl + C | await pressShortcut(driver, Key.CONTROL, 'c')
  * Ctrl + Shift + T | await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 't')
  */
-export async function pressShortcut(driver: WebDriver, ...keys: (keyof typeof Key)[]): Promise<void> {
+export async function pressShortcut(driver: WebDriver, ...keys: (string | keyof typeof Key)[]): Promise<void> {
     const actions = driver.actions()
     for (const key of keys) {
         actions.keyDown(key)
