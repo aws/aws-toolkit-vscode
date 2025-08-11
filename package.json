@@ -83,6 +83,7 @@
     },
     "dependencies": {
         "@types/node": "^22.7.5",
+        "@types/selenium-webdriver": "^4.1.28",
         "buffer": "^6.0.3",
         "jaro-winkler": "^0.2.8",
         "mocha": "^11.7.1",
