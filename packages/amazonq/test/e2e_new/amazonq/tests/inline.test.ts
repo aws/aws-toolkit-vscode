@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { Workbench, EditorView, InputBox, TextEditor, WebviewView, Key } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { createNewTextFile, writeToTextEditor, waitForEditorStabilization } from '../utils/generalUtils'
+import { createNewTextFile, writeToTextEditor, waitForInlineGeneration } from '../utils/generalUtils'
 import assert from 'assert'
 
 describe('Amazon Q Inline Completion / Chat Functionality', function () {
@@ -41,7 +41,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await input.sendKeys('Generate the fibonacci sequence through iteration')
         await input.sendKeys(Key.ENTER)
         // Wait for Amazon Q to finish generating code
-        await waitForEditorStabilization(textEditor)
+        await waitForInlineGeneration(textEditor)
 
         const textAfter = await textEditor.getText()
         assert(textAfter.length > textBefore.length, 'Amazon Q generated code')

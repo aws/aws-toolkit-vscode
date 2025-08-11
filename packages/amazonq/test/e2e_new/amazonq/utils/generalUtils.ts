@@ -165,13 +165,13 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
 }
 
 /**
- * Waits for editor content to stabilize by checking if line count stops changing
+ * Waits for Inline Generation by Amazon Q by checking if line count stops changing
  * @param editor The TextEditor instance
  * @param timeout Maximum time to wait in milliseconds (default: 15000)
  * @returns Promise<void>
  * @throws Error if timeout is exceeded
  */
-export async function waitForEditorStabilization(editor: TextEditor, timeout = 15000): Promise<void> {
+export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
     const startTime = Date.now()
     let previousLines = await editor.getNumberOfLines()
     let stableCount = 0
@@ -182,7 +182,7 @@ export async function waitForEditorStabilization(editor: TextEditor, timeout = 1
 
         if (currentLines === previousLines) {
             stableCount++
-            if (stableCount >= 2) {
+            if (stableCount >= 3) {
                 return
             }
         } else {
