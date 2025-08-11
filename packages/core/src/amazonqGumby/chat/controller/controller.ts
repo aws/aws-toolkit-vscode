@@ -58,7 +58,7 @@ import {
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
 import { setContext } from '../../../shared/vscode/setContext'
-import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHistoryHandler'
+import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHubViewProvider'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE

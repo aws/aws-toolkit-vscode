@@ -112,6 +112,7 @@ export class InlineCompletionManager implements Disposable {
         ) => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
+                const startLine = position.line
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
                 const totalSessionDisplayTime = performance.now() - requestStartTime
@@ -120,6 +121,11 @@ export class InlineCompletionManager implements Disposable {
                     this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                     getDiagnosticsOfCurrentFile()
                 )
+                // try remove the extra } ) ' " if there is a new reported problem
+                // the extra } will cause syntax error
+                if (diagnosticDiff.added.length > 0) {
+                    await handleExtraBrackets(editor, editor.selection.active, position)
+                }
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: sessionId,
                     completionSessionResult: {
@@ -164,10 +170,11 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                if (this.sessionManager.getActiveSession() === undefined) {
+                const session = this.sessionManager.getActiveSession()
+                if (session === undefined) {
                     return
                 }
-                const requestStartTime = this.sessionManager.getActiveSession()!.requestStartTime
+                const requestStartTime = session.requestStartTime
                 const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
@@ -176,9 +183,9 @@ export class InlineCompletionManager implements Disposable {
                     CodeWhispererConstants.platformLanguageIds,
                     this.inlineCompletionProvider
                 )
-                const sessionId = this.sessionManager.getActiveSession()?.sessionId
+                const sessionId = session.sessionId
                 const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-                if (!sessionId || !itemId) {
+                if (!itemId) {
                     return
                 }
                 const params: LogInlineCompletionSessionResultsParams = {
@@ -190,6 +197,7 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
+                    firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -229,53 +237,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
     }
 
-    /**
-     * Check if a completion suggestion is currently active/displayed
-     */
-    public async isCompletionActive(): Promise<boolean> {
-        const session = this.sessionManager.getActiveSession()
-        if (session === undefined || !session.displayed || session.suggestions.some((item) => item.isInlineEdit)) {
-            return false
-        }
-
-        // Use VS Code command to check if inline suggestion is actually visible on screen
-        // This command only executes when inlineSuggestionVisible context is true
-        await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
-        const isInlineSuggestionVisible = performance.now() - session.lastVisibleTime < 50
-        return isInlineSuggestionVisible
-    }
-
-    /**
-     * Batch discard telemetry for completion suggestions when edit suggestion is active
-     */
-    public batchDiscardTelemetryForEditSuggestion(items: any[], session: any): void {
-        // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
-        const completionSessionResult: {
-            [key: string]: { seen: boolean; accepted: boolean; discarded: boolean }
-        } = {}
-
-        for (const item of items) {
-            if (!item.isInlineEdit && item.itemId) {
-                completionSessionResult[item.itemId] = {
-                    seen: false,
-                    accepted: false,
-                    discarded: true,
-                }
-            }
-        }
-
-        // Send single telemetry event for all discarded items
-        if (Object.keys(completionSessionResult).length > 0) {
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: session.sessionId,
-                completionSessionResult,
-                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                totalSessionDisplayTime: performance.now() - session.requestStartTime,
-            }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-        }
-    }
-
     // this method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,
@@ -303,18 +264,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
-        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        // there is a bug in VS Code, when hitting Enter, the context.triggerKind is Invoke (0)
+        // when hitting other keystrokes, the context.triggerKind is Automatic (1)
+        // we only mark option + C as manual trigger
+        // this is a workaround since the inlineSuggest.trigger command take no params
+        const isAutoTrigger = performance.now() - vsCodeState.lastManualTriggerTime > 50
         if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
             // return early when suggestions are disabled with auto trigger
-            return []
-        }
-
-        // yield event loop to let the document listen catch updates
-        await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
             return []
         }
 
@@ -383,6 +339,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -407,8 +364,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -441,14 +398,17 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
                     }
                     this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -456,10 +416,6 @@ ${itemLog}
                     logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
                     return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing

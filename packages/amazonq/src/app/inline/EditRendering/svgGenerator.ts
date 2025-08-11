@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { diffWordsWithSpace } from 'diff'
+import { diffWordsWithSpace, diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'

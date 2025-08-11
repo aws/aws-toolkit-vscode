@@ -419,29 +419,15 @@ describe('getClientName', function () {
         assert.ok(isSageMakerStub.calledOnceWith('SMUS'))
     })
 
-    it('returns "AmazonQ-For-SMAI-CE" when in SMAI environment', function () {
-        isSageMakerStub.withArgs('SMUS').returns(false)
-        isSageMakerStub.withArgs('SMAI').returns(true)
-        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
-
-        const result = getClientName()
-
-        assert.strictEqual(result, 'AmazonQ-For-SMAI-CE')
-        assert.ok(isSageMakerStub.calledWith('SMUS'))
-        assert.ok(isSageMakerStub.calledWith('SMAI'))
-    })
-
     it('returns vscode app name when not in SMUS environment', function () {
         const mockAppName = 'Visual Studio Code'
         isSageMakerStub.withArgs('SMUS').returns(false)
-        isSageMakerStub.withArgs('SMAI').returns(false)
         sandbox.stub(vscode.env, 'appName').value(mockAppName)
 
         const result = getClientName()
 
         assert.strictEqual(result, mockAppName)
-        assert.ok(isSageMakerStub.calledWith('SMUS'))
-        assert.ok(isSageMakerStub.calledWith('SMAI'))
+        assert.ok(isSageMakerStub.calledOnceWith('SMUS'))
     })
 
     it('handles undefined app name gracefully', function () {
