@@ -37,12 +37,6 @@ export async function showEdits(
             return
         }
 
-        // TODO: To investigate why it fails and patch [generateDiffSvg]
-        if (newCode.length === 0) {
-            getLogger('nextEditPrediction').warn('not able to apply provided edit suggestion, skip rendering')
-            return
-        }
-
         if (svgImage) {
             // display the SVG image
             await displaySvgDecoration(
