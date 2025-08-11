@@ -1,0 +1,283 @@
+/* Base styling sheet for standard tags and common classes */
+@import url('./icons.css');
+
+/* Radio button */
+input[type='radio'] {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    padding: 4px;
+    border: 1px solid var(--vscode-settings-textInputForeground);
+    background-clip: content-box;
+    background-color: transparent;
+    border-radius: 50%;
+    margin: 0;
+}
+input[type='radio']:checked {
+    background-color: var(--vscode-focusBorder);
+    border: 1px solid var(--vscode-focusBorder);
+}
+input:focus:not(:focus-visible) {
+    outline-color: transparent;
+}
+
+/* Checkbox */
+/* TODO: use https://github.com/microsoft/vscode-webview-ui-toolkit */
+input[type='checkbox'] {
+    -webkit-appearance: none;
+    display: inline-block;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    border: 1px solid var(--vscode-settings-checkboxBorder);
+    border-radius: 20%;
+    background-size: 16px;
+    background-color: var(--vscode-settings-checkboxBackground);
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+}
+
+body.vscode-dark input[type='checkbox']:checked {
+    background-image: url('../../resources/icons/vscode/dark/check-old.svg');
+}
+
+body.vscode-light input[type='checkbox']:checked {
+    background-image: url('../../resources/icons/vscode/light/check-old.svg');
+}
+
+/* Placeholder */
+::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+/* Text/number input box */
+input[type='text'],
+input[type='password'],
+input[type='number'] {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+    padding: 4px 4px;
+}
+input[type='text'][data-invalid='true'],
+input[type='password'][data-invalid='true'],
+input[type='number'][data-invalid='true'] {
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-bottom: 0;
+}
+input:disabled {
+    /* TODO: use VSC webcomponent library instead */
+    filter: brightness(0.8);
+}
+.input-validation {
+    color: var(--vscode-inputValidation-errorForeground);
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    padding: 4px 4px;
+}
+
+/* Select drop-down */
+select {
+    margin: 0px 0px;
+    padding: 2px 0px;
+    border-radius: 4px;
+    border: 1px solid var(--vscode-settings-dropdownBorder);
+    background: var(--vscode-settings-dropdownBackground);
+    color: var(--vscode-settings-dropdownForeground);
+}
+select:invalid {
+    color: var(--vscode-input-placeholderForeground);
+}
+option {
+    color: var(--vscode-settings-dropdownForeground);
+    background: var(--vscode-settings-dropdownBackground);
+}
+
+/* Header (for settings) (TODO: move to different sheet) */
+.header {
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+/* The below selectors apply a tint depending on the theme: light for dark and dark for light */
+/* `backdrop-filter` with a brightness offset of 0.2 would be better here but it causes some slight flickering */
+body.vscode-dark .header {
+    background-color: rgb(255, 255, 255, 0.05);
+}
+body.vscode-light .header {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons */
+button,
+.button-theme-primary {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border);
+    padding: 8px 12px;
+}
+button,
+.button-theme-primary:hover:not(:disabled) {
+    background: var(--vscode-button-hoverBackground);
+    cursor: pointer;
+}
+.button-theme-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-border);
+}
+.button-theme-secondary:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground);
+    cursor: pointer;
+}
+.button-theme-soft {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+}
+button:disabled {
+    /* TODO: use VSC webcomponent library instead */
+    filter: brightness(0.8);
+    cursor: default;
+}
+
+/* Text area */
+textarea {
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+
+/* Badge */
+.badge {
+    color: var(--vscode-activityBarBadge-foreground);
+    background-color: var(--vscode-activityBarBadge-background);
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    border-radius: 16px;
+    white-space: nowrap;
+}
+
+/* Labels */
+.label-context {
+    display: block;
+    padding: 0 0 4px 0;
+}
+.option-label {
+    display: block;
+    /* max-width: 560px; */
+    padding: 0 0 8px 0;
+}
+
+/* Layout */
+.ml-0 {
+    margin-left: 0px;
+}
+.ml-2 {
+    margin-left: 2px;
+}
+.ml-4 {
+    margin-left: 4px;
+}
+.ml-8 {
+    margin-left: 8px;
+}
+.ml-16 {
+    margin-left: 16px;
+}
+.mr-0 {
+    margin-right: 0px;
+}
+.mr-2 {
+    margin-right: 2px;
+}
+.mr-4 {
+    margin-right: 4px;
+}
+.mr-8 {
+    margin-right: 8px;
+}
+.mr-16 {
+    margin-right: 16px;
+}
+.mt-0 {
+    margin-top: 0px;
+}
+.mt-2 {
+    margin-top: 2px;
+}
+.mt-4 {
+    margin-top: 4px;
+}
+.mt-8 {
+    margin-top: 8px;
+}
+.mt-16 {
+    margin-top: 16px;
+}
+.mb-0 {
+    margin-bottom: 0px;
+}
+.mb-2 {
+    margin-bottom: 2px;
+}
+.mb-4 {
+    margin-bottom: 4px;
+}
+.mb-8 {
+    margin-bottom: 8px;
+}
+.mb-16 {
+    margin-bottom: 16px;
+}
+
+/* Basic 16px icon class */
+.icon {
+    display: inline;
+    height: 16px;
+    width: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Misc. */
+.no-spacing {
+    margin: 0;
+    padding: 0;
+}
+.no-wrap {
+    white-space: nowrap;
+}
+.soft {
+    color: var(--vscode-input-placeholderForeground);
+}
+.container {
+    background: var(--vscode-menu-background);
+}
+.display-contents {
+    display: contents;
+}
+.button-container {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row;
+    /* margin: 16px 0 0 0; */
+    padding: 10px;
+    position: sticky;
+    top: 10px;
+    justify-content: flex-end;
+    border-bottom: 1px solid var(--vscode-menu-separatorBackground);
+    /**
+     * HACK: Using background-color alpha as a workaround because "opacity" affects children.
+     * TODO: Is there a way to use alpha with var(--vscode-menu-background) ?
+     */
+    /* background-color: rgba(0, 0, 0, 0.1); */
+}
+
+.button-container h1 {
+    margin: 0px;
+}

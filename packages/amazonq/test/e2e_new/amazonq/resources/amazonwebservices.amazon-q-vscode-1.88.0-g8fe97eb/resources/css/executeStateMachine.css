@@ -1,0 +1,55 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+textarea {
+    box-sizing: border-box;
+    background-color: var(--vscode-settings-textInputBackground);
+    color: var(--vscode-settings-textInputForeground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+    width: 100%;
+    font-size: 1.1em;
+}
+
+textarea[readonly] {
+    background-color: var(--vscode-textCodeBlock-background);
+}
+
+::placeholder {
+    opacity: 0.5;
+}
+
+body.vscode-light ::placeholder {
+    opacity: 0.3;
+}
+
+input[type='submit'] {
+    background-color: var(--vscode-button-background);
+    border: none;
+    color: var(--vscode-button-foreground);
+    padding: 10px 30px;
+    cursor: pointer;
+    float: right;
+    font-size: 1.1em;
+}
+
+input[type='file'] {
+    display: none;
+}
+
+.custom-file-upload {
+    background-color: var(--vscode-button-background);
+    border: none;
+    color: var(--vscode-button-foreground);
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.custom-file-name {
+    margin-left: 1em;
+}
+
+.input-header {
+    font-size: 1.1em;
+}

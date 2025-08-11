@@ -1,0 +1,83 @@
+input[type='submit'] {
+    background-color: var(--vscode-button-background);
+    border: none;
+    color: var(--vscode-button-foreground);
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+input[type='submit']:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+input[type='submit']:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+textarea {
+    background-color: var(--vscode-settings-textInputBackground);
+    color: var(--vscode-settings-textInputForeground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+    resize: none;
+}
+
+body.vscode-dark textarea {
+    border: 1px solid transparent;
+}
+
+textarea:focus {
+    outline: none;
+}
+
+[type='radio']:checked,
+[type='radio']:not(:checked) {
+    position: absolute;
+    left: -9999px;
+}
+
+[type='radio']:checked + label,
+[type='radio']:not(:checked) + label {
+    position: relative;
+    padding-left: 34px;
+    cursor: pointer;
+}
+
+[type='radio'] + label:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    border-color: transparent;
+    border-width: 5px;
+    border-style: solid;
+    background-color: var(--vscode-editor-background);
+    background-repeat: no-repeat;
+}
+
+[type='radio']:checked + label:before {
+    background-color: var(--vscode-button-background);
+}
+
+#positive-sentiment + label:before {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 16 16'%3E%3Cpath fill='%23fc0' d='M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1z'/%3E%3Cpath fill='%23424242' d='M11 6.5c0 .5-.447.5-1 .5s-1 0-1-.5C9 5.396 10 5 10 5s1 .396 1 1.5zM10.943 9.025c-.457 1.177-1.644 2.058-2.943 2.058s-2.455-.881-2.899-2.058h-.952C4.604 10.734 6.148 12 8 12c1.853 0 3.396-1.266 3.851-2.975h-.908zM7 6.5S6.553 7 6 7s-1 0-1-.5C5 5.396 6 5 6 5s1 .396 1 1.5z'/%3E%3C/svg%3E");
+}
+
+#negative-sentiment + label:before {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 16 16'%3E%3Ccircle fill='%23fc0' cx='8' cy='8' r='7'/%3E%3Cpath fill='%23424242' d='M10.973 6.5c0 .5-.447.5-1 .5s-1 0-1-.5c0-1.104 1-1.5 1-1.5s1 .396 1 1.5zM6.973 6.5c0 .5-.447.5-1 .5s-1 0-1-.5c0-1.104 1-1.5 1-1.5s1 .396 1 1.5zM5.104 12c.459-1.146 1.593-2 2.869-2 1.277 0 2.439.854 2.912 2h.916c-.475-1.678-1.998-2.917-3.828-2.917S4.618 10.322 4.143 12h.961z'/%3E%3C/svg%3E");
+}
+
+#error {
+    margin-top: 15px;
+    color: var(--vscode-errorForeground);
+}
+
+#remaining.exceeds-max-length {
+    color: var(--vscode-errorForeground);
+}
+
+#feedback-heading {
+    margin-top: 30px;
+}
