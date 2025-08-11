@@ -13,6 +13,9 @@ describe('Amazon Q Rules Functionality', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let webviewView: WebviewView
+    let tree: DefaultTreeSection
+    let content: ViewContent
+    let workbench: Workbench
 
     before(async function () {
         // we assume that we've left off on a webview from a previous test
