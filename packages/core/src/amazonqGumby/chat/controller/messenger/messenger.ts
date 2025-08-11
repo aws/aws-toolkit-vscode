@@ -50,7 +50,6 @@ export type UnrecoverableErrorType =
     | 'job-start-failed'
     | 'unsupported-source-db'
     | 'unsupported-target-db'
-    | 'invalid-custom-versions-file'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
     | 'invalid-from-to-jdk'
@@ -377,6 +376,38 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
+    public sendViewHistoryMessage(tabID: string, numInProgress: number) {
+        const buttons: ChatItemButton[] = []
+
+        buttons.push({
+            keepCardAfterClick: true,
+            text: CodeWhispererConstants.jobHistoryButtonText,
+            id: ButtonActions.VIEW_JOB_HISTORY,
+            disabled: false,
+        })
+
+        const messageText = CodeWhispererConstants.viewHistoryMessage(numInProgress)
+
+        const message = new ChatMessage(
+            {
+                message: messageText,
+                messageType: 'ai-prompt',
+                buttons,
+            },
+            tabID
+        )
+        this.dispatcher.sendChatMessage(message)
+    }
+
+    public sendJobRefreshInProgressMessage(tabID: string, jobId: string) {
+        this.dispatcher.sendAsyncEventProgress(
+            new AsyncEventProgressMessage(tabID, {
+                inProgress: true,
+                message: CodeWhispererConstants.refreshingJobChatMessage(jobId),
+            })
+        )
+    }
+
     public sendMessage(prompt: string, tabID: string, type: 'prompt' | 'ai-prompt') {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -420,9 +451,6 @@ export class Messenger {
                 break
             case 'unsupported-target-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
-                break
-            case 'invalid-custom-versions-file':
-                message = CodeWhispererConstants.invalidCustomVersionsFileMessage
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing

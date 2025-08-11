@@ -36,6 +36,7 @@ import {
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
+    handleExtraBrackets,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
@@ -106,11 +107,12 @@ export class InlineCompletionManager implements Disposable {
             item: InlineCompletionItemWithReferences,
             editor: TextEditor,
             requestStartTime: number,
-            startLine: number,
+            position: vscode.Position,
             firstCompletionDisplayLatency?: number
         ) => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
+                const startLine = position.line
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
                 const totalSessionDisplayTime = performance.now() - requestStartTime
@@ -119,6 +121,11 @@ export class InlineCompletionManager implements Disposable {
                     this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                     getDiagnosticsOfCurrentFile()
                 )
+                // try remove the extra } ) ' " if there is a new reported problem
+                // the extra } will cause syntax error
+                if (diagnosticDiff.added.length > 0) {
+                    await handleExtraBrackets(editor, editor.selection.active, position)
+                }
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: sessionId,
                     completionSessionResult: {
@@ -163,10 +170,11 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                if (this.sessionManager.getActiveSession() === undefined) {
+                const session = this.sessionManager.getActiveSession()
+                if (session === undefined) {
                     return
                 }
-                const requestStartTime = this.sessionManager.getActiveSession()!.requestStartTime
+                const requestStartTime = session.requestStartTime
                 const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
@@ -175,9 +183,9 @@ export class InlineCompletionManager implements Disposable {
                     CodeWhispererConstants.platformLanguageIds,
                     this.inlineCompletionProvider
                 )
-                const sessionId = this.sessionManager.getActiveSession()?.sessionId
+                const sessionId = session.sessionId
                 const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-                if (!sessionId || !itemId) {
+                if (!itemId) {
                     return
                 }
                 const params: LogInlineCompletionSessionResultsParams = {
@@ -189,6 +197,7 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
+                    firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -255,7 +264,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
-        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+        // there is a bug in VS Code, when hitting Enter, the context.triggerKind is Invoke (0)
+        // when hitting other keystrokes, the context.triggerKind is Automatic (1)
+        // we only mark option + C as manual trigger
+        // this is a workaround since the inlineSuggest.trigger command take no params
+        const isAutoTrigger = performance.now() - vsCodeState.lastManualTriggerTime > 50
         if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
             // return early when suggestions are disabled with auto trigger
             return []
@@ -263,12 +276,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // yield event loop to let the document listen catch updates
         await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
-            return []
-        }
 
         let logstr = `GenerateCompletion metadata:\\n`
         try {
@@ -279,14 +286,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const prevSessionId = prevSession?.sessionId
             const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const prevStartPosition = prevSession?.startPosition
-            if (prevSession?.triggerOnAcceptance) {
+            const editsTriggerOnAcceptance = prevSession?.triggerOnAcceptance
+            if (editsTriggerOnAcceptance) {
                 getAllRecommendationsOptions = {
                     ...getAllRecommendationsOptions,
                     editsStreakToken: prevSession?.editsStreakPartialResultToken,
                 }
             }
             const editor = window.activeTextEditor
-            if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
+            // Skip prefix matching for Edits suggestions that trigger on acceptance.
+            if (prevSession && prevSessionId && prevItemId && prevStartPosition && !editsTriggerOnAcceptance) {
                 const prefix = document.getText(new Range(prevStartPosition, position))
                 const prevItemMatchingPrefix = []
                 for (const item of this.sessionManager.getActiveRecommendation()) {
@@ -304,7 +313,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                                 item,
                                 editor,
                                 prevSession?.requestStartTime,
-                                position.line,
+                                position,
                                 prevSession?.firstCompletionDisplayLatency,
                             ],
                         }
@@ -330,6 +339,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
@@ -348,11 +358,14 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.languageClient,
                 document,
                 position,
-                context,
+                {
+                    triggerKind: isAutoTrigger ? 1 : 0,
+                    selectedCompletionInfo: context.selectedCompletionInfo,
+                },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -385,21 +398,24 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
-                    },
+                    }
+                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    this.sessionManager.clear()
+                    logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
+                    return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing
@@ -441,7 +457,7 @@ ${itemLog}
                             item,
                             editor,
                             session.requestStartTime,
-                            cursorPosition.line,
+                            cursorPosition,
                             session.firstCompletionDisplayLatency,
                         ],
                     }
