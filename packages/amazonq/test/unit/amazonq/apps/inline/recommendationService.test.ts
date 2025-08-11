@@ -163,7 +163,6 @@ describe('RecommendationService', () => {
                 position: mockPosition,
                 context: mockContext,
                 documentChangeParams: undefined,
-                openTabFilepaths: [],
             })
 
             // Verify session management
@@ -213,7 +212,6 @@ describe('RecommendationService', () => {
                 position: mockPosition,
                 context: mockContext,
                 documentChangeParams: undefined,
-                openTabFilepaths: [],
             }
             const secondRequestArgs = completionCalls[1].args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)

@@ -2,12 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
-    editCompletionRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
@@ -68,8 +68,8 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken,
         isAutoTrigger: boolean,
-        documentEventListener: DocumentEventListener,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
+        documentChangeEvent?: vscode.TextDocumentChangeEvent
     ) {
         const documentChangeEvent = documentEventListener?.getLastDocumentChangeEvent(document.uri.fsPath)?.event
 
@@ -84,7 +84,6 @@ export class RecommendationService {
                   contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
               }
             : undefined
-        const openTabs = await getOpenFilesInWindow()
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -92,7 +91,6 @@ export class RecommendationService {
             position,
             context,
             documentChangeParams: documentChangeParams,
-            openTabFilepaths: openTabs,
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
@@ -201,7 +199,6 @@ export class RecommendationService {
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 
-            // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background

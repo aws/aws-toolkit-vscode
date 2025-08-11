@@ -112,7 +112,6 @@ export class InlineCompletionManager implements Disposable {
         ) => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                const startLine = position.line
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
                 const totalSessionDisplayTime = performance.now() - requestStartTime
@@ -121,11 +120,6 @@ export class InlineCompletionManager implements Disposable {
                     this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                     getDiagnosticsOfCurrentFile()
                 )
-                // try remove the extra } ) ' " if there is a new reported problem
-                // the extra } will cause syntax error
-                if (diagnosticDiff.added.length > 0) {
-                    await handleExtraBrackets(editor, editor.selection.active, position)
-                }
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: sessionId,
                     completionSessionResult: {
@@ -170,12 +164,6 @@ export class InlineCompletionManager implements Disposable {
         const onInlineRejection = async () => {
             try {
                 vsCodeState.isCodeWhispererEditing = true
-                const session = this.sessionManager.getActiveSession()
-                if (session === undefined) {
-                    return
-                }
-                const requestStartTime = session.requestStartTime
-                const totalSessionDisplayTime = performance.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
                 this.disposable.dispose()
@@ -183,9 +171,9 @@ export class InlineCompletionManager implements Disposable {
                     CodeWhispererConstants.platformLanguageIds,
                     this.inlineCompletionProvider
                 )
-                const sessionId = session.sessionId
+                const sessionId = this.sessionManager.getActiveSession()?.sessionId
                 const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
-                if (!itemId) {
+                if (!sessionId || !itemId) {
                     return
                 }
                 const params: LogInlineCompletionSessionResultsParams = {
@@ -197,8 +185,6 @@ export class InlineCompletionManager implements Disposable {
                             discarded: false,
                         },
                     },
-                    firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                    totalSessionDisplayTime: totalSessionDisplayTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 // clear session manager states once rejected
@@ -311,13 +297,18 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
-        // there is a bug in VS Code, when hitting Enter, the context.triggerKind is Invoke (0)
-        // when hitting other keystrokes, the context.triggerKind is Automatic (1)
-        // we only mark option + C as manual trigger
-        // this is a workaround since the inlineSuggest.trigger command take no params
-        const isAutoTrigger = performance.now() - vsCodeState.lastManualTriggerTime > 50
+        const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
         if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
             // return early when suggestions are disabled with auto trigger
+            return []
+        }
+
+        // yield event loop to let the document listen catch updates
+        await sleep(1)
+        // prevent user deletion invoking auto trigger
+        // this is a best effort estimate of deletion
+        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
+            getLogger().debug('Skip auto trigger when deleting code')
             return []
         }
 
@@ -411,8 +402,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                this.documentEventListener,
-                getAllRecommendationsOptions
+                getAllRecommendationsOptions,
+                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()

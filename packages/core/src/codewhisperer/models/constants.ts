@@ -936,8 +936,4 @@ export const predictionTrackerDefaultConfig = {
     maxSupplementalContext: 15,
 }
 
-export const codeReviewFindingsSuffix = '_codeReviewFindings'
-export const displayFindingsSuffix = '_displayFindings'
-
-export const displayFindingsDetectorName = 'DisplayFindings'
 export const findingsSuffix = '_codeReviewFindings'

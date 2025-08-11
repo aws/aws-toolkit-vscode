@@ -132,14 +132,6 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         await activateAmazonqLsp(context)
     }
 
-    // Activate AutoDebug feature at extension level
-    try {
-        const autoDebugFeature = await activateAutoDebug(context)
-        context.subscriptions.push(autoDebugFeature)
-    } catch (error) {
-        getLogger().error('Failed to activate AutoDebug feature at extension level: %s', error)
-    }
-
     // Generic extension commands
     registerGenericCommands(context, amazonQContextPrefix)
 

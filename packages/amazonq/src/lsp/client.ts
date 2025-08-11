@@ -182,14 +182,12 @@ export async function startLanguageServer(
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
-                        codeReviewInChat: codeReviewInChat,
-                        // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
-                        displayFindings: true,
+                        codeReviewInChat: false,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                        showLogs: isSageMaker() ? false : true,
+                        showLogs: true,
                     },
                     textDocument: {
                         inlineCompletionWithReferences: textDocSection,
@@ -364,10 +362,6 @@ async function onLanguageServerReady(
             await sessionManager.maybeRefreshSessionUx()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
             sessionManager.onNextSuggestion()
-        }),
-        // this is a workaround since handleDidShowCompletionItem is not public API
-        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
-            sessionManager.checkInlineSuggestionVisibility()
         }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             vsCodeState.lastManualTriggerTime = performance.now()
