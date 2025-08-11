@@ -33,9 +33,11 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
             case Command.INIT:
                 void initMessageHandler(context)
                 break
-            case Command.API_CALL:
-                void apiCallMessageHandler(message as ApiCallRequestMessage, context)
+            case Command.API_CALL: {
+                const region = parseExecutionArnForStateMachine(context.executionArn)?.region || 'us-east-1'
+                void apiCallMessageHandler(message as ApiCallRequestMessage, context, region)
                 break
+            }
             case Command.START_EXECUTION:
                 void startExecutionMessageHandler(context)
                 break

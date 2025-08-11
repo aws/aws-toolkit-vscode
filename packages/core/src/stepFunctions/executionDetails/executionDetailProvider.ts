@@ -12,6 +12,7 @@ import { ComponentType } from '../messageHandlers/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
 import { handleMessage } from './handleMessage'
 import { ExecutionDetailsContext } from '../messageHandlers/types'
+import { parseExecutionArnForStateMachine } from '../utils'
 
 /**
  * Provider for Execution Details panels.
@@ -89,7 +90,10 @@ export class ExecutionDetailProvider {
         // Only include start time tag for express executions (when startTime is provided)
         const startTimeTag = startTime ? `<meta name="start-time" content="${startTime}" />` : ''
 
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${executionArnTag} ${startTimeTag} ${htmlFileSplit[1]}`
+        const region = parseExecutionArnForStateMachine(executionArn)?.region
+        const regionTag = `<meta name="region" content="${region}" />`
+
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${executionArnTag} ${startTimeTag} ${regionTag} ${htmlFileSplit[1]}`
     }
 
     /**
