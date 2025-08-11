@@ -178,167 +178,6 @@ async function cleanupTempFiles(): Promise<void> {
     }
 }
 
-/**
- * Handle streaming chunk processing for diff animations
- */
-async function handleStreamingChunk(
-    streamingChunk: any,
-    initializingStreamsByFile: Map<string, Set<string>>,
-    processedChunks: Map<string, Set<string>>
-): Promise<void> {
-    // Handle fsReplace streaming chunks separately
-    if (streamingChunk.toolName === 'fsReplace') {
-        try {
-            const contentHash = streamingChunk.content
-                ? `${streamingChunk.content.substring(0, 50)}-${streamingChunk.content.length}`
-                : 'empty'
-            const chunkHash = `${streamingChunk.toolUseId}-${contentHash}-${streamingChunk.fsWriteParams?.pairIndex || 0}-${streamingChunk.isComplete}`
-
-            if (!processedChunks.has(streamingChunk.toolUseId)) {
-                processedChunks.set(streamingChunk.toolUseId, new Set())
-            }
-
-            const toolChunks = processedChunks.get(streamingChunk.toolUseId)!
-
-            if (streamingChunk.fsWriteParams?.command === 'fsReplace_diffPair') {
-                if (toolChunks.has(chunkHash)) {
-                    return
-                }
-            } else {
-                const simpleHash = `${streamingChunk.toolUseId}-${streamingChunk.content?.length || 0}`
-                if (toolChunks.has(simpleHash) && streamingChunk.isComplete) {
-                    return
-                }
-                toolChunks.add(simpleHash)
-            }
-
-            toolChunks.add(chunkHash)
-
-            const animationHandler = getDiffAnimationHandler()
-            const filePath = streamingChunk.filePath
-            const isAlreadyInitializing =
-                filePath &&
-                initializingStreamsByFile.has(filePath) &&
-                initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
-
-            if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && filePath && !isAlreadyInitializing) {
-                if (!initializingStreamsByFile.has(filePath)) {
-                    initializingStreamsByFile.set(filePath, new Set())
-                }
-                initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
-
-                try {
-                    await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
-                } catch (error) {
-                    getLogger().error(
-                        `Failed to initialize fsReplace streaming session for ${streamingChunk.toolUseId}: ${error}`
-                    )
-                } finally {
-                    if (filePath && initializingStreamsByFile.has(filePath)) {
-                        const toolUseIds = initializingStreamsByFile.get(filePath)!
-                        toolUseIds.delete(streamingChunk.toolUseId)
-                        if (toolUseIds.size === 0) {
-                            initializingStreamsByFile.delete(filePath)
-                        }
-                    }
-                }
-            }
-
-            if (streamingChunk.fsWriteParams) {
-                const streamingController = (animationHandler as any).streamingDiffController
-                if (streamingController && streamingController.updateFsWriteParams) {
-                    streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
-                }
-            }
-
-            await animationHandler.streamContentUpdate(
-                streamingChunk.toolUseId,
-                streamingChunk.content || '',
-                streamingChunk.isComplete || false
-            )
-
-            if (!streamingChunk.isComplete || !streamingChunk.filePath) {
-                return
-            }
-
-            const toolUseIds = initializingStreamsByFile.get(streamingChunk.filePath)
-            if (!toolUseIds) {
-                return
-            }
-
-            toolUseIds.delete(streamingChunk.toolUseId)
-
-            if (toolUseIds.size === 0) {
-                initializingStreamsByFile.delete(streamingChunk.filePath)
-            }
-        } catch (error) {
-            getLogger().error(`Failed to process fsReplace streaming chunk: ${error}`)
-            initializingStreamsByFile.delete(streamingChunk.toolUseId)
-        }
-        return
-    }
-
-    try {
-        const animationHandler = getDiffAnimationHandler()
-        const filePath = streamingChunk.filePath
-        const isAlreadyInitializing =
-            filePath &&
-            initializingStreamsByFile.has(filePath) &&
-            initializingStreamsByFile.get(filePath)!.has(streamingChunk.toolUseId)
-
-        if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && filePath && !isAlreadyInitializing) {
-            if (!initializingStreamsByFile.has(filePath)) {
-                initializingStreamsByFile.set(filePath, new Set())
-            }
-            initializingStreamsByFile.get(filePath)!.add(streamingChunk.toolUseId)
-
-            try {
-                await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, filePath)
-            } catch (error) {
-                getLogger().error(`Failed to initialize streaming session for ${streamingChunk.toolUseId}: ${error}`)
-                throw error
-            } finally {
-                if (filePath && initializingStreamsByFile.has(filePath)) {
-                    const toolUseIds = initializingStreamsByFile.get(filePath)!
-                    toolUseIds.delete(streamingChunk.toolUseId)
-                    if (toolUseIds.size === 0) {
-                        initializingStreamsByFile.delete(filePath)
-                    }
-                }
-            }
-        }
-
-        if (streamingChunk.fsWriteParams) {
-            const streamingController = (animationHandler as any).streamingDiffController
-            if (streamingController && streamingController.updateFsWriteParams) {
-                streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
-            }
-        }
-
-        await animationHandler.streamContentUpdate(
-            streamingChunk.toolUseId,
-            streamingChunk.content || '',
-            streamingChunk.isComplete || false
-        )
-
-        if (!streamingChunk.isComplete || !streamingChunk.filePath) {
-            return
-        }
-
-        const toolUseIds = initializingStreamsByFile.get(streamingChunk.filePath)
-        if (!toolUseIds) {
-            return
-        }
-
-        toolUseIds.delete(streamingChunk.toolUseId)
-
-        if (toolUseIds.size === 0) {
-            initializingStreamsByFile.delete(streamingChunk.filePath)
-        }
-    } catch (error) {
-        getLogger().error(`Failed to process streaming chunk: ${error}`)
-    }
-}
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
@@ -886,7 +725,12 @@ export function registerMessageListeners(
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
         if ((params.data as any)?.streamingChunk) {
-            await handleStreamingChunk((params.data as any).streamingChunk, initializingStreamsByFile, processedChunks)
+            const animationHandler = getDiffAnimationHandler()
+            await animationHandler.handleStreamingChunk(
+                (params.data as any).streamingChunk,
+                initializingStreamsByFile,
+                processedChunks
+            )
             return
         }
 
