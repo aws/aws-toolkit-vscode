@@ -15,7 +15,7 @@ import {
 } from './nodes/sageMakerUnifiedStudioRootNode'
 import { DataZoneClient } from '../shared/client/datazoneClient'
 import { getLogger } from '../../shared/logger/logger'
-import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/smusAuthenticationProvider'
+import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/providers/smusAuthenticationProvider'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider

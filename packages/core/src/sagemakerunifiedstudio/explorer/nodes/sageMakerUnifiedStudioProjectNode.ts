@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneProject } from '../../shared/client/datazoneClient'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 import { SageMakerUnifiedStudioDataNode } from './sageMakerUnifiedStudioDataNode'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -21,6 +21,8 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     private project?: DataZoneProject
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+
+    constructor() {}
 
     public async getTreeItem(): Promise<vscode.TreeItem> {
         if (this.project) {
@@ -67,8 +69,9 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         return undefined
     }
 
-    public setProject(project: any): void {
+    public async setProject(project: any): Promise<void> {
         this.project = project
+
         // Fire the event to refresh this node and its children
         this.onDidChangeEmitter.fire()
     }

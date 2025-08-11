@@ -7,7 +7,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
-import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/smusAuthenticationProvider'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { SmusConnection } from '../../../../sagemakerunifiedstudio/auth/model'
 
 describe('SageMakerUnifiedStudioAuthInfoNode', function () {

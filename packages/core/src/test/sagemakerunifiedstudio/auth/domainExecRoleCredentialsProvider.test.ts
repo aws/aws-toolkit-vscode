@@ -1,0 +1,345 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import assert from 'assert'
+import sinon from 'sinon'
+import { DomainExecRoleCredentialsProvider } from '../../../sagemakerunifiedstudio/auth/providers/domainExecRoleCredentialsProvider'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusTimeouts } from '../../../sagemakerunifiedstudio/shared/smusUtils'
+import fetch from 'node-fetch'
+
+describe('DomainExecRoleCredentialsProvider', function () {
+    let derProvider: DomainExecRoleCredentialsProvider
+    let mockGetAccessToken: sinon.SinonStub
+    let fetchStub: sinon.SinonStub
+
+    const testDomainId = 'dzd_testdomain'
+    const testDomainUrl = 'https://test-domain.sagemaker.us-east-2.on.aws'
+    const testSsoRegion = 'us-east-2'
+    const testAccessToken = 'test-access-token-12345'
+
+    const mockCredentialsResponse = {
+        credentials: {
+            accessKeyId: 'AKIA-DER-KEY',
+            secretAccessKey: 'der-secret-key',
+            sessionToken: 'der-session-token',
+        },
+    }
+
+    beforeEach(function () {
+        // Mock access token function
+        mockGetAccessToken = sinon.stub().resolves(testAccessToken)
+
+        // Mock fetch
+        fetchStub = sinon.stub(fetch, 'default' as any).resolves({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: sinon.stub().resolves(mockCredentialsResponse),
+        } as any)
+
+        derProvider = new DomainExecRoleCredentialsProvider(
+            testDomainUrl,
+            testDomainId,
+            testSsoRegion,
+            mockGetAccessToken
+        )
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    describe('constructor', function () {
+        it('should initialize with correct properties', function () {
+            assert.strictEqual(derProvider.getDomainId(), testDomainId)
+            assert.strictEqual(derProvider.getDomainUrl(), testDomainUrl)
+            assert.strictEqual(derProvider.getDefaultRegion(), testSsoRegion)
+        })
+    })
+
+    describe('getCredentialsId', function () {
+        it('should return correct credentials ID', function () {
+            const credentialsId = derProvider.getCredentialsId()
+            assert.strictEqual(credentialsId.credentialSource, 'sso')
+            assert.strictEqual(credentialsId.credentialTypeId, testDomainId)
+        })
+    })
+
+    describe('getProviderType', function () {
+        it('should return sso provider type', function () {
+            assert.strictEqual(derProvider.getProviderType(), 'sso')
+        })
+    })
+
+    describe('getTelemetryType', function () {
+        it('should return ssoProfile telemetry type', function () {
+            assert.strictEqual(derProvider.getTelemetryType(), 'ssoProfile')
+        })
+    })
+
+    describe('getHashCode', function () {
+        it('should return correct hash code', function () {
+            const hashCode = derProvider.getHashCode()
+            assert.strictEqual(hashCode, `smus-der:${testDomainId}:${testSsoRegion}`)
+        })
+    })
+
+    describe('canAutoConnect', function () {
+        it('should return false', async function () {
+            const result = await derProvider.canAutoConnect()
+            assert.strictEqual(result, false)
+        })
+    })
+
+    describe('isAvailable', function () {
+        it('should return true when access token is available', async function () {
+            const result = await derProvider.isAvailable()
+            assert.strictEqual(result, true)
+            assert.ok(mockGetAccessToken.called)
+        })
+
+        it('should return false when access token throws error', async function () {
+            mockGetAccessToken.rejects(new Error('Token error'))
+            const result = await derProvider.isAvailable()
+            assert.strictEqual(result, false)
+        })
+    })
+
+    describe('getCredentials', function () {
+        it('should fetch and cache DER credentials', async function () {
+            const credentials = await derProvider.getCredentials()
+
+            // Verify access token was fetched
+            assert.ok(mockGetAccessToken.called)
+
+            // Verify fetch was called with correct parameters
+            assert.ok(fetchStub.called)
+            const fetchCall = fetchStub.firstCall
+            assert.strictEqual(fetchCall.args[0], `${testDomainUrl}/sso/redeem-token`)
+
+            const fetchOptions = fetchCall.args[1]
+            assert.strictEqual(fetchOptions.method, 'POST')
+            assert.strictEqual(fetchOptions.headers['Content-Type'], 'application/json')
+            assert.strictEqual(fetchOptions.headers['Accept'], 'application/json')
+            assert.strictEqual(fetchOptions.headers['User-Agent'], 'aws-toolkit-vscode')
+
+            const requestBody = JSON.parse(fetchOptions.body)
+            assert.strictEqual(requestBody.domainId, testDomainId)
+            assert.strictEqual(requestBody.accessToken, testAccessToken)
+
+            // Verify timeout is set
+            assert.strictEqual(fetchOptions.timeout, SmusTimeouts.apiCallTimeoutMs)
+            assert.strictEqual(fetchOptions.timeout, 10000) // 10 seconds
+
+            // Verify returned credentials
+            assert.strictEqual(credentials.accessKeyId, mockCredentialsResponse.credentials.accessKeyId)
+            assert.strictEqual(credentials.secretAccessKey, mockCredentialsResponse.credentials.secretAccessKey)
+            assert.strictEqual(credentials.sessionToken, mockCredentialsResponse.credentials.sessionToken)
+            assert.ok(credentials.expiration)
+        })
+
+        it('should use cached credentials when available', async function () {
+            // First call should fetch credentials
+            const credentials1 = await derProvider.getCredentials()
+
+            // Second call should use cache
+            const credentials2 = await derProvider.getCredentials()
+
+            // Fetch should only be called once
+            assert.strictEqual(fetchStub.callCount, 1)
+            assert.strictEqual(mockGetAccessToken.callCount, 1)
+
+            // Credentials should be the same
+            assert.strictEqual(credentials1, credentials2)
+        })
+
+        it('should handle missing access token', async function () {
+            mockGetAccessToken.resolves('')
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed' && err.message.includes('No access token available')
+                }
+            )
+        })
+
+        it('should handle HTTP errors from redeem token API', async function () {
+            fetchStub.resolves({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                text: sinon.stub().resolves('Invalid token'),
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed' && err.message.includes('401')
+                }
+            )
+        })
+
+        it('should handle timeout errors', async function () {
+            const timeoutError = new Error('Request timeout')
+            timeoutError.name = 'AbortError'
+            fetchStub.rejects(timeoutError)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'DerCredentialsFetchFailed' && err.message.includes('timed out after 10 seconds')
+                    )
+                }
+            )
+        })
+
+        it('should handle network errors', async function () {
+            const networkError = new Error('Network error')
+            fetchStub.rejects(networkError)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed'
+                }
+            )
+        })
+
+        it('should handle missing credentials object in response', async function () {
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves({}), // Missing credentials object
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'DerCredentialsFetchFailed' && err.message.includes('Missing credentials object')
+                    )
+                }
+            )
+        })
+
+        it('should handle invalid accessKeyId in response', async function () {
+            const invalidResponse = {
+                credentials: {
+                    accessKeyId: '', // Invalid empty string
+                    secretAccessKey: 'valid-secret',
+                    sessionToken: 'valid-token',
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves(invalidResponse),
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed' && err.message.includes('Invalid accessKeyId')
+                }
+            )
+        })
+
+        it('should handle invalid secretAccessKey in response', async function () {
+            const invalidResponse = {
+                credentials: {
+                    accessKeyId: 'valid-key',
+                    secretAccessKey: undefined, // Invalid null value
+                    sessionToken: 'valid-token',
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves(invalidResponse),
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed' && err.message.includes('Invalid secretAccessKey')
+                }
+            )
+        })
+
+        it('should handle invalid sessionToken in response', async function () {
+            const invalidResponse = {
+                credentials: {
+                    accessKeyId: 'valid-key',
+                    secretAccessKey: 'valid-secret',
+                    sessionToken: undefined, // Invalid undefined value
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves(invalidResponse),
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed' && err.message.includes('Invalid sessionToken')
+                }
+            )
+        })
+
+        it('should set default expiration when not provided in response', async function () {
+            const credentials = await derProvider.getCredentials()
+
+            // Should have expiration set to 55 mins from now
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = Date.now() + 55 * 60 * 1000 // 1 hour
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 5000, 'Expiration should be 55 mins from now')
+        })
+
+        it('should handle JSON parsing errors', async function () {
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().rejects(new Error('Invalid JSON')),
+            } as any)
+
+            await assert.rejects(
+                () => derProvider.getCredentials(),
+                (err: ToolkitError) => {
+                    return err.code === 'DerCredentialsFetchFailed'
+                }
+            )
+        })
+    })
+
+    describe('invalidate', function () {
+        it('should clear cache and force fresh fetch on next call', async function () {
+            // First call to populate cache
+            await derProvider.getCredentials()
+            assert.strictEqual(fetchStub.callCount, 1)
+
+            // Invalidate should clear cache
+            derProvider.invalidate()
+
+            // Next call should fetch fresh credentials
+            await derProvider.getCredentials()
+            assert.strictEqual(fetchStub.callCount, 2)
+        })
+    })
+})

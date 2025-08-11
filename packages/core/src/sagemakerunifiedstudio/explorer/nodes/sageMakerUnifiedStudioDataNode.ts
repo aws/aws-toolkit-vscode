@@ -15,6 +15,7 @@ import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProje
 import { createErrorTreeItem } from './utils'
 import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
 import { ConnectionType } from './types'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
 /**
  * Tree node representing a Data folder that contains S3 and Redshift connections
@@ -24,12 +25,14 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
     public readonly resource = {}
     private readonly logger = getLogger()
     private childrenNodes: TreeNode[] | undefined
+    private readonly authProvider: SmusAuthenticationProvider
 
     constructor(
         private readonly parent: SageMakerUnifiedStudioProjectNode,
         initialChildren: TreeNode[] = []
     ) {
         this.childrenNodes = initialChildren.length > 0 ? initialChildren : undefined
+        this.authProvider = SmusAuthenticationProvider.fromContext()
     }
 
     public async getChildren(): Promise<TreeNode[]> {
@@ -44,12 +47,13 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 return [this.createErrorNode('No project information available')]
             }
 
-            const environmentCredentials = await this.getEnvironmentCredentials(project)
+            const projectCredentialProvider = await this.authProvider.getProjectCredentialProvider(project.id)
+            const environmentCredentials = await projectCredentialProvider.getCredentials()
             if (!environmentCredentials) {
                 return [this.createErrorNode('Failed to get credentials')]
             }
 
-            const datazoneClient = DataZoneClient.getInstance()
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
             const connections = await datazoneClient.listConnections(project.domainId, undefined, project.id)
             this.logger.info(`Found ${connections.length} connections for project ${project.id}`)
 
@@ -67,31 +71,12 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         }
     }
 
-    private async getEnvironmentCredentials(project: DataZoneProject): Promise<AwsCredentialIdentity | undefined> {
-        const datazoneClient = DataZoneClient.getInstance()
-        this.logger.info(`Getting tooling environment credentials for project ${project.id}`)
-
-        const envCredsResponse = await datazoneClient.getProjectDefaultEnvironmentCreds(project.domainId, project.id)
-
-        if (!envCredsResponse?.accessKeyId || !envCredsResponse?.secretAccessKey || !envCredsResponse?.sessionToken) {
-            this.logger.warn('Tooling environment credentials are incomplete or missing')
-            return undefined
-        }
-
-        return {
-            accessKeyId: envCredsResponse.accessKeyId,
-            secretAccessKey: envCredsResponse.secretAccessKey,
-            sessionToken: envCredsResponse.sessionToken,
-        }
-    }
-
     private async createConnectionNodes(
         project: DataZoneProject,
         connections: DataZoneConnection[],
         environmentCredentials: AwsCredentialIdentity
     ): Promise<TreeNode[]> {
-        const datazoneClient = DataZoneClient.getInstance()
-        const region = datazoneClient.getRegion()
+        const region = this.authProvider.getDomainRegion()
         const dataNodes: TreeNode[] = []
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
@@ -120,7 +105,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         region: string
     ): Promise<TreeNode> {
         try {
-            const datazoneClient = DataZoneClient.getInstance()
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
             const getConnectionResponse = await datazoneClient.getConnection({
                 domainIdentifier: project.domainId,
                 identifier: connection.connectionId,
@@ -144,7 +129,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         environmentCredentials: AwsCredentialIdentity
     ): Promise<TreeNode> {
         try {
-            const datazoneClient = DataZoneClient.getInstance()
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
             const getConnectionResponse = await datazoneClient.getConnection({
                 domainIdentifier: project.domainId,
                 identifier: connection.connectionId,

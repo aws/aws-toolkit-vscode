@@ -219,6 +219,29 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    /**
+     * Gets the SSO access token for a connection
+     * @param connection The SSO connection to get the token for
+     * @returns Promise resolving to the access token string
+     */
+    @withTelemetryContext({ name: 'getSsoAccessToken', class: authClassName })
+    public async getSsoAccessToken(connection: Pick<SsoConnection, 'id'>): Promise<string> {
+        const profile = this.store.getProfileOrThrow(connection.id)
+
+        if (profile.type !== 'sso') {
+            throw new Error(`Connection ${connection.id} is not an SSO connection`)
+        }
+
+        const provider = this.getSsoTokenProvider(connection.id, profile)
+        const token = await provider.getToken()
+
+        if (!token?.accessToken) {
+            throw new Error(`No access token available for connection ${connection.id}`)
+        }
+
+        return token.accessToken
+    }
+
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     @withTelemetryContext({ name: 'useConnection', class: authClassName })

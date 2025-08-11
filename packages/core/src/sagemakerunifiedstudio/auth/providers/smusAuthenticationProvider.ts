@@ -1,0 +1,426 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { Auth } from '../../../auth/auth'
+import { getSecondaryAuth } from '../../../auth/secondaryAuth'
+import { ToolkitError } from '../../../shared/errors'
+import { withTelemetryContext } from '../../../shared/telemetry/util'
+import { SsoConnection } from '../../../auth/connection'
+import { showReauthenticateMessage } from '../../../shared/utilities/messages'
+import * as localizedText from '../../../shared/localizedText'
+import { ToolkitPromptSettings } from '../../../shared/settings'
+import { setContext } from '../../../shared/vscode/setContext'
+import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
+import { createSmusProfile, isValidSmusConnection, SmusConnection } from '../model'
+import { getLogger } from '../../../shared/logger/logger'
+import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
+import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
+import { ConnectionCredentialsProvider } from './connectionCredentialsProvider'
+
+/**
+ * Sets the context variable for SageMaker Unified Studio connection state
+ * @param isConnected Whether SMUS is connected
+ */
+export function setSmusConnectedContext(isConnected: boolean): Promise<void> {
+    return setContext('aws.smus.connected', isConnected)
+}
+const authClassName = 'SmusAuthenticationProvider'
+
+/**
+ * Authentication provider for SageMaker Unified Studio
+ * Manages authentication state and credentials for SMUS
+ */
+export class SmusAuthenticationProvider {
+    public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChange = this.onDidChangeEmitter.event
+    private credentialsProviderCache = new Map<string, any>()
+    private projectCredentialProvidersCache = new Map<string, ProjectRoleCredentialsProvider>()
+    private connectionCredentialProvidersCache = new Map<string, ConnectionCredentialsProvider>()
+
+    public constructor(
+        public readonly auth = Auth.instance,
+        public readonly secondaryAuth = getSecondaryAuth(
+            auth,
+            'smus',
+            'SageMaker Unified Studio',
+            isValidSmusConnection
+        )
+    ) {
+        this.onDidChangeActiveConnection(async () => {
+            // Invalidate any cached credentials for the previous connection
+            await this.invalidateAllCredentialsInCache()
+            // Clear credentials provider cache when connection changes
+            this.credentialsProviderCache.clear()
+            // Clear project provider cache when connection changes
+            this.projectCredentialProvidersCache.clear()
+            // Clear connection provider cache when connection changes
+            this.connectionCredentialProvidersCache.clear()
+            await setSmusConnectedContext(this.isConnected())
+            this.onDidChangeEmitter.fire()
+        })
+
+        // Set initial context in case event does not trigger
+        void setSmusConnectedContext(this.isConnectionValid())
+    }
+
+    /**
+     * Gets the active connection
+     */
+    public get activeConnection() {
+        return this.secondaryAuth.activeConnection
+    }
+
+    /**
+     * Checks if using a saved connection
+     */
+    public get isUsingSavedConnection() {
+        return this.secondaryAuth.hasSavedConnection
+    }
+
+    /**
+     * Checks if the connection is valid
+     */
+    public isConnectionValid(): boolean {
+        return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
+    }
+
+    /**
+     * Checks if connected to SMUS
+     */
+    public isConnected(): boolean {
+        return this.activeConnection !== undefined
+    }
+
+    /**
+     * Restores the previous connection
+     * Uses a promise to prevent multiple simultaneous restore calls
+     */
+    public async restore() {
+        await this.secondaryAuth.restoreConnection()
+    }
+
+    /**
+     * Authenticates with SageMaker Unified Studio using a domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns Promise resolving to the connection
+     */
+    @withTelemetryContext({ name: 'connectToSmus', class: authClassName })
+    public async connectToSmus(domainUrl: string): Promise<SmusConnection> {
+        const logger = getLogger()
+
+        try {
+            // Extract domain info using SmusUtils
+            const { domainId, region } = SmusUtils.extractDomainInfoFromUrl(domainUrl)
+
+            // Validate domain ID
+            if (!domainId) {
+                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+            }
+
+            logger.info(`SMUS: Connecting to domain ${domainId} in region ${region}`)
+
+            // Check if we already have a connection for this domain
+            const existingConn = (await this.auth.listConnections()).find(
+                (c): c is SmusConnection =>
+                    isValidSmusConnection(c) && (c as any).domainUrl?.toLowerCase() === domainUrl.toLowerCase()
+            )
+
+            if (existingConn) {
+                const connectionState = this.auth.getConnectionState(existingConn)
+                logger.info(`SMUS: Found existing connection ${existingConn.id} with state: ${connectionState}`)
+
+                // If connection is valid, use it directly without triggering new auth flow
+                if (connectionState === 'valid') {
+                    logger.info('SMUS: Using existing valid connection')
+
+                    // Use the existing connection
+                    const result = await this.secondaryAuth.useNewConnection(existingConn)
+                    return result
+                }
+
+                // If connection is invalid or expired, reauthenticate
+                if (connectionState === 'invalid') {
+                    logger.info('SMUS: Existing connection is invalid, reauthenticating')
+                    const reauthenticatedConn = await this.reauthenticate(existingConn)
+
+                    // Create the SMUS connection wrapper
+                    const smusConn: SmusConnection = {
+                        ...reauthenticatedConn,
+                        domainUrl,
+                        domainId,
+                    }
+
+                    const result = await this.secondaryAuth.useNewConnection(smusConn)
+                    logger.debug(`SMUS: Reauthenticated connection successfully, id=${result.id}`)
+                    return result
+                }
+            }
+
+            // No existing connection found, create a new one
+            logger.info('SMUS: No existing connection found, creating new connection')
+
+            // Get SSO instance info from DataZone
+            const ssoInstanceInfo = await SmusUtils.getSsoInstanceInfo(domainUrl)
+
+            // Create a new connection with appropriate scope based on domain URL
+            const profile = createSmusProfile(domainUrl, domainId, ssoInstanceInfo.issuerUrl, ssoInstanceInfo.region)
+            const newConn = await this.auth.createConnection(profile)
+            logger.debug(`SMUS: Created new connection ${newConn.id}`)
+
+            const smusConn: SmusConnection = {
+                ...newConn,
+                domainUrl,
+                domainId,
+            }
+
+            const result = await this.secondaryAuth.useNewConnection(smusConn)
+            return result
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio', {
+                code: 'FailedToConnect',
+            })
+        }
+    }
+
+    /**
+     * Reauthenticates an existing connection
+     * @param conn Connection to reauthenticate
+     * @returns Promise resolving to the reauthenticated connection
+     */
+    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
+    public async reauthenticate(conn: SsoConnection) {
+        try {
+            return await this.auth.reauthenticate(conn)
+        } catch (err) {
+            throw ToolkitError.chain(err, 'Unable to reauthenticate SageMaker Unified Studio connection.')
+        }
+    }
+
+    /**
+     * Shows a reauthentication prompt to the user
+     * @param conn Connection to reauthenticate
+     */
+    public async showReauthenticationPrompt(conn: SsoConnection): Promise<void> {
+        await showReauthenticateMessage({
+            message: localizedText.connectionExpired('SageMaker Unified Studio'),
+            connect: localizedText.reauthenticate,
+            suppressId: 'smusConnectionExpired',
+            settings: ToolkitPromptSettings.instance,
+            source: 'SageMaker Unified Studio',
+            reauthFunc: async () => {
+                await this.reauthenticate(conn)
+            },
+        })
+    }
+
+    /**
+     * Gets the current SSO access token for the active connection
+     * @returns Promise resolving to the access token string
+     */
+    public async getAccessToken(): Promise<string> {
+        const logger = getLogger()
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        try {
+            const accessToken = await this.auth.getSsoAccessToken(this.activeConnection)
+            logger.debug(`SMUS: Successfully retrieved SSO access token for connection ${this.activeConnection.id}`)
+
+            return accessToken
+        } catch (err) {
+            logger.error('Failed to get access token for %s: %s', this.activeConnection.id, err)
+            throw ToolkitError.chain(err, 'Failed to get SSO access token for SMUS')
+        }
+    }
+
+    /**
+     * Gets or creates a project credentials provider for the specified project
+     * @param projectId The project ID to get credentials for
+     * @returns Promise resolving to the project credentials provider
+     */
+    public async getProjectCredentialProvider(projectId: string): Promise<ProjectRoleCredentialsProvider> {
+        const logger = getLogger()
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        logger.debug(`SMUS: Getting project provider for project ${projectId}`)
+
+        // Check if we already have a cached provider for this project
+        if (this.projectCredentialProvidersCache.has(projectId)) {
+            logger.debug('SMUS: Using cached project provider')
+            return this.projectCredentialProvidersCache.get(projectId)!
+        }
+
+        logger.debug('SMUS: Creating new project provider')
+        // Create a new project provider and cache it
+        const projectProvider = new ProjectRoleCredentialsProvider(this, projectId)
+        this.projectCredentialProvidersCache.set(projectId, projectProvider)
+
+        logger.debug('SMUS: Cached new project provider')
+
+        return projectProvider
+    }
+
+    /**
+     * Gets or creates a connection credentials provider for the specified connection
+     * @param connectionId The connection ID to get credentials for
+     * @param projectId The project ID that owns the connection
+     * @param region The region for the connection
+     * @returns Promise resolving to the connection credentials provider
+     */
+    public async getConnectionCredentialsProvider(
+        connectionId: string,
+        projectId: string,
+        region: string
+    ): Promise<ConnectionCredentialsProvider> {
+        const logger = getLogger()
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        const cacheKey = `${this.activeConnection.domainId}:${projectId}:${connectionId}`
+        logger.debug(`SMUS: Getting connection provider for connection ${connectionId}`)
+
+        // Check if we already have a cached provider for this connection
+        if (this.connectionCredentialProvidersCache.has(cacheKey)) {
+            logger.debug('SMUS: Using cached connection provider')
+            return this.connectionCredentialProvidersCache.get(cacheKey)!
+        }
+
+        logger.debug('SMUS: Creating new connection provider')
+        // Create a new connection provider and cache it
+        const connectionProvider = new ConnectionCredentialsProvider(this, connectionId)
+        this.connectionCredentialProvidersCache.set(cacheKey, connectionProvider)
+
+        logger.debug('SMUS: Cached new connection provider')
+
+        return connectionProvider
+    }
+
+    /**
+     * Gets the domain ID from the active connection
+     * @returns Domain ID
+     */
+    public getDomainId(): string {
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+        return this.activeConnection.domainId
+    }
+
+    /**
+     * Gets the domain URL from the active connection
+     * @returns Domain URL
+     */
+    public getDomainUrl(): string {
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+        return this.activeConnection.domainUrl
+    }
+
+    public getDomainRegion(): string {
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+        return this.activeConnection.ssoRegion
+    }
+
+    /**
+     * Gets or creates a cached credentials provider for the active connection
+     * @returns Promise resolving to the credentials provider
+     */
+    public async getDerCredentialsProvider(): Promise<DomainExecRoleCredentialsProvider> {
+        const logger = getLogger()
+
+        // TODO : Return fromIni() credential provider here when in the SageMaker Unified Studio hosted IDE environment.
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        // Create a cache key based on the connection details
+        const cacheKey = `${this.activeConnection.ssoRegion}:${this.activeConnection.domainId}`
+
+        logger.debug(`SMUS: Getting credentials provider for cache key: ${cacheKey}`)
+
+        // Check if we already have a cached provider
+        if (this.credentialsProviderCache.has(cacheKey)) {
+            logger.debug('SMUS: Using cached credentials provider')
+            return this.credentialsProviderCache.get(cacheKey)
+        }
+
+        logger.debug('SMUS: Creating new credentials provider')
+
+        // Create a new provider and cache it
+        const provider = new DomainExecRoleCredentialsProvider(
+            this.activeConnection.domainUrl,
+            this.activeConnection.domainId,
+            this.activeConnection.ssoRegion,
+            async () => await this.getAccessToken()
+        )
+
+        this.credentialsProviderCache.set(cacheKey, provider)
+        logger.debug('SMUS: Cached new credentials provider')
+
+        return provider
+    }
+
+    /**
+     * Invalidates all cached credentials (for all connections)
+     * Used during connection changes or logout
+     */
+    private async invalidateAllCredentialsInCache(): Promise<void> {
+        const logger = getLogger()
+        logger.debug('SMUS: Invalidating all cached credentials')
+
+        // Clear all cached DER providers and their internal credentials
+        for (const [cacheKey, provider] of this.credentialsProviderCache.entries()) {
+            try {
+                provider.invalidate() // This will clear the provider's internal cache
+                logger.debug(`SMUS: Invalidated credentials for cache key: ${cacheKey}`)
+            } catch (err) {
+                logger.warn(`SMUS: Failed to invalidate credentials for cache key ${cacheKey}: %s`, err)
+            }
+        }
+
+        // Clear all cached project providers and their internal credentials
+        for (const [projectId, projectProvider] of this.projectCredentialProvidersCache.entries()) {
+            try {
+                projectProvider.invalidate() // This will clear the project provider's internal cache
+                logger.debug(`SMUS: Invalidated project credentials for project: ${projectId}`)
+            } catch (err) {
+                logger.warn(`SMUS: Failed to invalidate project credentials for project ${projectId}: %s`, err)
+            }
+        }
+
+        // Clear all cached connection providers and their internal credentials
+        for (const [cacheKey, connectionProvider] of this.connectionCredentialProvidersCache.entries()) {
+            try {
+                connectionProvider.invalidate() // This will clear the connection provider's internal cache
+                logger.debug(`SMUS: Invalidated connection credentials for cache key: ${cacheKey}`)
+            } catch (err) {
+                logger.warn(`SMUS: Failed to invalidate connection credentials for cache key ${cacheKey}: %s`, err)
+            }
+        }
+    }
+
+    static #instance: SmusAuthenticationProvider | undefined
+
+    public static get instance(): SmusAuthenticationProvider | undefined {
+        return SmusAuthenticationProvider.#instance
+    }
+
+    public static fromContext() {
+        return (this.#instance ??= new this())
+    }
+}

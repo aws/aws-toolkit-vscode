@@ -10,7 +10,7 @@ import { activate } from '../../../sagemakerunifiedstudio/explorer/activation'
 import {
     SmusAuthenticationProvider,
     setSmusConnectedContext,
-} from '../../../sagemakerunifiedstudio/auth/smusAuthenticationProvider'
+} from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
 import { SageMakerUnifiedStudioRootNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'

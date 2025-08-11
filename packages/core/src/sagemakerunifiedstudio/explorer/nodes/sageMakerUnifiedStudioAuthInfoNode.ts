@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
-import { SmusAuthenticationProvider } from '../../auth/smusAuthenticationProvider'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
 /**
  * Node representing the SageMaker Unified Studio authentication information

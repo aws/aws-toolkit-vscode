@@ -15,9 +15,7 @@ import {
     S3PropertiesOutput,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
-import { ToolkitError } from '../../../shared/errors'
-import fetch from 'node-fetch'
-
+import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 /**
  * Represents a DataZone project
  */
@@ -80,47 +78,17 @@ export interface DataZoneConnection {
     }
 }
 
-/**
- * Represents SSO instance information retrieved from DataZone
- */
-export interface SsoInstanceInfo {
-    issuerUrl: string
-    ssoInstanceId: string
-    clientId: string
-    region: string
-}
-
-/**
- * Response from DataZone /sso/login endpoint
- */
-interface DataZoneSsoLoginResponse {
-    redirectUrl: string
-}
-
-// Default values, input your domain id here
-let defaultDatazoneDomainId = ''
-let defaultDatazoneRegion = 'us-east-1'
-
 // Constants for DataZone environment configuration
 const toolingBlueprintName = 'Tooling'
 const sageMakerProviderName = 'Amazon SageMaker'
 
-// For testing purposes
-export function setDefaultDatazoneDomainId(domainId: string): void {
-    defaultDatazoneDomainId = domainId
-}
-
-// For testing purposes
-export function setDefaultDataZoneRegion(region: string): void {
-    defaultDatazoneRegion = region
-}
-
-export function resetDefaultDatazoneDomainId(): void {
-    defaultDatazoneDomainId = ''
-}
-
 /**
- * Client for interacting with AWS DataZone API
+ * Client for interacting with AWS DataZone API with DER credential support
+ *
+ * This client integrates with SmusAuthenticationProvider to provide authenticated
+ * DataZone operations using Domain Execution Role (DER) credentials.
+ *
+ * One instance per connection/domainId is maintained to avoid duplication.
  */
 export class DataZoneClient {
     /**
@@ -167,73 +135,78 @@ export class DataZoneClient {
     }
 
     private datazoneClient: DataZone | undefined
-    private static instance: DataZoneClient | undefined
+    private static instances = new Map<string, DataZoneClient>()
     private readonly logger = getLogger()
 
     private constructor(
-        private readonly region: string,
-        private readonly credentials?: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        private readonly authProvider: SmusAuthenticationProvider,
+        private readonly domainId: string,
+        private readonly region: string
     ) {}
 
     /**
-     * Gets a singleton instance of the DataZoneClient
-     * @returns DataZoneClient instance
+     * Gets an authenticated DataZoneClient instance using DER credentials
+     * One instance per connection/domainId is maintained
+     * @param authProvider The SMUS authentication provider
+     * @returns Promise resolving to authenticated DataZoneClient instance
      */
-    public static getInstance(): DataZoneClient {
-        if (!DataZoneClient.instance) {
-            const logger = getLogger()
-            if (defaultDatazoneRegion) {
-                logger.info(`DataZoneClient: Using default region: ${defaultDatazoneRegion}`)
-                DataZoneClient.instance = new DataZoneClient(defaultDatazoneRegion)
-                logger.info(`DataZoneClient: Created singleton instance with region ${defaultDatazoneRegion}`)
-            } else {
-                logger.error('No AWS regions available, please set defaultDatazoneRegion')
-                throw new Error('No AWS regions available')
-            }
+    public static async getInstance(authProvider: SmusAuthenticationProvider): Promise<DataZoneClient> {
+        const logger = getLogger()
+
+        if (!authProvider.isConnected()) {
+            throw new Error('SMUS authentication provider is not connected')
         }
-        return DataZoneClient.instance
+
+        const activeConnection = authProvider.activeConnection!
+        const instanceKey = `${activeConnection.domainId}:${activeConnection.ssoRegion}`
+
+        logger.debug(`DataZoneClient: Getting instance for domain: ${instanceKey}`)
+
+        // Check if we already have an instance for this domain/region
+        if (DataZoneClient.instances.has(instanceKey)) {
+            const existingInstance = DataZoneClient.instances.get(instanceKey)!
+            logger.debug('DataZoneClient: Using existing instance')
+            return existingInstance
+        }
+
+        // Create new instance
+        logger.debug('DataZoneClient: Creating new instance')
+        const instance = new DataZoneClient(authProvider, activeConnection.domainId, activeConnection.ssoRegion)
+        DataZoneClient.instances.set(instanceKey, instance)
+
+        // Set up cleanup when connection changes
+        const disposable = authProvider.onDidChangeActiveConnection(() => {
+            logger.debug(`DataZoneClient: Connection changed, cleaning up instance for: ${instanceKey}`)
+            DataZoneClient.instances.delete(instanceKey)
+            instance.datazoneClient = undefined
+            disposable.dispose()
+        })
+
+        logger.info(`DataZoneClient: Created instance for domain ${activeConnection.domainId}`)
+        return instance
     }
 
     /**
-     * Disposes the singleton instance and cleans up resources
+     * Disposes all instances and cleans up resources
      */
     public static dispose(): void {
-        if (DataZoneClient.instance) {
-            const logger = getLogger()
-            logger.debug('DataZoneClient: Disposing singleton instance')
-            DataZoneClient.instance.datazoneClient = undefined
-            DataZoneClient.instance = undefined
-        }
-    }
-
-    /* Creates a new DataZoneClient instance with specific credentials
-     * @param region AWS region
-     * @param credentials AWS credentials
-     * @returns DataZoneClient instance with credentials
-     */
-    public static createWithCredentials(
-        region: string,
-        credentials: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
-    ): DataZoneClient {
         const logger = getLogger()
-        logger.info(`DataZoneClient: Creating instance with credentials for region: ${region}`)
-        return new DataZoneClient(region, credentials)
+        logger.debug('DataZoneClient: Disposing all instances')
+
+        for (const [key, instance] of DataZoneClient.instances.entries()) {
+            instance.datazoneClient = undefined
+            logger.debug(`DataZoneClient: Disposed instance for: ${key}`)
+        }
+
+        DataZoneClient.instances.clear()
     }
 
     /**
-     * A workaround to get the DataZone domain ID from default
+     * Gets the DataZone domain ID
      * @returns DataZone domain ID
      */
     public getDomainId(): string {
-        return defaultDatazoneDomainId
+        return this.domainId
     }
 
     /**
@@ -245,123 +218,21 @@ export class DataZoneClient {
     }
 
     /**
-     * Makes HTTP call to DataZone /sso/login endpoint
-     * @param domainUrl The SageMaker Unified Studio domain URL
-     * @param domainId The extracted domain ID
-     * @returns Promise resolving to the login response
-     * @throws ToolkitError if the API call fails
-     */
-    private async callDataZoneLogin(domainUrl: string, domainId: string): Promise<DataZoneSsoLoginResponse> {
-        const loginUrl = new URL('/sso/login', domainUrl)
-        const requestBody = {
-            domainId: domainId,
-        }
-
-        const response = await fetch(loginUrl.toString(), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'User-Agent': 'aws-toolkit-vscode',
-            },
-            body: JSON.stringify(requestBody),
-        })
-
-        if (!response.ok) {
-            throw new ToolkitError(`DataZone login failed: ${response.status} ${response.statusText}`, {
-                code: 'DataZoneLoginFailed',
-            })
-        }
-
-        return (await response.json()) as DataZoneSsoLoginResponse
-    }
-
-    /**
-     * Gets SSO instance information by calling DataZone /sso/login endpoint
-     * This extracts the proper SSO instance ID and issuer URL needed for OAuth client registration
-     *
-     * @param domainUrl The SageMaker Unified Studio domain URL
-     * @returns Promise resolving to SSO instance information
-     * @throws ToolkitError if the API call fails or response is invalid
-     */
-    public async getSsoInstanceInfo(domainUrl: string): Promise<SsoInstanceInfo> {
-        try {
-            this.logger.info(`SMUS Auth: Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
-            // Extract domain ID from the domain URL
-            const domainId = this.extractDomainIdFromUrl(domainUrl)
-            if (!domainId) {
-                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
-            }
-
-            // Call DataZone /sso/login endpoint to get redirect URL with SSO instance info
-            const loginData = await this.callDataZoneLogin(domainUrl, domainId)
-            if (!loginData.redirectUrl) {
-                throw new ToolkitError('No redirect URL received from DataZone login', { code: 'InvalidLoginResponse' })
-            }
-
-            // Parse the redirect URL to extract SSO instance information
-            const redirectUrl = new URL(loginData.redirectUrl)
-            const clientIdParam = redirectUrl.searchParams.get('client_id')
-            if (!clientIdParam) {
-                throw new ToolkitError('No client_id found in DataZone redirect URL', { code: 'InvalidRedirectUrl' })
-            }
-
-            // Decode the client_id ARN: arn:aws:sso::1234567890:application/ssoins-instanceid/abc-12ab34de
-            const decodedClientId = decodeURIComponent(clientIdParam)
-            const arnParts = decodedClientId.split('/')
-            if (arnParts.length < 2) {
-                throw new ToolkitError('Invalid client_id ARN format', { code: 'InvalidArnFormat' })
-            }
-
-            const ssoInstanceId = arnParts[1] // Extract ssoins-6684636af7e1a207
-            const issuerUrl = `https://identitycenter.amazonaws.com/${ssoInstanceId}`
-
-            // Extract region from domain URL
-            const region = this.extractRegionFromUrl(domainUrl)
-
-            this.logger.info('SMUS Auth: Extracted SSO instance info: %s', ssoInstanceId)
-
-            return {
-                issuerUrl,
-                ssoInstanceId,
-                clientId: decodedClientId,
-                region,
-            }
-        } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-            this.logger.error('SMUS Auth: Failed to get SSO instance info: %s', errorMsg)
-
-            if (error instanceof ToolkitError) {
-                throw error
-            }
-
-            throw new ToolkitError(`Failed to get SSO instance info: ${errorMsg}`, {
-                code: 'SsoInstanceInfoFailed',
-                cause: error instanceof Error ? error : undefined,
-            })
-        }
-    }
-
-    /**
      * Gets the default tooling environment credentials for a DataZone project
-     * @param domainId The DataZone domain identifier
      * @param projectId The DataZone project identifier
      * @returns Promise resolving to environment credentials
      * @throws Error if tooling blueprint or environment is not found
      */
-    public async getProjectDefaultEnvironmentCreds(
-        domainId: string,
-        projectId: string
-    ): Promise<GetEnvironmentCredentialsCommandOutput> {
+    public async getProjectDefaultEnvironmentCreds(projectId: string): Promise<GetEnvironmentCredentialsCommandOutput> {
         try {
             this.logger.debug(
-                `Getting project default environment credentials for domain ${domainId}, project ${projectId}`
+                `Getting project default environment credentials for domain ${this.domainId}, project ${projectId}`
             )
             const datazoneClient = await this.getDataZoneClient()
 
             this.logger.debug('Listing environment blueprints')
             const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: domainId,
+                domainIdentifier: this.domainId,
                 managed: true,
                 name: toolingBlueprintName,
             })
@@ -374,7 +245,7 @@ export class DataZoneClient {
             this.logger.debug(`Found tooling blueprint with ID: ${toolingBlueprint.id}, listing environments`)
 
             const listEnvs = await datazoneClient.listEnvironments({
-                domainIdentifier: domainId,
+                domainIdentifier: this.domainId,
                 projectIdentifier: projectId,
                 environmentBlueprintIdentifier: toolingBlueprint.id,
                 provider: sageMakerProviderName,
@@ -388,17 +259,9 @@ export class DataZoneClient {
             this.logger.debug(`Found default environment with ID: ${defaultEnv.id}, getting environment credentials`)
 
             const defaultEnvCreds = await datazoneClient.getEnvironmentCredentials({
-                domainIdentifier: domainId,
+                domainIdentifier: this.domainId,
                 environmentIdentifier: defaultEnv.id,
             })
-
-            // Log credential details for debugging (masking sensitive parts)
-            this.logger.debug(
-                `Retrieved environment credentials with accessKeyId: ${
-                    defaultEnvCreds.accessKeyId ? defaultEnvCreds.accessKeyId.substring(0, 5) + '...' : 'undefined'
-                }`
-            )
-            this.logger.debug(`SessionToken present: ${defaultEnvCreds.sessionToken ? 'Yes' : 'No'}`)
 
             return defaultEnvCreds
         } catch (err) {
@@ -413,11 +276,23 @@ export class DataZoneClient {
     private async getDataZoneClient(): Promise<DataZone> {
         if (!this.datazoneClient) {
             try {
+                this.logger.debug('DataZoneClient: Creating authenticated DataZone client with DER credentials')
+
+                const credentialsProvider = async () => {
+                    const credentials = await (await this.authProvider.getDerCredentialsProvider()).getCredentials()
+                    return {
+                        accessKeyId: credentials.accessKeyId,
+                        secretAccessKey: credentials.secretAccessKey,
+                        sessionToken: credentials.sessionToken,
+                        expiration: credentials.expiration,
+                    }
+                }
+
                 this.datazoneClient = new DataZone({
                     region: this.region,
-                    credentials: this.credentials,
+                    credentials: credentialsProvider,
                 })
-                this.logger.debug('DataZoneClient: Successfully created DataZone client')
+                this.logger.debug('DataZoneClient: Successfully created authenticated DataZone client')
             } catch (err) {
                 this.logger.error('DataZoneClient: Failed to create DataZone client: %s', err as Error)
                 throw err
@@ -427,103 +302,11 @@ export class DataZoneClient {
     }
 
     /**
-     * Extracts the domain ID from a SageMaker Unified Studio domain URL
-     * @param domainUrl The SageMaker Unified Studio domain URL
-     * @returns The extracted domain ID or undefined if not found
-     */
-    private extractDomainIdFromUrl(domainUrl: string): string | undefined {
-        try {
-            // Domain URL format: https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
-            const url = new URL(domainUrl)
-            const hostname = url.hostname
-
-            // Extract domain ID from hostname (dzd_d3hr1nfjbtwui1 or dzd-d3hr1nfjbtwui1)
-            const domainIdMatch = hostname.match(/^(dzd[-_][a-zA-Z0-9_-]{1,36})\./)
-            return domainIdMatch?.[1]
-        } catch (error) {
-            this.logger.error('Failed to extract domain ID from URL: %s', error as Error)
-            return undefined
-        }
-    }
-
-    /**
-     * Extracts the AWS region from a SageMaker Unified Studio domain URL
-     * @param domainUrl The SageMaker Unified Studio domain URL
-     * @returns The extracted AWS region or the default region if not found
-     */
-    private extractRegionFromUrl(domainUrl: string): string {
-        try {
-            // Domain URL format: https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
-            const url = new URL(domainUrl)
-            const hostname = url.hostname
-
-            // Extract region from hostname (us-east-2)
-            const regionMatch = hostname.match(/\.sagemaker\.([a-z0-9-]+)\.on\.aws$/)
-            return regionMatch?.[1] || this.region
-        } catch (error) {
-            this.logger.error('Failed to extract region from URL: %s', error as Error)
-            return this.region
-        }
-    }
-
-    /**
-     * Extracts both domain ID and region from a SageMaker Unified Studio domain URL
-     * @param domainUrl The SageMaker Unified Studio domain URL
-     * @returns Object containing domainId and region
-     */
-    public extractDomainInfoFromUrl(domainUrl: string): { domainId: string | undefined; region: string } {
-        return {
-            domainId: this.extractDomainIdFromUrl(domainUrl),
-            region: this.extractRegionFromUrl(domainUrl),
-        }
-    }
-
-    /**
-     * Validates the domain URL format for SageMaker Unified Studio
-     * @param value The URL to validate
-     * @returns Error message if invalid, undefined if valid
-     */
-    public validateDomainUrl(value: string): string | undefined {
-        if (!value || value.trim() === '') {
-            return 'Domain URL is required'
-        }
-
-        const trimmedValue = value.trim()
-
-        // Check HTTPS requirement
-        if (!trimmedValue.startsWith('https://')) {
-            return 'Domain URL must use HTTPS (https://)'
-        }
-
-        // Check basic URL format
-        try {
-            const url = new URL(trimmedValue)
-
-            // Check if it looks like a SageMaker Unified Studio domain
-            if (!url.hostname.includes('sagemaker') || !url.hostname.includes('on.aws')) {
-                return 'URL must be a valid SageMaker Unified Studio domain (e.g., https://dzd_xxxxxxxxx.sagemaker.us-east-1.on.aws)'
-            }
-
-            // Extract domain ID to validate
-            const domainId = this.extractDomainIdFromUrl(trimmedValue)
-
-            if (!domainId) {
-                return 'URL must contain a valid domain ID (starting with dzd- or dzd_)'
-            }
-
-            return undefined // Valid
-        } catch (err) {
-            return 'Invalid URL format'
-        }
-    }
-
-    /**
      * Lists projects in a DataZone domain with pagination support
      * @param options Options for listing projects
      * @returns Paginated list of DataZone projects with nextToken
      */
     public async listProjects(options?: {
-        domainId?: string
         maxResults?: number
         userIdentifier?: string
         groupIdentifier?: string
@@ -531,16 +314,13 @@ export class DataZoneClient {
         nextToken?: string
     }): Promise<{ projects: DataZoneProject[]; nextToken?: string }> {
         try {
-            // Use provided domain ID or get from stored config
-            const targetDomainId = options?.domainId || this.getDomainId()
-
-            this.logger.info(`DataZoneClient: Listing projects for domain ${targetDomainId} in region ${this.region}`)
+            this.logger.info(`DataZoneClient: Listing projects for domain ${this.domainId} in region ${this.region}`)
 
             const datazoneClient = await this.getDataZoneClient()
 
             // Call the DataZone API to list projects with pagination
             const response = await datazoneClient.listProjects({
-                domainIdentifier: targetDomainId,
+                domainIdentifier: this.domainId,
                 maxResults: options?.maxResults,
                 userIdentifier: options?.userIdentifier,
                 groupIdentifier: options?.groupIdentifier,
@@ -549,7 +329,7 @@ export class DataZoneClient {
             })
 
             if (!response.items || response.items.length === 0) {
-                this.logger.info(`DataZoneClient: No projects found for domain ${targetDomainId}`)
+                this.logger.info(`DataZoneClient: No projects found for domain ${this.domainId}`)
                 return { projects: [] }
             }
 
@@ -558,12 +338,12 @@ export class DataZoneClient {
                 id: project.id || '',
                 name: project.name || '',
                 description: project.description,
-                domainId: targetDomainId,
+                domainId: this.domainId,
                 createdAt: project.createdAt ? new Date(project.createdAt) : undefined,
                 updatedAt: project.updatedAt ? new Date(project.updatedAt) : undefined,
             }))
 
-            this.logger.info(`DataZoneClient: Found ${projects.length} projects for domain ${targetDomainId}`)
+            this.logger.info(`DataZoneClient: Found ${projects.length} projects for domain ${this.domainId}`)
             return { projects, nextToken: response.nextToken }
         } catch (err) {
             this.logger.error('DataZoneClient: Failed to list projects: %s', err as Error)
@@ -577,7 +357,6 @@ export class DataZoneClient {
      * @returns Promise resolving to an array of all DataZone projects
      */
     public async fetchAllProjects(options?: {
-        domainId?: string
         userIdentifier?: string
         groupIdentifier?: string
         name?: string
@@ -603,6 +382,7 @@ export class DataZoneClient {
             throw err
         }
     }
+
     /*
      * Processes a connection response to add jdbcConnection if it's a Redshift connection
      * @param connection The connection object to process

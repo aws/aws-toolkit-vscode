@@ -13,7 +13,8 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusAuthenticationProvider } from '../../auth/smusAuthenticationProvider'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { SmusUtils } from '../../shared/smusUtils'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -201,14 +202,13 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
     const logger = getLogger()
     try {
         // Get DataZoneClient instance for URL validation
-        const dataZoneClient = DataZoneClient.getInstance()
 
         // Show domain URL input dialog
         const domainUrl = await vscode.window.showInputBox({
             title: 'SageMaker Unified Studio Authentication',
             prompt: 'Enter your SageMaker Unified Studio Domain URL',
             placeHolder: 'https://<dzd_xxxxxxxxx>.sagemaker.<region>.on.aws',
-            validateInput: (value) => dataZoneClient.validateDomainUrl(value),
+            validateInput: (value) => SmusUtils.validateDomainUrl(value),
         })
 
         if (!domainUrl) {
@@ -389,7 +389,6 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
     const logger = getLogger()
     getLogger().info('Listing SMUS projects in the domain')
     try {
-        const datazoneClient = DataZoneClient.getInstance()
         const authProvider = SmusAuthenticationProvider.fromContext()
         const activeConnection = authProvider.activeConnection
         if (!activeConnection) {
@@ -397,12 +396,14 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             return
         }
 
-        const domainId = activeConnection.domainId
+        logger.debug('SMUS: Getting DataZone client instance')
+        const authenticatedDataZoneClient = await DataZoneClient.getInstance(authProvider)
+        logger.debug('SMUS: DataZone client instance obtained successfully')
 
-        // Fetching all projects in the specified domain as we have to sort them by updatedAt
-        const smusProjects = await datazoneClient.fetchAllProjects({
-            domainId: domainId,
-        })
+        // Fetching all projects in the specified domain using the client's fetchAllProjects method
+        const allProjects = await authenticatedDataZoneClient.fetchAllProjects()
+
+        const smusProjects = allProjects
 
         if (smusProjects.length === 0) {
             void vscode.window.showInformationMessage('No projects found in the domain')
@@ -430,7 +431,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
         const selectedProject = await quickPick.prompt()
         if (selectedProject && projectNode) {
-            projectNode.setProject(selectedProject)
+            await projectNode.setProject(selectedProject)
 
             // Refresh the entire tree view
             await vscode.commands.executeCommand('aws.smus.rootView.refresh')

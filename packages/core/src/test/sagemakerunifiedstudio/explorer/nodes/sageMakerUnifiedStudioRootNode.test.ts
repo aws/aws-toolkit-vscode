@@ -11,14 +11,9 @@ import {
     selectSMUSProject,
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
 import { SageMakerUnifiedStudioProjectNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioProjectNode'
-import {
-    DataZoneClient,
-    DataZoneProject,
-    setDefaultDatazoneDomainId,
-    resetDefaultDatazoneDomainId,
-} from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { DataZoneClient, DataZoneProject } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
-import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/smusAuthenticationProvider'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 
 describe('SmusRootNode', function () {
@@ -44,8 +39,7 @@ describe('SmusRootNode', function () {
 
         rootNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
 
-        // Set mock domain ID
-        setDefaultDatazoneDomainId(testDomainId)
+        // Mock domain ID is handled by the mock auth provider
 
         // Create mock DataZone client
         mockDataZoneClient = {
@@ -59,7 +53,6 @@ describe('SmusRootNode', function () {
 
     afterEach(function () {
         sinon.restore()
-        resetDefaultDatazoneDomainId()
     })
 
     describe('constructor', function () {
@@ -288,11 +281,7 @@ describe('SelectSMUSProject', function () {
 
         assert.strictEqual(result, mockProject)
         assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
-        assert.ok(
-            mockDataZoneClient.fetchAllProjects.calledWith({
-                domainId: testDomainId,
-            })
-        )
+        assert.ok(mockDataZoneClient.fetchAllProjects.calledWith())
         assert.ok(createQuickPickStub.calledOnce)
         // The project node should have been updated with some project
         assert.ok(mockProjectNode.setProject.calledOnce)
@@ -319,11 +308,7 @@ describe('SelectSMUSProject', function () {
 
         assert.strictEqual(result, mockProject2)
         assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
-        assert.ok(
-            mockDataZoneClient.fetchAllProjects.calledWith({
-                domainId: testDomainId,
-            })
-        )
+        assert.ok(mockDataZoneClient.fetchAllProjects.calledWith())
         assert.ok(createQuickPickStub.calledOnce)
         // The project node should have been updated with some project
         assert.ok(mockProjectNode.setProject.calledOnce)

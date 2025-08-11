@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioDataNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioDataNode'
 import { SageMakerUnifiedStudioProjectNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioProjectNode'
 import { DataZoneClient, DataZoneProject } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import * as s3Strategy from '../../../../sagemakerunifiedstudio/explorer/nodes/s3Strategy'
 import * as redshiftStrategy from '../../../../sagemakerunifiedstudio/explorer/nodes/redshiftStrategy'
 
@@ -17,6 +18,8 @@ describe('SageMakerUnifiedStudioDataNode', function () {
     let dataNode: SageMakerUnifiedStudioDataNode
     let mockParent: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
     let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
+    let mockAuthProvider: sinon.SinonStubbedInstance<SmusAuthenticationProvider>
+    let mockProjectCredentialProvider: any
 
     const mockProject: DataZoneProject = {
         id: 'project-123',
@@ -38,6 +41,15 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             getProject: sandbox.stub().returns(mockProject),
         } as any
 
+        mockProjectCredentialProvider = {
+            getCredentials: sandbox.stub().resolves(mockCredentials),
+        }
+
+        mockAuthProvider = {
+            getProjectCredentialProvider: sandbox.stub().resolves(mockProjectCredentialProvider),
+            getDomainRegion: sandbox.stub().returns('us-east-1'),
+        } as any
+
         mockDataZoneClient = {
             getInstance: sandbox.stub(),
             getProjectDefaultEnvironmentCreds: sandbox.stub(),
@@ -47,6 +59,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
         } as any
 
         sandbox.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sandbox.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
         sandbox.stub(s3Strategy, 'createS3ConnectionNode').returns({} as any)
         sandbox.stub(redshiftStrategy, 'createRedshiftConnectionNode').returns({} as any)
 
@@ -106,9 +119,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
         })
 
         it('should return error node when credentials are missing', async function () {
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves({
-                $metadata: {},
-            })
+            mockProjectCredentialProvider.getCredentials.resolves(undefined)
 
             const children = await dataNode.getChildren()
 
@@ -117,7 +128,6 @@ describe('SageMakerUnifiedStudioDataNode', function () {
         })
 
         it('should return empty array when no connections found', async function () {
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
             mockDataZoneClient.listConnections.resolves([])
 
             const children = await dataNode.getChildren()
@@ -131,7 +141,6 @@ describe('SageMakerUnifiedStudioDataNode', function () {
                 { connectionId: 'redshift-conn', type: 'REDSHIFT' },
             ]
 
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
             mockDataZoneClient.getConnection.resolves({
                 connectionCredentials: mockCredentials,
@@ -152,7 +161,6 @@ describe('SageMakerUnifiedStudioDataNode', function () {
         it('should handle connection detail errors gracefully', async function () {
             const mockConnections = [{ connectionId: 's3-conn', type: 'S3' }]
 
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(mockCredentials)
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
             mockDataZoneClient.getConnection.rejects(new Error('Connection error'))
 
@@ -163,7 +171,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
         })
 
         it('should return error node when general error occurs', async function () {
-            mockDataZoneClient.getProjectDefaultEnvironmentCreds.rejects(new Error('General error'))
+            mockAuthProvider.getProjectCredentialProvider.rejects(new Error('General error'))
 
             const children = await dataNode.getChildren()
 
