@@ -10,7 +10,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
+import type { AmazonQInlineCompletionItemProvider } from '../completion'
 
 export async function showEdits(
     item: InlineCompletionItemWithReferences,
@@ -30,12 +30,6 @@ export async function showEdits(
             currentFile,
             item.insertText as string
         )
-
-        // TODO: To investigate why it fails and patch [generateDiffSvg]
-        if (newCode.length === 0) {
-            getLogger('nextEditPrediction').warn('not able to apply provided edit suggestion, skip rendering')
-            return
-        }
 
         // TODO: To investigate why it fails and patch [generateDiffSvg]
         if (newCode.length === 0) {
