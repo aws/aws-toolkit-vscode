@@ -68,6 +68,7 @@ import {
     OpenFileDialogResult,
     CheckDiagnosticsRequestType,
     CheckDiagnosticsParams,
+    DiagnosticInfo,
     openWorkspaceFileRequestType,
     OpenWorkspaceFileParams,
 } from '@aws/language-server-runtimes/protocol'
@@ -565,16 +566,16 @@ export function registerMessageListeners(
     registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
     // Register diagnostic check handler
     languageClient.onRequest(CheckDiagnosticsRequestType.method, async (params: CheckDiagnosticsParams) => {
-        const result: Record<string, any> = {}
+        const result: Record<string, DiagnosticInfo[]> = {}
 
-        for (const [filePath, diagnosticJson] of Object.entries(params.filePaths)) {
+        for (const [filePath, diagnosticJson] of Object.entries(params.fileDiagnostics)) {
             try {
                 const uri = vscode.Uri.file(filePath)
                 const diagnostics = vscode.languages.getDiagnostics(uri)
 
                 if (diagnostics && diagnostics.length > 0) {
                     // Convert VSCode diagnostics to JSON format
-                    const diagnosticsJson = diagnostics.map((diagnostic) => ({
+                    const diagnosticsJson: DiagnosticInfo[] = diagnostics.map((diagnostic) => ({
                         range: {
                             start: {
                                 line: diagnostic.range.start.line,
@@ -585,7 +586,10 @@ export function registerMessageListeners(
                         severity: diagnostic.severity,
                         message: diagnostic.message,
                         source: diagnostic.source,
-                        code: diagnostic.code,
+                        code:
+                            typeof diagnostic.code === 'object' && diagnostic.code !== null
+                                ? diagnostic.code.value
+                                : diagnostic.code,
                     }))
                     result[filePath] = diagnosticsJson
                 } else {
@@ -597,15 +601,27 @@ export function registerMessageListeners(
                 result[filePath] = diagnosticJson || []
             }
         }
-        return { filePaths: result }
+        return { fileDiagnostics: result }
     })
 
     // Register openWorkspaceFile handler
     languageClient.onRequest(openWorkspaceFileRequestType.method, async (params: OpenWorkspaceFileParams) => {
         try {
             const uri = vscode.Uri.file(params.filePath)
-            const doc = await vscode.workspace.openTextDocument(uri)
-            await vscode.window.showTextDocument(doc, { preview: false })
+
+            // Check if the file is already opened in any visible text editor
+            const existingEditor = vscode.window.visibleTextEditors.find(
+                (editor) => editor.document.uri.toString() === uri.toString()
+            )
+
+            let doc: vscode.TextDocument
+            if (existingEditor) {
+                // File is already open, use the existing document
+                doc = existingEditor.document
+            } else {
+                // File is not open, open it
+                doc = await vscode.workspace.openTextDocument(uri)
+            }
             if (params.makeActive) {
                 await vscode.window.showTextDocument(doc, { preview: false, preserveFocus: false })
             }
