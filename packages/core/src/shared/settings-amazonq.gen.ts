@@ -36,8 +36,7 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexMaxFileSize": {},
     "amazonQ.workspaceIndexCacheDirPath": {},
     "amazonQ.workspaceIndexIgnoreFilePatterns": {},
-    "amazonQ.ignoredSecurityIssues": {},
-    "amazonQ.proxy.certificateAuthority": {}
+    "amazonQ.ignoredSecurityIssues": {}
 }
 
 export default amazonqSettings

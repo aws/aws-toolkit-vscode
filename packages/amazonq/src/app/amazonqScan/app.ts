@@ -19,6 +19,7 @@ import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
 import { Commands, placeholder } from 'aws-core-vscode/shared'
+import { codeReviewInChat } from './models/constants'
 
 export function init(appContext: AmazonQAppInitContext) {
     const scanChatControllerEventEmitters: ScanChatControllerEventEmitters = {
@@ -74,17 +75,19 @@ export function init(appContext: AmazonQAppInitContext) {
         return debouncedEvent()
     })
 
-    Commands.register('aws.amazonq.security.scan-statusbar', async () => {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.notifyReauthenticate()
-        }
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.security.scan').then(() => {
-            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
-                sender: 'amazonqCore',
-                command: 'review',
+    if (!codeReviewInChat) {
+        Commands.register('aws.amazonq.security.scan-statusbar', async () => {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                await AuthUtil.instance.notifyReauthenticate()
+            }
+            return focusAmazonQPanel.execute(placeholder, 'amazonq.security.scan').then(() => {
+                DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                    sender: 'amazonqCore',
+                    command: 'review',
+                })
             })
         })
-    })
+    }
 
     codeScanState.setChatControllers(scanChatControllerEventEmitters)
     onDemandFileScanState.setChatControllers(scanChatControllerEventEmitters)

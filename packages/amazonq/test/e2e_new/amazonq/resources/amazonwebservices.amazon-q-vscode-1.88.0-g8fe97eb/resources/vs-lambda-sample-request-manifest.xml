@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<requests>
+    <request category="AWS">
+        <name>API Gateway AWS Proxy</name>
+        <filename>APIGatewayAWSProxy.json</filename>
+    </request>
+    <request category="AWS">
+        <name>API Gateway Authorizer</name>
+        <filename>APIGatewayAuthorizer.json</filename>
+    </request>
+    <request category="AWS">
+        <name>Rekognition S3 Request</name>
+        <filename>RekognitionS3Request.json</filename>
+    </request>
+    <request category="AWS">
+        <name>CodeCommit</name>
+        <filename>CodeCommit.json</filename>
+    </request>
+    <request category="AWS">
+        <name>CloudFormation Create Request</name>
+        <filename>CloudFormationCreateRequest.json</filename>
+    </request>
+    <request category="AWS">
+        <name>SES Email Receiving</name>
+        <filename>SESEmailReceiving.json</filename>
+    </request>
+    <request category="AWS">
+        <name>Scheduled Event</name>
+        <filename>ScheduledEvent.json</filename>
+    </request>
+    <request category="AWS">
+        <name>CloudWatch Logs</name>
+        <filename>CloudWatchLogs.json</filename>
+    </request>
+    <request category="AWS">
+        <name>SNS</name>
+        <filename>SNS.json</filename>
+    </request>
+    <request category="AWS">
+        <name>DynamoDB Update</name>
+        <filename>DynamoDBUpdate.json</filename>
+    </request>
+    <request category="AWS">
+        <name>Cognito Sync Trigger</name>
+        <filename>CognitoSyncTrigger.json</filename>
+    </request>
+    <request category="AWS">
+        <name>Kinesis</name>
+        <filename>Kinesis.json</filename>
+    </request>
+    <request category="AWS">
+        <name>Kinesis Firehose</name>
+        <filename>KinesisFirehose.json</filename>
+    </request>
+    <request category="AWS">
+        <name>S3 Put</name>
+        <filename>S3Put.json</filename>
+    </request>
+    <request category="AWS">
+        <name>S3 Delete</name>
+        <filename>S3Delete.json</filename>
+    </request>
+    <request category="AWS">
+        <name>AWS Config Periodic Rule</name>
+        <filename>AWSConfigPeriodicRule.json</filename>
+    </request>
+    <request category="AWS">
+        <name>AWS Config Change Trigger Rule</name>
+        <filename>AWSConfigChangeTriggerRule.json</filename>
+    </request>
+    <request category="Lex">
+        <name>Lex Book Car</name>
+        <filename>LexBookCar.json</filename>
+    </request>
+    <request category="Lex">
+        <name>Lex Book Hotel</name>
+        <filename>LexBookHotel.json</filename>
+    </request>
+    <request category="Lex">
+        <name>Order Flowers</name>
+        <filename>OrderFlowers.json</filename>
+    </request>
+    <request category="Alexa">
+        <name>Alexa Start Session</name>
+        <filename>AlexaStartSession.json</filename>
+    </request>
+    <request category="Alexa">
+        <name>Alexa End Session</name>
+        <filename>AlexaEndSession.json</filename>
+    </request>
+    <request category="Alexa">
+        <name>Alexa Smart Home - Control</name>
+        <filename>AlexaSmartHomeControl.json</filename>
+    </request>
+    <request category="Alexa">
+        <name>Alexa Intent - MyColorIs</name>
+        <filename>AlexaIntentMyColorIs.json</filename>
+    </request>
+    <request category="Common">
+        <name>Hello World</name>
+        <filename>HelloWorld.json</filename>
+    </request>
+    <request category="Common">
+        <name>Mobile Backend</name>
+        <filename>MobileBackend.json</filename>
+    </request>
+</requests>
