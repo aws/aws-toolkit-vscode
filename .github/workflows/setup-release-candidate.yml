@@ -30,7 +30,7 @@ jobs:
             - uses: actions/checkout@v4
               with:
                   ref: ${{ inputs.commitId }}
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.RELEASE_CANDIDATE_BRANCH_CREATION_PAT }}
                   persist-credentials: true
 
             - name: Setup Node.js
@@ -102,7 +102,7 @@ jobs:
 
                   # Commit version changes
                   git add packages/toolkit/package.json packages/amazonq/package.json package-lock.json
-                  git commit -m "Bump versions: toolkit=$TOOLKIT_VERSION, amazonq=$AMAZONQ_VERSION"
+                  git commit -m "chore: bump versions - toolkit=$TOOLKIT_VERSION, amazonq=$AMAZONQ_VERSION"
 
                   # Push RC branch
                   git push origin $BRANCH_NAME
