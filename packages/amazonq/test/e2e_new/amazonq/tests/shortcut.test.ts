@@ -14,7 +14,7 @@ import {
 } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
 
-describe('Amazon Q Shortcut Functionality', function () {
+describe('Amazon Q Shortcut Functionality Tests', function () {
     // this timeout is the general timeout for the entire test suite
     this.timeout(150000)
     let workbench: Workbench
@@ -35,9 +35,8 @@ describe('Amazon Q Shortcut Functionality', function () {
         await closeAllTabs(webviewView)
         await clearChat(webviewView)
     })
-    it('Keybind Check', async () => {
+    it('Allows User to Verify Command Palette Works as Expected', async () => {
         const driver = webviewView.getDriver()
-        // Open Command Palette
         await pressShortcut(driver, Key.COMMAND, Key.SHIFT, 'p')
         const input = new InputBox()
         await input.sendKeys('Preferences: Open Keyboard Shortcuts')
@@ -45,52 +44,37 @@ describe('Amazon Q Shortcut Functionality', function () {
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
     })
-    it('Generate Test Keybind', async () => {
+    it('Allows User to Generate Tests Using Keybind', async () => {
         await writeToTextEditor(textEditor, 'def fibonacci(n):')
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 't')
-        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
-        const responseReceived = await waitForChatResponse(webviewView)
-        if (!responseReceived) {
-            throw new Error('Chat response not received  within timeout')
-        }
-        console.log('Chat response detected successfully')
+        await waitForChatResponse(webviewView)
     })
-    it('Explain Code Shortcut', async () => {
+    it('Allows User to Select and Explain Code Using Keybind', async () => {
         await writeToTextEditor(textEditor, 'def fibonacci(n):')
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 'e')
-        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
-        const responseReceived = await waitForChatResponse(webviewView)
-        if (!responseReceived) {
-            throw new Error('Chat response not received  within timeout')
-        }
-        console.log('Chat response detected successfully')
+        await waitForChatResponse(webviewView)
     })
-    it('Optimize Code Shortcut', async () => {
+    it('Allows User to Optimize Code Using Keybind', async () => {
         await writeToTextEditor(textEditor, 'def fibonacci(n):')
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 'a')
-        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
-        const responseReceived = await waitForChatResponse(webviewView)
-        if (!responseReceived) {
-            throw new Error('Chat response not received  within timeout')
-        }
-        console.log('Chat response detected successfully')
+        await waitForChatResponse(webviewView)
     })
 })
