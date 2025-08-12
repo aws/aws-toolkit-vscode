@@ -51,7 +51,7 @@ describe('Amazon Q Shortcut Functionality', function () {
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 't')
-        //Clean Up Text
+        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
@@ -67,7 +67,7 @@ describe('Amazon Q Shortcut Functionality', function () {
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 'e')
-        //Clean Up Text
+        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
@@ -83,7 +83,7 @@ describe('Amazon Q Shortcut Functionality', function () {
 
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.COMMAND, Key.ALT, 'a')
-        //Clean Up Text
+        // Clean Up Text
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
