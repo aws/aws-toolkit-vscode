@@ -162,6 +162,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
     await textEditor.typeTextAt(1, 1, ' ')
     const currentLines = await textEditor.getNumberOfLines()
     await textEditor.typeTextAt(currentLines, 1, text)
+}
 /**
  * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
  * The function checks for a "stable state" by monitoring the number of lines in the editor.
