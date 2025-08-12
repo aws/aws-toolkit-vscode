@@ -26,11 +26,13 @@ on:
 jobs:
     setup-rc:
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
         steps:
             - uses: actions/checkout@v4
               with:
                   ref: ${{ inputs.commitId }}
-                  token: ${{ secrets.RELEASE_CANDIDATE_BRANCH_CREATION_PAT }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
                   persist-credentials: true
 
             - name: Setup Node.js
