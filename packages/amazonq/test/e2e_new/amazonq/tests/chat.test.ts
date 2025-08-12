@@ -21,7 +21,7 @@ describe('Amazon Q Chat Basic Functionality', function () {
         await closeAllTabs(webviewView)
     })
 
-    it('Chat Prompt Test', async () => {
+    it('Allows User to Chat with AmazonQ', async () => {
         await writeToChat('Hello, Amazon Q!', webviewView)
         const responseReceived = await waitForChatResponse(webviewView)
         if (!responseReceived) {
@@ -29,14 +29,14 @@ describe('Amazon Q Chat Basic Functionality', function () {
         }
         console.log('Chat response detected successfully')
     })
-    it('Multiple Chat Test', async () => {
+    it('Allows User to Add Multiple Chat Tabs', async () => {
         console.log('Starting Multiple Chat Test')
         for (let i = 0; i < 3; i++) {
             const addChat = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-plus'))
             await addChat.click()
         }
     })
-    it('View History', async () => {
+    it('Allows User to View Chat History', async () => {
         console.log('Starting View History Test')
         const viewHistory = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-history'))
         await viewHistory.click()
