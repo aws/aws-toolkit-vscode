@@ -80,7 +80,7 @@ export function extractFileContextInNotebooks(
 ): InlineCompletionWithReferencesParams['fileContextOverride'] | undefined {
     let caretLeftFileContext = ''
     let caretRightFileContext = ''
-    let languageName = runtimeLanguageContext.normalizeLanguage(document.languageId) ?? document.languageId
+    const languageName = runtimeLanguageContext.normalizeLanguage(document.languageId) ?? document.languageId
     if (document.uri.scheme === 'vscode-notebook-cell') {
         const notebook = getEnclosingNotebook(document)
         if (notebook) {
