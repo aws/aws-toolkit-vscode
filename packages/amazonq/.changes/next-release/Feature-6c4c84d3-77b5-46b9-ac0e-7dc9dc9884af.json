@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "auto-reject edit suggestions when cursor moves >25 lines away"
+}
