@@ -1,0 +1,110 @@
+name: Setup Release Candidate
+
+on:
+    workflow_dispatch:
+        inputs:
+            versionIncrement:
+                description: 'Release Version Increment'
+                default: 'Minor'
+                required: true
+                type: choice
+                options:
+                    - Major
+                    - Minor
+                    - Patch
+                    - Custom
+            customVersion:
+                description: "Custom Release Version (only used if release increment is 'Custom') - Format: 3.15.0"
+                default: ''
+                required: false
+                type: string
+            commitId:
+                description: 'Commit ID to create RC from'
+                required: true
+                type: string
+
+jobs:
+    setup-rc:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.commitId }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  persist-credentials: true
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+                  cache: 'npm'
+
+            - name: Calculate Release Versions
+              id: release-version
+              run: |
+                  customVersion="${{ inputs.customVersion }}"
+                  versionIncrement="${{ inputs.versionIncrement }}"
+
+                  increment_version() {
+                      local currentVersion=$1
+                      if [[ "$versionIncrement" == "Custom" && -n "$customVersion" ]]; then
+                          echo "$customVersion"
+                      else
+                          IFS='.' read -r major minor patch <<< "$currentVersion"
+                          case "$versionIncrement" in
+                              "Major")
+                                  major=$((major + 1))
+                                  minor=0
+                                  patch=0
+                                  ;;
+                              "Minor")
+                                  minor=$((minor + 1))
+                                  patch=0
+                                  ;;
+                              "Patch")
+                                  patch=$((patch + 1))
+                                  ;;
+                          esac
+                          echo "$major.$minor.$patch"
+                      fi
+                  }
+
+                  # Read and increment toolkit version
+                  toolkitCurrentVersion=$(node -e "console.log(require('./packages/toolkit/package.json').version)" | sed 's/-SNAPSHOT//')
+                  toolkitNewVersion=$(increment_version "$toolkitCurrentVersion")
+
+                  # Read and increment amazonq version
+                  amazonqCurrentVersion=$(node -e "console.log(require('./packages/amazonq/package.json').version)" | sed 's/-SNAPSHOT//')
+                  amazonqNewVersion=$(increment_version "$amazonqCurrentVersion")
+
+                  echo "TOOLKIT_VERSION=$toolkitNewVersion" >> $GITHUB_OUTPUT
+                  echo "AMAZONQ_VERSION=$amazonqNewVersion" >> $GITHUB_OUTPUT
+                  # Use date-based branch naming instead of version-based because we release
+                  # both extensions (toolkit and amazonq) from the same branch, and they may
+                  # have different version numbers. We can change this in the future
+                  echo "BRANCH_NAME=rc-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
+            - name: Create RC Branch and Update Versions
+              env:
+                  TOOLKIT_VERSION: ${{ steps.release-version.outputs.TOOLKIT_VERSION }}
+                  AMAZONQ_VERSION: ${{ steps.release-version.outputs.AMAZONQ_VERSION }}
+                  BRANCH_NAME: ${{ steps.release-version.outputs.BRANCH_NAME }}
+              run: |
+                  git config user.name "aws-toolkit-automation"
+                  git config user.email "<>"
+
+                  # Create RC branch using date-based naming
+                  git checkout -b $BRANCH_NAME
+
+                  # Update package versions individually
+                  npm version --no-git-tag-version $TOOLKIT_VERSION -w packages/toolkit
+                  npm version --no-git-tag-version $AMAZONQ_VERSION -w packages/amazonq
+
+                  # Commit version changes
+                  git add packages/toolkit/package.json packages/amazonq/package.json package-lock.json
+                  git commit -m "chore: bump versions - toolkit=$TOOLKIT_VERSION, amazonq=$AMAZONQ_VERSION"
+
+                  # Push RC branch
+                  git push origin $BRANCH_NAME
