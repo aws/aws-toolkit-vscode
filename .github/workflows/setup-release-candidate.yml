@@ -43,9 +43,12 @@ jobs:
 
             - name: Calculate Release Versions
               id: release-version
+              env:
+                  CUSTOM_VERSION: ${{ inputs.customVersion }}
+                  VERSION_INCREMENT: ${{ inputs.versionIncrement }}
               run: |
-                  customVersion="${{ inputs.customVersion }}"
-                  versionIncrement="${{ inputs.versionIncrement }}"
+                  customVersion="$CUSTOM_VERSION"
+                  versionIncrement="$VERSION_INCREMENT"
 
                   increment_version() {
                       local currentVersion=$1
@@ -84,7 +87,7 @@ jobs:
                   # Use date-based branch naming instead of version-based because we release
                   # both extensions (toolkit and amazonq) from the same branch, and they may
                   # have different version numbers. We can change this in the future
-                  echo "BRANCH_NAME=rc-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+                  echo "BRANCH_NAME=release/rc-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
 
             - name: Create RC Branch and Update Versions
               env:
