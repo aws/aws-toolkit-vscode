@@ -16,6 +16,8 @@ import { EditSuggestionState } from '../editSuggestionState'
 import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
+const autoRejectEditCursorDistance = 25
+
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
     private removedCodeDecorationType: vscode.TextEditorDecorationType
@@ -346,6 +348,19 @@ export async function displaySvgDecoration(
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
+    const cursorChangeListener = vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (!EditSuggestionState.isEditSuggestionActive()) {
+            return
+        }
+        if (e.textEditor !== editor) {
+            return
+        }
+        const currentPosition = e.selections[0].active
+        const distance = Math.abs(currentPosition.line - startLine)
+        if (distance > autoRejectEditCursorDistance) {
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
     await decorationManager.displayEditSuggestion(
         editor,
         svgImage,
@@ -371,6 +386,7 @@ export async function displaySvgDecoration(
 
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
+            cursorChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
@@ -405,6 +421,7 @@ export async function displaySvgDecoration(
             getLogger().info('Edit suggestion rejected')
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
+            cursorChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {

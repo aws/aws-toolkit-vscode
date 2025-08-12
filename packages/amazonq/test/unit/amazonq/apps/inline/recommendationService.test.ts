@@ -129,6 +129,9 @@ describe('RecommendationService', () => {
 
     describe('getAllRecommendations', () => {
         it('should handle single request with no partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -172,6 +175,9 @@ describe('RecommendationService', () => {
         })
 
         it('should handle multiple request with partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
