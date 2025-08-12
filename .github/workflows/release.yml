@@ -49,7 +49,7 @@ jobs:
               run: |
                   RC_NAME=$(echo ${{ github.ref_name }} | sed 's/release\///')
                   echo "FEAT_NAME=" >> $GITHUB_ENV
-                  echo "TAG_NAME=rc-$RC_NAME" >> $GITHUB_ENV
+                  echo "TAG_NAME=$RC_NAME" >> $GITHUB_ENV
             - if: github.ref_name == 'master'
               run: |
                   echo "FEAT_NAME=" >> $GITHUB_ENV
