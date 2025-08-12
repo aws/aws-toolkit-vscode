@@ -52,7 +52,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await input.sendKeys('Generate the fibonacci sequence through recursion')
         await input.sendKeys(Key.ENTER)
         await waitForInlineGeneration(textEditor)
-        //Clean Up Text
+        // Clean Up Text
         await textEditor.clearText()
     })
 })
