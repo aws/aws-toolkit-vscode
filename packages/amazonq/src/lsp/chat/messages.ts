@@ -104,6 +104,18 @@ import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 import { CommentUtils } from 'aws-core-vscode/utils'
+import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
+
+// Create a singleton instance of DiffAnimationHandler for streaming functionality
+let diffAnimationHandler: DiffAnimationHandler | undefined
+
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -154,6 +166,17 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         }
     })
 }
+async function cleanupTempFiles(): Promise<void> {
+    try {
+        const animationHandler = getDiffAnimationHandler()
+        const streamingController = (animationHandler as any).streamingDiffController
+        if (streamingController && streamingController.cleanupChatSession) {
+            await streamingController.cleanupChatSession()
+        }
+    } catch (error) {
+        getLogger().warn(`Failed to cleanup temp files: ${error}`)
+    }
+}
 
 export function registerMessageListeners(
     languageClient: LanguageClient,
@@ -161,6 +184,12 @@ export function registerMessageListeners(
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    const initializingStreamsByFile = new Map<string, Set<string>>() // filePath -> Set of toolUseIds
+
+    const processedChunks = new Map<string, Set<string>>() // toolUseId -> Set of content hashes
+
+    // Initialize DiffAnimationHandler
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
@@ -281,6 +310,9 @@ export function registerMessageListeners(
                 token?.cancel()
                 token?.dispose()
                 chatStreamTokens.delete(tabId)
+
+                initializingStreamsByFile.clear()
+                await cleanupTempFiles()
                 break
             }
             case chatRequestType.method: {
@@ -691,7 +723,17 @@ export function registerMessageListeners(
         await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
-    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+    languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        if ((params.data as any)?.streamingChunk) {
+            const animationHandler = getDiffAnimationHandler()
+            await animationHandler.handleStreamingChunk(
+                (params.data as any).streamingChunk,
+                initializingStreamsByFile,
+                processedChunks
+            )
+            return
+        }
+
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
             params: params,
@@ -704,6 +746,14 @@ export function registerMessageListeners(
             params: params,
         })
     })
+}
+
+// Clean up on extension deactivation
+export function dispose() {
+    if (diffAnimationHandler) {
+        void diffAnimationHandler.dispose()
+        diffAnimationHandler = undefined
+    }
 }
 
 function isServerEvent(command: string) {
