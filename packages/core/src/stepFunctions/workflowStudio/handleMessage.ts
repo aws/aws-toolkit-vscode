@@ -65,9 +65,11 @@ export async function handleMessage(message: Message, context: WebviewContext) {
             case Command.OPEN_FEEDBACK:
                 !isReadonlyMode && void submitFeedback(placeholder, 'Workflow Studio')
                 break
-            case Command.API_CALL:
-                !isReadonlyMode && apiCallMessageHandler(message as ApiCallRequestMessage, context)
+            case Command.API_CALL: {
+                const region = globals.awsContext.getCredentialDefaultRegion()
+                !isReadonlyMode && apiCallMessageHandler(message as ApiCallRequestMessage, context, region)
                 break
+            }
             default:
                 void handleUnsupportedMessage(context, message)
                 break

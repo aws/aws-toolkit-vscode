@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Command, Message, MessageType, BaseContext, ApiCallRequestMessage, UnsupportedMessage } from './types'
-import { StepFunctionApiHandler } from './stepFunctionApiHandler'
-import globals from '../../shared/extensionGlobals'
+import { Command, Message, MessageType, BaseContext, UnsupportedMessage, ApiCallRequestMessage } from './types'
 import { getLogger } from '../../shared/logger/logger'
+import { StepFunctionApiHandler } from './stepFunctionApiHandler'
 
 /**
  * Handler for managing webview stage load, which updates load notifications.
@@ -18,17 +17,6 @@ export async function loadStageMessageHandler(context: BaseContext) {
     setTimeout(() => {
         context.loaderNotification?.resolve()
     }, 100)
-}
-
-/**
- * Handler for making API calls from the webview and returning the response.
- * @param request The request message containing the API to call and the parameters
- * @param context The webview context used for returning the API response to the webview
- */
-export function apiCallMessageHandler(request: ApiCallRequestMessage, context: BaseContext) {
-    const logger = getLogger('stepfunctions')
-    const apiHandler = new StepFunctionApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
-    apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
 }
 
 /**
@@ -44,4 +32,16 @@ export async function handleUnsupportedMessage(context: BaseContext, originalMes
         command: Command.UNSUPPORTED_COMMAND,
         originalMessage,
     } as UnsupportedMessage)
+}
+
+/**
+ * Handler for making API calls from the webview and returning the response.
+ * @param request The request message containing the API to call and the parameters
+ * @param context The webview context used for returning the API response to the webview
+ * @param region The AWS region to use for the API calls
+ */
+export function apiCallMessageHandler(request: ApiCallRequestMessage, context: BaseContext, region: string) {
+    const logger = getLogger('stepfunctions')
+    const apiHandler = new StepFunctionApiHandler(region, context)
+    apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
 }
