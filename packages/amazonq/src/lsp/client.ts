@@ -174,6 +174,7 @@ export async function startLanguageServer(
                 },
                 awsClientCapabilities: {
                     q: {
+                        LoopDebug: true,
                         developerProfiles: true,
                         pinnedContextEnabled: true,
                         imageContextEnabled: true,
