@@ -95,8 +95,20 @@ describe('utils', function () {
 
             assert.ok(containerIcon instanceof vscode.ThemeIcon)
             assert.ok(nonContainerIcon instanceof vscode.ThemeIcon)
-            assert.strictEqual((containerIcon as vscode.ThemeIcon).id, 'list-tree')
-            assert.strictEqual((nonContainerIcon as vscode.ThemeIcon).id, 'table')
+            assert.strictEqual((containerIcon as vscode.ThemeIcon).id, 'table')
+            assert.strictEqual((nonContainerIcon as vscode.ThemeIcon).id, 'aws-redshift-table')
+        })
+
+        it('should return custom icon for GLUE_CATALOG', function () {
+            const catalogIcon = getIconForNodeType(NodeType.GLUE_CATALOG)
+
+            // The catalog icon should be a custom icon, not a ThemeIcon
+            assert.ok(catalogIcon)
+            // We can't easily test the exact icon path in unit tests, but we can verify it's not a ThemeIcon
+            assert.ok(
+                !(catalogIcon instanceof vscode.ThemeIcon) ||
+                    (catalogIcon as any).id === 'aws-sagemakerunifiedstudio-catalog'
+            )
         })
     })
 

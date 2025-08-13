@@ -116,8 +116,11 @@ export async function createRedshiftConnectionConfig(
     }
 
     // Add auth object for SECRET authentication type
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    if (authType === DatabaseIntegrationConnectionAuthenticationTypes.SECRET && secretArn) {
+    if (
+        (authType as DatabaseIntegrationConnectionAuthenticationTypes) ===
+            DatabaseIntegrationConnectionAuthenticationTypes.SECRET &&
+        secretArn
+    ) {
         connectionConfig.auth = { secretArn }
     }
 

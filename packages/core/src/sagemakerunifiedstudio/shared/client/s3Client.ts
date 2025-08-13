@@ -39,9 +39,14 @@ export class S3Client {
      * Uses S3's hierarchical folder-like structure by leveraging prefixes and delimiters
      * @param bucket S3 bucket name to list objects from
      * @param prefix Optional prefix to filter objects (acts like a folder path)
-     * @returns List of S3 paths representing folders and files at the current level
+     * @param continuationToken Optional continuation token for pagination
+     * @returns Object containing paths and nextToken for pagination
      */
-    public async listPaths(bucket: string, prefix?: string): Promise<S3Path[]> {
+    public async listPaths(
+        bucket: string,
+        prefix?: string,
+        continuationToken?: string
+    ): Promise<{ paths: S3Path[]; nextToken?: string }> {
         try {
             this.logger.info(`S3Client: Listing paths in bucket ${bucket} with prefix ${prefix || 'root'}`)
 
@@ -54,6 +59,7 @@ export class S3Client {
                 Bucket: bucket,
                 Prefix: prefix, // Filter objects that start with this prefix
                 Delimiter: '/', // Treat '/' as folder separator for hierarchical listing
+                ContinuationToken: continuationToken, // For pagination
             })
 
             const paths: S3Path[] = []
@@ -103,7 +109,10 @@ export class S3Client {
             }
 
             this.logger.info(`S3Client: Found ${paths.length} paths in bucket ${bucket}`)
-            return paths
+            return {
+                paths,
+                nextToken: response.NextContinuationToken,
+            }
         } catch (err) {
             this.logger.error('S3Client: Failed to list paths: %s', err as Error)
             throw err

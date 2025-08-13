@@ -189,10 +189,10 @@ describe('redshiftStrategy', function () {
             assert.strictEqual(node.data.nodeType, NodeType.CONNECTION)
             assert.strictEqual(node.data.value.connection.name, 'Test Redshift Connection')
 
-            // Test children provider
+            // Test children provider - now creates database nodes directly
             const children = await node.getChildren()
             assert.strictEqual(children.length, 1)
-            assert.strictEqual((children[0] as RedshiftNode).data.nodeType, NodeType.REDSHIFT_CLUSTER)
+            assert.strictEqual((children[0] as RedshiftNode).data.nodeType, NodeType.REDSHIFT_DATABASE)
         })
 
         it.skip('should create connection node with host from jdbcConnection', async function () {
@@ -225,7 +225,7 @@ describe('redshiftStrategy', function () {
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 1)
-            assert.strictEqual((children[0] as RedshiftNode).data.nodeType, NodeType.REDSHIFT_CLUSTER)
+            assert.strictEqual((children[0] as RedshiftNode).data.nodeType, NodeType.REDSHIFT_DATABASE)
         })
 
         it('should return empty children when connection params are missing', async function () {

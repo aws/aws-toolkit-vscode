@@ -7,6 +7,35 @@
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const NODE_ID_DELIMITER = '/'
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const AWS_DATA_CATALOG = 'AwsDataCatalog'
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME = 'project.default_lakehouse'
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DATA_DEFAULT_ATHENA_CONNECTION_NAME = 'project.athena'
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DATA_DEFAULT_IAM_CONNECTION_NAME = 'project.iam'
+
+// Ref: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+export const lakeHouseColumnTypes = {
+    NUMERIC: ['TINYINT', 'SMALLINT', 'INT', 'INTEGER', 'BIGINT', 'FLOAT', 'REAL', 'DOUBLE', 'DECIMAL'],
+    STRING: ['CHAR', 'STRING', 'VARCHAR', 'UUID'],
+    TIME: ['DATE', 'TIMESTAMP', 'INTERVAL'],
+    BOOLEAN: ['BOOLEAN'],
+    BINARY: ['BINARY', 'VARBINARY'],
+    COMPLEX: ['ARRAY', 'MAP', 'STRUCT', 'ROW', 'JSON'],
+}
+
+// Ref: https://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
+export const redshiftColumnTypes = {
+    NUMERIC: ['SMALLINT', 'INT2', 'INTEGER', 'INT', 'BIGINT', 'DECIMAL', 'NUMERIC', 'REAL', 'FLOAT', 'DOUBLE'],
+    STRING: ['CHAR', 'CHARACTER', 'NCHAR', 'BPCHAR', 'VARCHAR', 'VARCHAR', 'VARYING', 'NVARCHAR', 'TEXT'],
+    TIME: ['TIME', 'TIMETZ', 'TIMESTAMP', 'TIMESTAMPTZ', 'INTERVAL'],
+    BOOLEAN: ['BOOLEAN', 'BOOL'],
+    BINARY: ['VARBYTE', 'VARBINARY', 'BINARY', 'VARYING'],
+    COMPLEX: ['HLLSKETCH', 'SUPER', 'GEOMETRY', 'GEOGRAPHY'],
+}
+
 /**
  * Node types for different resources
  */

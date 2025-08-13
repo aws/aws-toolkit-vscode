@@ -11,6 +11,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneClient, DataZoneConnection, DataZoneProject } from '../../shared/client/datazoneClient'
 import { createS3ConnectionNode } from './s3Strategy'
 import { createRedshiftConnectionNode } from './redshiftStrategy'
+import { createLakehouseConnectionNode } from './lakehouseStrategy'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { createErrorTreeItem } from './utils'
 import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
@@ -21,7 +22,7 @@ import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticat
  * Tree node representing a Data folder that contains S3 and Redshift connections
  */
 export class SageMakerUnifiedStudioDataNode implements TreeNode {
-    public readonly id = 'smusDataFolder'
+    public readonly id = 'smusDataExplorer'
     public readonly resource = {}
     private readonly logger = getLogger()
     private childrenNodes: TreeNode[] | undefined
@@ -57,7 +58,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             const projectCredentialProvider = await this.authProvider.getProjectCredentialProvider(project.id)
             const environmentCredentials = await projectCredentialProvider.getCredentials()
             if (!environmentCredentials) {
-                return [this.createErrorNode('Failed to get credentials')]
+                return [this.createErrorNode('Failed to get project environment credentials')]
             }
 
             const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
@@ -73,7 +74,9 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             this.childrenNodes = dataNodes
             return dataNodes
         } catch (err) {
-            this.logger.error(`Failed to get connections: ${(err as Error).message}`)
+            const project = this.parent.getProject()
+            const projectInfo = project ? `project: ${project.id}, domain: ${project.domainId}` : 'unknown project'
+            this.logger.error(`Failed to get connections for ${projectInfo}: ${(err as Error).message}`)
             return [this.createErrorNode(`Failed to get connections: ${(err as Error).message}`)]
         }
     }
@@ -90,10 +93,13 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         const region = this.authProvider.getDomainRegion()
         const dataNodes: TreeNode[] = []
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        const s3Connections = connections.filter((conn) => conn.type === ConnectionType.S3)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        const redshiftConnections = connections.filter((conn) => conn.type === ConnectionType.REDSHIFT)
+        const s3Connections = connections.filter((conn) => (conn.type as ConnectionType) === ConnectionType.S3)
+        const redshiftConnections = connections.filter(
+            (conn) => (conn.type as ConnectionType) === ConnectionType.REDSHIFT
+        )
+        const lakehouseConnections = connections.filter(
+            (conn) => (conn.type as ConnectionType) === ConnectionType.ATHENA
+        )
 
         for (const connection of s3Connections) {
             const node = await this.createS3Node(project, connection, environmentCredentials, region)
@@ -101,7 +107,15 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         }
 
         for (const connection of redshiftConnections) {
+            if (connection.name.startsWith('project.lakehouse')) {
+                continue
+            }
             const node = await this.createRedshiftNode(project, connection, environmentCredentials)
+            dataNodes.push(node)
+        }
+
+        for (const connection of lakehouseConnections) {
+            const node = await this.createLakehouseNode(project, connection, environmentCredentials, region)
             dataNodes.push(node)
         }
 
@@ -156,6 +170,32 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             // Fall back to using environment credentials
 
             return createRedshiftConnectionNode(connection, environmentCredentials)
+        }
+    }
+
+    private async createLakehouseNode(
+        project: DataZoneProject,
+        connection: DataZoneConnection,
+        environmentCredentials: AwsCredentialIdentity,
+        region: string
+    ): Promise<TreeNode> {
+        try {
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+            const getConnectionResponse = await datazoneClient.getConnection({
+                domainIdentifier: project.domainId,
+                identifier: connection.connectionId,
+                withSecret: true,
+            })
+
+            // Extract connection credentials, fall back to environment credentials if connection credentials not present
+            const connectionCredentials = getConnectionResponse.connectionCredentials || environmentCredentials
+            return createLakehouseConnectionNode(connection, connectionCredentials as AwsCredentialIdentity, region)
+        } catch (connErr) {
+            this.logger.error(`Failed to get Lakehouse connection details: ${(connErr as Error).message}`)
+            this.logger.info(`Created Lakehouse connection node with fallback credentials`)
+            // Fall back to using environment credentials
+
+            return createLakehouseConnectionNode(connection, environmentCredentials, region)
         }
     }
 

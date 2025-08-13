@@ -13,7 +13,15 @@ import {
     createRedshiftConnectionConfig,
 } from '../../shared/client/sqlWorkbenchClient'
 import { NODE_ID_DELIMITER, NodeType, ResourceType, NodeData } from './types'
-import { getLabel, isLeafNode, getIconForNodeType, createColumnTreeItem, isRedLakeDatabase, getTooltip } from './utils'
+import {
+    getLabel,
+    isLeafNode,
+    getIconForNodeType,
+    createColumnTreeItem,
+    isRedLakeDatabase,
+    getTooltip,
+    getColumnType,
+} from './utils'
 import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
 
 /**
@@ -109,7 +117,7 @@ export function createRedshiftConnectionNode(
 ): RedshiftNode {
     return new RedshiftNode(
         {
-            id: `redshift-connection-${connection.connectionId}`,
+            id: connection.connectionId,
             nodeType: NodeType.CONNECTION,
             value: { connection, credentials },
             path: {
@@ -140,8 +148,38 @@ export function createRedshiftConnectionNode(
             // Wake up the database with a simple query
             await wakeUpDatabase(connectionConfig, connectionParams.region, credentials)
 
-            const clusterName = connectionParams.host.split('.')[0]
-            return [createClusterNode(clusterName, connectionConfig, node)]
+            const sqlClient = SQLWorkbenchClient.createWithCredentials(connectionParams.region, credentials)
+
+            const allResources = []
+            let nextToken: string | undefined
+
+            do {
+                const response = await sqlClient.getResources({
+                    connection: connectionConfig,
+                    resourceType: ResourceType.DATABASE,
+                    includeChildren: true,
+                    maxItems: 100,
+                    forceRefresh: true,
+                    pageToken: nextToken,
+                })
+                allResources.push(...(response.resources || []))
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            const databases = allResources.filter(
+                (r: any) =>
+                    r.type === ResourceType.DATABASE ||
+                    r.type === ResourceType.EXTERNAL_DATABASE ||
+                    r.type === ResourceType.SHARED_DATABASE
+            )
+
+            if (databases.length === 0) {
+                // If no databases found, return the default database
+                return [createDatabaseNode(connectionConfig.database, connectionConfig, node)]
+            }
+
+            // Map databases to nodes
+            return databases.map((db: any) => createDatabaseNode(db.displayName, connectionConfig, node))
         }
     )
 }
@@ -189,76 +227,6 @@ async function wakeUpDatabase(connectionConfig: ConnectionConfig, region: string
 }
 
 /**
- * Creates a cluster node
- */
-function createClusterNode(
-    clusterName: string,
-    connectionConfig: ConnectionConfig,
-    parent: RedshiftNode
-): RedshiftNode {
-    const logger = getLogger()
-
-    return new RedshiftNode(
-        {
-            id: `redshift-cluster-${clusterName}`,
-            nodeType: NodeType.REDSHIFT_CLUSTER,
-            value: {
-                clusterName,
-                connectionConfig,
-                identifier: clusterName,
-                type: ResourceType.DATABASE,
-                childObjectTypes: [ResourceType.DATABASE, ResourceType.EXTERNAL_DATABASE, ResourceType.SHARED_DATABASE],
-            },
-            path: {
-                ...parent.data.path,
-                cluster: clusterName,
-            },
-            parent,
-        },
-        async (node) => {
-            try {
-                // Get the original credentials from the root connection node
-                const rootCredentials = getRootCredentials(parent)
-
-                // Create SQL client with the original credentials
-                const sqlClient = SQLWorkbenchClient.createWithCredentials(
-                    connectionConfig.id.split(':')[3], // region
-                    rootCredentials
-                )
-
-                // Get databases
-                const response = await sqlClient.getResources({
-                    connection: connectionConfig,
-                    resourceType: ResourceType.DATABASE,
-                    includeChildren: true,
-                    maxItems: 100,
-                    forceRefresh: true,
-                })
-
-                const resources = response.resources || []
-                const databases = resources.filter(
-                    (r: any) =>
-                        r.type === ResourceType.DATABASE ||
-                        r.type === ResourceType.EXTERNAL_DATABASE ||
-                        r.type === ResourceType.SHARED_DATABASE
-                )
-
-                if (databases.length === 0) {
-                    // If no databases found, return the default database
-                    return [createDatabaseNode(connectionConfig.database, connectionConfig, node)]
-                }
-
-                // Map databases to nodes
-                return databases.map((db: any) => createDatabaseNode(db.displayName, connectionConfig, node))
-            } catch (err) {
-                logger.error(`Failed to get databases: ${(err as Error).message}`)
-                throw err
-            }
-        }
-    )
-}
-
-/**
  * Creates a database node
  */
 function createDatabaseNode(
@@ -270,7 +238,7 @@ function createDatabaseNode(
 
     return new RedshiftNode(
         {
-            id: `redshift-database-${databaseName}`,
+            id: databaseName,
             nodeType: NodeType.REDSHIFT_DATABASE,
             value: {
                 database: databaseName,
@@ -303,22 +271,29 @@ function createDatabaseNode(
                 }
 
                 // Get schemas
-                const response = await sqlClient.getResources({
-                    connection: dbConnectionConfig,
-                    resourceType: ResourceType.SCHEMA,
-                    includeChildren: true,
-                    maxItems: 100,
-                    parents: [
-                        {
-                            parentId: databaseName,
-                            parentType: ResourceType.DATABASE,
-                        },
-                    ],
-                    forceRefresh: true,
-                })
+                const allResources = []
+                let nextToken: string | undefined
 
-                const resources = response.resources || []
-                const schemas = resources.filter(
+                do {
+                    const response = await sqlClient.getResources({
+                        connection: dbConnectionConfig,
+                        resourceType: ResourceType.SCHEMA,
+                        includeChildren: true,
+                        maxItems: 100,
+                        parents: [
+                            {
+                                parentId: databaseName,
+                                parentType: ResourceType.DATABASE,
+                            },
+                        ],
+                        forceRefresh: true,
+                        pageToken: nextToken,
+                    })
+                    allResources.push(...(response.resources || []))
+                    nextToken = response.nextToken
+                } while (nextToken)
+
+                const schemas = allResources.filter(
                     (r: any) =>
                         r.type === ResourceType.SCHEMA ||
                         r.type === ResourceType.EXTERNAL_SCHEMA ||
@@ -348,7 +323,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
 
     return new RedshiftNode(
         {
-            id: `redshift-schema-${schemaName}`,
+            id: schemaName,
             nodeType: NodeType.REDSHIFT_SCHEMA,
             value: {
                 schema: schemaName,
@@ -408,21 +383,29 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                     forceRefresh: true,
                 }
 
-                const response = await sqlClient.getResources(requestParams)
+                const allResources = []
+                let nextToken: string | undefined
 
-                const resources = response.resources || []
+                do {
+                    const response = await sqlClient.getResources({
+                        ...requestParams,
+                        pageToken: nextToken,
+                    })
+                    allResources.push(...(response.resources || []))
+                    nextToken = response.nextToken
+                } while (nextToken)
 
                 // Group resources by type
-                const tables = resources.filter(
+                const tables = allResources.filter(
                     (r: any) =>
                         r.type === ResourceType.TABLE ||
                         r.type === ResourceType.EXTERNAL_TABLE ||
                         r.type === ResourceType.CATALOG_TABLE ||
                         r.type === ResourceType.DATA_CATALOG_TABLE
                 )
-                const views = resources.filter((r: any) => r.type === ResourceType.VIEW)
-                const functions = resources.filter((r: any) => r.type === ResourceType.FUNCTION)
-                const procedures = resources.filter((r: any) => r.type === ResourceType.STORED_PROCEDURE)
+                const views = allResources.filter((r: any) => r.type === ResourceType.VIEW)
+                const functions = allResources.filter((r: any) => r.type === ResourceType.FUNCTION)
+                const procedures = allResources.filter((r: any) => r.type === ResourceType.STORED_PROCEDURE)
 
                 // Create container nodes for each type
                 const containerNodes: RedshiftNode[] = []
@@ -570,12 +553,20 @@ function createObjectNode(
                 }
 
                 // Call getResources to get columns
-                const response = await sqlClient.getResources(requestParams)
+                const allColumns = []
+                let nextToken: string | undefined
 
-                const columns = response.resources || []
+                do {
+                    const response = await sqlClient.getResources({
+                        ...requestParams,
+                        pageToken: nextToken,
+                    })
+                    allColumns.push(...(response.resources || []))
+                    nextToken = response.nextToken
+                } while (nextToken)
 
                 // Create column nodes from API response
-                return columns.map((column: any) => {
+                return allColumns.map((column: any) => {
                     // Extract column type from resourceMetadata
                     let columnType = 'UNKNOWN'
                     if (column.resourceMetadata && Array.isArray(column.resourceMetadata)) {
@@ -584,6 +575,8 @@ function createObjectNode(
                             columnType = typeMetadata.value
                         }
                     }
+
+                    columnType = getColumnType(columnType)
 
                     return createColumnNode(
                         column.displayName,

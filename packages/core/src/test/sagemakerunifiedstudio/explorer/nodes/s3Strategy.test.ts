@@ -24,14 +24,13 @@ describe('s3Strategy', function () {
     describe('S3Node', function () {
         describe('constructor', function () {
             it('should create node with correct properties', function () {
-                const node = new S3Node(
-                    'test-id',
-                    NodeType.S3_BUCKET,
-                    'Test Bucket',
-                    ConnectionType.S3,
-                    { bucket: 'test-bucket' },
-                    { bucket: 'test-bucket' }
-                )
+                const node = new S3Node({
+                    id: 'test-id',
+                    nodeType: NodeType.S3_BUCKET,
+                    connectionType: ConnectionType.S3,
+                    value: { bucket: 'test-bucket' },
+                    path: { bucket: 'test-bucket' },
+                })
 
                 assert.strictEqual(node.id, 'test-id')
                 assert.strictEqual(node.data.nodeType, NodeType.S3_BUCKET)
@@ -39,68 +38,13 @@ describe('s3Strategy', function () {
             })
         })
 
-        describe('fromNodeData', function () {
-            it('should create node from data', function () {
-                const node = S3Node.fromNodeData(
-                    'test-id',
-                    NodeType.S3_FILE,
-                    'test.txt',
-                    ConnectionType.S3,
-                    { size: 1024 },
-                    { bucket: 'test-bucket', key: 'test.txt' }
-                )
-
-                assert.strictEqual(node.id, 'test-id')
-                assert.strictEqual(node.data.nodeType, NodeType.S3_FILE)
-            })
-        })
-
-        describe('createErrorNode', function () {
-            it('should create error node', function () {
-                const error = new Error('Test error')
-                const node = S3Node.createErrorNode('error-id', error)
-
-                assert.strictEqual(node.id, 'error-id')
-                assert.strictEqual(node.data.nodeType, NodeType.ERROR)
-            })
-        })
-
-        describe('createLoadingNode', function () {
-            it('should create loading node', function () {
-                const node = S3Node.createLoadingNode('loading-id')
-
-                assert.strictEqual(node.id, 'loading-id')
-                assert.strictEqual(node.data.nodeType, NodeType.LOADING)
-            })
-        })
-
-        describe('createEmptyNode', function () {
-            it('should create empty node', function () {
-                const node = S3Node.createEmptyNode('empty-id', 'No items')
-
-                assert.strictEqual(node.id, 'empty-id')
-                assert.strictEqual(node.data.nodeType, NodeType.EMPTY)
-            })
-        })
-
         describe('getChildren', function () {
-            it('should return cached children if available', async function () {
-                const node = S3Node.fromNodeData(
-                    'test-id',
-                    NodeType.S3_BUCKET,
-                    'Test Bucket',
-                    ConnectionType.S3,
-                    {},
-                    {},
-                    [S3Node.createEmptyNode('child', 'Child')]
-                )
-
-                const children = await node.getChildren()
-                assert.strictEqual(children.length, 1)
-            })
-
             it('should return empty array for leaf nodes', async function () {
-                const node = S3Node.fromNodeData('test-id', NodeType.S3_FILE, 'test.txt', ConnectionType.S3)
+                const node = new S3Node({
+                    id: 'test-id',
+                    nodeType: NodeType.S3_FILE,
+                    connectionType: ConnectionType.S3,
+                })
 
                 const children = await node.getChildren()
                 assert.strictEqual(children.length, 0)
@@ -111,16 +55,12 @@ describe('s3Strategy', function () {
                     throw new Error('Provider error')
                 }
 
-                const node = S3Node.fromNodeData(
-                    'test-id',
-                    NodeType.S3_BUCKET,
-                    'Test Bucket',
-                    ConnectionType.S3,
-                    {},
-                    {},
-                    undefined,
-                    undefined,
-                    false,
+                const node = new S3Node(
+                    {
+                        id: 'test-id',
+                        nodeType: NodeType.S3_BUCKET,
+                        connectionType: ConnectionType.S3,
+                    },
                     errorProvider
                 )
 
@@ -132,7 +72,11 @@ describe('s3Strategy', function () {
 
         describe('getTreeItem', function () {
             it('should return correct tree item for non-leaf node', async function () {
-                const node = S3Node.fromNodeData('test-id', NodeType.S3_BUCKET, 'Test Bucket', ConnectionType.S3)
+                const node = new S3Node({
+                    id: 'test-id',
+                    nodeType: NodeType.S3_BUCKET,
+                    connectionType: ConnectionType.S3,
+                })
 
                 const treeItem = await node.getTreeItem()
                 assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
@@ -140,7 +84,11 @@ describe('s3Strategy', function () {
             })
 
             it('should return correct tree item for leaf node', async function () {
-                const node = S3Node.fromNodeData('test-id', NodeType.S3_FILE, 'test.txt', ConnectionType.S3)
+                const node = new S3Node({
+                    id: 'test-id',
+                    nodeType: NodeType.S3_FILE,
+                    connectionType: ConnectionType.S3,
+                })
 
                 const treeItem = await node.getTreeItem()
                 assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
@@ -218,14 +166,17 @@ describe('s3Strategy', function () {
                 secretAccessKey: 'test-secret',
             }
 
-            mockS3Client.listPaths.resolves([
-                {
-                    bucket: 'test-bucket',
-                    prefix: 'file.txt',
-                    displayName: 'file.txt',
-                    isFolder: false,
-                },
-            ])
+            mockS3Client.listPaths.resolves({
+                paths: [
+                    {
+                        bucket: 'test-bucket',
+                        prefix: 'file.txt',
+                        displayName: 'file.txt',
+                        isFolder: false,
+                    },
+                ],
+                nextToken: undefined,
+            })
 
             const node = createS3ConnectionNode(connection as any, credentials, 'us-east-1')
             const children = await node.getChildren()

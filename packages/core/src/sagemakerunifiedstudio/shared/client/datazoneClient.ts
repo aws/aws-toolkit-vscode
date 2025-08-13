@@ -17,6 +17,7 @@ import {
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
+
 /**
  * Represents a DataZone project
  */

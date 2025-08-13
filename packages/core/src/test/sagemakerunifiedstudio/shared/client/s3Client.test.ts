@@ -63,9 +63,10 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket')
+            const result = await s3Client.listPaths('test-bucket')
 
-            assert.strictEqual(paths.length, 4)
+            assert.strictEqual(result.paths.length, 4)
+            const paths = result.paths
 
             // Check folders
             assert.strictEqual(paths[0].displayName, 'folder1')
@@ -101,9 +102,10 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket', 'prefix/')
+            const result = await s3Client.listPaths('test-bucket', 'prefix/')
 
-            assert.strictEqual(paths.length, 2)
+            assert.strictEqual(result.paths.length, 2)
+            const paths = result.paths
             assert.strictEqual(paths[0].displayName, 'subfolder')
             assert.strictEqual(paths[0].isFolder, true)
             assert.strictEqual(paths[1].displayName, 'file.txt')
@@ -115,6 +117,7 @@ describe('S3Client', function () {
             assert.strictEqual(callArgs.Bucket, 'test-bucket')
             assert.strictEqual(callArgs.Prefix, 'prefix/')
             assert.strictEqual(callArgs.Delimiter, '/')
+            assert.strictEqual(callArgs.ContinuationToken, undefined)
         })
 
         it('should return empty array when no objects found', async function () {
@@ -125,9 +128,9 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('empty-bucket')
+            const result = await s3Client.listPaths('empty-bucket')
 
-            assert.strictEqual(paths.length, 0)
+            assert.strictEqual(result.paths.length, 0)
         })
 
         it('should handle response with only folders', async function () {
@@ -138,9 +141,10 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket')
+            const result = await s3Client.listPaths('test-bucket')
 
-            assert.strictEqual(paths.length, 2)
+            assert.strictEqual(result.paths.length, 2)
+            const paths = result.paths
             assert.strictEqual(paths[0].isFolder, true)
             assert.strictEqual(paths[1].isFolder, true)
         })
@@ -159,9 +163,10 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket')
+            const result = await s3Client.listPaths('test-bucket')
 
-            assert.strictEqual(paths.length, 1)
+            assert.strictEqual(result.paths.length, 1)
+            const paths = result.paths
             assert.strictEqual(paths[0].isFolder, false)
             assert.strictEqual(paths[0].displayName, 'file1.txt')
         })
@@ -190,10 +195,11 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket', 'prefix/')
+            const result = await s3Client.listPaths('test-bucket', 'prefix/')
 
             // Should only include the folder from CommonPrefixes and the file (not folder markers)
-            assert.strictEqual(paths.length, 2)
+            assert.strictEqual(result.paths.length, 2)
+            const paths = result.paths
             assert.strictEqual(paths[0].displayName, 'folder')
             assert.strictEqual(paths[0].isFolder, true)
             assert.strictEqual(paths[1].displayName, 'file.txt')
@@ -225,10 +231,11 @@ describe('S3Client', function () {
 
             mockS3.listObjectsV2.resolves(mockResponse)
 
-            const paths = await s3Client.listPaths('test-bucket')
+            const result = await s3Client.listPaths('test-bucket')
 
             // Should only include valid entries
-            assert.strictEqual(paths.length, 2)
+            assert.strictEqual(result.paths.length, 2)
+            const paths = result.paths
             assert.strictEqual(paths[0].displayName, 'valid-folder')
             assert.strictEqual(paths[0].isFolder, true)
             assert.strictEqual(paths[1].displayName, 'valid-file.txt')
@@ -257,6 +264,40 @@ describe('S3Client', function () {
 
             // S3 constructor should only be called once (during first call)
             assert.ok(mockS3.listObjectsV2.calledTwice)
+        })
+
+        it('should handle ContinuationToken for pagination', async function () {
+            const mockResponse = {
+                CommonPrefixes: [{ Prefix: 'folder1/' }],
+                Contents: [{ Key: 'file1.txt', Size: 1024 }],
+                NextContinuationToken: 'next-token-123',
+            }
+
+            mockS3.listObjectsV2.resolves(mockResponse)
+
+            const result = await s3Client.listPaths('test-bucket', 'prefix/', 'continuation-token')
+
+            assert.strictEqual(result.paths.length, 2)
+            assert.strictEqual(result.nextToken, 'next-token-123')
+
+            // Verify ContinuationToken was passed
+            const callArgs = mockS3.listObjectsV2.getCall(0).args[0]
+            assert.strictEqual(callArgs.ContinuationToken, 'continuation-token')
+        })
+
+        it('should return undefined nextToken when no more pages', async function () {
+            const mockResponse = {
+                CommonPrefixes: [{ Prefix: 'folder1/' }],
+                Contents: [{ Key: 'file1.txt', Size: 1024 }],
+                NextContinuationToken: undefined,
+            }
+
+            mockS3.listObjectsV2.resolves(mockResponse)
+
+            const result = await s3Client.listPaths('test-bucket')
+
+            assert.strictEqual(result.paths.length, 2)
+            assert.strictEqual(result.nextToken, undefined)
         })
     })
 })

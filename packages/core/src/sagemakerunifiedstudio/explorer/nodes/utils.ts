@@ -13,6 +13,9 @@ import {
     ConnectionType,
     NodeData,
     LEAF_NODE_TYPES,
+    DATA_DEFAULT_ATHENA_CONNECTION_NAME,
+    redshiftColumnTypes,
+    lakeHouseColumnTypes,
 } from './types'
 
 /**
@@ -23,7 +26,23 @@ export function getLabel(data: {
     nodeType: NodeType
     isContainer?: boolean
     path?: { key?: string; label?: string }
+    value?: any
 }): string {
+    // For connection nodes, use the connection name
+    if (data.nodeType === NodeType.CONNECTION && data.value?.connection?.name) {
+        if (
+            data.value?.connection?.type === ConnectionType.ATHENA &&
+            data.value?.connection?.name === DATA_DEFAULT_ATHENA_CONNECTION_NAME
+        ) {
+            return 'Lakehouse'
+        }
+        const formattedType = data.value?.connection?.type?.replace(/([A-Z]+(?:_[A-Z]+)*)/g, (match: string) => {
+            const words = match.split('_')
+            return words.map((word: string) => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')
+        })
+        return `${formattedType} (${data.value.connection.name})`
+    }
+
     // For container nodes, use the node type
     if (data.isContainer) {
         switch (data.nodeType) {
@@ -79,10 +98,10 @@ export function isLeafNode(data: { nodeType: NodeType; isContainer?: boolean }):
 /**
  * Gets the icon for a node type
  */
-export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): vscode.ThemeIcon | IconPath {
+export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): vscode.ThemeIcon | IconPath | undefined {
     switch (nodeType) {
         case NodeType.CONNECTION:
-            return getIcon('vscode-plug')
+            return undefined
         case NodeType.S3_BUCKET:
             return getIcon('aws-s3-bucket')
         case NodeType.S3_FOLDER:
@@ -90,22 +109,22 @@ export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): v
         case NodeType.S3_FILE:
             return getIcon('vscode-file')
         case NodeType.REDSHIFT_CLUSTER:
-            return new vscode.ThemeIcon('database')
+            return getIcon('aws-redshift-cluster')
         case NodeType.REDSHIFT_DATABASE:
         case NodeType.GLUE_DATABASE:
             return new vscode.ThemeIcon('database')
         case NodeType.REDSHIFT_SCHEMA:
-            return new vscode.ThemeIcon('symbol-namespace')
+            return getIcon('aws-redshift-schema')
         case NodeType.REDSHIFT_TABLE:
         case NodeType.GLUE_TABLE:
-            return isContainer ? new vscode.ThemeIcon('list-tree') : new vscode.ThemeIcon('table')
+            return isContainer ? new vscode.ThemeIcon('table') : getIcon('aws-redshift-table')
         case NodeType.REDSHIFT_VIEW:
             return isContainer ? new vscode.ThemeIcon('list-tree') : new vscode.ThemeIcon('eye')
         case NodeType.REDSHIFT_FUNCTION:
         case NodeType.REDSHIFT_STORED_PROCEDURE:
             return isContainer ? new vscode.ThemeIcon('list-tree') : new vscode.ThemeIcon('symbol-method')
         case NodeType.GLUE_CATALOG:
-            return new vscode.ThemeIcon('database')
+            return getIcon('aws-sagemakerunifiedstudio-catalog')
         case NodeType.ERROR:
             return new vscode.ThemeIcon('error')
         case NodeType.LOADING:
@@ -146,6 +165,58 @@ export function createTreeItem(
 }
 
 /**
+ * Gets the column type category from a raw column type string
+ */
+export function getColumnType(columnTypeString?: string): string {
+    if (!columnTypeString) {
+        return 'UNKNOWN'
+    }
+
+    const lowerType = columnTypeString.toLowerCase()
+
+    // Search in both redshift and lakehouse column types
+    const allTypes = [...Object.values(redshiftColumnTypes).flat(), ...Object.values(lakeHouseColumnTypes).flat()].map(
+        (type) => type.toLowerCase()
+    )
+
+    return allTypes.find((key) => lowerType.startsWith(key)) || 'UNKNOWN'
+}
+
+/**
+ * Gets the icon for a column based on its type
+ */
+function getColumnIcon(columnType: string): vscode.ThemeIcon | IconPath {
+    const upperType = columnType.toUpperCase()
+
+    // Check if it's a numeric type
+    if (
+        lakeHouseColumnTypes.NUMERIC.some((type) => upperType.includes(type)) ||
+        redshiftColumnTypes.NUMERIC.some((type) => upperType.includes(type))
+    ) {
+        return getIcon('aws-sagemakerunifiedstudio-symbol-int')
+    }
+
+    // Check if it's a string type
+    if (
+        lakeHouseColumnTypes.STRING.some((type) => upperType.includes(type)) ||
+        redshiftColumnTypes.STRING.some((type) => upperType.includes(type))
+    ) {
+        return getIcon('vscode-symbol-key')
+    }
+
+    // Check if it's a time type
+    if (
+        lakeHouseColumnTypes.TIME.some((type) => upperType.includes(type)) ||
+        redshiftColumnTypes.TIME.some((type) => upperType.includes(type))
+    ) {
+        return getIcon('vscode-calendar')
+    }
+
+    // Default icon for unknown types
+    return new vscode.ThemeIcon('symbol-field')
+}
+
+/**
  * Creates a tree item for a column node with type information
  */
 export function createColumnTreeItem(label: string, columnType: string, nodeType: NodeType): vscode.TreeItem {
@@ -154,8 +225,8 @@ export function createColumnTreeItem(label: string, columnType: string, nodeType
     // Add column type as description (secondary text)
     item.description = columnType
 
-    // Set icon based on node type
-    item.iconPath = getIconForNodeType(nodeType)
+    // Set icon based on column type
+    item.iconPath = getColumnIcon(columnType)
 
     // Set context value for command enablement
     item.contextValue = nodeType

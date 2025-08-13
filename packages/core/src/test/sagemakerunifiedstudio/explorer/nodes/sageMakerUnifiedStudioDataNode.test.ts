@@ -12,6 +12,7 @@ import { DataZoneClient, DataZoneProject } from '../../../../sagemakerunifiedstu
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import * as s3Strategy from '../../../../sagemakerunifiedstudio/explorer/nodes/s3Strategy'
 import * as redshiftStrategy from '../../../../sagemakerunifiedstudio/explorer/nodes/redshiftStrategy'
+import * as lakehouseStrategy from '../../../../sagemakerunifiedstudio/explorer/nodes/lakehouseStrategy'
 
 describe('SageMakerUnifiedStudioDataNode', function () {
     let sandbox: sinon.SinonSandbox
@@ -60,8 +61,24 @@ describe('SageMakerUnifiedStudioDataNode', function () {
 
         sandbox.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
         sandbox.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
-        sandbox.stub(s3Strategy, 'createS3ConnectionNode').returns({} as any)
-        sandbox.stub(redshiftStrategy, 'createRedshiftConnectionNode').returns({} as any)
+        sandbox.stub(s3Strategy, 'createS3ConnectionNode').returns({
+            id: 's3-node',
+            getChildren: () => Promise.resolve([]),
+            getTreeItem: () => ({}) as any,
+            getParent: () => undefined,
+        } as any)
+        sandbox.stub(redshiftStrategy, 'createRedshiftConnectionNode').returns({
+            id: 'redshift-node',
+            getChildren: () => Promise.resolve([]),
+            getTreeItem: () => ({}) as any,
+            getParent: () => undefined,
+        } as any)
+        sandbox.stub(lakehouseStrategy, 'createLakehouseConnectionNode').returns({
+            id: 'lakehouse-node',
+            getChildren: () => Promise.resolve([]),
+            getTreeItem: () => ({}) as any,
+            getParent: () => undefined,
+        } as any)
 
         dataNode = new SageMakerUnifiedStudioDataNode(mockParent as any)
     })
@@ -72,7 +89,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
 
     describe('constructor', function () {
         it('should initialize with correct properties', function () {
-            assert.strictEqual(dataNode.id, 'smusDataFolder')
+            assert.strictEqual(dataNode.id, 'smusDataExplorer')
             assert.deepStrictEqual(dataNode.resource, {})
         })
 
@@ -137,8 +154,8 @@ describe('SageMakerUnifiedStudioDataNode', function () {
 
         it('should create S3 and Redshift nodes for connections', async function () {
             const mockConnections = [
-                { connectionId: 's3-conn', type: 'S3' },
-                { connectionId: 'redshift-conn', type: 'REDSHIFT' },
+                { connectionId: 's3-conn', type: 'S3', name: 's3-connection' },
+                { connectionId: 'redshift-conn', type: 'REDSHIFT', name: 'redshift-connection' },
             ]
 
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
