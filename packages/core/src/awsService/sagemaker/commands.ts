@@ -20,6 +20,7 @@ import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { RemoteSessionError } from '../../shared/remoteSession'
 import { ConnectFromRemoteWorkspaceMessage, InstanceTypeError } from './constants'
+import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 
 const localize = nls.loadMessageBundle()
 
@@ -101,6 +102,8 @@ export async function deeplinkConnect(
             connectionIdentifier,
             ctx.extensionContext,
             'sm_dl',
+            false /* isSMUS */,
+            undefined /* node */,
             session,
             wsUrl,
             token,
@@ -125,7 +128,11 @@ export async function deeplinkConnect(
     }
 }
 
-export async function stopSpace(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
+export async function stopSpace(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext,
+    sageMakerClient?: SagemakerClient
+) {
     const spaceName = node.spaceApp.SpaceName!
     const confirmed = await showConfirmationMessage({
         prompt: `You are about to stop this space. Any active resource will also be stopped. Are you sure you want to stop the space?`,
@@ -137,8 +144,8 @@ export async function stopSpace(node: SagemakerSpaceNode, ctx: vscode.ExtensionC
     if (!confirmed) {
         return
     }
-
-    const client = new SagemakerClient(node.regionCode)
+    //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
+    const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
     try {
         await client.deleteApp({
             DomainId: node.spaceApp.DomainId!,
@@ -159,14 +166,19 @@ export async function stopSpace(node: SagemakerSpaceNode, ctx: vscode.ExtensionC
     await tryRefreshNode(node)
 }
 
-export async function openRemoteConnect(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
+export async function openRemoteConnect(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext,
+    sageMakerClient?: SagemakerClient
+) {
     if (isRemoteWorkspace()) {
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
 
     if (node.getStatus() === 'Stopped') {
-        const client = new SagemakerClient(node.regionCode)
+        //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
+        const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
 
         try {
             await client.startSpace(node.spaceApp.SpaceName!, node.spaceApp.DomainId!)

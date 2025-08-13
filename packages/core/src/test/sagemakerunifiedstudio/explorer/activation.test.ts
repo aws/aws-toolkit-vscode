@@ -55,7 +55,7 @@ describe('SMUS Explorer Activation', function () {
 
         mockSmusRootNode = {
             getChildren: sinon.stub().resolves([]),
-            getProjectSelectNode: sinon.stub().returns({}),
+            getProjectSelectNode: sinon.stub().returns({ refreshNode: sinon.stub().resolves() }),
         } as any
 
         // Stub vscode APIs
@@ -86,6 +86,9 @@ describe('SMUS Explorer Activation', function () {
 
         // Stub setSmusConnectedContext
         sinon.stub({ setSmusConnectedContext }, 'setSmusConnectedContext').resolves()
+
+        // Stub setupUserActivityMonitoring
+        sinon.stub(require('../../../awsService/sagemaker/sagemakerSpace'), 'setupUserActivityMonitoring').resolves()
     })
 
     afterEach(function () {
@@ -116,7 +119,10 @@ describe('SMUS Explorer Activation', function () {
 
             assert.ok(registeredCommands.includes('aws.smus.rootView.refresh'))
             assert.ok(registeredCommands.includes('aws.smus.projectView'))
+            assert.ok(registeredCommands.includes('aws.smus.refreshProject'))
             assert.ok(registeredCommands.includes('aws.smus.switchProject'))
+            assert.ok(registeredCommands.includes('aws.smus.stopSpace'))
+            assert.ok(registeredCommands.includes('aws.smus.openRemoteConnection'))
             assert.ok(registeredCommands.includes('aws.smus.reauthenticate'))
         })
 
@@ -248,6 +254,118 @@ describe('SMUS Explorer Activation', function () {
                 assert.ok(errorMessages.length > 0, 'Should show error message')
                 assert.ok(errorMessages.some((msg) => msg.message.includes('Failed to reauthenticate')))
             })
+
+            it('should handle aws.smus.refreshProject command', async function () {
+                const refreshProjectCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.refreshProject')
+
+                assert.ok(refreshProjectCommand)
+
+                // Execute the command handler
+                await refreshProjectCommand.args[1]()
+
+                // Verify that getProjectSelectNode was called and refreshNode was called on the returned node
+                assert.ok(mockSmusRootNode.getProjectSelectNode.called)
+                const projectNode = mockSmusRootNode.getProjectSelectNode()
+                assert.ok((projectNode.refreshNode as sinon.SinonStub).called)
+            })
+
+            it('should handle aws.smus.stopSpace command with valid node', async function () {
+                const stopSpaceCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.stopSpace')
+
+                assert.ok(stopSpaceCommand)
+
+                const mockSpaceNode = {
+                    resource: {
+                        sageMakerClient: {},
+                    },
+                } as any
+
+                // Mock the stopSpace function
+                const stopSpaceStub = sinon.stub()
+                sinon.stub(require('../../../awsService/sagemaker/commands'), 'stopSpace').value(stopSpaceStub)
+
+                // Execute the command handler
+                await stopSpaceCommand.args[1](mockSpaceNode)
+
+                assert.ok(
+                    stopSpaceStub.calledWith(
+                        mockSpaceNode.resource,
+                        mockExtensionContext,
+                        mockSpaceNode.resource.sageMakerClient
+                    )
+                )
+            })
+
+            it('should handle aws.smus.stopSpace command with invalid node', async function () {
+                const stopSpaceCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.stopSpace')
+
+                assert.ok(stopSpaceCommand)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler with undefined node
+                await stopSpaceCommand.args[1](undefined)
+
+                // Check that a warning message was shown
+                const warningMessages = testWindow.shownMessages.filter((msg) => msg.severity === SeverityLevel.Warning)
+                assert.ok(warningMessages.length > 0, 'Should show warning message')
+                assert.ok(warningMessages.some((msg) => msg.message.includes('Space information is being refreshed')))
+            })
+
+            it('should handle aws.smus.openRemoteConnection command with valid node', async function () {
+                const openRemoteCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.openRemoteConnection')
+
+                assert.ok(openRemoteCommand)
+
+                const mockSpaceNode = {
+                    resource: {
+                        sageMakerClient: {},
+                    },
+                } as any
+
+                // Mock the openRemoteConnect function
+                const openRemoteConnectStub = sinon.stub()
+                sinon
+                    .stub(require('../../../awsService/sagemaker/commands'), 'openRemoteConnect')
+                    .value(openRemoteConnectStub)
+
+                // Execute the command handler
+                await openRemoteCommand.args[1](mockSpaceNode)
+
+                assert.ok(
+                    openRemoteConnectStub.calledWith(
+                        mockSpaceNode.resource,
+                        mockExtensionContext,
+                        mockSpaceNode.resource.sageMakerClient
+                    )
+                )
+            })
+
+            it('should handle aws.smus.openRemoteConnection command with invalid node', async function () {
+                const openRemoteCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.openRemoteConnection')
+
+                assert.ok(openRemoteCommand)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler with undefined node
+                await openRemoteCommand.args[1](undefined)
+
+                // Check that a warning message was shown
+                const warningMessages = testWindow.shownMessages.filter((msg) => msg.severity === SeverityLevel.Warning)
+                assert.ok(warningMessages.length > 0, 'Should show warning message')
+                assert.ok(warningMessages.some((msg) => msg.message.includes('Space information is being refreshed')))
+            })
         })
 
         it('should propagate auth provider initialization errors', async function () {
@@ -266,6 +384,13 @@ describe('SMUS Explorer Activation', function () {
             const treeDataProvider = createTreeViewStub.firstCall.args[1].treeDataProvider
             assert.ok(treeDataProvider)
         })
+
+        it('should setup user activity monitoring', async function () {
+            const setupStub = require('../../../awsService/sagemaker/sagemakerSpace').setupUserActivityMonitoring
+            await activate(mockExtensionContext)
+
+            assert.ok(setupStub.calledWith(mockExtensionContext))
+        })
     })
 
     describe('command registration', function () {
@@ -275,7 +400,10 @@ describe('SMUS Explorer Activation', function () {
             const expectedCommands = [
                 'aws.smus.rootView.refresh',
                 'aws.smus.projectView',
+                'aws.smus.refreshProject',
                 'aws.smus.switchProject',
+                'aws.smus.stopSpace',
+                'aws.smus.openRemoteConnection',
                 'aws.smus.reauthenticate',
             ]
 

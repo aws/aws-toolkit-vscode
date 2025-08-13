@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider } from '../../shared/treeview/resourceTreeDataProvider'
 import {
-    retrySmusProjectsCommand,
     smusLoginCommand,
     smusLearnMoreCommand,
     smusSignOutCommand,
@@ -14,8 +13,12 @@ import {
     selectSMUSProject,
 } from './nodes/sageMakerUnifiedStudioRootNode'
 import { DataZoneClient } from '../shared/client/datazoneClient'
+import { openRemoteConnect, stopSpace } from '../../awsService/sagemaker/commands'
+import { SagemakerUnifiedStudioSpaceNode } from './nodes/sageMakerUnifiedStudioSpaceNode'
+import { SageMakerUnifiedStudioProjectNode } from './nodes/sageMakerUnifiedStudioProjectNode'
 import { getLogger } from '../../shared/logger/logger'
 import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/providers/smusAuthenticationProvider'
+import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -29,7 +32,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     logger.debug('SMUS: Authentication provider initialized')
 
     // Create the SMUS projects tree view
-    const smusRootNode = new SageMakerUnifiedStudioRootNode(smusAuthProvider)
+    const smusRootNode = new SageMakerUnifiedStudioRootNode(smusAuthProvider, extensionContext)
     const treeDataProvider = new ResourceTreeDataProvider({ getChildren: () => smusRootNode.getChildren() })
 
     // Register the tree view
@@ -41,14 +44,21 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         smusLoginCommand.register(),
         smusLearnMoreCommand.register(),
         smusSignOutCommand.register(),
-        retrySmusProjectsCommand.register(),
         treeView,
         vscode.commands.registerCommand('aws.smus.rootView.refresh', () => {
             treeDataProvider.refresh()
         }),
 
-        vscode.commands.registerCommand('aws.smus.projectView', async (projectNode?: any) => {
-            return await selectSMUSProject(projectNode)
+        vscode.commands.registerCommand(
+            'aws.smus.projectView',
+            async (projectNode?: SageMakerUnifiedStudioProjectNode) => {
+                return await selectSMUSProject(projectNode)
+            }
+        ),
+
+        vscode.commands.registerCommand('aws.smus.refreshProject', async () => {
+            const projectNode = smusRootNode.getProjectSelectNode()
+            await projectNode.refreshNode()
         }),
 
         vscode.commands.registerCommand('aws.smus.switchProject', async () => {
@@ -56,6 +66,23 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             const projectNode = smusRootNode.getProjectSelectNode()
             return await selectSMUSProject(projectNode)
         }),
+
+        vscode.commands.registerCommand('aws.smus.stopSpace', async (node: SagemakerUnifiedStudioSpaceNode) => {
+            if (!validateNode(node)) {
+                return
+            }
+            await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+        }),
+
+        vscode.commands.registerCommand(
+            'aws.smus.openRemoteConnection',
+            async (node: SagemakerUnifiedStudioSpaceNode) => {
+                if (!validateNode(node)) {
+                    return
+                }
+                await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+            }
+        ),
 
         vscode.commands.registerCommand('aws.smus.reauthenticate', async (connection?: any) => {
             if (connection) {
@@ -77,4 +104,18 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         // Dispose DataZoneClient when extension is deactivated
         { dispose: () => DataZoneClient.dispose() }
     )
+
+    // Track user activity for autoshutdown feature
+    await setupUserActivityMonitoring(extensionContext)
+}
+
+/**
+ * Checks if a node  is undefined and shows a warning message if so.
+ */
+function validateNode(node: unknown): boolean {
+    if (!node) {
+        void vscode.window.showWarningMessage('Space information is being refreshed. Please try again shortly.')
+        return false
+    }
+    return true
 }

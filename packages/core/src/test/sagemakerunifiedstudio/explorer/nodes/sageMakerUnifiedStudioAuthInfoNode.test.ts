@@ -60,7 +60,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     describe('constructor', function () {
         it('should initialize with correct properties', function () {
             assert.strictEqual(authInfoNode.id, 'smusAuthInfoNode')
-            assert.deepStrictEqual(authInfoNode.resource, {})
+            assert.strictEqual(authInfoNode.resource, authInfoNode)
         })
 
         it('should register for auth provider changes', function () {

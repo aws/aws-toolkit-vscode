@@ -29,6 +29,19 @@ describe('SmusRootNode', function () {
     }
 
     beforeEach(function () {
+        // Create mock extension context
+        const mockExtensionContext = {
+            subscriptions: [],
+            workspaceState: {
+                get: sinon.stub(),
+                update: sinon.stub(),
+            },
+            globalState: {
+                get: sinon.stub(),
+                update: sinon.stub(),
+            },
+        } as any
+
         // Create a mock auth provider
         const mockAuthProvider = {
             isConnected: sinon.stub().returns(true),
@@ -37,7 +50,7 @@ describe('SmusRootNode', function () {
             onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
         } as any
 
-        rootNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+        rootNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
 
         // Mock domain ID is handled by the mock auth provider
 
@@ -65,7 +78,19 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const node = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const mockExtensionContext = {
+                subscriptions: [],
+                workspaceState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+                globalState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+            } as any
+
+            const node = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             assert.strictEqual(node.id, 'smusRootNode')
             assert.strictEqual(node.resource, node)
             assert.ok(node.getAuthInfoNode() instanceof SageMakerUnifiedStudioAuthInfoNode)
@@ -81,7 +106,7 @@ describe('SmusRootNode', function () {
 
             assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
-            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot.authenticated')
+            assert.strictEqual(treeItem.contextValue, 'sageMakerUnifiedStudioRoot')
             assert.strictEqual(treeItem.description, 'Connected')
             assert.ok(treeItem.iconPath)
         })
@@ -95,7 +120,19 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const mockExtensionContext = {
+                subscriptions: [],
+                workspaceState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+                globalState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+            } as any
+
+            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const treeItem = unauthenticatedNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'SageMaker Unified Studio')
@@ -116,7 +153,19 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const mockExtensionContext = {
+                subscriptions: [],
+                workspaceState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+                globalState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+            } as any
+
+            const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const children = await unauthenticatedNode.getChildren()
 
             assert.strictEqual(children.length, 2)
@@ -151,7 +200,19 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const errorNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider)
+            const mockExtensionContext = {
+                subscriptions: [],
+                workspaceState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+                globalState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+            } as any
+
+            const errorNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const children = await errorNode.getChildren()
 
             assert.strictEqual(children.length, 2)
@@ -192,6 +253,36 @@ describe('SmusRootNode', function () {
                 title: 'Select Project',
                 arguments: [children[1]],
             })
+        })
+
+        it('returns auth info node when connection is expired', async function () {
+            // Create a mock auth provider with expired connection
+            const mockAuthProvider = {
+                isConnected: sinon.stub().returns(true),
+                isConnectionValid: sinon.stub().returns(false),
+                activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+                showReauthenticationPrompt: sinon.stub(),
+            } as any
+
+            const mockExtensionContext = {
+                subscriptions: [],
+                workspaceState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+                globalState: {
+                    get: sinon.stub(),
+                    update: sinon.stub(),
+                },
+            } as any
+
+            const expiredNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
+            const children = await expiredNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.ok(children[0] instanceof SageMakerUnifiedStudioAuthInfoNode)
+            assert.ok(mockAuthProvider.showReauthenticationPrompt.calledOnce)
         })
     })
 
@@ -274,7 +365,6 @@ describe('SelectSMUSProject', function () {
     })
 
     it('fetches all projects and sets the project for first time', async function () {
-        // Test skipped due to issues with createQuickPickStub not being called
         mockDataZoneClient.fetchAllProjects.resolves([mockProject, mockProject2])
 
         const result = await selectSMUSProject(mockProjectNode as any)
@@ -283,9 +373,39 @@ describe('SelectSMUSProject', function () {
         assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
         assert.ok(mockDataZoneClient.fetchAllProjects.calledWith())
         assert.ok(createQuickPickStub.calledOnce)
-        // The project node should have been updated with some project
         assert.ok(mockProjectNode.setProject.calledOnce)
         assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
+    })
+
+    it('filters out GenerativeAIModelGovernanceProject', async function () {
+        const governanceProject: DataZoneProject = {
+            id: 'governance-123',
+            name: 'GenerativeAIModelGovernanceProject',
+            description: 'Governance project',
+            domainId: testDomainId,
+            updatedAt: new Date(),
+        }
+
+        mockDataZoneClient.fetchAllProjects.resolves([mockProject, governanceProject, mockProject2])
+
+        await selectSMUSProject(mockProjectNode as any)
+
+        // Verify that the governance project is filtered out
+        const quickPickCall = createQuickPickStub.getCall(0)
+        const items = quickPickCall.args[0]
+        assert.strictEqual(items.length, 2) // Should only have mockProject and mockProject2
+        assert.ok(!items.some((item: any) => item.data.name === 'GenerativeAIModelGovernanceProject'))
+    })
+
+    it('handles no active connection', async function () {
+        sinon.restore()
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            activeConnection: undefined,
+        } as any)
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, undefined)
     })
 
     it('fetches all projects and switches the current project', async function () {
@@ -294,7 +414,6 @@ describe('SelectSMUSProject', function () {
             getProject: sinon.stub().returns(mockProject),
             project: mockProject,
         } as any
-        // Test skipped due to issues with createQuickPickStub not being called
         mockDataZoneClient.fetchAllProjects.resolves([mockProject, mockProject2])
 
         // Stub quickPick to return mockProject2 for the second test
@@ -310,7 +429,6 @@ describe('SelectSMUSProject', function () {
         assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
         assert.ok(mockDataZoneClient.fetchAllProjects.calledWith())
         assert.ok(createQuickPickStub.calledOnce)
-        // The project node should have been updated with some project
         assert.ok(mockProjectNode.setProject.calledOnce)
         assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
     })
@@ -325,18 +443,12 @@ describe('SelectSMUSProject', function () {
     })
 
     it('handles API errors gracefully', async function () {
-        // Test skipped due to issues with logger stub not being called with expected arguments
-        // Make fetchAllProjects throw an error
         const error = new Error('API error')
         mockDataZoneClient.fetchAllProjects.rejects(error)
 
-        // Skip testing the showErrorMessage call since it's causing test issues
         const result = await selectSMUSProject(mockProjectNode as any)
 
-        // Should return undefined
         assert.strictEqual(result, undefined)
-
-        // Verify project was not set
         assert.ok(!mockProjectNode.setProject.called)
     })
 

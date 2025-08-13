@@ -35,6 +35,13 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         this.authProvider = SmusAuthenticationProvider.fromContext()
     }
 
+    public getTreeItem(): vscode.TreeItem {
+        const item = new vscode.TreeItem('Data', vscode.TreeItemCollapsibleState.Collapsed)
+        item.iconPath = getIcon('vscode-folder')
+        item.contextValue = 'dataFolder'
+        return item
+    }
+
     public async getChildren(): Promise<TreeNode[]> {
         if (this.childrenNodes !== undefined) {
             return this.childrenNodes
@@ -69,6 +76,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             this.logger.error(`Failed to get connections: ${(err as Error).message}`)
             return [this.createErrorNode(`Failed to get connections: ${(err as Error).message}`)]
         }
+    }
+
+    public getParent(): TreeNode | undefined {
+        return this.parent
     }
 
     private async createConnectionNodes(
@@ -155,16 +166,5 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             getTreeItem: () => createErrorTreeItem(message),
             getParent: () => this,
         }
-    }
-
-    public getTreeItem(): vscode.TreeItem {
-        const item = new vscode.TreeItem('Data', vscode.TreeItemCollapsibleState.Collapsed)
-        item.iconPath = getIcon('vscode-folder')
-        item.contextValue = 'dataFolder'
-        return item
-    }
-
-    public getParent(): TreeNode | undefined {
-        return this.parent
     }
 }

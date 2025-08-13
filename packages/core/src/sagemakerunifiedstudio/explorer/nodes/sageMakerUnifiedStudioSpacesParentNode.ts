@@ -1,0 +1,200 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
+import { updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { DescribeDomainResponse } from '@amzn/sagemaker-client'
+import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone'
+import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
+import { getLogger } from '../../../shared/logger/logger'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
+import { UserProfileMetadata } from '../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { SagemakerUnifiedStudioSpaceNode } from './sageMakerUnifiedStudioSpaceNode'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+
+export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
+    public readonly id = 'smusSpacesParentNode'
+    public readonly resource = this
+    private readonly sagemakerSpaceNodes: Map<string, SagemakerUnifiedStudioSpaceNode> = new Map()
+    private spaceApps: Map<string, SagemakerSpaceApp> = new Map()
+    private domainUserProfiles: Map<string, UserProfileMetadata> = new Map()
+    private readonly logger = getLogger()
+    private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
+    public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
+    public readonly onDidChangeChildren = this.onDidChangeEmitter.event
+    public readonly pollingSet: PollingSet<string> = new PollingSet(5, this.updatePendingNodes.bind(this))
+
+    public constructor(
+        private readonly parent: SageMakerUnifiedStudioComputeNode,
+        private readonly projectId: string,
+        private readonly extensionContext: vscode.ExtensionContext,
+        private readonly authProvider: SmusAuthenticationProvider,
+        private readonly sagemakerClient: SagemakerClient
+    ) {}
+
+    public async getTreeItem(): Promise<vscode.TreeItem> {
+        const item = new vscode.TreeItem('Spaces', vscode.TreeItemCollapsibleState.Expanded)
+        item.iconPath = {
+            light: vscode.Uri.joinPath(
+                this.extensionContext.extensionUri,
+                'resources/icons/aws/sagemakerunifiedstudio/spaces-dark.svg'
+            ),
+            dark: vscode.Uri.joinPath(
+                this.extensionContext.extensionUri,
+                'resources/icons/aws/sagemakerunifiedstudio/spaces.svg'
+            ),
+        }
+        item.contextValue = 'smusSpacesNode'
+        return item
+    }
+
+    public async getChildren(): Promise<TreeNode[]> {
+        await this.updateChildren()
+        const nodes = [...this.sagemakerSpaceNodes.values()]
+        return nodes
+    }
+
+    public getParent(): TreeNode | undefined {
+        return this.parent
+    }
+
+    public getProjectId(): string {
+        return this.projectId
+    }
+
+    public getAuthProvider(): SmusAuthenticationProvider {
+        return this.authProvider
+    }
+
+    public async refreshNode(): Promise<void> {
+        this.onDidChangeEmitter.fire()
+    }
+
+    public trackPendingNode(domainSpaceKey: string) {
+        this.pollingSet.add(domainSpaceKey)
+    }
+
+    public getSpaceNodes(spaceKey: string): SagemakerUnifiedStudioSpaceNode {
+        const childNode = this.sagemakerSpaceNodes.get(spaceKey)
+        if (childNode) {
+            return childNode
+        } else {
+            throw new Error(`Node with id ${spaceKey} from polling set not found`)
+        }
+    }
+
+    public async getSageMakerDomainId(): Promise<string> {
+        const activeConnection = this.authProvider.activeConnection
+        if (!activeConnection) {
+            this.logger.error('There is no active connection to get SageMaker domain ID')
+            throw new Error('No active connection found to get SageMaker domain ID')
+        }
+
+        this.logger.debug('SMUS: Getting DataZone client instance')
+        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        if (!datazoneClient) {
+            throw new Error('DataZone client is not initialized')
+        }
+        const toolingEnvId = await datazoneClient
+            .getToolingEnvironmentId(datazoneClient.getDomainId(), this.projectId)
+            .catch((err) => {
+                this.logger.error('Failed to get tooling environment ID: %s', err as Error)
+                throw new Error(`Failed to get tooling environment ID: ${err.message}`)
+            })
+        if (!toolingEnvId) {
+            throw new Error('No default environment found for project')
+        }
+        const toolingEnv: GetEnvironmentCommandOutput = await datazoneClient.getEnvironmentDetails(toolingEnvId)
+        if (toolingEnv.provisionedResources) {
+            for (const resource of toolingEnv.provisionedResources) {
+                if (resource.name === 'sageMakerDomainId') {
+                    if (!resource.value) {
+                        throw new Error('SageMaker domain ID not found in tooling environment')
+                    }
+                    getLogger().debug(`Found SageMaker domain ID: ${resource.value}`)
+                    return resource.value
+                }
+            }
+        }
+        throw new Error('No SageMaker domain found in the tooling environment')
+    }
+
+    private async updatePendingNodes() {
+        for (const spaceKey of this.pollingSet.values()) {
+            const childNode = this.getSpaceNodes(spaceKey)
+            await this.updatePendingSpaceNode(childNode)
+        }
+    }
+
+    private async updatePendingSpaceNode(node: SagemakerUnifiedStudioSpaceNode) {
+        await node.updateSpaceAppStatus()
+        if (!node.isPending()) {
+            this.pollingSet.delete(node.DomainSpaceKey)
+            await node.refreshNode()
+        }
+    }
+
+    private async updateChildren(): Promise<void> {
+        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
+        const userId = await datazoneClient.getUserId()
+        const ssoUserProfileId = this.extractSSOIdFromUserId(userId || '')
+        const sagemakerDomainId = await this.getSageMakerDomainId()
+        const [spaceApps, domains] = await this.sagemakerClient.fetchSpaceAppsAndDomains(
+            sagemakerDomainId,
+            false /* filterSmusDomains */
+        )
+        // Filter spaceApps to only show spaces owned by current user
+        const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
+        for (const [key, app] of spaceApps.entries()) {
+            const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
+            if (ssoUserProfileId === userProfile) {
+                filteredSpaceApps.set(key, app)
+            }
+        }
+        this.spaceApps = filteredSpaceApps
+        this.domainUserProfiles.clear()
+
+        for (const app of this.spaceApps.values()) {
+            const domainId = app.DomainId
+            const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
+            if (!domainId || !userProfile) {
+                continue
+            }
+
+            const domainUserProfileKey = getDomainUserProfileKey(domainId, userProfile)
+            this.domainUserProfiles.set(domainUserProfileKey, {
+                domain: domains.get(domainId) as DescribeDomainResponse,
+            })
+        }
+
+        updateInPlace(
+            this.sagemakerSpaceNodes,
+            this.spaceApps.keys(),
+            (key) => this.sagemakerSpaceNodes.get(key)!.updateSpace(this.spaceApps.get(key)!),
+            (key) =>
+                new SagemakerUnifiedStudioSpaceNode(
+                    this as any,
+                    this.sagemakerClient,
+                    datazoneClient.getRegion(),
+                    this.spaceApps.get(key)!,
+                    true /* isSMUSSpace */
+                )
+        )
+    }
+
+    private extractSSOIdFromUserId(userId: string): string {
+        const match = userId.match(/user-(.+)$/)
+        if (!match) {
+            this.logger.error(`Invalid UserId format: ${userId}`)
+            throw new Error(`Invalid UserId format: ${userId}`)
+        }
+        return match[1]
+    }
+}

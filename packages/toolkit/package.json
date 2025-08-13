@@ -1266,6 +1266,10 @@
                 {
                     "command": "aws.smus.switchProject",
                     "when": "false"
+                },
+                {
+                    "command": "aws.smus.refreshProject",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1330,13 +1334,18 @@
             "view/title": [
                 {
                     "command": "aws.smus.switchProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
                     "group": "smus@0"
+                },
+                {
+                    "command": "aws.smus.refreshProject",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "group": "smus@1"
                 },
                 {
                     "command": "aws.smus.signOut",
                     "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
-                    "group": "smus@1"
+                    "group": "smus@2"
                 },
                 {
                     "command": "aws.toolkit.submitFeedback",
@@ -1495,12 +1504,22 @@
                 {
                     "command": "aws.sagemaker.stopSpace",
                     "group": "inline@0",
-                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView  && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.smus.stopSpace",
+                    "group": "inline@0",
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
                 },
                 {
                     "command": "aws.sagemaker.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.smus.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
                 },
                 {
                     "command": "_aws.toolkit.notifications.dismiss",
@@ -1660,6 +1679,11 @@
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
                     "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.smus.refreshProject",
+                    "when": "view == aws.smus.rootView && viewItem == smusSelectedProject",
                     "group": "inline@1"
                 },
                 {
@@ -2419,6 +2443,11 @@
         },
         "commands": [
             {
+                "command": "aws.smus.openSpaceRemoteConnection",
+                "title": "Connect to SageMaker-Unified-Studio Space",
+                "icon": "$(remote-explorer)"
+            },
+            {
                 "command": "_aws.toolkit.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.title%",
@@ -2672,7 +2701,31 @@
                 }
             },
             {
+                "command": "aws.smus.openRemoteConnection",
+                "title": "Connect to SageMaker Space",
+                "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.sagemaker.stopSpace",
+                "title": "Stop SageMaker Space",
+                "icon": "$(debug-stop)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.stopSpace",
                 "title": "Stop SageMaker Space",
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
@@ -2688,6 +2741,21 @@
                 "title": "%AWS.command.smus.switchProject%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.refreshProject",
+                "title": "%AWS.command.smus.refreshProject%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
+                },
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -4885,25 +4953,53 @@
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemakerunifiedstudio-catalog": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemakerunifiedstudio-spaces": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e2"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-sagemakerunifiedstudio-spaces-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e3"
+                }
+            },
+            "aws-sagemakerunifiedstudio-symbol-int": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e4"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e5"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e6"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e7"
                 }
             }
         },

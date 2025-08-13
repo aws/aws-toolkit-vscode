@@ -394,15 +394,8 @@ export class SmusAuthenticationProvider {
         }
 
         // Clear all cached project providers and their internal credentials
-        for (const [projectId, projectProvider] of this.projectCredentialProvidersCache.entries()) {
-            try {
-                projectProvider.invalidate() // This will clear the project provider's internal cache
-                logger.debug(`SMUS: Invalidated project credentials for project: ${projectId}`)
-            } catch (err) {
-                logger.warn(`SMUS: Failed to invalidate project credentials for project ${projectId}: %s`, err)
-            }
-        }
 
+        await this.invalidateAllProjectCredentialsInCache()
         // Clear all cached connection providers and their internal credentials
         for (const [cacheKey, connectionProvider] of this.connectionCredentialProvidersCache.entries()) {
             try {
@@ -410,6 +403,23 @@ export class SmusAuthenticationProvider {
                 logger.debug(`SMUS: Invalidated connection credentials for cache key: ${cacheKey}`)
             } catch (err) {
                 logger.warn(`SMUS: Failed to invalidate connection credentials for cache key ${cacheKey}: %s`, err)
+            }
+        }
+    }
+
+    /**
+     * Invalidates all project cached credentials
+     */
+    public async invalidateAllProjectCredentialsInCache(): Promise<void> {
+        const logger = getLogger()
+        logger.debug('SMUS: Invalidating all cached project credentials')
+
+        for (const [projectId, projectProvider] of this.projectCredentialProvidersCache.entries()) {
+            try {
+                projectProvider.invalidate() // This will clear the project provider's internal cache
+                logger.debug(`SMUS: Invalidated project credentials for project: ${projectId}`)
+            } catch (err) {
+                logger.warn(`SMUS: Failed to invalidate project credentials for project ${projectId}: %s`, err)
             }
         }
     }

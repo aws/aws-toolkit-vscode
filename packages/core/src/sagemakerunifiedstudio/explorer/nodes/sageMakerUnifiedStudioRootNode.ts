@@ -13,29 +13,29 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusUtils } from '../../shared/smusUtils'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
 const contextValueSmusLearnMore = 'sageMakerUnifiedStudioLearnMore'
 
-/**
- * Root node for the SAGEMAKER UNIFIED STUDIO tree view
- */
 export class SageMakerUnifiedStudioRootNode implements TreeNode {
     public readonly id = 'smusRootNode'
     public readonly resource = this
+    private readonly logger = getLogger()
     private readonly projectNode: SageMakerUnifiedStudioProjectNode
     private readonly authInfoNode: SageMakerUnifiedStudioAuthInfoNode
-
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
-    public constructor(private readonly authProvider: SmusAuthenticationProvider) {
-        this.authInfoNode = new SageMakerUnifiedStudioAuthInfoNode()
-        this.projectNode = new SageMakerUnifiedStudioProjectNode()
+    public constructor(
+        private readonly authProvider: SmusAuthenticationProvider,
+        private readonly extensionContext: vscode.ExtensionContext
+    ) {
+        this.authInfoNode = new SageMakerUnifiedStudioAuthInfoNode(this)
+        this.projectNode = new SageMakerUnifiedStudioProjectNode(this, this.authProvider, this.extensionContext)
 
         // Subscribe to auth provider connection changes to refresh the node
         this.authProvider.onDidChange(() => {
@@ -43,50 +43,19 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         })
     }
 
-    public getProjectSelectNode(): SageMakerUnifiedStudioProjectNode {
-        return this.projectNode
-    }
+    public getTreeItem(): vscode.TreeItem {
+        const item = new vscode.TreeItem('SageMaker Unified Studio', vscode.TreeItemCollapsibleState.Expanded)
+        item.contextValue = contextValueSmusRoot
+        item.iconPath = getIcon('vscode-database')
 
-    public getAuthInfoNode(): SageMakerUnifiedStudioAuthInfoNode {
-        return this.authInfoNode
-    }
-
-    public refresh(): void {
-        this.onDidChangeEmitter.fire()
-    }
-
-    /**
-     * Checks if the user has authenticated to SageMaker Unified Studio
-     * This is validated by checking existing Connections for SMUS.
-     */
-    private isAuthenticated(): boolean {
-        try {
-            // Check if the connection is valid using the authentication provider
-            const result = this.authProvider.isConnectionValid()
-            getLogger().debug(`SMUS Root Node: Authentication check result: ${result}`)
-            return result
-        } catch (err) {
-            getLogger().error('Authentication check failed: %s', (err as Error).message)
-            return false
+        // Set description based on authentication state
+        if (!this.isAuthenticated()) {
+            item.description = 'Not authenticated'
+        } else {
+            item.description = 'Connected'
         }
-    }
 
-    private hasExpiredConnection(): boolean {
-        try {
-            // Check if there's an active connection but it's expired
-            const hasExpiredConnection = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
-
-            if (hasExpiredConnection) {
-                // Show reauthentication prompt to user
-                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection!)
-                return true
-            }
-
-            return false
-        } catch (err) {
-            getLogger().error('Failed to check expired connection: %s', (err as Error).message)
-            return false
-        }
+        return item
     }
 
     public async getChildren(): Promise<TreeNode[]> {
@@ -146,25 +115,49 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         return [this.authInfoNode, this.projectNode]
     }
 
-    public getTreeItem(): vscode.TreeItem {
-        const item = new vscode.TreeItem('SageMaker Unified Studio', vscode.TreeItemCollapsibleState.Expanded)
-        const isAuth = this.isAuthenticated()
-        const hasExpired = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
+    public getProjectSelectNode(): SageMakerUnifiedStudioProjectNode {
+        return this.projectNode
+    }
 
-        // Set context value based on authentication state for context menu
-        item.contextValue = isAuth ? `${contextValueSmusRoot}.authenticated` : contextValueSmusRoot
-        item.iconPath = getIcon('vscode-database')
+    public getAuthInfoNode(): SageMakerUnifiedStudioAuthInfoNode {
+        return this.authInfoNode
+    }
 
-        // Set description based on authentication state
-        if (hasExpired) {
-            item.description = 'Connection expired'
-        } else if (!isAuth) {
-            item.description = 'Not authenticated'
-        } else {
-            item.description = 'Connected'
+    public refresh(): void {
+        this.onDidChangeEmitter.fire()
+    }
+
+    /**
+     * Checks if the user has authenticated to SageMaker Unified Studio
+     * This is validated by checking existing Connections for SMUS.
+     */
+    private isAuthenticated(): boolean {
+        try {
+            // Check if the connection is valid using the authentication provider
+            const result = this.authProvider.isConnectionValid()
+            this.logger.debug(`SMUS Root Node: Authentication check result: ${result}`)
+            return result
+        } catch (err) {
+            this.logger.debug('Authentication check failed: %s', (err as Error).message)
+            return false
         }
+    }
 
-        return item
+    private hasExpiredConnection(): boolean {
+        try {
+            // Check if there's an active connection but it's expired
+            const hasExpiredConnection = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
+
+            if (hasExpiredConnection) {
+                // Show reauthentication prompt to user
+                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection!)
+                return true
+            }
+            return false
+        } catch (err) {
+            this.logger.debug('Failed to check expired connection: %s', (err as Error).message)
+            return false
+        }
     }
 }
 
@@ -342,52 +335,8 @@ export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => asy
     }
 })
 
-/**
- * Command to retry loading projects when there's an error
- */
-// TODO: Check if we need this command
-export const retrySmusProjectsCommand = Commands.declare('aws.smus.retryProjects', () => async () => {
+export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
     const logger = getLogger()
-    try {
-        // Force a refresh of the tree view
-        const treeDataProvider = vscode.extensions
-            .getExtension('amazonwebservices.aws-toolkit-vscode')
-            ?.exports?.getTreeDataProvider?.('aws.smus.rootView')
-        if (treeDataProvider) {
-            // If we can get the tree data provider, refresh it
-            treeDataProvider.refresh?.()
-        } else {
-            // Otherwise, try to use the command that's registered in activation.ts
-            try {
-                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-            } catch (cmdErr) {
-                logger.debug(`Failed to execute refresh command: ${(cmdErr as Error).message}`)
-            }
-        }
-
-        // Also trigger a command to refresh the explorer view
-        await vscode.commands.executeCommand('aws.refreshAwsExplorer')
-
-        // Log telemetry
-        telemetry.record({
-            name: 'smus_retryProjects',
-            result: 'Succeeded',
-            passive: false,
-        })
-
-        // Show a message to the user
-        void vscode.window.showInformationMessage('Retrying to load SageMaker Unified Studio projects...')
-    } catch (err) {
-        void vscode.window.showErrorMessage(
-            `SageMaker Unified Studio: Failed to retry loading projects: ${(err as Error).message}`
-        )
-        logger.error('Failed to retry loading projects: %s', (err as Error).message)
-    }
-})
-
-export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode, smusDomainId?: string) {
-    const logger = getLogger()
-    getLogger().info('Listing SMUS projects in the domain')
     try {
         const authProvider = SmusAuthenticationProvider.fromContext()
         const activeConnection = authProvider.activeConnection
@@ -395,8 +344,6 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             logger.error('There is no active connection to display project view')
             return
         }
-
-        logger.debug('SMUS: Getting DataZone client instance')
         const authenticatedDataZoneClient = await DataZoneClient.getInstance(authProvider)
         logger.debug('SMUS: DataZone client instance obtained successfully')
 
@@ -416,10 +363,15 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                     (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) -
                     (a.updatedAt ? new Date(a.updatedAt).getTime() : 0)
             )
-            .filter((project) => !projectNode?.getProject() || project.id !== projectNode.getProject()?.id)
+            .filter(
+                (project) =>
+                    // Filter out the Generative AI Model Governance project that is part of QiuckStart resources
+                    project.name !== 'GenerativeAIModelGovernanceProject' &&
+                    (!projectNode?.getProject() || project.id !== projectNode.getProject()?.id)
+            )
             .map((project) => ({
                 label: project.name,
-                detail: project.id,
+                detail: 'ID: ' + project.id,
                 description: project.description,
                 data: project,
             }))
@@ -432,11 +384,9 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
         const selectedProject = await quickPick.prompt()
         if (selectedProject && projectNode) {
             await projectNode.setProject(selectedProject)
-
             // Refresh the entire tree view
             await vscode.commands.executeCommand('aws.smus.rootView.refresh')
         }
-
         return selectedProject
     } catch (err) {
         logger.error('Failed to select project: %s', (err as Error).message)

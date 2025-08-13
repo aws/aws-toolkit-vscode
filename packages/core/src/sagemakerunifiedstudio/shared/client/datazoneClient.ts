@@ -16,6 +16,7 @@ import {
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 /**
  * Represents a DataZone project
  */
@@ -530,5 +531,86 @@ export class DataZoneClient {
             this.logger.error('DataZoneClient: Failed to list connections: %s', err as Error)
             throw err
         }
+    }
+
+    /**
+     * Gets the tooling environment ID for a project
+     * @param domainId The DataZone domain identifier
+     * @param projectId The DataZone project identifier
+     * @returns Promise resolving to the tooling environment ID
+     */
+    public async getToolingEnvironmentId(domainId: string, projectId: string): Promise<string> {
+        try {
+            this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
+            const datazoneClient = await this.getDataZoneClient()
+
+            // Get the tooling blueprint
+            const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
+                domainIdentifier: domainId,
+                managed: true,
+                name: toolingBlueprintName,
+            })
+
+            const toolingBlueprint = domainBlueprints.items?.[0]
+            if (!toolingBlueprint) {
+                throw new Error('Failed to get tooling blueprint')
+            }
+
+            // List environments for the project
+            const listEnvs = await datazoneClient.listEnvironments({
+                domainIdentifier: domainId,
+                projectIdentifier: projectId,
+                environmentBlueprintIdentifier: toolingBlueprint.id,
+                provider: sageMakerProviderName,
+            })
+
+            const defaultEnv = listEnvs.items?.find((env) => env.name === toolingBlueprintName)
+            if (!defaultEnv || !defaultEnv.id) {
+                throw new Error('Failed to find default Tooling environment')
+            }
+
+            this.logger.debug(`Found tooling environment with ID: ${defaultEnv.id}`)
+            return defaultEnv.id
+        } catch (err) {
+            this.logger.error('Failed to get tooling environment ID: %s', err as Error)
+            throw err
+        }
+    }
+
+    /**
+     * Gets environment details
+     * @param domainId The DataZone domain identifier
+     * @param environmentId The environment identifier
+     * @returns Promise resolving to environment details
+     */
+    public async getEnvironmentDetails(
+        environmentId: string
+    ): Promise<import('@aws-sdk/client-datazone').GetEnvironmentCommandOutput> {
+        try {
+            this.logger.debug(
+                `Getting environment details for domain ${this.getDomainId()}, environment ${environmentId}`
+            )
+            const datazoneClient = await this.getDataZoneClient()
+
+            const environment = await datazoneClient.getEnvironment({
+                domainIdentifier: this.getDomainId(),
+                identifier: environmentId,
+            })
+
+            this.logger.debug(`Retrieved environment details for ${environmentId}`)
+            return environment
+        } catch (err) {
+            this.logger.error('Failed to get environment details: %s', err as Error)
+            throw err
+        }
+    }
+
+    public async getUserId(): Promise<string | undefined> {
+        const derCredProvider = await this.authProvider.getDerCredentialsProvider()
+        this.logger.debug(`Calling STS GetCallerIdentity using DER credentials of ${this.getDomainId()}`)
+        const stsClient = new DefaultStsClient(this.getRegion(), await derCredProvider.getCredentials())
+        const callerIdentity = await stsClient.getCallerIdentity()
+        this.logger.debug(`Retrieved caller identity, UserId: ${callerIdentity.UserId}`)
+        return callerIdentity.UserId
     }
 }

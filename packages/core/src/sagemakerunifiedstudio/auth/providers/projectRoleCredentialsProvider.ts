@@ -12,6 +12,7 @@ import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
+import { loadMappings, saveMappings } from '../../../awsService/sagemaker/credentialMapping'
 
 /**
  * Credentials provider for SageMaker Unified Studio Project Role credentials
@@ -156,6 +157,9 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
                 Math.round((expiresAt.getTime() - Date.now()) / 60000)
             )
 
+            // Write project credentials to mapping file to be used by Sagemaker local server for remote connections
+            await this.writeCredentialsToMapping(awsCredentials)
+
             return awsCredentials
         } catch (err) {
             this.logger.error('SMUS Project: Failed to get project credentials for project %s: %s', this.projectId, err)
@@ -163,6 +167,24 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
                 code: 'ProjectCredentialsFetchFailed',
                 cause: err instanceof Error ? err : undefined,
             })
+        }
+    }
+
+    /**
+     * Writes project credentials to mapping file for local server usage
+     */
+    private async writeCredentialsToMapping(awsCredentials: AWS.Credentials): Promise<void> {
+        try {
+            const mapping = await loadMappings()
+            mapping.smusProjects ??= {}
+            mapping.smusProjects[this.projectId] = {
+                accessKey: awsCredentials.accessKeyId,
+                secret: awsCredentials.secretAccessKey,
+                token: awsCredentials.sessionToken || '',
+            }
+            await saveMappings(mapping)
+        } catch (err) {
+            this.logger.warn('SMUS Project: Failed to write project credentials to mapping file: %s', err)
         }
     }
 

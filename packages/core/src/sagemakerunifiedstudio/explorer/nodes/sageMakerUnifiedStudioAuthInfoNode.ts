@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
+import { SageMakerUnifiedStudioRootNode } from './sageMakerUnifiedStudioRootNode'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
 /**
@@ -12,13 +13,13 @@ import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticat
  */
 export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
     public readonly id = 'smusAuthInfoNode'
-    public readonly resource = {}
+    public readonly resource = this
     private readonly authProvider: SmusAuthenticationProvider
 
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
 
-    constructor() {
+    constructor(private readonly parent?: SageMakerUnifiedStudioRootNode) {
         this.authProvider = SmusAuthenticationProvider.fromContext()
 
         // Subscribe to auth provider connection changes to refresh the node
@@ -83,7 +84,7 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         return item
     }
 
-    public getParent(): undefined {
-        return undefined
+    public getParent(): TreeNode | undefined {
+        return this.parent
     }
 }

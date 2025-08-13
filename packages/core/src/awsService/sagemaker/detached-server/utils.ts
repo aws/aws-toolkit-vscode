@@ -96,7 +96,6 @@ export async function readMapping() {
     try {
         const content = await fs.readFile(mappingFilePath, 'utf-8')
         console.log(`Mapping file path: ${mappingFilePath}`)
-        console.log(`Conents: ${content}`)
         return JSON.parse(content)
     } catch (err) {
         throw new Error(`Failed to read mapping file: ${err instanceof Error ? err.message : String(err)}`)
