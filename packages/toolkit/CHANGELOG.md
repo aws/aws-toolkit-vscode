@@ -1,3 +1,7 @@
+## 3.71.0 2025-08-06
+
+- Miscellaneous non-user-facing changes
+
 ## 3.70.0 2025-07-30
 
 - **Feature** Improved connection actions for SSO

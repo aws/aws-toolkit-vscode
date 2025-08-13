@@ -14,6 +14,11 @@ import { createMockDocument } from 'aws-core-vscode/test'
 import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateManager'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
+import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
+
+const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
+const editApi = 'aws/textDocument/editCompletion'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
@@ -28,6 +33,10 @@ describe('RecommendationService', () => {
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: InlineCompletionTriggerKind.Automatic, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
+    const mockDocumentEventListener = {
+        isLastEventDeletion: (filepath: string) => false,
+        getLastDocumentChangeEvent: (filepath: string) => undefined,
+    } as DocumentEventListener
     const mockInlineCompletionItemOne = {
         insertText: 'ItemOne',
     } as InlineCompletionItem
@@ -120,6 +129,9 @@ describe('RecommendationService', () => {
 
     describe('getAllRecommendations', () => {
         it('should handle single request with no partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -134,12 +146,19 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledOnce)
-            const requestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 2)
+            assert.strictEqual(completionCalls.length, 1)
+            assert.strictEqual(editCalls.length, 1)
+
+            const requestArgs = completionCalls[0].args[1]
             assert.deepStrictEqual(requestArgs, {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -156,6 +175,9 @@ describe('RecommendationService', () => {
         })
 
         it('should handle multiple request with partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -177,12 +199,19 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledTwice)
-            const firstRequestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 3)
+            assert.strictEqual(completionCalls.length, 2)
+            assert.strictEqual(editCalls.length, 1)
+
+            const firstRequestArgs = completionCalls[0].args[1]
             const expectedRequestArgs = {
                 textDocument: {
                     uri: 'file:///test.py',
@@ -192,7 +221,7 @@ describe('RecommendationService', () => {
                 documentChangeParams: undefined,
                 openTabFilepaths: [],
             }
-            const secondRequestArgs = sendRequestStub.secondCall.args[1]
+            const secondRequestArgs = completionCalls[1].args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)
             assert.deepStrictEqual(secondRequestArgs, {
                 ...expectedRequestArgs,
@@ -218,7 +247,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify recordCompletionRequest was called
@@ -235,6 +265,7 @@ describe('RecommendationService', () => {
                 mockContext,
                 mockToken,
                 true,
+                mockDocumentEventListener,
                 {
                     showUi: false,
                     emitTelemetry: true,
@@ -254,7 +285,8 @@ describe('RecommendationService', () => {
                 mockPosition,
                 mockContext,
                 mockToken,
-                true
+                true,
+                mockDocumentEventListener
             )
 
             // Verify UI methods were called
@@ -286,6 +318,7 @@ describe('RecommendationService', () => {
                     mockContext,
                     mockToken,
                     true,
+                    mockDocumentEventListener,
                     options
                 )
 
@@ -298,6 +331,78 @@ describe('RecommendationService', () => {
                 // Restore the original console.error function
                 console.error = originalConsoleError
             }
+        })
+
+        it('should not make completion request when edit suggestion is active', async () => {
+            // Mock EditSuggestionState to return true (edit suggestion is active)
+            const isEditSuggestionActiveStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called only for edit API, not completion API
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 1) // Only edit call
+            assert.strictEqual(completionCalls.length, 0) // No completion calls
+            assert.strictEqual(editCalls.length, 1) // One edit call
+
+            // Verify the stub was called
+            sinon.assert.calledOnce(isEditSuggestionActiveStub)
+        })
+
+        it('should make completion request when edit suggestion is not active', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            const isEditSuggestionActiveStub = sandbox
+                .stub(EditSuggestionState, 'isEditSuggestionActive')
+                .returns(false)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called for both APIs
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 2) // Both calls
+            assert.strictEqual(completionCalls.length, 1) // One completion call
+            assert.strictEqual(editCalls.length, 1) // One edit call
+
+            // Verify the stub was called
+            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
     })
 })
