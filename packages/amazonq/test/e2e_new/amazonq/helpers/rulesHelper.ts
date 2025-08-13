@@ -3,30 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By } from 'vscode-extension-tester'
-import { printElementHTML, sleep, waitForElement } from '../utils/generalUtils'
+import { sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Clicks the Rules button in the top bar
  * @param webview The WebviewView instance
  */
 export async function clickRulesButton(webview: WebviewView): Promise<void> {
-    const body = await webview.findWebElement(By.css('body'))
-    await printElementHTML(body)
-
     const chatPromptWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-wrapper'))
     const topBar = await chatPromptWrapper.findElement(By.css('[data-testid="prompt-input-top-bar"]'))
     const buttons = await topBar.findElements(By.css('.mynah-button.mynah-button-secondary'))
 
     for (const button of buttons) {
-        try {
-            const labelElement = await button.findElement(By.css('.mynah-button-label'))
-            const text = await labelElement.getText()
-            if (text.trim() === 'Rules') {
-                await button.click()
-                return
-            }
-        } catch (e) {
-            continue
+        const labelElement = await button.findElement(By.css('.mynah-button-label'))
+        const text = await labelElement.getText()
+        if (text.trim() === 'Rules') {
+            await button.click()
+            return
         }
     }
     throw new Error('Rules button not found')
