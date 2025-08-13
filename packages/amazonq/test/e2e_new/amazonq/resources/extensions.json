@@ -1,15 +1,18 @@
 [
     {
         "identifier": { "id": "amazonwebservices.amazon-q-vscode" },
-        "version": "1.88.0-g8fe97eb",
+        "version": "1.89.0-ge97c6e9",
         "location": {
             "$mid": 1,
-            "path": "/Users/laurachn/Documents/GitHub/aws-toolkit-vscode/packages/amazonq/test/e2e_new/amazonq/resources/amazonwebservices.amazon-q-vscode-1.88.0-g8fe97eb",
+            "path": "/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/packages/amazonq/test/e2e_new/amazonq/resources/amazonwebservices.amazon-q-vscode-1.89.0-ge97c6e9",
             "scheme": "file"
         },
-        "relativeLocation": "amazonwebservices.amazon-q-vscode-1.88.0-g8fe97eb",
+        "relativeLocation": "amazonwebservices.amazon-q-vscode-1.89.0-ge97c6e9",
         "metadata": {
-            "installedTimestamp": 1754489892377,
+            "isApplicationScoped": false,
+            "isMachineScoped": false,
+            "isBuiltin": false,
+            "installedTimestamp": 1755109376879,
             "pinned": true,
             "source": "vsix",
             "id": "ca77fcb4-e1aa-4cab-ba31-cbdd9436df50",
