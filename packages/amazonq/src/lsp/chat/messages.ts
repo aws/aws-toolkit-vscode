@@ -69,6 +69,8 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
+import * as path from 'path'
+import * as os from 'os'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import {
@@ -81,22 +83,9 @@ import {
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import {
-    amazonQDiffScheme,
-    AmazonQPromptSettings,
-    messages,
-    openUrl,
-    isTextEditor,
-    globals,
-    setContext,
-} from 'aws-core-vscode/shared'
-import {
-    DefaultAmazonQAppInitContext,
-    messageDispatcher,
-    EditorContentController,
-    ViewDiffMessage,
-    referenceLogText,
-} from 'aws-core-vscode/amazonq'
+import { AmazonQPromptSettings, messages, openUrl, isTextEditor, globals, setContext } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
+import { fs } from 'aws-core-vscode/shared'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
@@ -161,6 +150,7 @@ export function registerMessageListeners(
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+    const tempDiffFiles = new Set<string>() // track temp files for cleanup
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
@@ -664,31 +654,50 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-        )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
-                },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+        const currentFileUri = vscode.Uri.parse(params.originalFileUri)
+        const originalContent = params.originalFileContent ?? ''
+
+        // Clean up any existing temp files first
+        for (const tempFile of tempDiffFiles) {
+            try {
+                await fs.delete(tempFile)
+            } catch {}
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
+        tempDiffFiles.clear()
+
+        // Create a temporary file with original content
+        const fileName = path.basename(currentFileUri.fsPath)
+        const tempFileName = `${path.parse(fileName).name}_original_${Date.now()}${path.extname(fileName)}`
+        const tempFilePath = path.join(os.tmpdir(), tempFileName)
+
+        try {
+            await fs.writeFile(tempFilePath, originalContent)
+            const tempFileUri = vscode.Uri.file(tempFilePath)
+            tempDiffFiles.add(tempFilePath)
+
+            // Open diff view with temp file (left) vs current file (right)
+            await vscode.commands.executeCommand(
+                'vscode.diff',
+                tempFileUri,
+                currentFileUri,
+                `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current)`,
+                { preview: false }
+            )
+
+            // Clean up temp file when diff view is closed
+            const disposable = vscode.window.onDidChangeVisibleTextEditors(() => {
+                const isDiffViewOpen = vscode.window.visibleTextEditors.some(
+                    (editor) => editor.document.uri.toString() === tempFileUri.toString()
+                )
+                if (!isDiffViewOpen && tempDiffFiles.has(tempFilePath)) {
+                    fs.delete(tempFilePath).catch(() => {})
+                    tempDiffFiles.delete(tempFilePath)
+                    disposable.dispose()
+                }
+            })
+        } catch (error) {
+            languageClient.error(`[VSCode Client] Failed to create temp file for diff: ${error}`)
+        }
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
