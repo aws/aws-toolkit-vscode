@@ -22,16 +22,16 @@ describe('Amazon Q Pin Context Functionality', function () {
         await dismissOverlayIfPresent(webviewView)
         await closeAllTabs(webviewView)
     })
-    it('File Context Test', async () => {
+    it('Allows User to Add File Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Files')
         await clickPinContextMenuItem(webviewView, 'Active file')
     })
-    it('Pin Context Test', async () => {
+    it('Allows User to Pin Workspace Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, '@workspace')
     })
-    it('Prompts Context Test', async () => {
+    it('Allows User to Add Prompt Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Prompts')
         const addPrompt = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-list-add'))
