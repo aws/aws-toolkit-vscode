@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## 3.71.0 2025-08-06
 
 - Miscellaneous non-user-facing changes
@@ -7,8 +6,6 @@
 
 - **Feature** Improved connection actions for SSO
 
-=======
->>>>>>> 9c36413c8 (Merge master into feature/ui-e2e-tests (#7680))
 ## 3.69.0 2025-07-16
 
 - **Bug Fix** SageMaker: Enable per-region manual filtering of Spaces
