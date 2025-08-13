@@ -58,7 +58,7 @@ import {
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
 import { setContext } from '../../../shared/vscode/setContext'
-import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHubViewProvider'
+import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHistoryHandler'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -580,10 +580,14 @@ export class GumbyController {
             return
         }
         const fileContents = await fs.readFileText(fileUri[0].fsPath)
-        const isValidFile = await validateCustomVersionsFile(fileContents)
+        const missingKey = await validateCustomVersionsFile(fileContents)
 
-        if (!isValidFile) {
-            this.messenger.sendUnrecoverableErrorResponse('invalid-custom-versions-file', message.tabID)
+        if (missingKey) {
+            this.messenger.sendMessage(
+                CodeWhispererConstants.invalidCustomVersionsFileMessage(missingKey),
+                message.tabID,
+                'ai-prompt'
+            )
             return
         }
         this.messenger.sendMessage(CodeWhispererConstants.receivedValidConfigFileMessage, message.tabID, 'ai-prompt')
