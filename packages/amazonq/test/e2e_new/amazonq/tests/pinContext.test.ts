@@ -7,7 +7,7 @@ import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from '../helpers/pinContextHelper'
-import { clearChat } from '../utils/generalUtils'
+import { clearChatInput } from '../utils/generalUtils'
 
 describe('Amazon Q Pin Context Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -24,7 +24,7 @@ describe('Amazon Q Pin Context Functionality', function () {
 
     afterEach(async () => {
         await dismissOverlayIfPresent(webviewView)
-        await clearChat(webviewView)
+        await clearChatInput(webviewView)
     })
 
     it('Pin Context Test', async () => {

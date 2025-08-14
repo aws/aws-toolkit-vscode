@@ -44,6 +44,54 @@ export async function waitForElements(
 }
 
 /**
+ * Robust button clicking function that locates a button by its wrapper and content, then clicks it
+ * @param webviewView The WebviewView instance
+ * @param buttonWrapperSelector CSS selector for the button's wrapper element
+ * @param buttonContentSelector CSS selector for the content inside the button (icon, text, etc.)
+ * @param buttonName Descriptive name for the button (used in error messages)
+ * @param timeout Timeout in milliseconds (defaults to 5000)
+ * @returns Promise<void>
+ */
+export async function clickButton(
+    webviewView: WebviewView,
+    buttonWrapperSelector: string,
+    buttonContentSelector: string,
+    buttonName: string = 'button',
+    timeout: number = 5000
+): Promise<void> {
+    try {
+        const buttonWrapper = await webviewView
+            .getDriver()
+            .wait(until.elementLocated(By.css(buttonWrapperSelector)), timeout, `${buttonName} wrapper not found`)
+
+        await webviewView
+            .getDriver()
+            .wait(until.elementIsVisible(buttonWrapper), timeout, `${buttonName} wrapper not visible`)
+
+        const buttonContent = await webviewView
+            .getDriver()
+            .wait(until.elementLocated(By.css(buttonContentSelector)), timeout, `${buttonName} content not found`)
+
+        const button = await buttonContent.findElement(By.xpath('./..'))
+        await webviewView.getDriver().wait(until.elementIsEnabled(button), timeout, `${buttonName} not clickable`)
+        await button.click()
+        await webviewView.getDriver().sleep(300)
+    } catch (e) {
+        console.error(`Failed to click ${buttonName}:`, {
+            error: e,
+            timestamp: new Date().toISOString(),
+        })
+        try {
+            const screenshot = await webviewView.getDriver().takeScreenshot()
+            console.log(`Screenshot taken at time of ${buttonName} failure`, screenshot)
+        } catch (screenshotError) {
+            console.error('Failed to take error screenshot:', screenshotError)
+        }
+        throw new Error(`Failed to click ${buttonName}: ${e}`)
+    }
+}
+
+/**
  * Presses a single key globally
  * @param driver The WebDriver instance
  * @param key The key to press
@@ -121,7 +169,7 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 8000):
  * @param webview The WebviewView instance
  * @returns Promise<boolean> True if successful, false if an error occurred
  */
-export async function clearChat(webview: WebviewView): Promise<boolean> {
+export async function clearChatInput(webview: WebviewView): Promise<boolean> {
     try {
         const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
         await chatInput.sendKeys(
