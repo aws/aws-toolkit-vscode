@@ -680,7 +680,7 @@ export function registerMessageListeners(
                 'vscode.diff',
                 tempFileUri,
                 currentFileUri,
-                `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current)`,
+                `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current, Editable)`,
                 { preview: false }
             )
 
