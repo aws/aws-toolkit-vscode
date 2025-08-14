@@ -37,7 +37,7 @@ describe('Amazon Q Shortcut Functionality Tests', function () {
     })
     it('Allows User to Verify Command Palette Works as Expected', async () => {
         const driver = webviewView.getDriver()
-        await pressShortcut(driver, Key.COMMAND, Key.SHIFT, 'p')
+        await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 'p')
         const input = new InputBox()
         await input.sendKeys('Preferences: Open Keyboard Shortcuts')
         await input.sendKeys(Key.ENTER)
@@ -49,7 +49,7 @@ describe('Amazon Q Shortcut Functionality Tests', function () {
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
-        await pressShortcut(driver, Key.COMMAND, Key.ALT, 't')
+        await pressShortcut(driver, Key.CONTROL, Key.ALT, 't')
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
@@ -60,7 +60,7 @@ describe('Amazon Q Shortcut Functionality Tests', function () {
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
-        await pressShortcut(driver, Key.COMMAND, Key.ALT, 'e')
+        await pressShortcut(driver, Key.CONTROL, Key.ALT, 'e')
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
@@ -71,7 +71,7 @@ describe('Amazon Q Shortcut Functionality Tests', function () {
         await textEditor.selectText('def fibonacci(n):')
 
         const driver = webviewView.getDriver()
-        await pressShortcut(driver, Key.COMMAND, Key.ALT, 'a')
+        await pressShortcut(driver, Key.CONTROL, Key.ALT, 'a')
         await textEditor.clearText()
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
