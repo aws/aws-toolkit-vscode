@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By, WebElement } from 'vscode-extension-tester'
-import { waitForElement } from '../utils/generalUtils'
+import { clickButton, waitForElement } from '../utils/generalUtils'
+import { dismissOverlayIfPresent } from '../utils/cleanupUtils'
 
 /**
  * Clicks the tools to get to the MCP server overlay
@@ -11,23 +12,12 @@ import { waitForElement } from '../utils/generalUtils'
  * @returns Promise<boolean> True if tools button was found and clicked, false otherwise
  */
 export async function clickToolsButton(webviewView: WebviewView): Promise<void> {
-    try {
-        const navWrapper = await waitForElement(webviewView, By.css('.mynah-nav-tabs-wrapper.mynah-ui-clickable-item'))
-        const buttonsWrapper = await navWrapper.findElement(By.css('.mynah-nav-tabs-bar-buttons-wrapper'))
-        const buttons = await buttonsWrapper.findElements(
-            By.css('.mynah-button.mynah-button-secondary.fill-state-always.mynah-ui-clickable-item')
-        )
-        for (const button of buttons) {
-            const icon = await button.findElement(By.css('i.mynah-ui-icon.mynah-ui-icon-tools'))
-            if (icon) {
-                await button.click()
-                await webviewView.getDriver().actions().move({ x: 0, y: 0 }).perform()
-            }
-        }
-        console.log('Tools button not found')
-    } catch (e) {
-        console.error('Error clicking tools button:', e)
-    }
+    await clickButton(
+        webviewView,
+        '[data-testid="tab-bar-buttons-wrapper"]',
+        '[data-testid="tab-bar-button"] .mynah-ui-icon-tools',
+        'tools button'
+    )
 }
 
 /**
@@ -36,15 +26,7 @@ export async function clickToolsButton(webviewView: WebviewView): Promise<void> 
  * @returns Promise<boolean> True if add button was found and clicked, false otherwise
  */
 export async function clickMCPAddButton(webviewView: WebviewView): Promise<void> {
-    try {
-        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const header = await sheetWrapper.findElement(By.css('.mynah-sheet-header'))
-        const actionsContainer = await header.findElement(By.css('.mynah-sheet-header-actions-container'))
-        const addButton = await actionsContainer.findElement(By.css('button:has(i.mynah-ui-icon-plus)'))
-        await addButton.click()
-    } catch (e) {
-        console.error('Error clicking the MCP add button:', e)
-    }
+    await clickButton(webviewView, '.mynah-sheet-header-actions-container', 'i.mynah-ui-icon-plus', 'MCP add button')
 }
 
 /**
@@ -225,17 +207,12 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
 }
 
 export async function saveMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
-    try {
-        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const body = await sheetWrapper.findElement(By.css('.mynah-sheet-body'))
-        const filterActions = await body.findElement(By.css('.mynah-detailed-list-filter-actions-wrapper'))
-        const saveButton = await filterActions.findElement(
-            By.css('.mynah-button.fill-state-always.status-primary.mynah-ui-clickable-item')
-        )
-        await saveButton.click()
-    } catch (e) {
-        console.error('Error saving the MCP server configuration:', e)
-    }
+    await clickButton(
+        webviewView,
+        '[data-testid="chat-item-action-button"][action-id="save-mcp"]',
+        'span.mynah-button-label',
+        'save button'
+    )
 }
 
 export async function cancelMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
@@ -259,13 +236,21 @@ export async function cancelMCPServerConfiguration(webviewView: WebviewView): Pr
  */
 export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<void> {
     try {
-        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const header = await sheetWrapper.findElement(By.css('.mynah-sheet-header'))
-        const actionsContainer = await header.findElement(By.css('.mynah-sheet-header-actions-container'))
-        const refreshButton = await actionsContainer.findElement(By.css('button:has(i.mynah-ui-icon-refresh)'))
-        await refreshButton.click()
+        // First dismiss any overlay that might be present
+        await dismissOverlayIfPresent(webviewView)
+
+        await clickButton(
+            webviewView,
+            '.mynah-sheet-header-actions-container',
+            'i.mynah-ui-icon-refresh',
+            'MCP refresh button'
+        )
+
+        // Dismiss any overlay that might appear after clicking
+        await dismissOverlayIfPresent(webviewView)
     } catch (e) {
         console.error('Error clicking the MCP refresh button:', e)
+        throw e
     }
 }
 
@@ -276,11 +261,10 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
  */
 export async function clickMCPCloseButton(webviewView: WebviewView): Promise<void> {
     try {
-        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const header = await sheetWrapper.findElement(By.css('.mynah-sheet-header'))
-        const cancelButton = await header.findElement(By.css('button:has(i.mynah-ui-icon-cancel)'))
-        await webviewView.getDriver().executeScript('arguments[0].click()', cancelButton)
+        await dismissOverlayIfPresent(webviewView)
+        await clickButton(webviewView, '.mynah-sheet-header', 'i.mynah-ui-icon-cancel', 'MCP close button')
     } catch (e) {
         console.error('Error closing the MCP overlay:', e)
+        throw e
     }
 }
