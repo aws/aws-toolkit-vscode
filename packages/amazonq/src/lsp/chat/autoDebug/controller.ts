@@ -110,32 +110,34 @@ export class AutoDebugController implements vscode.Disposable {
     /**
      * Fix with Amazon Q - sends up to 15 error messages one time when user clicks the button
      */
-    public async fixAllProblemsInFile(maxProblems: number = 15): Promise<void> {
+    public async fixAllProblemsInFile(maxProblems: number = 15): Promise<number> {
         try {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 void messages.showMessage('warn', 'No active editor found')
-                return
+                return 0
             }
 
             // Get all diagnostics for the current file
             const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
             const errorDiagnostics = this.filterErrorDiagnostics(allDiagnostics)
             if (errorDiagnostics.length === 0) {
-                return
+                return 0
             }
 
             // Take up to maxProblems errors (15 by default)
             const diagnosticsToFix = errorDiagnostics.slice(0, maxProblems)
             const result = await this.getProblemsFromDiagnostics(undefined, diagnosticsToFix)
             if (!result) {
-                return
+                return 0
             }
 
             const fixMessage = this.createFixMessage(result.editor.document.uri.fsPath, result.problems)
             await this.sendMessageToChat(fixMessage)
+            return result.problems.length
         } catch (error) {
             this.logger.error('AutoDebugController: Error in fix process: %s', error)
+            throw error
         }
     }
 
