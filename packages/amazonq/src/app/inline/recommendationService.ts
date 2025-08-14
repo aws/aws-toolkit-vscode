@@ -25,6 +25,7 @@ import { DocumentEventListener } from './documentEventListener'
 import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 import { asyncCallWithTimeout } from '../../util/timeoutUtil'
 import { EditSuggestionState } from './editSuggestionState'
+import { extractFileContextInNotebooks } from './notebookUtil'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -96,6 +97,9 @@ export class RecommendationService {
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
+        }
+        if (document.uri.scheme === 'vscode-notebook-cell') {
+            request.fileContextOverride = extractFileContextInNotebooks(document, position)
         }
         const requestStartTime = performance.now()
         const statusBar = CodeWhispererStatusBarManager.instance
