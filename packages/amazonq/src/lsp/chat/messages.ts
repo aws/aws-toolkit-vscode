@@ -70,7 +70,6 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as os from 'os'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import {
@@ -85,7 +84,6 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { AmazonQPromptSettings, messages, openUrl, isTextEditor, globals, setContext } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
-import { fs } from 'aws-core-vscode/shared'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
@@ -150,7 +148,6 @@ export function registerMessageListeners(
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
-    const tempDiffFiles = new Set<string>() // track temp files for cleanup
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
@@ -656,47 +653,39 @@ export function registerMessageListeners(
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
         const currentFileUri = vscode.Uri.parse(params.originalFileUri)
         const originalContent = params.originalFileContent ?? ''
-
-        // Clean up any existing temp files first
-        for (const tempFile of tempDiffFiles) {
-            try {
-                await fs.delete(tempFile)
-            } catch {}
-        }
-        tempDiffFiles.clear()
-
-        // Create a temporary file with original content
         const fileName = path.basename(currentFileUri.fsPath)
-        const tempFileName = `${path.parse(fileName).name}_original_${Date.now()}${path.extname(fileName)}`
-        const tempFilePath = path.join(os.tmpdir(), tempFileName)
+
+        // Use custom scheme to avoid adding to recent files
+        const originalFileUri = vscode.Uri.parse(`amazonq-diff:${fileName}_original_${Date.now()}`)
+
+        // Register content provider for the custom scheme
+        const disposable = vscode.workspace.registerTextDocumentContentProvider('amazonq-diff', {
+            provideTextDocumentContent: () => originalContent,
+        })
 
         try {
-            await fs.writeFile(tempFilePath, originalContent)
-            const tempFileUri = vscode.Uri.file(tempFilePath)
-            tempDiffFiles.add(tempFilePath)
-
-            // Open diff view with temp file (left) vs current file (right)
+            // Open diff view with custom scheme URI (left) vs current file (right)
             await vscode.commands.executeCommand(
                 'vscode.diff',
-                tempFileUri,
+                originalFileUri,
                 currentFileUri,
                 `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current, Editable)`,
                 { preview: false }
             )
 
-            // Clean up temp file when diff view is closed
-            const disposable = vscode.window.onDidChangeVisibleTextEditors(() => {
+            // Clean up content provider when diff view is closed
+            const cleanupDisposable = vscode.window.onDidChangeVisibleTextEditors(() => {
                 const isDiffViewOpen = vscode.window.visibleTextEditors.some(
-                    (editor) => editor.document.uri.toString() === tempFileUri.toString()
+                    (editor) => editor.document.uri.toString() === originalFileUri.toString()
                 )
-                if (!isDiffViewOpen && tempDiffFiles.has(tempFilePath)) {
-                    fs.delete(tempFilePath).catch(() => {})
-                    tempDiffFiles.delete(tempFilePath)
+                if (!isDiffViewOpen) {
                     disposable.dispose()
+                    cleanupDisposable.dispose()
                 }
             })
         } catch (error) {
-            languageClient.error(`[VSCode Client] Failed to create temp file for diff: ${error}`)
+            disposable.dispose()
+            languageClient.error(`[VSCode Client] Failed to open diff view: ${error}`)
         }
     })
 
