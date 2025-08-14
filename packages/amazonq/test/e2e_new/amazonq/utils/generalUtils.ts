@@ -117,7 +117,7 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 15000)
  * @param webview The WebviewView instance
  * @returns Promise<boolean> True if successful, false if an error occurred
  */
-export async function clearChat(webview: WebviewView): Promise<boolean> {
+export async function clearChatInput(webview: WebviewView): Promise<boolean> {
     try {
         const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
         await chatInput.sendKeys(
