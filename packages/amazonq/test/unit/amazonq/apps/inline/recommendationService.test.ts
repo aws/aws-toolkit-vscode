@@ -15,6 +15,7 @@ import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateM
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
+import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
 
 const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
 const editApi = 'aws/textDocument/editCompletion'
@@ -128,6 +129,9 @@ describe('RecommendationService', () => {
 
     describe('getAllRecommendations', () => {
         it('should handle single request with no partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -171,6 +175,9 @@ describe('RecommendationService', () => {
         })
 
         it('should handle multiple request with partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -324,6 +331,78 @@ describe('RecommendationService', () => {
                 // Restore the original console.error function
                 console.error = originalConsoleError
             }
+        })
+
+        it('should not make completion request when edit suggestion is active', async () => {
+            // Mock EditSuggestionState to return true (edit suggestion is active)
+            const isEditSuggestionActiveStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called only for edit API, not completion API
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 1) // Only edit call
+            assert.strictEqual(completionCalls.length, 0) // No completion calls
+            assert.strictEqual(editCalls.length, 1) // One edit call
+
+            // Verify the stub was called
+            sinon.assert.calledOnce(isEditSuggestionActiveStub)
+        })
+
+        it('should make completion request when edit suggestion is not active', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            const isEditSuggestionActiveStub = sandbox
+                .stub(EditSuggestionState, 'isEditSuggestionActive')
+                .returns(false)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called for both APIs
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 2) // Both calls
+            assert.strictEqual(completionCalls.length, 1) // One completion call
+            assert.strictEqual(editCalls.length, 1) // One edit call
+
+            // Verify the stub was called
+            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
     })
 })
