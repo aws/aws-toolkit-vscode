@@ -37,6 +37,29 @@ export async function* listStateMachines(
     }
 }
 
+export async function* listExecutions(
+    client: StepFunctionsClient,
+    stateMachineArn: string,
+    resultsToReturn: number
+): AsyncIterableIterator<StepFunctions.ExecutionListItem> {
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.statemachineexecutions', 'Loading State Machine Executions...')
+    )
+
+    try {
+        yield* client.listExecutions(
+            {
+                stateMachineArn: stateMachineArn,
+            },
+            resultsToReturn
+        )
+    } finally {
+        if (status) {
+            status.dispose()
+        }
+    }
+}
+
 /**
  * Checks if the given IAM Role is assumable by AWS Step Functions.
  * @param role The IAM role to check
