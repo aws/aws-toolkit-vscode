@@ -71,17 +71,16 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             assert.deepStrictEqual(children, [])
         })
 
-        it('returns spaces node when project is selected', async function () {
+        it('returns connection nodes and spaces node when project is selected', async function () {
             const mockProject = { id: 'project-123', name: 'Test Project' }
             ;(mockParent.getProject as sinon.SinonStub).returns(mockProject)
 
-            // Stub the SpacesParentNode constructor to prevent actual instantiation
-            sinon.stub(SageMakerUnifiedStudioSpacesParentNode.prototype, 'constructor' as any).returns({})
-
             const children = await computeNode.getChildren()
 
-            assert.strictEqual(children.length, 1)
-            assert.ok(children[0] instanceof SageMakerUnifiedStudioSpacesParentNode)
+            assert.strictEqual(children.length, 3)
+            assert.strictEqual(children[0].id, 'Data warehouse')
+            assert.strictEqual(children[1].id, 'Data processing')
+            assert.ok(children[2] instanceof SageMakerUnifiedStudioSpacesParentNode)
         })
     })
 

@@ -13,6 +13,7 @@ import {
     PhysicalEndpoint,
     RedshiftPropertiesOutput,
     S3PropertiesOutput,
+    ConnectionType,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
@@ -476,6 +477,18 @@ export class DataZoneClient {
         }
     }
 
+    public async fetchConnections(
+        domain: string | undefined,
+        project: string | undefined,
+        ConnectionType: ConnectionType
+    ): Promise<ListConnectionsCommandOutput> {
+        const datazoneClient = await this.getDataZoneClient()
+        return datazoneClient.listConnections({
+            domainIdentifier: domain,
+            projectIdentifier: project,
+            type: ConnectionType,
+        })
+    }
     /**
      * Lists connections in a DataZone environment
      * @param domainId The DataZone domain identifier

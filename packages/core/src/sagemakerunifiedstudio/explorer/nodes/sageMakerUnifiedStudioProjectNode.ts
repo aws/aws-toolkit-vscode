@@ -24,7 +24,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
-    private project?: DataZoneProject
+    public project?: DataZoneProject
     private logger = getLogger()
     private sagemakerClient?: SagemakerClient
 

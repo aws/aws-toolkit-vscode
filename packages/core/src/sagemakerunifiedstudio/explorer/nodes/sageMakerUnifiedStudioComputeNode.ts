@@ -10,6 +10,8 @@ import { SageMakerUnifiedStudioSpacesParentNode } from './sageMakerUnifiedStudio
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SagemakerClient } from '../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { SageMakerUnifiedStudioConnectionParentNode } from './sageMakerUnifiedStudioConnectionParentNode'
+import { ConnectionType } from '@aws-sdk/client-datazone'
 
 export class SageMakerUnifiedStudioComputeNode implements TreeNode {
     public readonly id = 'smusComputeNode'
@@ -19,7 +21,7 @@ export class SageMakerUnifiedStudioComputeNode implements TreeNode {
     constructor(
         public readonly parent: SageMakerUnifiedStudioProjectNode,
         private readonly extensionContext: vscode.ExtensionContext,
-        private readonly authprovider: SmusAuthenticationProvider,
+        public readonly authProvider: SmusAuthenticationProvider,
         private readonly sagemakerClient: SagemakerClient
     ) {}
 
@@ -35,11 +37,17 @@ export class SageMakerUnifiedStudioComputeNode implements TreeNode {
         const projectId = this.parent.getProject()?.id
 
         if (projectId) {
+            childrenNodes.push(
+                new SageMakerUnifiedStudioConnectionParentNode(this, ConnectionType.REDSHIFT, 'Data warehouse')
+            )
+            childrenNodes.push(
+                new SageMakerUnifiedStudioConnectionParentNode(this, ConnectionType.SPARK, 'Data processing')
+            )
             this.spacesNode = new SageMakerUnifiedStudioSpacesParentNode(
                 this,
                 projectId,
                 this.extensionContext,
-                this.authprovider,
+                this.authProvider,
                 this.sagemakerClient
             )
             childrenNodes.push(this.spacesNode)
