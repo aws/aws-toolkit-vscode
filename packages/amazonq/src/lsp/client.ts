@@ -165,7 +165,7 @@ export async function startLanguageServer(
             aws: {
                 clientInfo: {
                     name: getClientName(),
-                    version: version,
+                    version: extensionVersion,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
                         version: extensionVersion,
