@@ -110,11 +110,18 @@ export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promis
  * Ctrl + Shift + T | await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 't')
  */
 export async function pressShortcut(driver: WebDriver, ...keys: (string | keyof typeof Key)[]): Promise<void> {
+    // Replace CONTROL with COMMAND on macOS
+    const platformKeys = keys.map((key) => {
+        if (key === Key.CONTROL && process.platform === 'darwin') {
+            return Key.COMMAND
+        }
+        return key
+    })
     const actions = driver.actions()
-    for (const key of keys) {
+    for (const key of platformKeys) {
         actions.keyDown(key)
     }
-    for (const key of keys.reverse()) {
+    for (const key of platformKeys.reverse()) {
         actions.keyUp(key)
     }
     await actions.perform()
