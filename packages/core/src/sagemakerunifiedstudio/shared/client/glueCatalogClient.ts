@@ -9,15 +9,13 @@ import { getLogger } from '../../../shared/logger/logger'
 import * as GlueCatalogApi from './gluecatalogapi'
 import apiConfig = require('./gluecatalogapi.json')
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
 
 /**
  * Represents a Glue catalog
  */
-export interface GlueCatalog {
-    name: string
-    type: string
-    parameters?: Record<string, string>
-}
+export type GlueCatalog = GlueCatalogApi.Types.Catalog
 
 /**
  * Client for interacting with Glue Catalog API
@@ -29,11 +27,7 @@ export class GlueCatalogClient {
 
     private constructor(
         private readonly region: string,
-        private readonly credentials?: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        private readonly connectionCredentialsProvider?: ConnectionCredentialsProvider
     ) {}
 
     /**
@@ -55,13 +49,9 @@ export class GlueCatalogClient {
      */
     public static createWithCredentials(
         region: string,
-        credentials: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        connectionCredentialsProvider: ConnectionCredentialsProvider
     ): GlueCatalogClient {
-        return new GlueCatalogClient(region, credentials)
+        return new GlueCatalogClient(region, connectionCredentialsProvider)
     }
 
     /**
@@ -73,32 +63,31 @@ export class GlueCatalogClient {
     }
 
     /**
-     * Lists Glue catalogs
-     * @returns List of Glue catalogs
+     * Lists Glue catalogs with pagination support
+     * @param nextToken Optional pagination token
+     * @returns Object containing catalogs and nextToken
      */
-    public async getCatalogs(): Promise<GlueCatalog[]> {
+    public async getCatalogs(nextToken?: string): Promise<{ catalogs: GlueCatalog[]; nextToken?: string }> {
         try {
             this.logger.info(`GlueCatalogClient: Getting catalogs in region ${this.region}`)
 
             const glueClient = await this.getGlueCatalogClient()
 
-            // Call the GetCatalogs API
-            const response = await glueClient.getCatalogs().promise()
+            // Call the GetCatalogs API with pagination
+            const response = await glueClient
+                .getCatalogs({
+                    Recursive: true,
+                    NextToken: nextToken,
+                })
+                .promise()
 
-            if (!response.CatalogList || response.CatalogList.length === 0) {
-                this.logger.info('GlueCatalogClient: No catalogs found')
-                return []
+            const catalogs: GlueCatalog[] = response.CatalogList || []
+
+            this.logger.info(`GlueCatalogClient: Found ${catalogs.length} catalogs in this page`)
+            return {
+                catalogs,
+                nextToken: response.NextToken,
             }
-
-            // Map the response to our GlueCatalog interface
-            const catalogs: GlueCatalog[] = response.CatalogList.map((catalog) => ({
-                name: catalog.Name || '',
-                type: catalog.CatalogType || '',
-                parameters: catalog.Parameters,
-            }))
-
-            this.logger.info(`GlueCatalogClient: Found ${catalogs.length} catalogs`)
-            return catalogs
         } catch (err) {
             this.logger.error('GlueCatalogClient: Failed to get catalogs: %s', err as Error)
             throw err
@@ -111,18 +100,14 @@ export class GlueCatalogClient {
     private async getGlueCatalogClient(): Promise<GlueCatalogApi> {
         if (!this.glueClient) {
             try {
-                if (this.credentials) {
+                if (this.connectionCredentialsProvider) {
                     // Create client with provided credentials
                     this.glueClient = (await globals.sdkClientBuilder.createAwsService(
                         Service,
                         {
                             apiConfig: apiConfig,
                             region: this.region,
-                            credentials: {
-                                accessKeyId: this.credentials.accessKeyId,
-                                secretAccessKey: this.credentials.secretAccessKey,
-                                sessionToken: this.credentials.sessionToken,
-                            },
+                            credentialProvider: adaptConnectionCredentialsProvider(this.connectionCredentialsProvider),
                         } as ServiceConfigurationOptions,
                         undefined,
                         false

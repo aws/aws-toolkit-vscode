@@ -12,7 +12,9 @@ import {
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/redshiftStrategy'
 import { SQLWorkbenchClient } from '../../../../sagemakerunifiedstudio/shared/client/sqlWorkbenchClient'
 import * as sqlWorkbenchClient from '../../../../sagemakerunifiedstudio/shared/client/sqlWorkbenchClient'
+import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('redshiftStrategy', function () {
     let sandbox: sinon.SinonSandbox
@@ -147,6 +149,11 @@ describe('redshiftStrategy', function () {
                 connectableResourceType: 'CLUSTER',
                 database: 'test-db',
             })
+
+            const mockClientStore = {
+                getSQLWorkbenchClient: sandbox.stub().returns(mockSQLClient),
+            }
+            sandbox.stub(ConnectionClientStore, 'getInstance').returns(mockClientStore as any)
         })
 
         it.skip('should create Redshift connection node with JDBC URL', async function () {
@@ -167,9 +174,11 @@ describe('redshiftStrategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
             mockSQLClient.executeQuery.resolves('query-id')
@@ -184,7 +193,10 @@ describe('redshiftStrategy', function () {
                 ],
             })
 
-            const node = createRedshiftConnectionNode(connection as any, credentials)
+            const node = createRedshiftConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider
+            )
 
             assert.strictEqual(node.data.nodeType, NodeType.CONNECTION)
             assert.strictEqual(node.data.value.connection.name, 'Test Redshift Connection')
@@ -213,15 +225,20 @@ describe('redshiftStrategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
             mockSQLClient.executeQuery.resolves('query-id')
             mockSQLClient.getResources.resolves({ resources: [] })
 
-            const node = createRedshiftConnectionNode(connection as any, credentials)
+            const node = createRedshiftConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 1)
@@ -240,12 +257,17 @@ describe('redshiftStrategy', function () {
                 location: {},
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
-            const node = createRedshiftConnectionNode(connection as any, credentials)
+            const node = createRedshiftConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 0)
@@ -273,15 +295,20 @@ describe('redshiftStrategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
             mockSQLClient.executeQuery.resolves('query-id')
             mockSQLClient.getResources.resolves({ resources: [] })
 
-            const node = createRedshiftConnectionNode(connection as any, credentials)
+            const node = createRedshiftConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 1)
@@ -304,9 +331,11 @@ describe('redshiftStrategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
             // Make createRedshiftConnectionConfig throw an error
@@ -314,7 +343,10 @@ describe('redshiftStrategy', function () {
                 new Error('Connection config failed')
             )
 
-            const node = createRedshiftConnectionNode(connection as any, credentials)
+            const node = createRedshiftConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider
+            )
 
             // The error should be handled gracefully and return an error node
             const children = await node.getChildren()

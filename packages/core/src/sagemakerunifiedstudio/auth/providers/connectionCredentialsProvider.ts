@@ -147,7 +147,8 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
             validateCredentialFields(
                 connectionCredentials,
                 'InvalidConnectionCredentials',
-                'connection credential response'
+                'connection credential response',
+                true
             )
 
             // Create AWS credentials with expiration

@@ -5,6 +5,7 @@
 
 import { S3 } from '@aws-sdk/client-s3'
 import { getLogger } from '../../../shared/logger/logger'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
 /**
  * Represents an S3 path (bucket or prefix)
@@ -27,11 +28,7 @@ export class S3Client {
 
     constructor(
         private readonly region: string,
-        private readonly credentials: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        private readonly connectionCredentialsProvider: ConnectionCredentialsProvider
     ) {}
 
     /**
@@ -125,9 +122,19 @@ export class S3Client {
     private async getS3Client(): Promise<S3> {
         if (!this.s3Client) {
             try {
+                const credentialsProvider = async () => {
+                    const credentials = await this.connectionCredentialsProvider.getCredentials()
+                    return {
+                        accessKeyId: credentials.accessKeyId,
+                        secretAccessKey: credentials.secretAccessKey,
+                        sessionToken: credentials.sessionToken,
+                        expiration: credentials.expiration,
+                    }
+                }
+
                 this.s3Client = new S3({
                     region: this.region,
-                    credentials: this.credentials,
+                    credentials: credentialsProvider,
                 })
                 this.logger.debug('S3Client: Successfully created S3 client')
             } catch (err) {

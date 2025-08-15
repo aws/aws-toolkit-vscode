@@ -7,11 +7,8 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
-import {
-    SQLWorkbenchClient,
-    ConnectionConfig,
-    createRedshiftConnectionConfig,
-} from '../../shared/client/sqlWorkbenchClient'
+import { ConnectionConfig, createRedshiftConnectionConfig } from '../../shared/client/sqlWorkbenchClient'
+import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 import { NODE_ID_DELIMITER, NodeType, ResourceType, NodeData } from './types'
 import {
     getLabel,
@@ -22,7 +19,7 @@ import {
     getTooltip,
     getColumnType,
 } from './utils'
-import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
 /**
  * Redshift data node for SageMaker Unified Studio
@@ -113,13 +110,13 @@ export class RedshiftNode implements TreeNode {
  */
 export function createRedshiftConnectionNode(
     connection: DataZoneConnection,
-    credentials: AwsCredentialIdentity
+    connectionCredentialsProvider: ConnectionCredentialsProvider
 ): RedshiftNode {
     return new RedshiftNode(
         {
             id: connection.connectionId,
             nodeType: NodeType.CONNECTION,
-            value: { connection, credentials },
+            value: { connection, connectionCredentialsProvider },
             path: {
                 connection: connection.name,
             },
@@ -146,9 +143,14 @@ export function createRedshiftConnectionNode(
             )
 
             // Wake up the database with a simple query
-            await wakeUpDatabase(connectionConfig, connectionParams.region, credentials)
+            await wakeUpDatabase(connectionConfig, connectionParams.region, connectionCredentialsProvider, connection)
 
-            const sqlClient = SQLWorkbenchClient.createWithCredentials(connectionParams.region, credentials)
+            const clientStore = ConnectionClientStore.getInstance()
+            const sqlClient = clientStore.getSQLWorkbenchClient(
+                connection.connectionId,
+                connectionParams.region,
+                connectionCredentialsProvider
+            )
 
             const allResources = []
             let nextToken: string | undefined
@@ -216,9 +218,15 @@ function extractConnectionParams(connection: DataZoneConnection) {
 /**
  * Wake up the database with a simple query
  */
-async function wakeUpDatabase(connectionConfig: ConnectionConfig, region: string, credentials: AwsCredentialIdentity) {
+async function wakeUpDatabase(
+    connectionConfig: ConnectionConfig,
+    region: string,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
+    connection: DataZoneConnection
+) {
     const logger = getLogger()
-    const sqlClient = SQLWorkbenchClient.createWithCredentials(region, credentials)
+    const clientStore = ConnectionClientStore.getInstance()
+    const sqlClient = clientStore.getSQLWorkbenchClient(connection.connectionId, region, connectionCredentialsProvider)
     try {
         await sqlClient.executeQuery(connectionConfig, 'select 1 from sys_query_history limit 1;')
     } catch (e) {
@@ -259,7 +267,9 @@ function createDatabaseNode(
                 const rootCredentials = getRootCredentials(parent)
 
                 // Create SQL client with the original credentials
-                const sqlClient = SQLWorkbenchClient.createWithCredentials(
+                const clientStore = ConnectionClientStore.getInstance()
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    connectionConfig.id,
                     connectionConfig.id.split(':')[3], // region
                     rootCredentials
                 )
@@ -352,7 +362,10 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                 const rootCredentials = getRootCredentials(parent)
 
                 // Create SQL client with the original credentials
-                const sqlClient = SQLWorkbenchClient.createWithCredentials(
+                const clientStore = ConnectionClientStore.getInstance()
+                const rootConnection = getRootConnection(parent)
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    rootConnection.connectionId,
                     connectionConfig.id.split(':')[3], // region
                     rootCredentials
                 )
@@ -514,7 +527,10 @@ function createObjectNode(
                 const rootCredentials = getRootCredentials(parent)
 
                 // Create SQL client with the original credentials
-                const sqlClient = SQLWorkbenchClient.createWithCredentials(
+                const clientStore = ConnectionClientStore.getInstance()
+                const rootConnection = getRootConnection(parent)
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    rootConnection.connectionId,
                     connectionConfig.id.split(':')[3], // region
                     rootCredentials
                 )
@@ -646,9 +662,25 @@ function createEmptyNode(id: string, parent?: RedshiftNode): RedshiftNode {
 }
 
 /**
+ * Gets the root connection from a node
+ */
+function getRootConnection(node: RedshiftNode): DataZoneConnection {
+    // Start with the current node
+    let currentNode = node
+
+    // Traverse up to the root connection node
+    while (currentNode.data.parent) {
+        currentNode = currentNode.data.parent
+    }
+
+    // Get connection from the root node
+    return currentNode.data.value?.connection
+}
+
+/**
  * Gets the original credentials from the root connection node
  */
-function getRootCredentials(node: RedshiftNode): AwsCredentialIdentity {
+function getRootCredentials(node: RedshiftNode): ConnectionCredentialsProvider {
     // Start with the current node
     let currentNode = node
 
@@ -658,7 +690,7 @@ function getRootCredentials(node: RedshiftNode): AwsCredentialIdentity {
     }
 
     // Get credentials from the root node
-    const credentials = currentNode.data.value?.credentials
+    const credentials = currentNode.data.value?.connectionCredentialsProvider
 
     // Return credentials or fallback to dummy credentials
     return (

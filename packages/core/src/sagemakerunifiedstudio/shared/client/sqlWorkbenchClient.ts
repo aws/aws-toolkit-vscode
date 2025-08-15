@@ -12,6 +12,8 @@ import apiConfig = require('./sqlworkbench.json')
 import { v4 as uuidv4 } from 'uuid'
 import { getRedshiftTypeFromHost } from '../../explorer/nodes/utils'
 import { DatabaseIntegrationConnectionAuthenticationTypes, RedshiftType } from '../../explorer/nodes/types'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
 
 /**
  * Connection configuration for SQL Workbench
@@ -137,11 +139,7 @@ export class SQLWorkbenchClient {
 
     private constructor(
         private readonly region: string,
-        private readonly credentials?: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        private readonly connectionCredentialsProvider?: ConnectionCredentialsProvider
     ) {}
 
     /**
@@ -158,18 +156,14 @@ export class SQLWorkbenchClient {
     /**
      * Creates a new SQLWorkbenchClient instance with specific credentials
      * @param region AWS region
-     * @param credentials AWS credentials
-     * @returns SQLWorkbenchClient instance with credentials
+     * @param connectionCredentialsProvider ConnectionCredentialsProvider
+     * @returns SQLWorkbenchClient instance with credentials provider
      */
     public static createWithCredentials(
         region: string,
-        credentials: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        connectionCredentialsProvider: ConnectionCredentialsProvider
     ): SQLWorkbenchClient {
-        return new SQLWorkbenchClient(region, credentials)
+        return new SQLWorkbenchClient(region, connectionCredentialsProvider)
     }
 
     /**
@@ -286,7 +280,7 @@ export class SQLWorkbenchClient {
                 const endpoint = this.getSQLWorkbenchEndpoint(this.region)
                 this.logger.info(`Using SQL Workbench endpoint: ${endpoint}`)
 
-                if (this.credentials) {
+                if (this.connectionCredentialsProvider) {
                     // Create client with provided credentials
                     this.sqlClient = (await globals.sdkClientBuilder.createAwsService(
                         Service,
@@ -294,11 +288,7 @@ export class SQLWorkbenchClient {
                             apiConfig: apiConfig,
                             region: this.region,
                             endpoint: endpoint,
-                            credentials: {
-                                accessKeyId: this.credentials.accessKeyId,
-                                secretAccessKey: this.credentials.secretAccessKey,
-                                sessionToken: this.credentials.sessionToken,
-                            },
+                            credentialProvider: adaptConnectionCredentialsProvider(this.connectionCredentialsProvider),
                         } as ServiceConfigurationOptions,
                         undefined,
                         false

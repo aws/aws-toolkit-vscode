@@ -575,6 +575,7 @@
         "@aws-sdk/client-iam": "<3.731.0",
         "@aws-sdk/client-lambda": "<3.731.0",
         "@aws-sdk/client-s3": "<3.731.0",
+        "@aws-sdk/client-s3-control": "^3.830.0",
         "@aws-sdk/client-sagemaker": "<3.696.0",
         "@aws-sdk/client-ssm": "<3.731.0",
         "@aws-sdk/client-sso": "<3.731.0",

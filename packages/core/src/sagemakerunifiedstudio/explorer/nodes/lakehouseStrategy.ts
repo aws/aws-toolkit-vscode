@@ -7,8 +7,9 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
-import { GlueCatalogClient } from '../../shared/client/glueCatalogClient'
+import { GlueCatalog, GlueCatalogClient } from '../../shared/client/glueCatalogClient'
 import { GlueClient } from '../../shared/client/glueClient'
+import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 import {
     NODE_ID_DELIMITER,
     NodeType,
@@ -17,10 +18,11 @@ import {
     DATA_DEFAULT_ATHENA_CONNECTION_NAME,
     DATA_DEFAULT_IAM_CONNECTION_NAME,
     AWS_DATA_CATALOG,
+    DatabaseObjects,
 } from './types'
 import { getLabel, isLeafNode, getIconForNodeType, getTooltip, createColumnTreeItem, getColumnType } from './utils'
-import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
-import { Column } from '@aws-sdk/client-glue'
+import { Column, Database, Table } from '@aws-sdk/client-glue'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
 /**
  * Lakehouse data node for SageMaker Unified Studio
@@ -110,14 +112,19 @@ export class LakehouseNode implements TreeNode {
  */
 export function createLakehouseConnectionNode(
     connection: DataZoneConnection,
-    credentials: AwsCredentialIdentity,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): LakehouseNode {
     const logger = getLogger()
 
     // Create Glue clients
-    const glueCatalogClient = GlueCatalogClient.createWithCredentials(region, credentials)
-    const glueClient = new GlueClient(region, credentials)
+    const clientStore = ConnectionClientStore.getInstance()
+    const glueCatalogClient = clientStore.getGlueCatalogClient(
+        connection.connectionId,
+        region,
+        connectionCredentialsProvider
+    )
+    const glueClient = clientStore.getGlueClient(connection.connectionId, region, connectionCredentialsProvider)
 
     // Create the connection node
     return new LakehouseNode(
@@ -206,7 +213,12 @@ function createAwsDataCatalogNode(parent: LakehouseNode, glueClient: GlueClient)
             let nextToken: string | undefined
 
             do {
-                const { databases, nextToken: token } = await glueClient.getDatabases(undefined, nextToken)
+                const { databases, nextToken: token } = await glueClient.getDatabases(
+                    undefined,
+                    'ALL',
+                    ['NAME'],
+                    nextToken
+                )
                 allDatabases.push(...databases)
                 nextToken = token
             } while (nextToken)
@@ -214,6 +226,62 @@ function createAwsDataCatalogNode(parent: LakehouseNode, glueClient: GlueClient)
             return allDatabases.map((database) => createDatabaseNode(database.Name || '', database, glueClient, node))
         }
     )
+}
+
+export interface CatalogTree {
+    parent: GlueCatalog
+    children?: GlueCatalog[]
+}
+
+/**
+ * Builds catalog tree from flat catalog list
+ *
+ * AWS Glue catalogs can have parent-child relationships, but the API returns them as a flat list.
+ * This function reconstructs the hierarchical tree structure needed for proper UI display.
+ *
+ * Two-pass algorithm is required because:
+ * 1. First pass: Create a lookup map of all catalogs by name for O(1) access during relationship building
+ * 2. Second pass: Build parent-child relationships by linking catalogs that reference ParentCatalogNames
+ *
+ * Without the first pass, we'd need O(n²) time to find parent catalogs for each child catalog.
+ */
+function buildCatalogTree(catalogs: GlueCatalog[]): CatalogTree[] {
+    const catalogMap: Record<string, CatalogTree> = {}
+    const rootCatalogs: CatalogTree[] = []
+
+    // First pass: create a map of all catalogs with their metadata
+    // This allows us to quickly look up any catalog by name when building parent-child relationships in the second pass
+    for (const catalog of catalogs) {
+        if (catalog.Name) {
+            catalogMap[catalog.Name] = { parent: catalog, children: [] }
+        }
+    }
+
+    // Second pass: build the hierarchical tree structure by linking children to their parents
+    // Catalogs with ParentCatalogNames become children, others become root-level catalogs
+    for (const catalog of catalogs) {
+        if (catalog.Name) {
+            if (catalog.ParentCatalogNames && catalog.ParentCatalogNames.length > 0) {
+                const parentName = catalog.ParentCatalogNames[0]
+                const parent = catalogMap[parentName]
+                if (parent) {
+                    if (!parent.children) {
+                        parent.children = []
+                    }
+                    parent.children.push(catalog)
+                }
+            } else {
+                rootCatalogs.push(catalogMap[catalog.Name])
+            }
+        }
+    }
+    rootCatalogs.sort((a, b) => {
+        const timeA = new Date(a.parent.CreateTime ?? 0).getTime()
+        const timeB = new Date(b.parent.CreateTime ?? 0).getTime()
+        return timeA - timeB // For oldest first
+    })
+
+    return rootCatalogs
 }
 
 /**
@@ -224,56 +292,108 @@ async function getCatalogs(
     glueClient: GlueClient,
     parent: LakehouseNode
 ): Promise<LakehouseNode[]> {
-    const catalogs = await glueCatalogClient.getCatalogs()
-    return catalogs.map((catalog) => createCatalogNode(catalog.name, catalog, glueClient, parent))
+    const allCatalogs = []
+    let nextToken: string | undefined
+
+    do {
+        const { catalogs, nextToken: token } = await glueCatalogClient.getCatalogs(nextToken)
+        allCatalogs.push(...catalogs)
+        nextToken = token
+    } while (nextToken)
+
+    const catalogs = allCatalogs
+    const tree = buildCatalogTree(catalogs)
+
+    return tree.map((catalog) => {
+        const parentCatalog = catalog.parent
+
+        // If parent catalog has children, create node that shows child catalogs
+        if (catalog.children && catalog.children.length > 0) {
+            return new LakehouseNode(
+                {
+                    id: parentCatalog.Name || parentCatalog.CatalogId || '',
+                    nodeType: NodeType.GLUE_CATALOG,
+                    value: {
+                        catalog: parentCatalog,
+                        catalogName: parentCatalog.Name || '',
+                    },
+                    path: {
+                        ...parent.data.path,
+                        catalog: parentCatalog.CatalogId || '',
+                    },
+                    parent,
+                },
+                async (node: LakehouseNode) => {
+                    // Parent catalogs only show child catalogs
+                    const childCatalogs =
+                        catalog.children?.map((childCatalog) =>
+                            createCatalogNode(childCatalog.CatalogId || '', childCatalog, glueClient, node, false)
+                        ) || []
+                    return childCatalogs
+                }
+            )
+        }
+
+        // For catalogs without children, create regular catalog node
+        return createCatalogNode(parentCatalog.CatalogId || '', parentCatalog, glueClient, parent, false)
+    })
 }
 
 /**
  * Creates a catalog node
  */
 function createCatalogNode(
-    catalogName: string,
-    catalog: any,
+    catalogId: string,
+    catalog: GlueCatalog,
     glueClient: GlueClient,
-    parent: LakehouseNode
+    parent: LakehouseNode,
+    isParent: boolean = false
 ): LakehouseNode {
     const logger = getLogger()
 
     return new LakehouseNode(
         {
-            id: catalogName,
+            id: catalog.Name || catalogId,
             nodeType: NodeType.GLUE_CATALOG,
             value: {
                 catalog,
-                catalogName,
+                catalogName: catalog.Name || catalogId,
             },
             path: {
                 ...parent.data.path,
-                catalog: catalogName,
+                catalog: catalogId,
             },
             parent,
         },
-        async (node) => {
-            try {
-                logger.info(`Loading databases for catalog ${catalogName}`)
+        // Child catalogs load databases, parent catalogs will have their children provider overridden
+        isParent
+            ? async () => [] // Placeholder, will be overridden for parent catalogs with children
+            : async (node) => {
+                  try {
+                      logger.info(`Loading databases for catalog ${catalogId}`)
 
-                const allDatabases = []
-                let nextToken: string | undefined
+                      const allDatabases = []
+                      let nextToken: string | undefined
 
-                do {
-                    const { databases, nextToken: token } = await glueClient.getDatabases(catalogName, nextToken)
-                    allDatabases.push(...databases)
-                    nextToken = token
-                } while (nextToken)
+                      do {
+                          const { databases, nextToken: token } = await glueClient.getDatabases(
+                              catalogId,
+                              undefined,
+                              ['NAME'],
+                              nextToken
+                          )
+                          allDatabases.push(...databases)
+                          nextToken = token
+                      } while (nextToken)
 
-                return allDatabases.map((database) =>
-                    createDatabaseNode(database.Name || '', database, glueClient, node)
-                )
-            } catch (err) {
-                logger.error(`Failed to get databases for catalog ${catalogName}: ${(err as Error).message}`)
-                throw err
-            }
-        }
+                      return allDatabases.map((database) =>
+                          createDatabaseNode(database.Name || '', database, glueClient, node)
+                      )
+                  } catch (err) {
+                      logger.error(`Failed to get databases for catalog ${catalogId}: ${(err as Error).message}`)
+                      throw err
+                  }
+              }
     )
 }
 
@@ -282,7 +402,7 @@ function createCatalogNode(
  */
 function createDatabaseNode(
     databaseName: string,
-    database: any,
+    database: Database,
     glueClient: GlueClient,
     parent: LakehouseNode
 ): LakehouseNode {
@@ -311,12 +431,35 @@ function createDatabaseNode(
                 const catalogId = parent.data.path?.catalog === AWS_DATA_CATALOG ? undefined : parent.data.path?.catalog
 
                 do {
-                    const { tables, nextToken: token } = await glueClient.getTables(databaseName, catalogId, nextToken)
+                    const { tables, nextToken: token } = await glueClient.getTables(
+                        databaseName,
+                        catalogId,
+                        ['NAME', 'TABLE_TYPE'],
+                        nextToken
+                    )
                     allTables.push(...tables)
                     nextToken = token
                 } while (nextToken)
 
-                return allTables.map((table) => createTableNode(table.Name || '', table, glueClient, node))
+                // Group tables and views separately
+                const tables = allTables.filter((table) => table.TableType !== DatabaseObjects.VIRTUAL_VIEW)
+                const views = allTables.filter((table) => table.TableType === DatabaseObjects.VIRTUAL_VIEW)
+
+                const containerNodes: LakehouseNode[] = []
+
+                // Create tables container if there are tables
+                if (tables.length > 0) {
+                    containerNodes.push(createContainerNode(NodeType.GLUE_TABLE, tables, glueClient, node))
+                }
+
+                // Create views container if there are views
+                if (views.length > 0) {
+                    containerNodes.push(createContainerNode(NodeType.GLUE_VIEW, views, glueClient, node))
+                }
+
+                return containerNodes.length > 0
+                    ? containerNodes
+                    : [createEmptyNode(`${node.id}${NODE_ID_DELIMITER}empty`, node)]
             } catch (err) {
                 logger.error(`Failed to get tables for database ${databaseName}: ${(err as Error).message}`)
                 throw err
@@ -328,7 +471,12 @@ function createDatabaseNode(
 /**
  * Creates a table node
  */
-function createTableNode(tableName: string, table: any, glueClient: GlueClient, parent: LakehouseNode): LakehouseNode {
+function createTableNode(
+    tableName: string,
+    table: Table,
+    glueClient: GlueClient,
+    parent: LakehouseNode
+): LakehouseNode {
     const logger = getLogger()
 
     return new LakehouseNode(
@@ -350,7 +498,8 @@ function createTableNode(tableName: string, table: any, glueClient: GlueClient, 
                 logger.info(`Loading columns for table ${tableName}`)
 
                 const databaseName = node.data.path?.database || ''
-                const tableDetails = await glueClient.getTable(databaseName, tableName)
+                const catalogId = node.data.path?.catalog === AWS_DATA_CATALOG ? undefined : node.data.path?.catalog
+                const tableDetails = await glueClient.getTable(databaseName, tableName, catalogId)
                 const columns = tableDetails?.StorageDescriptor?.Columns || []
                 const partitions = tableDetails?.PartitionKeys || []
 
@@ -382,6 +531,33 @@ function createColumnNode(columnName: string, column: Column, parent: LakehouseN
         },
         parent,
     })
+}
+
+/**
+ * Creates a container node for grouping objects by type
+ */
+function createContainerNode(
+    nodeType: NodeType,
+    items: Table[],
+    glueClient: GlueClient,
+    parent: LakehouseNode
+): LakehouseNode {
+    return new LakehouseNode(
+        {
+            id: `${parent.id}${NODE_ID_DELIMITER}${nodeType}-container`,
+            nodeType: nodeType,
+            value: {
+                items,
+            },
+            path: parent.data.path,
+            parent,
+            isContainer: true,
+        },
+        async (node) => {
+            // Map items to nodes
+            return items.map((item) => createTableNode(item.Name || '', item, glueClient, node))
+        }
+    )
 }
 
 /**

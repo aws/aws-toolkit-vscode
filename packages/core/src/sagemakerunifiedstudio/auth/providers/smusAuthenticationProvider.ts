@@ -19,6 +19,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
 import { ConnectionCredentialsProvider } from './connectionCredentialsProvider'
+import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -59,6 +60,8 @@ export class SmusAuthenticationProvider {
             this.projectCredentialProvidersCache.clear()
             // Clear connection provider cache when connection changes
             this.connectionCredentialProvidersCache.clear()
+            // Clear all clients in client store when connection changes
+            ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
             this.onDidChangeEmitter.fire()
         })

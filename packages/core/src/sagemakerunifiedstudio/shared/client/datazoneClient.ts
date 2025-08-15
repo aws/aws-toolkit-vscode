@@ -14,6 +14,7 @@ import {
     RedshiftPropertiesOutput,
     S3PropertiesOutput,
     ConnectionType,
+    GluePropertiesOutput,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
@@ -63,6 +64,7 @@ export interface DataZoneConnection {
     props?: {
         s3Properties?: S3PropertiesOutput
         redshiftProperties?: RedshiftPropertiesOutput
+        glueProperties?: GluePropertiesOutput
         jdbcConnection?: JdbcConnection
         [key: string]: any
     }
@@ -507,40 +509,48 @@ export class DataZoneClient {
             )
 
             const datazoneClient = await this.getDataZoneClient()
+            let allConnections: DataZoneConnection[] = []
+            let nextToken: string | undefined
 
-            // Call the DataZone API to list connections
-            const response: ListConnectionsCommandOutput = await datazoneClient.listConnections({
-                domainIdentifier: domainId,
-                projectIdentifier: projectId,
-                environmentIdentifier: environmentId,
-            })
+            do {
+                // Call the DataZone API to list connections with pagination
+                const response: ListConnectionsCommandOutput = await datazoneClient.listConnections({
+                    domainIdentifier: domainId,
+                    projectIdentifier: projectId,
+                    environmentIdentifier: environmentId,
+                    nextToken,
+                    maxResults: 50,
+                })
 
-            if (!response.items || response.items.length === 0) {
-                this.logger.info(`DataZoneClient: No connections found for environment ${environmentId}`)
-                return []
-            }
+                if (response.items && response.items.length > 0) {
+                    // Map the response to our DataZoneConnection interface
+                    const connections: DataZoneConnection[] = response.items.map((connection) => {
+                        // Process the connection to add jdbcConnection if it's a Redshift connection
+                        this.processRedshiftConnection(connection)
 
-            // Map the response to our DataZoneConnection interface
-            const connections: DataZoneConnection[] = response.items.map((connection) => {
-                // Process the connection to add jdbcConnection if it's a Redshift connection
-                this.processRedshiftConnection(connection)
+                        // Parse location from physical endpoints
+                        const location = this.parseLocationFromPhysicalEndpoints(connection.physicalEndpoints)
 
-                // Parse location from physical endpoints
-                const location = this.parseLocationFromPhysicalEndpoints(connection.physicalEndpoints)
-
-                return {
-                    connectionId: connection.connectionId || '',
-                    name: connection.name || '',
-                    description: '',
-                    type: connection.type || '',
-                    domainId,
-                    environmentId,
-                    projectId,
-                    props: connection.props || {},
-                    location,
+                        return {
+                            connectionId: connection.connectionId || '',
+                            name: connection.name || '',
+                            description: '',
+                            type: connection.type || '',
+                            domainId,
+                            environmentId,
+                            projectId,
+                            props: connection.props || {},
+                            location,
+                        }
+                    })
+                    allConnections = [...allConnections, ...connections]
                 }
-            })
-            return connections
+
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            this.logger.info(`DataZoneClient: Fetched a total of ${allConnections.length} connections`)
+            return allConnections
         } catch (err) {
             this.logger.error('DataZoneClient: Failed to list connections: %s', err as Error)
             throw err

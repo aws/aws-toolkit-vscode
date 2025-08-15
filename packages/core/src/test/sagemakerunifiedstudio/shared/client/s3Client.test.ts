@@ -7,16 +7,19 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { S3Client } from '../../../../sagemakerunifiedstudio/shared/client/s3Client'
 import { S3 } from '@aws-sdk/client-s3'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('S3Client', function () {
     let sandbox: sinon.SinonSandbox
     let mockS3: sinon.SinonStubbedInstance<S3>
     let s3Client: S3Client
 
-    const mockCredentials = {
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-        sessionToken: 'test-token',
+    const mockCredentialsProvider = {
+        getCredentials: async () => ({
+            accessKeyId: 'test-key',
+            secretAccessKey: 'test-secret',
+            sessionToken: 'test-token',
+        }),
     }
 
     beforeEach(function () {
@@ -29,7 +32,7 @@ describe('S3Client', function () {
         sandbox.stub(S3.prototype, 'constructor' as any)
         sandbox.stub(S3.prototype, 'listObjectsV2').callsFake(mockS3.listObjectsV2)
 
-        s3Client = new S3Client('us-east-1', mockCredentials)
+        s3Client = new S3Client('us-east-1', mockCredentialsProvider as ConnectionCredentialsProvider)
     })
 
     afterEach(function () {
@@ -38,7 +41,7 @@ describe('S3Client', function () {
 
     describe('constructor', function () {
         it('should create client with correct properties', function () {
-            const client = new S3Client('us-west-2', mockCredentials)
+            const client = new S3Client('us-west-2', mockCredentialsProvider as ConnectionCredentialsProvider)
             assert.ok(client)
         })
     })

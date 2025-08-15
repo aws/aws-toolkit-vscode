@@ -12,6 +12,7 @@ import {
 } from '../../../../sagemakerunifiedstudio/shared/client/sqlWorkbenchClient'
 import { STSClient } from '@aws-sdk/client-sts'
 import globals from '../../../../shared/extensionGlobals'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('SQLWorkbenchClient', function () {
     let sandbox: sinon.SinonSandbox
@@ -64,13 +65,18 @@ describe('SQLWorkbenchClient', function () {
 
     describe('createWithCredentials', function () {
         it('should create client with credentials', function () {
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
-                sessionToken: 'test-token',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
             }
 
-            const client = SQLWorkbenchClient.createWithCredentials('us-east-1', credentials)
+            const client = SQLWorkbenchClient.createWithCredentials(
+                'us-east-1',
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             assert.strictEqual(client.getRegion(), 'us-east-1')
         })
     })

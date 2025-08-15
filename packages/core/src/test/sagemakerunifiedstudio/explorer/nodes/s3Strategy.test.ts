@@ -8,7 +8,9 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { S3Node, createS3ConnectionNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/s3Strategy'
 import { S3Client } from '../../../../sagemakerunifiedstudio/shared/client/s3Client'
+import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType, ConnectionType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('s3Strategy', function () {
     let sandbox: sinon.SinonSandbox
@@ -106,9 +108,14 @@ describe('s3Strategy', function () {
 
             sandbox.stub(S3Client.prototype, 'constructor' as any)
             sandbox.stub(S3Client.prototype, 'listPaths').callsFake(mockS3Client.listPaths)
+
+            const mockClientStore = {
+                getS3Client: sandbox.stub().returns(mockS3Client),
+            }
+            sandbox.stub(ConnectionClientStore, 'getInstance').returns(mockClientStore as any)
         })
 
-        it('should create S3 connection node successfully', function () {
+        it('should create S3 connection node successfully for non-default connection', function () {
             const connection = {
                 connectionId: 'conn-123',
                 name: 'Test S3 Connection',
@@ -120,12 +127,47 @@ describe('s3Strategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
-            const node = createS3ConnectionNode(connection as any, credentials, 'us-east-1')
+            const node = createS3ConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+
+            assert.strictEqual(node.data.nodeType, NodeType.CONNECTION)
+            assert.strictEqual(node.data.connectionType, ConnectionType.S3)
+        })
+
+        it('should create S3 connection node for default connection with full path', function () {
+            const connection = {
+                connectionId: 'conn-123',
+                name: 'project.s3_default_folder',
+                type: 'S3Connection',
+                props: {
+                    s3Properties: {
+                        s3Uri: 's3://test-bucket/domain/project/',
+                    },
+                },
+            }
+
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+            }
+
+            const node = createS3ConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
 
             assert.strictEqual(node.data.nodeType, NodeType.CONNECTION)
             assert.strictEqual(node.data.connectionType, ConnectionType.S3)
@@ -139,17 +181,23 @@ describe('s3Strategy', function () {
                 props: {},
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
-            const node = createS3ConnectionNode(connection as any, credentials, 'us-east-1')
+            const node = createS3ConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
 
             assert.strictEqual(node.data.nodeType, NodeType.ERROR)
         })
 
-        it('should handle bucket listing with children provider', async function () {
+        it('should handle bucket listing for non-default connection', async function () {
             const connection = {
                 connectionId: 'conn-123',
                 name: 'Test S3 Connection',
@@ -161,9 +209,11 @@ describe('s3Strategy', function () {
                 },
             }
 
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
             }
 
             mockS3Client.listPaths.resolves({
@@ -178,11 +228,60 @@ describe('s3Strategy', function () {
                 nextToken: undefined,
             })
 
-            const node = createS3ConnectionNode(connection as any, credentials, 'us-east-1')
+            const node = createS3ConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 1)
             assert.strictEqual((children[0] as S3Node).data.nodeType, NodeType.S3_BUCKET)
+        })
+
+        it('should handle bucket listing for default connection with full path display', async function () {
+            const connection = {
+                connectionId: 'conn-123',
+                name: 'project.s3_default_folder',
+                type: 'S3Connection',
+                props: {
+                    s3Properties: {
+                        s3Uri: 's3://test-bucket/domain/project/',
+                    },
+                },
+            }
+
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+            }
+
+            mockS3Client.listPaths.resolves({
+                paths: [
+                    {
+                        bucket: 'test-bucket',
+                        prefix: 'domain/project/dev/',
+                        displayName: 'dev',
+                        isFolder: true,
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const node = createS3ConnectionNode(
+                connection as any,
+                credentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+            const children = await node.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            const bucketNode = children[0] as S3Node
+            assert.strictEqual(bucketNode.data.nodeType, NodeType.S3_BUCKET)
+            // For default connection, should show full path
+            assert.strictEqual(bucketNode.data.path?.label, 'test-bucket/domain/project/')
         })
     })
 })

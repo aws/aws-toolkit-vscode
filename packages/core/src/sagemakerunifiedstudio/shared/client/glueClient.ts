@@ -3,8 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Glue, GetDatabasesCommand, GetTablesCommand, GetTableCommand, Table } from '@aws-sdk/client-glue'
+import {
+    Glue,
+    GetDatabasesCommand,
+    GetTablesCommand,
+    GetTableCommand,
+    Table,
+    ResourceShareType,
+    DatabaseAttributes,
+    TableAttributes,
+    Database,
+} from '@aws-sdk/client-glue'
 import { getLogger } from '../../../shared/logger/logger'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
 /**
  * Client for interacting with AWS Glue API using public SDK
@@ -15,11 +26,7 @@ export class GlueClient {
 
     constructor(
         private readonly region: string,
-        private readonly credentials: {
-            accessKeyId: string
-            secretAccessKey: string
-            sessionToken?: string
-        }
+        private readonly connectionCredentialsProvider: ConnectionCredentialsProvider
     ) {}
 
     /**
@@ -30,8 +37,10 @@ export class GlueClient {
      */
     public async getDatabases(
         catalogId?: string,
+        resourceShareType?: ResourceShareType,
+        attributesToGet?: DatabaseAttributes[],
         nextToken?: string
-    ): Promise<{ databases: any[]; nextToken?: string }> {
+    ): Promise<{ databases: Database[]; nextToken?: string }> {
         try {
             this.logger.info(`GlueClient: Getting databases for catalog ${catalogId || 'default'}`)
 
@@ -39,6 +48,8 @@ export class GlueClient {
             const response = await glueClient.send(
                 new GetDatabasesCommand({
                     CatalogId: catalogId,
+                    ResourceShareType: resourceShareType,
+                    AttributesToGet: attributesToGet,
                     NextToken: nextToken,
                     MaxResults: 100,
                 })
@@ -67,8 +78,9 @@ export class GlueClient {
     public async getTables(
         databaseName: string,
         catalogId?: string,
+        attributesToGet?: TableAttributes[],
         nextToken?: string
-    ): Promise<{ tables: any[]; nextToken?: string }> {
+    ): Promise<{ tables: Table[]; nextToken?: string }> {
         try {
             this.logger.info(`GlueClient: Getting tables for database ${databaseName}`)
 
@@ -77,6 +89,7 @@ export class GlueClient {
                 new GetTablesCommand({
                     DatabaseName: databaseName,
                     CatalogId: catalogId,
+                    AttributesToGet: attributesToGet,
                     NextToken: nextToken,
                     MaxResults: 100,
                 })
@@ -128,9 +141,19 @@ export class GlueClient {
     private async getGlueClient(): Promise<Glue> {
         if (!this.glueClient) {
             try {
+                const credentialsProvider = async () => {
+                    const credentials = await this.connectionCredentialsProvider.getCredentials()
+                    return {
+                        accessKeyId: credentials.accessKeyId,
+                        secretAccessKey: credentials.secretAccessKey,
+                        sessionToken: credentials.sessionToken,
+                        expiration: credentials.expiration,
+                    }
+                }
+
                 this.glueClient = new Glue({
                     region: this.region,
-                    credentials: this.credentials,
+                    credentials: credentialsProvider,
                 })
                 this.logger.debug('GlueClient: Successfully created Glue client')
             } catch (err) {

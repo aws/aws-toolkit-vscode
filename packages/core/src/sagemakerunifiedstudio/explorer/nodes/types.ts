@@ -16,6 +16,12 @@ export const DATA_DEFAULT_ATHENA_CONNECTION_NAME = 'project.athena'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const DATA_DEFAULT_IAM_CONNECTION_NAME = 'project.iam'
 
+// Database object types
+export enum DatabaseObjects {
+    EXTERNAL_TABLE = 'EXTERNAL_TABLE',
+    VIRTUAL_VIEW = 'VIRTUAL_VIEW',
+}
+
 // Ref: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
 export const lakeHouseColumnTypes = {
     NUMERIC: ['TINYINT', 'SMALLINT', 'INT', 'INTEGER', 'BIGINT', 'FLOAT', 'REAL', 'DOUBLE', 'DECIMAL'],
@@ -50,6 +56,7 @@ export enum NodeType {
     S3_BUCKET = 's3-bucket',
     S3_FOLDER = 'folder',
     S3_FILE = 'file',
+    S3_ACCESS_GRANT = 's3-access-grant',
 
     // Redshift types
     REDSHIFT_CLUSTER = 'redshift-cluster',
@@ -68,6 +75,8 @@ export enum NodeType {
     GLUE_DATABASE = 'database',
     // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
     GLUE_TABLE = 'table',
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
+    GLUE_VIEW = 'view',
 }
 
 /**
@@ -78,6 +87,7 @@ export enum ConnectionType {
     REDSHIFT = 'REDSHIFT',
     ATHENA = 'ATHENA',
     GLUE = 'GLUE',
+    LAKEHOUSE = 'LAKEHOUSE',
 }
 
 /**
@@ -160,6 +170,17 @@ export enum DatabaseIntegrationConnectionAuthenticationTypes {
 export const RedshiftServiceModelUrl = {
     REDSHIFT_SERVERLESS_URL: 'redshift-serverless.amazonaws.com',
     REDSHIFT_CLUSTER_URL: 'redshift.amazonaws.com',
+}
+
+/**
+ * Client types for ClientStore
+ */
+export enum ClientType {
+    S3Client = 'S3Client',
+    S3ControlClient = 'S3ControlClient',
+    SQLWorkbenchClient = 'SQLWorkbenchClient',
+    GlueClient = 'GlueClient',
+    GlueCatalogClient = 'GlueCatalogClient',
 }
 
 /**

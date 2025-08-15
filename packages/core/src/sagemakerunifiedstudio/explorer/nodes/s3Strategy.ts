@@ -8,9 +8,20 @@ import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
 import { S3Client } from '../../shared/client/s3Client'
+import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 import { NODE_ID_DELIMITER, NodeType, ConnectionType, NodeData } from './types'
 import { getLabel, isLeafNode, getIconForNodeType, getTooltip } from './utils'
-import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
+import {
+    ListCallerAccessGrantsCommand,
+    GetDataAccessCommand,
+    ListCallerAccessGrantsEntry,
+} from '@aws-sdk/client-s3-control'
+import { S3, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+
+// Regex to match default S3 connection names
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_folder)|(default\.s3)$/
 
 /**
  * S3 data node for SageMaker Unified Studio
@@ -93,7 +104,7 @@ export class S3Node implements TreeNode {
  */
 export function createS3ConnectionNode(
     connection: DataZoneConnection,
-    credentials: AwsCredentialIdentity,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): S3Node {
     const logger = getLogger()
@@ -105,8 +116,12 @@ export function createS3ConnectionNode(
         return createErrorNode(`${connection.connectionId}-error`, new Error('No S3 URI configured'))
     }
 
-    // Create S3 client
-    const s3Client = new S3Client(region, credentials)
+    // Get S3 client from store
+    const clientStore = ConnectionClientStore.getInstance()
+    const s3Client = clientStore.getS3Client(connection.connectionId, region, connectionCredentialsProvider)
+
+    // Check if this is a default S3 connection
+    const isDefaultConnection = DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP.test(connection.name)
 
     // Create the connection node
     return new S3Node(
@@ -122,70 +137,152 @@ export function createS3ConnectionNode(
         },
         async (node) => {
             try {
-                // Return a bucket node as the child of the connection
-                return [
-                    new S3Node(
-                        {
-                            id: s3Info.bucket,
-                            nodeType: NodeType.S3_BUCKET,
-                            connectionType: ConnectionType.S3,
-                            value: { bucket: s3Info.bucket },
-                            path: {
-                                connection: connection.name,
-                                bucket: s3Info.bucket,
+                if (isDefaultConnection && s3Info.prefix) {
+                    // For default connections, show the full path as the first node
+                    const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
+                    return [
+                        new S3Node(
+                            {
+                                id: fullPath,
+                                nodeType: NodeType.S3_BUCKET,
+                                connectionType: ConnectionType.S3,
+                                value: { bucket: s3Info.bucket, prefix: s3Info.prefix },
+                                path: {
+                                    connection: connection.name,
+                                    bucket: s3Info.bucket,
+                                    key: s3Info.prefix,
+                                    label: fullPath,
+                                },
+                                parent: node,
                             },
-                            parent: node,
-                        },
-                        async (bucketNode) => {
-                            try {
-                                // List objects in the bucket
-                                const allPaths = []
-                                let nextToken: string | undefined
+                            async (bucketNode) => {
+                                try {
+                                    // List objects starting from the prefix
+                                    const allPaths = []
+                                    let nextToken: string | undefined
 
-                                do {
-                                    const result = await s3Client.listPaths(s3Info.bucket, s3Info.prefix, nextToken)
-                                    allPaths.push(...result.paths)
-                                    nextToken = result.nextToken
-                                } while (nextToken)
+                                    do {
+                                        const result = await s3Client.listPaths(s3Info.bucket, s3Info.prefix, nextToken)
+                                        allPaths.push(...result.paths)
+                                        nextToken = result.nextToken
+                                    } while (nextToken)
 
-                                if (allPaths.length === 0) {
-                                    return [createEmptyNode(`${s3Info.bucket}-empty`, 'No objects found', bucketNode)]
-                                }
+                                    if (allPaths.length === 0) {
+                                        return [createEmptyNode(`${fullPath}-empty`, 'No objects found', bucketNode)]
+                                    }
 
-                                // Convert paths to nodes
-                                return allPaths.map((path) => {
-                                    const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+                                    // Convert paths to nodes
+                                    return allPaths.map((path) => {
+                                        const nodeId = `${path.bucket}-${path.prefix || 'root'}`
 
-                                    return new S3Node(
-                                        {
-                                            id: nodeId,
-                                            nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                            connectionType: ConnectionType.S3,
-                                            value: path,
-                                            path: {
-                                                connection: connection.name,
-                                                bucket: path.bucket,
-                                                key: path.prefix,
-                                                label: path.displayName,
+                                        return new S3Node(
+                                            {
+                                                id: nodeId,
+                                                nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                                                connectionType: ConnectionType.S3,
+                                                value: path,
+                                                path: {
+                                                    connection: connection.name,
+                                                    bucket: path.bucket,
+                                                    key: path.prefix,
+                                                    label: path.displayName,
+                                                },
+                                                parent: bucketNode,
                                             },
-                                            parent: bucketNode,
-                                        },
-                                        path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                                    )
-                                })
-                            } catch (err) {
-                                logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                return [createErrorNode(`${s3Info.bucket}-error`, err as Error, bucketNode)]
+                                            path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
+                                        )
+                                    })
+                                } catch (err) {
+                                    logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
+                                    return [createErrorNode(`${fullPath}-error`, err as Error, bucketNode)]
+                                }
                             }
-                        }
-                    ),
-                ]
+                        ),
+                    ]
+                } else {
+                    // For non-default connections, show bucket as the first node
+                    return [
+                        new S3Node(
+                            {
+                                id: s3Info.bucket,
+                                nodeType: NodeType.S3_BUCKET,
+                                connectionType: ConnectionType.S3,
+                                value: { bucket: s3Info.bucket },
+                                path: {
+                                    connection: connection.name,
+                                    bucket: s3Info.bucket,
+                                },
+                                parent: node,
+                            },
+                            async (bucketNode) => {
+                                try {
+                                    // List objects in the bucket
+                                    const allPaths = []
+                                    let nextToken: string | undefined
+
+                                    do {
+                                        const result = await s3Client.listPaths(s3Info.bucket, s3Info.prefix, nextToken)
+                                        allPaths.push(...result.paths)
+                                        nextToken = result.nextToken
+                                    } while (nextToken)
+
+                                    if (allPaths.length === 0) {
+                                        return [
+                                            createEmptyNode(`${s3Info.bucket}-empty`, 'No objects found', bucketNode),
+                                        ]
+                                    }
+
+                                    // Convert paths to nodes
+                                    return allPaths.map((path) => {
+                                        const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+
+                                        return new S3Node(
+                                            {
+                                                id: nodeId,
+                                                nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                                                connectionType: ConnectionType.S3,
+                                                value: path,
+                                                path: {
+                                                    connection: connection.name,
+                                                    bucket: path.bucket,
+                                                    key: path.prefix,
+                                                    label: path.displayName,
+                                                },
+                                                parent: bucketNode,
+                                            },
+                                            path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
+                                        )
+                                    })
+                                } catch (err) {
+                                    logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
+                                    return [createErrorNode(`${s3Info.bucket}-error`, err as Error, bucketNode)]
+                                }
+                            }
+                        ),
+                    ]
+                }
             } catch (err) {
                 logger.error(`Failed to create bucket node: ${(err as Error).message}`)
                 return [createErrorNode(`${connection.connectionId}-error`, err as Error, node)]
             }
         }
     )
+}
+
+/**
+ * Creates S3 access grant nodes for project.s3_default_folder connections
+ */
+export async function createS3AccessGrantNodes(
+    connection: DataZoneConnection,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
+    region: string,
+    accountId: string | undefined
+): Promise<S3Node[]> {
+    if (connection.name !== 'project.s3_default_folder' || !accountId) {
+        return []
+    }
+
+    return await listCallerAccessGrants(connectionCredentialsProvider, region, accountId, connection.connectionId)
 }
 
 /**
@@ -250,13 +347,13 @@ function parseS3Uri(connection: DataZoneConnection): { bucket: string; prefix?: 
     }
 
     // Parse S3 URI: s3://bucket-name/prefix/path/
-    const match = s3Uri.match(/^s3:\/\/([^/]+)\/(.*?)\/?$/)
-    if (!match) {
-        return undefined
-    }
+    const uriWithoutPrefix = s3Uri.replace('s3://', '')
+    // Since the URI ends with a slash, the last item will be an empty string, so ignore it in the parts.
+    const parts = uriWithoutPrefix.split('/').slice(0, -1)
+    const bucket = parts[0]
 
-    const bucket = match[1]
-    const prefix = match[2] || undefined
+    // If parts only contains 1 item, then only a bucket was provided, and the key is empty.
+    const prefix = parts.length > 1 ? parts.slice(1).join('/') + '/' : undefined
 
     return { bucket, prefix }
 }
@@ -283,4 +380,206 @@ function createEmptyNode(id: string, message: string, parent?: S3Node): S3Node {
         value: message,
         parent,
     })
+}
+
+async function listCallerAccessGrants(
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
+    region: string,
+    accountId: string,
+    connectionId: string
+): Promise<S3Node[]> {
+    const logger = getLogger()
+    try {
+        const clientStore = ConnectionClientStore.getInstance()
+        const s3ControlClient = clientStore.getS3ControlClient(connectionId, region, connectionCredentialsProvider)
+
+        const allGrants: ListCallerAccessGrantsEntry[] = []
+        let nextToken: string | undefined
+
+        do {
+            const command = new ListCallerAccessGrantsCommand({
+                AccountId: accountId,
+                NextToken: nextToken,
+            })
+
+            const response = await s3ControlClient.send(command)
+            const grants = response.CallerAccessGrantsList?.filter((entry) => !!entry) ?? []
+            allGrants.push(...grants)
+            nextToken = response.NextToken
+        } while (nextToken)
+
+        logger.info(`Listed ${allGrants.length} caller access grants`)
+
+        const accessGrantNodes = allGrants.map((grant) =>
+            getRootNodeFromS3AccessGrant(grant, accountId, region, connectionCredentialsProvider, connectionId)
+        )
+        return accessGrantNodes
+    } catch (error) {
+        logger.error(`Failed to list caller access grants: ${(error as Error).message}`)
+        return []
+    }
+}
+
+function parseS3UriForAccessGrant(s3Uri: string): { bucket: string; key: string } {
+    const uriWithoutPrefix = s3Uri.replace('s3://', '')
+    const parts = uriWithoutPrefix.split('/').slice(0, -1)
+    const bucket = parts[0]
+    const key = parts.length > 1 ? parts.slice(1).join('/') + '/' : ''
+    return { bucket, key }
+}
+
+function getRootNodeFromS3AccessGrant(
+    s3AccessGrant: ListCallerAccessGrantsEntry,
+    accountId: string,
+    region: string,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
+    connectionId: string
+): S3Node {
+    const s3Uri = s3AccessGrant.GrantScope
+    let bucket: string | undefined
+    let key: string | undefined
+    let nodeId = ''
+    let label: string
+
+    if (s3Uri) {
+        const { bucket: parsedBucket, key: parsedKey } = parseS3UriForAccessGrant(s3Uri)
+        bucket = parsedBucket
+        key = parsedKey
+        label = s3Uri.replace('s3://', '').replace('*', '')
+        nodeId = label
+    } else {
+        label = s3AccessGrant.GrantScope ?? ''
+    }
+
+    return new S3Node(
+        {
+            id: nodeId,
+            nodeType: NodeType.S3_ACCESS_GRANT,
+            connectionType: ConnectionType.S3,
+            value: s3AccessGrant,
+            path: { accountId, bucket, key, label },
+        },
+        async (node) => {
+            return await fetchAccessGrantChildren(node, accountId, region, connectionCredentialsProvider, connectionId)
+        }
+    )
+}
+
+async function fetchAccessGrantChildren(
+    node: S3Node,
+    accountId: string,
+    region: string,
+    connectionCredentialsProvider: ConnectionCredentialsProvider,
+    connectionId: string
+): Promise<S3Node[]> {
+    const logger = getLogger()
+    const path = node.data.path
+
+    try {
+        const clientStore = ConnectionClientStore.getInstance()
+        const s3ControlClient = clientStore.getS3ControlClient(connectionId, region, connectionCredentialsProvider)
+
+        const target = `s3://${path?.bucket ?? ''}/${path?.key ?? ''}*`
+
+        const getDataAccessCommand = new GetDataAccessCommand({
+            AccountId: accountId,
+            Target: target,
+            Permission: 'READ',
+        })
+
+        const grantCredentialsProvider = async () => {
+            const response = await s3ControlClient.send(getDataAccessCommand)
+            if (
+                !response.Credentials?.AccessKeyId ||
+                !response.Credentials?.SecretAccessKey ||
+                !response.Credentials?.SessionToken
+            ) {
+                throw new Error('Missing required credentials from access grant response')
+            }
+            return {
+                accessKeyId: response.Credentials.AccessKeyId,
+                secretAccessKey: response.Credentials.SecretAccessKey,
+                sessionToken: response.Credentials.SessionToken,
+                expiration: response.Credentials.Expiration,
+            }
+        }
+
+        const s3ClientWithGrant = new S3({
+            credentials: grantCredentialsProvider,
+            region,
+        })
+
+        const response = await s3ClientWithGrant.send(
+            new ListObjectsV2Command({
+                Bucket: path?.bucket ?? '',
+                Prefix: path?.key ?? '',
+                Delimiter: '/',
+                MaxKeys: 100,
+            })
+        )
+
+        const children: S3Node[] = []
+
+        // Add folders
+        if (response.CommonPrefixes) {
+            for (const prefix of response.CommonPrefixes) {
+                const folderName =
+                    prefix.Prefix?.split('/')
+                        .filter((name) => !!name)
+                        .at(-1) + '/'
+                children.push(
+                    new S3Node(
+                        {
+                            id: `${node.id}${NODE_ID_DELIMITER}${folderName}`,
+                            nodeType: NodeType.S3_FOLDER,
+                            connectionType: ConnectionType.S3,
+                            value: prefix,
+                            path: {
+                                accountId,
+                                bucket: path?.bucket,
+                                key: prefix.Prefix,
+                                label: folderName,
+                            },
+                            parent: node,
+                        },
+                        async (folderNode) => {
+                            return await fetchAccessGrantChildren(
+                                folderNode,
+                                accountId,
+                                region,
+                                connectionCredentialsProvider,
+                                connectionId
+                            )
+                        }
+                    )
+                )
+            }
+        }
+
+        // Add files
+        if (response.Contents) {
+            for (const content of response.Contents.filter((content) => content.Key !== response.Prefix)) {
+                const fileName = content.Key?.split('/').at(-1) ?? ''
+                children.push(
+                    new S3Node({
+                        id: `${node.id}${NODE_ID_DELIMITER}${fileName}`,
+                        nodeType: NodeType.S3_FILE,
+                        connectionType: ConnectionType.S3,
+                        value: content,
+                        path: {
+                            bucket: path?.bucket,
+                            key: content.Key,
+                            label: fileName,
+                        },
+                        parent: node,
+                    })
+                )
+            }
+        }
+
+        return children
+    } catch (error) {
+        logger.error(`Failed to fetch access grant children: ${(error as Error).message}`)
+        return [createErrorNode(`${node.id}${NODE_ID_DELIMITER}error`, error as Error, node)]
+    }
 }

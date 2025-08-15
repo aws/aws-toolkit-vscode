@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import globals from '../../../../shared/extensionGlobals'
 import { GlueCatalogClient } from '../../../../sagemakerunifiedstudio/shared/client/glueCatalogClient'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('GlueCatalogClient', function () {
     let sandbox: sinon.SinonSandbox
@@ -59,13 +60,18 @@ describe('GlueCatalogClient', function () {
 
     describe('createWithCredentials', function () {
         it('should create client with credentials', function () {
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
-                sessionToken: 'test-token',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
             }
 
-            const client = GlueCatalogClient.createWithCredentials('us-east-1', credentials)
+            const client = GlueCatalogClient.createWithCredentials(
+                'us-east-1',
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             assert.strictEqual(client.getRegion(), 'us-east-1')
         })
     })
@@ -75,10 +81,10 @@ describe('GlueCatalogClient', function () {
             const client = GlueCatalogClient.getInstance('us-east-1')
             const catalogs = await client.getCatalogs()
 
-            assert.strictEqual(catalogs.length, 1)
-            assert.strictEqual(catalogs[0].name, 'test-catalog')
-            assert.strictEqual(catalogs[0].type, 'HIVE')
-            assert.deepStrictEqual(catalogs[0].parameters, { key1: 'value1' })
+            assert.strictEqual(catalogs.catalogs.length, 1)
+            assert.strictEqual(catalogs.catalogs[0].Name, 'test-catalog')
+            assert.strictEqual(catalogs.catalogs[0].CatalogType, 'HIVE')
+            assert.deepStrictEqual(catalogs.catalogs[0].Parameters, { key1: 'value1' })
         })
 
         it('should return empty array when no catalogs found', async function () {
@@ -89,7 +95,7 @@ describe('GlueCatalogClient', function () {
             const client = GlueCatalogClient.getInstance('us-east-1')
             const catalogs = await client.getCatalogs()
 
-            assert.strictEqual(catalogs.length, 0)
+            assert.strictEqual(catalogs.catalogs.length, 0)
         })
 
         it('should handle API errors', async function () {
@@ -104,20 +110,24 @@ describe('GlueCatalogClient', function () {
         })
 
         it('should create client with credentials when provided', async function () {
-            const credentials = {
-                accessKeyId: 'test-key',
-                secretAccessKey: 'test-secret',
-                sessionToken: 'test-token',
+            const credentialsProvider = {
+                getCredentials: async () => ({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
             }
 
-            const client = GlueCatalogClient.createWithCredentials('us-east-1', credentials)
+            const client = GlueCatalogClient.createWithCredentials(
+                'us-east-1',
+                credentialsProvider as ConnectionCredentialsProvider
+            )
             await client.getCatalogs()
 
             assert.ok(mockSdkClientBuilder.createAwsService.calledOnce)
             const callArgs = mockSdkClientBuilder.createAwsService.getCall(0).args[1]
-            assert.strictEqual(callArgs.credentials.accessKeyId, 'test-key')
-            assert.strictEqual(callArgs.credentials.secretAccessKey, 'test-secret')
-            assert.strictEqual(callArgs.credentials.sessionToken, 'test-token')
+            assert.ok(callArgs.credentialProvider)
+            assert.strictEqual(callArgs.region, 'us-east-1')
         })
 
         it('should create client without credentials when not provided', async function () {

@@ -17,6 +17,7 @@ import {
     redshiftColumnTypes,
     lakeHouseColumnTypes,
 } from './types'
+import { DataZoneConnection } from '../../shared/client/datazoneClient'
 
 /**
  * Gets the label for a node based on its data
@@ -28,6 +29,11 @@ export function getLabel(data: {
     path?: { key?: string; label?: string }
     value?: any
 }): string {
+    // For S3 access grant nodes, use S3 (label) format
+    if (data.nodeType === NodeType.S3_ACCESS_GRANT && data.path?.label) {
+        return `S3 (${data.path.label})`
+    }
+
     // For connection nodes, use the connection name
     if (data.nodeType === NodeType.CONNECTION && data.value?.connection?.name) {
         if (
@@ -101,6 +107,7 @@ export function isLeafNode(data: { nodeType: NodeType; isContainer?: boolean }):
 export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): vscode.ThemeIcon | IconPath | undefined {
     switch (nodeType) {
         case NodeType.CONNECTION:
+        case NodeType.S3_ACCESS_GRANT:
             return undefined
         case NodeType.S3_BUCKET:
             return getIcon('aws-s3-bucket')
@@ -339,4 +346,20 @@ export function getRedshiftTypeFromHost(host?: string): RedshiftType | undefined
     } else {
         return undefined
     }
+}
+
+/**
+ * Determines if a connection is a federated connection by checking its type.
+ * A connection is considered federated if it's either:
+ * 1. A Redshift connection with Glue properties, or
+ * 2. A connection type that exists in GlueConnectionType
+ *
+ * @param connection
+ * @returns - boolean
+ */
+export function isFederatedConnection(connection?: DataZoneConnection): boolean {
+    if (connection?.type === ConnectionType.REDSHIFT) {
+        return !!connection?.props?.glueProperties
+    }
+    return false
 }

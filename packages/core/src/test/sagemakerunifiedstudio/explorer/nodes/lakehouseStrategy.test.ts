@@ -12,7 +12,9 @@ import {
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/lakehouseStrategy'
 import { GlueCatalogClient } from '../../../../sagemakerunifiedstudio/shared/client/glueCatalogClient'
 import { GlueClient } from '../../../../sagemakerunifiedstudio/shared/client/glueClient'
+import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('LakehouseStrategy', function () {
     let sandbox: sinon.SinonSandbox
@@ -27,10 +29,12 @@ describe('LakehouseStrategy', function () {
         projectId: 'project-123',
     }
 
-    const mockCredentials = {
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-        sessionToken: 'test-token',
+    const mockCredentialsProvider = {
+        getCredentials: async () => ({
+            accessKeyId: 'test-key',
+            secretAccessKey: 'test-secret',
+            sessionToken: 'test-token',
+        }),
     }
 
     beforeEach(function () {
@@ -50,6 +54,12 @@ describe('LakehouseStrategy', function () {
         sandbox.stub(GlueClient.prototype, 'getDatabases').callsFake(mockGlueClient.getDatabases)
         sandbox.stub(GlueClient.prototype, 'getTables').callsFake(mockGlueClient.getTables)
         sandbox.stub(GlueClient.prototype, 'getTable').callsFake(mockGlueClient.getTable)
+
+        const mockClientStore = {
+            getGlueClient: sandbox.stub().returns(mockGlueClient),
+            getGlueCatalogClient: sandbox.stub().returns(mockGlueCatalogClient),
+        }
+        sandbox.stub(ConnectionClientStore, 'getInstance').returns(mockClientStore as any)
     })
 
     afterEach(function () {
@@ -130,7 +140,11 @@ describe('LakehouseStrategy', function () {
 
     describe('createLakehouseConnectionNode', function () {
         it('should create connection node with correct structure', function () {
-            const node = createLakehouseConnectionNode(mockConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
 
             assert.strictEqual(node.id, 'lakehouse-conn-123')
             assert.strictEqual(node.data.nodeType, NodeType.CONNECTION)
@@ -143,13 +157,17 @@ describe('LakehouseStrategy', function () {
                 name: 'project.default_lakehouse',
             }
 
-            mockGlueCatalogClient.getCatalogs.resolves([])
+            mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
             mockGlueClient.getDatabases.resolves({
                 databases: [{ Name: 'default-db' }],
                 nextToken: undefined,
             })
 
-            const node = createLakehouseConnectionNode(defaultConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                defaultConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             const awsDataCatalogNode = children.find((child) => child.id.includes('AwsDataCatalog')) as LakehouseNode
@@ -158,50 +176,28 @@ describe('LakehouseStrategy', function () {
         })
 
         it('should not create AWS Data Catalog node for non-default connections', async function () {
-            mockGlueCatalogClient.getCatalogs.resolves([])
+            mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
 
-            const node = createLakehouseConnectionNode(mockConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             const awsDataCatalogNode = children.find((child) => child.id.includes('AwsDataCatalog'))
             assert.strictEqual(awsDataCatalogNode, undefined)
         })
 
-        // it('should handle pagination for databases', async function () {
-        //     mockGlueCatalogClient.getCatalogs.resolves([])
-        //     mockGlueClient.getDatabases
-        //         .onFirstCall()
-        //         .resolves({
-        //             databases: [{ Name: 'db1' }],
-        //             nextToken: 'token1',
-        //         })
-        //         .onSecondCall()
-        //         .resolves({
-        //             databases: [{ Name: 'db2' }],
-        //             nextToken: undefined,
-        //         })
-
-        //     const defaultConnection = {
-        //         ...mockConnection,
-        //         name: 'project.default_lakehouse',
-        //     }
-
-        //     const node = createLakehouseConnectionNode(defaultConnection as any, mockCredentials, 'us-east-1')
-        //     const children = await node.getChildren()
-
-        //     const awsDataCatalogNode = children.find((child) => child.id.includes('aws-data-catalog'))
-        //     if (awsDataCatalogNode) {
-        //         await awsDataCatalogNode.getChildren()
-        //         assert.ok(mockGlueClient.getDatabases.calledTwice)
-        //     }
-        //     assert.ok(mockGlueClient.getDatabases.called)
-        // })
-
         it('should handle errors gracefully', async function () {
             mockGlueCatalogClient.getCatalogs.rejects(new Error('Catalog error'))
             mockGlueClient.getDatabases.rejects(new Error('Database error'))
 
-            const node = createLakehouseConnectionNode(mockConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             assert.ok(children.length > 0)
@@ -209,9 +205,13 @@ describe('LakehouseStrategy', function () {
         })
 
         it('should create empty node when no catalogs found', async function () {
-            mockGlueCatalogClient.getCatalogs.resolves([])
+            mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
 
-            const node = createLakehouseConnectionNode(mockConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             assert.ok(children.some((child) => (child as LakehouseNode).data.nodeType === NodeType.EMPTY))
@@ -220,13 +220,19 @@ describe('LakehouseStrategy', function () {
 
     describe('Catalog nodes', function () {
         it('should create catalog nodes from API', async function () {
-            mockGlueCatalogClient.getCatalogs.resolves([{ name: 'test-catalog', type: 'HIVE' }])
+            mockGlueCatalogClient.getCatalogs.resolves({
+                catalogs: [{ CatalogId: 'test-catalog', CatalogType: 'HIVE' }],
+            })
             mockGlueClient.getDatabases.resolves({
                 databases: [{ Name: 'test-db' }],
                 nextToken: undefined,
             })
 
-            const node = createLakehouseConnectionNode(mockConnection as any, mockCredentials, 'us-east-1')
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
             const children = await node.getChildren()
 
             assert.ok(children.length > 0)
@@ -246,13 +252,15 @@ describe('LakehouseStrategy', function () {
                     do {
                         const { databases, nextToken: token } = await mockGlueClient.getDatabases(
                             'test-catalog',
+                            undefined,
+                            undefined,
                             nextToken
                         )
                         allDatabases.push(...databases)
                         nextToken = token
                     } while (nextToken)
                     return allDatabases.map(
-                        (db) => new LakehouseNode({ id: db.Name, nodeType: NodeType.GLUE_DATABASE })
+                        (db) => new LakehouseNode({ id: db.Name || '', nodeType: NodeType.GLUE_DATABASE })
                     )
                 }
             )
@@ -285,13 +293,14 @@ describe('LakehouseStrategy', function () {
                         const { tables, nextToken: token } = await mockGlueClient.getTables(
                             'test-db',
                             'test-catalog',
+                            undefined,
                             nextToken
                         )
                         allTables.push(...tables)
                         nextToken = token
                     } while (nextToken)
                     return allTables.map(
-                        (table) => new LakehouseNode({ id: table.Name, nodeType: NodeType.GLUE_TABLE })
+                        (table) => new LakehouseNode({ id: table.Name || '', nodeType: NodeType.GLUE_TABLE })
                     )
                 }
             )
@@ -318,7 +327,9 @@ describe('LakehouseStrategy', function () {
                 async () => {
                     const catalogId = undefined
                     const { tables } = await mockGlueClient.getTables('test-db', catalogId)
-                    return tables.map((table) => new LakehouseNode({ id: table.Name, nodeType: NodeType.GLUE_TABLE }))
+                    return tables.map(
+                        (table) => new LakehouseNode({ id: table.Name || '', nodeType: NodeType.GLUE_TABLE })
+                    )
                 }
             )
 

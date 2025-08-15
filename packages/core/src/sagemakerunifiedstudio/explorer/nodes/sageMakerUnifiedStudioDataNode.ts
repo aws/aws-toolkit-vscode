@@ -9,12 +9,11 @@ import { getIcon } from '../../../shared/icons'
 
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneClient, DataZoneConnection, DataZoneProject } from '../../shared/client/datazoneClient'
-import { createS3ConnectionNode } from './s3Strategy'
+import { createS3ConnectionNode, createS3AccessGrantNodes } from './s3Strategy'
 import { createRedshiftConnectionNode } from './redshiftStrategy'
 import { createLakehouseConnectionNode } from './lakehouseStrategy'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
-import { createErrorTreeItem } from './utils'
-import { AwsCredentialIdentity } from '@aws-sdk/types/dist-types/identity/AwsCredentialIdentity'
+import { createErrorTreeItem, isFederatedConnection } from './utils'
 import { ConnectionType } from './types'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
@@ -38,7 +37,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
     public getTreeItem(): vscode.TreeItem {
         const item = new vscode.TreeItem('Data', vscode.TreeItemCollapsibleState.Collapsed)
-        item.iconPath = getIcon('vscode-folder')
+        item.iconPath = getIcon('vscode-library')
         item.contextValue = 'dataFolder'
         return item
     }
@@ -55,12 +54,6 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 return [this.createErrorNode('No project information available')]
             }
 
-            const projectCredentialProvider = await this.authProvider.getProjectCredentialProvider(project.id)
-            const environmentCredentials = await projectCredentialProvider.getCredentials()
-            if (!environmentCredentials) {
-                return [this.createErrorNode('Failed to get project environment credentials')]
-            }
-
             const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
             const connections = await datazoneClient.listConnections(project.domainId, undefined, project.id)
             this.logger.info(`Found ${connections.length} connections for project ${project.id}`)
@@ -70,7 +63,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 return []
             }
 
-            const dataNodes = await this.createConnectionNodes(project, connections, environmentCredentials)
+            const dataNodes = await this.createConnectionNodes(project, connections)
             this.childrenNodes = dataNodes
             return dataNodes
         } catch (err) {
@@ -87,8 +80,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
     private async createConnectionNodes(
         project: DataZoneProject,
-        connections: DataZoneConnection[],
-        environmentCredentials: AwsCredentialIdentity
+        connections: DataZoneConnection[]
     ): Promise<TreeNode[]> {
         const region = this.authProvider.getDomainRegion()
         const dataNodes: TreeNode[] = []
@@ -98,24 +90,28 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             (conn) => (conn.type as ConnectionType) === ConnectionType.REDSHIFT
         )
         const lakehouseConnections = connections.filter(
-            (conn) => (conn.type as ConnectionType) === ConnectionType.ATHENA
+            (conn) => (conn.type as ConnectionType) === ConnectionType.LAKEHOUSE
         )
 
-        for (const connection of s3Connections) {
-            const node = await this.createS3Node(project, connection, environmentCredentials, region)
-            dataNodes.push(node)
+        // Create Bucket parent node if there are S3 connections
+        if (s3Connections.length > 0) {
+            const bucketNode = this.createBucketParentNode(project, s3Connections, region)
+            dataNodes.push(bucketNode)
         }
 
         for (const connection of redshiftConnections) {
             if (connection.name.startsWith('project.lakehouse')) {
                 continue
             }
-            const node = await this.createRedshiftNode(project, connection, environmentCredentials)
+            if (isFederatedConnection(connection)) {
+                continue
+            }
+            const node = await this.createRedshiftNode(project, connection, region)
             dataNodes.push(node)
         }
 
         for (const connection of lakehouseConnections) {
-            const node = await this.createLakehouseNode(project, connection, environmentCredentials, region)
+            const node = await this.createLakehouseNode(project, connection, region)
             dataNodes.push(node)
         }
 
@@ -126,9 +122,8 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
     private async createS3Node(
         project: DataZoneProject,
         connection: DataZoneConnection,
-        environmentCredentials: AwsCredentialIdentity,
         region: string
-    ): Promise<TreeNode> {
+    ): Promise<TreeNode[]> {
         try {
             const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
             const getConnectionResponse = await datazoneClient.getConnection({
@@ -137,46 +132,35 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 withSecret: true,
             })
 
-            // Extract connection credentials, fall back to environment credentials if connection credentials not present
-            const connectionCredentials = getConnectionResponse.connectionCredentials || environmentCredentials
-            return createS3ConnectionNode(connection, connectionCredentials as AwsCredentialIdentity, region)
+            const connectionCredentialsProvider = await this.authProvider.getConnectionCredentialsProvider(
+                connection.connectionId,
+                project.id,
+                getConnectionResponse.location?.awsRegion || region
+            )
+
+            const s3ConnectionNode = createS3ConnectionNode(
+                connection,
+                connectionCredentialsProvider,
+                getConnectionResponse.location?.awsRegion || region
+            )
+
+            const accessGrantNodes = await createS3AccessGrantNodes(
+                connection,
+                connectionCredentialsProvider,
+                getConnectionResponse.location?.awsRegion || region,
+                getConnectionResponse.location?.awsAccountId
+            )
+
+            return [s3ConnectionNode, ...accessGrantNodes]
         } catch (connErr) {
             this.logger.error(`Failed to get S3 connection details: ${(connErr as Error).message}`)
-            this.logger.info(`Created S3 connection node with fallback credentials`)
-            // Fall back to using environment credentials
-            return createS3ConnectionNode(connection, environmentCredentials, region)
+            return [this.createErrorNode(`Failed to get S3 connection: ${(connErr as Error).message}`)]
         }
     }
 
     private async createRedshiftNode(
         project: DataZoneProject,
         connection: DataZoneConnection,
-        environmentCredentials: AwsCredentialIdentity
-    ): Promise<TreeNode> {
-        try {
-            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
-            const getConnectionResponse = await datazoneClient.getConnection({
-                domainIdentifier: project.domainId,
-                identifier: connection.connectionId,
-                withSecret: true,
-            })
-
-            // Extract connection credentials, fall back to environment credentials if connection credentials not present
-            const connectionCredentials = getConnectionResponse.connectionCredentials || environmentCredentials
-            return createRedshiftConnectionNode(connection, connectionCredentials as AwsCredentialIdentity)
-        } catch (connErr) {
-            this.logger.error(`Failed to get Redshift connection details: ${(connErr as Error).message}`)
-            this.logger.info(`Created Redshift connection node with fallback credentials`)
-            // Fall back to using environment credentials
-
-            return createRedshiftConnectionNode(connection, environmentCredentials)
-        }
-    }
-
-    private async createLakehouseNode(
-        project: DataZoneProject,
-        connection: DataZoneConnection,
-        environmentCredentials: AwsCredentialIdentity,
         region: string
     ): Promise<TreeNode> {
         try {
@@ -187,15 +171,67 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 withSecret: true,
             })
 
-            // Extract connection credentials, fall back to environment credentials if connection credentials not present
-            const connectionCredentials = getConnectionResponse.connectionCredentials || environmentCredentials
-            return createLakehouseConnectionNode(connection, connectionCredentials as AwsCredentialIdentity, region)
+            const connectionCredentialsProvider = await this.authProvider.getConnectionCredentialsProvider(
+                connection.connectionId,
+                project.id,
+                getConnectionResponse.location?.awsRegion || region
+            )
+
+            return createRedshiftConnectionNode(connection, connectionCredentialsProvider)
+        } catch (connErr) {
+            this.logger.error(`Failed to get Redshift connection details: ${(connErr as Error).message}`)
+            return this.createErrorNode(`Failed to get Redshift connection: ${(connErr as Error).message}`)
+        }
+    }
+
+    private async createLakehouseNode(
+        project: DataZoneProject,
+        connection: DataZoneConnection,
+        region: string
+    ): Promise<TreeNode> {
+        try {
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+            const getConnectionResponse = await datazoneClient.getConnection({
+                domainIdentifier: project.domainId,
+                identifier: connection.connectionId,
+                withSecret: true,
+            })
+
+            const connectionCredentialsProvider = await this.authProvider.getConnectionCredentialsProvider(
+                connection.connectionId,
+                project.id,
+                getConnectionResponse.location?.awsRegion || region
+            )
+
+            return createLakehouseConnectionNode(connection, connectionCredentialsProvider, region)
         } catch (connErr) {
             this.logger.error(`Failed to get Lakehouse connection details: ${(connErr as Error).message}`)
-            this.logger.info(`Created Lakehouse connection node with fallback credentials`)
-            // Fall back to using environment credentials
+            return this.createErrorNode(`Failed to get Lakehouse connection: ${(connErr as Error).message}`)
+        }
+    }
 
-            return createLakehouseConnectionNode(connection, environmentCredentials, region)
+    private createBucketParentNode(
+        project: DataZoneProject,
+        s3Connections: DataZoneConnection[],
+        region: string
+    ): TreeNode {
+        return {
+            id: 'bucket-parent',
+            resource: {},
+            getTreeItem: () => {
+                const item = new vscode.TreeItem('Buckets', vscode.TreeItemCollapsibleState.Collapsed)
+                item.contextValue = 'bucketFolder'
+                return item
+            },
+            getChildren: async () => {
+                const s3Nodes: TreeNode[] = []
+                for (const connection of s3Connections) {
+                    const nodes = await this.createS3Node(project, connection, region)
+                    s3Nodes.push(...nodes)
+                }
+                return s3Nodes
+            },
+            getParent: () => this,
         }
     }
 

@@ -24,6 +24,7 @@ describe('ConnectionCredentialsProvider', function () {
         accessKeyId: 'AKIA-CONNECTION-KEY',
         secretAccessKey: 'connection-secret-key',
         sessionToken: 'connection-session-token',
+        expiration: new Date(Date.now() + 3600000), // 1 hour from now
     }
 
     const mockGetConnectionResponse = {

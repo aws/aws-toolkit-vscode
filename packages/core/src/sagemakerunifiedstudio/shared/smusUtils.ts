@@ -65,6 +65,7 @@ interface CredentialObject {
     accessKeyId?: unknown
     secretAccessKey?: unknown
     sessionToken?: unknown
+    expiration?: unknown
 }
 
 /**
@@ -77,7 +78,8 @@ interface CredentialObject {
 export function validateCredentialFields(
     credentials: CredentialObject,
     errorCode: string,
-    contextMessage: string
+    contextMessage: string,
+    validateExpireTime: boolean = false
 ): void {
     if (!credentials.accessKeyId || typeof credentials.accessKeyId !== 'string') {
         throw new ToolkitError(`Invalid accessKeyId in ${contextMessage}: ${typeof credentials.accessKeyId}`, {
@@ -93,6 +95,13 @@ export function validateCredentialFields(
         throw new ToolkitError(`Invalid sessionToken in ${contextMessage}: ${typeof credentials.sessionToken}`, {
             code: errorCode,
         })
+    }
+    if (validateExpireTime) {
+        if (!credentials.expiration || !(credentials.expiration instanceof Date)) {
+            throw new ToolkitError(`Invalid expireTime in ${contextMessage}: ${typeof credentials.expiration}`, {
+                code: errorCode,
+            })
+        }
     }
 }
 

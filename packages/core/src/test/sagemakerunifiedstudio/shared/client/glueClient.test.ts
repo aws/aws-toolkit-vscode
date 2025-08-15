@@ -7,16 +7,19 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { GlueClient } from '../../../../sagemakerunifiedstudio/shared/client/glueClient'
 import { Glue, GetDatabasesCommand, GetTablesCommand, GetTableCommand } from '@aws-sdk/client-glue'
+import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
 
 describe('GlueClient', function () {
     let sandbox: sinon.SinonSandbox
     let glueClient: GlueClient
     let mockGlue: sinon.SinonStubbedInstance<Glue>
 
-    const mockCredentials = {
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-        sessionToken: 'test-token',
+    const mockCredentialsProvider = {
+        getCredentials: async () => ({
+            accessKeyId: 'test-key',
+            secretAccessKey: 'test-secret',
+            sessionToken: 'test-token',
+        }),
     }
 
     beforeEach(function () {
@@ -28,7 +31,7 @@ describe('GlueClient', function () {
 
         sandbox.stub(Glue.prototype, 'send').callsFake(mockGlue.send)
 
-        glueClient = new GlueClient('us-east-1', mockCredentials)
+        glueClient = new GlueClient('us-east-1', mockCredentialsProvider as ConnectionCredentialsProvider)
     })
 
     afterEach(function () {
@@ -47,7 +50,7 @@ describe('GlueClient', function () {
 
             mockGlue.send.resolves(mockResponse)
 
-            const result = await glueClient.getDatabases('test-catalog', 'start-token')
+            const result = await glueClient.getDatabases('test-catalog', undefined, undefined, 'start-token')
 
             assert.strictEqual(result.databases.length, 2)
             assert.strictEqual(result.databases[0].Name, 'database1')
@@ -99,7 +102,7 @@ describe('GlueClient', function () {
 
             mockGlue.send.resolves(mockResponse)
 
-            const result = await glueClient.getTables('test-db', 'test-catalog', 'start-token')
+            const result = await glueClient.getTables('test-db', 'test-catalog', undefined, 'start-token')
 
             assert.strictEqual(result.tables.length, 2)
             assert.strictEqual(result.tables[0].Name, 'table1')

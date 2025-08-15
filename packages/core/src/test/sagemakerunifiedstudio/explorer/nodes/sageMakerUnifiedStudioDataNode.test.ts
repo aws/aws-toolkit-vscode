@@ -48,6 +48,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
 
         mockAuthProvider = {
             getProjectCredentialProvider: sandbox.stub().resolves(mockProjectCredentialProvider),
+            getConnectionCredentialsProvider: sandbox.stub().resolves(mockProjectCredentialProvider),
             getDomainRegion: sandbox.stub().returns('us-east-1'),
         } as any
 
@@ -67,6 +68,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             getTreeItem: () => ({}) as any,
             getParent: () => undefined,
         } as any)
+        sandbox.stub(s3Strategy, 'createS3AccessGrantNodes').resolves([])
         sandbox.stub(redshiftStrategy, 'createRedshiftConnectionNode').returns({
             id: 'redshift-node',
             getChildren: () => Promise.resolve([]),
@@ -152,39 +154,72 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             assert.strictEqual(children.length, 0)
         })
 
-        it('should create S3 and Redshift nodes for connections', async function () {
+        it('should create Bucket parent node and Redshift nodes for connections', async function () {
             const mockConnections = [
                 { connectionId: 's3-conn', type: 'S3', name: 's3-connection' },
                 { connectionId: 'redshift-conn', type: 'REDSHIFT', name: 'redshift-connection' },
             ]
 
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
-            mockDataZoneClient.getConnection.resolves({
-                connectionCredentials: mockCredentials,
-                connectionId: '',
-                name: '',
-                type: '',
-                domainId: '',
-                projectId: '',
-            })
+            mockDataZoneClient.getConnection
+                .onFirstCall()
+                .resolves({
+                    location: { awsRegion: 'us-east-1', awsAccountId: '' },
+                    connectionCredentials: mockCredentials,
+                    connectionId: '',
+                    name: '',
+                    type: '',
+                    domainId: '',
+                    projectId: '',
+                })
+                .onSecondCall()
+                .resolves({
+                    location: { awsRegion: 'us-east-1', awsAccountId: '' },
+                    connectionCredentials: mockCredentials,
+                    connectionId: '',
+                    name: '',
+                    type: '',
+                    domainId: '',
+                    projectId: '',
+                })
 
             const children = await dataNode.getChildren()
 
+            // Should have Bucket parent node and Redshift node
             assert.strictEqual(children.length, 2)
+
+            // Check for Bucket parent node
+            const bucketNode = children.find((child) => child.id === 'bucket-parent')
+            assert.ok(bucketNode, 'Should have bucket parent node')
+
+            // Verify Bucket node has correct tree item
+            const bucketTreeItem = await bucketNode!.getTreeItem()
+            assert.strictEqual(bucketTreeItem.label, 'Buckets')
+            assert.strictEqual(bucketTreeItem.contextValue, 'bucketFolder')
+
+            // Verify S3 nodes are created when Bucket node is expanded
+            await bucketNode!.getChildren!()
             assert.ok((s3Strategy.createS3ConnectionNode as sinon.SinonStub).calledOnce)
+
             assert.ok((redshiftStrategy.createRedshiftConnectionNode as sinon.SinonStub).calledOnce)
         })
 
         it('should handle connection detail errors gracefully', async function () {
-            const mockConnections = [{ connectionId: 's3-conn', type: 'S3' }]
+            const mockConnections = [{ connectionId: 's3-conn', type: 'S3', name: 's3-connection' }]
 
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
             mockDataZoneClient.getConnection.rejects(new Error('Connection error'))
 
             const children = await dataNode.getChildren()
 
+            // Should have Bucket parent node even with connection errors
             assert.strictEqual(children.length, 1)
-            assert.ok((s3Strategy.createS3ConnectionNode as sinon.SinonStub).calledOnce)
+            assert.strictEqual(children[0].id, 'bucket-parent')
+
+            // Error should occur when expanding the Bucket node
+            const bucketChildren = await children[0].getChildren!()
+            assert.strictEqual(bucketChildren.length, 1)
+            assert.strictEqual(bucketChildren[0].id, 'error-node')
         })
 
         it('should return error node when general error occurs', async function () {
