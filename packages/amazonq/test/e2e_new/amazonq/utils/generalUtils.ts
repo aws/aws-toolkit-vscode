@@ -109,7 +109,7 @@ export async function pressKey(driver: WebDriver, key: keyof typeof Key): Promis
  * Ctrl + C | await pressShortcut(driver, Key.CONTROL, 'c')
  * Ctrl + Shift + T | await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 't')
  */
-export async function pressShortcut(driver: WebDriver, ...keys: (keyof typeof Key)[]): Promise<void> {
+export async function pressShortcut(driver: WebDriver, ...keys: (string | keyof typeof Key)[]): Promise<void> {
     const actions = driver.actions()
     for (const key of keys) {
         actions.keyDown(key)
@@ -214,6 +214,39 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
     await textEditor.typeTextAt(1, 1, ' ')
     const currentLines = await textEditor.getNumberOfLines()
     await textEditor.typeTextAt(currentLines, 1, text)
+}
+/**
+ * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
+ * The function checks for a "stable state" by monitoring the number of lines in the editor.
+ * A stable state is achieved when the line count remains unchanged for 3 consecutive checks (3 seconds).
+ * Checks are performed every 1 second.
+ * @param editor The TextEditor instance
+ * @param timeout Maximum time to wait in milliseconds (default: 15000). Function will throw an error if generation takes longer than this timeout.
+ * @returns Promise<void>
+ * @throws Error if timeout is exceeded before a stable state is reached
+ */
+export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
+    const startTime = Date.now()
+    let previousLines = await editor.getNumberOfLines()
+    let stableCount = 0
+
+    while (Date.now() - startTime < timeout) {
+        await sleep(1000)
+        const currentLines = await editor.getNumberOfLines()
+
+        if (currentLines === previousLines) {
+            stableCount++
+            if (stableCount >= 3) {
+                return
+            }
+        } else {
+            stableCount = 0
+        }
+
+        previousLines = currentLines
+    }
+
+    throw new Error(`Editor stabilization timed out after ${timeout}ms`)
 }
 
 /**
