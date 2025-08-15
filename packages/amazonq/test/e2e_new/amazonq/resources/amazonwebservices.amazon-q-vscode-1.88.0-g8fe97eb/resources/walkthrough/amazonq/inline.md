@@ -1,1 +1,0 @@
-![Inline Suggestions](./inline.png)
