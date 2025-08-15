@@ -20,7 +20,7 @@ export async function sleep(timeout: number) {
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement> Returns the element found
  */
-export async function waitForElement(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement> {
+export async function waitForElement(webview: WebviewView, locator: By, timeout: number = 8000): Promise<WebElement> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElement(locator)
@@ -33,7 +33,11 @@ export async function waitForElement(webview: WebviewView, locator: By, timeout?
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement[]> Returns an array of elements found
  */
-export async function waitForElements(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement[]> {
+export async function waitForElements(
+    webview: WebviewView,
+    locator: By,
+    timeout: number = 8000
+): Promise<WebElement[]> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElements(locator)
@@ -139,7 +143,7 @@ export async function writeToChat(prompt: string, webview: WebviewView, send = t
  * @param timeout The timeout in milliseconds
  * @returns Promise<boolean> True if a response was detected, false if timeout occurred
  */
-export async function waitForChatResponse(webview: WebviewView, timeout = 15000): Promise<boolean> {
+export async function waitForChatResponse(webview: WebviewView, timeout = 8000): Promise<boolean> {
     const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
@@ -230,4 +234,24 @@ export async function findItemByText(items: WebElement[], text: string) {
         }
     }
     throw new Error(`Item with text "${text}" not found`)
+}
+
+/**
+ * Prints the HTML content of a web element for debugging purposes
+ * @param element The WebElement to print HTML for
+ */
+export async function printElementHTML(element: WebElement): Promise<void> {
+    const htmlContent = await element.getAttribute('outerHTML')
+
+    const formattedHTML = htmlContent
+        .replace(/></g, '>\n<')
+        .replace(/\s+/g, ' ')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join('\n')
+
+    console.log(`=== HTML CONTENT ===`)
+    console.log(formattedHTML)
+    console.log('=== END HTML ===')
 }
