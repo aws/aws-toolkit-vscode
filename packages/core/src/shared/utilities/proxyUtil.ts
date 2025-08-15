@@ -68,7 +68,7 @@ export class ProxyUtil {
      */
     private static async setProxyEnvironmentVariables(config: ProxyConfig): Promise<void> {
         // Always enable experimental proxy support for better handling of both explicit and transparent proxies
-        process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = 'true'
+        process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = 'false'
 
         const proxyUrl = config.proxyUrl
         // Set proxy environment variables
