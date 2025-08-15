@@ -23,11 +23,7 @@ describe('Amazon Q Chat Basic Functionality', function () {
 
     it('Allows User to Chat with AmazonQ', async () => {
         await writeToChat('Hello, Amazon Q!', webviewView)
-        const responseReceived = await waitForChatResponse(webviewView)
-        if (!responseReceived) {
-            throw new Error('Chat response not received within timeout')
-        }
-        console.log('Chat response detected successfully')
+        await waitForChatResponse(webviewView)
     })
     it('Allows User to Add Multiple Chat Tabs', async () => {
         console.log('Starting Multiple Chat Test')

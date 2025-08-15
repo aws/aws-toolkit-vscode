@@ -132,25 +132,23 @@ export async function pressShortcut(driver: WebDriver, ...keys: (string | keyof 
  * @param prompt The text to write in the chat input
  * @param webview The WebviewView instance
  * @param send Whether to click the send button (defaults to true)
- * @returns Promise<boolean> True if successful
  */
-export async function writeToChat(prompt: string, webview: WebviewView, send = true): Promise<boolean> {
+export async function writeToChat(prompt: string, webview: WebviewView, send = true): Promise<void> {
     const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
     await chatInput.sendKeys(prompt)
-    if (send === true) {
+    if (send) {
         const sendButton = await waitForElement(webview, By.css('.mynah-chat-prompt-button'))
         await sendButton.click()
     }
-    return true
 }
 
 /**
  * Waits for a chat response to be generated
  * @param webview The WebviewView instance
  * @param timeout The timeout in milliseconds
- * @returns Promise<boolean> True if a response was detected, false if timeout occurred
+ * @throws Error if timeout occurs before response is detected
  */
-export async function waitForChatResponse(webview: WebviewView, timeout = 8000): Promise<boolean> {
+export async function waitForChatResponse(webview: WebviewView, timeout = 15000): Promise<void> {
     const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
@@ -162,34 +160,27 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 8000):
             const chatItems = await latestContainer.findElements(By.css('*'))
 
             if (chatItems.length >= 2) {
-                return true
+                return
             }
         }
         await sleep(500)
     }
 
-    return false
+    throw new Error('Timeout waiting for chat response')
 }
 
 /**
  * Clears the text in the chat input field
  * @param webview The WebviewView instance
- * @returns Promise<boolean> True if successful, false if an error occurred
  */
-export async function clearChatInput(webview: WebviewView): Promise<boolean> {
-    try {
-        const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
-        await chatInput.sendKeys(
-            process.platform === 'darwin'
-                ? '\uE03D\u0061' // Command+A on macOS
-                : '\uE009\u0061' // Ctrl+A on Windows/Linux
-        )
-        await chatInput.sendKeys('\uE003') // Backspace
-        return true
-    } catch (e) {
-        console.error('Error clearing chat input:', e)
-        return false
-    }
+export async function clearChatInput(webview: WebviewView): Promise<void> {
+    const chatInput = await waitForElement(webview, By.css('.mynah-chat-prompt-input'))
+    await chatInput.sendKeys(
+        process.platform === 'darwin'
+            ? '\uE03D\u0061' // Command+A on macOS
+            : '\uE009\u0061' // Ctrl+A on Windows/Linux
+    )
+    await chatInput.sendKeys('\uE003') // Backspace
 }
 
 /**
