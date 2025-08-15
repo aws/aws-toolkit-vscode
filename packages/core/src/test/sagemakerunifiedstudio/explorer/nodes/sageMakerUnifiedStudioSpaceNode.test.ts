@@ -246,4 +246,35 @@ describe('SagemakerUnifiedStudioSpaceNode', function () {
             assert.strictEqual(spaceNode.DomainSpaceKey, 'domain-123:test-space')
         })
     })
+
+    describe('SagemakerSpace getContext for SMUS', function () {
+        it('returns awsSagemakerSpaceRunningNode for running SMUS space with undefined RemoteAccess', function () {
+            // Create a space app without RemoteAccess setting (undefined)
+            const smusSpaceApp = {
+                SpaceName: 'test-space',
+                DomainId: 'domain-123',
+                Status: 'InService',
+                DomainSpaceKey: 'domain-123:test-space',
+                App: {
+                    AppName: 'test-app',
+                    Status: 'InService',
+                },
+                SpaceSettingsSummary: {
+                    // RemoteAccess is undefined
+                },
+            } as any
+
+            // Create a real SagemakerSpace instance for SMUS to test the actual getContext logic
+            const realSagemakerSpace = new SagemakerSpace(
+                mockSagemakerClient,
+                'us-west-2',
+                smusSpaceApp,
+                true // isSMUSSpace = true
+            )
+
+            const context = realSagemakerSpace.getContext()
+
+            assert.strictEqual(context, 'awsSagemakerSpaceRunningNode')
+        })
+    })
 })

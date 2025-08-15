@@ -1509,7 +1509,7 @@
                 {
                     "command": "aws.smus.stopSpace",
                     "group": "inline@0",
-                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode|awsSagemakerSpaceRunningNode)$/"
                 },
                 {
                     "command": "aws.sagemaker.openRemoteConnection",

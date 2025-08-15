@@ -151,6 +151,8 @@ export class SagemakerSpace {
             return 'awsSagemakerSpaceRunningRemoteEnabledNode'
         } else if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'DISABLED') {
             return 'awsSagemakerSpaceRunningRemoteDisabledNode'
+        } else if (status === 'Running' && this.isSMUSSpace) {
+            return 'awsSagemakerSpaceRunningNode'
         } else if (status === 'Stopped' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
             return 'awsSagemakerSpaceStoppedRemoteEnabledNode'
         } else if (
