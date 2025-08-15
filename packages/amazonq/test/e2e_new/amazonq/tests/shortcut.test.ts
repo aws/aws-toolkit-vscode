@@ -6,7 +6,7 @@ import '../utils/setup'
 import { Workbench, EditorView, TextEditor, InputBox, WebviewView, Key } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
 import {
-    clearChat,
+    clearChatInput,
     pressShortcut,
     createNewTextFile,
     writeToTextEditor,
@@ -33,7 +33,7 @@ describe('Amazon Q Shortcut Functionality Tests', function () {
 
     afterEach(async function () {
         await closeAllTabs(webviewView)
-        await clearChat(webviewView)
+        await clearChatInput(webviewView)
     })
     it('Allows User to Verify Command Palette Works as Expected', async () => {
         const driver = webviewView.getDriver()
