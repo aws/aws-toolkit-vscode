@@ -97,6 +97,10 @@ export class AutoDebugCommands implements vscode.Disposable {
                 if (!editor) {
                     return
                 }
+                const saved = await editor.document.save()
+                if (!saved) {
+                    throw new Error('Failed to save document')
+                }
                 await this.controller.fixSpecificProblems(range, diagnostics)
             },
             'Fix with Amazon Q',
@@ -113,6 +117,10 @@ export class AutoDebugCommands implements vscode.Disposable {
                 const editor = this.checkActiveEditor()
                 if (!editor) {
                     return
+                }
+                const saved = await editor.document.save()
+                if (!saved) {
+                    throw new Error('Failed to save document')
                 }
                 await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
             },
