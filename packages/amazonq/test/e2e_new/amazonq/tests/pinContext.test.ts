@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import '../utils/setup'
-import { WebviewView } from 'vscode-extension-tester'
+import { WebviewView, By } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
-import { clickPinContextButton, getPinContextMenuItems, clickPinContextMenuItem } from '../helpers/pinContextHelper'
-import { clearChatInput } from '../utils/generalUtils'
+import { clickPinContextButton, clickPinContextMenuItem, clickSubMenuItem } from '../helpers/pinContextHelper'
+import { waitForElement } from '../utils/generalUtils'
 
 describe('Amazon Q Pin Context Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -18,18 +18,33 @@ describe('Amazon Q Pin Context Functionality', function () {
         webviewView = testContext.webviewView
     })
 
-    after(async function () {
-        await closeAllTabs(webviewView)
-    })
-
     afterEach(async () => {
         await dismissOverlayIfPresent(webviewView)
-        await clearChatInput(webviewView)
+        await closeAllTabs(webviewView)
     })
-
-    it('Pin Context Test', async () => {
+    it('Allows User to Add File Context', async () => {
         await clickPinContextButton(webviewView)
-        await getPinContextMenuItems(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Files')
+        await clickPinContextMenuItem(webviewView, 'Active file')
+    })
+    it('Allows User to Pin Workspace Context', async () => {
+        await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, '@workspace')
+    })
+    it('Allows User to Add Prompt Context', async () => {
+        await clickPinContextButton(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Prompts')
+        const addPrompt = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-list-add'))
+        await addPrompt.click()
+        const chatInput = await waitForElement(webviewView, By.css('[data-testid="chat-item-form-item-text-input"]'))
+        await chatInput.sendKeys('test')
+        const createPrompt = await waitForElement(
+            webviewView,
+            By.css('.mynah-button.fill-state-always.status-primary.mynah-ui-clickable-item')
+        )
+        await createPrompt.click()
+        await clickPinContextButton(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Prompts')
+        await clickSubMenuItem(webviewView, 'test')
     })
 })
