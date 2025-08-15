@@ -5,7 +5,7 @@
 import '../utils/setup'
 import { Workbench, EditorView, InputBox, TextEditor, WebviewView, Key } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { createNewTextFile, writeToTextEditor, sleep } from '../utils/generalUtils'
+import { createNewTextFile, writeToTextEditor, waitForInlineGeneration, pressShortcut } from '../utils/generalUtils'
 import assert from 'assert'
 
 describe('Amazon Q Inline Completion / Chat Functionality', function () {
@@ -16,7 +16,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
     let textEditor: TextEditor
     let webviewView: WebviewView
 
-    before(async function () {
+    beforeEach(async function () {
         webviewView = testContext.webviewView
         await webviewView.switchBack()
         workbench = testContext.workbench
@@ -24,27 +24,35 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         testContext.editorView = editorView
         textEditor = await createNewTextFile(workbench, editorView)
     })
-    after(async function () {
-        // Switch back to Webview Iframe when dealing with external webviews from Amazon Q.
+    afterEach(async function () {
+        // Switch back to iframe when dealing with external webviews from Amazon Q.
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
     })
-    it('Inline Test Shortcut', async () => {
-        await writeToTextEditor(textEditor, 'def factorial(n):')
-        const text = await textEditor.getText()
-        assert.equal(text, 'def factorial(n): ')
-        await textEditor.clearText()
-
+    it('Inline Test Generate', async () => {
         const textBefore = await textEditor.getText()
         await workbench.executeCommand('Amazon Q: Inline Chat')
         const input = new InputBox()
         await input.sendKeys('Generate the fibonacci sequence through iteration')
         await input.sendKeys(Key.ENTER)
-        // Must wait for response to be generated.
-        await sleep(8000)
+        // Wait for Amazon Q to finish generating code
+        await waitForInlineGeneration(textEditor)
 
         const textAfter = await textEditor.getText()
-        assert(textAfter.length > textBefore.length, 'Amazon Q should have generated code')
+        assert(textAfter.length > textBefore.length, 'Amazon Q generated code')
+        await textEditor.clearText()
+    })
+    it('Inline Keybind Shortcut', async () => {
+        await writeToTextEditor(textEditor, 'def fibonacci(n):')
+        await textEditor.selectText('def fibonacci(n):')
+
+        const driver = webviewView.getDriver()
+        await pressShortcut(driver, Key.COMMAND, 'i')
+        const input = new InputBox()
+        await input.sendKeys('Generate the fibonacci sequence through recursion')
+        await input.sendKeys(Key.ENTER)
+        await waitForInlineGeneration(textEditor)
+        // Clean Up Text
         await textEditor.clearText()
     })
 })

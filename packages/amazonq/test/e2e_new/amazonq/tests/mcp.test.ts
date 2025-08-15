@@ -9,9 +9,9 @@ import {
     clickMCPAddButton,
     clickMCPCloseButton,
     clickMCPRefreshButton,
-    clickToolsButton,
     configureMCPServer,
     saveMCPServerConfiguration,
+    clickToolsButton,
 } from '../helpers/mcpHelper'
 import { closeAllTabs } from '../utils/cleanupUtils'
 
