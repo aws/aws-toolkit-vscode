@@ -20,7 +20,7 @@ export async function sleep(timeout: number) {
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement> Returns the element found
  */
-export async function waitForElement(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement> {
+export async function waitForElement(webview: WebviewView, locator: By, timeout: number = 8000): Promise<WebElement> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElement(locator)
@@ -33,10 +33,62 @@ export async function waitForElement(webview: WebviewView, locator: By, timeout?
  * @param timeout The timeout in milliseconds (Optional)
  * @returns Promise<WebElement[]> Returns an array of elements found
  */
-export async function waitForElements(webview: WebviewView, locator: By, timeout?: number): Promise<WebElement[]> {
+export async function waitForElements(
+    webview: WebviewView,
+    locator: By,
+    timeout: number = 8000
+): Promise<WebElement[]> {
     const driver = webview.getDriver()
     await driver.wait(until.elementsLocated(locator), timeout)
     return await webview.findWebElements(locator)
+}
+
+/**
+ * Robust button clicking function that locates a button by its wrapper and content, then clicks it
+ * @param webviewView The WebviewView instance
+ * @param buttonWrapperSelector CSS selector for the button's wrapper element
+ * @param buttonContentSelector CSS selector for the content inside the button (icon, text, etc.)
+ * @param buttonName Descriptive name for the button (used in error messages)
+ * @param timeout Timeout in milliseconds (defaults to 5000)
+ * @returns Promise<void>
+ */
+export async function clickButton(
+    webviewView: WebviewView,
+    buttonWrapperSelector: string,
+    buttonContentSelector: string,
+    buttonName: string = 'button',
+    timeout: number = 5000
+): Promise<void> {
+    try {
+        const buttonWrapper = await webviewView
+            .getDriver()
+            .wait(until.elementLocated(By.css(buttonWrapperSelector)), timeout, `${buttonName} wrapper not found`)
+
+        await webviewView
+            .getDriver()
+            .wait(until.elementIsVisible(buttonWrapper), timeout, `${buttonName} wrapper not visible`)
+
+        const buttonContent = await webviewView
+            .getDriver()
+            .wait(until.elementLocated(By.css(buttonContentSelector)), timeout, `${buttonName} content not found`)
+
+        const button = await buttonContent.findElement(By.xpath('./..'))
+        await webviewView.getDriver().wait(until.elementIsEnabled(button), timeout, `${buttonName} not clickable`)
+        await button.click()
+        await webviewView.getDriver().sleep(300)
+    } catch (e) {
+        console.error(`Failed to click ${buttonName}:`, {
+            error: e,
+            timestamp: new Date().toISOString(),
+        })
+        try {
+            const screenshot = await webviewView.getDriver().takeScreenshot()
+            console.log(`Screenshot taken at time of ${buttonName} failure`, screenshot)
+        } catch (screenshotError) {
+            console.error('Failed to take error screenshot:', screenshotError)
+        }
+        throw new Error(`Failed to click ${buttonName}: ${e}`)
+    }
 }
 
 /**
@@ -65,7 +117,6 @@ export async function pressShortcut(driver: WebDriver, ...keys: (string | keyof 
         }
         return key
     })
-
     const actions = driver.actions()
     for (const key of platformKeys) {
         actions.keyDown(key)
@@ -99,7 +150,7 @@ export async function writeToChat(prompt: string, webview: WebviewView, send = t
  * @param timeout The timeout in milliseconds
  * @returns Promise<boolean> True if a response was detected, false if timeout occurred
  */
-export async function waitForChatResponse(webview: WebviewView, timeout = 15000): Promise<boolean> {
+export async function waitForChatResponse(webview: WebviewView, timeout = 8000): Promise<boolean> {
     const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
@@ -171,6 +222,39 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
     const currentLines = await textEditor.getNumberOfLines()
     await textEditor.typeTextAt(currentLines, 1, text)
 }
+/**
+ * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
+ * The function checks for a "stable state" by monitoring the number of lines in the editor.
+ * A stable state is achieved when the line count remains unchanged for 3 consecutive checks (3 seconds).
+ * Checks are performed every 1 second.
+ * @param editor The TextEditor instance
+ * @param timeout Maximum time to wait in milliseconds (default: 15000). Function will throw an error if generation takes longer than this timeout.
+ * @returns Promise<void>
+ * @throws Error if timeout is exceeded before a stable state is reached
+ */
+export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
+    const startTime = Date.now()
+    let previousLines = await editor.getNumberOfLines()
+    let stableCount = 0
+
+    while (Date.now() - startTime < timeout) {
+        await sleep(1000)
+        const currentLines = await editor.getNumberOfLines()
+
+        if (currentLines === previousLines) {
+            stableCount++
+            if (stableCount >= 3) {
+                return
+            }
+        } else {
+            stableCount = 0
+        }
+
+        previousLines = currentLines
+    }
+
+    throw new Error(`Editor stabilization timed out after ${timeout}ms`)
+}
 
 /**
  * Finds an item based on the text
@@ -190,4 +274,24 @@ export async function findItemByText(items: WebElement[], text: string) {
         }
     }
     throw new Error(`Item with text "${text}" not found`)
+}
+
+/**
+ * Prints the HTML content of a web element for debugging purposes
+ * @param element The WebElement to print HTML for
+ */
+export async function printElementHTML(element: WebElement): Promise<void> {
+    const htmlContent = await element.getAttribute('outerHTML')
+
+    const formattedHTML = htmlContent
+        .replace(/></g, '>\n<')
+        .replace(/\s+/g, ' ')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join('\n')
+
+    console.log(`=== HTML CONTENT ===`)
+    console.log(formattedHTML)
+    console.log('=== END HTML ===')
 }
