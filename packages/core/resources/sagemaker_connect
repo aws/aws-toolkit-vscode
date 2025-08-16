@@ -46,7 +46,7 @@ _get_ssm_session_info_async() {
     # Generate unique temporary file name to avoid conflicts
     local temp_file="/tmp/ssm_session_response_$$_$(date +%s%N).json"
 
-    local max_retries=60
+    local max_retries=8
     local retry_interval=5
     local attempt=1
 
