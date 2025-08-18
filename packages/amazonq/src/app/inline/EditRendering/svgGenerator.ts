@@ -431,6 +431,10 @@ export class SvgGenerationService {
         for (let lineIndex = 0; lineIndex < originalCode.length; lineIndex++) {
             const line = originalCode[lineIndex]
 
+            /**
+             * If [line] is an empty line or only contains whitespace char, [diffWordsWithSpace] will say it's not an "remove", i.e. [part.removed] will be undefined,
+             * therefore the deletion will not be highlighted. Thus fallback this scenario to highlight the entire line
+             */
             // If line exists in modifiedLines as a key, process character diffs
             if (Array.from(modifiedLines.keys()).includes(line) && line.trim().length > 0) {
                 const modifiedLine = modifiedLines.get(line)!
@@ -455,7 +459,7 @@ export class SvgGenerationService {
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
-                    end: line.length ?? 30,
+                    end: line.length ?? 4,
                 })
             }
         }
