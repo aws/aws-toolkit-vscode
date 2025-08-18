@@ -18,7 +18,7 @@ export const emptyDiffSvg = {
     originalCodeHighlightRange: [],
 }
 
-const DEFAULT_LINE_HIGHLIGHT_LENGTH = 4
+const defaultLineHighlightLength = 4
 
 export class SvgGenerationService {
     /**
@@ -461,7 +461,7 @@ export class SvgGenerationService {
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
-                    end: line.length ?? DEFAULT_LINE_HIGHLIGHT_LENGTH,
+                    end: line.length ?? defaultLineHighlightLength,
                 })
             }
         }
