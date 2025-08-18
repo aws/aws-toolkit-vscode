@@ -18,6 +18,8 @@ export const emptyDiffSvg = {
     originalCodeHighlightRange: [],
 }
 
+const DEFAULT_LINE_HIGHLIGHT_LENGTH = 4
+
 export class SvgGenerationService {
     /**
      * Generates an SVG image representing a code diff
@@ -459,7 +461,7 @@ export class SvgGenerationService {
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
-                    end: line.length ?? 4,
+                    end: line.length ?? DEFAULT_LINE_HIGHLIGHT_LENGTH,
                 })
             }
         }
