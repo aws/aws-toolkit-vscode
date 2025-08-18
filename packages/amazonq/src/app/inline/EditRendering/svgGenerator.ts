@@ -432,7 +432,7 @@ export class SvgGenerationService {
             const line = originalCode[lineIndex]
 
             // If line exists in modifiedLines as a key, process character diffs
-            if (Array.from(modifiedLines.keys()).includes(line)) {
+            if (Array.from(modifiedLines.keys()).includes(line) && line.trim().length > 0) {
                 const modifiedLine = modifiedLines.get(line)!
                 const changes = diffWordsWithSpace(line, modifiedLine)
 
@@ -455,7 +455,7 @@ export class SvgGenerationService {
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
-                    end: line.length,
+                    end: line.length ?? 30,
                 })
             }
         }
