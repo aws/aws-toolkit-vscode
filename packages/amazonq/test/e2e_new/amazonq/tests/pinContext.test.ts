@@ -19,7 +19,6 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     afterEach(async () => {
-        //await dismissOverlayIfPresent(webviewView)
         await closeAllTabs(webviewView)
     })
     it('Allows User to Add File Context', async () => {
