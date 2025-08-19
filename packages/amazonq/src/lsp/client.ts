@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import vscode from 'vscode'
+import vscode, { version } from 'vscode'
 import * as nls from 'vscode-nls'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
@@ -165,7 +165,7 @@ export async function startLanguageServer(
             aws: {
                 clientInfo: {
                     name: getClientName(),
-                    version: extensionVersion,
+                    version: version,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
                         version: extensionVersion,
