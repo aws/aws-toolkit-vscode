@@ -4,7 +4,7 @@
  */
 import '../utils/setup'
 import { WebviewView, By } from 'vscode-extension-tester'
-import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
+import { closeAllTabs } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import { clickPinContextButton, clickPinContextMenuItem, clickSubMenuItem } from '../helpers/pinContextHelper'
 import { waitForElement } from '../utils/generalUtils'
@@ -19,13 +19,13 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     afterEach(async () => {
-        await dismissOverlayIfPresent(webviewView)
+        //await dismissOverlayIfPresent(webviewView)
         await closeAllTabs(webviewView)
     })
     it('Allows User to Add File Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Files')
-        await clickPinContextMenuItem(webviewView, 'Active file')
+        await clickSubMenuItem(webviewView, 'Active file')
     })
     it('Allows User to Pin Workspace Context', async () => {
         await clickPinContextButton(webviewView)
