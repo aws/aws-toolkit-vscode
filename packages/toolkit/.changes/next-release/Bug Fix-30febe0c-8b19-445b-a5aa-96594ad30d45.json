@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Refresh S3 node in explorer on profile change"
+}
