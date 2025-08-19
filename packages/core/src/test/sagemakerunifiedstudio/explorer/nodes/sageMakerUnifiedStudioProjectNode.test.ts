@@ -13,6 +13,7 @@ import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SageMakerUnifiedStudioDataNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioDataNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
+import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 
 describe('SageMakerUnifiedStudioProjectNode', function () {
     let projectNode: SageMakerUnifiedStudioProjectNode
@@ -60,6 +61,8 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         // Create mock DataZone client
         mockDataZoneClient = {
             getProjectDefaultEnvironmentCreds: sinon.stub(),
+            getUserId: sinon.stub(),
+            fetchAllProjectMemberships: sinon.stub(),
         } as any
 
         // Stub DataZoneClient static methods
@@ -100,7 +103,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             const treeItem = await projectNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'Project: ' + mockProject.name)
-            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
             assert.strictEqual(treeItem.contextValue, 'smusSelectedProject')
             assert.strictEqual(treeItem.tooltip, `Project: ${mockProject.name}\nID: ${mockProject.id}`)
         })
@@ -114,11 +117,9 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
     })
 
     describe('setProject', function () {
-        it('updates the project and fires change event', async function () {
-            const emitterSpy = sinon.spy(projectNode['onDidChangeEmitter'], 'fire')
+        it('updates the project without firing change event', async function () {
             await projectNode.setProject(mockProject)
             assert.strictEqual(projectNode['project'], mockProject)
-            assert(emitterSpy.calledOnce)
         })
 
         it('invalidates credentials and disposes existing sagemaker client', async function () {
@@ -127,6 +128,30 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             projectNode['sagemakerClient'] = mockClient
 
             await projectNode.setProject(mockProject)
+
+            assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
+            assert(mockClient.dispose.calledOnce)
+            assert.strictEqual(projectNode['sagemakerClient'], undefined)
+        })
+    })
+
+    describe('clearProject', function () {
+        it('clears the project and fires change event', async function () {
+            await projectNode.setProject(mockProject)
+            const emitterSpy = sinon.spy(projectNode['onDidChangeEmitter'], 'fire')
+
+            await projectNode.clearProject()
+
+            assert.strictEqual(projectNode['project'], undefined)
+            assert(emitterSpy.calledOnce)
+        })
+
+        it('invalidates credentials and disposes existing sagemaker client', async function () {
+            // Set up existing sagemaker client with mock
+            const mockClient = { dispose: sinon.stub() } as any
+            projectNode['sagemakerClient'] = mockClient
+
+            await projectNode.clearProject()
 
             assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
             assert(mockClient.dispose.calledOnce)
@@ -159,7 +184,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             assert.deepStrictEqual(children, [])
         })
 
-        it('returns data and compute nodes when project is selected', async function () {
+        it('returns data and compute nodes when project is selected and user has access', async function () {
             await projectNode.setProject(mockProject)
             const mockCredProvider = {
                 getCredentials: sinon.stub().resolves({
@@ -169,6 +194,15 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
                 }),
             }
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
+
+            // Mock access check to return true
+            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
+            mockDataZoneClient.fetchAllProjectMemberships.resolves([
+                {
+                    memberDetails: { user: { userId: 'test-user-id' } },
+                },
+            ])
+            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             const children = await projectNode.getChildren()
             assert.strictEqual(children.length, 2)
@@ -181,10 +215,38 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             )
         })
 
+        it('returns access denied message when user does not have project access', async function () {
+            await projectNode.setProject(mockProject)
+
+            // Mock access check to return false
+            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
+            mockDataZoneClient.fetchAllProjectMemberships.resolves([])
+            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+
+            const children = await projectNode.getChildren()
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusProjectAccessDenied')
+
+            const treeItem = await children[0].getTreeItem()
+            assert.strictEqual(
+                treeItem.label,
+                'You are not a member of this project. Contact any of its owners to add you as a member.'
+            )
+        })
+
         it('throws error when initializeSagemakerClient fails', async function () {
             await projectNode.setProject(mockProject)
             const credError = new Error('Failed to initialize SageMaker client')
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(credError)
+
+            // Mock access check to return true so execution reaches initializeSagemakerClient
+            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
+            mockDataZoneClient.fetchAllProjectMemberships.resolves([
+                {
+                    memberDetails: { user: { userId: 'test-user-id' } },
+                },
+            ])
+            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             await assert.rejects(async () => await projectNode.getChildren(), credError)
         })
@@ -214,6 +276,48 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             assert(
                 (projectNode['authProvider'].getProjectCredentialProvider as sinon.SinonStub).calledWith(mockProject.id)
             )
+        })
+    })
+
+    describe('checkProjectAccess', function () {
+        it('returns true when user has project access', async function () {
+            await projectNode.setProject(mockProject)
+            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
+            mockDataZoneClient.fetchAllProjectMemberships.resolves([
+                {
+                    memberDetails: { user: { userId: 'test-user-id' } },
+                },
+            ])
+            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+
+            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            assert.strictEqual(hasAccess, true)
+        })
+
+        it('returns false when user does not have project access', async function () {
+            await projectNode.setProject(mockProject)
+            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
+            mockDataZoneClient.fetchAllProjectMemberships.resolves([])
+            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+
+            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            assert.strictEqual(hasAccess, false)
+        })
+
+        it('returns false when getUserId fails', async function () {
+            await projectNode.setProject(mockProject)
+            mockDataZoneClient.getUserId.resolves(undefined)
+
+            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            assert.strictEqual(hasAccess, false)
+        })
+
+        it('returns false when access check throws error', async function () {
+            await projectNode.setProject(mockProject)
+            mockDataZoneClient.getUserId.rejects(new Error('Access denied'))
+
+            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            assert.strictEqual(hasAccess, false)
         })
     })
 })

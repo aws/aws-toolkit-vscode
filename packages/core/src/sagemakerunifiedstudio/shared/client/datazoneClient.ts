@@ -307,6 +307,75 @@ export class DataZoneClient {
     }
 
     /**
+     * Lists project memberships in a DataZone project with pagination support
+     * @param options Options for listing project memberships
+     * @returns Paginated list of DataZone project permissions with nextToken
+     */
+    public async listProjectMemberships(options: {
+        projectIdentifier: string
+        maxResults?: number
+        nextToken?: string
+    }): Promise<{ memberships: any[]; nextToken?: string }> {
+        try {
+            this.logger.info(
+                `DataZoneClient: Listing project memberships for project ${options.projectIdentifier} in domain ${this.domainId}`
+            )
+
+            const datazoneClient = await this.getDataZoneClient()
+
+            const response = await datazoneClient.listProjectMemberships({
+                domainIdentifier: this.domainId,
+                projectIdentifier: options.projectIdentifier,
+                maxResults: options.maxResults,
+                nextToken: options.nextToken,
+            })
+
+            if (!response.members || response.members.length === 0) {
+                this.logger.info(
+                    `DataZoneClient: No project memberships found for project ${options.projectIdentifier}`
+                )
+                return { memberships: [] }
+            }
+
+            this.logger.debug(
+                `DataZoneClient: Found ${response.members.length} project memberships for project ${options.projectIdentifier}`
+            )
+            return { memberships: response.members, nextToken: response.nextToken }
+        } catch (err) {
+            this.logger.error('DataZoneClient: Failed to list project memberships: %s', err as Error)
+            throw err
+        }
+    }
+
+    /**
+     * Fetches all project memberships in a DataZone project by handling pagination automatically
+     * @param projectIdentifier The DataZone project identifier
+     * @returns Promise resolving to an array of all project memberships
+     */
+    public async fetchAllProjectMemberships(projectIdentifier: string): Promise<any[]> {
+        try {
+            let allMemberships: any[] = []
+            let nextToken: string | undefined
+            do {
+                const maxResultsPerPage = 50
+                const response = await this.listProjectMemberships({
+                    projectIdentifier,
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+                allMemberships = [...allMemberships, ...response.memberships]
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            this.logger.debug(`DataZoneClient: Fetched a total of ${allMemberships.length} project memberships`)
+            return allMemberships
+        } catch (err) {
+            this.logger.error('DataZoneClient: Failed to fetch all project memberships: %s', err as Error)
+            throw err
+        }
+    }
+
+    /**
      * Lists projects in a DataZone domain with pagination support
      * @param options Options for listing projects
      * @returns Paginated list of DataZone projects with nextToken
@@ -348,7 +417,7 @@ export class DataZoneClient {
                 updatedAt: project.updatedAt ? new Date(project.updatedAt) : undefined,
             }))
 
-            this.logger.info(`DataZoneClient: Found ${projects.length} projects for domain ${this.domainId}`)
+            this.logger.debug(`DataZoneClient: Found ${projects.length} projects for domain ${this.domainId}`)
             return { projects, nextToken: response.nextToken }
         } catch (err) {
             this.logger.error('DataZoneClient: Failed to list projects: %s', err as Error)
@@ -380,10 +449,10 @@ export class DataZoneClient {
                 nextToken = response.nextToken
             } while (nextToken)
 
-            this.logger.info(`DataZoneClient: Fetched a total of ${allProjects.length} projects`)
+            this.logger.debug(`DataZoneClient: Fetched a total of ${allProjects.length} projects`)
             return allProjects
         } catch (err) {
-            this.logger.error('DataZoneClient: Failed to fetch all projects: %s', err as Error)
+            this.logger.error('DataZoneClient: Failed to fetch all projects: %s', (err as Error).message)
             throw err
         }
     }
@@ -564,41 +633,63 @@ export class DataZoneClient {
      * @returns Promise resolving to the tooling environment ID
      */
     public async getToolingEnvironmentId(domainId: string, projectId: string): Promise<string> {
-        try {
-            this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
-            const datazoneClient = await this.getDataZoneClient()
+        this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
+        const datazoneClient = await this.getDataZoneClient()
 
+        let domainBlueprints
+        try {
             // Get the tooling blueprint
-            const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
+            domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
                 domainIdentifier: domainId,
                 managed: true,
                 name: toolingBlueprintName,
             })
+        } catch (err) {
+            this.logger.error(
+                'Failed to list environment blueprints for domain %s, %s',
+                domainId,
+                (err as Error).message
+            )
+            throw err
+        }
 
-            const toolingBlueprint = domainBlueprints.items?.[0]
-            if (!toolingBlueprint) {
-                throw new Error('Failed to get tooling blueprint')
-            }
+        const toolingBlueprint = domainBlueprints.items?.[0]
+        if (!toolingBlueprint) {
+            this.logger.error('No tooling blueprint found for domain %s', domainId)
+            throw new Error('No tooling blueprint found')
+        }
 
-            // List environments for the project
-            const listEnvs = await datazoneClient.listEnvironments({
+        // List environments for the project
+        let listEnvs
+        try {
+            this.logger.debug(`Listing environments for project ${projectId} with blueprint ${toolingBlueprint.id}`)
+            listEnvs = await datazoneClient.listEnvironments({
                 domainIdentifier: domainId,
                 projectIdentifier: projectId,
                 environmentBlueprintIdentifier: toolingBlueprint.id,
                 provider: sageMakerProviderName,
             })
-
-            const defaultEnv = listEnvs.items?.find((env) => env.name === toolingBlueprintName)
-            if (!defaultEnv || !defaultEnv.id) {
-                throw new Error('Failed to find default Tooling environment')
-            }
-
-            this.logger.debug(`Found tooling environment with ID: ${defaultEnv.id}`)
-            return defaultEnv.id
         } catch (err) {
-            this.logger.error('Failed to get tooling environment ID: %s', err as Error)
+            this.logger.error(
+                'Failed to list environments for domainId: %s, projectId: %s, %s',
+                domainId,
+                projectId,
+                (err as Error).message
+            )
             throw err
         }
+
+        const defaultEnv = listEnvs.items?.find((env) => env.name === toolingBlueprintName)
+        if (!defaultEnv || !defaultEnv.id) {
+            this.logger.error(
+                'No default Tooling environment found for domainId: %s, projectId: %s',
+                domainId,
+                projectId
+            )
+            throw new Error('No default Tooling environment found for project')
+        }
+        this.logger.debug(`Found tooling environment with ID: ${defaultEnv.id}`)
+        return defaultEnv.id
     }
 
     /**

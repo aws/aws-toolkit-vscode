@@ -109,22 +109,27 @@ describe('SageMakerUnifiedStudioConnectionParentNode', function () {
             )
         })
 
-        it('returns empty array when no connections exist', async function () {
+        it('returns no connections node when no connections exist', async function () {
             const emptyOutput: ListConnectionsCommandOutput = { items: [], $metadata: {} }
             mockDataZoneClient.fetchConnections.resolves(emptyOutput)
 
             const children = await connectionParentNode.getChildren()
 
-            assert.strictEqual(children.length, 0)
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoConnections')
+            const treeItem = await children[0].getTreeItem()
+            assert.strictEqual(treeItem.label, '[No connections found]')
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
         })
 
-        it('returns empty array when connections items is undefined', async function () {
+        it('returns no connections node when connections items is undefined', async function () {
             const undefinedOutput: ListConnectionsCommandOutput = { items: undefined, $metadata: {} }
             mockDataZoneClient.fetchConnections.resolves(undefinedOutput)
 
             const children = await connectionParentNode.getChildren()
 
-            assert.strictEqual(children.length, 0)
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoConnections')
         })
 
         it('handles missing project information gracefully', async function () {
@@ -143,7 +148,8 @@ describe('SageMakerUnifiedStudioConnectionParentNode', function () {
 
             const children = await nodeWithoutProject.getChildren()
 
-            assert.strictEqual(children.length, 0)
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoConnections')
             assert(mockDataZoneClient.fetchConnections.calledOnceWith(undefined, undefined, ConnectionType.SPARK))
         })
     })

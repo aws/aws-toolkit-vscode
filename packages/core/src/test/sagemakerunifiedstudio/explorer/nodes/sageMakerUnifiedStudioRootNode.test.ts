@@ -472,4 +472,15 @@ describe('SelectSMUSProject', function () {
         // Verify refresh command was not called
         assert.ok(!executeCommandStub.called)
     })
+
+    it('handles empty projects list correctly', async function () {
+        mockDataZoneClient.fetchAllProjects.resolves([])
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, undefined)
+        assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
+        assert.ok(!mockProjectNode.setProject.called)
+        assert.ok(!executeCommandStub.called)
+    })
 })

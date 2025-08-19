@@ -5,12 +5,18 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { SmusUtils, SmusErrorCodes, SmusTimeouts } from '../../../sagemakerunifiedstudio/shared/smusUtils'
+import {
+    SmusUtils,
+    SmusErrorCodes,
+    SmusTimeouts,
+    SmusCredentialExpiry,
+    validateCredentialFields,
+} from '../../../sagemakerunifiedstudio/shared/smusUtils'
+import { ToolkitError } from '../../../shared/errors'
 import fetch from 'node-fetch'
 
 describe('SmusUtils', () => {
     const testDomainUrl = 'https://dzd_domainId.sagemaker.us-east-2.on.aws'
-
     const testDomainIdLowercase = 'dzd_domainid' // Domain IDs get lowercased by URL parsing
     const testRegion = 'us-east-2'
 
@@ -62,6 +68,12 @@ describe('SmusUtils', () => {
             const urlWithDifferentRegion = 'https://dzd_test.sagemaker.eu-west-1.on.aws'
             const result = SmusUtils.extractRegionFromUrl(urlWithDifferentRegion)
             assert.strictEqual(result, 'eu-west-1')
+        })
+
+        it('should handle non-prod stages', () => {
+            const urlWithStage = 'https://dzd_test.sagemaker-gamma.us-west-2.on.aws'
+            const result = SmusUtils.extractRegionFromUrl(urlWithStage)
+            assert.strictEqual(result, 'us-west-2')
         })
     })
 
@@ -148,6 +160,12 @@ describe('SmusUtils', () => {
         it('should export SmusTimeouts with correct values', () => {
             assert.strictEqual(SmusTimeouts.apiCallTimeoutMs, 10 * 1000)
         })
+
+        it('should export SmusCredentialExpiry with correct values', () => {
+            assert.strictEqual(SmusCredentialExpiry.derExpiryMs, 55 * 60 * 1000)
+            assert.strictEqual(SmusCredentialExpiry.projectExpiryMs, 10 * 60 * 1000)
+            assert.strictEqual(SmusCredentialExpiry.connectionExpiryMs, 10 * 60 * 1000)
+        })
     })
 
     describe('getSsoInstanceInfo', () => {
@@ -213,7 +231,7 @@ describe('SmusUtils', () => {
             )
         })
 
-        it('should use correct timeout in fetch call', async () => {
+        it('should successfully extract SSO instance info', async () => {
             const mockResponse = {
                 ok: true,
                 json: sinon.stub().resolves({
@@ -223,11 +241,173 @@ describe('SmusUtils', () => {
             }
             fetchStub.resolves(mockResponse)
 
-            await SmusUtils.getSsoInstanceInfo(testDomainUrl)
+            const result = await SmusUtils.getSsoInstanceInfo(testDomainUrl)
 
-            assert.ok(fetchStub.called)
-            const fetchOptions = fetchStub.firstCall.args[1]
-            assert.strictEqual(fetchOptions.timeout, SmusTimeouts.apiCallTimeoutMs)
+            assert.strictEqual(result.ssoInstanceId, 'ssoins-123')
+            assert.strictEqual(result.issuerUrl, 'https://identitycenter.amazonaws.com/ssoins-123')
+            assert.strictEqual(result.clientId, 'arn:aws:sso::123456789:application/ssoins-123/apl-456')
+            assert.strictEqual(result.region, testRegion)
+        })
+
+        it('should throw error for missing redirect URL', async () => {
+            const mockResponse = {
+                ok: true,
+                json: sinon.stub().resolves({}),
+            }
+            fetchStub.resolves(mockResponse)
+
+            await assert.rejects(
+                () => SmusUtils.getSsoInstanceInfo(testDomainUrl),
+                (error: any) => {
+                    assert.strictEqual(error.code, 'InvalidLoginResponse')
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for missing client_id in redirect URL', async () => {
+            const mockResponse = {
+                ok: true,
+                json: sinon.stub().resolves({
+                    redirectUrl: 'https://example.com/oauth/authorize',
+                }),
+            }
+            fetchStub.resolves(mockResponse)
+
+            await assert.rejects(
+                () => SmusUtils.getSsoInstanceInfo(testDomainUrl),
+                (error: any) => {
+                    assert.strictEqual(error.code, 'InvalidRedirectUrl')
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for invalid ARN format', async () => {
+            const mockResponse = {
+                ok: true,
+                json: sinon.stub().resolves({
+                    redirectUrl: 'https://example.com/oauth/authorize?client_id=invalid-arn',
+                }),
+            }
+            fetchStub.resolves(mockResponse)
+
+            await assert.rejects(
+                () => SmusUtils.getSsoInstanceInfo(testDomainUrl),
+                (error: any) => {
+                    assert.strictEqual(error.code, 'InvalidArnFormat')
+                    return true
+                }
+            )
+        })
+    })
+
+    describe('extractSSOIdFromUserId', () => {
+        it('should extract SSO ID from valid user ID', () => {
+            const result = SmusUtils.extractSSOIdFromUserId('user-12345678-abcd-efgh-ijkl-123456789012')
+            assert.strictEqual(result, '12345678-abcd-efgh-ijkl-123456789012')
+        })
+
+        it('should throw error for invalid user ID format', () => {
+            assert.throws(
+                () => SmusUtils.extractSSOIdFromUserId('invalid-format'),
+                /Invalid UserId format: invalid-format/
+            )
+        })
+
+        it('should throw error for empty user ID', () => {
+            assert.throws(() => SmusUtils.extractSSOIdFromUserId(''), /Invalid UserId format: /)
+        })
+
+        it('should throw error for user ID without prefix', () => {
+            assert.throws(
+                () => SmusUtils.extractSSOIdFromUserId('12345678-abcd-efgh-ijkl-123456789012'),
+                /Invalid UserId format: 12345678-abcd-efgh-ijkl-123456789012/
+            )
+        })
+    })
+
+    describe('validateCredentialFields', () => {
+        it('should not throw for valid credentials', () => {
+            const validCredentials = {
+                accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+                secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+                sessionToken:
+                    'AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/LTo6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE',
+            }
+
+            assert.doesNotThrow(() => {
+                validateCredentialFields(validCredentials, 'TestError', 'test context')
+            })
+        })
+
+        it('should throw for missing accessKeyId', () => {
+            const invalidCredentials = {
+                secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+                sessionToken: 'token',
+            }
+
+            assert.throws(
+                () => validateCredentialFields(invalidCredentials, 'TestError', 'test context'),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual(error.code, 'TestError')
+                    assert.ok(error.message.includes('Invalid accessKeyId in test context'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw for invalid accessKeyId type', () => {
+            const invalidCredentials = {
+                accessKeyId: 123,
+                secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+                sessionToken: 'token',
+            }
+
+            assert.throws(
+                () => validateCredentialFields(invalidCredentials, 'TestError', 'test context'),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual(error.code, 'TestError')
+                    assert.ok(error.message.includes('Invalid accessKeyId in test context: number'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw for missing secretAccessKey', () => {
+            const invalidCredentials = {
+                accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+                sessionToken: 'token',
+            }
+
+            assert.throws(
+                () => validateCredentialFields(invalidCredentials, 'TestError', 'test context'),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual(error.code, 'TestError')
+                    assert.ok(error.message.includes('Invalid secretAccessKey in test context'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw for missing sessionToken', () => {
+            const invalidCredentials = {
+                accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+                secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+            }
+
+            assert.throws(
+                () => validateCredentialFields(invalidCredentials, 'TestError', 'test context'),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual(error.code, 'TestError')
+                    assert.ok(error.message.includes('Invalid sessionToken in test context'))
+                    return true
+                }
+            )
         })
     })
 })

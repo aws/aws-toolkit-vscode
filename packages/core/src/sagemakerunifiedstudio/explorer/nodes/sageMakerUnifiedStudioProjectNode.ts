@@ -9,11 +9,13 @@ import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import { SageMakerUnifiedStudioDataNode } from './sageMakerUnifiedStudioDataNode'
-import { DataZoneProject } from '../../shared/client/datazoneClient'
+import { DataZoneClient, DataZoneProject } from '../../shared/client/datazoneClient'
 import { SageMakerUnifiedStudioRootNode } from './sageMakerUnifiedStudioRootNode'
 import { SagemakerClient } from '../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
+import { getIcon } from '../../../shared/icons'
+import { SmusUtils } from '../../shared/smusUtils'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -36,11 +38,13 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
 
     public async getTreeItem(): Promise<vscode.TreeItem> {
         if (this.project) {
-            const item = new vscode.TreeItem('Project: ' + this.project.name, vscode.TreeItemCollapsibleState.Collapsed)
+            const item = new vscode.TreeItem('Project: ' + this.project.name, vscode.TreeItemCollapsibleState.Expanded)
             item.contextValue = 'smusSelectedProject'
             item.tooltip = `Project: ${this.project.name}\nID: ${this.project.id}`
+            item.iconPath = getIcon('vscode-folder-opened')
             return item
         }
+
         const item = new vscode.TreeItem('Select a project', vscode.TreeItemCollapsibleState.None)
         item.contextValue = 'smusProjectSelectPicker'
         item.command = {
@@ -48,6 +52,11 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
             title: 'Select Project',
             arguments: [this],
         }
+        item.iconPath = getIcon('vscode-folder-opened')
+
+        // Auto-invoke project selection after sign-in
+        void vscode.commands.executeCommand('aws.smus.projectView', this)
+
         return item
     }
 
@@ -61,6 +70,24 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 result: 'Succeeded',
                 passive: false,
             })
+            const hasAccess = await this.checkProjectAccess(this.project.id)
+            if (!hasAccess) {
+                return [
+                    {
+                        id: 'smusProjectAccessDenied',
+                        resource: {},
+                        getTreeItem: () => {
+                            const item = new vscode.TreeItem(
+                                'You are not a member of this project. Contact any of its owners to add you as a member.',
+                                vscode.TreeItemCollapsibleState.None
+                            )
+                            return item
+                        },
+                        getParent: () => this,
+                    },
+                ]
+            }
+
             const dataNode = new SageMakerUnifiedStudioDataNode(this)
             this.sagemakerClient = await this.initializeSagemakerClient(
                 this.authProvider.activeConnection?.ssoRegion || 'us-east-1'
@@ -87,17 +114,44 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     }
 
     public async setProject(project: any): Promise<void> {
+        await this.cleanupProjectResources()
+        this.project = project
+    }
+
+    public getProject(): DataZoneProject | undefined {
+        return this.project
+    }
+
+    public async clearProject(): Promise<void> {
+        await this.cleanupProjectResources()
+        this.project = undefined
+        await this.refreshNode()
+    }
+
+    private async cleanupProjectResources(): Promise<void> {
         await this.authProvider.invalidateAllProjectCredentialsInCache()
         if (this.sagemakerClient) {
             this.sagemakerClient.dispose()
             this.sagemakerClient = undefined
         }
-        this.project = project
-        await this.refreshNode()
     }
 
-    public getProject(): DataZoneProject | undefined {
-        return this.project
+    private async checkProjectAccess(projectId: string): Promise<boolean> {
+        try {
+            const dzClient = await DataZoneClient.getInstance(this.authProvider)
+            const userId = await dzClient.getUserId()
+            if (!userId) {
+                return false
+            }
+            const ssoUserProfileId = SmusUtils.extractSSOIdFromUserId(userId)
+            const memberships = await dzClient.fetchAllProjectMemberships(projectId)
+            const hasAccess = memberships.some((member) => member.memberDetails?.user?.userId === ssoUserProfileId)
+            this.logger.debug(`Project access check for user ${ssoUserProfileId}: ${hasAccess}`)
+            return hasAccess
+        } catch (err) {
+            this.logger.error('Failed to check project access: %s', (err as Error).message)
+            return false
+        }
     }
 
     private async initializeSagemakerClient(regionCode: string): Promise<SagemakerClient> {

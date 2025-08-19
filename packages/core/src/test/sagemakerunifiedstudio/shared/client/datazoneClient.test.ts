@@ -300,4 +300,119 @@ describe('DataZoneClient', () => {
             await assert.rejects(() => client.fetchAllProjects(), /API error/)
         })
     })
+
+    describe('getToolingEnvironmentId', () => {
+        it('should get tooling environment ID successfully', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [{ id: 'env-1', name: 'Tooling' }],
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1')
+
+            assert.strictEqual(result, 'env-1')
+        })
+
+        it('should handle listEnvironmentBlueprints error', async () => {
+            const error = new Error('Blueprint API Error')
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+        })
+
+        it('should handle listEnvironments error', async () => {
+            const error = new Error('Environment API Error')
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+        })
+    })
+
+    describe('fetchAllProjectMemberships', () => {
+        it('should fetch all project memberships with pagination', async () => {
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub(),
+            }
+
+            // First call returns first page with nextToken
+            mockDataZone.listProjectMemberships.onFirstCall().resolves({
+                members: [
+                    {
+                        memberDetails: {
+                            user: {
+                                userId: 'user-1',
+                            },
+                        },
+                    },
+                ],
+                nextToken: 'next-token',
+            })
+
+            // Second call returns second page without nextToken
+            mockDataZone.listProjectMemberships.onSecondCall().resolves({
+                members: [
+                    {
+                        memberDetails: {
+                            user: {
+                                userId: 'user-2',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.fetchAllProjectMemberships('project-1')
+
+            assert.strictEqual(result.length, 2)
+            assert.strictEqual(result[0].memberDetails?.user?.userId, 'user-1')
+            assert.strictEqual(result[1].memberDetails?.user?.userId, 'user-2')
+            assert.strictEqual(mockDataZone.listProjectMemberships.callCount, 2)
+        })
+
+        it('should handle empty memberships', async () => {
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub().resolves({
+                    members: [],
+                    nextToken: undefined,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.fetchAllProjectMemberships('project-1')
+
+            assert.strictEqual(result.length, 0)
+        })
+
+        it('should handle API errors', async () => {
+            const error = new Error('Membership API Error')
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.fetchAllProjectMemberships('project-1'), error)
+        })
+    })
 })

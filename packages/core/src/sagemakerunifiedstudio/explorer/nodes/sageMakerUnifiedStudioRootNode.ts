@@ -19,6 +19,8 @@ import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticat
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
 const contextValueSmusLearnMore = 'sageMakerUnifiedStudioLearnMore'
+const projectPickerTitle = 'Select a SageMaker Unified Studio project you want to open'
+const projectPickerPlaceholder = 'Select project'
 
 export class SageMakerUnifiedStudioRootNode implements TreeNode {
     public readonly id = 'smusRootNode'
@@ -38,7 +40,9 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         this.projectNode = new SageMakerUnifiedStudioProjectNode(this, this.authProvider, this.extensionContext)
 
         // Subscribe to auth provider connection changes to refresh the node
-        this.authProvider.onDidChange(() => {
+        this.authProvider.onDidChange(async () => {
+            // Clear the project when connection changes
+            await this.projectNode.clearProject()
             this.onDidChangeEmitter.fire()
         })
     }
@@ -352,11 +356,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
         const smusProjects = allProjects
 
-        if (smusProjects.length === 0) {
-            void vscode.window.showInformationMessage('No projects found in the domain')
-            return
-        }
-        // Process projects: sort by updatedAt, filter out current project, and map to quick pick items
+        // Process projects: sort by updatedAt, and map to quick pick items
         const items = [...smusProjects]
             .sort(
                 (a, b) =>
@@ -366,8 +366,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             .filter(
                 (project) =>
                     // Filter out the Generative AI Model Governance project that is part of QiuckStart resources
-                    project.name !== 'GenerativeAIModelGovernanceProject' &&
-                    (!projectNode?.getProject() || project.id !== projectNode.getProject()?.id)
+                    project.name !== 'GenerativeAIModelGovernanceProject'
             )
             .map((project) => ({
                 label: project.name,
@@ -375,19 +374,37 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 description: project.description,
                 data: project,
             }))
+        if (items.length === 0) {
+            logger.info('No projects found in the domain')
+            void vscode.window.showInformationMessage('No projects found in the domain')
+            // If no projects are found, show "No projects found" in the quick pick
+            const quickPickItem = [
+                {
+                    label: 'No projects found',
+                    detail: '',
+                    description: '',
+                    data: {},
+                },
+            ]
+            const quickPick = createQuickPick(quickPickItem, {
+                title: projectPickerTitle,
+                placeholder: projectPickerPlaceholder,
+            })
+            await quickPick.prompt()
+        } else {
+            const quickPick = createQuickPick(items, {
+                title: projectPickerTitle,
+                placeholder: projectPickerPlaceholder,
+            })
 
-        const quickPick = createQuickPick(items, {
-            title: 'Select a SageMaker Unified Studio project you want to open',
-            placeholder: 'Select project',
-        })
-
-        const selectedProject = await quickPick.prompt()
-        if (selectedProject && projectNode) {
-            await projectNode.setProject(selectedProject)
-            // Refresh the entire tree view
-            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            const selectedProject = await quickPick.prompt()
+            if (selectedProject && !('type' in selectedProject) && projectNode) {
+                await projectNode.setProject(selectedProject)
+                // Refresh the entire tree view
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            }
+            return selectedProject
         }
-        return selectedProject
     } catch (err) {
         logger.error('Failed to select project: %s', (err as Error).message)
         void vscode.window.showErrorMessage(`Failed to select project: ${(err as Error).message}`)

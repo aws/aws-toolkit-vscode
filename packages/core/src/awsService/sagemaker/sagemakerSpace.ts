@@ -131,8 +131,10 @@ export class SagemakerSpace {
         const domainId = this.spaceApp?.DomainId ?? '-'
         const owner = this.spaceApp?.OwnershipSettingsSummary?.OwnerUserProfileName || '-'
         const instanceType = this.spaceApp?.App?.ResourceSpec?.InstanceType ?? '-'
-
-        return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Domain ID:** ${domainId} \n\n**User Profile:** ${owner} \n\n**Instance:** ${instanceType}`
+        if (this.isSMUSSpace) {
+            return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Instance Type:** ${instanceType}`
+        }
+        return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Domain ID:** ${domainId} \n\n**User Profile:** ${owner}`
     }
 
     public getAppIcon() {

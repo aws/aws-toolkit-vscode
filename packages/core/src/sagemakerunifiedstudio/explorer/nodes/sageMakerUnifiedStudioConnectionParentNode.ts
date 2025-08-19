@@ -38,8 +38,16 @@ export class SageMakerUnifiedStudioConnectionParentNode implements TreeNode {
             this.connectionType
         )
         const childrenNodes = []
-        if (!this.connections?.items) {
-            return []
+        if (!this.connections?.items || this.connections.items.length === 0) {
+            return [
+                {
+                    id: 'smusNoConnections',
+                    resource: {},
+                    getTreeItem: () =>
+                        new vscode.TreeItem('[No connections found]', vscode.TreeItemCollapsibleState.None),
+                    getParent: () => this,
+                },
+            ]
         }
         for (const connection of this.connections.items) {
             childrenNodes.push(new SageMakerUnifiedStudioConnectionNode(this, connection))

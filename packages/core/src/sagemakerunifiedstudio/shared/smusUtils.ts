@@ -324,4 +324,18 @@ export class SmusUtils {
             })
         }
     }
+    /**
+     * Extracts SSO ID from a user ID in the format "user-<sso-id>"
+     * @param userId The user ID to extract SSO ID from
+     * @returns The extracted SSO ID
+     * @throws Error if the userId format is invalid
+     */
+    public static extractSSOIdFromUserId(userId: string): string {
+        const match = userId.match(/user-(.+)$/)
+        if (!match) {
+            this.logger.error(`Invalid UserId format: ${userId}`)
+            throw new Error(`Invalid UserId format: ${userId}`)
+        }
+        return match[1]
+    }
 }

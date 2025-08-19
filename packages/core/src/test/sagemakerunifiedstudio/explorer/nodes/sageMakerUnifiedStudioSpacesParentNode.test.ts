@@ -13,13 +13,14 @@ import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { getLogger } from '../../../../shared/logger/logger'
+import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 
 describe('SageMakerUnifiedStudioSpacesParentNode', function () {
     let spacesNode: SageMakerUnifiedStudioSpacesParentNode
     let mockParent: SageMakerUnifiedStudioComputeNode
     let mockExtensionContext: vscode.ExtensionContext
     let mockAuthProvider: SmusAuthenticationProvider
-    let mockSagemakerClient: SagemakerClient
+    let mockSagemakerClient: sinon.SinonStubbedInstance<SagemakerClient>
     let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
 
     beforeEach(function () {
@@ -30,9 +31,8 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         mockAuthProvider = {
             activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2' },
         } as any
-        mockSagemakerClient = {
-            fetchSpaceAppsAndDomains: sinon.stub(),
-        } as any
+        mockSagemakerClient = sinon.createStubInstance(SagemakerClient)
+        mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([new Map(), new Map()])
 
         mockDataZoneClient = {
             getInstance: sinon.stub(),
@@ -46,13 +46,14 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
         sinon.stub(getLogger(), 'debug')
         sinon.stub(getLogger(), 'error')
+        sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('user-12345')
 
         spacesNode = new SageMakerUnifiedStudioSpacesParentNode(
             mockParent,
             'project-123',
             mockExtensionContext,
             mockAuthProvider,
-            mockSagemakerClient
+            mockSagemakerClient as any
         )
     })
 
@@ -142,7 +143,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
                 'project-123',
                 mockExtensionContext,
                 mockAuthProviderNoConnection,
-                mockSagemakerClient
+                mockSagemakerClient as any
             )
 
             await assert.rejects(
@@ -226,121 +227,115 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
         beforeEach(function () {
             updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren').resolves()
-            mockSpaceNode1 = {} as SagemakerUnifiedStudioSpaceNode
-            mockSpaceNode2 = {} as SagemakerUnifiedStudioSpaceNode
+            mockSpaceNode1 = { id: 'space1' } as any
+            mockSpaceNode2 = { id: 'space2' } as any
         })
 
-        it('calls updateChildren and returns space nodes', async function () {
+        it('returns space nodes when spaces exist', async function () {
             spacesNode['sagemakerSpaceNodes'].set('space1', mockSpaceNode1)
             spacesNode['sagemakerSpaceNodes'].set('space2', mockSpaceNode2)
 
-            const result = await spacesNode.getChildren()
+            const children = await spacesNode.getChildren()
 
+            assert.strictEqual(children.length, 2)
+            assert(children.includes(mockSpaceNode1))
+            assert(children.includes(mockSpaceNode2))
             assert(updateChildrenStub.calledOnce)
-            assert.strictEqual(result.length, 2)
-            assert(result.includes(mockSpaceNode1))
-            assert(result.includes(mockSpaceNode2))
         })
 
-        it('returns empty array when no space nodes exist', async function () {
-            const result = await spacesNode.getChildren()
+        it('returns no spaces found node when no spaces exist', async function () {
+            const children = await spacesNode.getChildren()
 
-            assert(updateChildrenStub.calledOnce)
-            assert.strictEqual(result.length, 0)
+            assert.strictEqual(children.length, 1)
+            const noSpacesNode = children[0]
+            assert.strictEqual(noSpacesNode.id, 'smusNoSpaces')
+
+            const treeItem = await noSpacesNode.getTreeItem()
+            assert.strictEqual(treeItem.label, '[No Spaces found]')
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
         })
 
-        it('propagates error from updateChildren', async function () {
-            const error = new Error('Update failed')
-            updateChildrenStub.rejects(error)
+        it('returns no spaces found node when updateChildren throws error', async function () {
+            updateChildrenStub.rejects(new Error('Update failed'))
 
-            await assert.rejects(async () => await spacesNode.getChildren(), /Update failed/)
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoSpaces')
         })
     })
 
-    describe('updatePendingSpaceNode', function () {
-        let mockSpaceNode: sinon.SinonStubbedInstance<SagemakerUnifiedStudioSpaceNode>
-
-        beforeEach(function () {
-            mockSpaceNode = {
-                updateSpaceAppStatus: sinon.stub().resolves(),
-                isPending: sinon.stub(),
-                refreshNode: sinon.stub().resolves(),
+    describe('updatePendingNodes', function () {
+        it('updates pending space nodes and removes from polling set when not pending', async function () {
+            const mockSpaceNode = {
                 DomainSpaceKey: 'test-key',
+                updateSpaceAppStatus: sinon.stub().resolves(),
+                isPending: sinon.stub().returns(false),
+                refreshNode: sinon.stub().resolves(),
             } as any
-        })
 
-        it('updates space app status and refreshes when not pending', async function () {
-            mockSpaceNode.isPending.returns(false)
-            const deleteSpy = sinon.spy(spacesNode.pollingSet, 'delete')
+            spacesNode['sagemakerSpaceNodes'].set('test-key', mockSpaceNode)
+            spacesNode.pollingSet.add('test-key')
 
-            await spacesNode['updatePendingSpaceNode'](mockSpaceNode as any)
+            await spacesNode['updatePendingNodes']()
 
             assert(mockSpaceNode.updateSpaceAppStatus.calledOnce)
-            assert(mockSpaceNode.isPending.calledOnce)
-            assert(deleteSpy.calledWith('test-key'))
             assert(mockSpaceNode.refreshNode.calledOnce)
+            assert(!spacesNode.pollingSet.has('test-key'))
         })
 
-        it('updates space app status but does not refresh when still pending', async function () {
-            mockSpaceNode.isPending.returns(true)
-            const deleteSpy = sinon.spy(spacesNode.pollingSet, 'delete')
+        it('keeps pending nodes in polling set', async function () {
+            const mockSpaceNode = {
+                DomainSpaceKey: 'test-key',
+                updateSpaceAppStatus: sinon.stub().resolves(),
+                isPending: sinon.stub().returns(true),
+                refreshNode: sinon.stub().resolves(),
+            } as any
 
-            await spacesNode['updatePendingSpaceNode'](mockSpaceNode as any)
+            spacesNode['sagemakerSpaceNodes'].set('test-key', mockSpaceNode)
+            spacesNode.pollingSet.add('test-key')
+
+            await spacesNode['updatePendingNodes']()
 
             assert(mockSpaceNode.updateSpaceAppStatus.calledOnce)
-            assert(mockSpaceNode.isPending.calledOnce)
-            assert(deleteSpy.notCalled)
             assert(mockSpaceNode.refreshNode.notCalled)
+            assert(spacesNode.pollingSet.has('test-key'))
         })
     })
 
     describe('updateChildren', function () {
-        let getSageMakerDomainIdStub: sinon.SinonStub
-        let extractSSOIdStub: sinon.SinonStub
-        let updateInPlaceStub: sinon.SinonStub
-
         beforeEach(function () {
-            getSageMakerDomainIdStub = sinon.stub(spacesNode, 'getSageMakerDomainId').resolves('domain-123')
-            extractSSOIdStub = sinon.stub(spacesNode as any, 'extractSSOIdFromUserId').returns('user-123')
-            updateInPlaceStub = sinon.stub(require('../../../../shared/utilities/collectionUtils'), 'updateInPlace')
-
-            mockDataZoneClient.getUserId.resolves('ABCA4NU3S7PEOLDQPLXYZ:user-user-123')
+            mockDataZoneClient.getUserId.resolves('ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12')
+            mockDataZoneClient.getDomainId.returns('domain-123')
             mockDataZoneClient.getRegion.returns('us-west-2')
-            ;(mockSagemakerClient.fetchSpaceAppsAndDomains as sinon.SinonStub).resolves([
-                new Map([
-                    [
-                        'space1',
-                        { DomainId: 'domain-123', OwnershipSettingsSummary: { OwnerUserProfileName: 'user-123' } },
-                    ],
-                ]),
-                new Map([['domain-123', { DomainId: 'domain-123' }]]),
-            ])
+            mockDataZoneClient.getToolingEnvironmentId.resolves('env-123')
+            mockDataZoneClient.getEnvironmentDetails.resolves({
+                provisionedResources: [{ name: 'sageMakerDomainId', value: 'sagemaker-domain-123' }],
+            } as any)
         })
 
-        it('successfully updates children with filtered space apps', async function () {
-            await spacesNode['updateChildren']()
-
-            assert(mockDataZoneClient.getUserId.calledOnce)
-            assert(extractSSOIdStub.calledWith('ABCA4NU3S7PEOLDQPLXYZ:user-user-123'))
-            assert(getSageMakerDomainIdStub.calledOnce)
-            assert((mockSagemakerClient.fetchSpaceAppsAndDomains as sinon.SinonStub).calledWith('domain-123', false))
-            assert(updateInPlaceStub.calledOnce)
-        })
-
-        it('filters out spaces not owned by current user', async function () {
-            ;(mockSagemakerClient.fetchSpaceAppsAndDomains as sinon.SinonStub).resolves([
-                new Map([
-                    [
-                        'space1',
-                        { DomainId: 'domain-123', OwnershipSettingsSummary: { OwnerUserProfileName: 'user-123' } },
-                    ],
-                    [
-                        'space2',
-                        { DomainId: 'domain-123', OwnershipSettingsSummary: { OwnerUserProfileName: 'other-user' } },
-                    ],
-                ]),
-                new Map([['domain-123', { DomainId: 'domain-123' }]]),
+        it('filters spaces by current user ownership', async function () {
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-12345' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+                [
+                    'space2',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'other-user' },
+                        DomainSpaceKey: 'space2',
+                    },
+                ],
             ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
 
             await spacesNode['updateChildren']()
 
@@ -348,21 +343,26 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert(spacesNode['spaceApps'].has('space1'))
             assert(!spacesNode['spaceApps'].has('space2'))
         })
-    })
 
-    describe('extractSSOIdFromUserId', function () {
-        it('extracts SSO ID from valid user ID', function () {
-            const result = spacesNode['extractSSOIdFromUserId'](
-                'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
-            )
-            assert.strictEqual(result, '12345678-d061-70a4-0bf2-eeee67a6ab12')
-        })
+        it('creates space nodes for filtered spaces', async function () {
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-12345' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
 
-        it('throws error for invalid user ID format', function () {
-            assert.throws(
-                () => spacesNode['extractSSOIdFromUserId']('invalid-format'),
-                /Invalid UserId format: invalid-format/
-            )
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            assert.strictEqual(spacesNode['sagemakerSpaceNodes'].size, 1)
+            assert(spacesNode['sagemakerSpaceNodes'].has('space1'))
         })
     })
 })

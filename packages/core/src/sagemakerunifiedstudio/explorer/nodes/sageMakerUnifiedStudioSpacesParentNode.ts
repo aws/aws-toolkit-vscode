@@ -17,6 +17,7 @@ import { UserProfileMetadata } from '../../../awsService/sagemaker/explorer/sage
 import { SagemakerUnifiedStudioSpaceNode } from './sageMakerUnifiedStudioSpaceNode'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { SmusUtils } from '../../shared/smusUtils'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -55,9 +56,27 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     }
 
     public async getChildren(): Promise<TreeNode[]> {
-        await this.updateChildren()
+        try {
+            await this.updateChildren()
+        } catch (err) {
+            return this.getNoSpacesFoundChildren()
+        }
         const nodes = [...this.sagemakerSpaceNodes.values()]
+        if (nodes.length === 0) {
+            return this.getNoSpacesFoundChildren()
+        }
         return nodes
+    }
+
+    private getNoSpacesFoundChildren(): TreeNode[] {
+        return [
+            {
+                id: 'smusNoSpaces',
+                resource: {},
+                getTreeItem: () => new vscode.TreeItem('[No Spaces found]', vscode.TreeItemCollapsibleState.None),
+                getParent: () => this,
+            },
+        ]
     }
 
     public getParent(): TreeNode | undefined {
@@ -104,7 +123,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const toolingEnvId = await datazoneClient
             .getToolingEnvironmentId(datazoneClient.getDomainId(), this.projectId)
             .catch((err) => {
-                this.logger.error('Failed to get tooling environment ID: %s', err as Error)
+                this.logger.error('Failed to get tooling environment ID for project %s', this.projectId)
                 throw new Error(`Failed to get tooling environment ID: ${err.message}`)
             })
         if (!toolingEnvId) {
@@ -144,7 +163,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
         // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
         const userId = await datazoneClient.getUserId()
-        const ssoUserProfileId = this.extractSSOIdFromUserId(userId || '')
+        const ssoUserProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
         const sagemakerDomainId = await this.getSageMakerDomainId()
         const [spaceApps, domains] = await this.sagemakerClient.fetchSpaceAppsAndDomains(
             sagemakerDomainId,
@@ -187,14 +206,5 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     true /* isSMUSSpace */
                 )
         )
-    }
-
-    private extractSSOIdFromUserId(userId: string): string {
-        const match = userId.match(/user-(.+)$/)
-        if (!match) {
-            this.logger.error(`Invalid UserId format: ${userId}`)
-            throw new Error(`Invalid UserId format: ${userId}`)
-        }
-        return match[1]
     }
 }
