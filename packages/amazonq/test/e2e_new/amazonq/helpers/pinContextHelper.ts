@@ -36,7 +36,6 @@ export async function clickPinContextButton(webview: WebviewView): Promise<void>
  * @returns Promise<boolean> Returns the items as a WebElement List and the labels in a string array
  */
 export async function getPinContextMenuItems(webview: WebviewView): Promise<{ items: WebElement[]; labels: string[] }> {
-    await sleep(1000)
     const items = await webview.findElements(
         By.xpath(`//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]`)
     )
@@ -65,7 +64,6 @@ export async function getPinContextMenuItems(webview: WebviewView): Promise<{ it
  * NOTE: To find all possible text labels, you can call getPinContextMenuItems
  */
 export async function clickPinContextMenuItem(webview: WebviewView, itemName: string): Promise<void> {
-    await sleep(100)
     const item = await waitForElement(
         webview,
         By.xpath(
@@ -81,7 +79,6 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
  * @returns Promise<boolean> Returns the items as a WebElement List and the labels in a string array
  */
 export async function getSubMenuItems(webview: WebviewView): Promise<{ items: WebElement[]; labels: string[] }> {
-    await sleep(100)
     const items = await webview.findElements(
         By.xpath(`//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]`)
     )
@@ -109,7 +106,7 @@ export async function getSubMenuItems(webview: WebviewView): Promise<{ items: We
  * NOTE: To find all possible text labels, you can call getPinContextMenuItems
  */
 export async function clickSubMenuItem(webview: WebviewView, itemName: string): Promise<void> {
-    await sleep(100)
+    await sleep(0)
     const item = await waitForElement(
         webview,
         By.xpath(
