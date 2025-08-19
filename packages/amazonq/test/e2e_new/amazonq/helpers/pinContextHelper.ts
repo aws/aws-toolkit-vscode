@@ -36,25 +36,23 @@ export async function clickPinContextButton(webview: WebviewView): Promise<void>
  * @returns Promise<boolean> Returns the items as a WebElement List and the labels in a string array
  */
 export async function getPinContextMenuItems(webview: WebviewView): Promise<{ items: WebElement[]; labels: string[] }> {
-    const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-    // TODO: Fix the need for a sleep function to be required at all.
-    await sleep(100)
-    const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
+    const items = await webview.findElements(
+        By.xpath(`//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]`)
+    )
 
-    if (menuListItems.length === 0) {
+    if (items.length === 0) {
         throw new Error('No pin context menu items found')
     }
 
     const labels: string[] = []
-    for (const item of menuListItems) {
-        const textWrapper = await item.findElement(By.css('.mynah-detailed-list-item-text'))
-        const nameElement = await textWrapper.findElement(By.css('.mynah-detailed-list-item-name'))
+    for (const item of items) {
+        const nameElement = await item.findElement(By.css('.mynah-detailed-list-item-description'))
         const labelText = await nameElement.getText()
         labels.push(labelText)
         console.log('Menu item found:', labelText)
     }
 
-    return { items: menuListItems, labels }
+    return { items, labels }
 }
 
 /**
@@ -66,22 +64,14 @@ export async function getPinContextMenuItems(webview: WebviewView): Promise<{ it
  * NOTE: To find all possible text labels, you can call getPinContextMenuItems
  */
 export async function clickPinContextMenuItem(webview: WebviewView, itemName: string): Promise<void> {
-    const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-    await sleep(100)
-    const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
-    for (const item of menuListItems) {
-        const textWrapper = await item.findElement(By.css('.mynah-detailed-list-item-text'))
-        const nameElement = await textWrapper.findElement(By.css('.mynah-detailed-list-item-name'))
-        const labelText = await nameElement.getText()
-
-        if (labelText === itemName) {
-            console.log(`Clicking Pin Context menu item: ${itemName}`)
-            await item.click()
-            return
-        }
-    }
-
-    throw new Error(`Pin Context menu item not found: ${itemName}`)
+    const item = await waitForElement(
+        webview,
+        By.xpath(
+            `//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]//div[contains(@class, 'mynah-detailed-list-item-name') and text()='${itemName}']`
+        )
+    )
+    console.log(`Clicking Pin Context menu item: ${itemName}`)
+    await item.click()
 }
 /**
  * Lists all the possible Sub-menu items in the console.
@@ -89,26 +79,23 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
  * @returns Promise<boolean> Returns the items as a WebElement List and the labels in a string array
  */
 export async function getSubMenuItems(webview: WebviewView): Promise<{ items: WebElement[]; labels: string[] }> {
-    const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-    await sleep(100)
-    const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
+    const items = await webview.findElements(
+        By.xpath(`//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]`)
+    )
 
-    if (menuListItems.length === 0) {
+    if (items.length === 0) {
         throw new Error('No sub-menu items found')
     }
 
     const labels: string[] = []
-    for (const item of menuListItems) {
-        const textWrapper = await item.findElement(
-            By.css('.mynah-detailed-list-item-text.mynah-detailed-list-item-text-direction-row')
-        )
-        const nameElement = await textWrapper.findElement(By.css('.mynah-detailed-list-item-name'))
+    for (const item of items) {
+        const nameElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
         const labelText = await nameElement.getText()
         labels.push(labelText)
         console.log('Menu item found:', labelText)
     }
 
-    return { items: menuListItems, labels }
+    return { items, labels }
 }
 /**
  * Clicks a specific item in the Sub-Menu by its label text
@@ -119,22 +106,14 @@ export async function getSubMenuItems(webview: WebviewView): Promise<{ items: We
  * NOTE: To find all possible text labels, you can call getPinContextMenuItems
  */
 export async function clickSubMenuItem(webview: WebviewView, itemName: string): Promise<void> {
-    const menuList = await waitForElement(webview, By.css('.mynah-detailed-list-items-block'))
-    await sleep(100)
-    const menuListItems = await menuList.findElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
-    for (const item of menuListItems) {
-        const textWrapper = await item.findElement(
-            By.css('.mynah-detailed-list-item-text.mynah-detailed-list-item-text-direction-row')
+    // We require a sleep function of 0 so that the DOM of the SubMenu can load correctly.
+    await sleep(0)
+    const item = await waitForElement(
+        webview,
+        By.xpath(
+            `//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]//div[contains(@class, 'mynah-detailed-list-item-name') and text()='${itemName}']`
         )
-        const nameElement = await textWrapper.findElement(By.css('.mynah-detailed-list-item-name'))
-        const labelText = await nameElement.getText()
-
-        if (labelText === itemName) {
-            console.log(`Clicking Pin Context menu item: ${itemName}`)
-            await item.click()
-            return
-        }
-    }
-
-    throw new Error(`Pin Context menu item not found: ${itemName}`)
+    )
+    console.log(`Clicking Pin Context menu item: ${itemName}`)
+    await item.click()
 }
