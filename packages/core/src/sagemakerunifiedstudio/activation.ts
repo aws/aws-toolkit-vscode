@@ -7,9 +7,15 @@ import * as vscode from 'vscode'
 import { activate as activateConnectionMagicsSelector } from './connectionMagicsSelector/activation'
 import { activate as activateNotebookScheduling } from './notebookScheduling/activation'
 import { activate as activateExplorer } from './explorer/activation'
+import { isSageMaker } from '../shared/extensionUtilities'
+import { initializeResourceMetadata } from './shared/utils/resourceMetadataUtils'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    await activateConnectionMagicsSelector(extensionContext)
+    // Only run when environment is a SageMaker Unified Studio space
+    if (isSageMaker('SMUS')) {
+        await initializeResourceMetadata()
+        await activateConnectionMagicsSelector(extensionContext)
+    }
 
     await activateNotebookScheduling(extensionContext)
 
