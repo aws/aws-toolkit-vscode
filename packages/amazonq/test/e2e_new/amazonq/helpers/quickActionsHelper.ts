@@ -4,8 +4,8 @@
  */
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
-import { writeToChat } from '../utils/generalUtils'
-import { sleep, waitForElements } from '../utils/generalUtils'
+import { waitForElement, writeToChat } from '../utils/generalUtils'
+import { sleep } from '../utils/generalUtils'
 
 /**
  * Gets all quick action command menu items
@@ -14,21 +14,20 @@ import { sleep, waitForElements } from '../utils/generalUtils'
  */
 export async function getQuickActionsCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
     await writeToChat('/', webview, false)
+    // need to give the overlay time to load
     await sleep(2000)
-
-    const menuItems = await waitForElements(
-        webview,
-        By.css('.mynah-detailed-list-item.mynah-ui-clickable-item.target-command'),
-        10000
-    )
-
-    const menuTexts = []
-    for (let i = 0; i < menuItems.length; i++) {
-        const text = await menuItems[i].getText()
-        menuTexts.push(text)
+    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
+    if (quickActionItems.length === 0) {
+        throw new Error('No quick action commands found')
+    }
+    const quickActionTexts = []
+    for (const item of quickActionItems) {
+        const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
+        quickActionTexts.push(text)
     }
 
-    return { items: menuItems, texts: menuTexts }
+    return { items: quickActionItems, texts: quickActionTexts }
 }
 
 /**
@@ -37,15 +36,24 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
  * @param commandName The name of the command to click
  */
 export async function clickQuickActionsCommand(webview: WebviewView, commandName: string): Promise<void> {
-    const { items, texts } = await getQuickActionsCommands(webview)
-    if (items.length === 0) {
+    await writeToChat('/', webview, false)
+    // need to give the overlay time to load
+    await sleep(2000)
+    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
+    if (quickActionItems.length === 0) {
         throw new Error('No quick action commands found')
     }
-    const indexToClick = texts.findIndex((text) => text === commandName)
 
-    if (indexToClick === -1) {
-        throw new Error(`Command "${commandName}" not found`)
+    for (const item of quickActionItems) {
+        const descriptionElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
+        const description = await descriptionElement.getText()
+        if (description.includes(commandName)) {
+            await item.click()
+            await sleep(3000)
+            return
+        }
     }
-    await items[indexToClick].click()
-    await sleep(3000)
+
+    throw new Error(`Command "${commandName}" not found`)
 }
