@@ -106,6 +106,7 @@ export async function getSubMenuItems(webview: WebviewView): Promise<{ items: We
  * NOTE: To find all possible text labels, you can call getPinContextMenuItems
  */
 export async function clickSubMenuItem(webview: WebviewView, itemName: string): Promise<void> {
+    // We require a sleep function of 0 so that the DOM of the SubMenu can load correctly.
     await sleep(0)
     const item = await waitForElement(
         webview,
