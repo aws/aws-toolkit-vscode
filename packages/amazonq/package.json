@@ -219,6 +219,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.proxy.certificateAuthority%",
                     "default": null,
                     "scope": "application"
+                },
+                "amazonQ.proxy.enableProxyAndCertificateAutoDiscovery": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.enableProxyAndCertificateAutoDiscovery%",
+                    "default": true
                 }
             }
         },
