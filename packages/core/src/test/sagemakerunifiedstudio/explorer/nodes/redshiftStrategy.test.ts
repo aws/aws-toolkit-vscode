@@ -245,7 +245,7 @@ describe('redshiftStrategy', function () {
             assert.strictEqual((children[0] as RedshiftNode).data.nodeType, NodeType.REDSHIFT_DATABASE)
         })
 
-        it('should return empty children when connection params are missing', async function () {
+        it('should return placeholder when connection params are missing', async function () {
             const connection = {
                 connectionId: 'conn-123',
                 name: 'Test Connection',
@@ -270,7 +270,8 @@ describe('redshiftStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.strictEqual(children.length, 0)
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].resource, '[No data found]')
         })
 
         it.skip('should handle workgroup name in host', async function () {

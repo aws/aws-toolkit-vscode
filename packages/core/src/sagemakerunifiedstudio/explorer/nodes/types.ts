@@ -10,11 +10,13 @@ export const NODE_ID_DELIMITER = '/'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const AWS_DATA_CATALOG = 'AwsDataCatalog'
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME = 'project.default_lakehouse'
+export const DATA_DEFAULT_IAM_CONNECTION_NAME_REGEXP = /^(project\.iam)|(default\.iam)$/
+// eslint-disable-next-line @typescript-eslint/naming-convention, id-length
+export const DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP = /^(project\.default_lakehouse)|(default\.catalog)$/
+// eslint-disable-next-line @typescript-eslint/naming-convention, id-length
+export const DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP = /^(project\.athena)|(default\.sql)$/
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const DATA_DEFAULT_ATHENA_CONNECTION_NAME = 'project.athena'
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const DATA_DEFAULT_IAM_CONNECTION_NAME = 'project.iam'
+export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_folder)|(default\.s3)$/
 
 // Database object types
 export enum DatabaseObjects {
@@ -77,6 +79,10 @@ export enum NodeType {
     GLUE_TABLE = 'table',
     // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
     GLUE_VIEW = 'view',
+
+    // Redshift-specific catalog types
+    REDSHIFT_CATALOG = 'redshift-catalog',
+    REDSHIFT_CATALOG_DATABASE = 'redshift-catalog-database',
 }
 
 /**
@@ -95,6 +101,7 @@ export enum ConnectionType {
  */
 export enum ResourceType {
     DATABASE = 'DATABASE',
+    CATALOG_DATABASE = 'CATALOG_DATABASE',
     SCHEMA = 'SCHEMA',
     TABLE = 'TABLE',
     VIEW = 'VIEW',
@@ -109,6 +116,7 @@ export enum ResourceType {
     EXTERNAL_TABLE = 'EXTERNAL_TABLE',
     CATALOG_TABLE = 'CATALOG_TABLE',
     DATA_CATALOG_TABLE = 'DATA_CATALOG_TABLE',
+    CATALOG_COLUMN = 'CATALOG_COLUMN',
 }
 
 /**
@@ -194,3 +202,6 @@ export const LEAF_NODE_TYPES = [
     NodeType.LOADING,
     NodeType.EMPTY,
 ]
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const NO_DATA_FOUND_MESSAGE = '[No data found]'

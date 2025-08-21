@@ -14,13 +14,23 @@ import {
     NODE_ID_DELIMITER,
     NodeType,
     NodeData,
-    DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME,
-    DATA_DEFAULT_ATHENA_CONNECTION_NAME,
-    DATA_DEFAULT_IAM_CONNECTION_NAME,
+    DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP,
+    DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP,
+    DATA_DEFAULT_IAM_CONNECTION_NAME_REGEXP,
     AWS_DATA_CATALOG,
     DatabaseObjects,
+    NO_DATA_FOUND_MESSAGE,
 } from './types'
-import { getLabel, isLeafNode, getIconForNodeType, getTooltip, createColumnTreeItem, getColumnType } from './utils'
+import {
+    getLabel,
+    isLeafNode,
+    getIconForNodeType,
+    getTooltip,
+    createColumnTreeItem,
+    getColumnType,
+    createErrorItem,
+} from './utils'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { Column, Database, Table } from '@aws-sdk/client-glue'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
@@ -68,7 +78,9 @@ export class LakehouseNode implements TreeNode {
                 this.isLoading = false
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
-                return [createErrorNode(`${this.id}${NODE_ID_DELIMITER}error`, err as Error, this)]
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'getChildren', this.id) as LakehouseNode]
             }
         }
 
@@ -142,9 +154,9 @@ export function createLakehouseConnectionNode(
 
                 // Check if this is a default connection
                 const isDefaultConnection =
-                    connection.name.startsWith(DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME) ||
-                    connection.name.startsWith(DATA_DEFAULT_ATHENA_CONNECTION_NAME) ||
-                    connection.name.startsWith(DATA_DEFAULT_IAM_CONNECTION_NAME)
+                    DATA_DEFAULT_IAM_CONNECTION_NAME_REGEXP.test(connection.name) ||
+                    DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(connection.name) ||
+                    DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP.test(connection.name)
 
                 // Follow the reference pattern with Promise.allSettled
                 const [awsDataCatalogResult, catalogsResult] = await Promise.allSettled([
@@ -161,30 +173,24 @@ export function createLakehouseConnectionNode(
                 const errors: LakehouseNode[] = []
 
                 if (awsDataCatalogResult.status === 'rejected') {
-                    errors.push(
-                        createErrorNode(
-                            `${node.id}${NODE_ID_DELIMITER}aws-catalog-error`,
-                            awsDataCatalogResult.reason as Error,
-                            node
-                        )
-                    )
+                    const errorMessage = (awsDataCatalogResult.reason as Error).message
+                    void vscode.window.showErrorMessage(errorMessage)
+                    errors.push(createErrorItem(errorMessage, 'aws-data-catalog', node.id) as LakehouseNode)
                 }
 
                 if (catalogsResult.status === 'rejected') {
-                    errors.push(
-                        createErrorNode(
-                            `${node.id}${NODE_ID_DELIMITER}catalogs-error`,
-                            catalogsResult.reason as Error,
-                            node
-                        )
-                    )
+                    const errorMessage = (catalogsResult.reason as Error).message
+                    void vscode.window.showErrorMessage(errorMessage)
+                    errors.push(createErrorItem(errorMessage, 'catalogs', node.id) as LakehouseNode)
                 }
 
                 const allNodes = [...awsDataCatalog, ...apiCatalogs, ...errors]
-                return allNodes.length > 0 ? allNodes : [createEmptyNode(`${node.id}${NODE_ID_DELIMITER}empty`, node)]
+                return allNodes.length > 0 ? allNodes : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             } catch (err) {
                 logger.error(`Failed to get Lakehouse catalogs: ${(err as Error).message}`)
-                throw err
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'lakehouse-catalogs', node.id) as LakehouseNode]
             }
         }
     )
@@ -391,7 +397,9 @@ function createCatalogNode(
                       )
                   } catch (err) {
                       logger.error(`Failed to get databases for catalog ${catalogId}: ${(err as Error).message}`)
-                      throw err
+                      const errorMessage = (err as Error).message
+                      void vscode.window.showErrorMessage(errorMessage)
+                      return [createErrorItem(errorMessage, 'catalog-databases', node.id) as LakehouseNode]
                   }
               }
     )
@@ -459,10 +467,12 @@ function createDatabaseNode(
 
                 return containerNodes.length > 0
                     ? containerNodes
-                    : [createEmptyNode(`${node.id}${NODE_ID_DELIMITER}empty`, node)]
+                    : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             } catch (err) {
                 logger.error(`Failed to get tables for database ${databaseName}: ${(err as Error).message}`)
-                throw err
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'database-tables', node.id) as LakehouseNode]
             }
         }
     )
@@ -558,28 +568,4 @@ function createContainerNode(
             return items.map((item) => createTableNode(item.Name || '', item, glueClient, node))
         }
     )
-}
-
-/**
- * Creates an error node
- */
-function createErrorNode(id: string, error: Error, parent?: LakehouseNode): LakehouseNode {
-    return new LakehouseNode({
-        id,
-        nodeType: NodeType.ERROR,
-        value: error,
-        parent,
-    })
-}
-
-/**
- * Creates an empty node
- */
-function createEmptyNode(id: string, parent?: LakehouseNode): LakehouseNode {
-    return new LakehouseNode({
-        id,
-        nodeType: NodeType.EMPTY,
-        value: 'No catalogs found',
-        parent,
-    })
 }

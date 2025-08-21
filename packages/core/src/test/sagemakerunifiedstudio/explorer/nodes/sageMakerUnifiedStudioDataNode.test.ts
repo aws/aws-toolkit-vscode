@@ -134,7 +134,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             const children = await dataNode.getChildren()
 
             assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'error-node')
+            assert.ok(children[0].id.startsWith('smusDataExplorer-error-project-'))
         })
 
         it('should return error node when credentials are missing', async function () {
@@ -143,15 +143,16 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             const children = await dataNode.getChildren()
 
             assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'error-node')
+            assert.ok(children[0].id.startsWith('smusDataExplorer-error-connections-'))
         })
 
-        it('should return empty array when no connections found', async function () {
+        it('should return placeholder when no connections found', async function () {
             mockDataZoneClient.listConnections.resolves([])
 
             const children = await dataNode.getChildren()
 
-            assert.strictEqual(children.length, 0)
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].resource, '[No data found]')
         })
 
         it('should create Bucket parent node and Redshift nodes for connections', async function () {
@@ -219,7 +220,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             // Error should occur when expanding the Bucket node
             const bucketChildren = await children[0].getChildren!()
             assert.strictEqual(bucketChildren.length, 1)
-            assert.strictEqual(bucketChildren[0].id, 'error-node')
+            assert.ok(bucketChildren[0].id.startsWith('smusDataExplorer-error-s3-'))
         })
 
         it('should return error node when general error occurs', async function () {
@@ -228,7 +229,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             const children = await dataNode.getChildren()
 
             assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'error-node')
+            assert.ok(children[0].id.startsWith('smusDataExplorer-error-connections-'))
         })
     })
 })

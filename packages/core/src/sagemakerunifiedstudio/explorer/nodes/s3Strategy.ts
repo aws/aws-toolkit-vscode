@@ -9,8 +9,9 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
 import { S3Client } from '../../shared/client/s3Client'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
-import { NODE_ID_DELIMITER, NodeType, ConnectionType, NodeData } from './types'
-import { getLabel, isLeafNode, getIconForNodeType, getTooltip } from './utils'
+import { NODE_ID_DELIMITER, NodeType, ConnectionType, NodeData, NO_DATA_FOUND_MESSAGE } from './types'
+import { getLabel, isLeafNode, getIconForNodeType, getTooltip, createErrorItem } from './utils'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import {
     ListCallerAccessGrantsCommand,
     GetDataAccessCommand,
@@ -67,7 +68,9 @@ export class S3Node implements TreeNode {
                 this.isLoading = false
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
-                return [createErrorNode(`${this.id}${NODE_ID_DELIMITER}error`, err as Error, this)]
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'getChildren', this.id) as S3Node]
             }
         }
 
@@ -113,7 +116,9 @@ export function createS3ConnectionNode(
     const s3Info = parseS3Uri(connection)
     if (!s3Info) {
         logger.warn(`No S3 URI found in connection properties for connection ${connection.name}`)
-        return createErrorNode(`${connection.connectionId}-error`, new Error('No S3 URI configured'))
+        const errorMessage = 'No S3 URI configured'
+        void vscode.window.showErrorMessage(errorMessage)
+        return createErrorItem(errorMessage, 'connection', connection.connectionId) as S3Node
     }
 
     // Get S3 client from store
@@ -168,7 +173,7 @@ export function createS3ConnectionNode(
                                     } while (nextToken)
 
                                     if (allPaths.length === 0) {
-                                        return [createEmptyNode(`${fullPath}-empty`, 'No objects found', bucketNode)]
+                                        return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
                                     }
 
                                     // Convert paths to nodes
@@ -194,7 +199,15 @@ export function createS3ConnectionNode(
                                     })
                                 } catch (err) {
                                     logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                    return [createErrorNode(`${fullPath}-error`, err as Error, bucketNode)]
+                                    const errorMessage = (err as Error).message
+                                    void vscode.window.showErrorMessage(errorMessage)
+                                    return [
+                                        createErrorItem(
+                                            errorMessage,
+                                            'bucket-contents-default',
+                                            bucketNode.id
+                                        ) as S3Node,
+                                    ]
                                 }
                             }
                         ),
@@ -227,9 +240,7 @@ export function createS3ConnectionNode(
                                     } while (nextToken)
 
                                     if (allPaths.length === 0) {
-                                        return [
-                                            createEmptyNode(`${s3Info.bucket}-empty`, 'No objects found', bucketNode),
-                                        ]
+                                        return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
                                     }
 
                                     // Convert paths to nodes
@@ -255,7 +266,15 @@ export function createS3ConnectionNode(
                                     })
                                 } catch (err) {
                                     logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                    return [createErrorNode(`${s3Info.bucket}-error`, err as Error, bucketNode)]
+                                    const errorMessage = (err as Error).message
+                                    void vscode.window.showErrorMessage(errorMessage)
+                                    return [
+                                        createErrorItem(
+                                            errorMessage,
+                                            'bucket-contents-regular',
+                                            bucketNode.id
+                                        ) as S3Node,
+                                    ]
                                 }
                             }
                         ),
@@ -263,7 +282,9 @@ export function createS3ConnectionNode(
                 }
             } catch (err) {
                 logger.error(`Failed to create bucket node: ${(err as Error).message}`)
-                return [createErrorNode(`${connection.connectionId}-error`, err as Error, node)]
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'bucket-node', node.id) as S3Node]
             }
         }
     )
@@ -304,7 +325,7 @@ function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (nod
             } while (nextToken)
 
             if (allPaths.length === 0) {
-                return [createEmptyNode(`${node.id}${NODE_ID_DELIMITER}empty`, 'No objects found', node)]
+                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
             }
 
             // Convert paths to nodes
@@ -330,7 +351,9 @@ function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (nod
             })
         } catch (err) {
             logger.error(`Failed to list folder contents: ${(err as Error).message}`)
-            return [createErrorNode(`${node.id}${NODE_ID_DELIMITER}error`, err as Error, node)]
+            const errorMessage = (err as Error).message
+            void vscode.window.showErrorMessage(errorMessage)
+            return [createErrorItem(errorMessage, 'folder-contents', node.id) as S3Node]
         }
     }
 }
@@ -356,30 +379,6 @@ function parseS3Uri(connection: DataZoneConnection): { bucket: string; prefix?: 
     const prefix = parts.length > 1 ? parts.slice(1).join('/') + '/' : undefined
 
     return { bucket, prefix }
-}
-
-/**
- * Creates an error node
- */
-function createErrorNode(id: string, error: Error, parent?: S3Node): S3Node {
-    return new S3Node({
-        id,
-        nodeType: NodeType.ERROR,
-        value: error,
-        parent,
-    })
-}
-
-/**
- * Creates an empty node
- */
-function createEmptyNode(id: string, message: string, parent?: S3Node): S3Node {
-    return new S3Node({
-        id,
-        nodeType: NodeType.EMPTY,
-        value: message,
-        parent,
-    })
 }
 
 async function listCallerAccessGrants(
@@ -580,6 +579,8 @@ async function fetchAccessGrantChildren(
         return children
     } catch (error) {
         logger.error(`Failed to fetch access grant children: ${(error as Error).message}`)
-        return [createErrorNode(`${node.id}${NODE_ID_DELIMITER}error`, error as Error, node)]
+        const errorMessage = (error as Error).message
+        void vscode.window.showErrorMessage(errorMessage)
+        return [createErrorItem(errorMessage, 'access-grant-children', node.id) as S3Node]
     }
 }

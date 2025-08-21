@@ -108,7 +108,7 @@ describe('LakehouseStrategy', function () {
             const children = await node.getChildren()
 
             assert.strictEqual(children.length, 1)
-            assert.strictEqual(children[0].id, 'error-node/error')
+            assert.ok(children[0].id.startsWith('error-node-error-getChildren-'))
         })
 
         it('should create correct tree item for column node', async function () {
@@ -201,10 +201,10 @@ describe('LakehouseStrategy', function () {
             const children = await node.getChildren()
 
             assert.ok(children.length > 0)
-            assert.ok(children.some((child) => (child as LakehouseNode).data.nodeType === NodeType.ERROR))
+            assert.ok(children.some((child) => child.id.startsWith('lakehouse-conn-123-error-')))
         })
 
-        it('should create empty node when no catalogs found', async function () {
+        it('should create placeholder when no catalogs found', async function () {
             mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
 
             const node = createLakehouseConnectionNode(
@@ -214,7 +214,7 @@ describe('LakehouseStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.ok(children.some((child) => (child as LakehouseNode).data.nodeType === NodeType.EMPTY))
+            assert.ok(children.some((child) => child.resource === '[No data found]'))
         })
     })
 

@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getIcon, IconPath } from '../../../shared/icons'
+import { getIcon, IconPath, addColor } from '../../../shared/icons'
+import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import {
     NODE_ID_DELIMITER,
     NodeType,
@@ -13,7 +14,7 @@ import {
     ConnectionType,
     NodeData,
     LEAF_NODE_TYPES,
-    DATA_DEFAULT_ATHENA_CONNECTION_NAME,
+    DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP,
     redshiftColumnTypes,
     lakeHouseColumnTypes,
 } from './types'
@@ -37,8 +38,8 @@ export function getLabel(data: {
     // For connection nodes, use the connection name
     if (data.nodeType === NodeType.CONNECTION && data.value?.connection?.name) {
         if (
-            data.value?.connection?.type === ConnectionType.ATHENA &&
-            data.value?.connection?.name === DATA_DEFAULT_ATHENA_CONNECTION_NAME
+            data.value?.connection?.type === ConnectionType.LAKEHOUSE &&
+            DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(data.value?.connection?.name)
         ) {
             return 'Lakehouse'
         }
@@ -132,6 +133,10 @@ export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): v
             return isContainer ? new vscode.ThemeIcon('list-tree') : new vscode.ThemeIcon('symbol-method')
         case NodeType.GLUE_CATALOG:
             return getIcon('aws-sagemakerunifiedstudio-catalog')
+        case NodeType.REDSHIFT_CATALOG:
+            return new vscode.ThemeIcon('database')
+        case NodeType.REDSHIFT_CATALOG_DATABASE:
+            return getIcon('aws-redshift-schema')
         case NodeType.ERROR:
             return new vscode.ThemeIcon('error')
         case NodeType.LOADING:
@@ -251,6 +256,21 @@ export function createErrorTreeItem(message: string): vscode.TreeItem {
     const item = new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None)
     item.iconPath = new vscode.ThemeIcon('error')
     return item
+}
+
+/**
+ * Creates an error item with unique ID and proper styling
+ */
+export function createErrorItem(message: string, context: string, parentId: string): TreeNode {
+    return {
+        id: `${parentId}-error-${context}-${Date.now()}`,
+        resource: message,
+        getTreeItem: () => {
+            const item = new vscode.TreeItem(message, vscode.TreeItemCollapsibleState.None)
+            item.iconPath = addColor(getIcon('vscode-error'), 'testing.iconErrored')
+            return item
+        },
+    }
 }
 
 export const isRedLakeDatabase = (databaseName?: string) => {

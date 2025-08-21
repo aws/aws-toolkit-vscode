@@ -68,7 +68,7 @@ describe('s3Strategy', function () {
 
                 const children = await node.getChildren()
                 assert.strictEqual(children.length, 1)
-                assert.strictEqual((children[0] as S3Node).data.nodeType, NodeType.ERROR)
+                assert.ok(children[0].id.startsWith('test-id-error-getChildren-'))
             })
         })
 
@@ -194,7 +194,7 @@ describe('s3Strategy', function () {
                 'us-east-1'
             )
 
-            assert.strictEqual(node.data.nodeType, NodeType.ERROR)
+            assert.ok(node.id.startsWith('conn-123-error-connection-'))
         })
 
         it('should handle bucket listing for non-default connection', async function () {

@@ -13,8 +13,9 @@ import { createS3ConnectionNode, createS3AccessGrantNodes } from './s3Strategy'
 import { createRedshiftConnectionNode } from './redshiftStrategy'
 import { createLakehouseConnectionNode } from './lakehouseStrategy'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
-import { createErrorTreeItem, isFederatedConnection } from './utils'
-import { ConnectionType } from './types'
+import { isFederatedConnection, createErrorItem } from './utils'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
+import { ConnectionType, NO_DATA_FOUND_MESSAGE } from './types'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 
 /**
@@ -50,8 +51,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         try {
             const project = this.parent.getProject()
             if (!project) {
-                this.logger.error('No project information available')
-                return [this.createErrorNode('No project information available')]
+                const errorMessage = 'No project information available'
+                this.logger.error(errorMessage)
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'project', this.id)]
             }
 
             const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
@@ -59,8 +62,8 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             this.logger.info(`Found ${connections.length} connections for project ${project.id}`)
 
             if (connections.length === 0) {
-                this.childrenNodes = []
-                return []
+                this.childrenNodes = [createPlaceholderItem(NO_DATA_FOUND_MESSAGE)]
+                return this.childrenNodes
             }
 
             const dataNodes = await this.createConnectionNodes(project, connections)
@@ -69,8 +72,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (err) {
             const project = this.parent.getProject()
             const projectInfo = project ? `project: ${project.id}, domain: ${project.domainId}` : 'unknown project'
+            const errorMessage = 'Failed to get connections'
             this.logger.error(`Failed to get connections for ${projectInfo}: ${(err as Error).message}`)
-            return [this.createErrorNode(`Failed to get connections: ${(err as Error).message}`)]
+            void vscode.window.showErrorMessage(errorMessage)
+            return [createErrorItem(errorMessage, 'connections', this.id)]
         }
     }
 
@@ -153,8 +158,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
             return [s3ConnectionNode, ...accessGrantNodes]
         } catch (connErr) {
+            const errorMessage = `Failed to get S3 connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get S3 connection details: ${(connErr as Error).message}`)
-            return [this.createErrorNode(`Failed to get S3 connection: ${(connErr as Error).message}`)]
+            void vscode.window.showErrorMessage(errorMessage)
+            return [createErrorItem(errorMessage, `s3-${connection.connectionId}`, this.id)]
         }
     }
 
@@ -179,8 +186,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
             return createRedshiftConnectionNode(connection, connectionCredentialsProvider)
         } catch (connErr) {
+            const errorMessage = `Failed to get Redshift connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Redshift connection details: ${(connErr as Error).message}`)
-            return this.createErrorNode(`Failed to get Redshift connection: ${(connErr as Error).message}`)
+            void vscode.window.showErrorMessage(errorMessage)
+            return createErrorItem(errorMessage, `redshift-${connection.connectionId}`, this.id)
         }
     }
 
@@ -205,8 +214,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
             return createLakehouseConnectionNode(connection, connectionCredentialsProvider, region)
         } catch (connErr) {
+            const errorMessage = `Failed to get Lakehouse connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Lakehouse connection details: ${(connErr as Error).message}`)
-            return this.createErrorNode(`Failed to get Lakehouse connection: ${(connErr as Error).message}`)
+            void vscode.window.showErrorMessage(errorMessage)
+            return createErrorItem(errorMessage, `lakehouse-${connection.connectionId}`, this.id)
         }
     }
 
@@ -231,15 +242,6 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 }
                 return s3Nodes
             },
-            getParent: () => this,
-        }
-    }
-
-    private createErrorNode(message: string): TreeNode {
-        return {
-            id: 'error-node',
-            resource: {},
-            getTreeItem: () => createErrorTreeItem(message),
             getParent: () => this,
         }
     }

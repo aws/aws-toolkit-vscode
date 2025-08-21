@@ -9,7 +9,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
 import { ConnectionConfig, createRedshiftConnectionConfig } from '../../shared/client/sqlWorkbenchClient'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
-import { NODE_ID_DELIMITER, NodeType, ResourceType, NodeData } from './types'
+import { NODE_ID_DELIMITER, NodeType, ResourceType, NodeData, NO_DATA_FOUND_MESSAGE } from './types'
 import {
     getLabel,
     isLeafNode,
@@ -18,8 +18,11 @@ import {
     isRedLakeDatabase,
     getTooltip,
     getColumnType,
+    createErrorItem,
 } from './utils'
+import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import { GlueCatalog } from '../../shared/client/glueCatalogClient'
 
 /**
  * Redshift data node for SageMaker Unified Studio
@@ -65,7 +68,9 @@ export class RedshiftNode implements TreeNode {
                 this.isLoading = false
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
-                return [createErrorNode(`${this.id}${NODE_ID_DELIMITER}error`, err as Error, this)]
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'getChildren', this.id) as RedshiftNode]
             }
         }
 
@@ -127,7 +132,7 @@ export function createRedshiftConnectionNode(
 
             const connectionParams = extractConnectionParams(connection)
             if (!connectionParams) {
-                return []
+                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
             }
 
             const isGlueCatalogDatabase = isRedLakeDatabase(connectionParams.database)
@@ -152,36 +157,84 @@ export function createRedshiftConnectionNode(
                 connectionCredentialsProvider
             )
 
-            const allResources = []
-            let nextToken: string | undefined
+            // Fetch Glue catalogs for filtering purposes only
+            // This will help determine which catalogs are accessible within the project
+            let glueCatalogs: GlueCatalog[] = []
+            try {
+                glueCatalogs = await listGlueCatalogs(
+                    connection.connectionId,
+                    connectionParams.region,
+                    connectionCredentialsProvider
+                )
+            } catch (err) {
+                logger.warn(`Failed to fetch Glue catalogs for filtering: ${(err as Error).message}`)
+            }
 
-            do {
-                const response = await sqlClient.getResources({
-                    connection: connectionConfig,
-                    resourceType: ResourceType.DATABASE,
-                    includeChildren: true,
-                    maxItems: 100,
-                    forceRefresh: true,
-                    pageToken: nextToken,
-                })
-                allResources.push(...(response.resources || []))
-                nextToken = response.nextToken
-            } while (nextToken)
+            // Fetch databases and catalogs using getResources
+            const [databasesResult, catalogsResult] = await Promise.allSettled([
+                fetchResources(sqlClient, connectionConfig, ResourceType.DATABASE),
+                fetchResources(sqlClient, connectionConfig, ResourceType.CATALOG),
+            ])
 
-            const databases = allResources.filter(
+            const databases = databasesResult.status === 'fulfilled' ? databasesResult.value : []
+            const catalogs = catalogsResult.status === 'fulfilled' ? catalogsResult.value : []
+            const allNodes: RedshiftNode[] = []
+
+            // Filter databases
+            const filteredDatabases = databases.filter(
                 (r: any) =>
                     r.type === ResourceType.DATABASE ||
                     r.type === ResourceType.EXTERNAL_DATABASE ||
                     r.type === ResourceType.SHARED_DATABASE
             )
 
-            if (databases.length === 0) {
-                // If no databases found, return the default database
-                return [createDatabaseNode(connectionConfig.database, connectionConfig, node)]
+            // Filter catalogs using listGlueCatalogs results
+            const filteredCatalogs = catalogs.filter((catalog: any) => {
+                if (catalog.displayName?.toLowerCase() === 'awsdatacatalog') {
+                    return true // Always include AWS Data Catalog
+                }
+                // Filter using Glue catalogs list
+                return glueCatalogs.some((glueCatalog) => catalog.displayName?.endsWith(glueCatalog.Name ?? ''))
+            })
+
+            // Add database nodes
+            if (filteredDatabases.length === 0) {
+                if (databasesResult.status === 'rejected') {
+                    const errorMessage = `Failed to fetch databases - ${databasesResult.reason?.message || databasesResult.reason}.`
+                    void vscode.window.showErrorMessage(errorMessage)
+                    allNodes.push(createErrorItem(errorMessage, 'databases', node.id) as RedshiftNode)
+                } else {
+                    allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
+                }
+            } else {
+                allNodes.push(
+                    ...filteredDatabases.map((db: any) => createDatabaseNode(db.displayName, connectionConfig, node))
+                )
             }
 
-            // Map databases to nodes
-            return databases.map((db: any) => createDatabaseNode(db.displayName, connectionConfig, node))
+            // Add catalog nodes
+            if (filteredCatalogs.length === 0) {
+                if (catalogsResult.status === 'rejected') {
+                    const errorMessage = `Failed to fetch catalogs - ${catalogsResult.reason?.message || catalogsResult.reason}`
+                    void vscode.window.showErrorMessage(errorMessage)
+                    allNodes.push(createErrorItem(errorMessage, 'catalogs', node.id) as RedshiftNode)
+                } else {
+                    allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
+                }
+            } else {
+                allNodes.push(
+                    ...filteredCatalogs.map((catalog: any) =>
+                        createCatalogNode(
+                            catalog.displayName || catalog.identifier || '',
+                            catalog,
+                            connectionConfig,
+                            node
+                        )
+                    )
+                )
+            }
+
+            return allNodes
         }
     )
 }
@@ -311,15 +364,16 @@ function createDatabaseNode(
                 )
 
                 if (schemas.length === 0) {
-                    // If no schemas found, return the default schema
-                    return [createSchemaNode('public', dbConnectionConfig, node)]
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
                 }
 
                 // Map schemas to nodes
                 return schemas.map((schema: any) => createSchemaNode(schema.displayName, dbConnectionConfig, node))
             } catch (err) {
                 logger.error(`Failed to get schemas: ${(err as Error).message}`)
-                throw err
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'schemas', node.id) as RedshiftNode]
             }
         }
     )
@@ -448,13 +502,15 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                 }
 
                 if (containerNodes.length === 0) {
-                    return [createEmptyNode(`${node.id}${NODE_ID_DELIMITER}empty`, node)]
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
                 }
 
                 return containerNodes
             } catch (err) {
                 logger.error(`Failed to get schema contents: ${(err as Error).message}`)
-                throw err
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'schema-contents', node.id) as RedshiftNode]
             }
         }
     )
@@ -483,6 +539,12 @@ function createContainerNode(
         },
         async (node) => {
             // Map resources to nodes
+            if (nodeType === NodeType.REDSHIFT_TABLE && parent.data.value?.type === ResourceType.CATALOG_DATABASE) {
+                // For catalog tables, use catalog table node
+                return resources.map((resource: any) =>
+                    createCatalogTableNode(resource.displayName, resource, connectionConfig, node)
+                )
+            }
             return resources.map((resource: any) =>
                 createObjectNode(resource.displayName, nodeType, resource, connectionConfig, node)
             )
@@ -606,7 +668,9 @@ function createObjectNode(
                 })
             } catch (err) {
                 logger.error(`Failed to get columns: ${(err as Error).message}`)
-                return [createErrorNode(`${node.id}${NODE_ID_DELIMITER}error`, err as Error, node)]
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'columns', node.id) as RedshiftNode]
             }
         }
     )
@@ -633,30 +697,6 @@ function createColumnNode(
             ...parent.data.path,
             column: name,
         },
-        parent,
-    })
-}
-
-/**
- * Creates an error node
- */
-function createErrorNode(id: string, error: Error, parent?: RedshiftNode): RedshiftNode {
-    return new RedshiftNode({
-        id,
-        nodeType: NodeType.ERROR,
-        value: error,
-        parent,
-    })
-}
-
-/**
- * Creates an empty node
- */
-function createEmptyNode(id: string, parent?: RedshiftNode): RedshiftNode {
-    return new RedshiftNode({
-        id,
-        nodeType: NodeType.EMPTY,
-        value: 'No objects found',
         parent,
     })
 }
@@ -697,6 +737,276 @@ function getRootCredentials(node: RedshiftNode): ConnectionCredentialsProvider {
         credentials || {
             accessKeyId: 'dummy',
             secretAccessKey: 'dummy',
+        }
+    )
+}
+
+/**
+ * Fetch glue catalogs, this will help determine which catalogs are accessible within the project
+ */
+async function listGlueCatalogs(
+    connectionId: string,
+    region: string,
+    connectionCredentialsProvider: ConnectionCredentialsProvider
+): Promise<GlueCatalog[]> {
+    const clientStore = ConnectionClientStore.getInstance()
+    const glueCatalogClient = clientStore.getGlueCatalogClient(connectionId, region, connectionCredentialsProvider)
+
+    const allCatalogs = []
+    let nextToken: string | undefined
+
+    do {
+        const { catalogs, nextToken: token } = await glueCatalogClient.getCatalogs(nextToken)
+        allCatalogs.push(...catalogs)
+        nextToken = token
+    } while (nextToken)
+
+    return allCatalogs
+}
+
+/**
+ * Main logic to fetch catalog and database resources using getResources
+ */
+async function fetchResources(
+    sqlClient: any,
+    connectionConfig: ConnectionConfig,
+    resourceType: ResourceType,
+    parents: any[] = []
+): Promise<any[]> {
+    const allResources = []
+    let nextToken: string | undefined
+
+    do {
+        const requestParams = {
+            connection: connectionConfig,
+            resourceType,
+            includeChildren: true,
+            maxItems: 100,
+            parents,
+            forceRefresh: true,
+            pageToken: nextToken,
+        }
+        const response = await sqlClient.getResources(requestParams)
+        allResources.push(...(response.resources || []))
+        nextToken = response.nextToken
+    } while (nextToken)
+
+    return allResources
+}
+
+/**
+ * Creates a catalog database node
+ */
+function createCatalogDatabaseNode(
+    databaseName: string,
+    database: any,
+    connectionConfig: ConnectionConfig,
+    parent: RedshiftNode
+): RedshiftNode {
+    return new RedshiftNode(
+        {
+            id: `${parent.id}${NODE_ID_DELIMITER}${databaseName}`,
+            nodeType: NodeType.REDSHIFT_CATALOG_DATABASE,
+            value: {
+                ...database,
+                connectionConfig,
+                identifier: databaseName,
+                type: ResourceType.CATALOG_DATABASE,
+            },
+            path: {
+                ...parent.data.path,
+                database: databaseName,
+            },
+            parent,
+        },
+        async (node) => {
+            try {
+                const rootCredentials = getRootCredentials(parent)
+                const clientStore = ConnectionClientStore.getInstance()
+                const rootConnection = getRootConnection(parent)
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    rootConnection.connectionId,
+                    connectionConfig.id.split(':')[3],
+                    rootCredentials
+                )
+
+                // Use getResources to fetch tables within this catalog database
+                const tables = await fetchResources(sqlClient, connectionConfig, ResourceType.CATALOG_TABLE, [
+                    {
+                        parentId: database.identifier,
+                        parentType: ResourceType.CATALOG_DATABASE,
+                    },
+                    {
+                        parentId: parent.data.value?.catalog?.identifier || parent.data.path?.catalog,
+                        parentType: ResourceType.CATALOG,
+                    },
+                ])
+
+                if (tables.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
+                }
+
+                // Create container node for tables
+                return [createContainerNode(NodeType.REDSHIFT_TABLE, tables, connectionConfig, node)]
+            } catch (err) {
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'catalog-tables', node.id) as RedshiftNode]
+            }
+        }
+    )
+}
+
+/**
+ * Creates a catalog table node
+ */
+function createCatalogTableNode(
+    tableName: string,
+    table: any,
+    connectionConfig: ConnectionConfig,
+    parent: RedshiftNode
+): RedshiftNode {
+    return new RedshiftNode(
+        {
+            id: `${parent.id}${NODE_ID_DELIMITER}${tableName}`,
+            nodeType: NodeType.REDSHIFT_TABLE,
+            value: {
+                ...table,
+                connectionConfig,
+            },
+            path: {
+                ...parent.data.path,
+                table: tableName,
+            },
+            parent,
+        },
+        async (node) => {
+            try {
+                const rootCredentials = getRootCredentials(parent)
+                const clientStore = ConnectionClientStore.getInstance()
+                const rootConnection = getRootConnection(parent)
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    rootConnection.connectionId,
+                    connectionConfig.id.split(':')[3],
+                    rootCredentials
+                )
+
+                // Use getResources to fetch columns within this catalog table
+                // Need to traverse up to find the actual database and catalog nodes
+                let databaseNode = parent
+                while (databaseNode && databaseNode.data.nodeType !== NodeType.REDSHIFT_CATALOG_DATABASE) {
+                    databaseNode = databaseNode.data.parent
+                }
+
+                let catalogNode = databaseNode?.data.parent
+                while (catalogNode && catalogNode.data.nodeType !== NodeType.REDSHIFT_CATALOG) {
+                    catalogNode = catalogNode.data.parent
+                }
+
+                const parents = [
+                    {
+                        parentId: table.identifier,
+                        parentType: ResourceType.CATALOG_TABLE,
+                    },
+                    {
+                        parentId: databaseNode?.data.value?.identifier,
+                        parentType: ResourceType.CATALOG_DATABASE,
+                    },
+                    {
+                        parentId: catalogNode?.data.value?.catalog?.identifier || catalogNode?.data.value?.identifier,
+                        parentType: ResourceType.CATALOG,
+                    },
+                ]
+
+                const columns = await fetchResources(sqlClient, connectionConfig, ResourceType.CATALOG_COLUMN, parents)
+
+                return columns.map((column: any) => {
+                    let columnType = 'UNKNOWN'
+                    if (column.resourceMetadata && Array.isArray(column.resourceMetadata)) {
+                        const typeMetadata = column.resourceMetadata.find((meta: any) => meta.key === 'COLUMN_TYPE')
+                        if (typeMetadata) {
+                            columnType = typeMetadata.value
+                        }
+                    }
+
+                    columnType = getColumnType(columnType)
+
+                    return createColumnNode(
+                        column.displayName,
+                        {
+                            name: column.displayName,
+                            type: columnType,
+                        },
+                        connectionConfig,
+                        node
+                    )
+                })
+            } catch (err) {
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'catalog-columns', node.id) as RedshiftNode]
+            }
+        }
+    )
+}
+
+/**
+ * Creates a catalog node
+ */
+function createCatalogNode(
+    catalogName: string,
+    catalog: any,
+    connectionConfig: ConnectionConfig,
+    parent: RedshiftNode
+): RedshiftNode {
+    return new RedshiftNode(
+        {
+            id: `${parent.id}${NODE_ID_DELIMITER}${catalogName}`,
+            nodeType: NodeType.REDSHIFT_CATALOG,
+            value: {
+                catalog,
+                catalogName,
+                connectionConfig,
+                identifier: catalogName,
+                type: ResourceType.CATALOG,
+            },
+            path: {
+                ...parent.data.path,
+                catalog: catalogName,
+            },
+            parent,
+        },
+        async (node) => {
+            try {
+                const rootCredentials = getRootCredentials(parent)
+                const clientStore = ConnectionClientStore.getInstance()
+                const rootConnection = getRootConnection(parent)
+                const sqlClient = clientStore.getSQLWorkbenchClient(
+                    rootConnection.connectionId,
+                    connectionConfig.id.split(':')[3],
+                    rootCredentials
+                )
+
+                // Use getResources to fetch databases within this catalog
+                const databases = await fetchResources(sqlClient, connectionConfig, ResourceType.CATALOG_DATABASE, [
+                    {
+                        parentId: catalog.identifier,
+                        parentType: ResourceType.CATALOG,
+                    },
+                ])
+
+                if (databases.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
+                }
+
+                return databases.map((database: any) =>
+                    createCatalogDatabaseNode(database.displayName, database, connectionConfig, node)
+                )
+            } catch (err) {
+                const errorMessage = (err as Error).message
+                void vscode.window.showErrorMessage(errorMessage)
+                return [createErrorItem(errorMessage, 'catalog-databases', node.id) as RedshiftNode]
+            }
         }
     )
 }
