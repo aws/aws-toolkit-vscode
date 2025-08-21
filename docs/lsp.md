@@ -101,3 +101,5 @@ If you want to connect a local version of language-server-runtimes to aws-toolki
 ## Amazon Q Inline Activation
 
 -   In order to get inline completion working you must open a supported file type defined in CodewhispererInlineCompletionLanguages in `packages/amazonq/src/app/inline/completion.ts`
+
+h
