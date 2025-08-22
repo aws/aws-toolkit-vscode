@@ -12,7 +12,7 @@ import { initializeResourceMetadata } from './shared/utils/resourceMetadataUtils
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Only run when environment is a SageMaker Unified Studio space
-    if (isSageMaker('SMUS')) {
+    if (isSageMaker('SMUS') || isSageMaker('SMUS-SPACE-REMOTE-ACCESS')) {
         await initializeResourceMetadata()
         await activateConnectionMagicsSelector(extensionContext)
     }

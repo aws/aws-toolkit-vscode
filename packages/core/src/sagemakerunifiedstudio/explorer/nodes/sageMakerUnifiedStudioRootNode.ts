@@ -133,7 +133,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
 
     /**
      * Checks if the user has authenticated to SageMaker Unified Studio
-     * This is validated by checking existing Connections for SMUS.
+     * This is validated by checking existing Connections for SMUS or resource metadata.
      */
     private isAuthenticated(): boolean {
         try {
@@ -154,7 +154,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
 
             if (hasExpiredConnection) {
                 // Show reauthentication prompt to user
-                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection!)
+                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection! as any)
                 return true
             }
             return false
@@ -197,6 +197,7 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
  */
 export const smusLoginCommand = Commands.declare('aws.smus.login', () => async () => {
     const logger = getLogger()
+
     try {
         // Get DataZoneClient instance for URL validation
 

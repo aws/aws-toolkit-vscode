@@ -20,6 +20,8 @@ import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsPr
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
 import { ConnectionCredentialsProvider } from './connectionCredentialsProvider'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
+import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
+import { fromIni } from '@aws-sdk/credential-providers'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -27,6 +29,14 @@ import { ConnectionClientStore } from '../../shared/client/connectionClientStore
  */
 export function setSmusConnectedContext(isConnected: boolean): Promise<void> {
     return setContext('aws.smus.connected', isConnected)
+}
+
+/**
+ * Sets the context variable for SMUS space environment state
+ * @param inSmusSpace Whether we're in SMUS space environment
+ */
+export function setSmusSpaceEnvironmentContext(inSmusSpace: boolean): Promise<void> {
+    return setContext('aws.smus.inSmusSpaceEnvironment', inSmusSpace)
 }
 const authClassName = 'SmusAuthenticationProvider'
 
@@ -63,17 +73,34 @@ export class SmusAuthenticationProvider {
             // Clear all clients in client store when connection changes
             ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
+            await setSmusSpaceEnvironmentContext(SmusUtils.isInSmusSpaceEnvironment())
             this.onDidChangeEmitter.fire()
         })
 
         // Set initial context in case event does not trigger
         void setSmusConnectedContext(this.isConnectionValid())
+        void setSmusSpaceEnvironmentContext(SmusUtils.isInSmusSpaceEnvironment())
     }
 
     /**
      * Gets the active connection
      */
     public get activeConnection() {
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            const resourceMetadata = getResourceMetadata()!
+            if (resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion) {
+                return {
+                    domainId: resourceMetadata.AdditionalMetadata!.DataZoneDomainId!,
+                    ssoRegion: resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion!,
+                    // The following fields won't be needed in SMUS space environment
+                    // Set them to be empty string for type checks only
+                    domainUrl: '',
+                    id: '',
+                }
+            } else {
+                throw new ToolkitError('Domain region not found in metadata file.')
+            }
+        }
         return this.secondaryAuth.activeConnection
     }
 
@@ -88,6 +115,9 @@ export class SmusAuthenticationProvider {
      * Checks if the connection is valid
      */
     public isConnectionValid(): boolean {
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            return true
+        }
         return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
     }
 
@@ -95,6 +125,9 @@ export class SmusAuthenticationProvider {
      * Checks if connected to SMUS
      */
     public isConnected(): boolean {
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            return true
+        }
         return this.activeConnection !== undefined
     }
 
@@ -314,6 +347,10 @@ export class SmusAuthenticationProvider {
      * @returns Domain ID
      */
     public getDomainId(): string {
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            return getResourceMetadata()!.AdditionalMetadata!.DataZoneDomainId!
+        }
+
         if (!this.activeConnection) {
             throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
         }
@@ -332,6 +369,15 @@ export class SmusAuthenticationProvider {
     }
 
     public getDomainRegion(): string {
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            const resourceMetadata = getResourceMetadata()!
+            if (resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion) {
+                return resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion
+            } else {
+                throw new ToolkitError('Domain region not found in metadata file.')
+            }
+        }
+
         if (!this.activeConnection) {
             throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
         }
@@ -342,10 +388,15 @@ export class SmusAuthenticationProvider {
      * Gets or creates a cached credentials provider for the active connection
      * @returns Promise resolving to the credentials provider
      */
-    public async getDerCredentialsProvider(): Promise<DomainExecRoleCredentialsProvider> {
+    public async getDerCredentialsProvider(): Promise<any> {
         const logger = getLogger()
 
-        // TODO : Return fromIni() credential provider here when in the SageMaker Unified Studio hosted IDE environment.
+        if (SmusUtils.isInSmusSpaceEnvironment()) {
+            const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
+            return {
+                getCredentials: async () => await credentials(),
+            }
+        }
 
         if (!this.activeConnection) {
             throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })

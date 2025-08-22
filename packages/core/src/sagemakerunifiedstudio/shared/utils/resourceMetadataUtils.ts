@@ -53,7 +53,7 @@ export function getResourceMetadata(): ResourceMetadata | undefined {
 export async function initializeResourceMetadata(): Promise<void> {
     const logger = getLogger()
 
-    if (!isSageMaker('SMUS')) {
+    if (!isSageMaker('SMUS') && !isSageMaker('SMUS-SPACE-REMOTE-ACCESS')) {
         logger.debug(`Not in SageMaker Unified Studio space, skipping initialization of resource metadata`)
         return
     }

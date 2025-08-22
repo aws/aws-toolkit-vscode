@@ -13,6 +13,8 @@ import {
     validateCredentialFields,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
+import * as extensionUtilities from '../../../shared/extensionUtilities'
+import * as resourceMetadataUtils from '../../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
 
 describe('SmusUtils', () => {
@@ -408,6 +410,54 @@ describe('SmusUtils', () => {
                     return true
                 }
             )
+        })
+    })
+
+    describe('isInSmusSpaceEnvironment', () => {
+        let isSageMakerStub: sinon.SinonStub
+        let getResourceMetadataStub: sinon.SinonStub
+
+        beforeEach(() => {
+            isSageMakerStub = sinon.stub(extensionUtilities, 'isSageMaker')
+            getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+        })
+
+        it('should return true when in SMUS space with DataZone domain ID', () => {
+            isSageMakerStub.withArgs('SMUS').returns(true)
+            getResourceMetadataStub.returns({
+                AdditionalMetadata: {
+                    DataZoneDomainId: 'dz-domain-123',
+                },
+            })
+
+            const result = SmusUtils.isInSmusSpaceEnvironment()
+            assert.strictEqual(result, true)
+        })
+
+        it('should return false when not in SMUS space', () => {
+            isSageMakerStub.withArgs('SMUS').returns(false)
+            isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(false)
+
+            const result = SmusUtils.isInSmusSpaceEnvironment()
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false when in SMUS space but no resource metadata', () => {
+            isSageMakerStub.withArgs('SMUS').returns(true)
+            getResourceMetadataStub.returns(undefined)
+
+            const result = SmusUtils.isInSmusSpaceEnvironment()
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false when in SMUS space but no DataZone domain ID', () => {
+            isSageMakerStub.withArgs('SMUS').returns(true)
+            getResourceMetadataStub.returns({
+                AdditionalMetadata: {},
+            })
+
+            const result = SmusUtils.isInSmusSpaceEnvironment()
+            assert.strictEqual(result, false)
         })
     })
 })

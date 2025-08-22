@@ -1334,7 +1334,7 @@
             "view/title": [
                 {
                     "command": "aws.smus.switchProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
                     "group": "smus@0"
                 },
                 {
@@ -1344,7 +1344,7 @@
                 },
                 {
                     "command": "aws.smus.signOut",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
                     "group": "smus@2"
                 },
                 {

@@ -5,6 +5,8 @@
 
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
+import { isSageMaker } from '../../shared/extensionUtilities'
+import { getResourceMetadata } from './utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
 
 /**
@@ -337,5 +339,15 @@ export class SmusUtils {
             throw new Error(`Invalid UserId format: ${userId}`)
         }
         return match[1]
+    }
+
+    /**
+     * Checks if we're in SMUS space environment (should hide certain UI elements)
+     * @returns True if in SMUS space environment with DataZone domain ID
+     */
+    public static isInSmusSpaceEnvironment(): boolean {
+        const isSMUSspace = isSageMaker('SMUS') || isSageMaker('SMUS-SPACE-REMOTE-ACCESS')
+        const resourceMetadata = getResourceMetadata()
+        return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
     }
 }

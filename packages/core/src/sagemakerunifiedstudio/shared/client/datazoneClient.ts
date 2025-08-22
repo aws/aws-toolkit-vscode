@@ -457,6 +457,39 @@ export class DataZoneClient {
         }
     }
 
+    /**
+     * Gets a specific project by ID
+     * @param projectId The project identifier
+     * @returns Promise resolving to the project details
+     */
+    public async getProject(projectId: string): Promise<DataZoneProject> {
+        try {
+            this.logger.info(`DataZoneClient: Getting project ${projectId} in domain ${this.domainId}`)
+
+            const datazoneClient = await this.getDataZoneClient()
+
+            const response = await datazoneClient.getProject({
+                domainIdentifier: this.domainId,
+                identifier: projectId,
+            })
+
+            const project: DataZoneProject = {
+                id: response.id || '',
+                name: response.name || '',
+                description: response.description,
+                domainId: this.domainId,
+                createdAt: response.createdAt ? new Date(response.createdAt) : undefined,
+                updatedAt: response.lastUpdatedAt ? new Date(response.lastUpdatedAt) : undefined,
+            }
+
+            this.logger.debug(`DataZoneClient: Retrieved project ${projectId} with name: ${project.name}`)
+            return project
+        } catch (err) {
+            this.logger.error('DataZoneClient: Failed to get project: %s', err as Error)
+            throw err
+        }
+    }
+
     /*
      * Processes a connection response to add jdbcConnection if it's a Redshift connection
      * @param connection The connection object to process
