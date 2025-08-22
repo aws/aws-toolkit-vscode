@@ -189,8 +189,11 @@ export class IssueItem extends vscode.TreeItem {
     }
 
     private getDescription() {
+        const positionStr = `[Ln ${this.issue.startLine + 1}]`
         const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
-        return groupingStrategy !== CodeIssueGroupingStrategy.FileLocation ? `${path.basename(this.filePath)}` : ''
+        return groupingStrategy !== CodeIssueGroupingStrategy.FileLocation
+            ? `${path.basename(this.filePath)} ${positionStr}`
+            : positionStr
     }
 
     private getContextValue() {
