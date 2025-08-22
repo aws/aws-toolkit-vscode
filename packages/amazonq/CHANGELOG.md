@@ -1,3 +1,8 @@
+## 1.91.0 2025-08-22
+
+- **Bug Fix** Enable inline completion in Jupyter Notebook
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+
 ## 1.90.0 2025-08-15
 
 - Miscellaneous non-user-facing changes
