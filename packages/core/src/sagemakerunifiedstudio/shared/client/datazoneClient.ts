@@ -342,7 +342,7 @@ export class DataZoneClient {
             )
             return { memberships: response.members, nextToken: response.nextToken }
         } catch (err) {
-            this.logger.error('DataZoneClient: Failed to list project memberships: %s', err as Error)
+            this.logger.error('DataZoneClient: Failed to list project memberships: %s', (err as Error).message)
             throw err
         }
     }
@@ -370,7 +370,7 @@ export class DataZoneClient {
             this.logger.debug(`DataZoneClient: Fetched a total of ${allMemberships.length} project memberships`)
             return allMemberships
         } catch (err) {
-            this.logger.error('DataZoneClient: Failed to fetch all project memberships: %s', err as Error)
+            this.logger.error('DataZoneClient: Failed to fetch all project memberships: %s', (err as Error).message)
             throw err
         }
     }
@@ -420,7 +420,7 @@ export class DataZoneClient {
             this.logger.debug(`DataZoneClient: Found ${projects.length} projects for domain ${this.domainId}`)
             return { projects, nextToken: response.nextToken }
         } catch (err) {
-            this.logger.error('DataZoneClient: Failed to list projects: %s', err as Error)
+            this.logger.error('DataZoneClient: Failed to list projects: %s', (err as Error).message)
             throw err
         }
     }

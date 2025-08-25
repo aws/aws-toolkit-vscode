@@ -18,6 +18,7 @@ import { SagemakerUnifiedStudioSpaceNode } from './sageMakerUnifiedStudioSpaceNo
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusUtils } from '../../shared/smusUtils'
+import { getIcon } from '../../../shared/icons'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -59,6 +60,10 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         try {
             await this.updateChildren()
         } catch (err) {
+            const error = err as Error
+            if (error.name === 'AccessDeniedException') {
+                return this.getAccessDeniedChildren()
+            }
             return this.getNoSpacesFoundChildren()
         }
         const nodes = [...this.sagemakerSpaceNodes.values()]
@@ -74,6 +79,24 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                 id: 'smusNoSpaces',
                 resource: {},
                 getTreeItem: () => new vscode.TreeItem('[No Spaces found]', vscode.TreeItemCollapsibleState.None),
+                getParent: () => this,
+            },
+        ]
+    }
+
+    private getAccessDeniedChildren(): TreeNode[] {
+        return [
+            {
+                id: 'smusAccessDenied',
+                resource: {},
+                getTreeItem: () => {
+                    const item = new vscode.TreeItem(
+                        "You don't have permission to view spaces. Please contact your administrator.",
+                        vscode.TreeItemCollapsibleState.None
+                    )
+                    item.iconPath = getIcon('vscode-error')
+                    return item
+                },
                 getParent: () => this,
             },
         ]

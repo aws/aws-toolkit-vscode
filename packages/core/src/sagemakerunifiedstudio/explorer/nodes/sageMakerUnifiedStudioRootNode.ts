@@ -340,74 +340,84 @@ export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => asy
     }
 })
 
+function isAccessDenied(error: Error): boolean {
+    return error.name.includes('AccessDenied')
+}
+
+function createProjectQuickPickItems(projects: any[]) {
+    return projects
+        .sort(
+            (a, b) =>
+                (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) -
+                (a.updatedAt ? new Date(a.updatedAt).getTime() : 0)
+        )
+        .filter((project) => project.name !== 'GenerativeAIModelGovernanceProject')
+        .map((project) => ({
+            label: project.name,
+            detail: 'ID: ' + project.id,
+            description: project.description,
+            data: project,
+        }))
+}
+
+async function showQuickPick(items: any[]) {
+    const quickPick = createQuickPick(items, {
+        title: projectPickerTitle,
+        placeholder: projectPickerPlaceholder,
+    })
+    return await quickPick.prompt()
+}
+
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
     const logger = getLogger()
+
     try {
         const authProvider = SmusAuthenticationProvider.fromContext()
-        const activeConnection = authProvider.activeConnection
-        if (!activeConnection) {
-            logger.error('There is no active connection to display project view')
+        if (!authProvider.activeConnection) {
+            logger.error('No active connection to display project view')
             return
         }
-        const authenticatedDataZoneClient = await DataZoneClient.getInstance(authProvider)
-        logger.debug('SMUS: DataZone client instance obtained successfully')
 
-        // Fetching all projects in the specified domain using the client's fetchAllProjects method
-        const allProjects = await authenticatedDataZoneClient.fetchAllProjects()
+        const client = await DataZoneClient.getInstance(authProvider)
+        logger.debug('DataZone client instance obtained successfully')
 
-        const smusProjects = allProjects
+        const allProjects = await client.fetchAllProjects()
+        const items = createProjectQuickPickItems(allProjects)
 
-        // Process projects: sort by updatedAt, and map to quick pick items
-        const items = [...smusProjects]
-            .sort(
-                (a, b) =>
-                    (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) -
-                    (a.updatedAt ? new Date(a.updatedAt).getTime() : 0)
-            )
-            .filter(
-                (project) =>
-                    // Filter out the Generative AI Model Governance project that is part of QiuckStart resources
-                    project.name !== 'GenerativeAIModelGovernanceProject'
-            )
-            .map((project) => ({
-                label: project.name,
-                detail: 'ID: ' + project.id,
-                description: project.description,
-                data: project,
-            }))
         if (items.length === 0) {
             logger.info('No projects found in the domain')
             void vscode.window.showInformationMessage('No projects found in the domain')
-            // If no projects are found, show "No projects found" in the quick pick
-            const quickPickItem = [
-                {
-                    label: 'No projects found',
-                    detail: '',
-                    description: '',
-                    data: {},
-                },
-            ]
-            const quickPick = createQuickPick(quickPickItem, {
-                title: projectPickerTitle,
-                placeholder: projectPickerPlaceholder,
-            })
-            await quickPick.prompt()
-        } else {
-            const quickPick = createQuickPick(items, {
-                title: projectPickerTitle,
-                placeholder: projectPickerPlaceholder,
-            })
-
-            const selectedProject = await quickPick.prompt()
-            if (selectedProject && !('type' in selectedProject) && projectNode) {
-                await projectNode.setProject(selectedProject)
-                // Refresh the entire tree view
-                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-            }
-            return selectedProject
+            await showQuickPick([{ label: 'No projects found', detail: '', description: '', data: {} }])
+            return
         }
+
+        const selectedProject = await showQuickPick(items)
+        if (
+            selectedProject &&
+            typeof selectedProject === 'object' &&
+            selectedProject !== null &&
+            !('type' in selectedProject) &&
+            projectNode
+        ) {
+            await projectNode.setProject(selectedProject)
+            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+        }
+
+        return selectedProject
     } catch (err) {
-        logger.error('Failed to select project: %s', (err as Error).message)
-        void vscode.window.showErrorMessage(`Failed to select project: ${(err as Error).message}`)
+        const error = err as Error
+
+        if (isAccessDenied(error)) {
+            await showQuickPick([
+                {
+                    label: '$(error)',
+                    description: "You don't have permissions to view projects. Please contact your administrator",
+                },
+            ])
+            return
+        }
+
+        logger.error('Failed to select project: %s', error.message)
+        void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
     }
 }

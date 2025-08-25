@@ -263,6 +263,28 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children.length, 1)
             assert.strictEqual(children[0].id, 'smusNoSpaces')
         })
+
+        it('returns access denied node when AccessDeniedException is thrown', async function () {
+            const accessDeniedError = new Error('Access denied')
+            accessDeniedError.name = 'AccessDeniedException'
+            updateChildrenStub.rejects(accessDeniedError)
+
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            const accessDeniedNode = children[0]
+            assert.strictEqual(accessDeniedNode.id, 'smusAccessDenied')
+
+            const treeItem = await accessDeniedNode.getTreeItem()
+            assert.ok(treeItem)
+            assert.strictEqual(
+                treeItem.label,
+                "You don't have permission to view spaces. Please contact your administrator."
+            )
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.ok(treeItem.iconPath)
+            assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'error')
+        })
     })
 
     describe('updatePendingNodes', function () {
@@ -300,6 +322,26 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert(mockSpaceNode.updateSpaceAppStatus.calledOnce)
             assert(mockSpaceNode.refreshNode.notCalled)
             assert(spacesNode.pollingSet.has('test-key'))
+        })
+    })
+
+    describe('getAccessDeniedChildren', function () {
+        it('returns access denied tree node with error icon', async function () {
+            const accessDeniedChildren = spacesNode['getAccessDeniedChildren']()
+
+            assert.strictEqual(accessDeniedChildren.length, 1)
+            const accessDeniedNode = accessDeniedChildren[0]
+            assert.strictEqual(accessDeniedNode.id, 'smusAccessDenied')
+
+            const treeItem = await accessDeniedNode.getTreeItem()
+            assert.ok(treeItem)
+            assert.strictEqual(
+                treeItem.label,
+                "You don't have permission to view spaces. Please contact your administrator."
+            )
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.ok(treeItem.iconPath)
+            assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'error')
         })
     })
 
@@ -363,6 +405,14 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
             assert.strictEqual(spacesNode['sagemakerSpaceNodes'].size, 1)
             assert(spacesNode['sagemakerSpaceNodes'].has('space1'))
+        })
+
+        it('throws AccessDeniedException when fetchSpaceAppsAndDomains fails with access denied', async function () {
+            const accessDeniedError = new Error('Access denied to spaces')
+            accessDeniedError.name = 'AccessDeniedException'
+            mockSagemakerClient.fetchSpaceAppsAndDomains.rejects(accessDeniedError)
+
+            await assert.rejects(async () => await spacesNode['updateChildren'](), /Access denied to spaces/)
         })
     })
 })

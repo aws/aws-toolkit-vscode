@@ -69,9 +69,6 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         }
         item.iconPath = getIcon('vscode-folder-opened')
 
-        // Auto-invoke project selection after sign-in
-        void vscode.commands.executeCommand('aws.smus.projectView', this)
-
         return item
     }
 

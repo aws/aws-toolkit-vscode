@@ -117,45 +117,25 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
     })
 
     describe('setProject', function () {
-        it('updates the project without firing change event', async function () {
+        it('updates the project and calls cleanupProjectResources', async function () {
+            const cleanupSpy = sinon.spy(projectNode as any, 'cleanupProjectResources')
             await projectNode.setProject(mockProject)
             assert.strictEqual(projectNode['project'], mockProject)
-        })
-
-        it('invalidates credentials and disposes existing sagemaker client', async function () {
-            // Set up existing sagemaker client with mock
-            const mockClient = { dispose: sinon.stub() } as any
-            projectNode['sagemakerClient'] = mockClient
-
-            await projectNode.setProject(mockProject)
-
-            assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
-            assert(mockClient.dispose.calledOnce)
-            assert.strictEqual(projectNode['sagemakerClient'], undefined)
+            assert(cleanupSpy.calledOnce)
         })
     })
 
     describe('clearProject', function () {
-        it('clears the project and fires change event', async function () {
+        it('clears the project, calls cleanupProjectResources and fires change event', async function () {
             await projectNode.setProject(mockProject)
+            const cleanupSpy = sinon.spy(projectNode as any, 'cleanupProjectResources')
             const emitterSpy = sinon.spy(projectNode['onDidChangeEmitter'], 'fire')
 
             await projectNode.clearProject()
 
             assert.strictEqual(projectNode['project'], undefined)
+            assert(cleanupSpy.calledOnce)
             assert(emitterSpy.calledOnce)
-        })
-
-        it('invalidates credentials and disposes existing sagemaker client', async function () {
-            // Set up existing sagemaker client with mock
-            const mockClient = { dispose: sinon.stub() } as any
-            projectNode['sagemakerClient'] = mockClient
-
-            await projectNode.clearProject()
-
-            assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
-            assert(mockClient.dispose.calledOnce)
-            assert.strictEqual(projectNode['sagemakerClient'], undefined)
         })
     })
 
@@ -318,6 +298,28 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
 
             const hasAccess = await projectNode['checkProjectAccess']('project-123')
             assert.strictEqual(hasAccess, false)
+        })
+    })
+
+    describe('cleanupProjectResources', function () {
+        it('invalidates credentials and disposes existing sagemaker client', async function () {
+            // Set up existing sagemaker client with mock
+            const mockClient = { dispose: sinon.stub() } as any
+            projectNode['sagemakerClient'] = mockClient
+
+            await projectNode['cleanupProjectResources']()
+
+            assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
+            assert(mockClient.dispose.calledOnce)
+            assert.strictEqual(projectNode['sagemakerClient'], undefined)
+        })
+
+        it('handles case when no sagemaker client exists', async function () {
+            projectNode['sagemakerClient'] = undefined
+
+            await projectNode['cleanupProjectResources']()
+
+            assert((projectNode['authProvider'].invalidateAllProjectCredentialsInCache as sinon.SinonStub).calledOnce)
         })
     })
 })

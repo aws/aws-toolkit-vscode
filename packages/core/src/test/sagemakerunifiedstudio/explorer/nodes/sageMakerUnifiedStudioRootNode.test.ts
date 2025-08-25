@@ -15,6 +15,7 @@ import { DataZoneClient, DataZoneProject } from '../../../../sagemakerunifiedstu
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
+import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('SmusRootNode', function () {
     let rootNode: SageMakerUnifiedStudioRootNode
@@ -480,6 +481,102 @@ describe('SelectSMUSProject', function () {
 
         assert.strictEqual(result, undefined)
         assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
+        assert.ok(!mockProjectNode.setProject.called)
+        assert.ok(!executeCommandStub.called)
+    })
+})
+
+describe('selectSMUSProject - Additional Tests', function () {
+    let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
+    let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
+    let createQuickPickStub: sinon.SinonStub
+    let executeCommandStub: sinon.SinonStub
+
+    const testDomainId = 'test-domain-123'
+    const mockProject: DataZoneProject = {
+        id: 'project-123',
+        name: 'Test Project',
+        description: 'Test Description',
+        domainId: testDomainId,
+        updatedAt: new Date(),
+    }
+
+    beforeEach(function () {
+        mockDataZoneClient = {
+            getDomainId: sinon.stub().returns(testDomainId),
+            fetchAllProjects: sinon.stub(),
+        } as any
+
+        mockProjectNode = {
+            setProject: sinon.stub(),
+        } as any
+
+        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+        } as any)
+
+        const mockQuickPick = {
+            prompt: sinon.stub().resolves(mockProject),
+        }
+        createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
+        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('handles access denied error gracefully', async function () {
+        const accessDeniedError = new Error('Access denied')
+        accessDeniedError.name = 'AccessDeniedError'
+        mockDataZoneClient.fetchAllProjects.rejects(accessDeniedError)
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, undefined)
+        assert.ok(
+            createQuickPickStub.calledWith([
+                {
+                    label: '$(error)',
+                    description: "You don't have permissions to view projects. Please contact your administrator",
+                },
+            ])
+        )
+    })
+
+    it('shows "No projects found" message when projects list is empty', async function () {
+        mockDataZoneClient.fetchAllProjects.resolves([])
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.strictEqual(result, undefined)
+        const testWindow = getTestWindow()
+        assert.ok(testWindow.shownMessages.some((msg) => msg.message === 'No projects found in the domain'))
+        assert.ok(
+            createQuickPickStub.calledWith([
+                {
+                    label: 'No projects found',
+                    detail: '',
+                    description: '',
+                    data: {},
+                },
+            ])
+        )
+    })
+
+    it('handles invalid selected project object', async function () {
+        mockDataZoneClient.fetchAllProjects.resolves([mockProject])
+
+        // Mock quickPick to return an object with 'type' property (invalid selection)
+        const mockQuickPick = {
+            prompt: sinon.stub().resolves({ type: 'invalid', data: mockProject }),
+        }
+        createQuickPickStub.returns(mockQuickPick as any)
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        assert.deepStrictEqual(result, { type: 'invalid', data: mockProject })
         assert.ok(!mockProjectNode.setProject.called)
         assert.ok(!executeCommandStub.called)
     })
