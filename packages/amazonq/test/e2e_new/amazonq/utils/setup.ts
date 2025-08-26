@@ -13,5 +13,7 @@ before(async function () {
     console.log('You have 60 seconds to complete this step\n\n')
     await signInToAmazonQ()
     const webviewView = testContext.webviewView
+    console.log('THIS WORKED 13')
     await closeAllTabs(webviewView)
+    console.log('THIS WORKED 14')
 })

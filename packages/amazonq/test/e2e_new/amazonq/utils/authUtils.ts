@@ -57,14 +57,19 @@ export async function signInToAmazonQ(): Promise<void> {
     const dialog = new ModalDialog()
     console.log('THIS WORKED 5')
     await dialog.pushButton('Open')
+    console.log('THIS WORKED 6')
     await sleep(12000)
     console.log('Manual authentication should be done')
     await webviewView.switchBack()
-
+    console.log('THIS WORKED 7')
     const editorView = workbench.getEditorView()
+    console.log('THIS WORKED 8')
     await editorView.closeAllEditors()
+    console.log('THIS WORKED 9')
     webviewView = new WebviewView()
+    console.log('THIS WORKED 10')
     await webviewView.switchToFrame()
+    console.log('THIS WORKED 11')
 
     testContext.workbench = workbench
     testContext.webviewView = webviewView
