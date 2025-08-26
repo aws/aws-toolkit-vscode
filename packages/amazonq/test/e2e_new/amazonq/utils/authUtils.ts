@@ -2,9 +2,10 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, By, WebviewView } from 'vscode-extension-tester'
-import { findItemByText, sleep, waitForElements } from './generalUtils'
+import { Workbench, By, WebviewView, ModalDialog } from 'vscode-extension-tester'
+import { findItemByText, printElementHTML, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
+import { until } from 'selenium-webdriver'
 
 /* Completes the entire Amazon Q login flow
 
@@ -43,14 +44,31 @@ export async function signInToAmazonQ(): Promise<void> {
     await UrlContinue.click()
 
     console.log('Waiting for manual authentication...')
+    await webviewView.switchBack()
+    const driver = workbench.getDriver()
+    console.log('THIS WORKED 1')
+    const modalWnd = By.className('monaco-dialog-box')
+    console.log('THIS WORKED 2')
+    await driver.wait(until.elementLocated(modalWnd), 10_000)
+    console.log('THIS WORKED 3')
+    const dialog = new ModalDialog()
+    console.log('THIS WORKED 4')
+    await dialog.pushButton('Open')
+    console.log('THIS WORKED 5')
     await sleep(12000)
     console.log('Manual authentication should be done')
     await webviewView.switchBack()
-
+    console.log('THIS WORKED 6')
     const editorView = workbench.getEditorView()
+    console.log('THIS WORKED 7')
     await editorView.closeAllEditors()
+    console.log('THIS WORKED 8')
     webviewView = new WebviewView()
+    console.log('THIS WORKED 9')
     await webviewView.switchToFrame()
+    console.log('THIS WORKED 10')
+    const body = webviewView.findElement(By.css('body'))
+    await printElementHTML(body)
 
     testContext.workbench = workbench
     testContext.webviewView = webviewView
