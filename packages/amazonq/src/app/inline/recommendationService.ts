@@ -188,29 +188,37 @@ export class RecommendationService {
                 })),
             })
 
-            // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
-            if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
-                const session = this.sessionManager.getActiveSession()
-                if (!session) {
+            if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
+                // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
+                if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
+                    const session = this.sessionManager.getActiveSession()
+                    if (!session) {
+                        return []
+                    }
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: Object.fromEntries(
+                            result.items.map((item) => [
+                                item.itemId,
+                                {
+                                    seen: false,
+                                    accepted: false,
+                                    discarded: true,
+                                },
+                            ])
+                        ),
+                    }
+                    languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+                    this.sessionManager.clear()
+                    getLogger().info(
+                        'Completion discarded due to active edit suggestion displayed longer than 1 second'
+                    )
                     return []
+                } else if (EditSuggestionState.isEditSuggestionActive()) {
+                    // discard the current edit suggestion if its display time is less than 1 sec
+                    await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
+                    getLogger().info('Discarding active edit suggestion displaying less than 1 second')
                 }
-                const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
-                        },
-                    },
-                }
-                languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-                this.sessionManager.clear()
-                return []
-            } else if (EditSuggestionState.isEditSuggestionActive()) {
-                // discard the current edit suggestion if its display time is less than 1 sec
-                await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
             }
 
             TelemetryHelper.instance.setSdkApiCallEndTime()

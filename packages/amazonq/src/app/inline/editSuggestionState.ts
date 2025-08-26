@@ -12,7 +12,9 @@ export class EditSuggestionState {
 
     static setEditSuggestionActive(active: boolean): void {
         this.isEditSuggestionCurrentlyActive = active
-        this.displayStartTime = performance.now()
+        if (active) {
+            this.displayStartTime = performance.now()
+        }
     }
 
     static isEditSuggestionActive(): boolean {
