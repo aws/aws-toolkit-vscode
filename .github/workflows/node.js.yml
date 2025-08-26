@@ -214,3 +214,24 @@ jobs:
                   verbose: true
                   file: ./coverage/${{ matrix.package }}/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
+
+    e2e:
+        needs: lint-commits
+        name: test E2E
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: E2E Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run test:ui
