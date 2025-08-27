@@ -237,6 +237,53 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await vscode.commands.executeCommand(`aws.amazonq.checkInlineSuggestionVisibility`)
     }
 
+    /**
+     * Check if a completion suggestion is currently active/displayed
+     */
+    public async isCompletionActive(): Promise<boolean> {
+        const session = this.sessionManager.getActiveSession()
+        if (session === undefined || !session.displayed || session.suggestions.some((item) => item.isInlineEdit)) {
+            return false
+        }
+
+        // Use VS Code command to check if inline suggestion is actually visible on screen
+        // This command only executes when inlineSuggestionVisible context is true
+        await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
+        const isInlineSuggestionVisible = performance.now() - session.lastVisibleTime < 50
+        return isInlineSuggestionVisible
+    }
+
+    /**
+     * Batch discard telemetry for completion suggestions when edit suggestion is active
+     */
+    public batchDiscardTelemetryForEditSuggestion(items: any[], session: any): void {
+        // Emit DISCARD telemetry for completion suggestions that can't be shown due to active edit
+        const completionSessionResult: {
+            [key: string]: { seen: boolean; accepted: boolean; discarded: boolean }
+        } = {}
+
+        for (const item of items) {
+            if (!item.isInlineEdit && item.itemId) {
+                completionSessionResult[item.itemId] = {
+                    seen: false,
+                    accepted: false,
+                    discarded: true,
+                }
+            }
+        }
+
+        // Send single telemetry event for all discarded items
+        if (Object.keys(completionSessionResult).length > 0) {
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                totalSessionDisplayTime: performance.now() - session.requestStartTime,
+            }
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+        }
+    }
+
     // this method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,
@@ -276,12 +323,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // yield event loop to let the document listen catch updates
         await sleep(1)
-        // prevent user deletion invoking auto trigger
-        // this is a best effort estimate of deletion
-        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
-            getLogger().debug('Skip auto trigger when deleting code')
-            return []
-        }
 
         let logstr = `GenerateCompletion metadata:\\n`
         try {
@@ -350,6 +391,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                // Do not make auto trigger if user rejects a suggestion
+                // by typing characters that does not match
+                return []
             }
 
             // tell the tutorial that completions has been triggered
@@ -370,8 +414,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 },
                 token,
                 isAutoTrigger,
-                getAllRecommendationsOptions,
-                this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+                this.documentEventListener,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
@@ -404,21 +448,24 @@ ${itemLog}
 
             const cursorPosition = document.validatePosition(position)
 
-            if (position.isAfter(editor.selection.active)) {
-                const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: session.sessionId,
-                    completionSessionResult: {
-                        [itemId]: {
-                            seen: false,
-                            accepted: false,
-                            discarded: true,
+            // Completion will not be rendered if users cursor moves to a position which is before the position when the service is invoked
+            if (items.length > 0 && !items[0].isInlineEdit) {
+                if (position.isAfter(editor.selection.active)) {
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: {
+                            [itemId]: {
+                                seen: false,
+                                accepted: false,
+                                discarded: true,
+                            },
                         },
-                    },
+                    }
+                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    this.sessionManager.clear()
+                    logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
+                    return []
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-                this.sessionManager.clear()
-                logstr += `- cursor moved behind trigger position. Discarding suggestion...`
-                return []
             }
 
             // delay the suggestion rendeing if user is actively typing

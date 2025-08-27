@@ -1,3 +1,21 @@
+## 1.91.0 2025-08-22
+
+- **Bug Fix** Enable inline completion in Jupyter Notebook
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+
+## 1.90.0 2025-08-15
+
+- Miscellaneous non-user-facing changes
+
+## 1.89.0 2025-08-13
+
+- Miscellaneous non-user-facing changes
+
+## 1.88.0 2025-08-06
+
+- **Feature** Amazon Q Chat provides error explanations and fixes when hovering or right-clicking on error indicators and messages
+- **Feature** /transform: Show transformation history in Transformation Hub and allow users to resume jobs
+
 ## 1.87.0 2025-07-31
 
 - Miscellaneous non-user-facing changes
