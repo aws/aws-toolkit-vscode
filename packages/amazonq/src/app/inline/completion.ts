@@ -302,8 +302,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
         // prevent concurrent API calls and write to shared state variables
         if (vsCodeState.isRecommendationsActive) {
-            getLogger().info('Recommendations already active, returning empty')
-            return []
+            getLogger().info('Recommendations active')
+            // return []
         }
 
         if (vsCodeState.isCodeWhispererEditing) {
