@@ -925,7 +925,7 @@
             },
             {
                 "command": "aws.amazonq.fixCode",
-                "win": "win+alt+y",
+                "win": "win+alt+h",
                 "mac": "cmd+alt+y",
                 "linux": "meta+alt+y"
             },
@@ -943,7 +943,7 @@
             },
             {
                 "command": "aws.amazonq.generateUnitTests",
-                "key": "win+alt+t",
+                "key": "win+alt+n",
                 "mac": "cmd+alt+t",
                 "linux": "meta+alt+t"
             },
