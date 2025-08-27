@@ -223,6 +223,8 @@ jobs:
                 node-version: [18.x]
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AUTH_UTIL_LAMBDA_ARN: ${{ secrets.AUTH_UTIL_LAMBDA_ARN }}
+
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
