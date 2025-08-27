@@ -11,6 +11,7 @@ interface ProxyConfig {
     noProxy: string | undefined
     proxyStrictSSL: boolean | true
     certificateAuthority: string | undefined
+    isProxyAndCertAutoDiscoveryEnabled: boolean
 }
 
 /**
@@ -53,13 +54,15 @@ export class ProxyUtil {
         const amazonQConfig = vscode.workspace.getConfiguration('amazonQ')
         const proxySettings = amazonQConfig.get<{
             certificateAuthority?: string
-        }>('proxy', {})
+            enableProxyAndCertificateAutoDiscovery: boolean
+        }>('proxy', { enableProxyAndCertificateAutoDiscovery: true })
 
         return {
             proxyUrl,
             noProxy,
             proxyStrictSSL,
             certificateAuthority: proxySettings.certificateAuthority,
+            isProxyAndCertAutoDiscoveryEnabled: proxySettings.enableProxyAndCertificateAutoDiscovery,
         }
     }
 
@@ -67,8 +70,8 @@ export class ProxyUtil {
      * Sets environment variables based on proxy configuration
      */
     private static async setProxyEnvironmentVariables(config: ProxyConfig): Promise<void> {
-        // Always enable experimental proxy support for better handling of both explicit and transparent proxies
-        process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = 'true'
+        // Set experimental proxy support based on user setting
+        process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = config.isProxyAndCertAutoDiscoveryEnabled.toString()
 
         const proxyUrl = config.proxyUrl
         // Set proxy environment variables
