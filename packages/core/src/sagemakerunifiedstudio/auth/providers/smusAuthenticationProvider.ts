@@ -175,6 +175,12 @@ export class SmusAuthenticationProvider {
 
                     // Use the existing connection
                     const result = await this.secondaryAuth.useNewConnection(existingConn)
+
+                    // Auto-invoke project selection after successful sign-in (but not in SMUS space environment)
+                    if (!SmusUtils.isInSmusSpaceEnvironment()) {
+                        void vscode.commands.executeCommand('aws.smus.switchProject')
+                    }
+
                     return result
                 }
 
@@ -192,6 +198,12 @@ export class SmusAuthenticationProvider {
 
                     const result = await this.secondaryAuth.useNewConnection(smusConn)
                     logger.debug(`SMUS: Reauthenticated connection successfully, id=${result.id}`)
+
+                    // Auto-invoke project selection after successful reauthentication (but not in SMUS space environment)
+                    if (!SmusUtils.isInSmusSpaceEnvironment()) {
+                        void vscode.commands.executeCommand('aws.smus.switchProject')
+                    }
+
                     return result
                 }
             }
@@ -214,6 +226,12 @@ export class SmusAuthenticationProvider {
             }
 
             const result = await this.secondaryAuth.useNewConnection(smusConn)
+
+            // Auto-invoke project selection after successful sign-in (but not in SMUS space environment)
+            if (!SmusUtils.isInSmusSpaceEnvironment()) {
+                void vscode.commands.executeCommand('aws.smus.switchProject')
+            }
+
             return result
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio', {

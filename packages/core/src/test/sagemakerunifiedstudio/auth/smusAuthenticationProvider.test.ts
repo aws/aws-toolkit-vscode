@@ -5,6 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
+import * as vscode from 'vscode'
 
 // Mock the setContext function BEFORE importing modules that use it
 const setContextModule = require('../../../shared/vscode/setContext')
@@ -24,6 +25,8 @@ describe('SmusAuthenticationProvider', function () {
     let smusAuthProvider: SmusAuthenticationProvider
     let extractDomainInfoStub: sinon.SinonStub
     let getSsoInstanceInfoStub: sinon.SinonStub
+    let isInSmusSpaceEnvironmentStub: sinon.SinonStub
+    let executeCommandStub: sinon.SinonStub
     let mockSecondaryAuthState: {
         activeConnection: SmusConnection | undefined
         hasSavedConnection: boolean
@@ -94,9 +97,14 @@ describe('SmusAuthenticationProvider', function () {
             .stub(SmusUtils, 'extractDomainInfoFromUrl')
             .returns({ domainId: testDomainId, region: testRegion })
         getSsoInstanceInfoStub = sinon.stub(SmusUtils, 'getSsoInstanceInfo').resolves(testSsoInstanceInfo)
+        isInSmusSpaceEnvironmentStub = sinon.stub(SmusUtils, 'isInSmusSpaceEnvironment').returns(false)
+        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
         sinon.stub(require('../../../auth/secondaryAuth'), 'getSecondaryAuth').returns(mockSecondaryAuth)
 
         smusAuthProvider = new SmusAuthenticationProvider(mockAuth, mockSecondaryAuth)
+
+        // Reset the executeCommand stub for clean state
+        executeCommandStub.resetHistory()
     })
 
     afterEach(function () {
@@ -189,6 +197,7 @@ describe('SmusAuthenticationProvider', function () {
             assert.ok(getSsoInstanceInfoStub.calledWith(testDomainUrl))
             assert.ok(mockAuth.createConnection.called)
             assert.ok(mockSecondaryAuth.useNewConnection.called)
+            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
         })
 
         it('should reuse existing valid connection', async function () {
@@ -201,6 +210,7 @@ describe('SmusAuthenticationProvider', function () {
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.createConnection.notCalled)
             assert.ok(mockSecondaryAuth.useNewConnection.calledWith(existingConnection))
+            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
         })
 
         it('should reauthenticate existing invalid connection', async function () {
@@ -213,6 +223,7 @@ describe('SmusAuthenticationProvider', function () {
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.reauthenticate.calledWith(existingConnection))
             assert.ok(mockSecondaryAuth.useNewConnection.called)
+            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
         })
 
         it('should throw error for invalid domain URL', async function () {
@@ -225,6 +236,8 @@ describe('SmusAuthenticationProvider', function () {
                     return err.code === 'FailedToConnect' && (err.cause as any)?.code === 'InvalidDomainUrl'
                 }
             )
+            // Should not trigger project selection on error
+            assert.ok(executeCommandStub.notCalled)
         })
 
         it('should handle SmusUtils errors', async function () {
@@ -235,6 +248,8 @@ describe('SmusAuthenticationProvider', function () {
                 () => smusAuthProvider.connectToSmus(testDomainUrl),
                 (err: ToolkitError) => err.code === 'FailedToConnect'
             )
+            // Should not trigger project selection on error
+            assert.ok(executeCommandStub.notCalled)
         })
 
         it('should handle auth creation errors', async function () {
@@ -245,6 +260,47 @@ describe('SmusAuthenticationProvider', function () {
                 () => smusAuthProvider.connectToSmus(testDomainUrl),
                 (err: ToolkitError) => err.code === 'FailedToConnect'
             )
+            // Should not trigger project selection on error
+            assert.ok(executeCommandStub.notCalled)
+        })
+
+        it('should not trigger project selection in SMUS space environment', async function () {
+            isInSmusSpaceEnvironmentStub.returns(true)
+            mockAuth.listConnections.resolves([])
+
+            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+
+            assert.strictEqual(result, mockSmusConnection)
+            assert.ok(mockAuth.createConnection.called)
+            assert.ok(mockSecondaryAuth.useNewConnection.called)
+            assert.ok(executeCommandStub.notCalled)
+        })
+
+        it('should not trigger project selection when reusing connection in SMUS space environment', async function () {
+            isInSmusSpaceEnvironmentStub.returns(true)
+            const existingConnection = { ...mockSmusConnection, domainUrl: testDomainUrl.toLowerCase() }
+            mockAuth.listConnections.resolves([existingConnection])
+            mockAuth.getConnectionState.returns('valid')
+
+            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+
+            assert.strictEqual(result, mockSmusConnection)
+            assert.ok(mockSecondaryAuth.useNewConnection.calledWith(existingConnection))
+            assert.ok(executeCommandStub.notCalled)
+        })
+
+        it('should not trigger project selection when reauthenticating in SMUS space environment', async function () {
+            isInSmusSpaceEnvironmentStub.returns(true)
+            const existingConnection = { ...mockSmusConnection, domainUrl: testDomainUrl.toLowerCase() }
+            mockAuth.listConnections.resolves([existingConnection])
+            mockAuth.getConnectionState.returns('invalid')
+
+            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+
+            assert.strictEqual(result, mockSmusConnection)
+            assert.ok(mockAuth.reauthenticate.calledWith(existingConnection))
+            assert.ok(mockSecondaryAuth.useNewConnection.called)
+            assert.ok(executeCommandStub.notCalled)
         })
     })
 

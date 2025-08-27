@@ -303,12 +303,40 @@ describe('DomainExecRoleCredentialsProvider', function () {
         it('should set default expiration when not provided in response', async function () {
             const credentials = await derProvider.getCredentials()
 
-            // Should have expiration set to 55 mins from now
+            // Should have expiration set to 10 mins from now
             assert.ok(credentials.expiration)
             const expirationTime = credentials.expiration!.getTime()
-            const expectedTime = Date.now() + 55 * 60 * 1000 // 1 hour
+            const expectedTime = Date.now() + 10 * 60 * 1000 // 10 minutes
             const timeDiff = Math.abs(expirationTime - expectedTime)
-            assert.ok(timeDiff < 5000, 'Expiration should be 55 mins from now')
+            assert.ok(timeDiff < 5000, 'Expiration should be 10 mins from now')
+        })
+
+        it('should use expiration from API response when provided', async function () {
+            const futureExpiration = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours from now
+            const responseWithExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: futureExpiration.toISOString(), // API returns expiration as ISO string
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves(responseWithExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should use the expiration from the API response
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = futureExpiration.getTime()
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 1000, 'Should use expiration from API response')
         })
 
         it('should handle JSON parsing errors', async function () {
@@ -325,6 +353,38 @@ describe('DomainExecRoleCredentialsProvider', function () {
                     return err.code === 'DerCredentialsFetchFailed'
                 }
             )
+        })
+
+        it('should handle invalid expiration string in response', async function () {
+            const responseWithInvalidExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: 'invalid-date-string', // Invalid date string
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: sinon.stub().resolves(responseWithInvalidExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should fall back to default expiration when date parsing fails
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+
+            // Should be a valid timestamp (not NaN) using the default expiration
+            assert.ok(!isNaN(expirationTime), 'Should have valid expiration timestamp')
+
+            // Should be close to now + 10 minutes (default expiration)
+            const expectedTime = Date.now() + 10 * 60 * 1000
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 5000, 'Should fall back to default expiration for invalid date string')
         })
     })
 

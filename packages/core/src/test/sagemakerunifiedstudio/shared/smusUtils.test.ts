@@ -164,7 +164,7 @@ describe('SmusUtils', () => {
         })
 
         it('should export SmusCredentialExpiry with correct values', () => {
-            assert.strictEqual(SmusCredentialExpiry.derExpiryMs, 55 * 60 * 1000)
+            assert.strictEqual(SmusCredentialExpiry.derExpiryMs, 10 * 60 * 1000)
             assert.strictEqual(SmusCredentialExpiry.projectExpiryMs, 10 * 60 * 1000)
             assert.strictEqual(SmusCredentialExpiry.connectionExpiryMs, 10 * 60 * 1000)
         })

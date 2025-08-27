@@ -16,7 +16,7 @@ import { SmusCredentialExpiry, SmusTimeouts, SmusErrorCodes, validateCredentialF
  * Credentials provider for SageMaker Unified Studio Domain Execution Role (DER)
  * Uses SSO tokens to get DER credentials via the /sso/redeem-token endpoint
  *
- * This provider implements internal caching with 55-minute expiry and handles
+ * This provider implements internal caching with 10-minute expiry and handles
  * its own credential lifecycle independently
  */
 export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
@@ -122,7 +122,7 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
     public async getCredentials(): Promise<AWS.Credentials> {
         this.logger.debug(`SMUS DER: Getting DER credentials for domain ${this.domainId}`)
 
-        // Check cache first (55-minute expiry with 5-minute buffer for proactive refresh)
+        // Check cache first (10-minute expiry with 5-minute buffer for proactive refresh)
         if (this.credentialCache && this.credentialCache.expiresAt > new Date()) {
             this.logger.debug(`SMUS DER: Using cached DER credentials for domain ${this.domainId}`)
             return this.credentialCache.credentials
@@ -207,6 +207,7 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                     accessKeyId: string
                     secretAccessKey: string
                     sessionToken: string
+                    expiration: string
                 }
             }
 
@@ -225,9 +226,23 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
             validateCredentialFields(credentials, 'InvalidCredentialResponse', 'API response')
 
             // Create credentials with expiration
-            // Note: The response doesn't include expiration, so we set it to 55 minutes from now
-            // TODO: Update when the API provides actual expiration time
-            const credentialExpiresAt = new globals.clock.Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
+            // Note: The response doesn't include expiration yet, so we set it to 10 minutes for now if it does't exist
+            let credentialExpiresAt: Date
+            if (credentials.expiration) {
+                // The API returns expiration as a string, convert to Date
+                const parsedExpiration = new Date(credentials.expiration)
+                // Check if the parsed date is valid
+                if (isNaN(parsedExpiration.getTime())) {
+                    this.logger.warn(
+                        `SMUS DER: Invalid expiration date string: ${credentials.expiration}, using default expiration`
+                    )
+                    credentialExpiresAt = new Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
+                } else {
+                    credentialExpiresAt = parsedExpiration
+                }
+            } else {
+                credentialExpiresAt = new Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
+            }
 
             const awsCredentials: AWS.Credentials = {
                 accessKeyId: credentials.accessKeyId as string,
@@ -236,7 +251,7 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                 expiration: credentialExpiresAt,
             }
 
-            // Cache DER credentials with 55-minute expiry (5-minute buffer for proactive refresh)
+            // Cache DER credentials with 10-minute expiry (5-minute buffer for proactive refresh)
             const cacheExpiresAt = new globals.clock.Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
             this.credentialCache = {
                 credentials: awsCredentials,

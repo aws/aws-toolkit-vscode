@@ -30,8 +30,8 @@ interface DataZoneSsoLoginResponse {
  * Credential expiry time constants for SMUS providers (in milliseconds)
  */
 export const SmusCredentialExpiry = {
-    /** Domain Execution Role (DER) credentials expiry time: 55 minutes */
-    derExpiryMs: 55 * 60 * 1000,
+    /** Domain Execution Role (DER) credentials expiry time: 10 minutes */
+    derExpiryMs: 10 * 60 * 1000,
     /** Project Role credentials expiry time: 10 minutes */
     projectExpiryMs: 10 * 60 * 1000,
     /** Connection credentials expiry time: 10 minutes */
