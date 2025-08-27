@@ -5,6 +5,8 @@
 import { Workbench, By, WebviewView } from 'vscode-extension-tester'
 import { findItemByText, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
+import { isRunningInGitHubActionsE2E } from './ciUtils'
+import { authenticateForCI } from './ciOidcClient'
 
 /* Completes the entire Amazon Q login flow
 
@@ -16,6 +18,18 @@ Currently, the function will
 
 TO-DO: Currently this signInToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
 export async function signInToAmazonQ(): Promise<void> {
+    if (isRunningInGitHubActionsE2E()) {
+        console.log('CI Environment detected: Using automated authentication')
+        await authenticateForCI()
+
+        // Set up minimal test context for CI
+        const workbench = new Workbench()
+        testContext.workbench = workbench
+        // Skip webview setup for CI as authentication is handled by Lambda
+        return
+    }
+
+    // Normal manual authentication flow for local development
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
 
@@ -45,6 +59,7 @@ export async function signInToAmazonQ(): Promise<void> {
     console.log('Waiting for manual authentication...')
     await sleep(12000)
     console.log('Manual authentication should be done')
+
     await webviewView.switchBack()
 
     const editorView = workbench.getEditorView()
