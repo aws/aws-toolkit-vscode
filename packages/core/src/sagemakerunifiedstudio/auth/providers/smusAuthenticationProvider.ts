@@ -12,7 +12,7 @@ import { SsoConnection } from '../../../auth/connection'
 import { showReauthenticateMessage } from '../../../shared/utilities/messages'
 import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
-import { setContext } from '../../../shared/vscode/setContext'
+import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
 import { createSmusProfile, isValidSmusConnection, SmusConnection } from '../model'
 import { getLogger } from '../../../shared/logger/logger'
@@ -22,6 +22,7 @@ import { ConnectionCredentialsProvider } from './connectionCredentialsProvider'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { fromIni } from '@aws-sdk/credential-providers'
+import { randomUUID } from '../../../shared/crypto'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -86,16 +87,17 @@ export class SmusAuthenticationProvider {
      * Gets the active connection
      */
     public get activeConnection() {
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             const resourceMetadata = getResourceMetadata()!
             if (resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion) {
                 return {
                     domainId: resourceMetadata.AdditionalMetadata!.DataZoneDomainId!,
                     ssoRegion: resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion!,
                     // The following fields won't be needed in SMUS space environment
-                    // Set them to be empty string for type checks only
-                    domainUrl: '',
-                    id: '',
+                    // Craft the domain url with known information
+                    // Use randome id as placeholder
+                    domainUrl: `https://${resourceMetadata.AdditionalMetadata!.DataZoneDomainId!}.sagemaker.${resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion!}.on.aws/`,
+                    id: randomUUID(),
                 }
             } else {
                 throw new ToolkitError('Domain region not found in metadata file.')
@@ -115,7 +117,9 @@ export class SmusAuthenticationProvider {
      * Checks if the connection is valid
      */
     public isConnectionValid(): boolean {
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        // When in SMUS space, the extension is already running in projet context and sign in is not needed
+        // Set isConnectionValid to always true
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             return true
         }
         return this.activeConnection !== undefined && !this.secondaryAuth.isConnectionExpired
@@ -125,7 +129,9 @@ export class SmusAuthenticationProvider {
      * Checks if connected to SMUS
      */
     public isConnected(): boolean {
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        // When in SMUS space, the extension is already running in projet context and sign in is not needed
+        // Set isConnected to always true
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             return true
         }
         return this.activeConnection !== undefined
@@ -365,7 +371,7 @@ export class SmusAuthenticationProvider {
      * @returns Domain ID
      */
     public getDomainId(): string {
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             return getResourceMetadata()!.AdditionalMetadata!.DataZoneDomainId!
         }
 
@@ -387,7 +393,7 @@ export class SmusAuthenticationProvider {
     }
 
     public getDomainRegion(): string {
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             const resourceMetadata = getResourceMetadata()!
             if (resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion) {
                 return resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion
@@ -409,7 +415,9 @@ export class SmusAuthenticationProvider {
     public async getDerCredentialsProvider(): Promise<any> {
         const logger = getLogger()
 
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            // When in SMUS space, DomainExecutionRoleCreds can be found in config file
+            // Read the credentials from credential profile DomainExecutionRoleCreds
             const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
             return {
                 getCredentials: async () => await credentials(),

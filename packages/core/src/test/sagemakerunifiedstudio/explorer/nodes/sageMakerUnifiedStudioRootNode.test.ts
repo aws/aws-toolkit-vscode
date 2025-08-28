@@ -16,6 +16,7 @@ import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunified
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 import { getTestWindow } from '../../../shared/vscode/window'
+import { assertTelemetry } from '../../../../../src/test/testUtil'
 
 describe('SmusRootNode', function () {
     let rootNode: SageMakerUnifiedStudioRootNode
@@ -349,9 +350,11 @@ describe('SelectSMUSProject', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
         } as any)
 
-        // Stub quickPick
+        // Stub quickPick - return the project directly (not wrapped in an item)
         const mockQuickPick = {
             prompt: sinon.stub().resolves(mockProject),
         }
@@ -376,6 +379,10 @@ describe('SelectSMUSProject', function () {
         assert.ok(createQuickPickStub.calledOnce)
         assert.ok(mockProjectNode.setProject.calledOnce)
         assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
+        assertTelemetry('smus_accessProject', {
+            result: 'Succeeded',
+            smusProjectId: mockProject.id,
+        })
     })
 
     it('filters out GenerativeAIModelGovernanceProject', async function () {
@@ -402,11 +409,15 @@ describe('SelectSMUSProject', function () {
         sinon.restore()
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: undefined,
+            getDomainId: sinon.stub().returns(undefined),
         } as any)
 
         const result = await selectSMUSProject(mockProjectNode as any)
-
         assert.strictEqual(result, undefined)
+
+        assertTelemetry('smus_accessProject', {
+            result: 'Succeeded',
+        })
     })
 
     it('fetches all projects and switches the current project', async function () {
@@ -432,6 +443,10 @@ describe('SelectSMUSProject', function () {
         assert.ok(createQuickPickStub.calledOnce)
         assert.ok(mockProjectNode.setProject.calledOnce)
         assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
+        assertTelemetry('smus_accessProject', {
+            result: 'Succeeded',
+            smusProjectId: mockProject2.id,
+        })
     })
 
     it('shows message when no projects found', async function () {
@@ -448,9 +463,12 @@ describe('SelectSMUSProject', function () {
         mockDataZoneClient.fetchAllProjects.rejects(error)
 
         const result = await selectSMUSProject(mockProjectNode as any)
-
         assert.strictEqual(result, undefined)
+
         assert.ok(!mockProjectNode.setProject.called)
+        assertTelemetry('smus_accessProject', {
+            result: 'Succeeded',
+        })
     })
 
     it('handles case when user cancels project selection', async function () {
@@ -514,6 +532,8 @@ describe('selectSMUSProject - Additional Tests', function () {
         sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
         } as any)
 
         const mockQuickPick = {

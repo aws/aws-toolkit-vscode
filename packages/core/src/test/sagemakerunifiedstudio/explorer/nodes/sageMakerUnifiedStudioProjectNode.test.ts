@@ -14,6 +14,7 @@ import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SageMakerUnifiedStudioDataNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioDataNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
 import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import * as vscodeUtils from '../../../../shared/vscode/setContext'
 
 describe('SageMakerUnifiedStudioProjectNode', function () {
     let projectNode: SageMakerUnifiedStudioProjectNode
@@ -35,6 +36,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2' },
             invalidateAllProjectCredentialsInCache: sinon.stub(),
             getProjectCredentialProvider: sinon.stub(),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
         } as any
 
         // Create mock extension context
@@ -74,6 +76,9 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         // Stub child node constructors to prevent actual instantiation
         sinon.stub(SageMakerUnifiedStudioDataNode.prototype, 'constructor' as any).returns({})
         sinon.stub(SageMakerUnifiedStudioComputeNode.prototype, 'constructor' as any).returns({})
+
+        // Stub getContext to return false for SMUS space environment
+        sinon.stub(vscodeUtils, 'getContext').returns(false)
     })
 
     afterEach(function () {
@@ -186,13 +191,6 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
 
             const children = await projectNode.getChildren()
             assert.strictEqual(children.length, 2)
-            assert(
-                (telemetry.record as sinon.SinonStub).calledWith({
-                    name: 'smus_selectProject',
-                    result: 'Succeeded',
-                    passive: false,
-                })
-            )
         })
 
         it('returns access denied message when user does not have project access', async function () {

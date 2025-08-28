@@ -33,6 +33,8 @@ import {
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { Column, Database, Table } from '@aws-sdk/client-glue'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { getContext } from '../../../shared/vscode/setContext'
 
 /**
  * Lakehouse data node for SageMaker Unified Studio
@@ -149,49 +151,63 @@ export function createLakehouseConnectionNode(
             },
         },
         async (node) => {
-            try {
-                logger.info(`Loading Lakehouse catalogs for connection ${connection.name}`)
+            return telemetry.smus_renderLakehouseNode.run(async (span) => {
+                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
 
-                // Check if this is a default connection
-                const isDefaultConnection =
-                    DATA_DEFAULT_IAM_CONNECTION_NAME_REGEXP.test(connection.name) ||
-                    DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(connection.name) ||
-                    DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP.test(connection.name)
+                span.record({
+                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
+                    smusDomainId: connection.domainId,
+                    smusProjectId: connection.projectId,
+                    smusConnectionId: connection.connectionId,
+                    smusConnectionType: connection.type,
+                    smusProjectRegion: connection.location?.awsRegion,
+                })
+                try {
+                    logger.info(`Loading Lakehouse catalogs for connection ${connection.name}`)
 
-                // Follow the reference pattern with Promise.allSettled
-                const [awsDataCatalogResult, catalogsResult] = await Promise.allSettled([
-                    // AWS Data Catalog node (only for default connections)
-                    isDefaultConnection
-                        ? Promise.resolve([createAwsDataCatalogNode(node, glueClient)])
-                        : Promise.resolve([]),
-                    // Get catalogs by calling Glue API
-                    getCatalogs(glueCatalogClient, glueClient, node),
-                ])
+                    // Check if this is a default connection
+                    const isDefaultConnection =
+                        DATA_DEFAULT_IAM_CONNECTION_NAME_REGEXP.test(connection.name) ||
+                        DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(connection.name) ||
+                        DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP.test(connection.name)
 
-                const awsDataCatalog = awsDataCatalogResult.status === 'fulfilled' ? awsDataCatalogResult.value : []
-                const apiCatalogs = catalogsResult.status === 'fulfilled' ? catalogsResult.value : []
-                const errors: LakehouseNode[] = []
+                    // Follow the reference pattern with Promise.allSettled
+                    const [awsDataCatalogResult, catalogsResult] = await Promise.allSettled([
+                        // AWS Data Catalog node (only for default connections)
+                        isDefaultConnection
+                            ? Promise.resolve([createAwsDataCatalogNode(node, glueClient)])
+                            : Promise.resolve([]),
+                        // Get catalogs by calling Glue API
+                        getCatalogs(glueCatalogClient, glueClient, node),
+                    ])
 
-                if (awsDataCatalogResult.status === 'rejected') {
-                    const errorMessage = (awsDataCatalogResult.reason as Error).message
+                    const awsDataCatalog = awsDataCatalogResult.status === 'fulfilled' ? awsDataCatalogResult.value : []
+                    const apiCatalogs = catalogsResult.status === 'fulfilled' ? catalogsResult.value : []
+                    const errors: LakehouseNode[] = []
+
+                    if (awsDataCatalogResult.status === 'rejected') {
+                        const errorMessage = (awsDataCatalogResult.reason as Error).message
+                        void vscode.window.showErrorMessage(errorMessage)
+                        errors.push(createErrorItem(errorMessage, 'aws-data-catalog', node.id) as LakehouseNode)
+                    }
+
+                    if (catalogsResult.status === 'rejected') {
+                        const errorMessage = (catalogsResult.reason as Error).message
+                        void vscode.window.showErrorMessage(errorMessage)
+                        errors.push(createErrorItem(errorMessage, 'catalogs', node.id) as LakehouseNode)
+                    }
+
+                    const allNodes = [...awsDataCatalog, ...apiCatalogs, ...errors]
+                    return allNodes.length > 0
+                        ? allNodes
+                        : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
+                } catch (err) {
+                    logger.error(`Failed to get Lakehouse catalogs: ${(err as Error).message}`)
+                    const errorMessage = (err as Error).message
                     void vscode.window.showErrorMessage(errorMessage)
-                    errors.push(createErrorItem(errorMessage, 'aws-data-catalog', node.id) as LakehouseNode)
+                    return [createErrorItem(errorMessage, 'lakehouse-catalogs', node.id) as LakehouseNode]
                 }
-
-                if (catalogsResult.status === 'rejected') {
-                    const errorMessage = (catalogsResult.reason as Error).message
-                    void vscode.window.showErrorMessage(errorMessage)
-                    errors.push(createErrorItem(errorMessage, 'catalogs', node.id) as LakehouseNode)
-                }
-
-                const allNodes = [...awsDataCatalog, ...apiCatalogs, ...errors]
-                return allNodes.length > 0 ? allNodes : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
-            } catch (err) {
-                logger.error(`Failed to get Lakehouse catalogs: ${(err as Error).message}`)
-                const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
-                return [createErrorItem(errorMessage, 'lakehouse-catalogs', node.id) as LakehouseNode]
-            }
+            })
         }
     )
 }
@@ -229,7 +245,9 @@ function createAwsDataCatalogNode(parent: LakehouseNode, glueClient: GlueClient)
                 nextToken = token
             } while (nextToken)
 
-            return allDatabases.map((database) => createDatabaseNode(database.Name || '', database, glueClient, node))
+            return allDatabases.length > 0
+                ? allDatabases.map((database) => createDatabaseNode(database.Name || '', database, glueClient, node))
+                : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
         }
     )
 }
@@ -392,9 +410,11 @@ function createCatalogNode(
                           nextToken = token
                       } while (nextToken)
 
-                      return allDatabases.map((database) =>
-                          createDatabaseNode(database.Name || '', database, glueClient, node)
-                      )
+                      return allDatabases.length > 0
+                          ? allDatabases.map((database) =>
+                                createDatabaseNode(database.Name || '', database, glueClient, node)
+                            )
+                          : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
                   } catch (err) {
                       logger.error(`Failed to get databases for catalog ${catalogId}: ${(err as Error).message}`)
                       const errorMessage = (err as Error).message
@@ -513,7 +533,10 @@ function createTableNode(
                 const columns = tableDetails?.StorageDescriptor?.Columns || []
                 const partitions = tableDetails?.PartitionKeys || []
 
-                return [...columns, ...partitions].map((column) => createColumnNode(column.Name || '', column, node))
+                const allColumns = [...columns, ...partitions]
+                return allColumns.length > 0
+                    ? allColumns.map((column) => createColumnNode(column.Name || '', column, node))
+                    : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             } catch (err) {
                 logger.error(`Failed to get columns for table ${tableName}: ${(err as Error).message}`)
                 return []
@@ -565,7 +588,9 @@ function createContainerNode(
         },
         async (node) => {
             // Map items to nodes
-            return items.map((item) => createTableNode(item.Name || '', item, glueClient, node))
+            return items.length > 0
+                ? items.map((item) => createTableNode(item.Name || '', item, glueClient, node))
+                : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
         }
     )
 }

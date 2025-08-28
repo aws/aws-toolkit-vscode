@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { DataZoneClient, DataZoneProject } from '../../shared/client/datazoneClient'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
@@ -15,6 +15,8 @@ import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProje
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
 import { SmusUtils } from '../../shared/smusUtils'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { ToolkitError } from '../../../../src/shared/errors'
+import { errorCode } from '../../shared/errors'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -197,86 +199,86 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
  */
 export const smusLoginCommand = Commands.declare('aws.smus.login', () => async () => {
     const logger = getLogger()
-
-    try {
-        // Get DataZoneClient instance for URL validation
-
-        // Show domain URL input dialog
-        const domainUrl = await vscode.window.showInputBox({
-            title: 'SageMaker Unified Studio Authentication',
-            prompt: 'Enter your SageMaker Unified Studio Domain URL',
-            placeHolder: 'https://<dzd_xxxxxxxxx>.sagemaker.<region>.on.aws',
-            validateInput: (value) => SmusUtils.validateDomainUrl(value),
-        })
-
-        if (!domainUrl) {
-            // User cancelled
-            logger.debug('User cancelled domain URL input')
-            return
-        }
-
-        // Show a simple status bar message instead of progress dialog
-        vscode.window.setStatusBarMessage('Connecting to SageMaker Unified Studio...', 10000)
-
+    return telemetry.smus_login.run(async (span) => {
         try {
-            // Get the authentication provider instance
-            const authProvider = SmusAuthenticationProvider.fromContext()
+            // Get DataZoneClient instance for URL validation
 
-            // Connect to SMUS using the authentication provider
-            const connection = await authProvider.connectToSmus(domainUrl)
+            // Show domain URL input dialog
+            const domainUrl = await vscode.window.showInputBox({
+                title: 'SageMaker Unified Studio Authentication',
+                prompt: 'Enter your SageMaker Unified Studio Domain URL',
+                placeHolder: 'https://<dzd_xxxxxxxxx>.sagemaker.<region>.on.aws',
+                validateInput: (value) => SmusUtils.validateDomainUrl(value),
+            })
 
-            if (!connection) {
-                throw new Error('Failed to establish connection')
+            if (!domainUrl) {
+                // User cancelled
+                logger.debug('User cancelled domain URL input')
+                return
             }
 
-            // Extract domain ID and region for logging
-            const domainId = connection.domainId
-            const region = connection.ssoRegion
+            // Show a simple status bar message instead of progress dialog
+            vscode.window.setStatusBarMessage('Connecting to SageMaker Unified Studio...', 10000)
 
-            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
-
-            // Show success message
-            void vscode.window.showInformationMessage(
-                `Successfully connected to SageMaker Unified Studio domain: ${domainId}`
-            )
-
-            // Clear the status bar message
-            vscode.window.setStatusBarMessage('Connected to SageMaker Unified Studio', 3000)
-
-            // Immediately refresh the tree view to show authenticated state
             try {
-                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-            } catch (refreshErr) {
-                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+                // Get the authentication provider instance
+                const authProvider = SmusAuthenticationProvider.fromContext()
+
+                // Connect to SMUS using the authentication provider
+                const connection = await authProvider.connectToSmus(domainUrl)
+
+                if (!connection) {
+                    throw new ToolkitError('Failed to establish connection', {
+                        code: errorCode.failedAuthConnecton,
+                    })
+                }
+
+                // Extract domain ID and region for logging
+                const domainId = connection.domainId
+                const region = connection.ssoRegion
+
+                logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+                span.record({
+                    smusDomainId: domainId,
+                    awsRegion: region,
+                })
+
+                // Show success message
+                void vscode.window.showInformationMessage(
+                    `Successfully connected to SageMaker Unified Studio domain: ${domainId}`
+                )
+
+                // Clear the status bar message
+                vscode.window.setStatusBarMessage('Connected to SageMaker Unified Studio', 3000)
+
+                // Immediately refresh the tree view to show authenticated state
+                try {
+                    await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+                } catch (refreshErr) {
+                    logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+                }
+            } catch (connectionErr) {
+                // Clear the status bar message
+                vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
+
+                // Log the error and re-throw to be handled by the outer catch block
+                logger.error('Connection failed: %s', (connectionErr as Error).message)
+                throw new ToolkitError('Connection failed.', {
+                    cause: connectionErr as Error,
+                    code: (connectionErr as Error).name,
+                })
             }
-        } catch (connectionErr) {
-            // Clear the status bar message
-            vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
-
-            // Log the error and re-throw to be handled by the outer catch block
-            logger.error('Connection failed: %s', (connectionErr as Error).message)
-            throw connectionErr
+        } catch (err) {
+            void vscode.window.showErrorMessage(
+                `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
+            )
+            logger.error('Failed to initiate login: %s', (err as Error).message)
+            throw new ToolkitError('Failed to initiate login.', {
+                cause: err as Error,
+                code: (err as Error).name,
+            })
         }
-
-        // Log telemetry
-        telemetry.record({
-            name: 'smus_loginAttempted',
-            result: 'Succeeded',
-            passive: false,
-        })
-    } catch (err) {
-        void vscode.window.showErrorMessage(
-            `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
-        )
-        logger.error('Failed to initiate login: %s', (err as Error).message)
-
-        // Log failure telemetry
-        telemetry.record({
-            name: 'smus_loginAttempted',
-            result: 'Failed',
-            passive: false,
-        })
-    }
+    })
 })
 
 /**
@@ -284,67 +286,74 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
  */
 export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => async () => {
     const logger = getLogger()
-    try {
-        // Get the authentication provider instance
-        const authProvider = SmusAuthenticationProvider.fromContext()
-
-        // Check if there's an active connection to sign out from
-        if (!authProvider.isConnected()) {
-            void vscode.window.showInformationMessage('No active SageMaker Unified Studio connection to sign out from.')
-            return
-        }
-
-        // Get connection details for logging
-        const activeConnection = authProvider.activeConnection
-        const domainId = activeConnection?.domainId
-
-        // Show status message
-        vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
-
-        // Delete the connection (this will also invalidate tokens and clear cache)
-        if (activeConnection) {
-            await authProvider.secondaryAuth.deleteConnection()
-            logger.info(`Signed out from SageMaker Unified Studio${domainId}`)
-        }
-
-        // Show success message
-        void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
-
-        // Clear the status bar message
-        vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
-
-        // Refresh the tree view to show the sign-in state
+    return telemetry.smus_signOut.run(async (span) => {
         try {
-            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-        } catch (refreshErr) {
-            logger.debug(`Failed to refresh views after sign out: ${(refreshErr as Error).message}`)
+            // Get the authentication provider instance
+            const authProvider = SmusAuthenticationProvider.fromContext()
+
+            // Check if there's an active connection to sign out from
+            if (!authProvider.isConnected()) {
+                void vscode.window.showInformationMessage(
+                    'No active SageMaker Unified Studio connection to sign out from.'
+                )
+                return
+            }
+
+            // Get connection details for logging
+            const activeConnection = authProvider.activeConnection
+            const domainId = activeConnection?.domainId
+            const region = activeConnection?.ssoRegion
+
+            // Show status message
+            vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
+
+            span.record({
+                smusDomainId: domainId,
+                awsRegion: region,
+            })
+
+            // Delete the connection (this will also invalidate tokens and clear cache)
+            if (activeConnection) {
+                await authProvider.secondaryAuth.deleteConnection()
+                logger.info(`Signed out from SageMaker Unified Studio${domainId}`)
+            }
+
+            // Show success message
+            void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
+
+            // Clear the status bar message
+            vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
+
+            // Refresh the tree view to show the sign-in state
+            try {
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            } catch (refreshErr) {
+                logger.debug(`Failed to refresh views after sign out: ${(refreshErr as Error).message}`)
+                throw new ToolkitError('Failed to refresh views after sign out.', {
+                    cause: refreshErr as Error,
+                    code: (refreshErr as Error).name,
+                })
+            }
+        } catch (err) {
+            void vscode.window.showErrorMessage(
+                `SageMaker Unified Studio: Failed to sign out: ${(err as Error).message}`
+            )
+            logger.error('Failed to sign out: %s', (err as Error).message)
+
+            // Log failure telemetry
+            throw new ToolkitError('Failed to sign out.', {
+                cause: err as Error,
+                code: (err as Error).name,
+            })
         }
-
-        // Log telemetry
-        telemetry.record({
-            name: 'smus_signOut',
-            result: 'Succeeded',
-            passive: false,
-        })
-    } catch (err) {
-        void vscode.window.showErrorMessage(`SageMaker Unified Studio: Failed to sign out: ${(err as Error).message}`)
-        logger.error('Failed to sign out: %s', (err as Error).message)
-
-        // Log failure telemetry
-        telemetry.record({
-            name: 'smus_signOut',
-            result: 'Failed',
-            passive: false,
-            reason: (err as Error).message,
-        })
-    }
+    })
 })
 
 function isAccessDenied(error: Error): boolean {
     return error.name.includes('AccessDenied')
 }
 
-function createProjectQuickPickItems(projects: any[]) {
+function createProjectQuickPickItems(projects: DataZoneProject[]) {
     return projects
         .sort(
             (a, b) =>
@@ -371,53 +380,60 @@ async function showQuickPick(items: any[]) {
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
     const logger = getLogger()
 
-    try {
-        const authProvider = SmusAuthenticationProvider.fromContext()
-        if (!authProvider.activeConnection) {
-            logger.error('No active connection to display project view')
-            return
+    return telemetry.smus_accessProject.run(async (span) => {
+        try {
+            const authProvider = SmusAuthenticationProvider.fromContext()
+            if (!authProvider.activeConnection) {
+                logger.error('No active connection to display project view')
+                return
+            }
+
+            const client = await DataZoneClient.getInstance(authProvider)
+            logger.debug('DataZone client instance obtained successfully')
+
+            const allProjects = await client.fetchAllProjects()
+            const items = createProjectQuickPickItems(allProjects)
+
+            if (items.length === 0) {
+                logger.info('No projects found in the domain')
+                void vscode.window.showInformationMessage('No projects found in the domain')
+                await showQuickPick([{ label: 'No projects found', detail: '', description: '', data: {} }])
+                return
+            }
+
+            const selectedProject = await showQuickPick(items)
+            span.record({
+                smusDomainId: authProvider.getDomainId(),
+                smusProjectId: (selectedProject as DataZoneProject).id as string | undefined,
+                smusDomainRegion: authProvider.getDomainRegion(),
+            })
+            if (
+                selectedProject &&
+                typeof selectedProject === 'object' &&
+                selectedProject !== null &&
+                !('type' in selectedProject) &&
+                projectNode
+            ) {
+                await projectNode.setProject(selectedProject)
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            }
+
+            return selectedProject
+        } catch (err) {
+            const error = err as Error
+
+            if (isAccessDenied(error)) {
+                await showQuickPick([
+                    {
+                        label: '$(error)',
+                        description: "You don't have permissions to view projects. Please contact your administrator",
+                    },
+                ])
+                return
+            }
+
+            logger.error('Failed to select project: %s', error.message)
+            void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
         }
-
-        const client = await DataZoneClient.getInstance(authProvider)
-        logger.debug('DataZone client instance obtained successfully')
-
-        const allProjects = await client.fetchAllProjects()
-        const items = createProjectQuickPickItems(allProjects)
-
-        if (items.length === 0) {
-            logger.info('No projects found in the domain')
-            void vscode.window.showInformationMessage('No projects found in the domain')
-            await showQuickPick([{ label: 'No projects found', detail: '', description: '', data: {} }])
-            return
-        }
-
-        const selectedProject = await showQuickPick(items)
-        if (
-            selectedProject &&
-            typeof selectedProject === 'object' &&
-            selectedProject !== null &&
-            !('type' in selectedProject) &&
-            projectNode
-        ) {
-            await projectNode.setProject(selectedProject)
-            await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-        }
-
-        return selectedProject
-    } catch (err) {
-        const error = err as Error
-
-        if (isAccessDenied(error)) {
-            await showQuickPick([
-                {
-                    label: '$(error)',
-                    description: "You don't have permissions to view projects. Please contact your administrator",
-                },
-            ])
-            return
-        }
-
-        logger.error('Failed to select project: %s', error.message)
-        void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
-    }
+    })
 }

@@ -158,9 +158,13 @@ export async function stopSpace(
         if (error.name === 'AccessDeniedException') {
             throw new ToolkitError('You do not have permission to stop spaces. Please contact your administrator', {
                 cause: error,
+                code: error.name,
             })
         } else {
-            throw err
+            throw new ToolkitError(`Failed to stop space: ${spaceName}`, {
+                cause: error,
+                code: error.name,
+            })
         }
     }
     await tryRefreshNode(node)
@@ -185,14 +189,19 @@ export async function openRemoteConnect(
             await tryRefreshNode(node)
             const appType = node.spaceApp.SpaceSettingsSummary?.AppType
             if (!appType) {
-                throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.')
+                throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.', {
+                    code: 'undefinedAppType',
+                })
             }
             await client.waitForAppInService(node.spaceApp.DomainId!, node.spaceApp.SpaceName!, appType)
             await tryRemoteConnection(node, ctx)
         } catch (err: any) {
             // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
             if (err.code !== InstanceTypeError) {
-                throw err
+                throw new ToolkitError('Remote connection failed.', {
+                    cause: err as Error,
+                    code: err.code,
+                })
             }
         }
     } else if (node.getStatus() === 'Running') {

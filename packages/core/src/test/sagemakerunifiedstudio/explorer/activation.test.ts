@@ -281,7 +281,21 @@ describe('SMUS Explorer Activation', function () {
                 const mockSpaceNode = {
                     resource: {
                         sageMakerClient: {},
+                        DomainSpaceKey: 'test-space-key',
+                        regionCode: 'us-east-1',
+                        getParent: sinon.stub().returns({
+                            getAuthProvider: sinon.stub().returns({
+                                activeConnection: { domainId: 'test-domain' },
+                            }),
+                            getProjectId: sinon.stub().returns('test-project'),
+                        }),
                     },
+                    getParent: sinon.stub().returns({
+                        getAuthProvider: sinon.stub().returns({
+                            activeConnection: { domainId: 'test-domain' },
+                        }),
+                        getProjectId: sinon.stub().returns('test-project'),
+                    }),
                 } as any
 
                 // Mock the stopSpace function
@@ -328,7 +342,21 @@ describe('SMUS Explorer Activation', function () {
                 const mockSpaceNode = {
                     resource: {
                         sageMakerClient: {},
+                        DomainSpaceKey: 'test-space-key',
+                        regionCode: 'us-east-1',
+                        getParent: sinon.stub().returns({
+                            getAuthProvider: sinon.stub().returns({
+                                activeConnection: { domainId: 'test-domain' },
+                            }),
+                            getProjectId: sinon.stub().returns('test-project'),
+                        }),
                     },
+                    getParent: sinon.stub().returns({
+                        getAuthProvider: sinon.stub().returns({
+                            activeConnection: { domainId: 'test-domain' },
+                        }),
+                        getProjectId: sinon.stub().returns('test-project'),
+                    }),
                 } as any
 
                 // Mock the openRemoteConnect function

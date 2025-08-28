@@ -17,6 +17,7 @@ import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioCompu
 import { getIcon } from '../../../shared/icons'
 import { SmusUtils } from '../../shared/smusUtils'
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
+import { getContext } from '../../../shared/vscode/setContext'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -37,7 +38,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         private readonly extensionContext: vscode.ExtensionContext
     ) {
         // If we're in SMUS space environment, set project from resource metadata
-        if (SmusUtils.isInSmusSpaceEnvironment()) {
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             const resourceMetadata = getResourceMetadata()!
             if (resourceMetadata.AdditionalMetadata!.DataZoneProjectId) {
                 this.project = {
@@ -76,55 +77,61 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         if (!this.project) {
             return []
         }
-        try {
-            telemetry.record({
-                name: 'smus_selectProject',
-                result: 'Succeeded',
-                passive: false,
-            })
 
-            // Skip access check if we're in SMUS space environment (already in project space)
-            if (!SmusUtils.isInSmusSpaceEnvironment()) {
-                const hasAccess = await this.checkProjectAccess(this.project.id)
-                if (!hasAccess) {
-                    return [
-                        {
-                            id: 'smusProjectAccessDenied',
-                            resource: {},
-                            getTreeItem: () => {
-                                const item = new vscode.TreeItem(
-                                    'You are not a member of this project. Contact any of its owners to add you as a member.',
-                                    vscode.TreeItemCollapsibleState.None
-                                )
-                                return item
+        return telemetry.smus_renderProjectChildrenNode.run(async (span) => {
+            try {
+                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+
+                span.record({
+                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
+                    smusDomainId: this.project?.domainId,
+                    smusProjectId: this.project?.id,
+                    smusDomainRegion: this.authProvider.getDomainRegion(),
+                })
+
+                // Skip access check if we're in SMUS space environment (already in project space)
+                if (!getContext('aws.smus.inSmusSpaceEnvironment')) {
+                    const hasAccess = await this.checkProjectAccess(this.project!.id)
+                    if (!hasAccess) {
+                        return [
+                            {
+                                id: 'smusProjectAccessDenied',
+                                resource: {},
+                                getTreeItem: () => {
+                                    const item = new vscode.TreeItem(
+                                        'You are not a member of this project. Contact any of its owners to add you as a member.',
+                                        vscode.TreeItemCollapsibleState.None
+                                    )
+                                    return item
+                                },
+                                getParent: () => this,
                             },
-                            getParent: () => this,
-                        },
-                    ]
+                        ]
+                    }
                 }
+
+                const dataNode = new SageMakerUnifiedStudioDataNode(this)
+
+                // If we're in SMUS space environment, only show data node
+                if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+                    return [dataNode]
+                }
+
+                this.sagemakerClient = await this.initializeSagemakerClient(
+                    this.authProvider.activeConnection?.ssoRegion || 'us-east-1'
+                )
+                const computeNode = new SageMakerUnifiedStudioComputeNode(
+                    this,
+                    this.extensionContext,
+                    this.authProvider,
+                    this.sagemakerClient
+                )
+                return [dataNode, computeNode]
+            } catch (err) {
+                this.logger.error('Failed to select project: %s', (err as Error).message)
+                throw err
             }
-
-            const dataNode = new SageMakerUnifiedStudioDataNode(this)
-
-            // If we're in SMUS space environment, only show data node
-            if (SmusUtils.isInSmusSpaceEnvironment()) {
-                return [dataNode]
-            }
-
-            this.sagemakerClient = await this.initializeSagemakerClient(
-                this.authProvider.activeConnection?.ssoRegion || 'us-east-1'
-            )
-            const computeNode = new SageMakerUnifiedStudioComputeNode(
-                this,
-                this.extensionContext,
-                this.authProvider,
-                this.sagemakerClient
-            )
-            return [dataNode, computeNode]
-        } catch (err) {
-            this.logger.error('Failed to select project: %s', (err as Error).message)
-            throw err
-        }
+        })
     }
 
     public getParent(): TreeNode | undefined {
@@ -147,7 +154,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     public async clearProject(): Promise<void> {
         await this.cleanupProjectResources()
         // Don't clear project if we're in SMUS space environment
-        if (!SmusUtils.isInSmusSpaceEnvironment()) {
+        if (!getContext('aws.smus.inSmusSpaceEnvironment')) {
             this.project = undefined
         }
         await this.refreshNode()
@@ -180,7 +187,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     }
 
     private async fetchProjectName(): Promise<void> {
-        if (!this.project || !SmusUtils.isInSmusSpaceEnvironment()) {
+        if (!this.project || !getContext('aws.smus.inSmusSpaceEnvironment')) {
             return
         }
 

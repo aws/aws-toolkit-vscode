@@ -19,6 +19,8 @@ import { SageMakerUnifiedStudioProjectNode } from './nodes/sageMakerUnifiedStudi
 import { getLogger } from '../../shared/logger/logger'
 import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/providers/smusAuthenticationProvider'
 import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { SageMakerUnifiedStudioSpacesParentNode } from './nodes/sageMakerUnifiedStudioSpacesParentNode'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -71,7 +73,19 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             if (!validateNode(node)) {
                 return
             }
-            await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+            await telemetry.smus_stopSpace.run(async (span) => {
+                span.record({
+                    smusSpaceKey: node.resource.DomainSpaceKey,
+                    smusDomainRegion: node.resource.regionCode,
+                    smusDomainId: (
+                        node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
+                    )?.getAuthProvider()?.activeConnection?.domainId,
+                    smusProjectId: (
+                        node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
+                    )?.getProjectId(),
+                })
+                await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+            })
         }),
 
         vscode.commands.registerCommand(
@@ -80,7 +94,19 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 if (!validateNode(node)) {
                     return
                 }
-                await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                await telemetry.smus_startSpace.run(async (span) => {
+                    span.record({
+                        smusSpaceKey: node.resource.DomainSpaceKey,
+                        smusDomainRegion: node.resource.regionCode,
+                        smusDomainId: (
+                            node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
+                        )?.getAuthProvider()?.activeConnection?.domainId,
+                        smusProjectId: (
+                            node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
+                        )?.getProjectId(),
+                    })
+                    await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                })
             }
         ),
 
@@ -112,7 +138,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 /**
  * Checks if a node  is undefined and shows a warning message if so.
  */
-function validateNode(node: unknown): boolean {
+function validateNode(node: SagemakerUnifiedStudioSpaceNode): boolean {
     if (!node) {
         void vscode.window.showWarningMessage('Space information is being refreshed. Please try again shortly.')
         return false

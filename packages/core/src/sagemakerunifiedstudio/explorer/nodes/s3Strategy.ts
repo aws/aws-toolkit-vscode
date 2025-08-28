@@ -19,6 +19,8 @@ import {
 } from '@aws-sdk/client-s3-control'
 import { S3, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { getContext } from '../../../shared/vscode/setContext'
 
 // Regex to match default S3 connection names
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -141,151 +143,171 @@ export function createS3ConnectionNode(
             },
         },
         async (node) => {
-            try {
-                if (isDefaultConnection && s3Info.prefix) {
-                    // For default connections, show the full path as the first node
-                    const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
-                    return [
-                        new S3Node(
-                            {
-                                id: fullPath,
-                                nodeType: NodeType.S3_BUCKET,
-                                connectionType: ConnectionType.S3,
-                                value: { bucket: s3Info.bucket, prefix: s3Info.prefix },
-                                path: {
-                                    connection: connection.name,
-                                    bucket: s3Info.bucket,
-                                    key: s3Info.prefix,
-                                    label: fullPath,
+            return telemetry.smus_renderS3Node.run(async (span) => {
+                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+
+                span.record({
+                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
+                    smusDomainId: connection.domainId,
+                    smusProjectId: connection.projectId,
+                    smusConnectionId: connection.connectionId,
+                    smusConnectionType: connection.type,
+                    smusProjectRegion: connection.location?.awsRegion,
+                })
+                try {
+                    if (isDefaultConnection && s3Info.prefix) {
+                        // For default connections, show the full path as the first node
+                        const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
+                        return [
+                            new S3Node(
+                                {
+                                    id: fullPath,
+                                    nodeType: NodeType.S3_BUCKET,
+                                    connectionType: ConnectionType.S3,
+                                    value: { bucket: s3Info.bucket, prefix: s3Info.prefix },
+                                    path: {
+                                        connection: connection.name,
+                                        bucket: s3Info.bucket,
+                                        key: s3Info.prefix,
+                                        label: fullPath,
+                                    },
+                                    parent: node,
                                 },
-                                parent: node,
-                            },
-                            async (bucketNode) => {
-                                try {
-                                    // List objects starting from the prefix
-                                    const allPaths = []
-                                    let nextToken: string | undefined
+                                async (bucketNode) => {
+                                    try {
+                                        // List objects starting from the prefix
+                                        const allPaths = []
+                                        let nextToken: string | undefined
 
-                                    do {
-                                        const result = await s3Client.listPaths(s3Info.bucket, s3Info.prefix, nextToken)
-                                        allPaths.push(...result.paths)
-                                        nextToken = result.nextToken
-                                    } while (nextToken)
+                                        do {
+                                            const result = await s3Client.listPaths(
+                                                s3Info.bucket,
+                                                s3Info.prefix,
+                                                nextToken
+                                            )
+                                            allPaths.push(...result.paths)
+                                            nextToken = result.nextToken
+                                        } while (nextToken)
 
-                                    if (allPaths.length === 0) {
-                                        return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-                                    }
+                                        if (allPaths.length === 0) {
+                                            return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
+                                        }
 
-                                    // Convert paths to nodes
-                                    return allPaths.map((path) => {
-                                        const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+                                        // Convert paths to nodes
+                                        return allPaths.map((path) => {
+                                            const nodeId = `${path.bucket}-${path.prefix || 'root'}`
 
-                                        return new S3Node(
-                                            {
-                                                id: nodeId,
-                                                nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                                connectionType: ConnectionType.S3,
-                                                value: path,
-                                                path: {
-                                                    connection: connection.name,
-                                                    bucket: path.bucket,
-                                                    key: path.prefix,
-                                                    label: path.displayName,
+                                            return new S3Node(
+                                                {
+                                                    id: nodeId,
+                                                    nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                                                    connectionType: ConnectionType.S3,
+                                                    value: path,
+                                                    path: {
+                                                        connection: connection.name,
+                                                        bucket: path.bucket,
+                                                        key: path.prefix,
+                                                        label: path.displayName,
+                                                    },
+                                                    parent: bucketNode,
                                                 },
-                                                parent: bucketNode,
-                                            },
-                                            path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                                        )
-                                    })
-                                } catch (err) {
-                                    logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                    const errorMessage = (err as Error).message
-                                    void vscode.window.showErrorMessage(errorMessage)
-                                    return [
-                                        createErrorItem(
-                                            errorMessage,
-                                            'bucket-contents-default',
-                                            bucketNode.id
-                                        ) as S3Node,
-                                    ]
+                                                path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
+                                            )
+                                        })
+                                    } catch (err) {
+                                        logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
+                                        const errorMessage = (err as Error).message
+                                        void vscode.window.showErrorMessage(errorMessage)
+                                        return [
+                                            createErrorItem(
+                                                errorMessage,
+                                                'bucket-contents-default',
+                                                bucketNode.id
+                                            ) as S3Node,
+                                        ]
+                                    }
                                 }
-                            }
-                        ),
-                    ]
-                } else {
-                    // For non-default connections, show bucket as the first node
-                    return [
-                        new S3Node(
-                            {
-                                id: s3Info.bucket,
-                                nodeType: NodeType.S3_BUCKET,
-                                connectionType: ConnectionType.S3,
-                                value: { bucket: s3Info.bucket },
-                                path: {
-                                    connection: connection.name,
-                                    bucket: s3Info.bucket,
+                            ),
+                        ]
+                    } else {
+                        // For non-default connections, show bucket as the first node
+                        return [
+                            new S3Node(
+                                {
+                                    id: s3Info.bucket,
+                                    nodeType: NodeType.S3_BUCKET,
+                                    connectionType: ConnectionType.S3,
+                                    value: { bucket: s3Info.bucket },
+                                    path: {
+                                        connection: connection.name,
+                                        bucket: s3Info.bucket,
+                                    },
+                                    parent: node,
                                 },
-                                parent: node,
-                            },
-                            async (bucketNode) => {
-                                try {
-                                    // List objects in the bucket
-                                    const allPaths = []
-                                    let nextToken: string | undefined
+                                async (bucketNode) => {
+                                    try {
+                                        // List objects in the bucket
+                                        const allPaths = []
+                                        let nextToken: string | undefined
 
-                                    do {
-                                        const result = await s3Client.listPaths(s3Info.bucket, s3Info.prefix, nextToken)
-                                        allPaths.push(...result.paths)
-                                        nextToken = result.nextToken
-                                    } while (nextToken)
+                                        do {
+                                            const result = await s3Client.listPaths(
+                                                s3Info.bucket,
+                                                s3Info.prefix,
+                                                nextToken
+                                            )
+                                            allPaths.push(...result.paths)
+                                            nextToken = result.nextToken
+                                        } while (nextToken)
 
-                                    if (allPaths.length === 0) {
-                                        return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-                                    }
+                                        if (allPaths.length === 0) {
+                                            return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
+                                        }
 
-                                    // Convert paths to nodes
-                                    return allPaths.map((path) => {
-                                        const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+                                        // Convert paths to nodes
+                                        return allPaths.map((path) => {
+                                            const nodeId = `${path.bucket}-${path.prefix || 'root'}`
 
-                                        return new S3Node(
-                                            {
-                                                id: nodeId,
-                                                nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                                connectionType: ConnectionType.S3,
-                                                value: path,
-                                                path: {
-                                                    connection: connection.name,
-                                                    bucket: path.bucket,
-                                                    key: path.prefix,
-                                                    label: path.displayName,
+                                            return new S3Node(
+                                                {
+                                                    id: nodeId,
+                                                    nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                                                    connectionType: ConnectionType.S3,
+                                                    value: path,
+                                                    path: {
+                                                        connection: connection.name,
+                                                        bucket: path.bucket,
+                                                        key: path.prefix,
+                                                        label: path.displayName,
+                                                    },
+                                                    parent: bucketNode,
                                                 },
-                                                parent: bucketNode,
-                                            },
-                                            path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                                        )
-                                    })
-                                } catch (err) {
-                                    logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                    const errorMessage = (err as Error).message
-                                    void vscode.window.showErrorMessage(errorMessage)
-                                    return [
-                                        createErrorItem(
-                                            errorMessage,
-                                            'bucket-contents-regular',
-                                            bucketNode.id
-                                        ) as S3Node,
-                                    ]
+                                                path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
+                                            )
+                                        })
+                                    } catch (err) {
+                                        logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
+                                        const errorMessage = (err as Error).message
+                                        void vscode.window.showErrorMessage(errorMessage)
+                                        return [
+                                            createErrorItem(
+                                                errorMessage,
+                                                'bucket-contents-regular',
+                                                bucketNode.id
+                                            ) as S3Node,
+                                        ]
+                                    }
                                 }
-                            }
-                        ),
-                    ]
+                            ),
+                        ]
+                    }
+                } catch (err) {
+                    logger.error(`Failed to create bucket node: ${(err as Error).message}`)
+                    const errorMessage = (err as Error).message
+                    void vscode.window.showErrorMessage(errorMessage)
+                    return [createErrorItem(errorMessage, 'bucket-node', node.id) as S3Node]
                 }
-            } catch (err) {
-                logger.error(`Failed to create bucket node: ${(err as Error).message}`)
-                const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
-                return [createErrorItem(errorMessage, 'bucket-node', node.id) as S3Node]
-            }
+            })
         }
     )
 }
