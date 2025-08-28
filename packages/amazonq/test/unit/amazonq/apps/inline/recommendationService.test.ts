@@ -335,7 +335,7 @@ describe('RecommendationService', () => {
 
         it('should make completion request when edit suggestion is active', async () => {
             // Mock EditSuggestionState to return true (edit suggestion is active)
-            const isEditSuggestionActiveStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
 
             const mockResult = {
                 sessionId: 'test-session',
