@@ -12,6 +12,7 @@ import { sleep } from './generalUtils'
  */
 export async function closeAllTabs(webview: WebviewView): Promise<void> {
     const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
+    console.log('THIS WORKED 6')
 
     for (const button of closeButtons) {
         await button.click()
@@ -19,6 +20,7 @@ export async function closeAllTabs(webview: WebviewView): Promise<void> {
     }
 
     const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
+    console.log('THIS WORKED 7')
     const allClosed =
         tabsContainer.length === 1 ||
         (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0

@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, By, WebviewView } from 'vscode-extension-tester'
-import { findItemByText, sleep, waitForElements } from './generalUtils'
+import { Workbench, By, WebviewView, WebView } from 'vscode-extension-tester'
+import { findItemByText, printElementHTML, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
 import { isRunningInGitHubActionsE2E } from './ciUtils'
 import { authenticateForCI } from './ciOidcClient'
@@ -38,6 +38,8 @@ export async function signInToAmazonQ(): Promise<void> {
         console.log('THIS WORKED 5')
         testContext.webviewView = webviewView
         console.log('IT WORKED')
+        const body = webviewView.findElement(By.css('body'))
+        printElementHTML(body)
         return
     }
 
