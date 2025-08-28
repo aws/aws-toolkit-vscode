@@ -185,6 +185,8 @@ export async function startLanguageServer(
                         codeReviewInChat: codeReviewInChat,
                         // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
                         displayFindings: true,
+                        // feature flag for vscode terminal integration support
+                        terminalAvailability: true,
                     },
                     window: {
                         notifications: true,
