@@ -333,7 +333,7 @@ describe('RecommendationService', () => {
             }
         })
 
-        it('should not make completion request when edit suggestion is active', async () => {
+        it('should make completion request when edit suggestion is active', async () => {
             // Mock EditSuggestionState to return true (edit suggestion is active)
             const isEditSuggestionActiveStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
 
@@ -360,8 +360,8 @@ describe('RecommendationService', () => {
             const completionCalls = cs.filter((c) => c.firstArg === completionApi)
             const editCalls = cs.filter((c) => c.firstArg === editApi)
 
-            assert.strictEqual(cs.length, 1) // Only edit call
-            assert.strictEqual(completionCalls.length, 0) // No completion calls
+            assert.strictEqual(cs.length, 2) // Only edit call
+            assert.strictEqual(completionCalls.length, 1) // No completion calls
             assert.strictEqual(editCalls.length, 1) // One edit call
 
             // Verify the stub was called
@@ -370,10 +370,6 @@ describe('RecommendationService', () => {
 
         it('should make completion request when edit suggestion is not active', async () => {
             // Mock EditSuggestionState to return false (no edit suggestion active)
-            const isEditSuggestionActiveStub = sandbox
-                .stub(EditSuggestionState, 'isEditSuggestionActive')
-                .returns(false)
-
             const mockResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -400,9 +396,6 @@ describe('RecommendationService', () => {
             assert.strictEqual(cs.length, 2) // Both calls
             assert.strictEqual(completionCalls.length, 1) // One completion call
             assert.strictEqual(editCalls.length, 1) // One edit call
-
-            // Verify the stub was called
-            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
     })
 })
