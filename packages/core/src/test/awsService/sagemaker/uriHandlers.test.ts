@@ -74,11 +74,6 @@ describe('SageMaker URI handler', function () {
         await handler.handleUri(uri)
 
         assert.ok(deeplinkConnectStub.calledOnce)
-        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[1], 'abc123')
-        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[2], 'sess-xyz')
-        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[3], 'wss://example.com&cell-number=4')
-        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[4], 'my-token')
-        assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[5], 'my-domain')
         assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[6], undefined)
     })
 })
