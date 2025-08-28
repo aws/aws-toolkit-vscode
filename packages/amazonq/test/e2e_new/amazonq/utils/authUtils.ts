@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, By, WebviewView, WebView } from 'vscode-extension-tester'
+import { Workbench, By, WebviewView } from 'vscode-extension-tester'
 import { findItemByText, printElementHTML, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
 import { isRunningInGitHubActionsE2E } from './ciUtils'
@@ -40,6 +40,7 @@ export async function signInToAmazonQ(): Promise<void> {
         console.log('IT WORKED')
         const body = webviewView.findElement(By.css('body'))
         printElementHTML(body)
+        //if were not getting the print that we're expecting josh's registerhook works the moment the browser popup happens so we can probs use that
         return
     }
 
