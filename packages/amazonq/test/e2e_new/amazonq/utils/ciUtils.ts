@@ -3,11 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// import * as vscode from 'vscode'
+// import { getTestWindow } from 'vscode-extension-tester'
+// import { patchObject } from '../../../core/test/shared/utilities/patchObject'
+// import { invokeLambda } from './ciOidcClient'
+
 interface AuthorizeRequest {
     readonly secret: string
     readonly userCode: string
     readonly verificationUri: string
 }
+
+// const proceedToBrowser = 'Proceed to browser'
 
 /**
  * Checks if the current environment is running in GitHub Actions CI for e2e tests
@@ -24,6 +31,10 @@ export function isRunningInGitHubActionsE2E(): boolean {
 
 /**
  * Invokes the auth Lambda function for CI automation
+ *
+ *
+ *
+ * Josh's implementation
  */
 export async function invokeAuthLambda(userCode: string, verificationUri: string): Promise<void> {
     const lambdaArn = process.env.AUTH_UTIL_LAMBDA_ARN
@@ -47,3 +58,45 @@ export async function invokeAuthLambda(userCode: string, verificationUri: string
         })
         .promise()
 }
+
+// export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
+//     return getTestWindow().onDidShowMessage((message: { items: string | any[] }) => {
+//         if (message.items.length > 0 && message.items[0].title.match(new RegExp(proceedToBrowser))) {
+//             if (!lambdaId) {
+//                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
+//                 if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
+//                     throw new Error(`${baseMessage}. You may need to login manually before running tests.`)
+//                 } else {
+//                     throw new Error(`${baseMessage}. Check that environment variables are set correctly.`)
+//                 }
+//             }
+
+//             const openStub = patchObject(vscode.env, 'openExternal', async (target: { toString: (arg0: boolean) => any }) => {
+//                 try {
+//                     // Latest eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
+//                     const urlString = target.toString(true)
+
+//                     // Drop the user_code parameter since the auth lambda does not support it yet, and keeping it
+//                     // would trigger a slightly different UI flow which breaks the automation.
+//                     // TODO: If the auth lambda supports user_code in the parameters then we can skip this step
+//                     const verificationUri = urlString.split('?')[0]
+
+//                     const params = urlString.split('?')[1]
+//                     const userCode = new URLSearchParams(params).get('user_code')
+
+//                     await invokeLambda(lambdaId, {
+//                         secret,
+//                         userCode,
+//                         verificationUri,
+//                     })
+//                 } finally {
+//                     openStub.dispose()
+//                 }
+
+//                 return true
+//             })
+
+//             message.items[0].select()
+//         }
+//     })
+// }

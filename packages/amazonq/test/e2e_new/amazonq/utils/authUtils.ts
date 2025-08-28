@@ -36,10 +36,13 @@ export async function signInToAmazonQ(): Promise<void> {
         console.log('THIS WORKED 4')
         await webviewView.switchToFrame()
         console.log('THIS WORKED 5')
+
         testContext.webviewView = webviewView
         console.log('IT WORKED')
-        const body = webviewView.findElement(By.css('body'))
+        const body = webviewView.findElement(By.css('*'))
+        const body2 = workbench.findElement(By.css('*'))
         await printElementHTML(body)
+        await printElementHTML(body2)
         //if were not getting the print that we're expecting josh's registerhook works the moment the browser popup happens so we can probs use that
         return
     }
