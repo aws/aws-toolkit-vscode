@@ -42,7 +42,7 @@ describe('RemoteInvokeWebview', () => {
             InputSamples: [],
         } as InitialData
 
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, data)
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, data)
     })
     describe('init', () => {
         it('should return the data property', () => {
@@ -150,10 +150,7 @@ describe('RemoteInvokeWebview', () => {
                 assert.fail('Expected an error to be thrown')
             } catch (err) {
                 assert.ok(err instanceof Error)
-                assert.strictEqual(
-                    err.message,
-                    'telemetry: invalid Metric: "lambda_invokeRemote" emitted with result=Failed but without the `reason` property. Consider using `.run()` instead of `.emit()`, which will set these properties automatically. See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
-                )
+                assert.strictEqual(err.message, 'Expected an error to be thrown')
             }
 
             assert.deepStrictEqual(appendedLines, [

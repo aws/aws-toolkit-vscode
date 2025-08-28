@@ -9,11 +9,10 @@ import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
 import { Lambda } from 'aws-sdk'
 import {
     RemoteDebugController,
-    DebugConfig,
     activateRemoteDebugging,
     revertExistingConfig,
-    getLambdaSnapshot,
 } from '../../../lambda/remoteDebugging/ldkController'
+import { getLambdaSnapshot, type DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger'
 import { LdkClient } from '../../../lambda/remoteDebugging/ldkClient'
 import globals from '../../../shared/extensionGlobals'
 import * as messages from '../../../shared/utilities/messages'
@@ -29,6 +28,7 @@ import {
     setupDebuggingState,
     setupMockCleanupOperations,
 } from './testUtils'
+import { getRemoteDebugLayer } from '../../../lambda/remoteDebugging/remoteLambdaDebugger'
 
 describe('RemoteDebugController', () => {
     let sandbox: sinon.SinonSandbox
@@ -98,6 +98,10 @@ describe('RemoteDebugController', () => {
             assert.strictEqual(controller.supportCodeDownload(undefined), false, 'Should not support undefined runtime')
         })
 
+        it('should not support code download for hot-reloading LocalStack functions', () => {
+            assert.strictEqual(controller.supportCodeDownload('nodejs18.x', 'hot-reloading-hash-not-available'), false)
+        })
+
         it('should support remote debug for node, python, and java runtimes', () => {
             assert.strictEqual(controller.supportRuntimeRemoteDebug('nodejs18.x'), true, 'Should support Node.js')
             assert.strictEqual(controller.supportRuntimeRemoteDebug('python3.9'), true, 'Should support Python')
@@ -111,7 +115,7 @@ describe('RemoteDebugController', () => {
         })
 
         it('should get remote debug layer for supported regions and architectures', () => {
-            const result = controller.getRemoteDebugLayer('us-east-1', ['x86_64'])
+            const result = getRemoteDebugLayer('us-east-1', ['x86_64'])
 
             assert.strictEqual(typeof result, 'string', 'Should return layer ARN for supported region and architecture')
             assert(result?.includes('us-east-1'), 'Should contain the region in the ARN')
@@ -119,14 +123,14 @@ describe('RemoteDebugController', () => {
         })
 
         it('should return undefined for unsupported regions', () => {
-            const result = controller.getRemoteDebugLayer('unsupported-region', ['x86_64'])
+            const result = getRemoteDebugLayer('unsupported-region', ['x86_64'])
 
             assert.strictEqual(result, undefined, 'Should return undefined for unsupported region')
         })
 
         it('should return undefined when region or architectures are undefined', () => {
-            assert.strictEqual(controller.getRemoteDebugLayer(undefined, ['x86_64']), undefined)
-            assert.strictEqual(controller.getRemoteDebugLayer('us-west-2', undefined), undefined)
+            assert.strictEqual(getRemoteDebugLayer(undefined, ['x86_64']), undefined)
+            assert.strictEqual(getRemoteDebugLayer('us-west-2', undefined), undefined)
         })
     })
 
@@ -235,7 +239,7 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Succeeded',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
@@ -297,7 +301,7 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Succeeded',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
@@ -436,7 +440,7 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Failed',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
