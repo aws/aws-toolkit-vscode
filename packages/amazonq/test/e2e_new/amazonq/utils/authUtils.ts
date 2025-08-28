@@ -26,6 +26,7 @@ export async function signInToAmazonQ(): Promise<void> {
         const workbench = new Workbench()
         testContext.workbench = workbench
         // Skip webview setup for CI as authentication is handled by Lambda
+        console.log('IT WORKED')
         return
     }
 
