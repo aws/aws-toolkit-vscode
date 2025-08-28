@@ -26,6 +26,17 @@ export async function signInToAmazonQ(): Promise<void> {
         const workbench = new Workbench()
         testContext.workbench = workbench
         // Skip webview setup for CI as authentication is handled by Lambda
+        await workbench.executeCommand('Amazon Q: Open Chat')
+        console.log('THIS WORKED 1')
+        const editorView = workbench.getEditorView()
+        console.log('THIS WORKED 2')
+        await editorView.closeAllEditors()
+        console.log('THIS WORKED 3')
+        const webviewView = new WebviewView()
+        console.log('THIS WORKED 4')
+        await webviewView.switchToFrame()
+        console.log('THIS WORKED 5')
+        testContext.webviewView = webviewView
         console.log('IT WORKED')
         return
     }
