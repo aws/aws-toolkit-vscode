@@ -39,7 +39,7 @@ export async function signInToAmazonQ(): Promise<void> {
         testContext.webviewView = webviewView
         console.log('IT WORKED')
         const body = webviewView.findElement(By.css('body'))
-        printElementHTML(body)
+        await printElementHTML(body)
         //if were not getting the print that we're expecting josh's registerhook works the moment the browser popup happens so we can probs use that
         return
     }
