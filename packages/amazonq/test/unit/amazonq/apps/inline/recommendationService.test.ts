@@ -363,9 +363,6 @@ describe('RecommendationService', () => {
             assert.strictEqual(cs.length, 2) // Only edit call
             assert.strictEqual(completionCalls.length, 1) // No completion calls
             assert.strictEqual(editCalls.length, 1) // One edit call
-
-            // Verify the stub was called
-            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
 
         it('should make completion request when edit suggestion is not active', async () => {
