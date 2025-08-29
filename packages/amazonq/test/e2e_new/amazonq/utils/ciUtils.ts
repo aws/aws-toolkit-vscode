@@ -59,44 +59,21 @@ export async function invokeAuthLambda(userCode: string, verificationUri: string
         .promise()
 }
 
-// export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
-//     return getTestWindow().onDidShowMessage((message: { items: string | any[] }) => {
-//         if (message.items.length > 0 && message.items[0].title.match(new RegExp(proceedToBrowser))) {
-//             if (!lambdaId) {
-//                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
-//                 if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
-//                     throw new Error(`${baseMessage}. You may need to login manually before running tests.`)
-//                 } else {
-//                     throw new Error(`${baseMessage}. Check that environment variables are set correctly.`)
-//                 }
-//             }
+// export async function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
+//     // Latest eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
+//     const urlString = 'https://oidc.us-east-1.amazonaws.com/authorize?response_type=code&client_id=-yit8OUGd-Hnuxi-wde3dHVzLWVhc3QtMQ&redirect_uri=http://127.0.0.1:53085/oauth/callback&scopes=codewhisperer:completions,codewhisperer:analysis,codewhisperer:conversations,codewhisperer:transformations,codewhisperer:taskassist&state=2f35c7c1-0398-489d-8839-26323587cab6&code_challenge=iL8MZPd_SldEB3B4Y0tKrPjHGRlFt5_r3FYziVNbm9g&code_challenge_method=S256'
 
-//             const openStub = patchObject(vscode.env, 'openExternal', async (target: { toString: (arg0: boolean) => any }) => {
-//                 try {
-//                     // Latest eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
-//                     const urlString = target.toString(true)
+//     // Drop the user_code parameter since the auth lambda does not support it yet, and keeping it
+//     // would trigger a slightly different UI flow which breaks the automation.
+//     // TODO: If the auth lambda supports user_code in the parameters then we can skip this step
+//     const verificationUri = urlString.split('?')[0]
 
-//                     // Drop the user_code parameter since the auth lambda does not support it yet, and keeping it
-//                     // would trigger a slightly different UI flow which breaks the automation.
-//                     // TODO: If the auth lambda supports user_code in the parameters then we can skip this step
-//                     const verificationUri = urlString.split('?')[0]
+//     const params = urlString.split('?')[1]
+//     const userCode = new URLSearchParams(params).get('user_code')
 
-//                     const params = urlString.split('?')[1]
-//                     const userCode = new URLSearchParams(params).get('user_code')
-
-//                     await invokeLambda(lambdaId, {
-//                         secret,
-//                         userCode,
-//                         verificationUri,
-//                     })
-//                 } finally {
-//                     openStub.dispose()
-//                 }
-
-//                 return true
-//             })
-
-//             message.items[0].select()
-//         }
+//     await invokeLambda(lambdaId, {
+//         secret,
+//         userCode,
+//         verificationUri,
 //     })
 // }
