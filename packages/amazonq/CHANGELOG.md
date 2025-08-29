@@ -1,3 +1,9 @@
+## 1.92.0 2025-08-28
+
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+- **Feature** Enabling dynamic model fetching capabilities in Amazon Q chat
+- **Feature** Amazon Q: Support for configuring and utilizing remote MCP servers.
+
 ## 1.91.0 2025-08-22
 
 - **Bug Fix** Enable inline completion in Jupyter Notebook

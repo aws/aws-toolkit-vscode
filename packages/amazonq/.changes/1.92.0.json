@@ -1,0 +1,18 @@
+{
+	"date": "2025-08-28",
+	"version": "1.92.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q supports admin control for MCP servers to restrict MCP server usage"
+		},
+		{
+			"type": "Feature",
+			"description": "Enabling dynamic model fetching capabilities in Amazon Q chat"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: Support for configuring and utilizing remote MCP servers."
+		}
+	]
+}
