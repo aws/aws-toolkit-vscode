@@ -24,7 +24,7 @@ export class EditDecorationManager {
     private currentImageDecoration: vscode.DecorationOptions | undefined
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
-    private rejectHandler: (() => void) | undefined
+    private rejectHandler: ((isDiscard: boolean) => void) | undefined
 
     constructor() {
         this.registerCommandHandlers()
@@ -131,7 +131,7 @@ export class EditDecorationManager {
         svgImage: vscode.Uri,
         startLine: number,
         onAccept: () => Promise<void>,
-        onReject: () => Promise<void>,
+        onReject: (isDiscard: boolean) => Promise<void>,
         originalCode: string,
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
@@ -185,9 +185,9 @@ export class EditDecorationManager {
         })
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', (isDiscard: boolean = false) => {
             if (this.rejectHandler) {
-                this.rejectHandler()
+                this.rejectHandler(isDiscard)
             }
         })
     }
@@ -416,20 +416,31 @@ export async function displaySvgDecoration(
             //     )
             // }
         },
-        async () => {
+        async (isDiscard: boolean) => {
             // Handle reject
-            getLogger().info('Edit suggestion rejected')
+            if (isDiscard) {
+                getLogger().info('Edit suggestion discarded')
+            } else {
+                getLogger().info('Edit suggestion rejected')
+            }
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
             cursorChangeListener.dispose()
+            const suggestionState = isDiscard
+                ? {
+                      seen: false,
+                      accepted: false,
+                      discarded: true,
+                  }
+                : {
+                      seen: true,
+                      accepted: false,
+                      discarded: false,
+                  }
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
+                    [item.itemId]: suggestionState,
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
