@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, WebviewView, By } from 'vscode-extension-tester'
+import { Workbench, WebviewView, By, ModalDialog, until } from 'vscode-extension-tester'
 import { printElementHTML, sleep } from './generalUtils'
 import { testContext } from './testContext'
 
@@ -90,12 +90,11 @@ export async function signInToAmazonQ(): Promise<void> {
     // }
 
     // Normal manual authentication flow for local development
-    const workbench = new Workbench()
-    await workbench.executeCommand('Amazon Q: Open Chat')
 
-    await sleep(5000)
-    let webviewView = new WebviewView()
-    await webviewView.switchToFrame()
+    //UN COMMENT
+    const workbench = new Workbench()
+    // await sleep(5000)
+    // await workbench.executeCommand('Amazon Q: Open Chat')
 
     // const selectableItems = await waitForElements(webviewView, By.css('.selectable-item'))
     // if (selectableItems.length === 0) {
@@ -115,10 +114,22 @@ export async function signInToAmazonQ(): Promise<void> {
 
     // const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
     // await UrlContinue.click()
+
+    // console.log('Waiting for manual authentication...')
+    // await sleep(12000)
+    const driver = workbench.getDriver()
+    const modalWnd = By.className('monaco-dialog-box')
+    await driver.wait(until.elementLocated(modalWnd), 10_000)
+    const dialog = new ModalDialog()
+    await dialog.pushButton('Open')
+    await sleep(5000)
+    await workbench.executeCommand('Amazon Q: Open Chat')
+    await sleep(5000)
+    let webviewView = new WebviewView()
+    await webviewView.switchToFrame()
     const body = webviewView.findElement(By.css('*'))
     await printElementHTML(body)
-    console.log('Waiting for manual authentication...')
-    await sleep(12000)
+
     console.log('Manual authentication should be done')
 
     await webviewView.switchBack()
