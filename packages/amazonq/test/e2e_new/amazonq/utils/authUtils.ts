@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, By, WebviewView } from 'vscode-extension-tester'
+import { Workbench, By, WebviewView, until, ModalDialog } from 'vscode-extension-tester'
 import { findItemByText, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
 
@@ -14,7 +14,7 @@ Currently, the function will
 3. Inputs the Start URL
 4. IMPORTANT: you must click manually open yourself when the popup window asks to open the browser and complete the authentication in the browser** 
 
-TO-DO: Currently this signInToAmazonQ is not fully autonomous as we ran into a blocker when the browser window pops up */
+IMPORTANT: YOU MUST BE MIDWAY AUTHENTICATED FOR THE LOCAL AUTH TO BE AUTONOMOUS */
 export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
@@ -41,6 +41,13 @@ export async function signInToAmazonQ(): Promise<void> {
 
     const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
     await UrlContinue.click()
+
+    await webviewView.switchBack()
+    const driver = workbench.getDriver()
+    const modalWnd = By.className('monaco-dialog-box')
+    await driver.wait(until.elementLocated(modalWnd), 10_000)
+    const dialog = new ModalDialog()
+    await dialog.pushButton('Open')
 
     console.log('Waiting for manual authentication...')
     await sleep(12000)
