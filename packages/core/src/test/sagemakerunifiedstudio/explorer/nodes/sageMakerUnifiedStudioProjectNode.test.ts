@@ -65,6 +65,10 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             getProjectDefaultEnvironmentCreds: sinon.stub(),
             getUserId: sinon.stub(),
             fetchAllProjectMemberships: sinon.stub(),
+            getDomainId: sinon.stub().returns('test-domain-id'),
+            getToolingEnvironmentId: sinon.stub(),
+            getEnvironmentDetails: sinon.stub(),
+            getToolingEnvironment: sinon.stub(),
         } as any
 
         // Stub DataZoneClient static methods
@@ -187,6 +191,17 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
                     memberDetails: { user: { userId: 'test-user-id' } },
                 },
             ])
+            // Mock getToolingEnvironment method
+            mockDataZoneClient.getToolingEnvironment.resolves({
+                id: 'env-123',
+                awsAccountRegion: 'us-east-1',
+                projectId: undefined,
+                domainId: undefined,
+                createdBy: undefined,
+                name: undefined,
+                provider: undefined,
+                $metadata: {},
+            })
             sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             const children = await projectNode.getChildren()
@@ -224,6 +239,17 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
                     memberDetails: { user: { userId: 'test-user-id' } },
                 },
             ])
+            // Mock getToolingEnvironment method
+            mockDataZoneClient.getToolingEnvironment.resolves({
+                id: 'env-123',
+                awsAccountRegion: 'us-east-1',
+                projectId: undefined,
+                domainId: undefined,
+                createdBy: undefined,
+                name: undefined,
+                provider: undefined,
+                $metadata: {},
+            })
             sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             await assert.rejects(async () => await projectNode.getChildren(), credError)

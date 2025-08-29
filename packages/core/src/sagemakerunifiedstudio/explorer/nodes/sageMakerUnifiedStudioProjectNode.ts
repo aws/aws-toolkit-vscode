@@ -117,9 +117,17 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                     return [dataNode]
                 }
 
-                this.sagemakerClient = await this.initializeSagemakerClient(
-                    this.authProvider.activeConnection?.ssoRegion || 'us-east-1'
-                )
+                const dzClient = await DataZoneClient.getInstance(this.authProvider)
+                if (!this.project?.id) {
+                    throw new Error('Project ID is required')
+                }
+                const toolingEnv = await dzClient.getToolingEnvironment(this.project.id)
+                const spaceAwsAccountRegion = toolingEnv.awsAccountRegion
+
+                if (!spaceAwsAccountRegion) {
+                    throw new Error('No AWS account region found in tooling environment')
+                }
+                this.sagemakerClient = await this.initializeSagemakerClient(spaceAwsAccountRegion)
                 const computeNode = new SageMakerUnifiedStudioComputeNode(
                     this,
                     this.extensionContext,

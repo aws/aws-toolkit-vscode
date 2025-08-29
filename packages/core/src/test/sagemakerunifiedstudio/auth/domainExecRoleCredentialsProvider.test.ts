@@ -7,8 +7,8 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { DomainExecRoleCredentialsProvider } from '../../../sagemakerunifiedstudio/auth/providers/domainExecRoleCredentialsProvider'
 import { ToolkitError } from '../../../shared/errors'
-import { SmusTimeouts } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import fetch from 'node-fetch'
+import { SmusTimeouts } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 
 describe('DomainExecRoleCredentialsProvider', function () {
     let derProvider: DomainExecRoleCredentialsProvider
@@ -37,6 +37,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
             ok: true,
             status: 200,
             statusText: 'OK',
+            text: sinon.stub().resolves(JSON.stringify(mockCredentialsResponse)),
             json: sinon.stub().resolves(mockCredentialsResponse),
         } as any)
 
@@ -215,6 +216,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify({})),
                 json: sinon.stub().resolves({}), // Missing credentials object
             } as any)
 
@@ -241,6 +243,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(invalidResponse)),
                 json: sinon.stub().resolves(invalidResponse),
             } as any)
 
@@ -265,6 +268,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(invalidResponse)),
                 json: sinon.stub().resolves(invalidResponse),
             } as any)
 
@@ -289,6 +293,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(invalidResponse)),
                 json: sinon.stub().resolves(invalidResponse),
             } as any)
 
@@ -311,7 +316,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
             assert.ok(timeDiff < 5000, 'Expiration should be 10 mins from now')
         })
 
-        it('should use expiration from API response when provided', async function () {
+        it('should use expiration from API response when provided as ISO string', async function () {
             const futureExpiration = new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours from now
             const responseWithExpiration = {
                 credentials: {
@@ -326,6 +331,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithExpiration)),
                 json: sinon.stub().resolves(responseWithExpiration),
             } as any)
 
@@ -339,11 +345,126 @@ describe('DomainExecRoleCredentialsProvider', function () {
             assert.ok(timeDiff < 1000, 'Should use expiration from API response')
         })
 
+        it('should handle epoch timestamp in seconds from API response', async function () {
+            const futureTime = Math.floor(Date.now() / 1000) + 3600 // 1 hour from now in seconds
+            const responseWithEpochExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: futureTime.toString(), // Epoch timestamp in seconds as string
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithEpochExpiration)),
+                json: sinon.stub().resolves(responseWithEpochExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should correctly parse epoch timestamp and convert to Date
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = futureTime * 1000 // Convert to milliseconds
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 1000, 'Should correctly parse epoch timestamp in seconds')
+        })
+
+        it('should handle epoch timestamp as number from API response', async function () {
+            const futureTime = Math.floor(Date.now() / 1000) + 7200 // 2 hours from now in seconds
+            const responseWithEpochExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: futureTime, // Epoch timestamp in seconds as number
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithEpochExpiration)),
+                json: sinon.stub().resolves(responseWithEpochExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should correctly parse epoch timestamp and convert to Date
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = futureTime * 1000 // Convert to milliseconds
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 1000, 'Should correctly parse epoch timestamp as number')
+        })
+
+        it('should handle zero epoch timestamp gracefully', async function () {
+            const responseWithZeroExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: '0', // Zero is not > 0, so treated as ISO string "0" which represents year 0
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithZeroExpiration)),
+                json: sinon.stub().resolves(responseWithZeroExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // "0" is parsed as a valid date (year 0), not as an invalid date
+            // So it should use the parsed date, not the default expiration
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = new Date('0').getTime() // Year 0
+            assert.strictEqual(expirationTime, expectedTime, 'Should use parsed date for year 0')
+        })
+
+        it('should handle negative epoch timestamp gracefully', async function () {
+            const responseWithNegativeExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: '-1', // Negative is not > 0, so treated as ISO string "-1" which represents year -1
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithNegativeExpiration)),
+                json: sinon.stub().resolves(responseWithNegativeExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // "-1" is parsed as a valid date (year -1), not as an invalid date
+            // So it should use the parsed date, not the default expiration
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = new Date('-1').getTime() // Year -1
+            assert.strictEqual(expirationTime, expectedTime, 'Should use parsed date for year -1')
+        })
+
         it('should handle JSON parsing errors', async function () {
             fetchStub.resolves({
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves('invalid json'),
                 json: sinon.stub().rejects(new Error('Invalid JSON')),
             } as any)
 
@@ -369,6 +490,7 @@ describe('DomainExecRoleCredentialsProvider', function () {
                 ok: true,
                 status: 200,
                 statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithInvalidExpiration)),
                 json: sinon.stub().resolves(responseWithInvalidExpiration),
             } as any)
 
@@ -385,6 +507,62 @@ describe('DomainExecRoleCredentialsProvider', function () {
             const expectedTime = Date.now() + 10 * 60 * 1000
             const timeDiff = Math.abs(expirationTime - expectedTime)
             assert.ok(timeDiff < 5000, 'Should fall back to default expiration for invalid date string')
+        })
+
+        it('should handle empty expiration string in response', async function () {
+            const responseWithEmptyExpiration = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: '', // Empty string
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithEmptyExpiration)),
+                json: sinon.stub().resolves(responseWithEmptyExpiration),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should fall back to default expiration for empty string
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = Date.now() + 10 * 60 * 1000 // Default 10 minutes
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 5000, 'Should use default expiration for empty string')
+        })
+
+        it('should handle non-numeric string that looks like a number', async function () {
+            const responseWithInvalidNumber = {
+                credentials: {
+                    accessKeyId: 'AKIA-DER-KEY',
+                    secretAccessKey: 'der-secret-key',
+                    sessionToken: 'der-session-token',
+                    expiration: '123abc', // Non-numeric string
+                },
+            }
+
+            fetchStub.resolves({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                text: sinon.stub().resolves(JSON.stringify(responseWithInvalidNumber)),
+                json: sinon.stub().resolves(responseWithInvalidNumber),
+            } as any)
+
+            const credentials = await derProvider.getCredentials()
+
+            // Should fall back to default expiration for invalid numeric string
+            assert.ok(credentials.expiration)
+            const expirationTime = credentials.expiration!.getTime()
+            const expectedTime = Date.now() + 10 * 60 * 1000 // Default 10 minutes
+            const timeDiff = Math.abs(expirationTime - expectedTime)
+            assert.ok(timeDiff < 5000, 'Should use default expiration for invalid numeric string')
         })
     })
 

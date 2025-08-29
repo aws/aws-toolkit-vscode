@@ -6,6 +6,8 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
+import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types/commands/GetEnvironmentCommand'
 
 describe('DataZoneClient', () => {
     let dataZoneClient: DataZoneClient
@@ -342,6 +344,69 @@ describe('DataZoneClient', () => {
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+        })
+    })
+
+    describe('getToolingEnvironment', () => {
+        beforeEach(() => {
+            mockAuthProvider = {} as SmusAuthenticationProvider
+        })
+
+        it('should return environment details when successful', async () => {
+            const mockEnvironment: GetEnvironmentCommandOutput = {
+                id: 'env-123',
+                awsAccountRegion: 'us-east-1',
+                projectId: undefined,
+                domainId: undefined,
+                createdBy: undefined,
+                name: undefined,
+                provider: undefined,
+                $metadata: {},
+            }
+
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [{ id: 'env-1', name: 'Tooling' }],
+                }),
+                getEnvironment: sinon.stub().resolves(mockEnvironment),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getToolingEnvironment('project-123')
+
+            assert.strictEqual(result, mockEnvironment)
+        })
+
+        it('should throw error when no tooling environment ID found', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [],
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                () => dataZoneClient.getToolingEnvironment('project-123'),
+                /Failed to get tooling environment ID: No default Tooling environment found for project/
+            )
+        })
+
+        it('should throw error when getToolingEnvironmentId fails', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().rejects(new Error('API error')),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironment('project-123'), /API error/)
         })
     })
 

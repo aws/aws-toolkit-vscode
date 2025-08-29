@@ -98,12 +98,13 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             (conn) => (conn.type as ConnectionType) === ConnectionType.LAKEHOUSE
         )
 
-        // Create Bucket parent node if there are S3 connections
-        if (s3Connections.length > 0) {
-            const bucketNode = this.createBucketParentNode(project, s3Connections, region)
-            dataNodes.push(bucketNode)
+        // Add Lakehouse nodes first
+        for (const connection of lakehouseConnections) {
+            const node = await this.createLakehouseNode(project, connection, region)
+            dataNodes.push(node)
         }
 
+        // Add Redshift nodes second
         for (const connection of redshiftConnections) {
             if (connection.name.startsWith('project.lakehouse')) {
                 continue
@@ -115,9 +116,10 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             dataNodes.push(node)
         }
 
-        for (const connection of lakehouseConnections) {
-            const node = await this.createLakehouseNode(project, connection, region)
-            dataNodes.push(node)
+        // Add S3 Bucket parent node last
+        if (s3Connections.length > 0) {
+            const bucketNode = this.createBucketParentNode(project, s3Connections, region)
+            dataNodes.push(bucketNode)
         }
 
         this.logger.info(`Created ${dataNodes.length} total connection nodes`)

@@ -202,7 +202,9 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                 )
             }
 
-            const data = (await response.json()) as {
+            const responseText = await response.text()
+
+            const data = JSON.parse(responseText) as {
                 credentials: {
                     accessKeyId: string
                     secretAccessKey: string
@@ -210,7 +212,6 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                     expiration: string
                 }
             }
-
             this.logger.debug(`SMUS DER: Successfully received credentials from API for domain ${this.domainId}`)
 
             // Validate the response data structure
@@ -226,21 +227,50 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
             validateCredentialFields(credentials, 'InvalidCredentialResponse', 'API response')
 
             // Create credentials with expiration
-            // Note: The response doesn't include expiration yet, so we set it to 10 minutes for now if it does't exist
             let credentialExpiresAt: Date
             if (credentials.expiration) {
-                // The API returns expiration as a string, convert to Date
-                const parsedExpiration = new Date(credentials.expiration)
+                // Handle both epoch timestamps and ISO date strings
+                let parsedExpiration: Date
+
+                // Check if expiration is a numeric string (epoch timestamp)
+                const expirationNum = Number(credentials.expiration)
+                if (!isNaN(expirationNum) && expirationNum > 0) {
+                    // Treat as epoch timestamp in seconds and convert to milliseconds
+                    const timestampMs = expirationNum * 1000
+                    parsedExpiration = new Date(timestampMs)
+                    this.logger.debug(
+                        `SMUS DER: Parsed epoch timestamp ${credentials.expiration} (seconds) as ${parsedExpiration.toISOString()}`
+                    )
+                } else {
+                    // Treat as ISO date string
+                    parsedExpiration = new Date(credentials.expiration)
+                    if (!isNaN(parsedExpiration.getTime())) {
+                        this.logger.debug(
+                            `SMUS DER: Parsed ISO date string ${credentials.expiration} as ${parsedExpiration.toISOString()}`
+                        )
+                    } else {
+                        this.logger.debug(
+                            `SMUS DER: Failed to parse ISO date string ${credentials.expiration} - invalid date format`
+                        )
+                    }
+                }
+
                 // Check if the parsed date is valid
                 if (isNaN(parsedExpiration.getTime())) {
                     this.logger.warn(
-                        `SMUS DER: Invalid expiration date string: ${credentials.expiration}, using default expiration`
+                        `SMUS DER: Invalid expiration value: ${credentials.expiration}, using default expiration`
                     )
                     credentialExpiresAt = new Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
                 } else {
                     credentialExpiresAt = parsedExpiration
                 }
+                if (!isNaN(credentialExpiresAt.getTime())) {
+                    this.logger.debug(`SMUS DER: Credential expires at ${credentialExpiresAt.toISOString()}`)
+                } else {
+                    this.logger.debug(`SMUS DER: Invalid credential expiration date, using default`)
+                }
             } else {
+                this.logger.debug(`SMUS DER: No expiration provided, using default`)
                 credentialExpiresAt = new Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
             }
 

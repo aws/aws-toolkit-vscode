@@ -41,6 +41,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             getRegion: sinon.stub(),
             getToolingEnvironmentId: sinon.stub(),
             getEnvironmentDetails: sinon.stub(),
+            getToolingEnvironment: sinon.stub(),
         } as any
 
         sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
@@ -163,7 +164,8 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
         it('throws error when tooling environment ID not found', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
-            mockDataZoneClient.getToolingEnvironmentId.rejects(new Error('Environment not found'))
+            const error = new Error('Failed to get tooling environment ID: Environment not found')
+            mockDataZoneClient.getToolingEnvironment.rejects(error)
 
             await assert.rejects(
                 async () => await spacesNode.getSageMakerDomainId(),
@@ -173,7 +175,8 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
         it('throws error when no default environment found', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
-            mockDataZoneClient.getToolingEnvironmentId.resolves(undefined)
+            const error = new Error('No default environment found for project')
+            mockDataZoneClient.getToolingEnvironment.rejects(error)
 
             await assert.rejects(
                 async () => await spacesNode.getSageMakerDomainId(),
@@ -183,12 +186,12 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
         it('throws error when SageMaker domain ID not found in resources', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
-            mockDataZoneClient.getToolingEnvironmentId.resolves('env-123')
-            mockDataZoneClient.getEnvironmentDetails.resolves({
+            mockDataZoneClient.getToolingEnvironment.resolves({
                 projectId: 'project-123',
                 domainId: 'domain-123',
                 createdBy: 'user',
                 name: 'test-env',
+                awsAccountRegion: 'us-west-2',
                 provisionedResources: [{ name: 'otherResource', value: 'value', type: 'OTHER' }],
             } as any)
 
@@ -200,12 +203,12 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
         it('returns SageMaker domain ID when found', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
-            mockDataZoneClient.getToolingEnvironmentId.resolves('env-123')
-            mockDataZoneClient.getEnvironmentDetails.resolves({
+            mockDataZoneClient.getToolingEnvironment.resolves({
                 projectId: 'project-123',
                 domainId: 'domain-123',
                 createdBy: 'user',
                 name: 'test-env',
+                awsAccountRegion: 'us-west-2',
                 provisionedResources: [
                     {
                         name: 'sageMakerDomainId',
@@ -350,8 +353,8 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             mockDataZoneClient.getUserId.resolves('ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12')
             mockDataZoneClient.getDomainId.returns('domain-123')
             mockDataZoneClient.getRegion.returns('us-west-2')
-            mockDataZoneClient.getToolingEnvironmentId.resolves('env-123')
-            mockDataZoneClient.getEnvironmentDetails.resolves({
+            mockDataZoneClient.getToolingEnvironment.resolves({
+                awsAccountRegion: 'us-west-2',
                 provisionedResources: [{ name: 'sageMakerDomainId', value: 'sagemaker-domain-123' }],
             } as any)
         })

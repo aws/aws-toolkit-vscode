@@ -15,6 +15,7 @@ import {
     S3PropertiesOutput,
     ConnectionType,
     GluePropertiesOutput,
+    GetEnvironmentCommandOutput,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
@@ -751,6 +752,33 @@ export class DataZoneClient {
             this.logger.error('Failed to get environment details: %s', err as Error)
             throw err
         }
+    }
+
+    /**
+     * Gets the tooling environment details for a project
+     * @param projectId The project ID
+     * @returns The tooling environment details
+     */
+    public async getToolingEnvironment(projectId: string): Promise<GetEnvironmentCommandOutput> {
+        const logger = getLogger()
+
+        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        if (!datazoneClient) {
+            throw new Error('DataZone client is not initialized')
+        }
+
+        const toolingEnvId = await datazoneClient
+            .getToolingEnvironmentId(datazoneClient.getDomainId(), projectId)
+            .catch((err) => {
+                logger.error('Failed to get tooling environment ID for project %s', projectId)
+                throw new Error(`Failed to get tooling environment ID: ${err.message}`)
+            })
+
+        if (!toolingEnvId) {
+            throw new Error('No default environment found for project')
+        }
+
+        return await datazoneClient.getEnvironmentDetails(toolingEnvId)
     }
 
     public async getUserId(): Promise<string | undefined> {

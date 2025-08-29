@@ -8,7 +8,6 @@ import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioCompu
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
-import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone'
 import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
@@ -31,6 +30,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
     public readonly pollingSet: PollingSet<string> = new PollingSet(5, this.updatePendingNodes.bind(this))
+    private spaceAwsAccountRegion: string | undefined
 
     public constructor(
         private readonly parent: SageMakerUnifiedStudioComputeNode,
@@ -143,16 +143,9 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
         }
-        const toolingEnvId = await datazoneClient
-            .getToolingEnvironmentId(datazoneClient.getDomainId(), this.projectId)
-            .catch((err) => {
-                this.logger.error('Failed to get tooling environment ID for project %s', this.projectId)
-                throw new Error(`Failed to get tooling environment ID: ${err.message}`)
-            })
-        if (!toolingEnvId) {
-            throw new Error('No default environment found for project')
-        }
-        const toolingEnv: GetEnvironmentCommandOutput = await datazoneClient.getEnvironmentDetails(toolingEnvId)
+
+        const toolingEnv = await datazoneClient.getToolingEnvironment(this.projectId)
+        this.spaceAwsAccountRegion = toolingEnv.awsAccountRegion
         if (toolingEnv.provisionedResources) {
             for (const resource of toolingEnv.provisionedResources) {
                 if (resource.name === 'sageMakerDomainId') {
@@ -224,7 +217,10 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                 new SagemakerUnifiedStudioSpaceNode(
                     this as any,
                     this.sagemakerClient,
-                    datazoneClient.getRegion(),
+                    this.spaceAwsAccountRegion ||
+                        (() => {
+                            throw new Error('No AWS account region found in tooling environment')
+                        })(),
                     this.spaceApps.get(key)!,
                     true /* isSMUSSpace */
                 )

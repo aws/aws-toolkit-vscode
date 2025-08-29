@@ -161,7 +161,7 @@ export async function stopSpace(
                 code: error.name,
             })
         } else {
-            throw new ToolkitError(`Failed to stop space: ${spaceName}`, {
+            throw new ToolkitError(`Failed to stop space ${spaceName}: ${(error as Error).message}`, {
                 cause: error,
                 code: error.name,
             })
@@ -198,7 +198,7 @@ export async function openRemoteConnect(
         } catch (err: any) {
             // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
             if (err.code !== InstanceTypeError) {
-                throw new ToolkitError('Remote connection failed.', {
+                throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
                     cause: err as Error,
                     code: err.code,
                 })
