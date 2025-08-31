@@ -74,9 +74,12 @@ export async function persistLocalCredentials(spaceArn: string): Promise<void> {
 export async function persistSmusProjectCreds(spaceArn: string, node: SagemakerUnifiedStudioSpaceNode): Promise<void> {
     const nodeParent = node.getParent() as SageMakerUnifiedStudioSpacesParentNode
     const authProvider = nodeParent.getAuthProvider()
-    const projectAuthProvider = await authProvider.getProjectCredentialProvider(nodeParent.getProjectId())
+    const projectId = nodeParent.getProjectId()
+    const projectAuthProvider = await authProvider.getProjectCredentialProvider(projectId)
     await projectAuthProvider.getCredentials()
-    await setSmusSpaceSsoProfile(spaceArn, nodeParent.getProjectId())
+    await setSmusSpaceSsoProfile(spaceArn, projectId)
+    // Trigger SSH credential refresh for the project
+    projectAuthProvider.startProactiveCredentialRefresh()
 }
 
 /**

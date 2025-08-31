@@ -129,7 +129,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             }
         }),
         // Dispose DataZoneClient when extension is deactivated
-        { dispose: () => DataZoneClient.dispose() }
+        { dispose: () => DataZoneClient.dispose() },
+        // Dispose SMUS auth provider when extension is deactivated
+        { dispose: () => smusAuthProvider.dispose() }
     )
 
     // Track user activity for autoshutdown feature when in SageMaker Unified Studio environment

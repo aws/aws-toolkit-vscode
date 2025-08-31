@@ -23,7 +23,7 @@ describe('ProjectRoleCredentialsProvider', function () {
         accessKeyId: 'AKIA-PROJECT-KEY',
         secretAccessKey: 'project-secret-key',
         sessionToken: 'project-session-token',
-        expiration: new Date(Date.now() + 14 * 60 * 1000).toISOString(), // 14 minutes as ISO string
+        expiration: new Date(Date.now() + 14 * 60 * 1000), // 14 minutes as Date object
         $metadata: {
             httpStatusCode: 200,
             requestId: 'test-request-id',

@@ -218,4 +218,18 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
             `SMUS Connection: Successfully invalidated connection credentials cache for connection ${this.connectionId}`
         )
     }
+
+    /**
+     * Disposes of the provider and cleans up resources
+     */
+    public dispose(): void {
+        this.logger.debug(
+            `SMUS Connection: Disposing connection credentials provider for connection ${this.connectionId}`
+        )
+        // Clear cache to clean up resources
+        this.invalidate()
+        this.logger.debug(
+            `SMUS Connection: Successfully disposed connection credentials provider for connection ${this.connectionId}`
+        )
+    }
 }

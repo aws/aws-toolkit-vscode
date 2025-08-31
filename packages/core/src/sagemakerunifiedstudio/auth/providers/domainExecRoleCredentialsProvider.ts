@@ -314,4 +314,12 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
         this.credentialCache = undefined
         this.logger.debug(`SMUS DER: Successfully invalidated DER credentials cache for domain ${this.domainId}`)
     }
+    /**
+     * Disposes of the provider and cleans up resources
+     */
+    public dispose(): void {
+        this.logger.debug(`SMUS DER: Disposing DER credentials provider for domain ${this.domainId}`)
+        this.invalidate()
+        this.logger.debug(`SMUS DER: Successfully disposed DER credentials provider for domain ${this.domainId}`)
+    }
 }

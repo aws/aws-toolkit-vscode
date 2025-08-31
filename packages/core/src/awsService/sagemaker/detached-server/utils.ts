@@ -122,6 +122,24 @@ async function processWriteQueue() {
 }
 
 /**
+ * Detects if the connection identifier is using SMUS credentials
+ * @param connectionIdentifier - The connection identifier to check
+ * @returns Promise<boolean> - true if SMUS, false otherwise
+ */
+export async function isSmusConnection(connectionIdentifier: string): Promise<boolean> {
+    try {
+        const mapping = await readMapping()
+        const profile = mapping.localCredential?.[connectionIdentifier]
+
+        // Check if profile exists and has smusProjectId
+        return profile && 'smusProjectId' in profile
+    } catch (err) {
+        // If we can't read the mapping, assume not SMUS to avoid breaking existing functionality
+        return false
+    }
+}
+
+/**
  * Writes the mapping to a temp file and atomically renames it to the target path.
  * Uses a queue to prevent race conditions when multiple requests try to write simultaneously.
  */

@@ -28,6 +28,11 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
         credentials: AWS.Credentials
         expiresAt: Date
     }
+    private refreshTimer?: NodeJS.Timeout
+    private readonly refreshInterval = 10 * 60 * 1000 // 10 minutes
+    private readonly checkInterval = 10 * 1000 // 10 seconds - check frequently, refresh based on actual time
+    private sshRefreshActive = false
+    private lastRefreshTime?: Date
 
     constructor(
         private readonly smusAuthProvider: SmusAuthenticationProvider,
@@ -162,11 +167,21 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
 
             return awsCredentials
         } catch (err) {
-            this.logger.error(
-                'SMUS Project: Failed to get project credentials for project %s: %s',
-                this.projectId,
-                (err as Error).message
-            )
+            this.logger.error('SMUS Project: Failed to get project credentials for project %s: %s', this.projectId, err)
+
+            // Handle InvalidGrantException specially - indicates need for reauthentication
+            if (err instanceof Error && err.name === 'InvalidGrantException') {
+                // Invalidate cache when authentication fails
+                this.invalidate()
+                throw new ToolkitError(
+                    `Failed to get project credentials for project ${this.projectId}: ${err.message}. Reauthentication required.`,
+                    {
+                        code: 'InvalidRefreshToken',
+                        cause: err,
+                    }
+                )
+            }
+
             throw new ToolkitError(`Failed to get project credentials for project ${this.projectId}: ${err}`, {
                 code: 'ProjectCredentialsFetchFailed',
                 cause: err instanceof Error ? err : undefined,
@@ -193,6 +208,139 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
     }
 
     /**
+     * Starts proactive credential refresh for SSH connections
+     *
+     * Uses an expiry-based approach with safety buffer:
+     * - Checks every 10 seconds using setTimeout
+     * - Refreshes when credentials expire within 5 minutes (safety buffer)
+     * - Falls back to 10-minute time-based refresh if no expiry information available
+     * - Handles sleep/resume because it uses wall-clock time for expiry checks
+     *
+     * This means credentials are refreshed just before they expire, reducing
+     * unnecessary API calls while ensuring credentials remain valid.
+     */
+    public startProactiveCredentialRefresh(): void {
+        if (this.sshRefreshActive) {
+            this.logger.debug(`SMUS Project: SSH refresh already active for project ${this.projectId}`)
+            return
+        }
+
+        this.logger.info(`SMUS Project: Starting SSH credential refresh for project ${this.projectId}`)
+        this.sshRefreshActive = true
+        this.lastRefreshTime = new Date() // Initialize refresh time
+
+        // Start the check timer (checks every 10 seconds, refreshes every 10 minutes based on actual time)
+        this.scheduleNextCheck()
+    }
+
+    /**
+     * Stops proactive credential refresh
+     * Called when SSH connection ends or SMUS disconnects
+     */
+    public stopProactiveCredentialRefresh(): void {
+        if (!this.sshRefreshActive) {
+            return
+        }
+
+        this.logger.info(`SMUS Project: Stopping SSH credential refresh for project ${this.projectId}`)
+        this.sshRefreshActive = false
+        this.lastRefreshTime = undefined
+
+        // Clean up timer
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer)
+            this.refreshTimer = undefined
+        }
+    }
+
+    /**
+     * Schedules the next credential check (every 10 seconds)
+     * Refreshes credentials when they expire within 5 minutes (safety buffer)
+     * Falls back to 10-minute time-based refresh if no expiry information available
+     * This handles sleep/resume scenarios correctly
+     */
+    private scheduleNextCheck(): void {
+        if (!this.sshRefreshActive) {
+            return
+        }
+        // Check every 10 seconds, but only refresh every 10 minutes based on actual time elapsed
+        this.refreshTimer = setTimeout(async () => {
+            try {
+                const now = new Date()
+                // Check if we need to refresh based on actual time elapsed
+                if (this.shouldPerformRefresh(now)) {
+                    await this.refresh()
+                }
+                // Schedule next check if still active
+                if (this.sshRefreshActive) {
+                    this.scheduleNextCheck()
+                }
+            } catch (error) {
+                this.logger.error(
+                    `SMUS Project: Failed to refresh credentials for project ${this.projectId}: %O`,
+                    error
+                )
+                // Continue trying even if refresh fails. Dispose will handle stopping the refresh.
+                if (this.sshRefreshActive) {
+                    this.scheduleNextCheck()
+                }
+            }
+        }, this.checkInterval)
+    }
+
+    /**
+     * Determines if a credential refresh should be performed based on credential expiration
+     * This handles sleep/resume scenarios properly and is more efficient than time-based refresh
+     */
+    private shouldPerformRefresh(now: Date): boolean {
+        if (!this.lastRefreshTime || !this.credentialCache) {
+            // First refresh or no cached credentials
+            this.logger.debug(`SMUS Project: First refresh - no previous credentials for ${this.projectId}`)
+            return true
+        }
+
+        // Check if credentials expire soon (with 5-minute safety buffer)
+        const safetyBufferMs = 5 * 60 * 1000 // 5 minutes before expiry
+        const expiryTime = this.credentialCache.credentials.expiration?.getTime()
+
+        if (!expiryTime) {
+            // No expiry info - fall back to time-based refresh as safety net
+            const timeSinceLastRefresh = now.getTime() - this.lastRefreshTime.getTime()
+            const shouldRefresh = timeSinceLastRefresh >= this.refreshInterval
+            return shouldRefresh
+        }
+
+        const timeUntilExpiry = expiryTime - now.getTime()
+        const shouldRefresh = timeUntilExpiry < safetyBufferMs
+        return shouldRefresh
+    }
+
+    /**
+     * Performs credential refresh by invalidating cache and fetching fresh credentials
+     */
+    private async refresh(): Promise<void> {
+        const now = new Date()
+        const expiryTime = this.credentialCache?.credentials.expiration?.getTime()
+
+        if (expiryTime) {
+            const minutesUntilExpiry = Math.round((expiryTime - now.getTime()) / 60000)
+            this.logger.debug(
+                `SMUS Project: Refreshing credentials for project ${this.projectId} - expires in ${minutesUntilExpiry} minutes`
+            )
+        } else {
+            const minutesSinceLastRefresh = this.lastRefreshTime
+                ? Math.round((now.getTime() - this.lastRefreshTime.getTime()) / 60000)
+                : 0
+            this.logger.debug(
+                `SMUS Project: Refreshing credentials for project ${this.projectId} - time-based refresh after ${minutesSinceLastRefresh} minutes`
+            )
+        }
+
+        await this.getCredentials()
+        this.lastRefreshTime = new Date()
+    }
+
+    /**
      * Invalidates cached project credentials
      * Clears the internal cache without fetching new credentials
      */
@@ -203,5 +351,13 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
         this.logger.debug(
             `SMUS Project: Successfully invalidated project credentials cache for project ${this.projectId}`
         )
+    }
+
+    /**
+     * Disposes of the provider and cleans up resources
+     */
+    public dispose(): void {
+        this.stopProactiveCredentialRefresh()
+        this.invalidate()
     }
 }

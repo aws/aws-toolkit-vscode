@@ -13,9 +13,9 @@ import { showReauthenticateMessage } from '../../../shared/utilities/messages'
 import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
+import { getLogger } from '../../../shared/logger/logger'
 import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
 import { createSmusProfile, isValidSmusConnection, SmusConnection } from '../model'
-import { getLogger } from '../../../shared/logger/logger'
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
 import { ConnectionCredentialsProvider } from './connectionCredentialsProvider'
@@ -46,6 +46,7 @@ const authClassName = 'SmusAuthenticationProvider'
  * Manages authentication state and credentials for SMUS
  */
 export class SmusAuthenticationProvider {
+    private readonly logger = getLogger()
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
@@ -63,6 +64,9 @@ export class SmusAuthenticationProvider {
         )
     ) {
         this.onDidChangeActiveConnection(async () => {
+            // Stop SSH credential refresh for all projects when connection changes
+            this.stopAllSshCredentialRefresh()
+
             // Invalidate any cached credentials for the previous connection
             await this.invalidateAllCredentialsInCache()
             // Clear credentials provider cache when connection changes
@@ -81,6 +85,17 @@ export class SmusAuthenticationProvider {
         // Set initial context in case event does not trigger
         void setSmusConnectedContext(this.isConnectionValid())
         void setSmusSpaceEnvironmentContext(SmusUtils.isInSmusSpaceEnvironment())
+    }
+
+    /**
+     * Stops SSH credential refresh for all projects
+     * Called when SMUS connection changes or extension deactivates
+     */
+    public stopAllSshCredentialRefresh(): void {
+        this.logger.debug('SMUS Auth: Stopping SSH credential refresh for all projects')
+        for (const provider of this.projectCredentialProvidersCache.values()) {
+            provider.stopProactiveCredentialRefresh()
+        }
     }
 
     /**
@@ -280,6 +295,7 @@ export class SmusAuthenticationProvider {
     /**
      * Gets the current SSO access token for the active connection
      * @returns Promise resolving to the access token string
+     * @throws ToolkitError if unable to retrieve access token
      */
     public async getAccessToken(): Promise<string> {
         const logger = getLogger()
@@ -294,8 +310,23 @@ export class SmusAuthenticationProvider {
 
             return accessToken
         } catch (err) {
-            logger.error('Failed to get access token for %s: %s', this.activeConnection.id, err)
-            throw ToolkitError.chain(err, 'Failed to get SSO access token for SMUS')
+            logger.error(
+                `SMUS: Failed to retrieve SSO access token for connection ${this.activeConnection.id}: %s`,
+                err
+            )
+
+            // Check if this is a reauth error that should be handled by showing SMUS-specific prompt
+            if (err instanceof ToolkitError && err.code === 'InvalidConnection') {
+                // Re-throw the error to maintain the error flow
+                logger.debug(
+                    `SMUS: Auth connection has been marked invalid - Likely due to expiry. Reauthentication flow will be triggered, ignoring error`
+                )
+            }
+
+            throw new ToolkitError(`Failed to retrieve SSO access token for connection ${this.activeConnection.id}`, {
+                code: SmusErrorCodes.RedeemAccessTokenFailed,
+                cause: err instanceof Error ? err : undefined,
+            })
         }
     }
 
@@ -502,6 +533,34 @@ export class SmusAuthenticationProvider {
                 logger.warn(`SMUS: Failed to invalidate project credentials for project ${projectId}: %s`, err)
             }
         }
+    }
+
+    /**
+     * Stops SSH credential refresh and cleans up resources
+     */
+    public dispose(): void {
+        this.logger.debug('SMUS Auth: Disposing authentication provider and all cached providers')
+
+        // Dispose all project providers
+        for (const provider of this.projectCredentialProvidersCache.values()) {
+            provider.dispose()
+        }
+        this.projectCredentialProvidersCache.clear()
+
+        // Dispose all connection providers
+        for (const provider of this.connectionCredentialProvidersCache.values()) {
+            provider.dispose()
+        }
+        this.connectionCredentialProvidersCache.clear()
+
+        // Dispose all DER providers in the general cache
+        for (const provider of this.credentialsProviderCache.values()) {
+            if (provider && typeof provider.dispose === 'function') {
+                provider.dispose()
+            }
+        }
+        this.credentialsProviderCache.clear()
+        this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
     }
 
     static #instance: SmusAuthenticationProvider | undefined

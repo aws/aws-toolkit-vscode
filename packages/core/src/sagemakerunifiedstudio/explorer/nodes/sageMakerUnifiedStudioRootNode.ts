@@ -46,6 +46,14 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             // Clear the project when connection changes
             await this.projectNode.clearProject()
             this.onDidChangeEmitter.fire()
+            // Immediately refresh the tree view to show authenticated state
+            try {
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            } catch (refreshErr) {
+                this.logger.debug(
+                    `Failed to refresh views after connection state change: ${(refreshErr as Error).message}`
+                )
+            }
         })
     }
 
@@ -65,14 +73,21 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
     }
 
     public async getChildren(): Promise<TreeNode[]> {
+        const isAuthenticated = this.isAuthenticated()
+        const hasExpiredConnection = this.hasExpiredConnection()
+
+        this.logger.debug(
+            `SMUS Root Node getChildren: isAuthenticated=${isAuthenticated}, hasExpiredConnection=${hasExpiredConnection}`
+        )
+
         // Check for expired connection first
-        if (this.hasExpiredConnection()) {
+        if (hasExpiredConnection) {
             // Show auth info node with expired indication
             return [this.authInfoNode] // This will show expired connection info
         }
 
         // Check authentication state
-        if (!this.isAuthenticated()) {
+        if (!isAuthenticated) {
             // Show login option and learn more link when not authenticated
             return [
                 {
@@ -151,12 +166,20 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
 
     private hasExpiredConnection(): boolean {
         try {
-            // Check if there's an active connection but it's expired
-            const hasExpiredConnection = this.authProvider.activeConnection && !this.authProvider.isConnectionValid()
+            const activeConnection = this.authProvider.activeConnection
+            const isConnectionValid = this.authProvider.isConnectionValid()
+
+            this.logger.debug(
+                `SMUS Root Node: activeConnection=${!!activeConnection}, isConnectionValid=${isConnectionValid}`
+            )
+
+            // Check if there's an active connection but it's expired/invalid
+            const hasExpiredConnection = activeConnection && !isConnectionValid
 
             if (hasExpiredConnection) {
+                this.logger.debug('SMUS Root Node: Connection is expired, showing reauthentication prompt')
                 // Show reauthentication prompt to user
-                void this.authProvider.showReauthenticationPrompt(this.authProvider.activeConnection! as any)
+                void this.authProvider.showReauthenticationPrompt(activeConnection as any)
                 return true
             }
             return false

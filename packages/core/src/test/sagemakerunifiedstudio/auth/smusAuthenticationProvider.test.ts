@@ -336,6 +336,64 @@ describe('SmusAuthenticationProvider', function () {
         })
     })
 
+    describe('getAccessToken', function () {
+        beforeEach(function () {
+            mockSecondaryAuthState.activeConnection = mockSmusConnection
+            mockAuth.getSsoAccessToken = sinon.stub().resolves('mock-access-token')
+            mockAuth.invalidateConnection = sinon.stub()
+        })
+
+        it('should return access token when successful', async function () {
+            const token = await smusAuthProvider.getAccessToken()
+
+            assert.strictEqual(token, 'mock-access-token')
+            assert.ok(mockAuth.getSsoAccessToken.calledWith(mockSmusConnection))
+        })
+
+        it('should throw error when no active connection', async function () {
+            mockSecondaryAuthState.activeConnection = undefined
+
+            await assert.rejects(
+                () => smusAuthProvider.getAccessToken(),
+                (err: ToolkitError) => err.code === 'NoActiveConnection'
+            )
+        })
+
+        it('should handle InvalidGrantException and mark connection for reauthentication', async function () {
+            const invalidGrantError = new Error('UnknownError')
+            invalidGrantError.name = 'InvalidGrantException'
+            mockAuth.getSsoAccessToken.rejects(invalidGrantError)
+
+            await assert.rejects(
+                () => smusAuthProvider.getAccessToken(),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'RedeemAccessTokenFailed' &&
+                        err.message.includes('Failed to retrieve SSO access token for connection')
+                    )
+                }
+            )
+
+            // Verify connection was NOT invalidated (current implementation doesn't handle InvalidGrantException specially)
+            assert.ok(mockAuth.invalidateConnection.notCalled)
+        })
+
+        it('should handle other errors normally', async function () {
+            const genericError = new Error('Network error')
+            mockAuth.getSsoAccessToken.rejects(genericError)
+
+            await assert.rejects(
+                () => smusAuthProvider.getAccessToken(),
+                (err: ToolkitError) =>
+                    err.message.includes('Failed to retrieve SSO access token for connection') &&
+                    err.code === 'RedeemAccessTokenFailed'
+            )
+
+            // Verify connection was NOT invalidated for generic errors
+            assert.ok(mockAuth.invalidateConnection.notCalled)
+        })
+    })
+
     describe('fromContext', function () {
         it('should return singleton instance', function () {
             const instance1 = SmusAuthenticationProvider.fromContext()

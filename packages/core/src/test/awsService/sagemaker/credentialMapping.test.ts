@@ -238,10 +238,13 @@ describe('credentialMapping', () => {
         })
 
         it('persists SMUS project credentials', async () => {
+            const mockCredentialProvider = {
+                getCredentials: sandbox.stub().resolves(),
+                startProactiveCredentialRefresh: sandbox.stub(),
+            }
+
             const mockAuthProvider = {
-                getProjectCredentialProvider: sandbox.stub().resolves({
-                    getCredentials: sandbox.stub().resolves(),
-                }),
+                getProjectCredentialProvider: sandbox.stub().resolves(mockCredentialProvider),
             }
 
             mockNode.getParent.returns(mockParent as any)
@@ -260,6 +263,11 @@ describe('credentialMapping', () => {
                 type: 'sso',
                 smusProjectId: projectId,
             })
+
+            // Verify the correct methods were called
+            assert.ok(mockAuthProvider.getProjectCredentialProvider.calledWith(projectId))
+            assert.ok(mockCredentialProvider.getCredentials.calledOnce)
+            assert.ok(mockCredentialProvider.startProactiveCredentialRefresh.calledOnce)
         })
     })
 
