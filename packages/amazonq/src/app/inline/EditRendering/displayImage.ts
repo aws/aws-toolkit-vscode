@@ -318,7 +318,9 @@ export async function displaySvgDecoration(
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-        getLogger().info('Edit suggestion discarded due to active completion suggestion')
+        getLogger('nextEditPrediction').debug(
+            `Auto discarded  edit suggestion for active completion suggestion: ${item.insertText as string}`
+        )
         return
     }
 
@@ -345,6 +347,9 @@ export async function displaySvgDecoration(
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
+            getLogger('nextEditPrediction').debug(
+                `Auto rejected edit suggestion for invalid patch: ${item.insertText as string}}`
+            )
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
