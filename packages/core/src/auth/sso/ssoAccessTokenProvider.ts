@@ -39,6 +39,7 @@ import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import _ from 'lodash'
 import { builderIdStartUrl } from './constants'
+import { invokeLambda, patchObject } from '../../test/setupUtil'
 
 export const authenticationPath = 'sso/authenticated'
 
@@ -582,6 +583,28 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
                     codeChallenge,
                     codeChallengeMethod: 'S256',
                 })
+
+                getLogger().debug('AUTH LAMBDA ABOUT TO BE CALLED')
+                const lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']
+                if (lambdaId) {
+                    const openStub = patchObject(vscode.env, 'openExternal', async (target) => {
+                        try {
+                            const urlString = target.toString(true)
+                            const verificationUri = urlString.split('?')[0]
+                            const params = urlString.split('?')[1]
+                            const userCode = new URLSearchParams(params).get('user_code')
+                            await invokeLambda(lambdaId, {
+                                secret: 'amazonq-test-account',
+                                userCode,
+                                verificationUri,
+                            })
+                        } finally {
+                            openStub.dispose()
+                        }
+                        return true
+                    })
+                }
+                getLogger().debug('AUTH CALLED AFTER')
 
                 await vscode.env.openExternal(vscode.Uri.parse(location))
 
