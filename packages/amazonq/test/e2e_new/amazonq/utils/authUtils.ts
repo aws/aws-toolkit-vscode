@@ -18,7 +18,7 @@ TO-DO: Currently this signInToAmazonQ is not fully autonomous as we ran into a b
 export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
-    await sleep(5000)
+    await sleep(8000)
     let webviewView = new WebviewView()
     await webviewView.switchToFrame()
 
