@@ -5,7 +5,7 @@
 import globals from '../../shared/extensionGlobals'
 
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import { codeWhispererClient as client } from '../client/codewhisperer'
+import { codeWhispererClient as client, Recommendation } from '../client/codewhisperer'
 import { CodewhispererGettingStartedTask, CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType } from '../../shared/telemetry/telemetry'
 import { CodeWhispererSettings } from './codewhispererSettings'
@@ -19,6 +19,46 @@ import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient
 import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
 
 export class TelemetryHelper {
+    recordUserDecisionTelemetry(
+        requestIdList: string[],
+        sessionId: string,
+        recommendations: Recommendation[],
+        acceptIndex: number,
+        length: number,
+        completionTypes: Map<number, CodewhispererCompletionType>,
+        suggestionStates: Map<number, string>,
+        supplementalMetadata: CodeWhispererSupplementalContext | undefined
+    ) {
+        throw new Error('Method not implemented.')
+    }
+    recordUserDecisionTelemetryForEmptyList(
+        requestIdList: string[],
+        sessionId: string,
+        page: number,
+        language: string,
+        supplementalMetadata: CodeWhispererSupplementalContext | undefined
+    ) {
+        throw new Error('Method not implemented.')
+    }
+    setTypeAheadLength(length: number) {
+        throw new Error('Method not implemented.')
+    }
+    setTraceId(traceId: string) {
+        throw new Error('Method not implemented.')
+    }
+    setTriggerCharForUserTriggerDecision(triggerChar: string) {
+        throw new Error('Method not implemented.')
+    }
+    // TODO:
+    getLastTriggerDecisionForClassifier() {
+        return ''
+    }
+    setClassifierThreshold(threshold: number) {
+        throw new Error('Method not implemented.')
+    }
+    setClassifierResult(classifierResult: number) {
+        throw new Error('Method not implemented.')
+    }
     // Some variables for client component latency
     private _sdkApiCallEndTime = 0
     get sdkApiCallEndTime(): number {
