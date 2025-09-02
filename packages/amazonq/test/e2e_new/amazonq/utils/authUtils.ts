@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Workbench, By, WebviewView } from 'vscode-extension-tester'
-import { findItemByText, sleep, waitForElements } from './generalUtils'
+import { Workbench, By, WebviewView, until, ModalDialog } from 'vscode-extension-tester'
+import { findItemByText, printElementHTML, sleep, waitForElements } from './generalUtils'
 import { testContext } from './testContext'
 
 /* Completes the entire Amazon Q login flow
@@ -18,7 +18,6 @@ TO-DO: Currently this signInToAmazonQ is not fully autonomous as we ran into a b
 export async function signInToAmazonQ(): Promise<void> {
     const workbench = new Workbench()
     await workbench.executeCommand('Amazon Q: Open Chat')
-
     await sleep(5000)
     let webviewView = new WebviewView()
     await webviewView.switchToFrame()
@@ -42,6 +41,21 @@ export async function signInToAmazonQ(): Promise<void> {
     const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
     await UrlContinue.click()
 
+    /**
+     * this is the moment that a browser should pop up, at this moment can we just call the browser auth function?
+     */
+    await webviewView.switchBack()
+    const driver = workbench.getDriver()
+    const modalWnd = By.className('monaco-dialog-box')
+    await driver.wait(until.elementLocated(modalWnd), 10_000)
+    const dialog = new ModalDialog()
+    const details = await dialog.getDetails()
+
+    console.log('this should be the url:', details)
+
+    // await dialog.pushButton('Open')
+
+    /** */
     console.log('Waiting for manual authentication...')
     await sleep(12000)
     console.log('Manual authentication should be done')
@@ -51,6 +65,8 @@ export async function signInToAmazonQ(): Promise<void> {
     await editorView.closeAllEditors()
     webviewView = new WebviewView()
     await webviewView.switchToFrame()
+
+    await printElementHTML(webviewView)
 
     testContext.workbench = workbench
     testContext.webviewView = webviewView
