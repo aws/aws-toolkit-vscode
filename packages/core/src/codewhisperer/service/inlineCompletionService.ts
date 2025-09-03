@@ -18,7 +18,6 @@ import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
-import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
 export class InlineCompletionService {
@@ -263,11 +262,3 @@ export class CodeWhispererStatusBar {
         statusBar.show()
     }
 }
-
-/** In this module due to circulare dependency issues */
-export const refreshStatusBar = Commands.declare(
-    { id: 'aws.amazonq.refreshStatusBar', logging: false },
-    () => async () => {
-        await InlineCompletionService.instance.refreshStatusBar()
-    }
-)
