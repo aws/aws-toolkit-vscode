@@ -33,6 +33,10 @@ export class SagemakerSpace {
 
     public updateSpace(spaceApp: SagemakerSpaceApp) {
         this.setSpaceStatus(spaceApp.Status ?? '', spaceApp.App?.Status ?? '')
+        // Only update RemoteAccess property to minimize impact due to minor structural differences between variables
+        if (this.spaceApp.SpaceSettingsSummary && spaceApp.SpaceSettingsSummary?.RemoteAccess) {
+            this.spaceApp.SpaceSettingsSummary.RemoteAccess = spaceApp.SpaceSettingsSummary.RemoteAccess
+        }
         this.label = this.buildLabel()
         this.description = this.isSMUSSpace ? undefined : this.buildDescription()
         this.tooltip = new vscode.MarkdownString(this.buildTooltip())
@@ -109,8 +113,20 @@ export class SagemakerSpace {
             SpaceName: this.spaceApp.SpaceName,
         })
 
+        // AWS DescribeSpace API returns full details with property names like 'SpaceSettings'
+        // but our internal SagemakerSpaceApp type expects 'SpaceSettingsSummary' (from ListSpaces API)
+        // We destructure and rename properties to maintain type compatibility
+        const {
+            SpaceSettings: spaceSettingsSummary,
+            OwnershipSettings: ownershipSettingsSummary,
+            SpaceSharingSettings: spaceSharingSettingsSummary,
+            ...spaceDetails
+        } = space
         this.updateSpace({
-            ...space,
+            SpaceSettingsSummary: spaceSettingsSummary,
+            OwnershipSettingsSummary: ownershipSettingsSummary,
+            SpaceSharingSettingsSummary: spaceSharingSettingsSummary,
+            ...spaceDetails,
             App: app,
             DomainSpaceKey: this.spaceApp.DomainSpaceKey,
         })
