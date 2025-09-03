@@ -45,6 +45,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
+import { activate as activateInline } from '../app/inline/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
@@ -338,8 +339,17 @@ async function onLanguageServerReady(
     // tutorial for inline chat
     const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
-    const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
-    inlineManager.registerInlineCompletion()
+    const enableInlineRollback = false
+    if (enableInlineRollback) {
+        // use VSC inline
+        await activateInline()
+    } else {
+        // use language server for inline completion
+        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
+        inlineManager.registerInlineCompletion()
+        toDispose.push(inlineManager)
+    }
+
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
     if (Experiments.instance.get('amazonqChatLSP', true)) {
@@ -354,7 +364,6 @@ async function onLanguageServerReady(
     await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
-        inlineManager,
         Commands.register('aws.amazonq.showPrev', async () => {
             await sessionManager.maybeRefreshSessionUx()
             await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
