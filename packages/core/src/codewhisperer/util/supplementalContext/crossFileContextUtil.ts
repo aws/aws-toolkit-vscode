@@ -194,7 +194,7 @@ export async function fetchProjectContext(
     editor: vscode.TextEditor,
     target: 'default' | 'codemap' | 'bm25'
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    //const inputChunkContent = getInputChunk(editor)
+    // const inputChunkContent = getInputChunk(editor)
     // TODO:
     const inlineProjectContext: { content: string; score: number; filePath: string }[] = []
 
