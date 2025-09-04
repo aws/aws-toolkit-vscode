@@ -44,6 +44,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
+import { LanguageClient } from 'vscode-languageclient'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -99,6 +100,7 @@ export class RecommendationHandler {
     private next: vscode.Disposable
     private prev: vscode.Disposable
     private _timer?: NodeJS.Timer
+    private languageClient?: LanguageClient
     documentUri: vscode.Uri | undefined = undefined
 
     constructor() {
@@ -119,6 +121,10 @@ export class RecommendationHandler {
 
     isValidResponse(): boolean {
         return session.recommendations.some((r) => r.content.trim() !== '')
+    }
+
+    setLanguageClient(languageClient: LanguageClient) {
+        this.languageClient = this.languageClient
     }
 
     async getServerResponse(
@@ -204,7 +210,8 @@ export class RecommendationHandler {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
                     this.nextToken,
-                    config.isSuggestionsWithCodeReferencesEnabled
+                    config.isSuggestionsWithCodeReferencesEnabled,
+                    this.languageClient
                 )
             } else {
                 session.requestContext = {

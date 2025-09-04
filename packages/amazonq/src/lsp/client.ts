@@ -342,7 +342,7 @@ async function onLanguageServerReady(
     const enableInlineRollback = true
     if (enableInlineRollback) {
         // use VSC inline
-        await activateInline()
+        await activateInline(client)
     } else {
         // use language server for inline completion
         const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)

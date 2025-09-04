@@ -13,10 +13,12 @@ import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 import * as os from 'os'
 import { crossFileContextConfig } from '../../models/constants'
+import { LanguageClient } from 'vscode-languageclient'
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken: vscode.CancellationToken,
+    languageClient?: LanguageClient
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
 
@@ -32,7 +34,7 @@ export async function fetchSupplementalContext(
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken, languageClient)
     }
 
     return supplementalContextPromise

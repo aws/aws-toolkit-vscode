@@ -22,14 +22,16 @@ import {
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { Commands, getLogger, globals, sleep } from 'aws-core-vscode/shared'
+import { LanguageClient } from 'vscode-languageclient'
 
-export async function activate() {
+export async function activate(languageClient: LanguageClient) {
     const codewhispererSettings = CodeWhispererSettings.instance
     const client = new DefaultCodeWhispererClient()
 
     if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
+        RecommendationHandler.instance.setLanguageClient(languageClient)
     }
 
     function getAutoTriggerStatus(): boolean {
