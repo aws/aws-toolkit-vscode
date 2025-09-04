@@ -158,7 +158,10 @@ export async function downloadLanguageServer(): Promise<void> {
                         if (!fs.existsSync(path.join(resourcesDir, 'servers', 'aws-lsp-codewhisperer.js'))) {
                             throw new Error(`Extracting aws-lsp-codewhisperer.js failure`)
                         }
-                        if (!fs.existsSync(path.join(resourcesDir, 'clients', 'amazonq-ui.js'))) {
+                        // Check for amazonq-ui.js in both locations for backwards compatibility (moved from clients.zip to servers.zip)
+                        const amazonqUiInClients = fs.existsSync(path.join(resourcesDir, 'clients', 'amazonq-ui.js'))
+                        const amazonqUiInServers = fs.existsSync(path.join(resourcesDir, 'servers', 'amazonq-ui.js'))
+                        if (!amazonqUiInClients && !amazonqUiInServers) {
                             throw new Error(`Extracting amazonq-ui.js failure`)
                         }
                         console.log('Download and extraction completed successfully')

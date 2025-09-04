@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nodeFs from 'fs'
 import vscode from 'vscode'
 import { fs, getNodeExecutableName, getRgExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-core-vscode/shared'
 import path from 'path'
@@ -45,11 +46,15 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
 
         const nodePath = path.join(assetDirectory, `servers/${getNodeExecutableName()}`)
         const rgPath = path.join(assetDirectory, `servers/ripgrep/${getRgExecutableName()}`)
+        // Check for amazonq-ui.js in both locations for backwards compatibility
+        const amazonqUiInClientsPath = path.join(assetDirectory, 'clients/amazonq-ui.js')
+        const amazonqUiInServersPath = path.join(assetDirectory, 'servers/amazonq-ui.js')
+        const uiPath = nodeFs.existsSync(amazonqUiInClientsPath) ? amazonqUiInClientsPath : amazonqUiInServersPath
         return {
             lsp: path.join(assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
             node: nodePath,
             ripGrep: rgPath,
-            ui: path.join(assetDirectory, 'clients/amazonq-ui.js'),
+            ui: uiPath,
         }
     }
 
@@ -58,10 +63,14 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
 
 export function getBundledResourcePaths(ctx: vscode.ExtensionContext): AmazonQResourcePaths {
     const assetDirectory = vscode.Uri.joinPath(ctx.extensionUri, 'resources', 'language-server').fsPath
+    // Check for amazonq-ui.js in both locations for backwards compatibility
+    const amazonqUiInClientsPath = path.join(assetDirectory, 'clients/amazonq-ui.js')
+    const amazonqUiInServersPath = path.join(assetDirectory, 'servers/amazonq-ui.js')
+    const uiPath = nodeFs.existsSync(amazonqUiInClientsPath) ? amazonqUiInClientsPath : amazonqUiInServersPath
     return {
         lsp: path.join(assetDirectory, 'servers', 'aws-lsp-codewhisperer.js'),
         node: process.execPath,
         ripGrep: '',
-        ui: path.join(assetDirectory, 'clients', 'amazonq-ui.js'),
+        ui: uiPath,
     }
 }

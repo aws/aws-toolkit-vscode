@@ -23,7 +23,8 @@ export interface LspResult {
  * resourcePaths = {
  *     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
  *     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
- *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+ *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js' or
+ *          '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/amazonq-ui.js'
  * }
  * ```
  */
@@ -47,7 +48,8 @@ export interface LspResolution<T extends ResourcePaths> extends LspResult {
      * resourcePaths = {
      *     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
      *     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
-     *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+     *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js' or
+     *          '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/amazonq-ui.js'
      * }
      * ```
      */
