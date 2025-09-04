@@ -162,7 +162,11 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
 
             return awsCredentials
         } catch (err) {
-            this.logger.error('SMUS Project: Failed to get project credentials for project %s: %s', this.projectId, err)
+            this.logger.error(
+                'SMUS Project: Failed to get project credentials for project %s: %s',
+                this.projectId,
+                (err as Error).message
+            )
             throw new ToolkitError(`Failed to get project credentials for project ${this.projectId}: ${err}`, {
                 code: 'ProjectCredentialsFetchFailed',
                 cause: err instanceof Error ? err : undefined,

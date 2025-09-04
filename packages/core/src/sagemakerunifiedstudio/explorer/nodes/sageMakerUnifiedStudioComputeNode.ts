@@ -26,7 +26,7 @@ export class SageMakerUnifiedStudioComputeNode implements TreeNode {
     ) {}
 
     public async getTreeItem(): Promise<vscode.TreeItem> {
-        const item = new vscode.TreeItem('Compute', vscode.TreeItemCollapsibleState.Collapsed)
+        const item = new vscode.TreeItem('Compute', vscode.TreeItemCollapsibleState.Expanded)
         item.iconPath = getIcon('vscode-chip')
         item.contextValue = this.getContext()
         return item

@@ -56,7 +56,7 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             const treeItem = await computeNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'Compute')
-            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
             assert.strictEqual(treeItem.contextValue, 'smusComputeNode')
             assert.ok(treeItem.iconPath)
         })

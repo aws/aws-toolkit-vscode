@@ -53,6 +53,8 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             ),
         }
         item.contextValue = 'smusSpacesNode'
+        item.description = 'Hover over any space and click the connection icon to connect remotely'
+        item.tooltip = item.description
         return item
     }
 

@@ -21,6 +21,7 @@ import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/pro
 import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { SageMakerUnifiedStudioSpacesParentNode } from './nodes/sageMakerUnifiedStudioSpacesParentNode'
+import { isSageMaker } from '../../shared/extensionUtilities'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -131,8 +132,18 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         { dispose: () => DataZoneClient.dispose() }
     )
 
-    // Track user activity for autoshutdown feature
-    await setupUserActivityMonitoring(extensionContext)
+    // Track user activity for autoshutdown feature when in SageMaker Unified Studio environment
+    if (isSageMaker('SMUS-SPACE-REMOTE-ACCESS')) {
+        logger.info('SageMaker Unified Studio environment detected, setting up user activity monitoring')
+        try {
+            await setupUserActivityMonitoring(extensionContext)
+        } catch (error) {
+            logger.error(`Error in UserActivityMonitoring: ${error}`)
+            throw error
+        }
+    } else {
+        logger.info('Not in SageMaker Unified Studio remote environment, skipping user activity monitoring')
+    }
 }
 
 /**

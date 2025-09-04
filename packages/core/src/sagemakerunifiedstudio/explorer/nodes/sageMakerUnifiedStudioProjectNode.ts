@@ -15,7 +15,6 @@ import { SagemakerClient } from '../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
 import { getIcon } from '../../../shared/icons'
-import { SmusUtils } from '../../shared/smusUtils'
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { getContext } from '../../../shared/vscode/setContext'
 
@@ -31,6 +30,8 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     public project?: DataZoneProject
     private logger = getLogger()
     private sagemakerClient?: SagemakerClient
+    private hasShownFirstTimeMessage = false
+    private isFirstTimeSelection = false
 
     constructor(
         private readonly parent: SageMakerUnifiedStudioRootNode,
@@ -61,7 +62,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
             return item
         }
 
-        const item = new vscode.TreeItem('Select a project', vscode.TreeItemCollapsibleState.None)
+        const item = new vscode.TreeItem('Select a project', vscode.TreeItemCollapsibleState.Expanded)
         item.contextValue = 'smusProjectSelectPicker'
         item.command = {
             command: 'aws.smus.projectView',
@@ -91,7 +92,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
 
                 // Skip access check if we're in SMUS space environment (already in project space)
                 if (!getContext('aws.smus.inSmusSpaceEnvironment')) {
-                    const hasAccess = await this.checkProjectAccess(this.project!.id)
+                    const hasAccess = await this.checkProjectCredsAccess(this.project!.id)
                     if (!hasAccess) {
                         return [
                             {
@@ -99,7 +100,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                                 resource: {},
                                 getTreeItem: () => {
                                     const item = new vscode.TreeItem(
-                                        'You are not a member of this project. Contact any of its owners to add you as a member.',
+                                        'You do not have access to this project. Contact your administrator.',
                                         vscode.TreeItemCollapsibleState.None
                                     )
                                     return item
@@ -127,6 +128,12 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 if (!spaceAwsAccountRegion) {
                     throw new Error('No AWS account region found in tooling environment')
                 }
+                if (this.isFirstTimeSelection && !this.hasShownFirstTimeMessage) {
+                    this.hasShownFirstTimeMessage = true
+                    void vscode.window.showInformationMessage(
+                        'Find your space in the Explorer panel under SageMaker Unified Studio. Hover over any space and click the connection icon to connect remotely.'
+                    )
+                }
                 this.sagemakerClient = await this.initializeSagemakerClient(spaceAwsAccountRegion)
                 const computeNode = new SageMakerUnifiedStudioComputeNode(
                     this,
@@ -152,6 +159,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
 
     public async setProject(project: any): Promise<void> {
         await this.cleanupProjectResources()
+        this.isFirstTimeSelection = !this.project
         this.project = project
     }
 
@@ -176,20 +184,23 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         }
     }
 
-    private async checkProjectAccess(projectId: string): Promise<boolean> {
+    private async checkProjectCredsAccess(projectId: string): Promise<boolean> {
+        // TODO: Ideally we should be checking user project access by calling fetchAllProjectMemberships
+        // and checking if user is part of that, or get user groups and check if any of the groupIds
+        // exists in the project memberships for more comprehensive access validation.
         try {
-            const dzClient = await DataZoneClient.getInstance(this.authProvider)
-            const userId = await dzClient.getUserId()
-            if (!userId) {
-                return false
-            }
-            const ssoUserProfileId = SmusUtils.extractSSOIdFromUserId(userId)
-            const memberships = await dzClient.fetchAllProjectMemberships(projectId)
-            const hasAccess = memberships.some((member) => member.memberDetails?.user?.userId === ssoUserProfileId)
-            this.logger.debug(`Project access check for user ${ssoUserProfileId}: ${hasAccess}`)
-            return hasAccess
+            const projectProvider = await this.authProvider.getProjectCredentialProvider(projectId)
+            this.logger.info(`Successfully obtained project credentials provider for project ${projectId}`)
+            await projectProvider.getCredentials()
+            return true
         } catch (err) {
-            this.logger.error('Failed to check project access: %s', (err as Error).message)
+            // If err.name is 'AccessDeniedException', it means user doesn't have access to the project
+            // We can safely return false in that case without logging the error
+            if ((err as any).name === 'AccessDeniedException') {
+                this.logger.debug(
+                    'Access denied when obtaining project credentials, user likely lacks project access or role permissions'
+                )
+            }
             return false
         }
     }

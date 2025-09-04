@@ -10,6 +10,7 @@ import { SagemakerClient, SagemakerSpaceApp } from '../../shared/clients/sagemak
 import { getIcon, IconPath } from '../../shared/icons'
 import { generateSpaceStatus, updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
 import { UserActivity } from '../../shared/extensionUtilities'
+import { getLogger } from '../../shared/logger/logger'
 
 export class SagemakerSpace {
     public label: string = ''
@@ -191,23 +192,38 @@ export class SagemakerSpace {
  * Sets up user activity monitoring for SageMaker spaces
  */
 export async function setupUserActivityMonitoring(extensionContext: vscode.ExtensionContext): Promise<void> {
+    const logger = getLogger()
+    logger.info('setupUserActivityMonitoring: Starting user activity monitoring setup')
+
     const tmpDirectory = '/tmp/'
     const idleFilePath = path.join(tmpDirectory, '.sagemaker-last-active-timestamp')
+    logger.debug(`setupUserActivityMonitoring: Using idle file path: ${idleFilePath}`)
 
-    const userActivity = new UserActivity(ActivityCheckInterval)
-    userActivity.onUserActivity(() => updateIdleFile(idleFilePath))
+    try {
+        const userActivity = new UserActivity(ActivityCheckInterval)
+        userActivity.onUserActivity(() => {
+            logger.debug('setupUserActivityMonitoring: User activity detected, updating idle file')
+            void updateIdleFile(idleFilePath)
+        })
 
-    let terminalActivityInterval: NodeJS.Timeout | undefined = startMonitoringTerminalActivity(idleFilePath)
+        let terminalActivityInterval: NodeJS.Timeout | undefined = startMonitoringTerminalActivity(idleFilePath)
+        logger.debug('setupUserActivityMonitoring: Started terminal activity monitoring')
+        // Write initial timestamp
+        await updateIdleFile(idleFilePath)
+        logger.info('setupUserActivityMonitoring: Initial timestamp written successfully')
+        extensionContext.subscriptions.push(userActivity, {
+            dispose: () => {
+                logger.info('setupUserActivityMonitoring: Disposing user activity monitoring')
+                if (terminalActivityInterval) {
+                    clearInterval(terminalActivityInterval)
+                    terminalActivityInterval = undefined
+                }
+            },
+        })
 
-    // Write initial timestamp
-    await updateIdleFile(idleFilePath)
-
-    extensionContext.subscriptions.push(userActivity, {
-        dispose: () => {
-            if (terminalActivityInterval) {
-                clearInterval(terminalActivityInterval)
-                terminalActivityInterval = undefined
-            }
-        },
-    })
+        logger.info('setupUserActivityMonitoring: User activity monitoring setup completed successfully')
+    } catch (error) {
+        logger.error(`setupUserActivityMonitoring: Error during setup: ${error}`)
+        throw error
+    }
 }

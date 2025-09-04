@@ -13,7 +13,6 @@ import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SageMakerUnifiedStudioDataNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioDataNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
-import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 import * as vscodeUtils from '../../../../shared/vscode/setContext'
 
 describe('SageMakerUnifiedStudioProjectNode', function () {
@@ -101,7 +100,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             const treeItem = await projectNode.getTreeItem()
 
             assert.strictEqual(treeItem.label, 'Select a project')
-            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Expanded)
             assert.strictEqual(treeItem.contextValue, 'smusProjectSelectPicker')
             assert.ok(treeItem.command)
             assert.strictEqual(treeItem.command?.command, 'aws.smus.projectView')
@@ -184,13 +183,6 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             }
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
 
-            // Mock access check to return true
-            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
-            mockDataZoneClient.fetchAllProjectMemberships.resolves([
-                {
-                    memberDetails: { user: { userId: 'test-user-id' } },
-                },
-            ])
             // Mock getToolingEnvironment method
             mockDataZoneClient.getToolingEnvironment.resolves({
                 id: 'env-123',
@@ -202,7 +194,6 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
                 provider: undefined,
                 $metadata: {},
             })
-            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             const children = await projectNode.getChildren()
             assert.strictEqual(children.length, 2)
@@ -211,34 +202,38 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         it('returns access denied message when user does not have project access', async function () {
             await projectNode.setProject(mockProject)
 
-            // Mock access check to return false
-            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
-            mockDataZoneClient.fetchAllProjectMemberships.resolves([])
-            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+            // Mock access check to return false by throwing AccessDeniedException
+            const accessError = new Error('Access denied')
+            accessError.name = 'AccessDeniedException'
+            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(accessError)
 
             const children = await projectNode.getChildren()
             assert.strictEqual(children.length, 1)
             assert.strictEqual(children[0].id, 'smusProjectAccessDenied')
 
             const treeItem = await children[0].getTreeItem()
-            assert.strictEqual(
-                treeItem.label,
-                'You are not a member of this project. Contact any of its owners to add you as a member.'
-            )
+            assert.strictEqual(treeItem.label, 'You do not have access to this project. Contact your administrator.')
         })
 
         it('throws error when initializeSagemakerClient fails', async function () {
             await projectNode.setProject(mockProject)
             const credError = new Error('Failed to initialize SageMaker client')
-            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(credError)
 
-            // Mock access check to return true so execution reaches initializeSagemakerClient
-            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
-            mockDataZoneClient.fetchAllProjectMemberships.resolves([
-                {
-                    memberDetails: { user: { userId: 'test-user-id' } },
-                },
-            ])
+            // First call succeeds for access check, second call fails for initializeSagemakerClient
+            const mockCredProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }
+            projectNode['authProvider'].getProjectCredentialProvider = sinon
+                .stub()
+                .onFirstCall()
+                .resolves(mockCredProvider)
+                .onSecondCall()
+                .rejects(credError)
+
             // Mock getToolingEnvironment method
             mockDataZoneClient.getToolingEnvironment.resolves({
                 id: 'env-123',
@@ -250,7 +245,6 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
                 provider: undefined,
                 $metadata: {},
             })
-            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
 
             await assert.rejects(async () => await projectNode.getChildren(), credError)
         })
@@ -283,44 +277,44 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         })
     })
 
-    describe('checkProjectAccess', function () {
+    describe('checkProjectCredsAccess', function () {
         it('returns true when user has project access', async function () {
-            await projectNode.setProject(mockProject)
-            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
-            mockDataZoneClient.fetchAllProjectMemberships.resolves([
-                {
-                    memberDetails: { user: { userId: 'test-user-id' } },
-                },
-            ])
-            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+            const mockCredProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }
+            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
 
-            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
             assert.strictEqual(hasAccess, true)
         })
 
         it('returns false when user does not have project access', async function () {
-            await projectNode.setProject(mockProject)
-            mockDataZoneClient.getUserId.resolves('arn:aws:sso:::account/123456789012/user/test-user-id')
-            mockDataZoneClient.fetchAllProjectMemberships.resolves([])
-            sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('test-user-id')
+            const accessError = new Error('Access denied')
+            accessError.name = 'AccessDeniedException'
+            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(accessError)
 
-            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
             assert.strictEqual(hasAccess, false)
         })
 
-        it('returns false when getUserId fails', async function () {
-            await projectNode.setProject(mockProject)
-            mockDataZoneClient.getUserId.resolves(undefined)
+        it('returns false when getCredentials fails', async function () {
+            const mockCredProvider = {
+                getCredentials: sinon.stub().rejects(new Error('Credentials error')),
+            }
+            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
 
-            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
             assert.strictEqual(hasAccess, false)
         })
 
-        it('returns false when access check throws error', async function () {
-            await projectNode.setProject(mockProject)
-            mockDataZoneClient.getUserId.rejects(new Error('Access denied'))
+        it('returns false when access check throws non-AccessDeniedException error', async function () {
+            projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(new Error('Other error'))
 
-            const hasAccess = await projectNode['checkProjectAccess']('project-123')
+            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
             assert.strictEqual(hasAccess, false)
         })
     })
