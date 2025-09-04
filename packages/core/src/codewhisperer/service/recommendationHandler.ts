@@ -124,7 +124,7 @@ export class RecommendationHandler {
     }
 
     setLanguageClient(languageClient: LanguageClient) {
-        this.languageClient = this.languageClient
+        this.languageClient = languageClient
     }
 
     async getServerResponse(
