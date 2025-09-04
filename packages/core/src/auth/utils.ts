@@ -890,3 +890,12 @@ export async function getAuthType() {
     }
     return authType
 }
+
+export const localStackConnectionHeader = 'x-localstack'
+export const localStackConnectionString = 'localstack'
+
+export function isLocalStackConnection(): boolean {
+    return (
+        globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
+    )
+}

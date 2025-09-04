@@ -10,6 +10,7 @@ import { AwsContext } from './awsContext'
 import { DevSettings } from './settings'
 import { getUserAgent } from './telemetry/util'
 import { telemetry } from './telemetry/telemetry'
+import { isLocalStackConnection } from '../auth/utils'
 
 /** Suppresses a very noisy warning printed by AWS SDK v2, which clutters local debugging output, CI logs, etc. */
 export function disableAwsSdkWarning() {
@@ -146,8 +147,12 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
         const endpointUrl = this.awsContext.getCredentialEndpointUrl()
-        if (opt.endpoint === undefined && endpointUrl !== undefined) {
+        if (!('endpoint' in opt) && endpointUrl !== undefined) {
             opt.endpoint = endpointUrl
+        }
+        if (isLocalStackConnection()) {
+            // Disable host prefixes for LocalStack
+            opt.hostPrefixEnabled = false
         }
         // Then check if there's an endpoint in the dev settings
         if (serviceName) {

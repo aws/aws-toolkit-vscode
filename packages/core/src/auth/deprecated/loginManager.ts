@@ -30,10 +30,11 @@ import { isAutomation } from '../../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../../shared/errors'
 import * as localizedText from '../../shared/localizedText'
-import { DefaultStsClient } from '../../shared/clients/stsClient'
+import { DefaultStsClient, type GetCallerIdentityResponse } from '../../shared/clients/stsClient'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { localStackConnectionHeader, localStackConnectionString } from '../utils'
 
 const loginManagerClassName = 'LoginManager'
 /**
@@ -117,12 +118,32 @@ export class LoginManager {
         region = this.defaultCredentialsRegion
     ) {
         const stsClient = new DefaultStsClient(region, credentials, endpointUrl)
-        const accountId = (await stsClient.getCallerIdentity()).Account
+        const callerIdentity = await stsClient.getCallerIdentity()
+        await this.detectExternalConnection(callerIdentity)
+        // Validate presence of Account Id
+        const accountId = callerIdentity.Account
         if (!accountId) {
+            if (endpointUrl !== undefined) {
+                telemetry.auth_customEndpoint.emit({ source: 'validateCredentials', result: 'Failed' })
+            }
             throw new Error('Could not determine Account Id for credentials')
+        }
+        if (endpointUrl !== undefined) {
+            telemetry.auth_customEndpoint.emit({ source: 'validateCredentials', result: 'Succeeded' })
         }
 
         return accountId
+    }
+
+    private async detectExternalConnection(callerIdentity: GetCallerIdentityResponse): Promise<void> {
+        // @ts-ignore
+        const headers = callerIdentity.$response?.httpResponse?.headers
+        if (headers !== undefined && localStackConnectionHeader in headers) {
+            await globals.globalState.update('aws.toolkit.externalConnection', localStackConnectionString)
+            telemetry.auth_localstackEndpoint.emit({ source: 'validateCredentials', result: 'Succeeded' })
+        } else {
+            await globals.globalState.update('aws.toolkit.externalConnection', undefined)
+        }
     }
 
     /**

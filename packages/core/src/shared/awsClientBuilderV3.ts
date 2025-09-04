@@ -31,6 +31,7 @@ import {
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
+import { S3Client } from '@aws-sdk/client-s3'
 import { FetchHttpHandler } from '@smithy/fetch-http-handler'
 import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
@@ -42,6 +43,7 @@ import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
+import { isLocalStackConnection } from '../auth/utils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand<CommandInput, object>> = new (
@@ -81,6 +83,8 @@ export interface AwsClientOptions {
     retryStrategy: RetryStrategy | RetryStrategyV2
     logger: Logger
     token: TokenIdentity | TokenIdentityProvider
+    forcePathStyle: boolean
+    hostPrefixEnabled: boolean
 }
 
 interface AwsServiceOptions<C extends AwsClient> {
@@ -176,8 +180,19 @@ export class AWSClientBuilderV3 {
         }
         // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
         const endpointUrl = this.context.getCredentialEndpointUrl()
-        if (opt.endpoint === undefined && endpointUrl !== undefined) {
+        if (!('endpoint' in opt) && endpointUrl !== undefined) {
+            // Because we check that 'endpoint' doesn't exist in `opt`, TS complains when we actually add it
+            // @ts-expect-error TS2339
             opt.endpoint = endpointUrl
+        }
+        if (isLocalStackConnection()) {
+            // Disable host prefixes for LocalStack
+            opt.hostPrefixEnabled = false
+            // serviceClient name gets minified, but it's always consistent
+            if (serviceOptions.serviceClient.name === S3Client.name) {
+                // Use path-style S3 URLs for LocalStack
+                opt.forcePathStyle = true
+            }
         }
         const service = new serviceOptions.serviceClient(opt)
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })

@@ -8,6 +8,7 @@ import { Credentials } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
+export type GetCallerIdentityResponse = STS.GetCallerIdentityResponse
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 export class DefaultStsClient {
     public constructor(
