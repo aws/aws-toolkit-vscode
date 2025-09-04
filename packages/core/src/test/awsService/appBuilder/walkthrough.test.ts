@@ -26,6 +26,7 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { assertTelemetryCurried } from '../../testUtil'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpResourceFetcher'
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
+import type { ToolId } from '../../../shared/telemetry/telemetry'
 import { CodeScansState } from '../../../codewhisperer'
 
 interface TestScenario {
@@ -463,7 +464,8 @@ describe('AppBuilder Walkthrough', function () {
         })
 
         describe('Install LocalStack Extension', function () {
-            const expectedLocalStackToolId = 'sam-cli' // temporarily until toolkit-common changes
+            // @ts-ignore until TODO from src/awsService/appBuilder/walkthrough.ts:installLocalStackExtension
+            const expectedLocalStackToolId: ToolId = 'localstack'
 
             it('should show already installed message when extension exists', async function () {
                 const mockExtension = { id: 'localstack.localstack' }
@@ -485,7 +487,7 @@ describe('AppBuilder Walkthrough', function () {
                 assertTelemetry({
                     result: 'Succeeded',
                     source: 'test-source',
-                    toolId: expectedLocalStackToolId, // Note: currently uses sam-cli as toolId per TODO comment
+                    toolId: expectedLocalStackToolId,
                 })
             })
 

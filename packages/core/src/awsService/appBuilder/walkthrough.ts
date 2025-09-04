@@ -350,8 +350,9 @@ export async function getOrInstallCliWrapper(toolId: AwsClis, source: string) {
 
 export async function installLocalStackExtension(source: string) {
     await telemetry.appBuilder_installTool.run(async (span) => {
-        // TODO: update `toolId` to "localstack" after updating the telemetry definitions: https://github.com/aws/aws-toolkit-common/blob/8c88537fae2ac7e6524fb2b29ae336c606850eeb/telemetry/definitions/commonDefinitions.json#L2215-L2221
-        const toolId: ToolId = 'sam-cli'
+        // TODO: Update `ToolId` accepted values: https://github.com/aws/aws-toolkit-common/blob/8c88537fae2ac7e6524fb2b29ae336c606850eeb/telemetry/definitions/commonDefinitions.json#L2215-L2221
+        // @ts-ignore
+        const toolId: ToolId = 'localstack'
         span.record({ source, toolId })
         const extensionId = 'localstack.localstack'
         const extension = vscode.extensions.getExtension(extensionId)
