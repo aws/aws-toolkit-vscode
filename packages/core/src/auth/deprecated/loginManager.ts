@@ -65,19 +65,19 @@ export class LoginManager {
 
         try {
             provider = await getProvider(args.providerId)
-
-            const credentials = (await this.store.upsertCredentials(args.providerId, provider))?.credentials
+            const { credentials, endpointUrl } = await this.store.upsertCredentials(args.providerId, provider)
             if (!credentials) {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
-            const accountId = await this.validateCredentials(credentials, provider.getDefaultRegion())
+            const accountId = await this.validateCredentials(credentials, endpointUrl, provider.getDefaultRegion())
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
                 credentials,
                 accountId: accountId,
                 credentialsId: asString(args.providerId),
                 defaultRegion: provider.getDefaultRegion(),
+                endpointUrl: provider.getEndpointUrl?.(),
             })
 
             telemetryResult = 'Succeeded'
@@ -111,8 +111,12 @@ export class LoginManager {
         }
     }
 
-    public async validateCredentials(credentials: Credentials, region = this.defaultCredentialsRegion) {
-        const stsClient = new DefaultStsClient(region, credentials)
+    public async validateCredentials(
+        credentials: Credentials,
+        endpointUrl?: string,
+        region = this.defaultCredentialsRegion
+    ) {
+        const stsClient = new DefaultStsClient(region, credentials, endpointUrl)
         const accountId = (await stsClient.getCallerIdentity()).Account
         if (!accountId) {
             throw new Error('Could not determine Account Id for credentials')

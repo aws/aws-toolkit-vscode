@@ -538,6 +538,7 @@ describe('lambda2samCoreLogic', function () {
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
                 }),
+                endpointUrl: undefined,
             }
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
@@ -596,6 +597,7 @@ describe('lambda2samCoreLogic', function () {
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
                 }),
+                endpointUrl: undefined,
             }
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
@@ -647,6 +649,7 @@ describe('lambda2samCoreLogic', function () {
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
                 }),
+                endpointUrl: undefined,
             }
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 

@@ -125,6 +125,7 @@ export class AWSClientBuilderV3 {
             JSON.stringify(serviceOptions.clientOptions),
             serviceOptions.region,
             serviceOptions.userAgent ? '1' : '0',
+            this.context.getCredentialEndpointUrl(), // It gets the valid endpoint at the moment of creation
             serviceOptions.settings ? JSON.stringify(serviceOptions.settings.get('endpoints', {})) : '',
         ].join(':')
     }
@@ -173,7 +174,11 @@ export class AWSClientBuilderV3 {
                 return creds
             }
         }
-
+        // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
+        const endpointUrl = this.context.getCredentialEndpointUrl()
+        if (opt.endpoint === undefined && endpointUrl !== undefined) {
+            opt.endpoint = endpointUrl
+        }
         const service = new serviceOptions.serviceClient(opt)
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })

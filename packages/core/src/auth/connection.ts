@@ -111,6 +111,7 @@ export function createSsoProfile(
 export interface SsoConnection extends SsoProfile {
     readonly id: string
     readonly label: string
+    readonly endpointUrl: string | undefined
 
     /**
      * Retrieves a bearer token, refreshing or re-authenticating as-needed.
@@ -129,6 +130,7 @@ export interface IamConnection {
     // This may change in the future after refactoring legacy implementations
     readonly id: string
     readonly label: string
+    readonly endpointUrl: string | undefined
     getCredentials(): Promise<Credentials>
 }
 

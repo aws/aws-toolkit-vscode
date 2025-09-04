@@ -144,6 +144,12 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
             apiConfig?.metadata?.serviceId?.toLowerCase() ??
             (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
 
+        // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
+        const endpointUrl = this.awsContext.getCredentialEndpointUrl()
+        if (opt.endpoint === undefined && endpointUrl !== undefined) {
+            opt.endpoint = endpointUrl
+        }
+        // Then check if there's an endpoint in the dev settings
         if (serviceName) {
             opt.endpoint = settings.get('endpoints', {})[serviceName] ?? opt.endpoint
         }
