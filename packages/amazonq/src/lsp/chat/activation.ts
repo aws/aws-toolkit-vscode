@@ -84,6 +84,7 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
         }),
         Commands.register('aws.amazonq.manageSubscription', () => {
             focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
             languageClient
                 .sendRequest('workspace/executeCommand', {
                     command: 'aws/chat/manageSubscription',

@@ -23,6 +23,7 @@ import {
     CodeWhispererSettings,
     getSelectedCustomization,
     TelemetryHelper,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
@@ -361,6 +362,10 @@ async function onLanguageServerReady(
             // this is a workaround since handleDidShowCompletionItem is not public API
             Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
                 sessionManager.checkInlineSuggestionVisibility()
+            }),
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                vsCodeState.lastManualTriggerTime = performance.now()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }),
             vscode.workspace.onDidCloseTextDocument(async () => {
                 await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
