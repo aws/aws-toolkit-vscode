@@ -1,3 +1,7 @@
+## 1.93.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
 ## 1.92.0 2025-08-28
 
 - **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
