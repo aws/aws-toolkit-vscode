@@ -202,15 +202,19 @@ export async function fetchProjectContext(
     target: 'default' | 'codemap' | 'bm25',
     languageclient?: LanguageClient
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    if (languageclient) {
-        const request: GetSupplementalContextParams = {
-            filePath: editor.document.uri.fsPath,
+    try {
+        if (languageclient) {
+            const request: GetSupplementalContextParams = {
+                filePath: editor.document.uri.fsPath,
+            }
+            const response = await languageclient.sendRequest<SupplementalContextItem[]>(
+                getSupplementalContextRequestType.method,
+                request
+            )
+            return response as CodeWhispererSupplementalContextItem[]
         }
-        const response = await languageclient.sendRequest<SupplementalContextItem[]>(
-            getSupplementalContextRequestType.method,
-            request
-        )
-        return response as CodeWhispererSupplementalContextItem[]
+    } catch (error) {
+        return []
     }
     return []
 }
