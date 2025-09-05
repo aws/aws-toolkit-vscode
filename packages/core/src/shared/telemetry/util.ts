@@ -486,10 +486,15 @@ export function withTelemetryContext(opts: TelemetryContextArgs) {
  * Used to identify the q client info and send the respective origin parameter from LSP to invoke Maestro service at CW API level
  *
  * Returns default value of vscode appName or AmazonQ-For-SMUS-CE in case of a sagemaker unified studio environment
+ * Returns default value of vscode appName
+ * OR AmazonQ-For-SMUS-CE in case of SMUS
+ * OR AmazonQ-For-SMAI-CE in case of SMAI
  */
 export function getClientName(): string {
     if (isSageMaker('SMUS')) {
         return 'AmazonQ-For-SMUS-CE'
+    } else if (isSageMaker('SMAI')) {
+        return 'AmazonQ-For-SMAI-CE'
     }
     return env.appName
 }

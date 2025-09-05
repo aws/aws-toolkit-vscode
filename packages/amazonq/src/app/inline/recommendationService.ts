@@ -8,8 +8,9 @@ import {
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
     editCompletionRequestType,
+    LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
-import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
+import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import {
@@ -24,6 +25,8 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from './documentEventListener'
 import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 import { asyncCallWithTimeout } from '../../util/timeoutUtil'
+import { extractFileContextInNotebooks } from './notebookUtil'
+import { EditSuggestionState } from './editSuggestionState'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -95,6 +98,9 @@ export class RecommendationService {
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
+        }
+        if (document.uri.scheme === 'vscode-notebook-cell') {
+            request.fileContextOverride = extractFileContextInNotebooks(document, position)
         }
         const requestStartTime = performance.now()
         const statusBar = CodeWhispererStatusBarManager.instance
@@ -181,6 +187,39 @@ export class RecommendationService {
                         ) + '...',
                 })),
             })
+
+            if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
+                // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
+                if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
+                    const session = this.sessionManager.getActiveSession()
+                    if (!session) {
+                        return []
+                    }
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: Object.fromEntries(
+                            result.items.map((item) => [
+                                item.itemId,
+                                {
+                                    seen: false,
+                                    accepted: false,
+                                    discarded: true,
+                                },
+                            ])
+                        ),
+                    }
+                    languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+                    this.sessionManager.clear()
+                    getLogger().info(
+                        'Completion discarded due to active edit suggestion displayed longer than 1 second'
+                    )
+                    return []
+                } else if (EditSuggestionState.isEditSuggestionActive()) {
+                    // discard the current edit suggestion if its display time is less than 1 sec
+                    await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
+                    getLogger().info('Discarding active edit suggestion displaying less than 1 second')
+                }
+            }
 
             TelemetryHelper.instance.setSdkApiCallEndTime()
             TelemetryHelper.instance.setSessionId(result.sessionId)
