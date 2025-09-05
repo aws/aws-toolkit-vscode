@@ -342,12 +342,35 @@ async function onLanguageServerReady(
     const enableInlineRollback = true
     if (enableInlineRollback) {
         // use VSC inline
-        await activateInline()
+        await activateInline(client)
     } else {
         // use language server for inline completion
         const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
         inlineManager.registerInlineCompletion()
-        toDispose.push(inlineManager)
+        toDispose.push(
+            inlineManager,
+            Commands.register('aws.amazonq.showPrev', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+                sessionManager.onPrevSuggestion()
+            }),
+            Commands.register('aws.amazonq.showNext', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+                sessionManager.onNextSuggestion()
+            }),
+            // this is a workaround since handleDidShowCompletionItem is not public API
+            Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+                sessionManager.checkInlineSuggestionVisibility()
+            }),
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                vsCodeState.lastManualTriggerTime = performance.now()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            }),
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            })
+        )
     }
 
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
@@ -364,24 +387,6 @@ async function onLanguageServerReady(
     await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
-        Commands.register('aws.amazonq.showPrev', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
-            sessionManager.onPrevSuggestion()
-        }),
-        Commands.register('aws.amazonq.showNext', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
-            sessionManager.onNextSuggestion()
-        }),
-        // this is a workaround since handleDidShowCompletionItem is not public API
-        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
-            sessionManager.checkInlineSuggestionVisibility()
-        }),
-        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-            vsCodeState.lastManualTriggerTime = performance.now()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-        }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
             telemetry.record({
                 traceId: TelemetryHelper.instance.traceId,
@@ -406,9 +411,6 @@ async function onLanguageServerReady(
                 await inlineTutorialAnnotation.dismissTutorial()
                 getLogger().debug(`codewhisperer: user dismiss tutorial.`)
             }
-        }),
-        vscode.workspace.onDidCloseTextDocument(async () => {
-            await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
         }),
         AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
             await auth.refreshConnection()

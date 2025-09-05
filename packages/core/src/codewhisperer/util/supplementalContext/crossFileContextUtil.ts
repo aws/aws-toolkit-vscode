@@ -23,7 +23,13 @@ import {
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import fs from '../../../shared/fs/fs'
+import { LanguageClient } from 'vscode-languageclient'
 
+import {
+    GetSupplementalContextParams,
+    getSupplementalContextRequestType,
+    SupplementalContextItem,
+} from '@aws/language-server-runtimes/protocol'
 type CrossFileSupportedLanguage =
     | 'java'
     | 'python'
@@ -66,7 +72,8 @@ type SupplementalContextConfig = 'none' | 'opentabs' | 'codemap' | 'bm25' | 'def
 
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken: vscode.CancellationToken,
+    languageClient?: LanguageClient
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
@@ -101,7 +108,7 @@ export async function fetchSupplementalContextForSrc(
             async function () {
                 const result: CodeWhispererSupplementalContextItem[] = []
                 const opentabsContext = await fetchOpentabsContext(editor, cancellationToken)
-                const codemap = await fetchProjectContext(editor, 'codemap')
+                const codemap = await fetchProjectContext(editor, 'codemap', languageClient)
 
                 function addToResult(items: CodeWhispererSupplementalContextItem[]) {
                     for (const item of items) {
@@ -145,7 +152,7 @@ export async function fetchSupplementalContextForSrc(
     if (supplementalContextConfig === 'bm25') {
         const projectBM25Promise = waitUntil(
             async function () {
-                return await fetchProjectContext(editor, 'bm25')
+                return await fetchProjectContext(editor, 'bm25', languageClient)
             },
             { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
         )
@@ -168,7 +175,7 @@ export async function fetchSupplementalContextForSrc(
     // global bm25 with repomap
     const projectContextAndCodemapPromise = waitUntil(
         async function () {
-            return await fetchProjectContext(editor, 'default')
+            return await fetchProjectContext(editor, 'default', languageClient)
         },
         { timeout: supplementalContextTimeoutInMs, interval: 5, truthy: false }
     )
@@ -192,13 +199,20 @@ export async function fetchSupplementalContextForSrc(
 
 export async function fetchProjectContext(
     editor: vscode.TextEditor,
-    target: 'default' | 'codemap' | 'bm25'
+    target: 'default' | 'codemap' | 'bm25',
+    languageclient?: LanguageClient
 ): Promise<CodeWhispererSupplementalContextItem[]> {
-    // const inputChunkContent = getInputChunk(editor)
-    // TODO:
-    const inlineProjectContext: { content: string; score: number; filePath: string }[] = []
-
-    return inlineProjectContext
+    if (languageclient) {
+        const request: GetSupplementalContextParams = {
+            filePath: editor.document.uri.fsPath,
+        }
+        const response = await languageclient.sendRequest<SupplementalContextItem[]>(
+            getSupplementalContextRequestType.method,
+            request
+        )
+        return response as CodeWhispererSupplementalContextItem[]
+    }
+    return []
 }
 
 export async function fetchOpentabsContext(

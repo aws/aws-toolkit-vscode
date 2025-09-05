@@ -22,6 +22,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
 import { predictionTracker } from '../nextEditPrediction/activation'
+import { LanguageClient } from 'vscode-languageclient'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -224,7 +225,8 @@ async function getWorkspaceId(editor: vscode.TextEditor): Promise<string | undef
 export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
-    allowCodeWithReference: boolean
+    allowCodeWithReference: boolean,
+    languageClient?: LanguageClient
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
     supplementalMetadata: CodeWhispererSupplementalContext | undefined
@@ -236,7 +238,7 @@ export async function buildListRecommendationRequest(
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
 
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token, languageClient)
 
     logSupplementalContext(supplementalContexts)
 
