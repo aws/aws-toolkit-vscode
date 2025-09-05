@@ -4,16 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { AppType } from '@aws-sdk/client-sagemaker'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { SagemakerParentNode } from './sagemakerParentNode'
-import { generateSpaceStatus } from '../utils'
-import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
+import { SagemakerUnifiedStudioSpaceNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { SagemakerSpace } from '../sagemakerSpace'
 
 export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNode {
+    private smSpace: SagemakerSpace
     public constructor(
         public readonly parent: SagemakerParentNode,
         public readonly client: SagemakerClient,
@@ -21,139 +21,61 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
         public readonly spaceApp: SagemakerSpaceApp
     ) {
         super('')
+        this.smSpace = new SagemakerSpace(this.client, this.regionCode, this.spaceApp)
         this.updateSpace(spaceApp)
-        this.contextValue = this.getContext()
+        this.contextValue = this.smSpace.getContext()
     }
 
     public updateSpace(spaceApp: SagemakerSpaceApp) {
-        this.setSpaceStatus(spaceApp.Status ?? '', spaceApp.App?.Status ?? '')
-        this.label = this.buildLabel()
-        this.description = this.buildDescription()
-        this.tooltip = new vscode.MarkdownString(this.buildTooltip())
-        this.iconPath = this.getAppIcon()
-
+        this.smSpace.updateSpace(spaceApp)
+        this.updateFromSpace()
         if (this.isPending()) {
             this.parent.trackPendingNode(this.DomainSpaceKey)
         }
     }
 
-    public setSpaceStatus(spaceStatus: string, appStatus: string) {
-        this.spaceApp.Status = spaceStatus
-        if (this.spaceApp.App) {
-            this.spaceApp.App.Status = appStatus
-        }
+    private updateFromSpace() {
+        this.label = this.smSpace.label
+        this.description = this.smSpace.description
+        this.tooltip = this.smSpace.tooltip
+        this.iconPath = this.smSpace.iconPath
+        this.contextValue = this.smSpace.contextValue
     }
 
     public isPending(): boolean {
-        return this.getStatus() !== 'Running' && this.getStatus() !== 'Stopped'
+        return this.smSpace.isPending()
     }
 
     public getStatus(): string {
-        return generateSpaceStatus(this.spaceApp.Status, this.spaceApp.App?.Status)
+        return this.smSpace.getStatus()
     }
 
     public async getAppStatus() {
-        const app = await this.client.describeApp({
-            DomainId: this.spaceApp.DomainId,
-            AppName: this.spaceApp.App?.AppName,
-            AppType: this.spaceApp.SpaceSettingsSummary?.AppType,
-            SpaceName: this.spaceApp.SpaceName,
-        })
-
-        return app.Status ?? 'Unknown'
+        return this.smSpace.getAppStatus()
     }
 
     public get name(): string {
-        return this.spaceApp.SpaceName ?? `(no name)`
+        return this.smSpace.name
     }
 
     public get arn(): string {
-        return 'placeholder-arn'
+        return this.smSpace.arn
     }
 
     public async getAppArn() {
-        const appDetails = await this.client.describeApp({
-            DomainId: this.spaceApp.DomainId,
-            AppName: this.spaceApp.App?.AppName,
-            AppType: this.spaceApp.SpaceSettingsSummary?.AppType,
-            SpaceName: this.spaceApp.SpaceName,
-        })
-
-        return appDetails.AppArn
+        return this.smSpace.getAppArn()
     }
 
     public async getSpaceArn() {
-        const appDetails = await this.client.describeSpace({
-            DomainId: this.spaceApp.DomainId,
-            SpaceName: this.spaceApp.SpaceName,
-        })
-
-        return appDetails.SpaceArn
+        return this.smSpace.getSpaceArn()
     }
 
     public async updateSpaceAppStatus() {
-        const space = await this.client.describeSpace({
-            DomainId: this.spaceApp.DomainId,
-            SpaceName: this.spaceApp.SpaceName,
-        })
-
-        const app = await this.client.describeApp({
-            DomainId: this.spaceApp.DomainId,
-            AppName: this.spaceApp.App?.AppName,
-            AppType: this.spaceApp.SpaceSettingsSummary?.AppType,
-            SpaceName: this.spaceApp.SpaceName,
-        })
-
-        this.updateSpace({
-            ...space,
-            App: app,
-            DomainSpaceKey: this.spaceApp.DomainSpaceKey,
-        })
-    }
-
-    private buildLabel(): string {
-        const status = generateSpaceStatus(this.spaceApp.Status, this.spaceApp.App?.Status)
-        return `${this.name} (${status})`
-    }
-
-    private buildDescription(): string {
-        return `${this.spaceApp.SpaceSharingSettingsSummary?.SharingType ?? 'Unknown'} space`
-    }
-    private buildTooltip() {
-        const spaceName = this.spaceApp?.SpaceName ?? '-'
-        const appType = this.spaceApp?.SpaceSettingsSummary?.AppType ?? '-'
-        const domainId = this.spaceApp?.DomainId ?? '-'
-        const owner = this.spaceApp?.OwnershipSettingsSummary?.OwnerUserProfileName ?? '-'
-
-        return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Domain ID:** ${domainId} \n\n**User Profile:** ${owner}`
-    }
-
-    private getAppIcon() {
-        if (this.spaceApp.SpaceSettingsSummary?.AppType === AppType.CodeEditor) {
-            return getIcon('aws-sagemaker-code-editor')
+        await this.smSpace.updateSpaceAppStatus()
+        this.updateFromSpace()
+        if (this.isPending()) {
+            this.parent.trackPendingNode(this.DomainSpaceKey)
         }
-
-        if (this.spaceApp.SpaceSettingsSummary?.AppType === AppType.JupyterLab) {
-            return getIcon('aws-sagemaker-jupyter-lab')
-        }
-    }
-
-    private getContext() {
-        const status = this.getStatus()
-        if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
-            return 'awsSagemakerSpaceRunningRemoteEnabledNode'
-        } else if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'DISABLED') {
-            return 'awsSagemakerSpaceRunningRemoteDisabledNode'
-        } else if (status === 'Stopped' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
-            return 'awsSagemakerSpaceStoppedRemoteEnabledNode'
-        } else if (
-            status === 'Stopped' &&
-            (!this.spaceApp.SpaceSettingsSummary?.RemoteAccess ||
-                this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'DISABLED')
-        ) {
-            return 'awsSagemakerSpaceStoppedRemoteDisabledNode'
-        }
-        return 'awsSagemakerSpaceNode'
     }
 
     public get DomainSpaceKey(): string {
@@ -166,13 +88,15 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
     }
 }
 
-export async function tryRefreshNode(node?: SagemakerSpaceNode) {
+export async function tryRefreshNode(node?: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode) {
     if (node) {
         try {
             // For SageMaker spaces, refresh just the individual space node to avoid expensive
             // operation of refreshing all spaces in the domain
             await node.updateSpaceAppStatus()
-            await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+            node instanceof SagemakerSpaceNode
+                ? await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+                : await node.refreshNode()
         } catch (e) {
             getLogger().error('refreshNode failed: %s', (e as Error).message)
         }

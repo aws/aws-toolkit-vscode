@@ -96,7 +96,6 @@ export async function readMapping() {
     try {
         const content = await fs.readFile(mappingFilePath, 'utf-8')
         console.log(`Mapping file path: ${mappingFilePath}`)
-        console.log(`Conents: ${content}`)
         return JSON.parse(content)
     } catch (err) {
         throw new Error(`Failed to read mapping file: ${err instanceof Error ? err.message : String(err)}`)
@@ -119,6 +118,24 @@ async function processWriteQueue() {
         }
     } finally {
         isWriting = false
+    }
+}
+
+/**
+ * Detects if the connection identifier is using SMUS credentials
+ * @param connectionIdentifier - The connection identifier to check
+ * @returns Promise<boolean> - true if SMUS, false otherwise
+ */
+export async function isSmusConnection(connectionIdentifier: string): Promise<boolean> {
+    try {
+        const mapping = await readMapping()
+        const profile = mapping.localCredential?.[connectionIdentifier]
+
+        // Check if profile exists and has smusProjectId
+        return profile && 'smusProjectId' in profile
+    } catch (err) {
+        // If we can't read the mapping, assume not SMUS to avoid breaking existing functionality
+        return false
     }
 }
 

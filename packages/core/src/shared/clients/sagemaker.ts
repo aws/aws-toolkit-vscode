@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import {
     AppDetails,
+    AppType,
     CreateAppCommand,
     CreateAppCommandInput,
     CreateAppCommandOutput,
@@ -48,14 +49,42 @@ import { getDomainSpaceKey } from '../../awsService/sagemaker/utils'
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
 import { yes, no, continueText, cancel } from '../localizedText'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
+import globals from '../extensionGlobals'
 
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
     DomainSpaceKey: string
 }
+
 export class SagemakerClient extends ClientWrapper<SageMakerClient> {
-    public constructor(public override readonly regionCode: string) {
-        super(regionCode, SageMakerClient, true)
+    public constructor(
+        public override readonly regionCode: string,
+        private readonly credentialsProvider?: () => Promise<AwsCredentialIdentity>
+    ) {
+        super(regionCode, SageMakerClient)
+    }
+
+    protected override getClient(ignoreCache: boolean = false) {
+        if (!this.client || ignoreCache) {
+            const args = {
+                serviceClient: SageMakerClient,
+                region: this.regionCode,
+                clientOptions: {
+                    endpoint: `https://sagemaker.${this.regionCode}.amazonaws.com`,
+                    region: this.regionCode,
+                    ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
+                },
+            }
+            this.client = globals.sdkClientBuilderV3.createAwsService(args)
+        }
+        return this.client
+    }
+
+    public override dispose() {
+        getLogger().debug('SagemakerClient: Disposing client %O', this.client)
+        this.client?.destroy()
+        this.client = undefined
     }
 
     public listSpaces(request: ListSpacesCommandInput = {}): AsyncCollection<SpaceDetails[]> {
@@ -200,27 +229,37 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         }
     }
 
-    public async fetchSpaceAppsAndDomains(): Promise<
-        [Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]
-    > {
+    public async listSpaceApps(domainId?: string): Promise<Map<string, SagemakerSpaceApp>> {
+        // Create options object conditionally if domainId is provided
+        const options = domainId ? { DomainIdEquals: domainId } : undefined
+
+        const appMap: Map<string, AppDetails> = await this.listApps(options)
+            .flatten()
+            .filter((app) => !!app.DomainId && !!app.SpaceName)
+            .filter((app) => app.AppType === AppType.JupyterLab || app.AppType === AppType.CodeEditor)
+            .toMap((app) => getDomainSpaceKey(app.DomainId || '', app.SpaceName || ''))
+
+        const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces(options)
+            .flatten()
+            .filter((space) => !!space.DomainId && !!space.SpaceName)
+            .map((space) => {
+                const key = getDomainSpaceKey(space.DomainId || '', space.SpaceName || '')
+                return { ...space, App: appMap.get(key), DomainSpaceKey: key }
+            })
+            .toMap((space) => getDomainSpaceKey(space.DomainId || '', space.SpaceName || ''))
+        return spaceApps
+    }
+
+    public async fetchSpaceAppsAndDomains(
+        domainId?: string,
+        filterSmusDomains: boolean = true
+    ): Promise<[Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]> {
         try {
-            const appMap: Map<string, AppDetails> = await this.listApps()
-                .flatten()
-                .filter((app) => !!app.DomainId && !!app.SpaceName)
-                .filter((app) => app.AppType === 'JupyterLab' || app.AppType === 'CodeEditor')
-                .toMap((app) => getDomainSpaceKey(app.DomainId || '', app.SpaceName || ''))
-
-            const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces()
-                .flatten()
-                .filter((space) => !!space.DomainId && !!space.SpaceName)
-                .map((space) => {
-                    const key = getDomainSpaceKey(space.DomainId || '', space.SpaceName || '')
-                    return { ...space, App: appMap.get(key), DomainSpaceKey: key }
-                })
-                .toMap((space) => getDomainSpaceKey(space.DomainId || '', space.SpaceName || ''))
-
+            const spaceApps = await this.listSpaceApps(domainId)
             // Get de-duped list of domain IDs for all of the spaces
-            const domainIds: string[] = [...new Set([...spaceApps].map(([_, spaceApp]) => spaceApp.DomainId || ''))]
+            const domainIds: string[] = domainId
+                ? [domainId]
+                : [...new Set([...spaceApps].map(([_, spaceApp]) => spaceApp.DomainId || ''))]
 
             // Get details for each domain
             const domains: [string, DescribeDomainResponse][] = await Promise.all(
@@ -235,9 +274,11 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
             const filteredSpaceApps = new Map(
                 [...spaceApps]
-                    // Filter out SageMaker Unified Studio domains
-                    .filter(([_, spaceApp]) =>
-                        isEmpty(domainsMap.get(spaceApp.DomainId || '')?.DomainSettings?.UnifiedStudioSettings)
+                    // Filter out SageMaker Unified Studio domains only if filterSmusDomains is true
+                    .filter(
+                        ([_, spaceApp]) =>
+                            !filterSmusDomains ||
+                            isEmpty(domainsMap.get(spaceApp.DomainId || '')?.DomainSettings?.UnifiedStudioSettings)
                     )
             )
 

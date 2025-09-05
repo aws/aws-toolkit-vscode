@@ -30,6 +30,8 @@ export type contextKey =
     | 'aws.stepFunctions.isWorkflowStudioFocused'
     | 'aws.toolkit.notifications.show'
     | 'aws.amazonq.editSuggestionActive'
+    | 'aws.smus.connected'
+    | 'aws.smus.inSmusSpaceEnvironment'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'

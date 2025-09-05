@@ -15,6 +15,7 @@ import { open } from './utils'
 export enum ExceptionType {
     ACCESS_DENIED = 'AccessDeniedException',
     DEFAULT = 'Default',
+    EXPIRED_TOKEN = 'ExpiredTokenException',
     INTERNAL_FAILURE = 'InternalFailure',
     RESOURCE_LIMIT_EXCEEDED = 'ResourceLimitExceeded',
     THROTTLING = 'ThrottlingException',
@@ -31,13 +32,18 @@ export const getVSCodeErrorTitle = (error: SageMakerServiceException): string =>
     return ErrorText.StartSession[ExceptionType.DEFAULT].Title
 }
 
-export const getVSCodeErrorText = (error: SageMakerServiceException): string => {
+export const getVSCodeErrorText = (error: SageMakerServiceException, isSmus?: boolean): string => {
     const exceptionType = error.name as ExceptionType
 
     switch (exceptionType) {
         case ExceptionType.ACCESS_DENIED:
         case ExceptionType.VALIDATION:
             return ErrorText.StartSession[exceptionType].Text.replace('{message}', error.message)
+        case ExceptionType.EXPIRED_TOKEN:
+            // Use SMUS-specific message if in SMUS context
+            return isSmus
+                ? ErrorText.StartSession[ExceptionType.EXPIRED_TOKEN].SmusText
+                : ErrorText.StartSession[exceptionType].Text
         case ExceptionType.INTERNAL_FAILURE:
         case ExceptionType.RESOURCE_LIMIT_EXCEEDED:
         case ExceptionType.THROTTLING:
@@ -56,6 +62,12 @@ export const ErrorText = {
         [ExceptionType.DEFAULT]: {
             Title: 'Unexpected system error',
             Text: 'We encountered an unexpected error: [{exceptionType}]. Please contact your administrator and provide them with this error so they can investigate the issue.',
+        },
+        [ExceptionType.EXPIRED_TOKEN]: {
+            Title: 'Authentication expired',
+            Text: 'Your session has expired. Please refresh your credentials and try again.',
+            SmusText:
+                'Your session has expired. This is likely due to network connectivity issues after machine sleep/resume. Please wait 10-30 seconds for automatic credential refresh, then try again. If the issue persists, try reconnecting through AWS Toolkit.',
         },
         [ExceptionType.INTERNAL_FAILURE]: {
             Title: 'Failed to connect remotely to VSCode',
