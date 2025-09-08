@@ -219,6 +219,30 @@ export class Auth implements AuthService, ConnectionManager {
         }
     }
 
+    /**
+     * Gets the SSO access token for a connection
+     * @param connection The SSO connection to get the token for
+     * @returns Promise resolving to the access token string
+     */
+    @withTelemetryContext({ name: 'getSsoAccessToken', class: authClassName })
+    public async getSsoAccessToken(connection: Pick<SsoConnection, 'id'>): Promise<string> {
+        const profile = this.store.getProfileOrThrow(connection.id)
+
+        if (profile.type !== 'sso') {
+            throw new Error(`Connection ${connection.id} is not an SSO connection`)
+        }
+
+        const provider = this.getSsoTokenProvider(connection.id, profile)
+        // Calling existing getToken private method - It will handle setting the connection state etc.
+        const token = await this._getToken(connection.id, provider)
+
+        if (!token?.accessToken) {
+            throw new Error(`No access token available for connection ${connection.id}`)
+        }
+
+        return token.accessToken
+    }
+
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
     public async useConnection({ id }: Pick<IamConnection, 'id'>): Promise<IamConnection>
     @withTelemetryContext({ name: 'useConnection', class: authClassName })
@@ -923,9 +947,21 @@ export class Auth implements AuthService, ConnectionManager {
         if (previousState === 'valid') {
             // Non-token expiration errors can happen. We must log it here, otherwise they are lost.
             getLogger().warn(`auth: valid connection became invalid. Last error: %s`, this.#validationErrors.get(id))
-
             const timeout = new Timeout(60000)
             this.#invalidCredentialsTimeouts.set(id, timeout)
+
+            // Check if this is a SMUS profile - if so, skip the generic prompt
+            // as SMUS has its own reauthentication flow
+            const isSmusConnection = profile.type === 'sso' && 'domainUrl' in profile && 'domainId' in profile
+            if (isSmusConnection) {
+                getLogger().debug(`auth: Skipping generic reauthentication prompt for SMUS connection ${id}`)
+                // For SMUS connections, just throw the InvalidConnection error
+                // The SMUS auth provider will handle showing the appropriate prompt
+                throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
+                    code: errorCode.invalidConnection,
+                    cause: this.#validationErrors.get(id),
+                })
+            }
 
             const connLabel = profile.metadata.label ?? (profile.type === 'sso' ? this.getSsoProfileLabel(profile) : id)
             const message = localize(
