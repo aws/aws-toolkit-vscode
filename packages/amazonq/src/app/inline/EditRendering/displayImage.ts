@@ -408,18 +408,18 @@ export async function displaySvgDecoration(
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
             // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
-            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-            //     await inlineCompletionProvider.provideInlineCompletionItems(
-            //         editor.document,
-            //         endPosition,
-            //         {
-            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-            //             selectedCompletionInfo: undefined,
-            //         },
-            //         new vscode.CancellationTokenSource().token,
-            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-            //     )
-            // }
+            if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
+                await inlineCompletionProvider.provideInlineCompletionItems(
+                    editor.document,
+                    endPosition,
+                    {
+                        triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
+                        selectedCompletionInfo: undefined,
+                    },
+                    new vscode.CancellationTokenSource().token,
+                    { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
+                )
+            }
         },
         async (isDiscard: boolean) => {
             // Handle reject
