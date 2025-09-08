@@ -421,25 +421,60 @@
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemakerunifiedstudio-catalog": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemakerunifiedstudio-spaces": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e2"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-sagemakerunifiedstudio-spaces-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e3"
+                }
+            },
+            "aws-sagemakerunifiedstudio-symbol-int": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e4"
+                }
+            },
+            "aws-sagemakerunifiedstudio-table": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e5"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e6"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e7"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e8"
                 }
             }
         }
@@ -539,12 +574,15 @@
         "@aws-sdk/client-cloudwatch-logs": "<3.731.0",
         "@aws-sdk/client-codecatalyst": "<3.731.0",
         "@aws-sdk/client-cognito-identity": "<3.731.0",
+        "@aws-sdk/client-datazone": "^3.848.0",
         "@aws-sdk/client-docdb": "<3.731.0",
         "@aws-sdk/client-docdb-elastic": "<3.731.0",
         "@aws-sdk/client-ec2": "<3.731.0",
+        "@aws-sdk/client-glue": "^3.852.0",
         "@aws-sdk/client-iam": "<3.731.0",
         "@aws-sdk/client-lambda": "<3.731.0",
         "@aws-sdk/client-s3": "<3.731.0",
+        "@aws-sdk/client-s3-control": "^3.830.0",
         "@aws-sdk/client-sagemaker": "<3.696.0",
         "@aws-sdk/client-ssm": "<3.731.0",
         "@aws-sdk/client-sso": "<3.731.0",
