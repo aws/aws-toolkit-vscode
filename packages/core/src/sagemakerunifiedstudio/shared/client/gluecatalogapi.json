@@ -1,0 +1,2695 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2022-07-26",
+        "auth": ["aws.auth#sigv4"],
+        "endpointPrefix": "glue",
+        "jsonVersion": "1.1",
+        "protocol": "json",
+        "protocols": ["json"],
+        "serviceFullName": "Glue Private Service",
+        "serviceId": "GlueCatalogAPI",
+        "signatureVersion": "v4",
+        "signingName": "glue",
+        "targetPrefix": "AWSGlue",
+        "uid": "gluecatalogapi-2022-07-26"
+    },
+    "operations": {
+        "DescribeConnectionType": {
+            "name": "DescribeConnectionType",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "DescribeConnectionTypeRequest"
+            },
+            "output": {
+                "shape": "DescribeConnectionTypeResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
+        },
+        "GetCatalog": {
+            "name": "GetCatalog",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetCatalogRequest"
+            },
+            "output": {
+                "shape": "GetCatalogResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "FederationSourceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "GlueEncryptionException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
+        "GetCatalogs": {
+            "name": "GetCatalogs",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetCatalogsRequest"
+            },
+            "output": {
+                "shape": "GetCatalogsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "GlueEncryptionException"
+                },
+                {
+                    "shape": "FederationSourceException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
+        "GetCompletion": {
+            "name": "GetCompletion",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetCompletionRequest"
+            },
+            "output": {
+                "shape": "GetCompletionResponse"
+            },
+            "errors": [
+                {
+                    "shape": "AlreadyExistsException"
+                },
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
+        },
+        "GetEntityRecords": {
+            "name": "GetEntityRecords",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetEntityRecordsRequest"
+            },
+            "output": {
+                "shape": "GetEntityRecordsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "GlueEncryptionException"
+                },
+                {
+                    "shape": "FederationSourceException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
+        },
+        "GetJobRun": {
+            "name": "GetJobRun",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetJobRunRequest"
+            },
+            "output": {
+                "shape": "GetJobRunResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                }
+            ]
+        },
+        "GetJobRuns": {
+            "name": "GetJobRuns",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetJobRunsRequest"
+            },
+            "output": {
+                "shape": "GetJobRunsResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                }
+            ]
+        },
+        "GetTable": {
+            "name": "GetTable",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "GetTableRequest"
+            },
+            "output": {
+                "shape": "GetTableResponse"
+            },
+            "errors": [
+                {
+                    "shape": "ResourceNotReadyException"
+                },
+                {
+                    "shape": "FederationSourceRetryableException"
+                },
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "GlueEncryptionException"
+                },
+                {
+                    "shape": "FederationSourceException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                }
+            ]
+        },
+        "ListConnectionTypes": {
+            "name": "ListConnectionTypes",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "ListConnectionTypesRequest"
+            },
+            "output": {
+                "shape": "ListConnectionTypesResponse"
+            },
+            "errors": [
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                }
+            ]
+        },
+        "StartCompletion": {
+            "name": "StartCompletion",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": {
+                "shape": "StartCompletionRequest"
+            },
+            "output": {
+                "shape": "StartCompletionResponse"
+            },
+            "errors": [
+                {
+                    "shape": "AlreadyExistsException"
+                },
+                {
+                    "shape": "InternalServiceException"
+                },
+                {
+                    "shape": "InvalidInputException"
+                },
+                {
+                    "shape": "EntityNotFoundException"
+                },
+                {
+                    "shape": "OperationTimeoutException"
+                },
+                {
+                    "shape": "AccessDeniedException"
+                },
+                {
+                    "shape": "ValidationException"
+                }
+            ]
+        }
+    },
+    "shapes": {
+        "AccessDeniedException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when the client doesn't have permission for the operation they requested.</p>",
+            "exception": true
+        },
+        "AllowedValue": {
+            "type": "structure",
+            "required": ["DisplayName", "Description", "Value"],
+            "members": {
+                "DisplayName": {
+                    "shape": "AllowedValueDisplayNameString"
+                },
+                "Description": {
+                    "shape": "AllowedValueDescriptionString"
+                },
+                "Value": {
+                    "shape": "AllowedValueValueString"
+                }
+            }
+        },
+        "AllowedValueDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0
+        },
+        "AllowedValueDisplayNameString": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "AllowedValueValueString": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "AllowedValues": {
+            "type": "list",
+            "member": {
+                "shape": "AllowedValue"
+            }
+        },
+        "AlreadyExistsException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception occurs when a user submits for an already existing script</p>",
+            "exception": true
+        },
+        "ApiVersion": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "[a-zA-Z0-9.-]*"
+        },
+        "ArnString": {
+            "type": "string",
+            "max": 2048,
+            "min": 20
+        },
+        "AttemptCount": {
+            "type": "integer",
+            "box": true
+        },
+        "AttributeCondition": {
+            "type": "structure",
+            "members": {
+                "Expression": {
+                    "shape": "ExpressionString"
+                },
+                "Scope": {
+                    "shape": "ScopeString"
+                }
+            }
+        },
+        "AuthConfiguration": {
+            "type": "structure",
+            "required": ["AuthenticationType", "SecretArn"],
+            "members": {
+                "AuthenticationType": {
+                    "shape": "Property"
+                },
+                "SecretArn": {
+                    "shape": "Property"
+                },
+                "OAuth2Properties": {
+                    "shape": "PropertiesMap"
+                },
+                "BasicAuthenticationProperties": {
+                    "shape": "PropertiesMap"
+                },
+                "CustomAuthenticationProperties": {
+                    "shape": "PropertiesMap"
+                }
+            }
+        },
+        "AuthenticationType": {
+            "type": "string",
+            "enum": ["BASIC", "OAUTH2", "CUSTOM"]
+        },
+        "AuthenticationTypes": {
+            "type": "list",
+            "member": {
+                "shape": "AuthenticationType"
+            }
+        },
+        "BlobParametersMap": {
+            "type": "map",
+            "key": {
+                "shape": "KeyString"
+            },
+            "value": {
+                "shape": "BlobParametersMapValue"
+            }
+        },
+        "BlobParametersMapValue": {
+            "type": "blob"
+        },
+        "Bool": {
+            "type": "boolean",
+            "box": true
+        },
+        "Boolean": {
+            "type": "boolean",
+            "box": true
+        },
+        "BooleanValue": {
+            "type": "boolean",
+            "box": true
+        },
+        "Capabilities": {
+            "type": "structure",
+            "required": ["SupportedAuthenticationTypes", "SupportedDataOperations", "SupportedComputeEnvironments"],
+            "members": {
+                "SupportedAuthenticationTypes": {
+                    "shape": "AuthenticationTypes"
+                },
+                "SupportedDataOperations": {
+                    "shape": "DataOperations"
+                },
+                "SupportedComputeEnvironments": {
+                    "shape": "ComputeEnvironments"
+                }
+            }
+        },
+        "Catalog": {
+            "type": "structure",
+            "members": {
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "Name": {
+                    "shape": "CatalogNameString"
+                },
+                "Description": {
+                    "shape": "GlueCommonDescriptionString"
+                },
+                "ResourceArn": {
+                    "shape": "ResourceArnString"
+                },
+                "Parameters": {
+                    "shape": "ParametersMap"
+                },
+                "DataParameters": {
+                    "shape": "BlobParametersMap"
+                },
+                "CatalogType": {
+                    "shape": "CatalogType"
+                },
+                "CreateTime": {
+                    "shape": "Timestamp"
+                },
+                "UpdateTime": {
+                    "shape": "Timestamp"
+                },
+                "TargetCatalog": {
+                    "shape": "TargetCatalog"
+                },
+                "FederatedCatalog": {
+                    "shape": "FederatedCatalog"
+                },
+                "CatalogProperties": {
+                    "shape": "CatalogPropertiesOutput"
+                },
+                "CatalogIdentifier": {
+                    "shape": "CatalogIdentifier"
+                },
+                "ParentCatalogIdentifiers": {
+                    "shape": "CatalogIdentifierList"
+                },
+                "ParentCatalogNames": {
+                    "shape": "CatalogNameList"
+                },
+                "CreateTableDefaultPermissions": {
+                    "shape": "PrincipalPermissionsList"
+                },
+                "CreateDatabaseDefaultPermissions": {
+                    "shape": "PrincipalPermissionsList"
+                }
+            }
+        },
+        "CatalogIdString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "CatalogIdentifier": {
+            "type": "string",
+            "max": 100,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "CatalogIdentifierList": {
+            "type": "list",
+            "member": {
+                "shape": "CatalogIdentifier"
+            }
+        },
+        "CatalogList": {
+            "type": "list",
+            "member": {
+                "shape": "Catalog"
+            }
+        },
+        "CatalogNameList": {
+            "type": "list",
+            "member": {
+                "shape": "CatalogNameString"
+            }
+        },
+        "CatalogNameString": {
+            "type": "string",
+            "max": 30,
+            "min": 1,
+            "pattern": "(?!(.*[.\\/\\\\]|aws:)).*"
+        },
+        "CatalogPropertiesOutput": {
+            "type": "structure",
+            "members": {
+                "DataLakeAccessProperties": {
+                    "shape": "DataLakeAccessPropertiesOutput"
+                },
+                "IcebergOptimizationProperties": {
+                    "shape": "IcebergOptimizationPropertiesOutput"
+                }
+            }
+        },
+        "CatalogType": {
+            "type": "string",
+            "enum": [
+                "REDSHIFT_CATALOG",
+                "FEDERATED",
+                "NATIVE",
+                "REDSHIFT",
+                "LINKCONTAINER",
+                "LINK_FEDERATED",
+                "LINK_NATIVE",
+                "LINK_REDSHIFT"
+            ]
+        },
+        "Column": {
+            "type": "structure",
+            "required": ["Name"],
+            "members": {
+                "Name": {
+                    "shape": "NameString"
+                },
+                "Type": {
+                    "shape": "TypeString"
+                },
+                "Comment": {
+                    "shape": "CommentString"
+                },
+                "Parameters": {
+                    "shape": "ParametersMap"
+                }
+            }
+        },
+        "ColumnList": {
+            "type": "list",
+            "member": {
+                "shape": "Column"
+            }
+        },
+        "ColumnValueStringList": {
+            "type": "list",
+            "member": {
+                "shape": "ColumnValuesString"
+            }
+        },
+        "ColumnValuesString": {
+            "type": "string"
+        },
+        "CommentString": {
+            "type": "string",
+            "max": 255,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "CompletionIdString": {
+            "type": "string",
+            "max": 36,
+            "min": 36,
+            "pattern": ".*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}.*"
+        },
+        "CompletionStatus": {
+            "type": "string",
+            "enum": ["SUBMITTED", "SUCCEEDED", "FAILED", "RUNNING", "EXPIRED", "DELETED"]
+        },
+        "CompletionString": {
+            "type": "string",
+            "max": 30720,
+            "min": 1
+        },
+        "ComputeEnvironment": {
+            "type": "string",
+            "enum": ["SPARK", "PYTHON", "ATHENA"]
+        },
+        "ComputeEnvironmentConfiguration": {
+            "type": "structure",
+            "required": [
+                "Name",
+                "Description",
+                "ComputeEnvironment",
+                "SupportedAuthenticationTypes",
+                "AdditionalConnectionProperties",
+                "AdditionalConnectionOptions",
+                "ConnectionPropertyNameOverrides",
+                "ConnectionOptionNameOverrides",
+                "ConnectionPropertyExclusions",
+                "ConnectionOptionExclusions",
+                "ConnectionPropertiesRequiredOverrides"
+            ],
+            "members": {
+                "Name": {
+                    "shape": "ComputeEnvironmentName"
+                },
+                "Description": {
+                    "shape": "String"
+                },
+                "ComputeEnvironment": {
+                    "shape": "ComputeEnvironment"
+                },
+                "SupportedAuthenticationTypes": {
+                    "shape": "AuthenticationTypes"
+                },
+                "AdditionalConnectionProperties": {
+                    "shape": "PropertiesMap"
+                },
+                "AdditionalConnectionOptions": {
+                    "shape": "PropertiesMap"
+                },
+                "ConnectionPropertyNameOverrides": {
+                    "shape": "PropertyNameOverrides"
+                },
+                "ConnectionOptionNameOverrides": {
+                    "shape": "PropertyNameOverrides"
+                },
+                "ConnectionPropertyExclusions": {
+                    "shape": "ListOfString"
+                },
+                "ConnectionOptionExclusions": {
+                    "shape": "ListOfString"
+                },
+                "ConnectionPropertiesRequiredOverrides": {
+                    "shape": "ListOfString"
+                },
+                "PhysicalConnectionPropertiesRequired": {
+                    "shape": "Bool"
+                }
+            }
+        },
+        "ComputeEnvironmentConfigurationMap": {
+            "type": "map",
+            "key": {
+                "shape": "ComputeEnvironmentName"
+            },
+            "value": {
+                "shape": "ComputeEnvironmentConfiguration"
+            }
+        },
+        "ComputeEnvironmentName": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "ComputeEnvironments": {
+            "type": "list",
+            "member": {
+                "shape": "ComputeEnvironment"
+            }
+        },
+        "ConditionStatement": {
+            "type": "map",
+            "key": {
+                "shape": "String"
+            },
+            "value": {
+                "shape": "String"
+            }
+        },
+        "ConditionStatements": {
+            "type": "list",
+            "member": {
+                "shape": "ConditionStatement"
+            }
+        },
+        "ConnectionOptions": {
+            "type": "map",
+            "key": {
+                "shape": "OptionKey"
+            },
+            "value": {
+                "shape": "OptionValue"
+            }
+        },
+        "ConnectionType": {
+            "type": "string",
+            "enum": [
+                "JDBC",
+                "SFTP",
+                "REDSHIFT",
+                "ATHENA",
+                "MONGODB",
+                "KAFKA",
+                "NETWORK",
+                "YARNRESOURCEMANAGER",
+                "MARKETPLACE",
+                "HIVE_METASTORE",
+                "CUSTOM",
+                "SALESFORCE",
+                "VIEW_VALIDATION_REDSHIFT",
+                "VIEW_VALIDATION_ATHENA"
+            ]
+        },
+        "ConnectionTypeBrief": {
+            "type": "structure",
+            "members": {
+                "ConnectionType": {
+                    "shape": "ConnectionType"
+                },
+                "DisplayName": {
+                    "shape": "DisplayName"
+                },
+                "Vendor": {
+                    "shape": "Vendor"
+                },
+                "Description": {
+                    "shape": "Description"
+                },
+                "Categories": {
+                    "shape": "ListOfString"
+                },
+                "Capabilities": {
+                    "shape": "Capabilities"
+                },
+                "LogoUrl": {
+                    "shape": "UrlString"
+                },
+                "DocumentationUrl": {
+                    "shape": "UrlString"
+                },
+                "ConnectionTypeVariants": {
+                    "shape": "ConnectionTypeVariantList"
+                }
+            }
+        },
+        "ConnectionTypeList": {
+            "type": "list",
+            "member": {
+                "shape": "ConnectionTypeBrief"
+            }
+        },
+        "ConnectionTypeVariant": {
+            "type": "structure",
+            "members": {
+                "ConnectionTypeVariantName": {
+                    "shape": "DisplayName"
+                },
+                "DisplayName": {
+                    "shape": "DisplayName"
+                },
+                "Description": {
+                    "shape": "Description"
+                },
+                "LogoUrl": {
+                    "shape": "UrlString"
+                },
+                "DocumentationUrl": {
+                    "shape": "UrlString"
+                }
+            }
+        },
+        "ConnectionTypeVariantList": {
+            "type": "list",
+            "member": {
+                "shape": "ConnectionTypeVariant"
+            }
+        },
+        "DataAccessModeEnum": {
+            "type": "string",
+            "enum": ["LakeFormation", "Hybrid", "Other"]
+        },
+        "DataLakeAccessPropertiesOutput": {
+            "type": "structure",
+            "members": {
+                "DataLakeAccess": {
+                    "shape": "Boolean"
+                },
+                "DataTransferRole": {
+                    "shape": "GlueCommonIAMRoleArn"
+                },
+                "KmsKey": {
+                    "shape": "ResourceArnString"
+                },
+                "ManagedWorkgroupName": {
+                    "shape": "GlueCommonNameString"
+                },
+                "ManagedWorkgroupStatus": {
+                    "shape": "GlueCommonNameString"
+                },
+                "NamespaceArn": {
+                    "shape": "ResourceArnString"
+                },
+                "RedshiftDatabaseName": {
+                    "shape": "GlueCommonNameString"
+                },
+                "StatusMessage": {
+                    "shape": "GlueCommonNameString"
+                },
+                "CatalogType": {
+                    "shape": "GlueCommonNameString"
+                }
+            }
+        },
+        "DataLakePrincipal": {
+            "type": "structure",
+            "members": {
+                "DataLakePrincipalIdentifier": {
+                    "shape": "DataLakePrincipalString"
+                },
+                "AttributeCondition": {
+                    "shape": "AttributeCondition"
+                }
+            }
+        },
+        "DataLakePrincipalString": {
+            "type": "string",
+            "max": 255,
+            "min": 1
+        },
+        "DataOperation": {
+            "type": "string",
+            "enum": ["READ", "WRITE"]
+        },
+        "DataOperations": {
+            "type": "list",
+            "member": {
+                "shape": "DataOperation"
+            }
+        },
+        "DataType": {
+            "type": "string",
+            "enum": ["STRING", "INTEGER", "BOOLEAN", "STRING_LIST"]
+        },
+        "DatabaseIdString": {
+            "type": "string",
+            "max": 100,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "DescribeConnectionTypeRequest": {
+            "type": "structure",
+            "members": {
+                "ConnectionType": {
+                    "shape": "NameString"
+                }
+            }
+        },
+        "DescribeConnectionTypeResponse": {
+            "type": "structure",
+            "members": {
+                "ConnectionType": {
+                    "shape": "NameString"
+                },
+                "DisplayName": {
+                    "shape": "DisplayName"
+                },
+                "Vendor": {
+                    "shape": "Vendor"
+                },
+                "Description": {
+                    "shape": "Description"
+                },
+                "LogoUrl": {
+                    "shape": "UrlString"
+                },
+                "DocumentationUrl": {
+                    "shape": "UrlString"
+                },
+                "Categories": {
+                    "shape": "ListOfString"
+                },
+                "Capabilities": {
+                    "shape": "Capabilities"
+                },
+                "ConnectionProperties": {
+                    "shape": "PropertiesMap"
+                },
+                "SparkConnectionProperties": {
+                    "shape": "PropertiesMap"
+                },
+                "AthenaConnectionProperties": {
+                    "shape": "PropertiesMap"
+                },
+                "ConnectionOptions": {
+                    "shape": "PropertiesMap"
+                },
+                "AuthenticationConfiguration": {
+                    "shape": "AuthConfiguration"
+                },
+                "ComputeEnvironmentConfigurations": {
+                    "shape": "ComputeEnvironmentConfigurationMap"
+                },
+                "PhysicalConnectionRequirements": {
+                    "shape": "PropertiesMap"
+                }
+            }
+        },
+        "Description": {
+            "type": "string",
+            "max": 1024,
+            "min": 0
+        },
+        "DescriptionErrorString": {
+            "type": "string",
+            "max": 400000,
+            "min": 0
+        },
+        "DescriptionString": {
+            "type": "string",
+            "max": 2048,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*.*"
+        },
+        "DisplayName": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "EntityFieldName": {
+            "type": "string"
+        },
+        "EntityName": {
+            "type": "string"
+        },
+        "EntityNotFoundException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                },
+                "fromFederationSource": {
+                    "shape": "NullableBoolean"
+                }
+            },
+            "documentation": "<p>This exception is thrown when the requested entity is not found in the server side.</p>",
+            "exception": true
+        },
+        "ErrorDetail": {
+            "type": "structure",
+            "members": {
+                "ErrorCode": {
+                    "shape": "NameString"
+                },
+                "ErrorMessage": {
+                    "shape": "DescriptionString"
+                }
+            }
+        },
+        "ExecutionClass": {
+            "type": "string",
+            "enum": ["FLEX", "STANDARD"]
+        },
+        "ExecutionTime": {
+            "type": "integer",
+            "box": true
+        },
+        "ExpressionString": {
+            "type": "string"
+        },
+        "FederatedCatalog": {
+            "type": "structure",
+            "members": {
+                "Identifier": {
+                    "shape": "GlueCommonFederationIdentifier"
+                },
+                "ConnectionName": {
+                    "shape": "GlueCommonNameString"
+                }
+            }
+        },
+        "FederatedTable": {
+            "type": "structure",
+            "members": {
+                "Identifier": {
+                    "shape": "FederationIdentifier"
+                },
+                "DatabaseIdentifier": {
+                    "shape": "FederationIdentifier"
+                },
+                "ProfileName": {
+                    "shape": "NameString"
+                },
+                "ConnectionName": {
+                    "shape": "NameString"
+                },
+                "ConnectionType": {
+                    "shape": "NameString"
+                }
+            }
+        },
+        "FederationIdentifier": {
+            "type": "string",
+            "max": 512,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "FederationSourceException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "exception": true
+        },
+        "FederationSourceRetryableException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "exception": true
+        },
+        "FilterPredicate": {
+            "type": "string",
+            "max": 2048,
+            "min": 1,
+            "pattern": "[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*"
+        },
+        "FormatString": {
+            "type": "string",
+            "max": 128,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "GenericMap": {
+            "type": "map",
+            "key": {
+                "shape": "GenericString"
+            },
+            "value": {
+                "shape": "GenericString"
+            }
+        },
+        "GenericString": {
+            "type": "string"
+        },
+        "GetCatalogRequest": {
+            "type": "structure",
+            "required": ["Name"],
+            "members": {
+                "Name": {
+                    "shape": "CatalogNameString"
+                },
+                "ParentCatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "CatalogIdentifier": {
+                    "shape": "CatalogIdentifier"
+                },
+                "ContextMap": {
+                    "shape": "RequestContextMap"
+                },
+                "FederateToSource": {
+                    "shape": "Boolean"
+                }
+            }
+        },
+        "GetCatalogResponse": {
+            "type": "structure",
+            "required": ["Catalog"],
+            "members": {
+                "Catalog": {
+                    "shape": "Catalog"
+                },
+                "DataParameters": {
+                    "shape": "BlobParametersMap"
+                }
+            }
+        },
+        "GetCatalogsRequest": {
+            "type": "structure",
+            "members": {
+                "ParentCatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                },
+                "MaxResults": {
+                    "shape": "PageSize"
+                },
+                "Recursive": {
+                    "shape": "NullableBoolean"
+                },
+                "ContextMap": {
+                    "shape": "RequestContextMap"
+                }
+            }
+        },
+        "GetCatalogsResponse": {
+            "type": "structure",
+            "required": ["CatalogList"],
+            "members": {
+                "CatalogList": {
+                    "shape": "CatalogList"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                }
+            }
+        },
+        "GetCompletionRequest": {
+            "type": "structure",
+            "required": ["CompletionId"],
+            "members": {
+                "CompletionId": {
+                    "shape": "CompletionIdString"
+                }
+            }
+        },
+        "GetCompletionResponse": {
+            "type": "structure",
+            "required": ["CompletionId", "LastModifiedOn", "Status"],
+            "members": {
+                "CompletionId": {
+                    "shape": "CompletionIdString"
+                },
+                "StartedOn": {
+                    "shape": "startedOn"
+                },
+                "LastModifiedOn": {
+                    "shape": "lastModifiedOn"
+                },
+                "ErrorMessage": {
+                    "shape": "HashString"
+                },
+                "CompletedOn": {
+                    "shape": "completedOn"
+                },
+                "Status": {
+                    "shape": "CompletionStatus"
+                },
+                "Completion": {
+                    "shape": "CompletionString"
+                },
+                "SourceURLs": {
+                    "shape": "SourceUrlList"
+                },
+                "Tags": {
+                    "shape": "TagsMap"
+                }
+            }
+        },
+        "GetEntityRecordsRequest": {
+            "type": "structure",
+            "required": ["EntityName", "Limit"],
+            "members": {
+                "EntityName": {
+                    "shape": "EntityName"
+                },
+                "Limit": {
+                    "shape": "Limit"
+                },
+                "ConnectionName": {
+                    "shape": "NameString"
+                },
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                },
+                "DataStoreApiVersion": {
+                    "shape": "ApiVersion"
+                },
+                "ConnectionOptions": {
+                    "shape": "ConnectionOptions"
+                },
+                "FilterPredicate": {
+                    "shape": "FilterPredicate"
+                },
+                "OrderBy": {
+                    "shape": "String"
+                },
+                "SelectedFields": {
+                    "shape": "SelectedFields"
+                },
+                "StagingConfiguration": {
+                    "shape": "StagingConfiguration"
+                }
+            }
+        },
+        "GetEntityRecordsResponse": {
+            "type": "structure",
+            "members": {
+                "Records": {
+                    "shape": "Records"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                }
+            }
+        },
+        "GetJobRunRequest": {
+            "type": "structure",
+            "required": ["JobName", "RunId"],
+            "members": {
+                "JobName": {
+                    "shape": "NameString"
+                },
+                "RunId": {
+                    "shape": "IdString"
+                },
+                "PredecessorsIncluded": {
+                    "shape": "BooleanValue"
+                }
+            }
+        },
+        "GetJobRunResponse": {
+            "type": "structure",
+            "members": {
+                "JobRun": {
+                    "shape": "JobRun"
+                }
+            }
+        },
+        "GetJobRunsRequest": {
+            "type": "structure",
+            "required": ["JobName"],
+            "members": {
+                "JobName": {
+                    "shape": "NameString"
+                },
+                "NextToken": {
+                    "shape": "OrchestrationToken"
+                },
+                "MaxResults": {
+                    "shape": "OrchestrationPageSize200"
+                }
+            }
+        },
+        "GetJobRunsResponse": {
+            "type": "structure",
+            "members": {
+                "JobRuns": {
+                    "shape": "JobRunList"
+                },
+                "NextToken": {
+                    "shape": "OrchestrationToken"
+                }
+            }
+        },
+        "GetTableRequest": {
+            "type": "structure",
+            "required": ["DatabaseName", "Name"],
+            "members": {
+                "DatabaseName": {
+                    "shape": "NameString"
+                },
+                "Name": {
+                    "shape": "NameString"
+                },
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "TransactionId": {
+                    "shape": "TransactionIdString"
+                },
+                "QueryAsOfTime": {
+                    "shape": "Timestamp"
+                },
+                "IncludeAccessMode": {
+                    "shape": "NullableBoolean"
+                },
+                "IncludeStatusDetails": {
+                    "shape": "NullableBoolean"
+                },
+                "AttributesToGet": {
+                    "shape": "TableAttributesList"
+                },
+                "CatalogIdentifier": {
+                    "shape": "CatalogIdentifier"
+                },
+                "DatabaseIdentifier": {
+                    "shape": "DatabaseIdString"
+                },
+                "TableIdentifier": {
+                    "shape": "TableIdString"
+                },
+                "ContextMap": {
+                    "shape": "RequestContextMap"
+                }
+            }
+        },
+        "GetTableResponse": {
+            "type": "structure",
+            "members": {
+                "Table": {
+                    "shape": "Table"
+                },
+                "UseAdvancedFiltering": {
+                    "shape": "NullableBoolean"
+                }
+            }
+        },
+        "GlueCommonDescriptionString": {
+            "type": "string",
+            "max": 2048,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "GlueCommonFederationIdentifier": {
+            "type": "string",
+            "max": 512,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "GlueCommonIAMRoleArn": {
+            "type": "string",
+            "pattern": "arn:aws(-(cn|us-gov|iso(-[bef])?))?:iam::[0-9]{12}:role/.+.*"
+        },
+        "GlueCommonNameString": {
+            "type": "string",
+            "max": 155,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "GlueEncryptionException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "exception": true
+        },
+        "GlueResourceArn": {
+            "type": "string",
+            "pattern": ".*arn:aws(-(cn|us-gov|iso(-[bef])?))?:glue:.*"
+        },
+        "GlueVersionString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": "(\\w+\\.)+\\w+"
+        },
+        "HashString": {
+            "type": "string",
+            "max": 255,
+            "min": 1
+        },
+        "IcebergOptimizationPropertiesOutput": {
+            "type": "structure",
+            "members": {
+                "RoleArn": {
+                    "shape": "GlueCommonIAMRoleArn"
+                },
+                "Compaction": {
+                    "shape": "ParametersMap"
+                },
+                "Retention": {
+                    "shape": "ParametersMap"
+                },
+                "OrphanFileDeletion": {
+                    "shape": "ParametersMap"
+                },
+                "LastUpdatedTime": {
+                    "shape": "Timestamp"
+                }
+            }
+        },
+        "IdString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "Integer": {
+            "type": "integer",
+            "box": true
+        },
+        "IntegerFlag": {
+            "type": "integer",
+            "box": true,
+            "max": 1,
+            "min": 0
+        },
+        "IntegerValue": {
+            "type": "integer",
+            "box": true
+        },
+        "InternalServiceException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception is thrown when a call fails due to internal error.</p>",
+            "exception": true,
+            "fault": true
+        },
+        "InvalidInputException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                },
+                "fromFederationSource": {
+                    "shape": "NullableBoolean"
+                }
+            },
+            "documentation": "<p>This exception is thrown when the format of the input is incorrect.</p>",
+            "exception": true
+        },
+        "JobMode": {
+            "type": "string",
+            "enum": ["SCRIPT", "VISUAL", "NOTEBOOK"]
+        },
+        "JobRun": {
+            "type": "structure",
+            "members": {
+                "Id": {
+                    "shape": "IdString"
+                },
+                "Attempt": {
+                    "shape": "AttemptCount"
+                },
+                "PreviousRunId": {
+                    "shape": "IdString"
+                },
+                "TriggerName": {
+                    "shape": "NameString"
+                },
+                "JobName": {
+                    "shape": "NameString"
+                },
+                "JobMode": {
+                    "shape": "JobMode"
+                },
+                "JobRunQueuingEnabled": {
+                    "shape": "NullableBoolean"
+                },
+                "StartedOn": {
+                    "shape": "TimestampValue"
+                },
+                "LastModifiedOn": {
+                    "shape": "TimestampValue"
+                },
+                "CompletedOn": {
+                    "shape": "TimestampValue"
+                },
+                "JobRunState": {
+                    "shape": "JobRunState"
+                },
+                "Arguments": {
+                    "shape": "GenericMap"
+                },
+                "ErrorMessage": {
+                    "shape": "DescriptionErrorString"
+                },
+                "PredecessorRuns": {
+                    "shape": "PredecessorList"
+                },
+                "AllocatedCapacity": {
+                    "shape": "IntegerValue"
+                },
+                "ExecutionTime": {
+                    "shape": "ExecutionTime"
+                },
+                "Timeout": {
+                    "shape": "Timeout"
+                },
+                "MaxCapacity": {
+                    "shape": "NullableDouble"
+                },
+                "WorkerType": {
+                    "shape": "WorkerType"
+                },
+                "NumberOfWorkers": {
+                    "shape": "NullableInteger"
+                },
+                "SecurityConfiguration": {
+                    "shape": "NameString"
+                },
+                "LogGroupName": {
+                    "shape": "LogGroupString"
+                },
+                "NotificationProperty": {
+                    "shape": "NotificationProperty"
+                },
+                "GlueVersion": {
+                    "shape": "GlueVersionString"
+                },
+                "ExecutionClass": {
+                    "shape": "ExecutionClass"
+                },
+                "MinFlexWorkers": {
+                    "shape": "NullableInteger"
+                },
+                "DPUSeconds": {
+                    "shape": "NullableDouble"
+                },
+                "ExecutionArguments": {
+                    "shape": "GenericMap"
+                },
+                "ProfileName": {
+                    "shape": "NameString"
+                },
+                "StateDetail": {
+                    "shape": "OrchestrationMessageString"
+                },
+                "MaintenanceWindow": {
+                    "shape": "MaintenanceWindow"
+                },
+                "UpgradeAnalysisMetadata": {
+                    "shape": "UpgradeAnalysisMetadata"
+                }
+            }
+        },
+        "JobRunList": {
+            "type": "list",
+            "member": {
+                "shape": "JobRun"
+            }
+        },
+        "JobRunState": {
+            "type": "string",
+            "enum": [
+                "STARTING",
+                "RUNNING",
+                "STOPPING",
+                "STOPPED",
+                "SUCCEEDED",
+                "FAILED",
+                "TIMEOUT",
+                "ERROR",
+                "WAITING",
+                "EXPIRED"
+            ]
+        },
+        "KeyString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "LakeFormationPermissionEnforcedEnum": {
+            "type": "string",
+            "enum": ["AllUsers", "SomeUsers", "NoUser"]
+        },
+        "Limit": {
+            "type": "long",
+            "box": true,
+            "max": 1000,
+            "min": 1
+        },
+        "ListConnectionTypesRequest": {
+            "type": "structure",
+            "members": {
+                "MaxResults": {
+                    "shape": "PageSize"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                }
+            }
+        },
+        "ListConnectionTypesResponse": {
+            "type": "structure",
+            "members": {
+                "ConnectionTypes": {
+                    "shape": "ConnectionTypeList"
+                },
+                "NextToken": {
+                    "shape": "NextToken"
+                }
+            }
+        },
+        "ListOfString": {
+            "type": "list",
+            "member": {
+                "shape": "String"
+            }
+        },
+        "LocationMap": {
+            "type": "map",
+            "key": {
+                "shape": "ColumnValuesString"
+            },
+            "value": {
+                "shape": "ColumnValuesString"
+            }
+        },
+        "LocationString": {
+            "type": "string",
+            "max": 2056,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\r\\n\\t]*.*"
+        },
+        "LocationStringList": {
+            "type": "list",
+            "member": {
+                "shape": "LocationString"
+            }
+        },
+        "LogGroupString": {
+            "type": "string",
+            "max": 400000,
+            "min": 0
+        },
+        "MaintenanceWindow": {
+            "type": "string",
+            "pattern": "(Sun|Mon|Tue|Wed|Thu|Fri|Sat):([01]?[0-9]|2[0-3])"
+        },
+        "Maximum": {
+            "type": "integer",
+            "box": true
+        },
+        "Minimum": {
+            "type": "integer",
+            "box": true
+        },
+        "NameString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "NameStringList": {
+            "type": "list",
+            "member": {
+                "shape": "NameString"
+            }
+        },
+        "NextToken": {
+            "type": "string"
+        },
+        "NonNegativeInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "NotificationProperty": {
+            "type": "structure",
+            "members": {
+                "NotifyDelayAfter": {
+                    "shape": "NotifyDelayAfter"
+                }
+            }
+        },
+        "NotifyDelayAfter": {
+            "type": "integer",
+            "box": true,
+            "min": 1
+        },
+        "NullableBoolean": {
+            "type": "boolean",
+            "box": true
+        },
+        "NullableDouble": {
+            "type": "double",
+            "box": true
+        },
+        "NullableInteger": {
+            "type": "integer",
+            "box": true
+        },
+        "OperationTimeoutException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception occurs when the server throws a timeout</p>",
+            "exception": true
+        },
+        "OptionKey": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "[\\w]*"
+        },
+        "OptionValue": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "[\\S]*"
+        },
+        "OrchestrationMessageString": {
+            "type": "string",
+            "max": 400000,
+            "min": 0
+        },
+        "OrchestrationPageSize200": {
+            "type": "integer",
+            "box": true,
+            "max": 200,
+            "min": 1
+        },
+        "OrchestrationToken": {
+            "type": "string",
+            "max": 400000,
+            "min": 0
+        },
+        "Order": {
+            "type": "structure",
+            "required": ["Column", "SortOrder"],
+            "members": {
+                "Column": {
+                    "shape": "NameString"
+                },
+                "SortOrder": {
+                    "shape": "IntegerFlag"
+                }
+            }
+        },
+        "OrderList": {
+            "type": "list",
+            "member": {
+                "shape": "Order"
+            }
+        },
+        "OutputLocation": {
+            "type": "string"
+        },
+        "PageSize": {
+            "type": "integer",
+            "box": true,
+            "max": 1000,
+            "min": 1
+        },
+        "ParametersMap": {
+            "type": "map",
+            "key": {
+                "shape": "KeyString"
+            },
+            "value": {
+                "shape": "ParametersMapValue"
+            },
+            "max": 50,
+            "min": 0
+        },
+        "ParametersMapValue": {
+            "type": "string",
+            "max": 512000,
+            "min": 0
+        },
+        "Permission": {
+            "type": "string",
+            "enum": [
+                "ALL",
+                "SELECT",
+                "ALTER",
+                "DROP",
+                "DELETE",
+                "INSERT",
+                "DESCRIBE",
+                "CREATE_DATABASE",
+                "CREATE_TABLE",
+                "DATA_LOCATION_ACCESS",
+                "READ",
+                "WRITE",
+                "CREATE_LF_TAG",
+                "ASSOCIATE",
+                "UPDATE",
+                "GRANT_WITH_LF_TAG_EXPRESSION",
+                "CREATE_LF_TAG_EXPRESSION"
+            ]
+        },
+        "PermissionList": {
+            "type": "list",
+            "member": {
+                "shape": "Permission"
+            }
+        },
+        "Phase": {
+            "type": "string",
+            "enum": ["AUTHENTICATION", "CONNECTION_CREATION"]
+        },
+        "Predecessor": {
+            "type": "structure",
+            "members": {
+                "JobName": {
+                    "shape": "NameString"
+                },
+                "RunId": {
+                    "shape": "IdString"
+                }
+            }
+        },
+        "PredecessorList": {
+            "type": "list",
+            "member": {
+                "shape": "Predecessor"
+            }
+        },
+        "PrimitiveInteger": {
+            "type": "integer",
+            "box": true
+        },
+        "PrincipalPermissions": {
+            "type": "structure",
+            "members": {
+                "Principal": {
+                    "shape": "DataLakePrincipal"
+                },
+                "Permissions": {
+                    "shape": "PermissionList"
+                }
+            }
+        },
+        "PrincipalPermissionsList": {
+            "type": "list",
+            "member": {
+                "shape": "PrincipalPermissions"
+            }
+        },
+        "PromptString": {
+            "type": "string",
+            "max": 30720,
+            "min": 1
+        },
+        "PropertiesMap": {
+            "type": "map",
+            "key": {
+                "shape": "PropertyName"
+            },
+            "value": {
+                "shape": "Property"
+            }
+        },
+        "Property": {
+            "type": "structure",
+            "members": {
+                "Name": {
+                    "shape": "PropertyName"
+                },
+                "DisplayName": {
+                    "shape": "PropertyName"
+                },
+                "Description": {
+                    "shape": "PropertyDescriptionString"
+                },
+                "DataType": {
+                    "shape": "DataType"
+                },
+                "Required": {
+                    "shape": "Bool"
+                },
+                "ConditionallyRequired": {
+                    "shape": "ConditionStatements"
+                },
+                "DefaultValue": {
+                    "shape": "String"
+                },
+                "Phase": {
+                    "shape": "Phase"
+                },
+                "PropertyTypes": {
+                    "shape": "PropertyTypes"
+                },
+                "AllowedValues": {
+                    "shape": "AllowedValues"
+                },
+                "Validations": {
+                    "shape": "Validations"
+                },
+                "DataOperationScopes": {
+                    "shape": "DataOperations"
+                },
+                "Order": {
+                    "shape": "PrimitiveInteger"
+                },
+                "DocumentationUrl": {
+                    "shape": "String"
+                },
+                "Reference": {
+                    "shape": "String"
+                },
+                "Format": {
+                    "shape": "String"
+                }
+            }
+        },
+        "PropertyDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0
+        },
+        "PropertyName": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "PropertyNameOverrides": {
+            "type": "map",
+            "key": {
+                "shape": "PropertyName"
+            },
+            "value": {
+                "shape": "PropertyName"
+            }
+        },
+        "PropertyType": {
+            "type": "string",
+            "enum": ["USER_INPUT", "SECRET", "READ_ONLY", "UNUSED"]
+        },
+        "PropertyTypes": {
+            "type": "list",
+            "member": {
+                "shape": "PropertyType"
+            }
+        },
+        "Record": {
+            "type": "structure",
+            "members": {},
+            "document": true,
+            "sensitive": true
+        },
+        "Records": {
+            "type": "list",
+            "member": {
+                "shape": "Record"
+            }
+        },
+        "RequestContextKey": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "RequestContextMap": {
+            "type": "map",
+            "key": {
+                "shape": "RequestContextKey"
+            },
+            "value": {
+                "shape": "RequestContextValue"
+            },
+            "max": 50,
+            "min": 0
+        },
+        "RequestContextValue": {
+            "type": "string",
+            "max": 10240,
+            "min": 0
+        },
+        "ResourceAction": {
+            "type": "string",
+            "enum": ["CREATE", "UPDATE"]
+        },
+        "ResourceArnString": {
+            "type": "string"
+        },
+        "ResourceNotReadyException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "exception": true
+        },
+        "ResourceState": {
+            "type": "string",
+            "enum": ["QUEUED", "IN_PROGRESS", "SUCCESS", "STOPPED", "FAILED"]
+        },
+        "SchemaId": {
+            "type": "structure",
+            "members": {
+                "SchemaArn": {
+                    "shape": "GlueResourceArn"
+                },
+                "SchemaName": {
+                    "shape": "SchemaRegistryNameString"
+                },
+                "RegistryName": {
+                    "shape": "SchemaRegistryNameString"
+                }
+            }
+        },
+        "SchemaReference": {
+            "type": "structure",
+            "members": {
+                "SchemaId": {
+                    "shape": "SchemaId"
+                },
+                "SchemaVersionId": {
+                    "shape": "SchemaVersionIdString"
+                },
+                "SchemaVersionNumber": {
+                    "shape": "VersionLongNumber"
+                }
+            }
+        },
+        "SchemaRegistryNameString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[a-zA-Z0-9-_$#.]+.*"
+        },
+        "SchemaVersionIdString": {
+            "type": "string",
+            "max": 36,
+            "min": 36,
+            "pattern": ".*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}.*"
+        },
+        "ScopeString": {
+            "type": "string",
+            "max": 25,
+            "min": 25
+        },
+        "ScriptLocationString": {
+            "type": "string",
+            "max": 400000,
+            "min": 0
+        },
+        "SelectedFields": {
+            "type": "list",
+            "member": {
+                "shape": "EntityFieldName"
+            }
+        },
+        "SerDeInfo": {
+            "type": "structure",
+            "members": {
+                "Name": {
+                    "shape": "NameString"
+                },
+                "SerializationLibrary": {
+                    "shape": "NameString"
+                },
+                "Parameters": {
+                    "shape": "ParametersMap"
+                }
+            }
+        },
+        "SkewedInfo": {
+            "type": "structure",
+            "members": {
+                "SkewedColumnNames": {
+                    "shape": "NameStringList"
+                },
+                "SkewedColumnValues": {
+                    "shape": "ColumnValueStringList"
+                },
+                "SkewedColumnValueLocationMaps": {
+                    "shape": "LocationMap"
+                }
+            }
+        },
+        "SourceUrlList": {
+            "type": "list",
+            "member": {
+                "shape": "HashString"
+            },
+            "max": 3,
+            "min": 1
+        },
+        "StagingConfiguration": {
+            "type": "structure",
+            "members": {
+                "OutputLocation": {
+                    "shape": "OutputLocation"
+                }
+            }
+        },
+        "StartCompletionContext": {
+            "type": "list",
+            "member": {
+                "shape": "StartCompletionContextItem"
+            }
+        },
+        "StartCompletionContextItem": {
+            "type": "map",
+            "key": {
+                "shape": "HashString"
+            },
+            "value": {
+                "shape": "HashString"
+            }
+        },
+        "StartCompletionRequest": {
+            "type": "structure",
+            "required": ["Prompt"],
+            "members": {
+                "Prompt": {
+                    "shape": "PromptString"
+                },
+                "Tags": {
+                    "shape": "TagsMap"
+                },
+                "Context": {
+                    "shape": "StartCompletionContext"
+                }
+            }
+        },
+        "StartCompletionResponse": {
+            "type": "structure",
+            "required": ["CompletionId", "ConversationId"],
+            "members": {
+                "CompletionId": {
+                    "shape": "CompletionIdString"
+                },
+                "ConversationId": {
+                    "shape": "CompletionIdString"
+                }
+            }
+        },
+        "StatusDetails": {
+            "type": "structure",
+            "members": {
+                "RequestedChange": {
+                    "shape": "Table"
+                },
+                "ViewValidations": {
+                    "shape": "ViewValidationList"
+                }
+            }
+        },
+        "StorageDescriptor": {
+            "type": "structure",
+            "members": {
+                "Columns": {
+                    "shape": "ColumnList"
+                },
+                "Location": {
+                    "shape": "LocationString"
+                },
+                "AdditionalLocations": {
+                    "shape": "LocationStringList"
+                },
+                "InputFormat": {
+                    "shape": "FormatString"
+                },
+                "OutputFormat": {
+                    "shape": "FormatString"
+                },
+                "Compressed": {
+                    "shape": "Boolean"
+                },
+                "NumberOfBuckets": {
+                    "shape": "Integer"
+                },
+                "SerDeInfo": {
+                    "shape": "SerDeInfo"
+                },
+                "BucketColumns": {
+                    "shape": "NameStringList"
+                },
+                "SortColumns": {
+                    "shape": "OrderList"
+                },
+                "Parameters": {
+                    "shape": "ParametersMap"
+                },
+                "SkewedInfo": {
+                    "shape": "SkewedInfo"
+                },
+                "StoredAsSubDirectories": {
+                    "shape": "Boolean"
+                },
+                "SchemaReference": {
+                    "shape": "SchemaReference"
+                }
+            }
+        },
+        "String": {
+            "type": "string"
+        },
+        "Table": {
+            "type": "structure",
+            "required": ["Name"],
+            "members": {
+                "Name": {
+                    "shape": "NameString"
+                },
+                "DatabaseName": {
+                    "shape": "NameString"
+                },
+                "Description": {
+                    "shape": "DescriptionString"
+                },
+                "Owner": {
+                    "shape": "NameString"
+                },
+                "CreateTime": {
+                    "shape": "Timestamp"
+                },
+                "UpdateTime": {
+                    "shape": "Timestamp"
+                },
+                "LastAccessTime": {
+                    "shape": "Timestamp"
+                },
+                "LastAnalyzedTime": {
+                    "shape": "Timestamp"
+                },
+                "Retention": {
+                    "shape": "NonNegativeInteger"
+                },
+                "StorageDescriptor": {
+                    "shape": "StorageDescriptor"
+                },
+                "PartitionKeys": {
+                    "shape": "ColumnList"
+                },
+                "ViewOriginalText": {
+                    "shape": "ViewTextString"
+                },
+                "ViewExpandedText": {
+                    "shape": "ViewTextString"
+                },
+                "TableType": {
+                    "shape": "TableTypeString"
+                },
+                "Parameters": {
+                    "shape": "ParametersMap"
+                },
+                "DataParameters": {
+                    "shape": "BlobParametersMap"
+                },
+                "CreatedBy": {
+                    "shape": "NameString"
+                },
+                "IsRegisteredWithLakeFormation": {
+                    "shape": "Boolean"
+                },
+                "LakeFormationPermissionEnforced": {
+                    "shape": "LakeFormationPermissionEnforcedEnum"
+                },
+                "DataAccessMode": {
+                    "shape": "DataAccessModeEnum"
+                },
+                "TargetTable": {
+                    "shape": "TableIdentifier"
+                },
+                "FederatedTable": {
+                    "shape": "FederatedTable"
+                },
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "IsRowFilteringEnabled": {
+                    "shape": "Boolean"
+                },
+                "VersionId": {
+                    "shape": "VersionString"
+                },
+                "CatalogIdentifier": {
+                    "shape": "CatalogIdentifier"
+                },
+                "TableId": {
+                    "shape": "TableIdString"
+                },
+                "DatabaseId": {
+                    "shape": "DatabaseIdString"
+                },
+                "ViewDefinition": {
+                    "shape": "ViewDefinition"
+                },
+                "DataProvider": {
+                    "shape": "NameString"
+                },
+                "IsMultiDialectView": {
+                    "shape": "Boolean"
+                },
+                "Status": {
+                    "shape": "TableStatus"
+                }
+            }
+        },
+        "TableAttributes": {
+            "type": "string",
+            "enum": ["NAME", "VERSION_ID", "DATA_ACCESS_MODE", "DEFAULT", "ALL", "TABLE_TYPE", "DESCRIPTION"]
+        },
+        "TableAttributesList": {
+            "type": "list",
+            "member": {
+                "shape": "TableAttributes"
+            }
+        },
+        "TableIdString": {
+            "type": "string",
+            "max": 100,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "TableIdentifier": {
+            "type": "structure",
+            "members": {
+                "CatalogId": {
+                    "shape": "CatalogIdString"
+                },
+                "DatabaseName": {
+                    "shape": "NameString"
+                },
+                "Name": {
+                    "shape": "NameString"
+                },
+                "Region": {
+                    "shape": "NameString"
+                },
+                "DatabaseId": {
+                    "shape": "DatabaseIdString"
+                }
+            }
+        },
+        "TableStatus": {
+            "type": "structure",
+            "members": {
+                "RequestedBy": {
+                    "shape": "NameString"
+                },
+                "UpdatedBy": {
+                    "shape": "NameString"
+                },
+                "RequestTime": {
+                    "shape": "Timestamp"
+                },
+                "UpdateTime": {
+                    "shape": "Timestamp"
+                },
+                "Action": {
+                    "shape": "ResourceAction"
+                },
+                "State": {
+                    "shape": "ResourceState"
+                },
+                "Error": {
+                    "shape": "ErrorDetail"
+                },
+                "Details": {
+                    "shape": "StatusDetails"
+                }
+            }
+        },
+        "TableTypeString": {
+            "type": "string",
+            "max": 255,
+            "min": 0
+        },
+        "TagKey": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "TagValue": {
+            "type": "string",
+            "max": 256,
+            "min": 0
+        },
+        "TagsMap": {
+            "type": "map",
+            "key": {
+                "shape": "TagKey"
+            },
+            "value": {
+                "shape": "TagValue"
+            },
+            "max": 50,
+            "min": 0
+        },
+        "TargetCatalog": {
+            "type": "structure",
+            "members": {
+                "CatalogArn": {
+                    "shape": "ResourceArnString"
+                },
+                "CatalogIdentifier": {
+                    "shape": "CatalogIdentifier"
+                },
+                "AutoDiscovery": {
+                    "shape": "Boolean"
+                }
+            }
+        },
+        "Timeout": {
+            "type": "integer",
+            "box": true
+        },
+        "Timestamp": {
+            "type": "timestamp"
+        },
+        "TimestampValue": {
+            "type": "timestamp"
+        },
+        "TransactionIdString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\p{L}\\p{N}\\p{P}]*.*"
+        },
+        "TypeString": {
+            "type": "string",
+            "max": 20000,
+            "min": 0,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "UpgradeAnalysisMetadata": {
+            "type": "structure",
+            "members": {
+                "ValidationJobRunId": {
+                    "shape": "NameString"
+                },
+                "GlueVersion": {
+                    "shape": "NameString"
+                },
+                "ScriptLocation": {
+                    "shape": "ScriptLocationString"
+                },
+                "AnalysisId": {
+                    "shape": "IdString"
+                }
+            }
+        },
+        "UrlString": {
+            "type": "string"
+        },
+        "Validation": {
+            "type": "structure",
+            "members": {
+                "ValidationType": {
+                    "shape": "ValidationType"
+                },
+                "Patterns": {
+                    "shape": "ListOfString"
+                },
+                "Description": {
+                    "shape": "ValidationDescriptionString"
+                },
+                "MaxLength": {
+                    "shape": "Maximum"
+                },
+                "Maximum": {
+                    "shape": "Maximum"
+                },
+                "Minimum": {
+                    "shape": "Minimum"
+                }
+            }
+        },
+        "ValidationDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0
+        },
+        "ValidationDryRunOpts": {
+            "type": "structure",
+            "members": {
+                "SerializedMockEngineResult": {
+                    "shape": "String"
+                },
+                "ErrorMessage": {
+                    "shape": "String"
+                },
+                "MinimumReceiveCount": {
+                    "shape": "Integer"
+                }
+            }
+        },
+        "ValidationException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "shape": "String"
+                }
+            },
+            "documentation": "<p>This exception occurs when the dag cannot be successfully validated</p>",
+            "exception": true
+        },
+        "ValidationType": {
+            "type": "string",
+            "enum": ["REGEX", "RANGE"]
+        },
+        "Validations": {
+            "type": "list",
+            "member": {
+                "shape": "Validation"
+            }
+        },
+        "Vendor": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "VersionLongNumber": {
+            "type": "long",
+            "box": true,
+            "max": 100000,
+            "min": 1
+        },
+        "VersionString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDC00-\\uDBFF\\uDFFF\\t]*.*"
+        },
+        "ViewDefinition": {
+            "type": "structure",
+            "members": {
+                "IsProtected": {
+                    "shape": "Boolean"
+                },
+                "Definer": {
+                    "shape": "ArnString"
+                },
+                "SubObjects": {
+                    "shape": "ViewSubObjectsList"
+                },
+                "Representations": {
+                    "shape": "ViewRepresentationList"
+                }
+            }
+        },
+        "ViewDialect": {
+            "type": "string",
+            "enum": ["REDSHIFT", "ATHENA", "SPARK"]
+        },
+        "ViewDialectVersionString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": ".*[a-zA-Z0-9_.-]+.*"
+        },
+        "ViewRepresentation": {
+            "type": "structure",
+            "members": {
+                "Dialect": {
+                    "shape": "ViewDialect"
+                },
+                "DialectVersion": {
+                    "shape": "ViewDialectVersionString"
+                },
+                "ViewOriginalText": {
+                    "shape": "ViewTextString"
+                },
+                "ViewExpandedText": {
+                    "shape": "ViewTextString"
+                },
+                "ValidationConnection": {
+                    "shape": "NameString"
+                },
+                "IsStale": {
+                    "shape": "Boolean"
+                },
+                "ValidationDryRunOpts": {
+                    "shape": "ValidationDryRunOpts"
+                }
+            }
+        },
+        "ViewRepresentationList": {
+            "type": "list",
+            "member": {
+                "shape": "ViewRepresentation"
+            },
+            "max": 1000,
+            "min": 1
+        },
+        "ViewSubObjectsList": {
+            "type": "list",
+            "member": {
+                "shape": "ArnString"
+            },
+            "max": 10,
+            "min": 0
+        },
+        "ViewTextString": {
+            "type": "string",
+            "max": 409600,
+            "min": 0
+        },
+        "ViewValidation": {
+            "type": "structure",
+            "members": {
+                "Dialect": {
+                    "shape": "ViewDialect"
+                },
+                "DialectVersion": {
+                    "shape": "ViewDialectVersionString"
+                },
+                "ViewValidationText": {
+                    "shape": "ViewTextString"
+                },
+                "UpdateTime": {
+                    "shape": "Timestamp"
+                },
+                "State": {
+                    "shape": "ResourceState"
+                },
+                "Error": {
+                    "shape": "ErrorDetail"
+                }
+            }
+        },
+        "ViewValidationList": {
+            "type": "list",
+            "member": {
+                "shape": "ViewValidation"
+            }
+        },
+        "WorkerType": {
+            "type": "string",
+            "enum": ["Standard", "G_1X", "G_2X", "G_4X", "G_8X", "G_025X", "Z_2X"]
+        },
+        "completedOn": {
+            "type": "long",
+            "box": true
+        },
+        "lastModifiedOn": {
+            "type": "long",
+            "box": true
+        },
+        "startedOn": {
+            "type": "long",
+            "box": true
+        }
+    }
+}
