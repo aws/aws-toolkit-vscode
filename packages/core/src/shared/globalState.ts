@@ -8,7 +8,7 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
-type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
+type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId' | 'smus'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
 
 export type JsonSchemasKey = 'devfileSchemaVersion' | 'samAndCfnSchemaVersion'
