@@ -60,7 +60,7 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
             layerArn: undefined,
             lambdaTimeout: undefined,
         })
-        mockFunctionConfig = createMockFunctionConfig()
+        mockFunctionConfig = createMockFunctionConfig({ Runtime: 'nodejs22.x' })
     })
 
     afterEach(() => {
@@ -128,14 +128,13 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
                 )
             )
 
-            await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
+            await controller.startDebugging(mockConfig.functionArn, 'nodejs22.x', mockConfig)
 
             // Assert state changes
             assert.strictEqual(controller.isDebugging, true, 'Should be in debugging state')
-            // Qualifier is only set for version publishing, not for $LATEST
+            // Qualifier is not set for LocalStack
             assert.strictEqual(controller.qualifier, undefined, 'Should not set qualifier for $LATEST')
 
-            // Verify LdkClient calls
             assert(mockLdkClient.getFunctionDetail.calledWith(mockConfig.functionArn), 'Should get function details')
 
             assert(fetchStubHealth.calledOnce, 'Should call LocalStack health check once')
@@ -146,7 +145,7 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
                 result: 'Succeeded',
                 source: 'LocalStackDebug',
                 action: '{"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"isLambdaRemote":false}',
-                runtimeString: 'nodejs18.x',
+                runtimeString: 'nodejs22.x',
             })
         })
 
@@ -186,11 +185,10 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
             // Mock revertExistingConfig
             setupMockRevertExistingConfig(sandbox)
 
-            let errorThrown = false
             try {
-                await controller.startDebugging(mockConfig.functionArn, 'nodejs18.x', mockConfig)
+                await controller.startDebugging(mockConfig.functionArn, 'nodejs22.x', mockConfig)
+                assert.fail('Should have thrown an error')
             } catch (error) {
-                errorThrown = true
                 assert(error instanceof Error, 'Should throw an error')
                 assert(
                     error.message.includes('Error StartDebugging') ||
@@ -200,8 +198,6 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
                     'Should throw relevant error'
                 )
             }
-
-            assert(errorThrown, 'Should have thrown an error')
 
             // Assert state is cleaned up
             assert.strictEqual(controller.isDebugging, false, 'Should not be in debugging state after failure')

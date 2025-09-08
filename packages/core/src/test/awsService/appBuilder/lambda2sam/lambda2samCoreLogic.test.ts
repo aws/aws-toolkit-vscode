@@ -431,10 +431,7 @@ describe('lambda2samCoreLogic', function () {
             } as any
 
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
             const resourceToImport: ResourcesToImport = [
                 {
@@ -490,10 +487,7 @@ describe('lambda2samCoreLogic', function () {
             } as any
 
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
             // Make createChangeSet fail
             cfnClientStub.createChangeSet.resolves({}) // No Id
@@ -522,24 +516,10 @@ describe('lambda2samCoreLogic', function () {
     describe('callExternalApiForCfnTemplate', function () {
         it('extracts function name from ARN in ResourceIdentifier', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-                endpointUrl: undefined,
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
@@ -581,24 +561,10 @@ describe('lambda2samCoreLogic', function () {
 
         it('preserves function name when not an ARN', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-                endpointUrl: undefined,
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
@@ -633,24 +599,10 @@ describe('lambda2samCoreLogic', function () {
 
         it('handles non-Lambda resources without modification', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-                endpointUrl: undefined,
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
@@ -699,10 +651,7 @@ describe('lambda2samCoreLogic', function () {
     describe('lambdaToSam', function () {
         it('converts a Lambda function to a SAM project', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
             // Setup AWS Lambda client responses
             lambdaClientStub.getFunction.resolves({
@@ -784,4 +733,33 @@ describe('lambda2samCoreLogic', function () {
             )
         })
     })
+
+    function mockLambdaNode(withArn: boolean = false) {
+        if (withArn) {
+            return {
+                name: 'test-function',
+                regionCode: 'us-east-2',
+                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
+            } as LambdaFunctionNode
+        } else {
+            return {
+                name: 'test-function',
+                regionCode: 'us-east-2',
+            } as LambdaFunctionNode
+        }
+    }
+
+    function mockIamConnection() {
+        return {
+            type: 'iam' as const,
+            id: 'test-connection',
+            label: 'Test Connection',
+            state: 'valid' as const,
+            getCredentials: sandbox.stub().resolves({
+                accessKeyId: 'test-key',
+                secretAccessKey: 'test-secret',
+            }),
+            endpointUrl: undefined,
+        }
+    }
 })
