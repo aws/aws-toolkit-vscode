@@ -36,14 +36,29 @@ export async function resolveCredentialsFor(connectionIdentifier: string): Promi
             return fromIni({ profile: name })
         }
         case 'sso': {
-            const { accessKey, secret, token } = profile
-            if (!accessKey || !secret || !token) {
+            if ('accessKey' in profile && 'secret' in profile && 'token' in profile) {
+                const { accessKey, secret, token } = profile
+                if (!accessKey || !secret || !token) {
+                    throw new Error(`Missing SSO credentials for "${connectionIdentifier}"`)
+                }
+                return {
+                    accessKeyId: accessKey,
+                    secretAccessKey: secret,
+                    sessionToken: token,
+                }
+            } else if ('smusProjectId' in profile) {
+                // Handle SMUS project ID case
+                const { accessKey, secret, token } = mapping.smusProjects?.[profile.smusProjectId] || {}
+                if (!accessKey || !secret || !token) {
+                    throw new Error(`Missing ProjectRole credentials for SMUS Space "${connectionIdentifier}"`)
+                }
+                return {
+                    accessKeyId: accessKey,
+                    secretAccessKey: secret,
+                    sessionToken: token,
+                }
+            } else {
                 throw new Error(`Missing SSO credentials for "${connectionIdentifier}"`)
-            }
-            return {
-                accessKeyId: accessKey,
-                secretAccessKey: secret,
-                sessionToken: token,
             }
         }
         default:
