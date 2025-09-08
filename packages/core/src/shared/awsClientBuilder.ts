@@ -82,8 +82,11 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
         const opt = { ...options }
         delete opt.onRequestSetup
+        if (opt.credentialProvider) {
+            opt.credentials = await opt.credentialProvider.resolvePromise()
+        }
 
-        if (!opt.credentials && !opt.token) {
+        if (!opt.credentials && !opt.token && !opt.credentialProvider) {
             const shim = this.awsContext.credentialsShim
 
             if (!shim) {

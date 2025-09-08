@@ -23,7 +23,7 @@ describe('sagemakerParentNode', function () {
     let testNode: SagemakerParentNode
     let client: SagemakerClient
     let fetchSpaceAppsAndDomainsStub: sinon.SinonStub<
-        [],
+        [domainId?: string | undefined, filterSmusDomains?: boolean | undefined],
         Promise<[Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]>
     >
     let getCallerIdentityStub: sinon.SinonStub<[], Promise<GetCallerIdentityResponse>>
