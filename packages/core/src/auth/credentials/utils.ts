@@ -21,7 +21,7 @@ import { isValidResponse } from '../../shared/wizards/wizard'
 const credentialsTimeout = 300000 // 5 minutes
 const credentialsProgressDelay = 1000
 
-export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
+export function asEnvironmentVariables(credentials: Credentials, endpointUrl?: string): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
 
     environmentVariables.AWS_ACCESS_KEY = credentials.accessKeyId
@@ -30,6 +30,9 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
     environmentVariables.AWS_SECRET_ACCESS_KEY = credentials.secretAccessKey
     environmentVariables.AWS_SESSION_TOKEN = credentials.sessionToken
     environmentVariables.AWS_SECURITY_TOKEN = credentials.sessionToken
+    if (endpointUrl !== undefined) {
+        environmentVariables.AWS_ENDPOINT_URL = endpointUrl
+    }
 
     return environmentVariables
 }

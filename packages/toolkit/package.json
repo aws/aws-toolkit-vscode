@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.73.0-SNAPSHOT",
+    "version": "3.74.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -780,6 +780,11 @@
                     "when": "(!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst) && !aws.explorer.showAuthView"
                 },
                 {
+                    "id": "aws.smus.rootView",
+                    "name": "%AWS.sagemakerunifiedstudio.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
+                },
+                {
                     "type": "webview",
                     "id": "aws.toolkit.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
@@ -1257,6 +1262,14 @@
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
                     "when": "false"
+                },
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.smus.refreshProject",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1319,6 +1332,21 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
+                    "group": "smus@0"
+                },
+                {
+                    "command": "aws.smus.refreshProject",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "group": "smus@1"
+                },
+                {
+                    "command": "aws.smus.signOut",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
+                    "group": "smus@2"
+                },
                 {
                     "command": "aws.toolkit.submitFeedback",
                     "when": "view == aws.explorer && !aws.isWebExtHost",
@@ -1460,18 +1488,38 @@
                     "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.smus.notebookscheduling.createjob",
+                    "when": "resourceExtname == .ipynb",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.smus.notebookscheduling.viewjobs",
+                    "when": "resourceExtname == .ipynb",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "aws.sagemaker.stopSpace",
                     "group": "inline@0",
-                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView  && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.smus.stopSpace",
+                    "group": "inline@0",
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode|awsSagemakerSpaceRunningNode)$/"
                 },
                 {
                     "command": "aws.sagemaker.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.smus.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
                 },
                 {
                     "command": "_aws.toolkit.notifications.dismiss",
@@ -1634,6 +1682,11 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.smus.refreshProject",
+                    "when": "view == aws.smus.rootView && viewItem == smusSelectedProject",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
@@ -1685,47 +1738,47 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/ || viewItem == awsAppBuilderDeployedNode",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/ || viewItem == awsAppBuilderDeployedNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadLambda",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsAppBuilderDeployedNode",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/ || viewItem == awsAppBuilderDeployedNode",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.lambda.openWorkspace",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeDownloadable",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                     "group": "0@6"
                 },
                 {
                     "command": "aws.toolkit.lambda.convertToSam",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeDownloadable",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNodeDownloadable)$/",
                     "group": "0@3"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsAppBuilderDeployedNode",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/ || viewItem == awsAppBuilderDeployedNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view =~ /^(aws.explorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
+                    "when": "view =~ /^(aws.explorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                     "group": "4@1"
                 },
                 {
                     "command": "aws.copyLambdaUrl",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/ || viewItem == awsAppBuilderDeployedNode",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/ || viewItem == awsAppBuilderDeployedNode",
                     "group": "2@0"
                 },
                 {
                     "command": "aws.appBuilder.searchLogs",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "0@3"
                 },
                 {
                     "command": "aws.appBuilder.tailLogs",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "0@4"
                 },
                 {
@@ -1870,17 +1923,17 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|(awsEc2(Running|Pending|Stopped)Node))/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|(awsEc2(Running|Pending|Stopped)Node))/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))/",
                     "group": "2@2"
                 },
                 {
                     "command": "aws.openAwsConsole",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsS3BucketNode)$/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsS3BucketNode)$/",
                     "group": "2@3"
                 },
                 {
@@ -2225,22 +2278,22 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.appBuilder.searchLogs",
-                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "inline@2"
                 },
                 {
                     "command": "aws.quickDeployLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeDownloadable",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                     "group": "inline@3"
                 },
                 {
                     "command": "aws.toolkit.lambda.convertToSam",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeDownloadable",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNodeDownloadable)$/",
                     "group": "inline@4"
                 },
                 {
@@ -2329,7 +2382,7 @@
                 },
                 {
                     "command": "aws.appBuilder.tailLogs",
-                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "inline@3"
                 }
             ],
@@ -2389,6 +2442,11 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.smus.openSpaceRemoteConnection",
+                "title": "Connect to SageMaker-Unified-Studio Space",
+                "icon": "$(remote-explorer)"
+            },
             {
                 "command": "_aws.toolkit.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
@@ -2643,11 +2701,73 @@
                 }
             },
             {
+                "command": "aws.smus.openRemoteConnection",
+                "title": "Connect to SageMaker Space",
+                "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.sagemaker.stopSpace",
                 "title": "Stop SageMaker Space",
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.stopSpace",
+                "title": "Stop SageMaker Space",
+                "icon": "$(debug-stop)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.switchProject",
+                "title": "%AWS.command.smus.switchProject%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.refreshProject",
+                "title": "%AWS.command.smus.refreshProject%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.smus.signOut",
+                "title": "%AWS.command.smus.signOut%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(sign-out)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3121,7 +3241,7 @@
                 "command": "aws.toolkit.lambda.convertToSam",
                 "title": "%AWS.command.lambda.convertToSam%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3136,7 +3256,7 @@
                 "command": "aws.downloadLambda",
                 "title": "%AWS.command.downloadLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3147,7 +3267,7 @@
                 "command": "aws.lambda.openWorkspace",
                 "title": "%AWS.command.openLambdaWorkspace%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3177,7 +3297,7 @@
                 "command": "aws.quickDeployLambda",
                 "title": "%AWS.command.quickDeployLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -4283,6 +4403,16 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.smus.notebookscheduling.createjob",
+                "title": "Create Notebook Job",
+                "category": "Job"
+            },
+            {
+                "command": "aws.smus.notebookscheduling.viewjobs",
+                "title": "View Notebook Jobs",
+                "category": "Job"
             }
         ],
         "jsonValidation": [
@@ -4823,25 +4953,60 @@
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemakerunifiedstudio-catalog": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemakerunifiedstudio-spaces": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e2"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-sagemakerunifiedstudio-spaces-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e3"
+                }
+            },
+            "aws-sagemakerunifiedstudio-symbol-int": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e4"
+                }
+            },
+            "aws-sagemakerunifiedstudio-table": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e5"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e6"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e7"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e8"
                 }
             }
         },
