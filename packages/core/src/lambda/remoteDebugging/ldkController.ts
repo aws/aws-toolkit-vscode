@@ -6,23 +6,23 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import { Lambda } from 'aws-sdk'
-import { getRegionFromArn, isTunnelInfo, LdkClient } from './ldkClient'
+import type { Lambda } from 'aws-sdk'
+import { getRegionFromArn, LdkClient } from './ldkClient'
 import { getFamily, mapFamilyToDebugType } from '../models/samLambdaRuntime'
 import { findJavaPath } from '../../shared/utilities/pathFind'
 import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage, showMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import * as nls from 'vscode-nls'
-import { getRemoteDebugLayer } from './ldkLayers'
 import path from 'path'
 import { glob } from 'glob'
 import { Commands } from '../../shared/vscode/commands2'
+import { getLambdaSnapshot, persistLambdaSnapshot, type LambdaDebugger, type DebugConfig } from './lambdaDebugger'
+import { RemoteLambdaDebugger } from './remoteLambdaDebugger'
+import { LocalStackLambdaDebugger } from './localStackLambdaDebugger'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger()
-export const remoteDebugContextString = 'aws.lambda.remoteDebugContext'
-export const remoteDebugSnapshotString = 'aws.lambda.remoteDebugSnapshot'
 
 // Map debug types to their corresponding VS Code extension IDs
 const mapDebugTypeToExtensionId = new Map<string, string[]>([
@@ -32,26 +32,6 @@ const mapDebugTypeToExtensionId = new Map<string, string[]>([
 ])
 
 const mapExtensionToBackup = new Map<string, string>([['ms-vscode.js-debug', 'ms-vscode.js-debug-nightly']])
-
-export interface DebugConfig {
-    functionArn: string
-    functionName: string
-    port: number
-    localRoot: string
-    remoteRoot: string
-    skipFiles: string[]
-    shouldPublishVersion: boolean
-    lambdaRuntime?: string // Lambda runtime (e.g., nodejs18.x)
-    debuggerRuntime?: string // VS Code debugger runtime (e.g., node)
-    outFiles?: string[]
-    sourceMap?: boolean
-    justMyCode?: boolean
-    projectName?: string
-    otherDebugParams?: string
-    lambdaTimeout?: number
-    layerArn?: string
-    handlerFile?: string
-}
 
 // Helper function to create a human-readable diff message
 function createDiffMessage(
@@ -183,20 +163,6 @@ export async function activateRemoteDebugging(): Promise<void> {
         void vscode.window.showWarningMessage(`Error in activateRemoteDebugging: ${error}`)
         logger.error(`Error in activateRemoteDebugging:${error}`)
     }
-}
-
-// this should be called when the debug session is started
-async function persistLambdaSnapshot(config: Lambda.FunctionConfiguration | undefined): Promise<void> {
-    try {
-        await globals.globalState.update(remoteDebugSnapshotString, config)
-    } catch (error) {
-        // TODO raise toolkit error
-        logger.error(`Error persisting debug sessions:${error}`)
-    }
-}
-
-export function getLambdaSnapshot(): Lambda.FunctionConfiguration | undefined {
-    return globals.globalState.get<Lambda.FunctionConfiguration>(remoteDebugSnapshotString)
 }
 
 /**
@@ -409,9 +375,11 @@ export class RemoteDebugController {
     static #instance: RemoteDebugController
     isDebugging: boolean = false
     qualifier: string | undefined = undefined
+    debugger: LambdaDebugger | undefined = undefined
     private lastDebugStartTime: number = 0
     // private debugSession: DebugSession | undefined
     private debugSessionDisposables: Map<string, vscode.Disposable> = new Map()
+    private debugTypeSource: 'remoteDebug' | 'LocalStackDebug' = 'remoteDebug'
 
     public static get instance() {
         if (this.#instance !== undefined) {
@@ -442,8 +410,12 @@ export class RemoteDebugController {
         }
     }
 
-    public supportCodeDownload(runtime: string | undefined): boolean {
+    public supportCodeDownload(runtime: string | undefined, codeSha256: string | undefined = ''): boolean {
         if (!runtime) {
+            return false
+        }
+        // Incompatible with LocalStack hot-reloading
+        if (codeSha256?.startsWith('hot-reloading')) {
             return false
         }
         try {
@@ -463,22 +435,6 @@ export class RemoteDebugController {
         } catch {
             return false
         }
-    }
-
-    public getRemoteDebugLayer(
-        region: string | undefined,
-        architectures: Lambda.ArchitecturesList | undefined
-    ): string | undefined {
-        if (!region || !architectures) {
-            return undefined
-        }
-        if (architectures.includes('x86_64')) {
-            return getRemoteDebugLayer(region, 'x86_64')
-        }
-        if (architectures.includes('arm64')) {
-            return getRemoteDebugLayer(region, 'arm64')
-        }
-        return undefined
     }
 
     public async installDebugExtension(runtime: string | undefined): Promise<boolean | undefined> {
@@ -545,6 +501,20 @@ export class RemoteDebugController {
     }
 
     public async startDebugging(functionArn: string, runtime: string, debugConfig: DebugConfig): Promise<void> {
+        if (debugConfig.isLambdaRemote) {
+            this.debugTypeSource = 'remoteDebug'
+            this.debugger = new RemoteLambdaDebugger(debugConfig, {
+                getQualifier: () => {
+                    return this.qualifier
+                },
+                setQualifier: (qualifier) => {
+                    this.qualifier = qualifier
+                },
+            })
+        } else {
+            this.debugTypeSource = 'LocalStackDebug'
+            this.debugger = new LocalStackLambdaDebugger(debugConfig)
+        }
         if (this.isDebugging) {
             getLogger().error('Debug already in progress, remove debug setup to restart')
             return
@@ -558,7 +528,7 @@ export class RemoteDebugController {
             debugConfigForTelemetry.localRoot = undefined
 
             span.record({
-                source: 'remoteDebug',
+                source: this.debugTypeSource,
                 passive: false,
                 action: JSON.stringify(debugConfigForTelemetry),
             })
@@ -588,6 +558,9 @@ export class RemoteDebugController {
                         )
                     }
 
+                    // Ensure the remote connection is reachable before calling lambda.GetFunction in revertExistingConfig()
+                    await this.debugger?.checkHealth()
+
                     // Check if a snapshot already exists and revert if needed
                     // Use the revertExistingConfig function from ldkController
                     progress.report({ message: 'Checking if snapshot exists...' })
@@ -606,7 +579,6 @@ export class RemoteDebugController {
                         // let's preserve this config to a global variable at here
                         // we will use this config to revert the changes back to it once was, once confirm it's success, update the global to undefined
                         // if somehow the changes failed to revert, in init phase(activate remote debugging), we will detect this config and prompt user to revert the changes
-                        const ldkClient = LdkClient.instance
                         // get function config again in case anything changed
                         const functionConfig = await LdkClient.instance.getFunctionDetail(functionArn)
                         if (!functionConfig?.Runtime || !functionConfig?.FunctionArn) {
@@ -619,56 +591,14 @@ export class RemoteDebugController {
                             runtimeString: functionConfig.Runtime as any,
                         })
 
-                        // Create or reuse tunnel
-                        progress.report({ message: 'Creating secure tunnel...' })
-                        getLogger().info('Creating secure tunnel...')
-                        const tunnelInfo = await ldkClient.createOrReuseTunnel(region)
-                        if (!tunnelInfo) {
-                            throw new ToolkitError(`Empty tunnel info response, please retry:${tunnelInfo}`)
-                        }
-
-                        if (!isTunnelInfo(tunnelInfo)) {
-                            throw new ToolkitError(`Invalid tunnel info response:${tunnelInfo}`)
-                        }
-                        // start update lambda funcion, await in the end
-                        // Create debug deployment
-                        progress.report({ message: 'Configuring Lambda function for debugging...' })
-                        getLogger().info('Configuring Lambda function for debugging...')
-
-                        const layerArn =
-                            debugConfig.layerArn ?? this.getRemoteDebugLayer(region, functionConfig.Architectures)
-                        if (!layerArn) {
-                            throw new ToolkitError(`No Layer Arn is provided`)
-                        }
-                        // start this request and await in the end
-                        const debugDeployPromise = ldkClient.createDebugDeployment(
-                            functionConfig,
-                            tunnelInfo.destinationToken,
-                            debugConfig.lambdaTimeout ?? 900,
-                            debugConfig.shouldPublishVersion,
-                            layerArn,
-                            progress
-                        )
+                        await this.debugger?.setup(progress, functionConfig, region)
 
                         const vscodeDebugConfig = await getVscodeDebugConfig(functionConfig, debugConfig)
                         // show every field in debugConfig
                         // getLogger().info(`Debug configuration created successfully ${JSON.stringify(debugConfig)}`)
 
-                        // Start local proxy with timeout and better error handling
-                        progress.report({ message: 'Starting local proxy...' })
+                        await this.debugger?.waitForSetup(progress, functionConfig, region)
 
-                        const proxyStartTimeout = new Promise((_, reject) => {
-                            setTimeout(() => reject(new Error('Local proxy start timed out')), 30000)
-                        })
-
-                        const proxyStartAttempt = ldkClient.startProxy(region, tunnelInfo.sourceToken, debugConfig.port)
-
-                        const proxyStarted = await Promise.race([proxyStartAttempt, proxyStartTimeout])
-
-                        if (!proxyStarted) {
-                            throw new ToolkitError('Failed to start local proxy')
-                        }
-                        getLogger().info('Local proxy started successfully')
                         progress.report({ message: 'Starting debugger...' })
                         // Start debugging in a non-blocking way
                         void Promise.resolve(vscode.debug.startDebugging(undefined, vscodeDebugConfig)).then(
@@ -686,17 +616,7 @@ export class RemoteDebugController {
                             }
                         })
 
-                        // wait until lambda function update is completed
-                        progress.report({ message: 'Waiting for function update...' })
-                        const qualifier = await debugDeployPromise
-                        if (!qualifier || qualifier === 'Failed') {
-                            throw new ToolkitError('Failed to configure Lambda function for debugging')
-                        }
-                        // store the published version for debugging in version
-                        if (debugConfig.shouldPublishVersion) {
-                            // we already reverted
-                            this.qualifier = qualifier
-                        }
+                        await this.debugger?.waitForFunctionUpdates(progress)
 
                         // Store the disposable
                         this.debugSessionDisposables.set(functionConfig.FunctionArn, debugSessionEndDisposable)
@@ -708,7 +628,7 @@ export class RemoteDebugController {
                             await this.stopDebugging()
                         } catch (errStop) {
                             getLogger().error(
-                                'encountered following error when stoping debug for failed debug session:'
+                                'encountered following error when stopping debug for failed debug session:'
                             )
                             getLogger().error(errStop as Error)
                         }
@@ -730,7 +650,10 @@ export class RemoteDebugController {
                 return
             }
             // use sessionDuration to record debug duration
-            span.record({ sessionDuration: this.lastDebugStartTime === 0 ? 0 : Date.now() - this.lastDebugStartTime })
+            span.record({
+                sessionDuration: this.lastDebugStartTime === 0 ? 0 : Date.now() - this.lastDebugStartTime,
+                source: this.debugTypeSource,
+            })
             try {
                 await vscode.window.withProgress(
                     {
@@ -740,7 +663,6 @@ export class RemoteDebugController {
                     },
                     async (progress) => {
                         progress.report({ message: 'Stopping debugging...' })
-                        const ldkClient = LdkClient.instance
 
                         // First attempt to clean up resources from Lambda
                         const savedConfig = getLambdaSnapshot()
@@ -754,19 +676,7 @@ export class RemoteDebugController {
                             disposable.dispose()
                             this.debugSessionDisposables.delete(savedConfig.FunctionArn)
                         }
-                        getLogger().info(`Removing debug deployment for function: ${savedConfig.FunctionName}`)
-
-                        await vscode.commands.executeCommand('workbench.action.debug.stop')
-                        // Then stop the proxy (with more reliable error handling)
-                        getLogger().info('Stopping proxy during cleanup')
-                        await ldkClient.stopProxy()
-                        // Ensure our resources are properly cleaned up
-                        if (this.qualifier) {
-                            await ldkClient.deleteDebugVersion(savedConfig.FunctionArn, this.qualifier)
-                        }
-                        if (await ldkClient.removeDebugDeployment(savedConfig, true)) {
-                            await persistLambdaSnapshot(undefined)
-                        }
+                        await this.debugger?.cleanup(savedConfig)
 
                         progress.report({ message: `Debug session stopped` })
                     }
