@@ -26,7 +26,7 @@ export function isTunnelInfo(data: TunnelInfo): data is TunnelInfo {
     )
 }
 
-interface TunnelInfo {
+export interface TunnelInfo {
     tunnelID: string
     sourceToken: string
     destinationToken: string

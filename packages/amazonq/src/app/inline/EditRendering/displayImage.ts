@@ -24,7 +24,7 @@ export class EditDecorationManager {
     private currentImageDecoration: vscode.DecorationOptions | undefined
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
-    private rejectHandler: (() => void) | undefined
+    private rejectHandler: ((isDiscard: boolean) => void) | undefined
 
     constructor() {
         this.registerCommandHandlers()
@@ -131,7 +131,7 @@ export class EditDecorationManager {
         svgImage: vscode.Uri,
         startLine: number,
         onAccept: () => Promise<void>,
-        onReject: () => Promise<void>,
+        onReject: (isDiscard: boolean) => Promise<void>,
         originalCode: string,
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
@@ -185,9 +185,9 @@ export class EditDecorationManager {
         })
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', (isDiscard: boolean = false) => {
             if (this.rejectHandler) {
-                this.rejectHandler()
+                this.rejectHandler(isDiscard)
             }
         })
     }
@@ -318,7 +318,9 @@ export async function displaySvgDecoration(
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-        getLogger().info('Edit suggestion discarded due to active completion suggestion')
+        getLogger('nextEditPrediction').debug(
+            `Auto discarded  edit suggestion for active completion suggestion: ${item.insertText as string}`
+        )
         return
     }
 
@@ -345,6 +347,9 @@ export async function displaySvgDecoration(
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
+            getLogger('nextEditPrediction').debug(
+                `Auto rejected edit suggestion for invalid patch: ${item.insertText as string}}`
+            )
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
@@ -416,20 +421,31 @@ export async function displaySvgDecoration(
             //     )
             // }
         },
-        async () => {
+        async (isDiscard: boolean) => {
             // Handle reject
-            getLogger().info('Edit suggestion rejected')
+            if (isDiscard) {
+                getLogger().info('Edit suggestion discarded')
+            } else {
+                getLogger().info('Edit suggestion rejected')
+            }
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
             cursorChangeListener.dispose()
+            const suggestionState = isDiscard
+                ? {
+                      seen: false,
+                      accepted: false,
+                      discarded: true,
+                  }
+                : {
+                      seen: true,
+                      accepted: false,
+                      discarded: false,
+                  }
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
+                    [item.itemId]: suggestionState,
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,

@@ -238,6 +238,46 @@
             "name": "executedCount",
             "type": "int",
             "description": "The number of executed operations"
+        },
+        {
+            "name": "smusDomainId",
+            "type": "string",
+            "description": "SMUS domain identifier"
+        },
+        {
+            "name": "smusProjectId",
+            "type": "string",
+            "description": "SMUS project identifier"
+        },
+        {
+            "name": "smusSpaceKey",
+            "type": "string",
+            "description": "SMUS space composite key consisting of domainId and spaceName"
+        },
+        {
+            "name": "smusToolkitEnv",
+            "type": "string",
+            "description": "The environment user is running SMUS extension against"
+        },
+        {
+            "name": "smusDomainRegion",
+            "type": "string",
+            "description": "The SMUS domain region"
+        },
+        {
+            "name": "smusProjectRegion",
+            "type": "string",
+            "description": "The SMUS project region"
+        },
+        {
+            "name": "smusConnectionId",
+            "type": "string",
+            "description": "SMUS connection identifier"
+        },
+        {
+            "name": "smusConnectionType",
+            "type": "string",
+            "description": "SMUS connection type"
         }
     ],
     "metrics": [
@@ -1152,6 +1192,14 @@
             "description": "User click Convert a lambda function to SAM project"
         },
         {
+            "name": "auth_customEndpoint",
+            "description": "User used a custom endpoint"
+        },
+        {
+            "name": "auth_localstackEndpoint",
+            "description": "User used a LocalStack connection"
+        },
+        {
             "name": "lambda_remoteDebugStop",
             "description": "user stop remote debugging",
             "metadata": [
@@ -1254,6 +1302,201 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_login",
+            "description": "Emitted whenever a user signin to SMUS",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_signOut",
+            "description": "Emitted whenever a user signouts SMUS",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_accessProject",
+            "description": "Emitted whenever a user accesses a SMUS project",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderProjectChildrenNode",
+            "description": "Emitted whenever children node of project is rendered",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "smus_startSpace",
+            "description": "Emitted whenever a user starts a SMUS space",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_stopSpace",
+            "description": "Emitted whenever a user stop a SMUS space",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderS3Node",
+            "description": "Emitted whenever rendering a s3 node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderRedshiftNode",
+            "description": "Emitted whenever rendering a Redshift node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderLakehouseNode",
+            "description": "Emitted whenever rendering a Lakehouse node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
                     "required": false
                 }
             ]

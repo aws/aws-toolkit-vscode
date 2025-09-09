@@ -13,7 +13,12 @@ import { activateViewsShared, registerToolView } from '../../awsexplorer/activat
 import { setContext } from '../../shared/vscode/setContext'
 import { fs } from '../../shared/fs/fs'
 import { AppBuilderRootNode } from './explorer/nodes/rootNode'
-import { initWalkthroughProjectCommand, walkthroughContextString, getOrInstallCliWrapper } from './walkthrough'
+import {
+    initWalkthroughProjectCommand,
+    walkthroughContextString,
+    getOrInstallCliWrapper,
+    installLocalStackExtension,
+} from './walkthrough'
 import { getLogger } from '../../shared/logger/logger'
 import path from 'path'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
@@ -141,6 +146,9 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
         }),
         Commands.register('aws.toolkit.installDocker', async () => {
             await getOrInstallCliWrapper('docker', source)
+        }),
+        Commands.register('aws.toolkit.installLocalStack', async () => {
+            await installLocalStackExtension(source)
         }),
         Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
             await setWalkthrough('API')
