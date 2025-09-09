@@ -21,6 +21,14 @@ import { LambdaFunctionFileNode } from './lambdaFunctionFileNode'
 
 export const contextValueLambdaFunction = 'awsRegionFunctionNode'
 export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable'
+// Without "Convert to SAM application"
+export const contextValueLambdaFunctionDownloadOnly = 'awsRegionFunctionNodeDownloadableOnly'
+
+function isLambdaFunctionDownloadable(contextValue?: string): boolean {
+    return (
+        contextValue === contextValueLambdaFunctionImportable || contextValue === contextValueLambdaFunctionDownloadOnly
+    )
+}
 
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -32,7 +40,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     ) {
         super(
             `${configuration.FunctionArn}`,
-            contextValue === contextValueLambdaFunctionImportable
+            isLambdaFunctionDownloadable(contextValue)
                 ? vscode.TreeItemCollapsibleState.Collapsed
                 : vscode.TreeItemCollapsibleState.None
         )
@@ -72,7 +80,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        if (!(this.contextValue === contextValueLambdaFunctionImportable)) {
+        if (!isLambdaFunctionDownloadable(this.contextValue)) {
             return []
         }
 

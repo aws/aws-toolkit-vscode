@@ -1192,6 +1192,14 @@
             "description": "User click Convert a lambda function to SAM project"
         },
         {
+            "name": "auth_customEndpoint",
+            "description": "User used a custom endpoint"
+        },
+        {
+            "name": "auth_localstackEndpoint",
+            "description": "User used a LocalStack connection"
+        },
+        {
             "name": "lambda_remoteDebugStop",
             "description": "user stop remote debugging",
             "metadata": [
