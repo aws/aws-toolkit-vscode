@@ -743,7 +743,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
+            getLogger().error(`CodeTransformation: error = %O`, e)
             throw e
         }
     }
