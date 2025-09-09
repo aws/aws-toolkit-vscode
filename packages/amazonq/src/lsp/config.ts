@@ -35,7 +35,7 @@ export function isValidConfigSection(section: unknown): section is ConfigSection
 }
 
 export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
-    manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/qAgenticChatServer/0/manifest.json',
+    manifestUrl: 'https://github.com/aws/language-servers/releases/download/agentic-alpha/manifest.json', // This manifest.json will be pointing to main branch of language servers repo(https://github.com/aws/language-servers/releases/tag/agentic-alpha)
     supportedVersions: '1.*.*',
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
