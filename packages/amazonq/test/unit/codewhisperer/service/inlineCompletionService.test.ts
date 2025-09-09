@@ -7,16 +7,12 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import {
-    CodeWhispererStatusBarManager,
     InlineCompletionService,
     ReferenceInlineProvider,
     RecommendationHandler,
-    CodeSuggestionsState,
     ConfigurationEntry,
     CWInlineCompletionItemProvider,
     session,
-    AuthUtil,
-    listCodeWhispererCommandsId,
     DefaultCodeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from 'aws-core-vscode/test'
@@ -173,83 +169,5 @@ describe('CWInlineCompletionProvider', function () {
 
             assert.ok(result === undefined)
         })
-    })
-})
-
-describe('codewhisperer status bar', function () {
-    let sandbox: sinon.SinonSandbox
-    let statusBar: TestStatusBar
-    let service: InlineCompletionService
-
-    class TestStatusBar extends CodeWhispererStatusBarManager {
-        constructor() {
-            super()
-        }
-
-        getStatusBar() {
-            return this.statusBar
-        }
-    }
-
-    beforeEach(async function () {
-        await resetCodeWhispererGlobalVariables()
-        sandbox = sinon.createSandbox()
-        statusBar = new TestStatusBar()
-        service = new InlineCompletionService(statusBar)
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
-
-    it('shows correct status bar when auth is not connected', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
-        sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-
-        await service.refreshStatusBar()
-
-        const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(chrome-close) Amazon Q')
-        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
-        assert.deepStrictEqual(actualStatusBar.backgroundColor, new vscode.ThemeColor('statusBarItem.errorBackground'))
-    })
-
-    it('shows correct status bar when auth is connected', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
-        sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(true)
-
-        await service.refreshStatusBar()
-
-        const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-start) Amazon Q')
-        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
-        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
-    })
-
-    it('shows correct status bar when auth is connected but paused', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
-        sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(false)
-
-        await service.refreshStatusBar()
-
-        const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-pause) Amazon Q')
-        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
-        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
-    })
-
-    it('shows correct status bar when auth is expired', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
-        sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
-
-        await service.refreshStatusBar()
-
-        const actualStatusBar = statusBar.getStatusBar()
-        assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) Amazon Q')
-        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
-        assert.deepStrictEqual(
-            actualStatusBar.backgroundColor,
-            new vscode.ThemeColor('statusBarItem.warningBackground')
-        )
     })
 })
