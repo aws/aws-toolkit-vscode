@@ -12,6 +12,7 @@ import { CredentialsProviderManager } from '../providers/credentialsProviderMana
 export interface CachedCredentials {
     credentials: AWS.Credentials
     credentialsHashCode: string
+    endpointUrl?: string
 }
 
 /**
@@ -92,6 +93,7 @@ export class CredentialsStore {
         const credentials = {
             credentials: await credentialsProvider.getCredentials(),
             credentialsHashCode: credentialsProvider.getHashCode(),
+            endpointUrl: credentialsProvider.getEndpointUrl?.(),
         }
 
         this.credentialsCache[asString(credentialsId)] = credentials

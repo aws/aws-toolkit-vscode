@@ -51,12 +51,6 @@ function handleDevSettings(statusBarItem: vscode.StatusBarItem, devSettings: Dev
 function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSettings): void {
     const company = getIdeProperties().company
     const connections = getAllConnectionsInUse(Auth.instance)
-    const connectedTooltip = localize(
-        'AWS.credentials.statusbar.connected',
-        'Connected to {0} with "{1}" (click to change)',
-        getIdeProperties().company,
-        connections[0]?.label
-    )
     const disconnectedTooltip = localize(
         'AWS.credentials.statusbar.disconnected',
         'Click to connect to {0}',
@@ -69,7 +63,25 @@ function updateItem(statusBarItem: vscode.StatusBarItem, devSettings: DevSetting
         statusBarItem.text = company
         statusBarItem.tooltip = disconnectedTooltip
     } else if (connections.length === 1) {
-        statusBarItem.text = getText(connections[0].label)
+        // Get the endpoint URL if available
+        const endpointUrl = connections[0].endpointUrl
+        const connectedTooltip = endpointUrl
+            ? localize(
+                  'AWS.credentials.statusbar.connected.endpoint',
+                  'Connected to {0} with "{1}" ({2}) (click to change)',
+                  getIdeProperties().company,
+                  connections[0]?.label,
+                  endpointUrl
+              )
+            : localize(
+                  'AWS.credentials.statusbar.connected',
+                  'Connected to {0} with "{1}" (click to change)',
+                  getIdeProperties().company,
+                  connections[0]?.label
+              )
+
+        const displayText = endpointUrl ? `${connections[0].label} (custom endpoint)` : connections[0].label
+        statusBarItem.text = getText(displayText)
         statusBarItem.tooltip = connectedTooltip
     } else {
         const expired = connections.filter((c) => c.state !== 'valid')
