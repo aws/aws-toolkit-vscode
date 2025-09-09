@@ -137,6 +137,7 @@ describe('generateDeployedNode', () => {
             label: 'iam',
             getCredentials: sinon.stub(),
             state: 'valid',
+            endpointUrl: undefined,
         }
 
         const lambdaDeployedNodeInput = {
