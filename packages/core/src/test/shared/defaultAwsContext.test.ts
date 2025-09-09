@@ -83,11 +83,52 @@ describe('DefaultAwsContext', function () {
         })
     })
 
-    function makeSampleAwsContextCredentials(): AwsContextCredentials {
+    it('gets endpoint URL from credentials', async function () {
+        const testEndpointUrl = 'https://custom-endpoint.example.com'
+        const awsCredentials = makeSampleAwsContextCredentials(testEndpointUrl)
+
+        const testContext = new DefaultAwsContext()
+
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(testContext.getCredentialEndpointUrl(), testEndpointUrl)
+    })
+
+    it('returns undefined endpoint URL when not set in credentials', async function () {
+        const awsCredentials = makeSampleAwsContextCredentials()
+
+        const testContext = new DefaultAwsContext()
+
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(testContext.getCredentialEndpointUrl(), undefined)
+    })
+
+    it('returns undefined endpoint URL when no credentials are set', async function () {
+        const testContext = new DefaultAwsContext()
+
+        assert.strictEqual(testContext.getCredentialEndpointUrl(), undefined)
+    })
+
+    it('returns undefined endpoint URL after setting undefined credentials', async function () {
+        const testEndpointUrl = 'https://custom-endpoint.example.com'
+        const awsCredentials = makeSampleAwsContextCredentials(testEndpointUrl)
+
+        const testContext = new DefaultAwsContext()
+
+        // First set credentials with endpoint URL
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(testContext.getCredentialEndpointUrl(), testEndpointUrl)
+
+        // Then clear credentials
+        await testContext.setCredentials(undefined)
+        assert.strictEqual(testContext.getCredentialEndpointUrl(), undefined)
+    })
+
+    function makeSampleAwsContextCredentials(endpointUrl?: string): AwsContextCredentials {
         return {
             credentials: {} as any as AWS.Credentials,
             credentialsId: 'qwerty',
             accountId: testAccountIdValue,
+            endpointUrl,
         }
     }
 })

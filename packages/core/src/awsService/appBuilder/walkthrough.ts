@@ -16,7 +16,7 @@ import { ToolkitError } from '../../shared/errors'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { fs } from '../../shared/fs/fs'
 import path from 'path'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry, ToolId } from '../../shared/telemetry/telemetry'
 
 import { minSamCliVersionForAppBuilderSupport } from '../../shared/sam/cli/samCliValidator'
 import { SamCliInfoInvocation } from '../../shared/sam/cli/samCliInfo'
@@ -344,6 +344,37 @@ export async function getOrInstallCliWrapper(toolId: AwsClis, source: string) {
             await getOrInstallCli(toolId, true, true)
         } finally {
             telemetry.record({ source: source, toolId: toolId })
+        }
+    })
+}
+
+export async function installLocalStackExtension(source: string) {
+    await telemetry.appBuilder_installTool.run(async (span) => {
+        // TODO: Update `ToolId` accepted values: https://github.com/aws/aws-toolkit-common/blob/8c88537fae2ac7e6524fb2b29ae336c606850eeb/telemetry/definitions/commonDefinitions.json#L2215-L2221
+        // @ts-ignore
+        const toolId: ToolId = 'localstack'
+        span.record({ source, toolId })
+        const extensionId = 'localstack.localstack'
+        const extension = vscode.extensions.getExtension(extensionId)
+        if (extension) {
+            void vscode.window.showInformationMessage(
+                localize(
+                    'AWS.toolkit.lambda.walkthrough.localStackExtension.alreadyInstalled',
+                    'LocalStack extension is already installed'
+                )
+            )
+        } else {
+            try {
+                await vscode.commands.executeCommand('workbench.extensions.installExtension', extensionId)
+                void vscode.window.showInformationMessage(
+                    localize(
+                        'AWS.toolkit.lambda.walkthrough.localStackExtension.installSuccessful',
+                        'LocalStack extension has been installed'
+                    )
+                )
+            } catch (err) {
+                throw ToolkitError.chain(err, 'Failed to install LocalStack extension')
+            }
         }
     })
 }

@@ -215,7 +215,7 @@ export class Auth implements AuthService, ConnectionManager {
             const provider = await this.getCredentialsProvider(id, profile)
             await this.authenticate(id, () => this.createCachedCredentials(provider), shouldInvalidate)
 
-            return this.getIamConnection(id, profile)
+            return await this.getIamConnection(id, profile)
         }
     }
 
@@ -253,7 +253,8 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
-        const conn = profile.type === 'sso' ? this.getSsoConnection(id, profile) : this.getIamConnection(id, profile)
+        const conn =
+            profile.type === 'sso' ? this.getSsoConnection(id, profile) : await this.getIamConnection(id, profile)
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
@@ -705,7 +706,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             return this.getSsoConnection(id, profile)
         } else {
-            return this.getIamConnection(id, profile)
+            return await this.getIamConnection(id, profile)
         }
     }
 
@@ -805,10 +806,13 @@ export class Auth implements AuthService, ConnectionManager {
         )
     }
 
-    private getIamConnection(
+    private async getIamConnection(
         id: Connection['id'],
         profile: StoredProfile<IamProfile>
-    ): IamConnection & StatefulConnection {
+    ): Promise<IamConnection & StatefulConnection> {
+        // Get the provider to extract the endpoint URL
+        const provider = await this.getCredentialsProvider(id, profile)
+        const endpointUrl = provider.getEndpointUrl?.()
         return {
             id,
             type: 'iam',
@@ -816,6 +820,7 @@ export class Auth implements AuthService, ConnectionManager {
             label:
                 profile.metadata.label ?? (profile.type === 'iam' && profile.subtype === 'linked' ? profile.name : id),
             getCredentials: async () => this.getCredentials(id, await this.getCredentialsProvider(id, profile)),
+            endpointUrl,
         }
     }
 
@@ -832,6 +837,8 @@ export class Auth implements AuthService, ConnectionManager {
             label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
             getRegistration: () => provider.getClientRegistration(),
+            // SsoConnection is managed internally in the AWS Toolkit, so the endpointUrl can't be configured
+            endpointUrl: undefined,
         }
     }
 
@@ -856,8 +863,8 @@ export class Auth implements AuthService, ConnectionManager {
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
         globals.loginManager.store.invalidateCredentials(providerId)
-        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
-        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
+        const { credentials, endpointUrl } = await globals.loginManager.store.upsertCredentials(providerId, provider)
+        await globals.loginManager.validateCredentials(credentials, endpointUrl, provider.getDefaultRegion())
 
         return credentials
     }
