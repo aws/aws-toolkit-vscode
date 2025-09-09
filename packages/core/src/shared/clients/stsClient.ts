@@ -8,11 +8,13 @@ import { Credentials } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
+export type GetCallerIdentityResponse = STS.GetCallerIdentityResponse
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 export class DefaultStsClient {
     public constructor(
         public readonly regionCode: string,
-        private readonly credentials?: Credentials
+        private readonly credentials?: Credentials,
+        private readonly endpointUrl?: string
     ) {}
 
     public async assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
@@ -33,6 +35,7 @@ export class DefaultStsClient {
             {
                 credentials: this.credentials,
                 stsRegionalEndpoints: 'regional',
+                endpoint: this.endpointUrl,
             },
             this.regionCode
         )

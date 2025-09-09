@@ -207,3 +207,8 @@ export function getTempRegionLocation(region: string) {
 export function getTempLocation(functionName: string, region: string) {
     return path.join(getTempRegionLocation(region), functionName)
 }
+
+// LocalStack hot-reloading: https://docs.localstack.cloud/aws/tooling/lambda-tools/hot-reloading/
+export function isHotReloadingFunction(codeSha256: string | undefined): boolean {
+    return codeSha256?.startsWith('hot-reloading') ?? false
+}

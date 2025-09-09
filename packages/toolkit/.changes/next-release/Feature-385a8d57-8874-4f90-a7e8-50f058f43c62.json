@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile"
+}
