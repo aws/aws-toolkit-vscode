@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import {
     CloudWatchLogsClient,
+    type CloudWatchLogsClientConfig,
     StartLiveTailCommand,
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
@@ -53,12 +54,17 @@ export class LiveTailSession {
         this._logGroupArn = configuration.logGroupArn
         this.logStreamFilter = configuration.logStreamFilter
         this.logEventFilterPattern = configuration.logEventFilterPattern
+        const cwlClientProps: CloudWatchLogsClientConfig = {
+            credentials: configuration.awsCredentials,
+            region: configuration.region,
+            customUserAgent: getUserAgent(),
+        }
+        const endpointUrl = globals.awsContext.getCredentialEndpointUrl()
+        if (endpointUrl !== undefined) {
+            cwlClientProps.endpoint = endpointUrl
+        }
         this.liveTailClient = {
-            cwlClient: new CloudWatchLogsClient({
-                credentials: configuration.awsCredentials,
-                region: configuration.region,
-                customUserAgent: getUserAgent(),
-            }),
+            cwlClient: new CloudWatchLogsClient(cwlClientProps),
             abortController: new AbortController(),
         }
         this._maxLines = LiveTailSession.settings.get('limit', 10000)
