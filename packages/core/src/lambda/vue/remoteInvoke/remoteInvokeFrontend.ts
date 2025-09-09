@@ -9,7 +9,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
+import type { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
 
 const client = WebviewClientFactory.create<RemoteInvokeWebview>()
 const defaultInitialData = {
@@ -25,6 +25,7 @@ const defaultInitialData = {
     supportCodeDownload: true,
     runtimeSupportsRemoteDebug: true,
     remoteDebugLayer: '',
+    isLambdaRemote: true,
 }
 
 export default defineComponent({
@@ -32,7 +33,7 @@ export default defineComponent({
         return {
             initialData: { ...defaultInitialData },
             debugConfig: {
-                debugPort: 9229,
+                debugPort: undefined,
                 localRootPath: '',
                 remoteRootPath: '/var/task',
                 shouldPublishVersion: true,
@@ -58,6 +59,7 @@ export default defineComponent({
                 isCollapsed: true,
                 showNameInput: false,
                 payload: 'sampleEvents',
+                extraRegionInfo: '',
             },
             payloadData: {
                 selectedSampleRequest: '',
@@ -173,6 +175,9 @@ export default defineComponent({
         // Sync state from workspace storage
         async syncStateFromWorkspace() {
             try {
+                // Detect Lambda remote debugging connection
+                this.uiState.extraRegionInfo = this.initialData.isLambdaRemote ? '' : '(LocalStack running)'
+
                 // Update debugging state
                 this.debugState.isDebugging = await client.isWebViewDebugging()
                 this.debugConfig.localRootPath = await client.getLocalPath()
@@ -295,11 +300,13 @@ export default defineComponent({
                     return
                 }
 
+                const defaultPort = this.initialData.isLambdaRemote ? 9229 : undefined
+
                 if (!this.debugState.isDebugging) {
                     this.debugState.isDebugging = await client.startDebugging({
                         functionArn: this.initialData.FunctionArn,
                         functionName: this.initialData.FunctionName,
-                        port: this.debugConfig.debugPort ?? 9229,
+                        port: this.debugConfig.debugPort ?? defaultPort,
                         sourceMap: this.runtimeSettings.sourceMapEnabled,
                         localRoot: this.debugConfig.localRootPath,
                         shouldPublishVersion: this.debugConfig.shouldPublishVersion,
@@ -315,6 +322,7 @@ export default defineComponent({
                         layerArn: this.initialData.remoteDebugLayer,
                         lambdaTimeout: this.debugConfig.lambdaTimeout ?? 900,
                         outFiles: this.runtimeSettings.outFiles?.split(','),
+                        isLambdaRemote: this.initialData.isLambdaRemote ?? true,
                     })
                     if (!this.debugState.isDebugging) {
                         // user cancel or failed to start debugging
@@ -425,6 +433,14 @@ export default defineComponent({
                     this.initialData.FunctionArn,
                     this.initialData.FunctionRegion
                 )
+            }
+        },
+        onDebugPortChange(event: Event) {
+            const value = (event.target as HTMLInputElement).value
+            if (value === '') {
+                this.debugConfig.debugPort = undefined
+            } else {
+                this.debugConfig.debugPort = Number(value)
             }
         },
     },
