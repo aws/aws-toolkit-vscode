@@ -21,7 +21,10 @@
         </div>
         <div class="form-row">
             <label>Region</label>
-            <info-wrap>{{ initialData.FunctionRegion }}</info-wrap>
+            <info-wrap
+                >{{ initialData.FunctionRegion }}
+                <b v-if="uiState.extraRegionInfo">{{ uiState.extraRegionInfo }}</b></info-wrap
+            >
         </div>
         <div class="form-row">
             <label>Runtime</label>
@@ -147,7 +150,7 @@
                             <input
                                 type="text"
                                 v-model="debugConfig.remoteRootPath"
-                                placeholder="default to /var/task, the directory of your deployed lambda code"
+                                placeholder="Default to /var/task, the directory of your deployed lambda code"
                                 title="The path to the code on the remote Lambda function"
                             />
                         </div>
@@ -162,15 +165,24 @@
                             <input
                                 type="number"
                                 v-model="debugConfig.debugPort"
-                                placeholder="default to 9229, the debug port that will be used for remote debugging"
-                                title="The network port used for the debugger connection (default to 9229)"
+                                @input="onDebugPortChange"
+                                :placeholder="
+                                    initialData.isLambdaRemote
+                                        ? 'Default to 9229, the debug port that will be used for remote debugging'
+                                        : 'Default to a random debug port'
+                                "
+                                :title="
+                                    initialData.isLambdaRemote
+                                        ? 'The network port used for the debugger connection (default to 9229)'
+                                        : 'The network port used for the debugger connection (default to a random port)'
+                                "
                                 :class="{ 'input-error': debugPortError !== '' }"
                             />
                             <div v-if="debugPortError" class="error-message">{{ debugPortError }}</div>
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div v-if="initialData.isLambdaRemote" class="form-row">
                         <label for="shouldPublishVersionCheckbox">Publish version</label>
                         <div style="align-items: center">
                             <input
@@ -197,28 +209,28 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div v-if="initialData.isLambdaRemote" class="form-row">
                         <label>Timeout override</label>
                         <div class="form-double-row">
                             <input
                                 type="number"
                                 v-model="debugConfig.lambdaTimeout"
-                                placeholder="default to 900 (seconds), the time you can debug before lambda timeout, "
-                                title="specify timeout you want for remote debugging"
+                                placeholder="Default to 900 (seconds), the time you can debug before lambda timeout, "
+                                title="Specify timeout you want for remote debugging"
                                 :class="{ 'input-error': lambdaTimeoutError !== '' }"
                             />
                             <div v-if="lambdaTimeoutError" class="error-message">{{ lambdaTimeoutError }}</div>
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div v-if="initialData.isLambdaRemote" class="form-row">
                         <label>Layer override</label>
                         <div class="form-double-row">
                             <input
                                 type="text"
                                 v-model="initialData.remoteDebugLayer"
-                                placeholder="specify debug layer you want for remote debugging"
-                                title="specify debug layer you want for remote debugging"
+                                placeholder="Specify debug layer you want for remote debugging"
+                                title="Specify debug layer you want for remote debugging"
                                 :class="{ 'input-error': lambdaLayerError !== '' }"
                             />
                             <div v-if="lambdaLayerError" class="error-message">{{ lambdaLayerError }}</div>
@@ -244,7 +256,7 @@
                         <input
                             type="text"
                             v-model="runtimeSettings.skipFiles"
-                            placeholder="default to /var/runtime/node_modules/**/*.js,<node_internals>/**/*.js"
+                            placeholder="Default to /var/runtime/node_modules/**/*.js,<node_internals>/**/*.js"
                             title="The files to skip debugging"
                         />
                     </div>
@@ -280,7 +292,7 @@
                             type="text"
                             v-model="runtimeSettings.projectName"
                             placeholder="YourJavaProjectName"
-                            title="The name of the Java project for debuging"
+                            title="The name of the Java project for debugging"
                         />
                     </div>
                 </div>
@@ -317,7 +329,7 @@
                                 />
                                 <label class="label-selector" for="localFile"> Local file</label><br />
                             </div>
-                            <div class="formfield">
+                            <div v-if="initialData.isLambdaRemote" class="formfield">
                                 <input
                                     class="radio-selector"
                                     type="radio"
