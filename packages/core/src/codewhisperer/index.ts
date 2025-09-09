@@ -36,7 +36,7 @@ export {
     codeWhispererClient,
 } from './client/codewhisperer'
 export { listCodeWhispererCommands, listCodeWhispererCommandsId } from './ui/statusBarMenu'
-export { CodeWhispererStatusBar, InlineCompletionService } from './service/inlineCompletionService'
+export { InlineCompletionService } from './service/inlineCompletionService'
 export { refreshStatusBar, CodeWhispererStatusBarManager } from './service/statusBar'
 export { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 export { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import {
-    CodeWhispererStatusBar,
+    CodeWhispererStatusBarManager,
     InlineCompletionService,
     ReferenceInlineProvider,
     RecommendationHandler,
@@ -181,7 +181,7 @@ describe('codewhisperer status bar', function () {
     let statusBar: TestStatusBar
     let service: InlineCompletionService
 
-    class TestStatusBar extends CodeWhispererStatusBar {
+    class TestStatusBar extends CodeWhispererStatusBarManager {
         constructor() {
             super()
         }
