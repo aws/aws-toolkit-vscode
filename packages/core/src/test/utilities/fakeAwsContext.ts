@@ -57,6 +57,10 @@ export class FakeAwsContext implements AwsContext {
     public getCredentialDefaultRegion(): string {
         return this.awsContextCredentials?.defaultRegion ?? defaultRegion
     }
+
+    public getCredentialEndpointUrl(): string | undefined {
+        return this.awsContextCredentials?.endpointUrl
+    }
 }
 
 export function makeFakeAwsContextWithPlaceholderIds(credentials: AWS.Credentials): FakeAwsContext {

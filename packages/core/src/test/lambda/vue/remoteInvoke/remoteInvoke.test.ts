@@ -26,7 +26,7 @@ describe('RemoteInvokeWebview', function () {
         mockData = {
             FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
         }
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, mockData)
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
     })
     describe('Invoke Remote Lambda Function with Payload', () => {
         it('should invoke with a simple payload', async function () {
