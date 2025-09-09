@@ -487,10 +487,13 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         const state = auth.getConnectionState(conn)
         // Only allow SSO connections to be deleted
         const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
+        // Get endpoint URL if available
+        const connLabel = conn.endpointUrl ? `${conn.label} (${conn.endpointUrl})` : conn.label
         if (state === 'valid') {
+            const label = codicon`${getConnectionIcon(conn)} ${connLabel}`
             return {
                 data: conn,
-                label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
+                label: label,
                 description: await getConnectionDescription(conn),
                 buttons: [...deleteButton],
             }
@@ -509,7 +512,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
             detail: getDetail(),
             data: conn,
             invalidSelection: state !== 'authenticating',
-            label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            label: codicon`${getIcon('vscode-error')} ${connLabel}`,
             buttons: [...deleteButton],
             description:
                 state === 'authenticating'
@@ -607,7 +610,14 @@ export class AuthNode implements TreeNode<Auth> {
         const conn = this.resource.activeConnection
         const itemLabel =
             conn?.label !== undefined
-                ? localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
+                ? conn?.endpointUrl !== undefined
+                    ? localize(
+                          'aws.auth.node.connectedWithEndpoint',
+                          `Connected with {0} ({1})`,
+                          conn.label,
+                          conn?.endpointUrl
+                      )
+                    : localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
                 : localize('aws.auth.node.selectConnection', 'Select a connection...')
 
         const item = new vscode.TreeItem(itemLabel)
@@ -879,4 +889,13 @@ export async function getAuthType() {
         authType = 'awsId'
     }
     return authType
+}
+
+export const localStackConnectionHeader = 'x-localstack'
+export const localStackConnectionString = 'localstack'
+
+export function isLocalStackConnection(): boolean {
+    return (
+        globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
+    )
 }
