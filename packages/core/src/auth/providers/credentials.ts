@@ -112,6 +112,10 @@ export interface CredentialsProvider {
      */
     getTelemetryType(): CredentialType
     getDefaultRegion(): string | undefined
+    /**
+     * Gets the endpoint URL configured for this profile, if any.
+     */
+    getEndpointUrl?(): string | undefined
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
     /**
