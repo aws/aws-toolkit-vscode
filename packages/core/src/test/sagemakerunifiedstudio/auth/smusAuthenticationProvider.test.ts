@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 
 // Mock the setContext function BEFORE importing modules that use it
 const setContextModule = require('../../../shared/vscode/setContext')
-const setContextStubGlobal = sinon.stub(setContextModule, 'setContext').resolves()
 
 import { SmusAuthenticationProvider } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { SmusConnection } from '../../../sagemakerunifiedstudio/auth/model'
@@ -27,6 +26,7 @@ describe('SmusAuthenticationProvider', function () {
     let getSsoInstanceInfoStub: sinon.SinonStub
     let isInSmusSpaceEnvironmentStub: sinon.SinonStub
     let executeCommandStub: sinon.SinonStub
+    let setContextStubGlobal: sinon.SinonStub
     let mockSecondaryAuthState: {
         activeConnection: SmusConnection | undefined
         hasSavedConnection: boolean
@@ -57,6 +57,9 @@ describe('SmusAuthenticationProvider', function () {
     }
 
     beforeEach(function () {
+        // Create the setContext stub
+        setContextStubGlobal = sinon.stub(setContextModule, 'setContext').resolves()
+
         mockAuth = {
             createConnection: sinon.stub().resolves(mockSmusConnection),
             listConnections: sinon.stub().resolves([]),
