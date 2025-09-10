@@ -61,4 +61,9 @@ export class EnvVarsCredentialsProvider implements CredentialsProvider {
         }
         return this.credentials
     }
+
+    public getEndpointUrl(): string | undefined {
+        const env = process.env as EnvironmentVariables
+        return env.AWS_ENDPOINT_URL?.toString()
+    }
 }

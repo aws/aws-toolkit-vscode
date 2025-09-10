@@ -743,7 +743,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
+            getLogger().error(`CodeTransformation: error = %O`, e)
             throw e
         }
     }
@@ -827,11 +827,11 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
     getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
     const diffContents = await fs.readFileText(clientInstructionsPath)
     if (diffContents.trim()) {
-        const diffModel = new DiffModel()
-        diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
         // show user the diff.patch
         const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
         await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+        const diffModel = new DiffModel()
+        diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
     } else {
         // still need to set the project copy so that we can use it below
         transformByQState.setProjectCopyFilePath(path.join(destinationPath, 'sources'))

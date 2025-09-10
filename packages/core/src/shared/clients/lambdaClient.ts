@@ -14,6 +14,7 @@ import { LambdaClient as LambdaSdkClient, GetFunctionCommand, GetFunctionCommand
 import { CancellationError } from '../utilities/timeoutUtils'
 import { fromSSO } from '@aws-sdk/credential-provider-sso'
 import { getIAMConnection } from '../../auth/utils'
+import { WaiterConfiguration } from 'aws-sdk/lib/service'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
 
@@ -274,6 +275,21 @@ export class DefaultLambdaClient {
                 'The operation cannot be performed at this time. An update is in progress for resource:'
             )
         )
+    }
+
+    public async waitForActive(functionName: string, waiter?: WaiterConfiguration): Promise<void> {
+        const sdkClient = await this.createSdkClient()
+
+        await sdkClient
+            .waitFor('functionActive', {
+                FunctionName: functionName,
+                $waiter: waiter ?? {
+                    delay: 1,
+                    // In LocalStack, it requires 2 MBit/s connection to download ~150 MB Lambda image in 600 seconds
+                    maxAttempts: 600,
+                },
+            })
+            .promise()
     }
 
     private async createSdkClient(): Promise<Lambda> {

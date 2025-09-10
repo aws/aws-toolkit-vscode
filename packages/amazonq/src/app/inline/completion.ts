@@ -300,12 +300,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             options: JSON.stringify(getAllRecommendationsOptions),
         })
 
-        // prevent concurrent API calls and write to shared state variables
-        if (vsCodeState.isRecommendationsActive) {
-            getLogger().info('Recommendations already active, returning empty')
-            return []
-        }
-
         if (vsCodeState.isCodeWhispererEditing) {
             getLogger().info('Q is editing, returning empty')
             return []
@@ -391,6 +385,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
+                // Do not make auto trigger if user rejects a suggestion
+                // by typing characters that does not match
+                return []
             }
 
             // tell the tutorial that completions has been triggered
