@@ -138,10 +138,16 @@ export const runningSecurityScan = 'Reviewing project for code issues...'
 
 export const runningFileScan = 'Reviewing current file for code issues...'
 
+export const noSuggestions = 'No suggestions from Amazon Q'
+
 export const noInlineSuggestionsMsg = 'No suggestions from Amazon Q'
 
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 
+/**
+ * the interval of the background thread invocation, which is triggered by the timer
+ */
+export const defaultCheckPeriodMillis = 1000 * 60 * 5
 /**
  * Key bindings JSON file path
  */
