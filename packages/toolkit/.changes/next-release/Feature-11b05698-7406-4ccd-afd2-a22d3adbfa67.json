@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE"
-}
