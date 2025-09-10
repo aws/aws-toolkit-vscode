@@ -5,6 +5,7 @@
 
 import vscode from 'vscode'
 import {
+    acceptSuggestion,
     AuthUtil,
     CodeSuggestionsState,
     CodeWhispererCodeCoverageTracker,
@@ -61,6 +62,7 @@ export async function activate(languageClient: LanguageClient) {
          * Automated trigger
          */
         globals.context.subscriptions.push(
+            acceptSuggestion.register(globals.context),
             vscode.window.onDidChangeActiveTextEditor(async (editor) => {
                 await RecommendationHandler.instance.onEditorChange()
             }),
