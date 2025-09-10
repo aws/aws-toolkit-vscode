@@ -15,7 +15,6 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { ExtContext } from '../../shared/extensions'
 import { onAcceptance } from './onAcceptance'
 import * as codewhispererClient from '../client/codewhisperer'
 import {
@@ -36,7 +35,7 @@ import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 export const acceptSuggestion = Commands.declare(
     'aws.amazonq.accept',
-    (context: ExtContext) =>
+    (context: vscode.ExtensionContext) =>
         async (
             range: vscode.Range,
             effectiveRange: vscode.Range,
