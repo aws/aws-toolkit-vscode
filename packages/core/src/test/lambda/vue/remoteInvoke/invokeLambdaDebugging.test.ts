@@ -8,7 +8,8 @@ import { RemoteInvokeWebview, InitialData } from '../../../../lambda/vue/remoteI
 import { LambdaClient, DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import * as vscode from 'vscode'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { RemoteDebugController, DebugConfig } from '../../../../lambda/remoteDebugging/ldkController'
+import { RemoteDebugController } from '../../../../lambda/remoteDebugging/ldkController'
+import type { DebugConfig } from '../../../../lambda/remoteDebugging/lambdaDebugger'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import * as downloadLambda from '../../../../lambda/commands/downloadLambda'
@@ -62,7 +63,7 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             regionSupportsRemoteDebug: true,
         } as InitialData
 
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, data)
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, data)
 
         // Mock RemoteDebugController
         mockDebugController = createStubInstance(RemoteDebugController)
@@ -184,7 +185,7 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         })
 
         it('should return false when LambdaFunctionNode is undefined', async () => {
-            remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, {
+            remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, {
                 ...data,
                 LambdaFunctionNode: undefined,
             })
@@ -485,11 +486,14 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
                 functionArn: data.FunctionArn,
                 functionName: data.FunctionName,
             })
-
+            async function mockRun<T>(fn: (span: any) => T): Promise<T> {
+                const span = { record: sandbox.stub() }
+                return fn(span)
+            }
             // Mock telemetry to avoid issues
             sandbox.stub(require('../../../../shared/telemetry/telemetry'), 'telemetry').value({
                 lambda_invokeRemote: {
-                    emit: sandbox.stub(),
+                    run: mockRun,
                 },
             })
         })

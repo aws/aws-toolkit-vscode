@@ -547,7 +547,7 @@ export const noChangesMadeMessage = "I didn't make any changes for this transfor
 
 export const noOngoingJobMessage = 'No ongoing job.'
 
-export const nothingToShowMessage = 'Nothing to show'
+export const noJobHistoryMessage = 'No job history'
 
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
@@ -582,8 +582,8 @@ export const invalidMetadataFileUnsupportedSourceDB =
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
-export const invalidCustomVersionsFileMessage =
-    "I wasn't able to parse the dependency upgrade file. Check that it's configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file)."
+export const invalidCustomVersionsFileMessage = (missingKey: string) =>
+    `The dependency upgrade file provided is missing required field \`${missingKey}\`. Check that it is configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).`
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
@@ -941,13 +941,3 @@ export const displayFindingsSuffix = '_displayFindings'
 
 export const displayFindingsDetectorName = 'DisplayFindings'
 export const findingsSuffix = '_codeReviewFindings'
-
-export interface HistoryObject {
-    startTime: string
-    projectName: string
-    status: string
-    duration: string
-    diffPath: string
-    summaryPath: string
-    jobId: string
-}

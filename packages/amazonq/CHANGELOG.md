@@ -1,3 +1,26 @@
+## 1.93.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 1.92.0 2025-08-28
+
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+- **Feature** Enabling dynamic model fetching capabilities in Amazon Q chat
+- **Feature** Amazon Q: Support for configuring and utilizing remote MCP servers.
+
+## 1.91.0 2025-08-22
+
+- **Bug Fix** Enable inline completion in Jupyter Notebook
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+
+## 1.90.0 2025-08-15
+
+- Miscellaneous non-user-facing changes
+
+## 1.89.0 2025-08-13
+
+- Miscellaneous non-user-facing changes
+
 ## 1.88.0 2025-08-06
 
 - **Feature** Amazon Q Chat provides error explanations and fixes when hovering or right-clicking on error indicators and messages

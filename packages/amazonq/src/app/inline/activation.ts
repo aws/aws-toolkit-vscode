@@ -9,7 +9,6 @@ import {
     CodeWhispererConstants,
     isInlineCompletionEnabled,
     runtimeLanguageContext,
-    TelemetryHelper,
     UserWrittenCodeTracker,
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
@@ -52,11 +51,6 @@ export async function activate() {
                     return
                 }
 
-                if (vsCodeState.lastUserModificationTime) {
-                    TelemetryHelper.instance.setTimeSinceLastModification(
-                        performance.now() - vsCodeState.lastUserModificationTime
-                    )
-                }
                 vsCodeState.lastUserModificationTime = performance.now()
                 /**
                  * Important:  Doing this sleep(10) is to make sure

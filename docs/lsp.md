@@ -77,26 +77,60 @@ If you want to connect a local version of language-server-runtimes to aws-toolki
     /toolkit
     /core
     /amazonq
+    /language-servers
     /language-server-runtimes
     ```
 
 2. Inside of the language-server-runtimes project run:
+
     ```
     npm install
     npm run compile
     cd runtimes
     npm run prepub
     cd out
+    ```
+
+    If you get an error running `npm run prepub`, you can instead run `npm run prepub:copyFiles` to skip cleaning and testing.
+
+3. Choose one of the following approaches:
+
+### Option A: Using npm pack (Recommended)
+
+3a. Create a package file:
+
+    npm pack
+
+You will see a file created like this: `aws-language-server-runtimes-0.*.*.tgz`
+
+4a. Inside of language-servers, find the package where you need the change.
+
+For example, if you would like the change in `language-servers/app/aws-lsp-codewhisperer-runtimes`, you would run:
+
+    cd language-servers/app/aws-lsp-codewhisperer-runtimes
+
+    npm install ../../../language-server-runtimes/runtimes/out/aws-language-server-runtimes-0.*.*.tgz
+
+    npm run compile
+
+5a. If you need the change in aws-toolkit-vscode run:
+
+    cd aws-toolkit-vscode
+
+    npm install ../language-server-runtimes/runtimes/out/aws-language-server-runtimes-0.*.*.tgz
+
+### Option B: Using npm link (Alternative)
+
+3b. Create npm links:
+
     npm link
     cd ../../types
     npm link
-    ```
-    If you get an error running `npm run prepub`, you can instead run `npm run prepub:copyFiles` to skip cleaning and testing.
-3. Inside of aws-toolkit-vscode run:
-    ```
+
+4b. Inside of aws-toolkit-vscode run:
+
     npm install
     npm link @aws/language-server-runtimes @aws/language-server-runtimes-types
-    ```
 
 ## Amazon Q Inline Activation
 

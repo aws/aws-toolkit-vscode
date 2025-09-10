@@ -22,6 +22,7 @@ import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
+import { copyArtifacts } from './transformFileHandler'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -164,6 +165,8 @@ export class DiffModel {
             getLogger().error(`CodeTransformation: diff.patch file is empty`)
             throw new Error(CodeWhispererConstants.noChangesMadeMessage)
         }
+
+        getLogger().info(`CodeTransformation: parsing patch file at ${pathToDiff}`)
 
         let changedFiles = parsePatch(diffContents)
         // exclude dependency_upgrade.yml from patch application
@@ -434,7 +437,6 @@ export class ProposedTransformationExplorer {
                 zip.extractAllTo(pathContainingArchive)
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
                 singlePatchFile = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, files[0])
-                fs.copyFileSync(singlePatchFile, path.join(transformByQState.getJobHistoryPath(), 'diff.patch')) // store diff patch locally
                 patchFiles.push(singlePatchFile)
                 diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath())
 
@@ -443,24 +445,8 @@ export class ProposedTransformationExplorer {
                 transformByQState.setSummaryFilePath(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
-                // store summary and build log locally for history
-                if (!fs.existsSync(path.join(transformByQState.getJobHistoryPath(), 'summary'))) {
-                    fs.mkdirSync(path.join(transformByQState.getJobHistoryPath(), 'summary'))
-                }
-                fs.copyFileSync(
-                    transformByQState.getSummaryFilePath(),
-                    path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
-                )
-                if (
-                    fs.existsSync(
-                        path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log')
-                    )
-                ) {
-                    fs.copyFileSync(
-                        path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log'),
-                        path.join(transformByQState.getJobHistoryPath(), 'summary', 'buildCommandOutput.log')
-                    )
-                }
+
+                await copyArtifacts(pathContainingArchive, transformByQState.getJobHistoryPath())
 
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
