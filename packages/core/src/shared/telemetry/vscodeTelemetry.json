@@ -1324,33 +1324,33 @@
             ]
         },
         {
-          "name": "amazonq_autoDebugCommand",
-              "description": "Tracks usage of Amazon Q auto debug commands (fixWithQ, fixAllWithQ, explainProblem)",
-              "metadata": [
-                  {
-                      "type": "amazonqAutoDebugCommandType",
-                      "required": true
-                  },
-                  {
-                      "type": "amazonqAutoDebugAction",
-                      "required": true
-                  },
-                  {
-                      "type": "amazonqAutoDebugProblemCount",
-                      "required": false
-                  },
-                  {
-                      "type": "result"
-                  },
-                  {
-                      "type": "reason",
-                      "required": false
-                  },
-                  {
-                      "type": "reasonDesc",
+            "name": "amazonq_autoDebugCommand",
+            "description": "Tracks usage of Amazon Q auto debug commands (fixWithQ, fixAllWithQ, explainProblem)",
+            "metadata": [
+                {
+                    "type": "amazonqAutoDebugCommandType",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugAction",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugProblemCount",
                     "required": false
-                  }
-                ]
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "reasonDesc",
+                    "required": false
+                }
+            ]
         },
         {
             "name": "smus_login",
