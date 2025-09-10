@@ -335,7 +335,7 @@ export class RecommendationHandler {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
                 session.requestIdList.push(requestId)
             }
-            getLogger('nextEditPrediction').debug(`codeWhisper request ${requestId}`)
+            getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
                 UserWrittenCodeTracker.instance.onQFeatureInvoked()
