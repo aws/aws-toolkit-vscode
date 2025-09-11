@@ -1,3 +1,7 @@
+## 1.94.0 2025-09-11
+
+- Miscellaneous non-user-facing changes
+
 ## 1.93.0 2025-09-05
 
 - Miscellaneous non-user-facing changes
