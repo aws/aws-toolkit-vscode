@@ -145,8 +145,6 @@
     "AWS.command.amazonq.optimizeCode": "Optimize",
     "AWS.command.amazonq.sendToPrompt": "Send to prompt",
     "AWS.command.amazonq.generateUnitTests": "Generate Tests",
-    "AWS.command.amazonq.security.scan": "Run Project Review",
-    "AWS.command.amazonq.security.fileScan": "Run File Review",
     "AWS.command.amazonq.generateFix": "Fix",
     "AWS.command.amazonq.viewDetails": "View Details",
     "AWS.command.amazonq.explainIssue": "Explain",

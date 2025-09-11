@@ -10,7 +10,6 @@ import { CodeScanIssue, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { getLogger } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { codeReviewInChat } from '../../app/amazonqScan/models/constants'
 import { telemetry, AmazonqCodeReviewTool } from 'aws-core-vscode/telemetry'
 
 /**
@@ -68,11 +67,6 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerShellCommandShortCut('aws.amazonq.rejectCmdExecution', 'reject-shell-command', provider),
         registerShellCommandShortCut('aws.amazonq.stopCmdExecution', 'stop-shell-command', provider)
     )
-    if (codeReviewInChat) {
-        globals.context.subscriptions.push(
-            registerGenericCommand('aws.amazonq.security.scan-statusbar', 'Review', provider)
-        )
-    }
 }
 
 async function handleIssueCommand(

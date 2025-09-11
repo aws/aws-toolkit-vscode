@@ -4,13 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    AmazonQAppInitContext,
-    MessagePublisher,
-    MessageListener,
-    focusAmazonQPanel,
-    DefaultAmazonQAppInitContext,
-} from 'aws-core-vscode/amazonq'
+import { AmazonQAppInitContext, MessageListener } from 'aws-core-vscode/amazonq'
 import { AuthUtil, codeScanState, onDemandFileScanState } from 'aws-core-vscode/codewhisperer'
 import { ScanChatControllerEventEmitters, ChatSessionManager } from 'aws-core-vscode/amazonqScan'
 import { ScanController } from './chat/controller/controller'
@@ -18,8 +12,6 @@ import { AppToWebViewMessageDispatcher } from './chat/views/connector/connector'
 import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
-import { Commands, placeholder } from 'aws-core-vscode/shared'
-import { codeReviewInChat } from './models/constants'
 
 export function init(appContext: AmazonQAppInitContext) {
     const scanChatControllerEventEmitters: ScanChatControllerEventEmitters = {
@@ -50,8 +42,6 @@ export function init(appContext: AmazonQAppInitContext) {
         webViewMessageListener: new MessageListener<any>(scanChatUIInputEventEmitter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(scanChatUIInputEventEmitter), 'review')
-
     const debouncedEvent = debounce(async () => {
         const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionID = ''
@@ -74,20 +64,6 @@ export function init(appContext: AmazonQAppInitContext) {
     AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
         return debouncedEvent()
     })
-
-    if (!codeReviewInChat) {
-        Commands.register('aws.amazonq.security.scan-statusbar', async () => {
-            if (AuthUtil.instance.isConnectionExpired()) {
-                await AuthUtil.instance.notifyReauthenticate()
-            }
-            return focusAmazonQPanel.execute(placeholder, 'amazonq.security.scan').then(() => {
-                DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
-                    sender: 'amazonqCore',
-                    command: 'review',
-                })
-            })
-        })
-    }
 
     codeScanState.setChatControllers(scanChatControllerEventEmitters)
     onDemandFileScanState.setChatControllers(scanChatControllerEventEmitters)

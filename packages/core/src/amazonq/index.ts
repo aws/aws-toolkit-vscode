@@ -13,7 +13,6 @@ export {
     focusAmazonQChatWalkthrough,
     openAmazonQWalkthrough,
     walkthroughInlineSuggestionsExample,
-    walkthroughSecurityScanExample,
 } from './onboardingPage/walkthrough'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'
