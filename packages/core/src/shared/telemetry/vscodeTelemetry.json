@@ -240,6 +240,23 @@
             "description": "The number of executed operations"
         },
         {
+            "name": "amazonqAutoDebugCommandType",
+            "type": "string",
+            "allowedValues": ["fixWithQ", "fixAllWithQ", "explainProblem"],
+            "description": "The type of auto debug command executed"
+        },
+        {
+            "name": "amazonqAutoDebugAction",
+            "type": "string",
+            "allowedValues": ["invoked", "completed"],
+            "description": "The action performed (invoked or completed)"
+        },
+        {
+            "name": "amazonqAutoDebugProblemCount",
+            "type": "int",
+            "description": "Number of problems being processed"
+        },
+        {
             "name": "smusDomainId",
             "type": "string",
             "description": "SMUS domain identifier"
@@ -1302,6 +1319,35 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_autoDebugCommand",
+            "description": "Tracks usage of Amazon Q auto debug commands (fixWithQ, fixAllWithQ, explainProblem)",
+            "metadata": [
+                {
+                    "type": "amazonqAutoDebugCommandType",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugAction",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugProblemCount",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "reasonDesc",
                     "required": false
                 }
             ]
