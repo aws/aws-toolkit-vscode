@@ -17,7 +17,7 @@ import {
     connectScriptPrefix,
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
-import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
+import { StartDevEnvironmentSessionRequest } from '@aws-sdk/client-codecatalyst'
 import { mkdir, readFile } from 'fs/promises'
 import fs from '../../shared/fs/fs'
 import { globals } from '../../shared'
