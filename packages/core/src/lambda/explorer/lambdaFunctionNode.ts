@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { getIcon } from '../../shared/icons'
@@ -34,7 +34,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
-        public configuration: Lambda.FunctionConfiguration,
+        public configuration: FunctionConfiguration,
         public override readonly contextValue?: string,
         public localDir?: string
     ) {
@@ -50,7 +50,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         this.contextValue = contextValue
     }
 
-    public update(configuration: Lambda.FunctionConfiguration): void {
+    public update(configuration: FunctionConfiguration): void {
         this.configuration = configuration
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`

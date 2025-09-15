@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { LdkClient, getRegionFromArn, isTunnelInfo } from '../../../lambda/remoteDebugging/ldkClient'
 import { LocalProxy } from '../../../lambda/remoteDebugging/localProxy'
 import * as utils from '../../../lambda/remoteDebugging/utils'
@@ -183,7 +183,7 @@ describe('LdkClient', () => {
     })
 
     describe('getFunctionDetail()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 
@@ -212,7 +212,7 @@ describe('LdkClient', () => {
     })
 
     describe('createDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 
@@ -291,7 +291,7 @@ describe('LdkClient', () => {
     })
 
     describe('removeDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 

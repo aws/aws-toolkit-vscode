@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
@@ -19,7 +18,8 @@ import { getSampleLambdaPayloads, SampleRequest, isHotReloadingFunction } from '
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { telemetry, Runtime } from '../../../shared/telemetry/telemetry'
+import { telemetry, Runtime as TelemetryRuntime } from '../../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import {
     runSamCliRemoteTestEvents,
     SamCliRemoteTestEventsParameters,
@@ -58,7 +58,7 @@ export interface InitialData {
     Source?: string
     StackName?: string
     LogicalId?: string
-    Runtime?: string
+    Runtime?: Runtime
     LocalRootPath?: string
     LambdaFunctionNode?: LambdaFunctionNode
     supportCodeDownload?: boolean
@@ -294,7 +294,9 @@ export class RemoteInvokeWebview extends VueWebview {
                     ? await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
                     : await this.client.invoke(this.data.FunctionArn, input, qualifier)
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
-                const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+                const payload = funcResponse.Payload
+                    ? new TextDecoder().decode(funcResponse.Payload)
+                    : JSON.stringify({})
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
                 this.channel.appendLine('Logs:')
@@ -393,12 +395,14 @@ export class RemoteInvokeWebview extends VueWebview {
             return false
         }
 
-        const handlerFile = await getLambdaHandlerFile(
-            vscode.Uri.file(this.data.LocalRootPath),
-            '',
-            this.data.LambdaFunctionNode?.configuration.Handler ?? '',
-            this.data.Runtime ?? 'unknown'
-        )
+        const handlerFile = this.data.Runtime
+            ? await getLambdaHandlerFile(
+                  vscode.Uri.file(this.data.LocalRootPath),
+                  '',
+                  this.data.LambdaFunctionNode?.configuration.Handler ?? '',
+                  this.data.Runtime
+              )
+            : undefined
         if (!handlerFile || !(await fs.exists(handlerFile))) {
             this.handlerFileAvailable = false
             return false
@@ -517,7 +521,7 @@ export class RemoteInvokeWebview extends VueWebview {
     // Download lambda code and update the local root path
     public async downloadRemoteCode(): Promise<string | undefined> {
         return await telemetry.lambda_import.run(async (span) => {
-            span.record({ runtime: this.data.Runtime as Runtime | undefined, source: 'RemoteDebug' })
+            span.record({ runtime: this.data.Runtime as TelemetryRuntime | undefined, source: 'RemoteDebug' })
             try {
                 if (this.data.LambdaFunctionNode) {
                     const output = await runDownloadLambda(this.data.LambdaFunctionNode, true)
@@ -762,7 +766,7 @@ export async function invokeRemoteLambda(
     const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 
     // Initialize support and debugging capabilities
-    const runtime = resource.configuration.Runtime ?? 'unknown'
+    const runtime = resource.configuration.Runtime
     const region = resource.regionCode
     const supportCodeDownload = RemoteDebugController.instance.supportCodeDownload(
         runtime,

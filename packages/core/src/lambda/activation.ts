@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { deleteLambda } from './commands/deleteLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
@@ -229,7 +229,7 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
 
         Commands.register('aws.appBuilder.tailLogs', async (node: LambdaFunctionNode | TreeNode) => {
-            let functionConfiguration: Lambda.FunctionConfiguration
+            let functionConfiguration: FunctionConfiguration
             try {
                 const sourceNode = getSourceNode<LambdaFunctionNode>(node)
                 functionConfiguration = sourceNode.configuration

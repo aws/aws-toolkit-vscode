@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { IoTSecureTunneling, Lambda } from 'aws-sdk'
+import IoTSecureTunneling from 'aws-sdk/clients/iotsecuretunneling'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { getClientId } from '../../shared/telemetry/util'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { LocalProxy } from './localProxy'
@@ -34,9 +35,9 @@ export interface TunnelInfo {
 
 async function callUpdateFunctionConfiguration(
     lambda: DefaultLambdaClient,
-    config: Lambda.FunctionConfiguration,
+    config: FunctionConfiguration,
     waitForUpdate: boolean
-): Promise<Lambda.FunctionConfiguration> {
+): Promise<FunctionConfiguration> {
     // Update function configuration back to original values
     return await lambda.updateFunctionConfiguration(
         {
@@ -207,7 +208,7 @@ export class LdkClient {
         }
     }
 
-    async getFunctionDetail(functionArn: string): Promise<Lambda.FunctionConfiguration | undefined> {
+    async getFunctionDetail(functionArn: string): Promise<FunctionConfiguration | undefined> {
         try {
             const region = getRegionFromArn(functionArn)
             if (!region) {
@@ -220,7 +221,7 @@ export class LdkClient {
                 return undefined
             }
             const client = this.getLambdaClient(region)
-            const configuration = (await client.getFunction(functionArn)).Configuration as Lambda.FunctionConfiguration
+            const configuration = (await client.getFunction(functionArn)).Configuration as FunctionConfiguration
             // get function detail
             // return function detail
             return configuration
@@ -237,7 +238,7 @@ export class LdkClient {
     // 3: adding two param to lambda environment variable
     // {AWS_LAMBDA_EXEC_WRAPPER:/opt/bin/ldk_wrapper, AWS_LDK_DESTINATION_TOKEN: destinationToken }
     async createDebugDeployment(
-        config: Lambda.FunctionConfiguration,
+        config: FunctionConfiguration,
         destinationToken: string,
         lambdaTimeout: number,
         shouldPublishVersion: boolean,
@@ -311,7 +312,7 @@ export class LdkClient {
             }
 
             // Create a temporary config for the update
-            const updateConfig: Lambda.FunctionConfiguration = {
+            const updateConfig: FunctionConfiguration = {
                 FunctionName: config.FunctionName,
                 Timeout: lambdaTimeout ?? 900, // 15 minutes
                 Layers: updatedLayers.map((arn) => ({ Arn: arn })),
@@ -355,7 +356,7 @@ export class LdkClient {
     // we are 1: reverting timeout to it's original snapshot
     // 2: reverting layer status according to it's original snapshot
     // 3: reverting environment back to it's original snapshot
-    async removeDebugDeployment(config: Lambda.FunctionConfiguration, check: boolean = true): Promise<boolean> {
+    async removeDebugDeployment(config: FunctionConfiguration, check: boolean = true): Promise<boolean> {
         try {
             if (!config.FunctionArn || !config.FunctionName) {
                 throw new Error('Function ARN is missing')
