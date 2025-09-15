@@ -294,9 +294,8 @@ export class RemoteInvokeWebview extends VueWebview {
                     ? await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
                     : await this.client.invoke(this.data.FunctionArn, input, qualifier)
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
-                const payload = funcResponse.Payload
-                    ? new TextDecoder().decode(funcResponse.Payload)
-                    : JSON.stringify({})
+                const decodedPayload = funcResponse.Payload ? new TextDecoder().decode(funcResponse.Payload) : ''
+                const payload = decodedPayload || JSON.stringify({})
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
                 this.channel.appendLine('Logs:')
