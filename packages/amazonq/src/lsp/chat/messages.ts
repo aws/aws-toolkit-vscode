@@ -651,7 +651,16 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const currentFileUri = vscode.Uri.parse(params.originalFileUri)
+        // Handle both file:// URIs and raw file paths, ensuring proper Windows path handling
+        let currentFileUri: vscode.Uri
+        try {
+            // Try parsing as URI first
+            currentFileUri = vscode.Uri.parse(params.originalFileUri, true)
+        } catch {
+            // If parsing fails, treat as file path and create URI
+            currentFileUri = vscode.Uri.file(params.originalFileUri)
+        }
+
         const originalContent = params.originalFileContent ?? ''
         const fileName = path.basename(currentFileUri.fsPath)
 
