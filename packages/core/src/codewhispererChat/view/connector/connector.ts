@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
@@ -97,7 +96,7 @@ interface StackOverflowMetadata {
     readonly answerCount: number
     readonly isAccepted: boolean
     readonly score: number
-    readonly lastActivityDate: Timestamp
+    readonly lastActivityDate: Date
 }
 
 export class SearchView extends UiMessage {
