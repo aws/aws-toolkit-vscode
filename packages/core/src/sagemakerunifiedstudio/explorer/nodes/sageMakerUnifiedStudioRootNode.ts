@@ -8,6 +8,7 @@ import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneClient, DataZoneProject } from '../../shared/client/datazoneClient'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
@@ -256,7 +257,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
                     })
                 }
 
-                // Extract domain ID and region for logging
+                // Extract domain account ID, domain ID, and region for logging
                 const domainId = connection.domainId
                 const region = connection.ssoRegion
 
@@ -265,6 +266,18 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
                     smusDomainId: domainId,
                     awsRegion: region,
                 })
+                try {
+                    const derCredProvider = await authProvider.getDerCredentialsProvider()
+                    const stsClient = new DefaultStsClient(region, await derCredProvider.getCredentials())
+                    const callerIdentity = await stsClient.getCallerIdentity()
+                    span.record({
+                        smusDomainAccountId: callerIdentity.Account,
+                    })
+                } catch (err) {
+                    logger.error(
+                        `Failed to resolve AWS account ID via STS Client for domain ${domainId} in region ${region}: ${err}`
+                    )
+                }
 
                 // Show success message
                 void vscode.window.showInformationMessage(
@@ -334,6 +347,18 @@ export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => asy
                 smusDomainId: domainId,
                 awsRegion: region,
             })
+            try {
+                const derCredProvider = await authProvider.getDerCredentialsProvider()
+                const stsClient = new DefaultStsClient(region!, await derCredProvider.getCredentials())
+                const callerIdentity = await stsClient.getCallerIdentity()
+                span.record({
+                    smusDomainAccountId: callerIdentity.Account,
+                })
+            } catch (err) {
+                logger.error(
+                    `Failed to resolve AWS account ID via STS Client for domain ${domainId} in region ${region}: ${err}`
+                )
+            }
 
             // Delete the connection (this will also invalidate tokens and clear cache)
             if (activeConnection) {

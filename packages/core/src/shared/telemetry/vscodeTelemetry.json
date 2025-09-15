@@ -295,6 +295,16 @@
             "name": "smusConnectionType",
             "type": "string",
             "description": "SMUS connection type"
+        },
+        {
+            "name": "smusDomainAccountId",
+            "type": "string",
+            "description": "SMUS domain account id"
+        },
+        {
+            "name": "smusProjectAccountId",
+            "type": "string",
+            "description": "SMUS project account id"
         }
     ],
     "metrics": [
@@ -1359,6 +1369,10 @@
                 {
                     "type": "smusDomainId",
                     "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
                 }
             ]
         },
@@ -1368,6 +1382,10 @@
             "metadata": [
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 }
             ]
@@ -1414,7 +1432,7 @@
             "passive": true
         },
         {
-            "name": "smus_startSpace",
+            "name": "smus_openRemoteConnection",
             "description": "Emitted whenever a user starts a SMUS space",
             "metadata": [
                 {

@@ -95,7 +95,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 if (!validateNode(node)) {
                     return
                 }
-                await telemetry.smus_startSpace.run(async (span) => {
+                await telemetry.smus_openRemoteConnection.run(async (span) => {
                     span.record({
                         smusSpaceKey: node.resource.DomainSpaceKey,
                         smusDomainRegion: node.resource.regionCode,
