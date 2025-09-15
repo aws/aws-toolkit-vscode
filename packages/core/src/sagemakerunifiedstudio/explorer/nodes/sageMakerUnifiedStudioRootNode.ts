@@ -238,7 +238,9 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
             if (!domainUrl) {
                 // User cancelled
                 logger.debug('User cancelled domain URL input')
-                return
+                throw new ToolkitError('User cancelled domain URL input', {
+                    cancelled: true,
+                })
             }
 
             // Show a simple status bar message instead of progress dialog
