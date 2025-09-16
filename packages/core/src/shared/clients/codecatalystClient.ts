@@ -24,10 +24,8 @@ import {
 } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
-import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { Uri } from 'vscode'
-import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 import {
     CodeCatalystClient as CodeCatalystSDKClient,
     CreateAccessTokenCommand,
@@ -53,15 +51,18 @@ import {
     GetProjectCommandOutput,
     GetProjectRequest,
     GetSourceRepositoryCloneUrlsCommand,
+    GetSourceRepositoryCloneUrlsRequest,
     GetSourceRepositoryCloneUrlsResponse,
     GetSpaceCommand,
     GetSpaceCommandOutput,
     GetSpaceRequest,
     GetSubscriptionCommand,
     GetSubscriptionRequest,
+    GetSubscriptionResponse,
     GetUserDetailsCommand,
     GetUserDetailsCommandOutput,
     GetUserDetailsRequest,
+    GetUserDetailsResponse,
     ListDevEnvironmentsCommand,
     ListDevEnvironmentsRequest,
     ListDevEnvironmentsResponse,
@@ -73,6 +74,7 @@ import {
     ListSourceRepositoriesRequest,
     ListSourceRepositoriesResponse,
     ListSourceRepositoryBranchesCommand,
+    ListSourceRepositoryBranchesItem,
     ListSourceRepositoryBranchesRequest,
     ListSpacesCommand,
     ListSpacesRequest,
@@ -152,14 +154,14 @@ export interface DevEnvironment extends CodeCatalystDevEnvironmentSummary {
 
 /** CodeCatalyst developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface CodeCatalystDevEnvSession extends CodeCatalyst.StartDevEnvironmentResponse {}
+export interface CodeCatalystDevEnvSession extends StartDevEnvironmentResponse {}
 
 export interface CodeCatalystOrg extends SpaceSummary {
     readonly type: 'org'
     readonly name: string
 }
 
-export interface CodeCatalystProject extends CodeCatalyst.ProjectSummary {
+export interface CodeCatalystProject extends ProjectSummary {
     readonly type: 'project'
     readonly name: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
@@ -172,7 +174,7 @@ export interface CodeCatalystRepo extends ListSourceRepositoriesItem {
     readonly project: Pick<CodeCatalystProject, 'name'>
 }
 
-export interface CodeCatalystBranch extends CodeCatalyst.ListSourceRepositoryBranchesItem {
+export interface CodeCatalystBranch extends ListSourceRepositoryBranchesItem {
     readonly type: 'branch'
     readonly name: string
     readonly repo: Pick<CodeCatalystRepo, 'name'>
@@ -200,7 +202,7 @@ function toBranch(
     org: string,
     project: string,
     repo: string,
-    branch: CodeCatalyst.ListSourceRepositoryBranchesItem
+    branch: ListSourceRepositoryBranchesItem
 ): CodeCatalystBranch {
     assertHasProps(branch, 'name')
 
@@ -229,10 +231,7 @@ function createCodeCatalystClient(
     })
 }
 
-export type UserDetails = RequiredProps<
-    CodeCatalyst.GetUserDetailsResponse,
-    'userId' | 'userName' | 'displayName' | 'primaryEmail'
->
+export type UserDetails = RequiredProps<GetUserDetailsResponse, 'userId' | 'userName' | 'displayName' | 'primaryEmail'>
 
 // CodeCatalyst client has two variants: 'logged-in' and 'not logged-in'
 // The 'not logged-in' variant is a subtype and has restricted functionality
@@ -421,7 +420,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         }
     }
 
-    public async getSubscription(request: GetSubscriptionRequest): Promise<CodeCatalyst.GetSubscriptionResponse> {
+    public async getSubscription(request: GetSubscriptionRequest): Promise<GetSubscriptionResponse> {
         return this.call(GetSubscriptionCommand, request, false)
     }
 
