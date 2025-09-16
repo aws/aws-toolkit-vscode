@@ -653,12 +653,14 @@ export function registerMessageListeners(
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
         // Handle both file:// URIs and raw file paths, ensuring proper Windows path handling
         let currentFileUri: vscode.Uri
-        try {
-            // Try parsing as URI first
-            currentFileUri = vscode.Uri.parse(params.originalFileUri, true)
-        } catch {
-            // If parsing fails, treat as file path and create URI
-            currentFileUri = vscode.Uri.file(params.originalFileUri)
+
+        // Check if it's already a proper file:// URI
+        if (params.originalFileUri.startsWith('file://')) {
+            currentFileUri = vscode.Uri.parse(params.originalFileUri)
+        } else {
+            // Decode URL-encoded characters and treat as file path
+            const decodedPath = decodeURIComponent(params.originalFileUri)
+            currentFileUri = vscode.Uri.file(decodedPath)
         }
 
         const originalContent = params.originalFileContent ?? ''
