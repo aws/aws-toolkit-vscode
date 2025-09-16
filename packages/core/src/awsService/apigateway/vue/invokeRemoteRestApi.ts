@@ -8,7 +8,7 @@ import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../../shared/logger/logger'
 
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
-import { Resource } from 'aws-sdk/clients/apigateway'
+import { Resource } from '@aws-sdk/client-api-gateway'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { Result } from '../../../shared/telemetry/telemetry'
 import { VueWebview } from '../../../webviews/main'
