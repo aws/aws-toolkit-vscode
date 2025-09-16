@@ -21,7 +21,7 @@ import {
     selectRegionProfileCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { CodeScansState, codeScanState, RegionProfile } from '../models/model'
+import { CodeScansState, RegionProfile } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
@@ -68,25 +68,6 @@ export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> 
         label: codicon`${icon} ${label}`,
         onClick: () => showReferenceLog.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'openReferenceLog'>
-}
-
-export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
-    const label = `Full project scan is now /review!`
-    const icon = codeScanState.getIconForButton()
-    const description = 'Open in Chat Panel'
-
-    return {
-        data: 'securityScan',
-        label: codicon`${icon} ${label}`,
-        description: description,
-        onClick: () =>
-            vscode.commands.executeCommand(
-                'aws.amazonq.security.scan-statusbar',
-                placeholder,
-                'cwQuickPickSource',
-                true
-            ),
-    } as DataQuickPickItem<'securityScan'>
 }
 
 export function createReconnect(): DataQuickPickItem<'reconnect'> {
