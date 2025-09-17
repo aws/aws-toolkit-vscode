@@ -862,6 +862,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
+        getLogger().debug(`credentials: create cache credentials for ${provider.getProviderType()}`)
         globals.loginManager.store.invalidateCredentials(providerId)
         const { credentials, endpointUrl } = await globals.loginManager.store.upsertCredentials(providerId, provider)
         await globals.loginManager.validateCredentials(credentials, endpointUrl, provider.getDefaultRegion())
@@ -874,6 +875,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }
+        return undefined
     }
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))

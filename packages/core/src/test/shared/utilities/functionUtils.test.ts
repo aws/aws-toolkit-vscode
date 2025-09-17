@@ -4,7 +4,13 @@
  */
 
 import assert from 'assert'
-import { once, onceChanged, debounce, oncePerUniqueArg } from '../../../shared/utilities/functionUtils'
+import {
+    once,
+    onceChanged,
+    debounce,
+    oncePerUniqueArg,
+    onceChangedWithComparator,
+} from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
 describe('functionUtils', function () {
@@ -47,6 +53,32 @@ describe('functionUtils', function () {
         // TODO: use lib?: https://github.com/anywhichway/nano-memoize
         fn('arg1', arg2_)
         assert.strictEqual(counter, 3)
+    })
+
+    it('onceChangedWithComparator()', function () {
+        let counter = 0
+        const credentialsEqual = ([prev]: [any], [current]: [any]) => {
+            if (!prev && !current) return true
+            if (!prev || !current) return false
+            return prev.accessKeyId === current.accessKeyId && prev.secretAccessKey === current.secretAccessKey
+        }
+        const fn = onceChangedWithComparator((creds: any) => void counter++, credentialsEqual)
+
+        const creds1 = { accessKeyId: 'key1', secretAccessKey: 'secret1' }
+        const creds2 = { accessKeyId: 'key1', secretAccessKey: 'secret1' }
+        const creds3 = { accessKeyId: 'key2', secretAccessKey: 'secret2' }
+
+        fn(creds1)
+        assert.strictEqual(counter, 1)
+
+        fn(creds2) // Same values, should not execute
+        assert.strictEqual(counter, 1)
+
+        fn(creds3) // Different values, should execute
+        assert.strictEqual(counter, 2)
+
+        fn(creds3) // Same as previous, should not execute
+        assert.strictEqual(counter, 2)
     })
 
     it('oncePerUniqueArg()', function () {

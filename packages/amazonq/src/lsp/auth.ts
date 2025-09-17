@@ -17,7 +17,7 @@ import * as crypto from 'crypto'
 import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
-import { onceChanged } from 'aws-core-vscode/utils'
+import { onceChanged, onceChangedWithComparator } from 'aws-core-vscode/utils'
 import { getLogger, oneMinute, isSageMaker } from 'aws-core-vscode/shared'
 import { isSsoConnection, isIamConnection } from 'aws-core-vscode/auth'
 
@@ -108,7 +108,21 @@ export class AmazonQLspAuth {
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
 
-    public updateIamCredentials = onceChanged(this._updateIamCredentials.bind(this))
+    private areCredentialsEqual(creds1: any, creds2: any): boolean {
+        if (!creds1 && !creds2) return true
+        if (!creds1 || !creds2) return false
+
+        return (
+            creds1.accessKeyId === creds2.accessKeyId &&
+            creds1.secretAccessKey === creds2.secretAccessKey &&
+            creds1.sessionToken === creds2.sessionToken
+        )
+    }
+
+    public updateIamCredentials = onceChangedWithComparator(
+        this._updateIamCredentials.bind(this),
+        ([prevCreds], [currentCreds]) => this.areCredentialsEqual(prevCreds, currentCreds)
+    )
     private async _updateIamCredentials(credentials: any) {
         getLogger().info(
             `[SageMaker Debug] Updating IAM credentials - credentials received: ${credentials ? 'YES' : 'NO'}`

@@ -8,6 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { asString, CredentialsProvider, CredentialsId } from '../providers/credentials'
 import { CredentialsProviderManager } from '../providers/credentialsProviderManager'
+// import { get } from 'lodash'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
@@ -31,11 +32,17 @@ export class CredentialsStore {
      * If the expiration property does not exist, it is assumed to never expire.
      */
     public isValid(key: string): boolean {
+        // Apply 60-second buffer similar to SSO token expiry logic
+        const expirationBufferMs = 60000
+
         if (this.credentialsCache[key]) {
             const expiration = this.credentialsCache[key].credentials.expiration
-            return expiration !== undefined ? expiration >= new globals.clock.Date() : true
+            const now = new globals.clock.Date()
+            const bufferedNow = new globals.clock.Date(now.getTime() + expirationBufferMs)
+            const isValid = expiration !== undefined ? expiration >= bufferedNow : true
+            return isValid
         }
-
+        getLogger().debug(`credentials: no credentials found for ${key}`)
         return false
     }
 
