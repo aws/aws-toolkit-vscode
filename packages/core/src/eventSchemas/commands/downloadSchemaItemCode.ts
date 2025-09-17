@@ -266,18 +266,12 @@ export class CodeDownloader {
             codeDownloadRequest.schemaName,
             codeDownloadRequest.schemaVersion
         )
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log({ response })
 
         if (Buffer.isBuffer(response.Body)) {
             const zipContents = response.Body!.buffer
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log({ zipContents })
 
             return zipContents
         } else {
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('throw new TypeError')
             throw new TypeError('Response body should be Buffer type')
         }
     }
