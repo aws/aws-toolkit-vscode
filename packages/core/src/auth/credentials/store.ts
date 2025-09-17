@@ -8,7 +8,6 @@ import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { asString, CredentialsProvider, CredentialsId } from '../providers/credentials'
 import { CredentialsProviderManager } from '../providers/credentialsProviderManager'
-// import { get } from 'lodash'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
