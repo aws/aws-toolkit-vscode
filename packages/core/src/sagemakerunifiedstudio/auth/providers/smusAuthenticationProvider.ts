@@ -14,7 +14,7 @@ import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { getLogger } from '../../../shared/logger/logger'
-import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
+import { SmusUtils, SmusErrorCodes, extractAccountIdFromArn } from '../../shared/smusUtils'
 import { createSmusProfile, isValidSmusConnection, SmusConnection } from '../model'
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
@@ -23,6 +23,7 @@ import { ConnectionClientStore } from '../../shared/client/connectionClientStore
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { fromIni } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -53,6 +54,7 @@ export class SmusAuthenticationProvider {
     private credentialsProviderCache = new Map<string, any>()
     private projectCredentialProvidersCache = new Map<string, ProjectRoleCredentialsProvider>()
     private connectionCredentialProvidersCache = new Map<string, ConnectionCredentialsProvider>()
+    private cachedDomainAccountId: string | undefined
 
     public constructor(
         public readonly auth = Auth.instance,
@@ -75,6 +77,8 @@ export class SmusAuthenticationProvider {
             this.projectCredentialProvidersCache.clear()
             // Clear connection provider cache when connection changes
             this.connectionCredentialProvidersCache.clear()
+            // Clear cached domain account ID when connection changes
+            this.cachedDomainAccountId = undefined
             // Clear all clients in client store when connection changes
             ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
@@ -423,6 +427,99 @@ export class SmusAuthenticationProvider {
         return this.activeConnection.domainUrl
     }
 
+    /**
+     * Gets the AWS account ID for the active domain connection
+     * In SMUS space environment, extracts from ResourceArn in metadata
+     * Otherwise, makes an STS GetCallerIdentity call using DER credentials and caches the result
+     * @returns Promise resolving to the domain's AWS account ID
+     * @throws ToolkitError if unable to retrieve account ID
+     */
+    public async getDomainAccountId(): Promise<string> {
+        const logger = getLogger()
+
+        // Return cached value if available
+        if (this.cachedDomainAccountId) {
+            logger.debug('SMUS: Using cached domain account ID')
+            return this.cachedDomainAccountId
+        }
+
+        // If in SMUS space environment, extract account ID from resource-metadata file
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            try {
+                logger.debug('SMUS: Extracting domain account ID from ResourceArn in resource-metadata file')
+
+                const resourceMetadata = getResourceMetadata()!
+                const resourceArn = resourceMetadata.ResourceArn
+
+                if (!resourceArn) {
+                    throw new ToolkitError('ResourceArn not found in metadata file', {
+                        code: SmusErrorCodes.AccountIdNotFound,
+                    })
+                }
+
+                // Extract account ID from ResourceArn using SmusUtils
+                const accountId = extractAccountIdFromArn(resourceArn)
+
+                // Cache the account ID
+                this.cachedDomainAccountId = accountId
+
+                logger.debug(
+                    `Successfully extracted and cached domain account ID from resource-metadata file: ${accountId}`
+                )
+
+                return accountId
+            } catch (err) {
+                logger.error(`Failed to extract domain account ID from ResourceArn: %s`, err)
+
+                throw new ToolkitError('Failed to extract AWS account ID from ResourceArn in SMUS space environment', {
+                    code: SmusErrorCodes.GetDomainAccountIdFailed,
+                    cause: err instanceof Error ? err : undefined,
+                })
+            }
+        }
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        // Use existing STS GetCallerIdentity implementation for non-SMUS space environments
+        try {
+            logger.debug('Fetching domain account ID via STS GetCallerIdentity')
+
+            // Get DER credentials provider
+            const derCredProvider = await this.getDerCredentialsProvider()
+
+            // Get the region for STS client
+            const region = this.getDomainRegion()
+
+            // Create STS client with DER credentials
+            const stsClient = new DefaultStsClient(region, await derCredProvider.getCredentials())
+
+            // Make GetCallerIdentity call
+            const callerIdentity = await stsClient.getCallerIdentity()
+
+            if (!callerIdentity.Account) {
+                throw new ToolkitError('Account ID not found in STS GetCallerIdentity response', {
+                    code: SmusErrorCodes.AccountIdNotFound,
+                })
+            }
+
+            // Cache the account ID
+            this.cachedDomainAccountId = callerIdentity.Account
+
+            logger.debug(`Successfully retrieved and cached domain account ID: ${callerIdentity.Account}`)
+
+            return callerIdentity.Account
+        } catch (err) {
+            logger.error(`Failed to retrieve domain account ID: %s`, err)
+
+            throw new ToolkitError('Failed to retrieve AWS account ID for active domain connection', {
+                code: SmusErrorCodes.GetDomainAccountIdFailed,
+                cause: err instanceof Error ? err : undefined,
+            })
+        }
+    }
+
     public getDomainRegion(): string {
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             const resourceMetadata = getResourceMetadata()!
@@ -516,6 +613,10 @@ export class SmusAuthenticationProvider {
                 logger.warn(`SMUS: Failed to invalidate connection credentials for cache key ${cacheKey}: %s`, err)
             }
         }
+
+        // Clear cached domain account ID
+        this.cachedDomainAccountId = undefined
+        logger.debug('SMUS: Cleared cached domain account ID')
     }
 
     /**
@@ -560,6 +661,10 @@ export class SmusAuthenticationProvider {
             }
         }
         this.credentialsProviderCache.clear()
+
+        // Clear cached domain account ID
+        this.cachedDomainAccountId = undefined
+
         this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
     }
 

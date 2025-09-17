@@ -11,6 +11,7 @@ import {
     SmusTimeouts,
     SmusCredentialExpiry,
     validateCredentialFields,
+    extractAccountIdFromArn,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
@@ -458,6 +459,65 @@ describe('SmusUtils', () => {
 
             const result = SmusUtils.isInSmusSpaceEnvironment()
             assert.strictEqual(result, false)
+        })
+    })
+})
+
+describe('extractAccountIdFromArn', () => {
+    describe('valid ARN formats', () => {
+        it('should extract account ID from valid ARN', () => {
+            const arn = 'arn:aws:sagemaker:us-west-2:123456789012:app/domain-id/ce/CodeEditor/default'
+            const result = extractAccountIdFromArn(arn)
+
+            assert.strictEqual(result, '123456789012')
+        })
+    })
+
+    describe('invalid ARN formats', () => {
+        it('should throw error for empty ARN', () => {
+            assert.throws(
+                () => extractAccountIdFromArn(''),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Invalid SageMaker ARN format'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for non-ARN string', () => {
+            assert.throws(
+                () => extractAccountIdFromArn('not-an-arn'),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Invalid SageMaker ARN format'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for wrong service', () => {
+            const arn = 'arn:aws:s3:us-east-1:123456789012:bucket/my-bucket'
+            assert.throws(
+                () => extractAccountIdFromArn(arn),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Invalid SageMaker ARN format'))
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for missing account ID', () => {
+            const arn = 'arn:aws:sagemaker:us-east-1::space/domain/space'
+            assert.throws(
+                () => extractAccountIdFromArn(arn),
+                (error: any) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Invalid SageMaker ARN format'))
+                    return true
+                }
+            )
         })
     })
 })
