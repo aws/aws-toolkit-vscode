@@ -262,6 +262,7 @@ describe('redshiftStrategy', function () {
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
                 }),
+                getDomainAccountId: async () => '123456789012',
             }
 
             const node = createRedshiftConnectionNode(
