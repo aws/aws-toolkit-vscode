@@ -20,8 +20,8 @@ import { getLogger } from '../../shared/logger/logger'
 import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/providers/smusAuthenticationProvider'
 import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { SageMakerUnifiedStudioSpacesParentNode } from './nodes/sageMakerUnifiedStudioSpacesParentNode'
 import { isSageMaker } from '../../shared/extensionUtilities'
+import { recordSpaceTelemetry } from '../shared/telemetry'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -75,16 +75,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 return
             }
             await telemetry.smus_stopSpace.run(async (span) => {
-                span.record({
-                    smusSpaceKey: node.resource.DomainSpaceKey,
-                    smusDomainRegion: node.resource.regionCode,
-                    smusDomainId: (
-                        node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
-                    )?.getAuthProvider()?.activeConnection?.domainId,
-                    smusProjectId: (
-                        node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
-                    )?.getProjectId(),
-                })
+                await recordSpaceTelemetry(span, node)
                 await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
             })
         }),
@@ -95,17 +86,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 if (!validateNode(node)) {
                     return
                 }
-                await telemetry.smus_startSpace.run(async (span) => {
-                    span.record({
-                        smusSpaceKey: node.resource.DomainSpaceKey,
-                        smusDomainRegion: node.resource.regionCode,
-                        smusDomainId: (
-                            node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
-                        )?.getAuthProvider()?.activeConnection?.domainId,
-                        smusProjectId: (
-                            node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
-                        )?.getProjectId(),
-                    })
+                await telemetry.smus_openRemoteConnection.run(async (span) => {
+                    await recordSpaceTelemetry(span, node)
                     await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
                 })
             }
