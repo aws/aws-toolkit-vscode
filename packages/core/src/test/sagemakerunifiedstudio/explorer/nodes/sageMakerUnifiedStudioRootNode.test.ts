@@ -17,6 +17,7 @@ import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/a
 import * as pickerPrompter from '../../../../shared/ui/pickerPrompter'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { assertTelemetry } from '../../../../../src/test/testUtil'
+import { createMockExtensionContext, createMockUnauthenticatedAuthProvider } from '../../testUtils'
 
 describe('SmusRootNode', function () {
     let rootNode: SageMakerUnifiedStudioRootNode
@@ -30,19 +31,36 @@ describe('SmusRootNode', function () {
         domainId: testDomainId,
     }
 
+    /**
+     * Helper function to verify login and learn more nodes
+     */
+    async function verifyLoginAndLearnMoreNodes(children: any[]) {
+        assert.strictEqual(children.length, 2)
+        assert.strictEqual(children[0].id, 'smusLogin')
+        assert.strictEqual(children[1].id, 'smusLearnMore')
+
+        // Check login node
+        const loginTreeItem = await children[0].getTreeItem()
+        assert.strictEqual(loginTreeItem.label, 'Sign in to get started')
+        assert.strictEqual(loginTreeItem.contextValue, 'sageMakerUnifiedStudioLogin')
+        assert.deepStrictEqual(loginTreeItem.command, {
+            command: 'aws.smus.login',
+            title: 'Sign in to SageMaker Unified Studio',
+        })
+
+        // Check learn more node
+        const learnMoreTreeItem = await children[1].getTreeItem()
+        assert.strictEqual(learnMoreTreeItem.label, 'Learn more about SageMaker Unified Studio')
+        assert.strictEqual(learnMoreTreeItem.contextValue, 'sageMakerUnifiedStudioLearnMore')
+        assert.deepStrictEqual(learnMoreTreeItem.command, {
+            command: 'aws.smus.learnMore',
+            title: 'Learn more about SageMaker Unified Studio',
+        })
+    }
+
     beforeEach(function () {
         // Create mock extension context
-        const mockExtensionContext = {
-            subscriptions: [],
-            workspaceState: {
-                get: sinon.stub(),
-                update: sinon.stub(),
-            },
-            globalState: {
-                get: sinon.stub(),
-                update: sinon.stub(),
-            },
-        } as any
+        const mockExtensionContext = createMockExtensionContext()
 
         // Create a mock auth provider
         const mockAuthProvider = {
@@ -80,17 +98,7 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const mockExtensionContext = {
-                subscriptions: [],
-                workspaceState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-                globalState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-            } as any
+            const mockExtensionContext = createMockExtensionContext()
 
             const node = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             assert.strictEqual(node.id, 'smusRootNode')
@@ -115,24 +123,8 @@ describe('SmusRootNode', function () {
 
         it('returns correct tree item when not authenticated', async function () {
             // Create a mock auth provider for unauthenticated state
-            const mockAuthProvider = {
-                isConnected: sinon.stub().returns(false),
-                isConnectionValid: sinon.stub().returns(false),
-                activeConnection: undefined,
-                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
-            } as any
-
-            const mockExtensionContext = {
-                subscriptions: [],
-                workspaceState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-                globalState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-            } as any
+            const mockAuthProvider = createMockUnauthenticatedAuthProvider()
+            const mockExtensionContext = createMockExtensionContext()
 
             const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const treeItem = unauthenticatedNode.getTreeItem()
@@ -148,49 +140,12 @@ describe('SmusRootNode', function () {
     describe('getChildren', function () {
         it('returns login node when not authenticated (empty domain ID)', async function () {
             // Create a mock auth provider for unauthenticated state
-            const mockAuthProvider = {
-                isConnected: sinon.stub().returns(false),
-                isConnectionValid: sinon.stub().returns(false),
-                activeConnection: undefined,
-                onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
-            } as any
-
-            const mockExtensionContext = {
-                subscriptions: [],
-                workspaceState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-                globalState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-            } as any
+            const mockAuthProvider = createMockUnauthenticatedAuthProvider()
+            const mockExtensionContext = createMockExtensionContext()
 
             const unauthenticatedNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const children = await unauthenticatedNode.getChildren()
-
-            assert.strictEqual(children.length, 2)
-            assert.strictEqual(children[0].id, 'smusLogin')
-            assert.strictEqual(children[1].id, 'smusLearnMore')
-
-            // Check login node
-            const loginTreeItem = await children[0].getTreeItem()
-            assert.strictEqual(loginTreeItem.label, 'Sign in to get started')
-            assert.strictEqual(loginTreeItem.contextValue, 'sageMakerUnifiedStudioLogin')
-            assert.deepStrictEqual(loginTreeItem.command, {
-                command: 'aws.smus.login',
-                title: 'Sign in to SageMaker Unified Studio',
-            })
-
-            // Check learn more node
-            const learnMoreTreeItem = await children[1].getTreeItem()
-            assert.strictEqual(learnMoreTreeItem.label, 'Learn more about SageMaker Unified Studio')
-            assert.strictEqual(learnMoreTreeItem.contextValue, 'sageMakerUnifiedStudioLearnMore')
-            assert.deepStrictEqual(learnMoreTreeItem.command, {
-                command: 'aws.smus.learnMore',
-                title: 'Learn more about SageMaker Unified Studio',
-            })
+            await verifyLoginAndLearnMoreNodes(children)
         })
 
         it('returns login node when DataZone client throws error', async function () {
@@ -202,34 +157,11 @@ describe('SmusRootNode', function () {
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
             } as any
 
-            const mockExtensionContext = {
-                subscriptions: [],
-                workspaceState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-                globalState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-            } as any
+            const mockExtensionContext = createMockExtensionContext()
 
             const errorNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const children = await errorNode.getChildren()
-
-            assert.strictEqual(children.length, 2)
-            assert.strictEqual(children[0].id, 'smusLogin')
-            assert.strictEqual(children[1].id, 'smusLearnMore')
-
-            // Check login node
-            const loginTreeItem = await children[0].getTreeItem()
-            assert.strictEqual(loginTreeItem.label, 'Sign in to get started')
-            assert.strictEqual(loginTreeItem.contextValue, 'sageMakerUnifiedStudioLogin')
-
-            // Check learn more node
-            const learnMoreTreeItem = await children[1].getTreeItem()
-            assert.strictEqual(learnMoreTreeItem.label, 'Learn more about SageMaker Unified Studio')
-            assert.strictEqual(learnMoreTreeItem.contextValue, 'sageMakerUnifiedStudioLearnMore')
+            await verifyLoginAndLearnMoreNodes(children)
         })
 
         it('returns root nodes when authenticated', async function () {
@@ -267,17 +199,7 @@ describe('SmusRootNode', function () {
                 showReauthenticationPrompt: sinon.stub(),
             } as any
 
-            const mockExtensionContext = {
-                subscriptions: [],
-                workspaceState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-                globalState: {
-                    get: sinon.stub(),
-                    update: sinon.stub(),
-                },
-            } as any
+            const mockExtensionContext = createMockExtensionContext()
 
             const expiredNode = new SageMakerUnifiedStudioRootNode(mockAuthProvider, mockExtensionContext)
             const children = await expiredNode.getChildren()
@@ -350,6 +272,7 @@ describe('SelectSMUSProject', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns('us-west-2'),
         } as any)
@@ -532,6 +455,7 @@ describe('selectSMUSProject - Additional Tests', function () {
         sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns('us-west-2'),
         } as any)
