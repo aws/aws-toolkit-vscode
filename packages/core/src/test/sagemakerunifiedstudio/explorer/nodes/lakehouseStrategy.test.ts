@@ -35,6 +35,7 @@ describe('LakehouseStrategy', function () {
             secretAccessKey: 'test-secret',
             sessionToken: 'test-token',
         }),
+        getDomainAccountId: async () => '123456789012',
     }
 
     beforeEach(function () {

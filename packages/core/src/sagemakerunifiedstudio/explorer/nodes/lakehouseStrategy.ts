@@ -34,7 +34,7 @@ import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { Column, Database, Table } from '@aws-sdk/client-glue'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { getContext } from '../../../shared/vscode/setContext'
+import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 
 /**
  * Lakehouse data node for SageMaker Unified Studio
@@ -152,16 +152,7 @@ export function createLakehouseConnectionNode(
         },
         async (node) => {
             return telemetry.smus_renderLakehouseNode.run(async (span) => {
-                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-
-                span.record({
-                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
-                    smusDomainId: connection.domainId,
-                    smusProjectId: connection.projectId,
-                    smusConnectionId: connection.connectionId,
-                    smusConnectionType: connection.type,
-                    smusProjectRegion: connection.location?.awsRegion,
-                })
+                await recordDataConnectionTelemetry(span, connection, connectionCredentialsProvider)
                 try {
                     logger.info(`Loading Lakehouse catalogs for connection ${connection.name}`)
 

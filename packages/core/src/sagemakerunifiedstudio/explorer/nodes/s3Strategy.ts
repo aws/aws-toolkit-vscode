@@ -20,7 +20,7 @@ import {
 import { S3, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { getContext } from '../../../shared/vscode/setContext'
+import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 
 // Regex to match default S3 connection names
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -144,16 +144,7 @@ export function createS3ConnectionNode(
         },
         async (node) => {
             return telemetry.smus_renderS3Node.run(async (span) => {
-                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-
-                span.record({
-                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
-                    smusDomainId: connection.domainId,
-                    smusProjectId: connection.projectId,
-                    smusConnectionId: connection.connectionId,
-                    smusConnectionType: connection.type,
-                    smusProjectRegion: connection.location?.awsRegion,
-                })
+                await recordDataConnectionTelemetry(span, connection, connectionCredentialsProvider)
                 try {
                     if (isDefaultConnection && s3Info.prefix) {
                         // For default connections, show the full path as the first node
