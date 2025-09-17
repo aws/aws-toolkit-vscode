@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { Schemas } from 'aws-sdk'
+import { PutCodeBindingResponse } from '@aws-sdk/client-schemas'
 import fs = require('fs')
 import path = require('path')
 import * as vscode from 'vscode'
@@ -180,10 +180,8 @@ export class SchemaCodeDownloader {
 export class CodeGenerator {
     public constructor(public client: SchemaClient) {}
 
-    public async generate(
-        codeDownloadRequest: SchemaCodeDownloadRequestDetails
-    ): Promise<Schemas.PutCodeBindingResponse> {
-        let response: Schemas.PutCodeBindingResponse
+    public async generate(codeDownloadRequest: SchemaCodeDownloadRequestDetails): Promise<PutCodeBindingResponse> {
+        let response: PutCodeBindingResponse
         try {
             response = await this.client.putCodeBinding(
                 codeDownloadRequest.language,
@@ -268,12 +266,18 @@ export class CodeDownloader {
             codeDownloadRequest.schemaName,
             codeDownloadRequest.schemaVersion
         )
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log({ response })
 
         if (Buffer.isBuffer(response.Body)) {
             const zipContents = response.Body!.buffer
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log({ zipContents })
 
             return zipContents
         } else {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('throw new TypeError')
             throw new TypeError('Response body should be Buffer type')
         }
     }
