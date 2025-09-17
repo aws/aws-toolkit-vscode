@@ -11,6 +11,7 @@ import { S3Client } from '../../../../sagemakerunifiedstudio/shared/client/s3Cli
 import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType, ConnectionType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
 import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
+import { createMockS3Connection, createMockCredentialsProvider } from '../../testUtils'
 
 describe('s3Strategy', function () {
     let sandbox: sinon.SinonSandbox
@@ -145,23 +146,8 @@ describe('s3Strategy', function () {
         })
 
         it('should create S3 connection node for default connection with full path', function () {
-            const connection = {
-                connectionId: 'conn-123',
-                name: 'project.s3_default_folder',
-                type: 'S3Connection',
-                props: {
-                    s3Properties: {
-                        s3Uri: 's3://test-bucket/domain/project/',
-                    },
-                },
-            }
-
-            const credentialsProvider = {
-                getCredentials: async () => ({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const connection = createMockS3Connection()
+            const credentialsProvider = createMockCredentialsProvider()
 
             const node = createS3ConnectionNode(
                 connection as any,
@@ -209,12 +195,7 @@ describe('s3Strategy', function () {
                 },
             }
 
-            const credentialsProvider = {
-                getCredentials: async () => ({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const credentialsProvider = createMockCredentialsProvider()
 
             mockS3Client.listPaths.resolves({
                 paths: [
@@ -240,23 +221,8 @@ describe('s3Strategy', function () {
         })
 
         it('should handle bucket listing for default connection with full path display', async function () {
-            const connection = {
-                connectionId: 'conn-123',
-                name: 'project.s3_default_folder',
-                type: 'S3Connection',
-                props: {
-                    s3Properties: {
-                        s3Uri: 's3://test-bucket/domain/project/',
-                    },
-                },
-            }
-
-            const credentialsProvider = {
-                getCredentials: async () => ({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const connection = createMockS3Connection()
+            const credentialsProvider = createMockCredentialsProvider()
 
             mockS3Client.listPaths.resolves({
                 paths: [

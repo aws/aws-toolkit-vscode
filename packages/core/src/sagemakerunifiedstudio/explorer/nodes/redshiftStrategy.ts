@@ -131,10 +131,11 @@ export function createRedshiftConnectionNode(
         async (node) => {
             return telemetry.smus_renderRedshiftNode.run(async (span) => {
                 const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-
+                const accountId = await connectionCredentialsProvider.getDomainAccountId()
                 span.record({
                     smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
                     smusDomainId: connection.domainId,
+                    smusDomainAccountId: accountId,
                     smusProjectId: connection.projectId,
                     smusConnectionId: connection.connectionId,
                     smusConnectionType: connection.type,
