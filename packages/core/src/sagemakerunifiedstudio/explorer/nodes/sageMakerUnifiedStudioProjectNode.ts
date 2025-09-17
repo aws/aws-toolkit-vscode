@@ -82,10 +82,11 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         return telemetry.smus_renderProjectChildrenNode.run(async (span) => {
             try {
                 const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-
+                const accountId = await this.authProvider.getDomainAccountId()
                 span.record({
                     smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
                     smusDomainId: this.project?.domainId,
+                    smusDomainAccountId: accountId,
                     smusProjectId: this.project?.id,
                     smusDomainRegion: this.authProvider.getDomainRegion(),
                 })

@@ -13,10 +13,10 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusUtils } from '../../shared/smusUtils'
+import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
-import { errorCode } from '../../shared/errors'
+import { recordAuthTelemetry } from '../../shared/telemetry'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -237,7 +237,10 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
             if (!domainUrl) {
                 // User cancelled
                 logger.debug('User cancelled domain URL input')
-                return
+                throw new ToolkitError('User cancelled domain URL input', {
+                    cancelled: true,
+                    code: SmusErrorCodes.UserCancelled,
+                })
             }
 
             // Show a simple status bar message instead of progress dialog
@@ -252,19 +255,16 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
 
                 if (!connection) {
                     throw new ToolkitError('Failed to establish connection', {
-                        code: errorCode.failedAuthConnecton,
+                        code: SmusErrorCodes.FailedAuthConnecton,
                     })
                 }
 
-                // Extract domain ID and region for logging
+                // Extract domain account ID, domain ID, and region for logging
                 const domainId = connection.domainId
                 const region = connection.ssoRegion
 
                 logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
-                span.record({
-                    smusDomainId: domainId,
-                    awsRegion: region,
-                })
+                await recordAuthTelemetry(span, authProvider, domainId, region)
 
                 // Show success message
                 void vscode.window.showInformationMessage(
@@ -292,9 +292,12 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
                 })
             }
         } catch (err) {
-            void vscode.window.showErrorMessage(
-                `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
-            )
+            const isUserCancelled = err instanceof ToolkitError && err.code === SmusErrorCodes.UserCancelled
+            if (!isUserCancelled) {
+                void vscode.window.showErrorMessage(
+                    `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
+                )
+            }
             logger.error('Failed to initiate login: %s', (err as Error).message)
             throw new ToolkitError('Failed to initiate login.', {
                 cause: err as Error,
@@ -329,11 +332,7 @@ export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => asy
 
             // Show status message
             vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
-
-            span.record({
-                smusDomainId: domainId,
-                awsRegion: region,
-            })
+            await recordAuthTelemetry(span, authProvider, domainId, region)
 
             // Delete the connection (this will also invalidate tokens and clear cache)
             if (activeConnection) {
@@ -425,10 +424,12 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             }
 
             const selectedProject = await showQuickPick(items)
+            const accountId = await authProvider.getDomainAccountId()
             span.record({
                 smusDomainId: authProvider.getDomainId(),
                 smusProjectId: (selectedProject as DataZoneProject).id as string | undefined,
                 smusDomainRegion: authProvider.getDomainRegion(),
+                smusDomainAccountId: accountId,
             })
             if (
                 selectedProject &&
