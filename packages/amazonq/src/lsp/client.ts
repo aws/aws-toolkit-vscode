@@ -21,6 +21,7 @@ import {
 import {
     AuthUtil,
     CodeWhispererSettings,
+    FeatureConfigProvider,
     getSelectedCustomization,
     TelemetryHelper,
     vsCodeState,
@@ -45,6 +46,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
+import { activate as activateInline } from '../app/inline/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
@@ -338,8 +340,42 @@ async function onLanguageServerReady(
     // tutorial for inline chat
     const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
-    const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
-    inlineManager.registerInlineCompletion()
+    const enableInlineRollback = FeatureConfigProvider.instance.getPreFlareRollbackGroup() === 'treatment'
+    if (enableInlineRollback) {
+        // use VSC inline
+        getLogger().info('Entering preflare logic')
+        await activateInline(client)
+    } else {
+        // use language server for inline completion
+        getLogger().info('Entering postflare logic')
+        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
+        inlineManager.registerInlineCompletion()
+        toDispose.push(
+            inlineManager,
+            Commands.register('aws.amazonq.showPrev', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+                sessionManager.onPrevSuggestion()
+            }),
+            Commands.register('aws.amazonq.showNext', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+                sessionManager.onNextSuggestion()
+            }),
+            // this is a workaround since handleDidShowCompletionItem is not public API
+            Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+                sessionManager.checkInlineSuggestionVisibility()
+            }),
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                vsCodeState.lastManualTriggerTime = performance.now()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            }),
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            })
+        )
+    }
+
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
     if (Experiments.instance.get('amazonqChatLSP', true)) {
@@ -354,25 +390,6 @@ async function onLanguageServerReady(
     await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
-        inlineManager,
-        Commands.register('aws.amazonq.showPrev', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
-            sessionManager.onPrevSuggestion()
-        }),
-        Commands.register('aws.amazonq.showNext', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
-            sessionManager.onNextSuggestion()
-        }),
-        // this is a workaround since handleDidShowCompletionItem is not public API
-        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
-            sessionManager.checkInlineSuggestionVisibility()
-        }),
-        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-            vsCodeState.lastManualTriggerTime = performance.now()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-        }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
             telemetry.record({
                 traceId: TelemetryHelper.instance.traceId,
@@ -397,9 +414,6 @@ async function onLanguageServerReady(
                 await inlineTutorialAnnotation.dismissTutorial()
                 getLogger().debug(`codewhisperer: user dismiss tutorial.`)
             }
-        }),
-        vscode.workspace.onDidCloseTextDocument(async () => {
-            await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
         }),
         AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
             await auth.refreshConnection()
