@@ -29,7 +29,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 issue,
                 filePath,
                 'Explain',
-                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user.',
+                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user. You must start with the information stored in the recommendation.text field if it is present.',
                 provider,
                 'explainIssue'
             )
