@@ -74,6 +74,14 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
     }
 
     /**
+     * Gets the domain AWS account ID
+     * @returns Promise resolving to the domain account ID
+     */
+    public async getDomainAccountId(): Promise<string> {
+        return this.smusAuthProvider.getDomainAccountId()
+    }
+
+    /**
      * Gets the hash code
      * @returns Hash code
      */
