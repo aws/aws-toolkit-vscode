@@ -14,6 +14,7 @@ import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SageMakerUnifiedStudioDataNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioDataNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
 import * as vscodeUtils from '../../../../shared/vscode/setContext'
+import { createMockExtensionContext } from '../../testUtils'
 
 describe('SageMakerUnifiedStudioProjectNode', function () {
     let projectNode: SageMakerUnifiedStudioProjectNode
@@ -36,20 +37,11 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             invalidateAllProjectCredentialsInCache: sinon.stub(),
             getProjectCredentialProvider: sinon.stub(),
             getDomainRegion: sinon.stub().returns('us-west-2'),
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
         } as any
 
         // Create mock extension context
-        const mockExtensionContext = {
-            subscriptions: [],
-            workspaceState: {
-                get: sinon.stub(),
-                update: sinon.stub(),
-            },
-            globalState: {
-                get: sinon.stub(),
-                update: sinon.stub(),
-            },
-        } as any
+        const mockExtensionContext = createMockExtensionContext()
 
         projectNode = new SageMakerUnifiedStudioProjectNode(mockParent, mockAuthProvider, mockExtensionContext)
 
