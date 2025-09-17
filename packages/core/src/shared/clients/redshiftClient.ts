@@ -231,7 +231,7 @@ export class DefaultRedshiftClient {
         connectionParams: ConnectionParams
     ): Promise<ClusterCredentials | GetCredentialsResponse> {
         if (warehouseType === RedshiftWarehouseType.PROVISIONED) {
-            const redshiftClient = await this.redshiftClientProvider(this.regionCode)
+            const redshiftClient = this.redshiftClientProvider(this.regionCode)
             const getClusterCredentialsRequest: GetClusterCredentialsMessage = {
                 DbUser: connectionParams.username!,
                 DbName: connectionParams.database,
