@@ -18,6 +18,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
+import { createMockSpaceNode } from '../testUtils'
 
 describe('SMUS Explorer Activation', function () {
     let mockExtensionContext: vscode.ExtensionContext
@@ -30,7 +31,7 @@ describe('SMUS Explorer Activation', function () {
     let dataZoneDisposeStub: sinon.SinonStub
     let setupUserActivityMonitoringStub: sinon.SinonStub
 
-    beforeEach(function () {
+    beforeEach(async function () {
         mockExtensionContext = {
             subscriptions: [],
         } as any
@@ -45,6 +46,7 @@ describe('SMUS Explorer Activation', function () {
                 domainId: 'test-domain',
                 ssoRegion: 'us-east-1',
             },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
         } as any
 
         mockTreeView = {
@@ -285,25 +287,7 @@ describe('SMUS Explorer Activation', function () {
 
                 assert.ok(stopSpaceCommand)
 
-                const mockSpaceNode = {
-                    resource: {
-                        sageMakerClient: {},
-                        DomainSpaceKey: 'test-space-key',
-                        regionCode: 'us-east-1',
-                        getParent: sinon.stub().returns({
-                            getAuthProvider: sinon.stub().returns({
-                                activeConnection: { domainId: 'test-domain' },
-                            }),
-                            getProjectId: sinon.stub().returns('test-project'),
-                        }),
-                    },
-                    getParent: sinon.stub().returns({
-                        getAuthProvider: sinon.stub().returns({
-                            activeConnection: { domainId: 'test-domain' },
-                        }),
-                        getProjectId: sinon.stub().returns('test-project'),
-                    }),
-                } as any
+                const mockSpaceNode = createMockSpaceNode()
 
                 // Mock the stopSpace function
                 const stopSpaceStub = sinon.stub()
@@ -346,25 +330,7 @@ describe('SMUS Explorer Activation', function () {
 
                 assert.ok(openRemoteCommand)
 
-                const mockSpaceNode = {
-                    resource: {
-                        sageMakerClient: {},
-                        DomainSpaceKey: 'test-space-key',
-                        regionCode: 'us-east-1',
-                        getParent: sinon.stub().returns({
-                            getAuthProvider: sinon.stub().returns({
-                                activeConnection: { domainId: 'test-domain' },
-                            }),
-                            getProjectId: sinon.stub().returns('test-project'),
-                        }),
-                    },
-                    getParent: sinon.stub().returns({
-                        getAuthProvider: sinon.stub().returns({
-                            activeConnection: { domainId: 'test-domain' },
-                        }),
-                        getProjectId: sinon.stub().returns('test-project'),
-                    }),
-                } as any
+                const mockSpaceNode = createMockSpaceNode()
 
                 // Mock the openRemoteConnect function
                 const openRemoteConnectStub = sinon.stub()
