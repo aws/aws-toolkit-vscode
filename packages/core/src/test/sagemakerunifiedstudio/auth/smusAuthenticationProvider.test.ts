@@ -14,8 +14,12 @@ import { SmusAuthenticationProvider } from '../../../sagemakerunifiedstudio/auth
 import { SmusConnection } from '../../../sagemakerunifiedstudio/auth/model'
 import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { SmusUtils } from '../../../sagemakerunifiedstudio/shared/smusUtils'
+import * as smusUtils from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as messages from '../../../shared/utilities/messages'
+import * as vscodeSetContext from '../../../shared/vscode/setContext'
+import * as resourceMetadataUtils from '../../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 describe('SmusAuthenticationProvider', function () {
     let mockAuth: any
@@ -408,6 +412,168 @@ describe('SmusAuthenticationProvider', function () {
         it('should return instance property', function () {
             const instance = SmusAuthenticationProvider.fromContext()
             assert.strictEqual(SmusAuthenticationProvider.instance, instance)
+        })
+    })
+
+    describe('getDomainAccountId', function () {
+        let getContextStub: sinon.SinonStub
+        let getResourceMetadataStub: sinon.SinonStub
+        let extractAccountIdFromArnStub: sinon.SinonStub
+        let getDerCredentialsProviderStub: sinon.SinonStub
+        let getDomainRegionStub: sinon.SinonStub
+        let mockStsClient: any
+        let mockCredentialsProvider: any
+
+        beforeEach(function () {
+            // Mock dependencies
+            getContextStub = sinon.stub(vscodeSetContext, 'getContext')
+            getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+            extractAccountIdFromArnStub = sinon.stub(smusUtils, 'extractAccountIdFromArn')
+
+            // Mock STS client
+            mockStsClient = {
+                getCallerIdentity: sinon.stub(),
+            }
+            sinon
+                .stub(DefaultStsClient.prototype, 'getCallerIdentity')
+                .callsFake(() => mockStsClient.getCallerIdentity())
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }
+
+            // Stub methods on the provider instance
+            getDerCredentialsProviderStub = sinon
+                .stub(smusAuthProvider, 'getDerCredentialsProvider')
+                .resolves(mockCredentialsProvider)
+            getDomainRegionStub = sinon.stub(smusAuthProvider, 'getDomainRegion').returns('us-east-1')
+
+            // Reset cached value
+            smusAuthProvider['cachedDomainAccountId'] = undefined
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        describe('when cached value exists', function () {
+            it('should return cached account ID without making any calls', async function () {
+                const cachedAccountId = '123456789012'
+                smusAuthProvider['cachedDomainAccountId'] = cachedAccountId
+
+                const result = await smusAuthProvider.getDomainAccountId()
+
+                assert.strictEqual(result, cachedAccountId)
+                assert.ok(getContextStub.notCalled)
+                assert.ok(getResourceMetadataStub.notCalled)
+                assert.ok(mockStsClient.getCallerIdentity.notCalled)
+            })
+        })
+
+        describe('in SMUS space environment', function () {
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(true)
+            })
+
+            it('should extract account ID from ResourceArn and cache it', async function () {
+                const testAccountId = '123456789012'
+                const testResourceArn = `arn:aws:sagemaker:us-east-1:${testAccountId}:domain/test-domain`
+
+                getResourceMetadataStub.returns({
+                    ResourceArn: testResourceArn,
+                })
+                extractAccountIdFromArnStub.returns(testAccountId)
+
+                const result = await smusAuthProvider.getDomainAccountId()
+
+                assert.strictEqual(result, testAccountId)
+                assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], testAccountId)
+                assert.ok(getResourceMetadataStub.called)
+                assert.ok(extractAccountIdFromArnStub.calledWith(testResourceArn))
+                assert.ok(mockStsClient.getCallerIdentity.notCalled)
+            })
+
+            it('should throw error when ResourceArn is missing from metadata', async function () {
+                getResourceMetadataStub.returns({})
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDomainAccountId(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'GetDomainAccountIdFailed' &&
+                            err.message.includes(
+                                'Failed to extract AWS account ID from ResourceArn in SMUS space environment'
+                            )
+                        )
+                    }
+                )
+
+                assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], undefined)
+            })
+        })
+
+        describe('in non-SMUS space environment', function () {
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
+                mockSecondaryAuthState.activeConnection = mockSmusConnection
+            })
+
+            it('should use STS GetCallerIdentity to get account ID and cache it', async function () {
+                const testAccountId = '123456789012'
+                mockStsClient.getCallerIdentity.resolves({
+                    Account: testAccountId,
+                    UserId: 'test-user-id',
+                    Arn: 'arn:aws:sts::123456789012:assumed-role/test-role/test-session',
+                })
+
+                const result = await smusAuthProvider.getDomainAccountId()
+
+                assert.strictEqual(result, testAccountId)
+                assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], testAccountId)
+                assert.ok(getDerCredentialsProviderStub.called)
+                assert.ok(getDomainRegionStub.called)
+                assert.ok(mockCredentialsProvider.getCredentials.called)
+                assert.ok(mockStsClient.getCallerIdentity.called)
+            })
+
+            it('should throw error when no active connection exists', async function () {
+                mockSecondaryAuthState.activeConnection = undefined
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDomainAccountId(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'NoActiveConnection' &&
+                            err.message.includes('No active SMUS connection available')
+                        )
+                    }
+                )
+
+                assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], undefined)
+                assert.ok(getDerCredentialsProviderStub.notCalled)
+                assert.ok(mockStsClient.getCallerIdentity.notCalled)
+            })
+
+            it('should throw error when STS GetCallerIdentity fails', async function () {
+                mockStsClient.getCallerIdentity.rejects(new Error('STS call failed'))
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDomainAccountId(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'GetDomainAccountIdFailed' &&
+                            err.message.includes('Failed to retrieve AWS account ID for active domain connection')
+                        )
+                    }
+                )
+
+                assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], undefined)
+            })
         })
     })
 })
