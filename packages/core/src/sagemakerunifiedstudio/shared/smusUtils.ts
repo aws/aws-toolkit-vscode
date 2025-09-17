@@ -50,6 +50,14 @@ export const SmusErrorCodes = {
     SmusLoginFailed: 'SmusLoginFailed',
     /** Error code for when redeeming access token fails */
     RedeemAccessTokenFailed: 'RedeemAccessTokenFailed',
+    /** Error code for when connection establish fails */
+    FailedAuthConnecton: 'FailedAuthConnecton',
+    /** Error code for when user cancels an operation */
+    UserCancelled: 'UserCancelled',
+    /** Error code for when domain account Id is missing */
+    AccountIdNotFound: 'AccountIdNotFound',
+    /** Error code for when fails to get domain account Id */
+    GetDomainAccountIdFailed: 'GetDomainAccountIdFailed',
 } as const
 
 /**
@@ -350,4 +358,25 @@ export class SmusUtils {
         const resourceMetadata = getResourceMetadata()
         return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
     }
+}
+
+/**
+ * Extracts the account ID from a SageMaker ARN.
+ * Supports formats like:
+ *   arn:aws:sagemaker:<region>:<account_id>:app/*
+ *
+ * @param arn - The full SageMaker ARN string
+ * @returns The account ID from the ARN
+ * @throws If the ARN format is invalid
+ */
+export function extractAccountIdFromArn(arn: string): string {
+    // Match the ARN components to extract account ID
+    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space|domain)\/.+$/i
+    const match = arn.match(regex)
+
+    if (!match?.groups) {
+        throw new ToolkitError(`Invalid SageMaker ARN format: "${arn}"`)
+    }
+
+    return match.groups.accountId
 }
