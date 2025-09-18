@@ -4,8 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import IoTSecureTunneling from 'aws-sdk/clients/iotsecuretunneling'
 import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import {
+    CloseTunnelCommand,
+    IoTSecureTunnelingClient,
+    ListTunnelsCommand,
+    OpenTunnelCommand,
+    RotateTunnelAccessTokenCommand,
+} from '@aws-sdk/client-iotsecuretunneling'
 import { getClientId } from '../../shared/telemetry/util'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { LocalProxy } from './localProxy'
@@ -62,7 +68,7 @@ export class LdkClient {
     private localProxy: LocalProxy | undefined
     private static instanceCreating = false
     private lambdaClientCache: Map<string, DefaultLambdaClient> = new Map()
-    private iotSTClientCache: Map<string, IoTSecureTunneling> = new Map()
+    private iotSTClientCache: Map<string, IoTSecureTunnelingClient> = new Map()
 
     constructor() {}
 
@@ -98,9 +104,9 @@ export class LdkClient {
         return this.lambdaClientCache.get(region)!
     }
 
-    private async getIoTSTClient(region: string): Promise<IoTSecureTunneling> {
+    private getIoTSTClient(region: string): IoTSecureTunnelingClient {
         if (!this.iotSTClientCache.has(region)) {
-            this.iotSTClientCache.set(region, await getIoTSTClientWithAgent(region))
+            this.iotSTClientCache.set(region, getIoTSTClientWithAgent(region))
         }
         return this.iotSTClientCache.get(region)!
     }
@@ -125,13 +131,13 @@ export class LdkClient {
             const vscodeUuid = getClientId(globals.globalState)
 
             // Create IoTSecureTunneling client
-            const iotSecureTunneling = await this.getIoTSTClient(region)
+            const iotSecureTunneling = this.getIoTSTClient(region)
 
             // Define tunnel identifier
             const tunnelIdentifier = `RemoteDebugging+${vscodeUuid}`
             const timeoutInMinutes = 720
             // List existing tunnels
-            const listTunnelsResponse = await iotSecureTunneling.listTunnels({}).promise()
+            const listTunnelsResponse = await iotSecureTunneling.send(new ListTunnelsCommand({}))
 
             // Find tunnel with our identifier
             const existingTunnel = listTunnelsResponse.tunnelSummaries?.find(
@@ -151,20 +157,20 @@ export class LdkClient {
                     return rotateResponse
                 } else {
                     // Close tunnel if less than 15 minutes remaining
-                    await iotSecureTunneling
-                        .closeTunnel({
+                    await iotSecureTunneling.send(
+                        new CloseTunnelCommand({
                             tunnelId: existingTunnel.tunnelId,
                             delete: false,
                         })
-                        .promise()
+                    )
 
                     getLogger().info(`Closed tunnel ${existingTunnel.tunnelId} with less than 15 minutes remaining`)
                 }
             }
 
             // Create new tunnel
-            const openTunnelResponse = await iotSecureTunneling
-                .openTunnel({
+            const openTunnelResponse = await iotSecureTunneling.send(
+                new OpenTunnelCommand({
                     description: tunnelIdentifier,
                     timeoutConfig: {
                         maxLifetimeTimeoutMinutes: timeoutInMinutes, // 12 hours
@@ -173,7 +179,7 @@ export class LdkClient {
                         services: ['WSS'],
                     },
                 })
-                .promise()
+            )
 
             getLogger().info(`Created new tunnel with ID: ${openTunnelResponse.tunnelId}`)
 
@@ -190,13 +196,13 @@ export class LdkClient {
     // Refresh tunnel tokens
     async refreshTunnelTokens(tunnelId: string, region: string): Promise<TunnelInfo | undefined> {
         try {
-            const iotSecureTunneling = await this.getIoTSTClient(region)
-            const rotateResponse = await iotSecureTunneling
-                .rotateTunnelAccessToken({
+            const iotSecureTunneling = this.getIoTSTClient(region)
+            const rotateResponse = await iotSecureTunneling.send(
+                new RotateTunnelAccessTokenCommand({
                     tunnelId: tunnelId,
                     clientMode: 'ALL',
                 })
-                .promise()
+            )
 
             return {
                 tunnelID: tunnelId,
