@@ -38,8 +38,7 @@ export class CredentialsStore {
             const expiration = this.credentialsCache[key].credentials.expiration
             const now = new globals.clock.Date()
             const bufferedNow = new globals.clock.Date(now.getTime() + expirationBufferMs)
-            const isValid = expiration !== undefined ? expiration >= bufferedNow : true
-            return isValid
+            return expiration !== undefined ? expiration >= bufferedNow : true
         }
         getLogger().debug(`credentials: no credentials found for ${key}`)
         return false
