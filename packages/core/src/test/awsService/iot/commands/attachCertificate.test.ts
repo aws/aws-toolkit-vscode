@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import { Iot } from 'aws-sdk'
+import { Certificate } from '@aws-sdk/client-iot'
 import { attachCertificateCommand, CertGen } from '../../../../awsService/iot/commands/attachCertificate'
 import { IotThingFolderNode } from '../../../../awsService/iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../../awsService/iot/explorer/iotThingNode'
@@ -19,22 +19,22 @@ import assert from 'assert'
 describe('attachCertCommand', function () {
     const thingName = 'iot-thing'
     let iot: IotClient
-    let certs: Iot.Certificate[]
+    let certs: Certificate[]
     let thingNode: IotThingNode
     let selection: number = 0
     let sandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
 
-    const prompt: (iot: IotClient, certFetch: CertGen) => Promise<PromptResult<Iot.Certificate>> = async (
+    const prompt: (iot: IotClient, certFetch: CertGen) => Promise<PromptResult<Certificate>> = async (
         iot,
         certFetch
     ) => {
         const iterable = certFetch(iot)
-        const responses: DataQuickPickItem<Iot.Certificate>[] = []
+        const responses: DataQuickPickItem<Certificate>[] = []
         for await (const response of iterable) {
             responses.push(...response)
         }
-        return selection > -1 ? (responses[selection].data as Iot.Certificate) : undefined
+        return selection > -1 ? (responses[selection].data as Certificate) : undefined
     }
 
     beforeEach(function () {
