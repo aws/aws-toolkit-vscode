@@ -109,8 +109,12 @@ export class AmazonQLspAuth {
     }
 
     private areCredentialsEqual(creds1: any, creds2: any): boolean {
-        if (!creds1 && !creds2) return true
-        if (!creds1 || !creds2) return false
+        if (!creds1 && !creds2) {
+            return true
+        }
+        if (!creds1 || !creds2) {
+            return false
+        }
 
         return (
             creds1.accessKeyId === creds2.accessKeyId &&

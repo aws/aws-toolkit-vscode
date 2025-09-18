@@ -58,8 +58,12 @@ describe('functionUtils', function () {
     it('onceChangedWithComparator()', function () {
         let counter = 0
         const credentialsEqual = ([prev]: [any], [current]: [any]) => {
-            if (!prev && !current) return true
-            if (!prev || !current) return false
+            if (!prev && !current) {
+                return true
+            }
+            if (!prev || !current) {
+                return false
+            }
             return prev.accessKeyId === current.accessKeyId && prev.secretAccessKey === current.secretAccessKey
         }
         const fn = onceChangedWithComparator((creds: any) => void counter++, credentialsEqual)
