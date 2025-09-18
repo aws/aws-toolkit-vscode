@@ -875,7 +875,6 @@ export class Auth implements AuthService, ConnectionManager {
         if (creds !== undefined && creds.credentialsHashCode === provider.getHashCode()) {
             return creds.credentials
         }
-        return undefined
     }
 
     private readonly getToken = keyedDebounce(this._getToken.bind(this))
