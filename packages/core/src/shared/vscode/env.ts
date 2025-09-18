@@ -146,36 +146,56 @@ export function hasSageMakerEnvVars(): boolean {
 /**
  * Checks if the current environment is running on Amazon Linux 2.
  *
- * This function attempts to detect if we're running in a container on an AL2 host
- * by checking both the OS release and container-specific indicators.
+ * This function detects if we're actually running on AL2, not just if the host is AL2.
+ * In containerized environments, we check the container's OS, not the host's.
  *
  * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
 export function isAmazonLinux2() {
+    // Skip AL2 detection for web environments
+    // In web mode, we're running in a browser, not on AL2
+    if (isWeb()) {
+        return false
+    }
+
     // First check if we're in a SageMaker environment, which should not be treated as AL2
     // even if the underlying host is AL2
     if (hasSageMakerEnvVars()) {
         return false
     }
 
-    // Check if we're in a container environment that's not AL2
-    if (process.env.container === 'docker' || process.env.DOCKER_HOST || process.env.DOCKER_BUILDKIT) {
-        // Additional check for container OS - if we can determine it's not AL2
-        try {
-            const fs = require('fs')
-            if (fs.existsSync('/etc/os-release')) {
-                const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
-                if (!osRelease.includes('Amazon Linux 2') && !osRelease.includes('amzn2')) {
-                    return false
-                }
+    // For containerized environments, check the actual container OS
+    // not the host kernel version
+    try {
+        const fs = require('fs')
+        if (fs.existsSync('/etc/os-release')) {
+            const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
+            // Check if this is actually Amazon Linux 2
+            const isAL2 =
+                osRelease.includes('Amazon Linux 2') ||
+                (osRelease.includes('ID="amzn"') && osRelease.includes('VERSION_ID="2"'))
+
+            // If we found os-release file, trust its content over kernel version
+            if (!isAL2) {
+                // Explicitly not AL2 based on os-release
+                return false
             }
-        } catch (e) {
-            // If we can't read the file, fall back to the os.release() check
+            // If it is AL2 according to os-release, continue to kernel check for confirmation
         }
+    } catch (e) {
+        // If we can't read the file, fall back to the os.release() check
+        // This might happen in some restricted environments
+        getLogger().error(`Checking the current environment failed with error: ${e}`)
     }
 
-    // Standard check for AL2 in the OS release string
-    return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
+    // Check kernel version as a fallback or confirmation
+    // This should only be trusted if we couldn't determine from /etc/os-release
+    // or if /etc/os-release confirmed it's AL2
+    const kernelRelease = os.release()
+    const hasAL2Kernel =
+        (kernelRelease.includes('.amzn2int.') || kernelRelease.includes('.amzn2.')) && process.platform === 'linux'
+
+    return hasAL2Kernel
 }
 
 /**
@@ -217,9 +237,9 @@ export function getExtRuntimeContext(): {
     extensionHost: ExtensionHostLocation
 } {
     const extensionHost =
-        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
-        // should be used
-        typeof navigator === 'undefined'
+        // Check if we're in a Node.js environment (desktop/remote) vs web worker
+        // Updated to be compatible with Node.js v22 which includes navigator global
+        typeof process === 'object' && process.versions?.node
             ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
                 ? 'local'
                 : 'remote'
