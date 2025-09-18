@@ -19,6 +19,7 @@ export {
     getTelemetryMetadataForConn,
     isIamConnection,
     isSsoConnection,
+    areCredentialsEqual,
 } from './connection'
 export { Auth } from './auth'
 export { CredentialsStore } from './credentials/store'
