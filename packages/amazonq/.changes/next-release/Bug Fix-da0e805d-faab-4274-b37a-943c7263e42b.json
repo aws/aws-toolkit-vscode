@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q automatically refreshes expired IAM Credentials in Sagemaker instances"
+}
