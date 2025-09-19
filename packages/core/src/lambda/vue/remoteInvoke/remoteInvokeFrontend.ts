@@ -182,6 +182,7 @@ export default defineComponent({
                 this.debugState.isDebugging = await client.isWebViewDebugging()
                 this.debugConfig.localRootPath = await client.getLocalPath()
                 this.debugState.handlerFileAvailable = await client.getHandlerAvailable()
+                this.runtimeSettings.outFiles = await client.getOutFile()
                 // Get current session state
 
                 if (this.debugState.isDebugging) {
