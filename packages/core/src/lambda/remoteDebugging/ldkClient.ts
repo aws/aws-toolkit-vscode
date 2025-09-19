@@ -302,6 +302,10 @@ export class LdkClient {
                 updatedEnv.ORIGINAL_AWS_LAMBDA_EXEC_WRAPPER = currentEnv['AWS_LAMBDA_EXEC_WRAPPER']
             }
 
+            if (getLogger().logLevelEnabled('debug')) {
+                updatedEnv.RUST_LOG = 'debug'
+            }
+
             // Create Lambda client using AWS SDK
             const lambda = this.getLambdaClient(region)
 
