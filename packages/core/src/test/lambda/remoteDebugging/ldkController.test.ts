@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
     RemoteDebugController,
     activateRemoteDebugging,
@@ -200,7 +200,7 @@ describe('RemoteDebugController', () => {
 
     describe('Debug Session Management', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({
@@ -406,7 +406,7 @@ describe('RemoteDebugController', () => {
 
     describe('Telemetry Verification', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({

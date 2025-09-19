@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -166,7 +166,7 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
             return { python: '/var/lang/bin/python3.11', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.12':
             return { python: '/var/lang/bin/python3.12', bootstrap: '/var/runtime/bootstrap.py' }
-        case 'python3.13':
+        case 'python3.13' as Runtime:
             return { python: '/var/lang/bin/python3.13', bootstrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)

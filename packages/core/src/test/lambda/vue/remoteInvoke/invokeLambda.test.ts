@@ -22,6 +22,7 @@ import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteT
 import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { assertLogsContain } from '../../../globalSetup.test'
 import { createResponse } from '../../../testUtil'
+import { InvocationResponse } from '@aws-sdk/client-lambda'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
@@ -61,8 +62,8 @@ describe('RemoteInvokeWebview', () => {
             const input = '{"key": "value"}'
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: '{"result": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
 
             const appendedLines: string[] = []
@@ -87,8 +88,8 @@ describe('RemoteInvokeWebview', () => {
         it('handles Lambda invocation with no payload', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: '',
-            }
+                Payload: new TextEncoder().encode(''),
+            } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
             const appendedLines: string[] = []
@@ -111,8 +112,8 @@ describe('RemoteInvokeWebview', () => {
         })
         it('handles Lambda invocation with undefined LogResult', async () => {
             const mockResponse = {
-                Payload: '{"result": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "success"}'),
+            } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
 
