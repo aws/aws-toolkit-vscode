@@ -5,13 +5,21 @@
 
 import assert from 'assert'
 import path from 'path'
-import { isCloudDesktop, getEnvVars, getServiceEnvVarConfig, isAmazonLinux2, isBeta } from '../../../shared/vscode/env'
+import {
+    isCloudDesktop,
+    getEnvVars,
+    getServiceEnvVarConfig,
+    isAmazonLinux2,
+    isBeta,
+    hasSageMakerEnvVars,
+} from '../../../shared/vscode/env'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import * as sinon from 'sinon'
 import os from 'os'
 import fs from '../../../shared/fs/fs'
 import vscode from 'vscode'
 import { getComputeEnvType } from '../../../shared/telemetry/util'
+import * as globals from '../../../shared/extensionGlobals'
 
 describe('env', function () {
     // create a sinon sandbox instance and instantiate in a beforeEach
@@ -97,18 +105,225 @@ describe('env', function () {
         assert.strictEqual(isBeta(), expected)
     })
 
-    it('isAmazonLinux2', function () {
-        sandbox.stub(process, 'platform').value('linux')
-        const versionStub = stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
+    describe('isAmazonLinux2', function () {
+        let fsExistsStub: sinon.SinonStub
+        let fsReadFileStub: sinon.SinonStub
+        let isWebStub: sinon.SinonStub
+        let platformStub: sinon.SinonStub
+        let osReleaseStub: sinon.SinonStub
+        let moduleLoadStub: sinon.SinonStub
 
-        // Test with actual AL2 kernel
-        assert.strictEqual(isAmazonLinux2(), true)
+        beforeEach(function () {
+            // Default stubs
+            platformStub = sandbox.stub(process, 'platform').value('linux')
+            osReleaseStub = stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
+            isWebStub = sandbox.stub(globals, 'isWeb').returns(false)
 
-        versionStub.returns('5.10.236-227.928.amzn2.x86_64')
-        assert.strictEqual(isAmazonLinux2(), true)
+            // Mock fs module
+            const fsMock = {
+                existsSync: sandbox.stub().returns(false),
+                readFileSync: sandbox.stub().returns(''),
+            }
+            fsExistsStub = fsMock.existsSync
+            fsReadFileStub = fsMock.readFileSync
 
-        versionStub.returns('5.10.220-188.869.NOT_INTERNAL.x86_64')
-        assert.strictEqual(isAmazonLinux2(), false)
+            // Stub Module._load to intercept require calls
+            const Module = require('module')
+            moduleLoadStub = sandbox.stub(Module, '_load').callThrough()
+            moduleLoadStub.withArgs('fs').returns(fsMock)
+        })
+
+        it('returns false in web environment', function () {
+            isWebStub.returns(true)
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false in SageMaker environment with SAGEMAKER_APP_TYPE', function () {
+            sandbox.stub(process.env, 'SAGEMAKER_APP_TYPE').value('JupyterLab')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false in SageMaker environment with SM_APP_TYPE', function () {
+            sandbox.stub(process.env, 'SM_APP_TYPE').value('JupyterLab')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false in SageMaker environment with SERVICE_NAME', function () {
+            sandbox.stub(process.env, 'SERVICE_NAME').value('SageMakerUnifiedStudio')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false when /etc/os-release indicates Ubuntu in container', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Ubuntu"
+VERSION="20.04.6 LTS (Focal Fossa)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 20.04.6 LTS"
+VERSION_ID="20.04"
+            `)
+
+            // Even with AL2 kernel (host is AL2), should return false (container is Ubuntu)
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false when /etc/os-release indicates Amazon Linux 2023', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Amazon Linux"
+VERSION="2023"
+ID="amzn"
+ID_LIKE="fedora"
+VERSION_ID="2023"
+PLATFORM_ID="platform:al2023"
+PRETTY_NAME="Amazon Linux 2023"
+            `)
+
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns true when /etc/os-release indicates Amazon Linux 2', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Amazon Linux 2"
+VERSION="2"
+ID="amzn"
+ID_LIKE="centos rhel fedora"
+VERSION_ID="2"
+PRETTY_NAME="Amazon Linux 2"
+            `)
+
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('returns true when /etc/os-release has ID="amzn" and VERSION_ID="2"', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Amazon Linux"
+VERSION="2"
+ID="amzn"
+VERSION_ID="2"
+            `)
+
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('returns false when /etc/os-release indicates CentOS', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="CentOS Linux"
+VERSION="7 (Core)"
+ID="centos"
+ID_LIKE="rhel fedora"
+VERSION_ID="7"
+            `)
+
+            // Even with AL2 kernel
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('falls back to kernel check when /etc/os-release does not exist', function () {
+            fsExistsStub.returns(false)
+
+            // Test with AL2 kernel
+            assert.strictEqual(isAmazonLinux2(), true)
+
+            // Test with non-AL2 kernel
+            osReleaseStub.returns('5.10.220-188.869.NOT_INTERNAL.x86_64')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('falls back to kernel check when /etc/os-release read fails', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.throws(new Error('Permission denied'))
+
+            // Should fall back to kernel check
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('returns true with .amzn2. kernel pattern', function () {
+            fsExistsStub.returns(false)
+            osReleaseStub.returns('5.10.236-227.928.amzn2.x86_64')
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('returns true with .amzn2int. kernel pattern', function () {
+            fsExistsStub.returns(false)
+            osReleaseStub.returns('5.10.220-188.869.amzn2int.x86_64')
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('returns false with non-AL2 kernel', function () {
+            fsExistsStub.returns(false)
+            osReleaseStub.returns('5.15.0-91-generic')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false on non-Linux platforms', function () {
+            platformStub.value('darwin')
+            fsExistsStub.returns(false)
+            assert.strictEqual(isAmazonLinux2(), false)
+
+            platformStub.value('win32')
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('returns false when container OS is different from host OS', function () {
+            // Scenario: Host is AL2 (kernel shows AL2) but container is Ubuntu
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Ubuntu"
+VERSION="22.04"
+ID=ubuntu
+VERSION_ID="22.04"
+            `)
+            osReleaseStub.returns('5.10.220-188.869.amzn2int.x86_64') // AL2 kernel from host
+
+            // Should trust container OS over kernel
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+    })
+
+    describe('hasSageMakerEnvVars', function () {
+        afterEach(function () {
+            // Clean up environment variables
+            delete process.env.SAGEMAKER_APP_TYPE
+            delete process.env.SAGEMAKER_INTERNAL_IMAGE_URI
+            delete process.env.STUDIO_LOGGING_DIR
+            delete process.env.SM_APP_TYPE
+            delete process.env.SM_INTERNAL_IMAGE_URI
+            delete process.env.SERVICE_NAME
+        })
+
+        it('returns true when SAGEMAKER_APP_TYPE is set', function () {
+            process.env.SAGEMAKER_APP_TYPE = 'JupyterLab'
+            assert.strictEqual(hasSageMakerEnvVars(), true)
+        })
+
+        it('returns true when SM_APP_TYPE is set', function () {
+            process.env.SM_APP_TYPE = 'JupyterLab'
+            assert.strictEqual(hasSageMakerEnvVars(), true)
+        })
+
+        it('returns true when SERVICE_NAME is SageMakerUnifiedStudio', function () {
+            process.env.SERVICE_NAME = 'SageMakerUnifiedStudio'
+            assert.strictEqual(hasSageMakerEnvVars(), true)
+        })
+
+        it('returns true when STUDIO_LOGGING_DIR contains /var/log/studio', function () {
+            process.env.STUDIO_LOGGING_DIR = '/var/log/studio/logs'
+            assert.strictEqual(hasSageMakerEnvVars(), true)
+        })
+
+        it('returns false when no SageMaker env vars are set', function () {
+            assert.strictEqual(hasSageMakerEnvVars(), false)
+        })
+
+        it('returns false when SERVICE_NAME is set but not SageMakerUnifiedStudio', function () {
+            process.env.SERVICE_NAME = 'SomeOtherService'
+            assert.strictEqual(hasSageMakerEnvVars(), false)
+        })
     })
 
     it('isCloudDesktop', async function () {
