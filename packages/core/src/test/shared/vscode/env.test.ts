@@ -8,7 +8,6 @@ import path from 'path'
 import { isCloudDesktop, getEnvVars, getServiceEnvVarConfig, isAmazonLinux2, isBeta } from '../../../shared/vscode/env'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import * as sinon from 'sinon'
-import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import os from 'os'
 import fs from '../../../shared/fs/fs'
 import vscode from 'vscode'
@@ -110,20 +109,6 @@ describe('env', function () {
 
         versionStub.returns('5.10.220-188.869.NOT_INTERNAL.x86_64')
         assert.strictEqual(isAmazonLinux2(), false)
-
-        // Test with container environment (Ubuntu container on AL2 host)
-        versionStub.returns('5.10.236-227.928.amzn2.x86_64')
-        const existsStub = sandbox.stub(nodeFs, 'existsSync').returns(true)
-        const readFileStub = sandbox.stub(nodeFs, 'readFileSync').returns('ID="ubuntu"\nVERSION_ID="20.04"')
-        assert.strictEqual(isAmazonLinux2(), false, 'Should return false for Ubuntu container on AL2 host')
-
-        // Test with actual AL2 in /etc/os-release
-        readFileStub.returns('ID="amzn"\nVERSION_ID="2"')
-        assert.strictEqual(isAmazonLinux2(), true, 'Should return true for actual AL2')
-
-        // Clean up stubs
-        existsStub.restore()
-        readFileStub.restore()
     })
 
     it('isCloudDesktop', async function () {

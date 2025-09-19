@@ -170,7 +170,15 @@ export function isAmazonLinux2() {
         const fs = require('fs')
         if (fs.existsSync('/etc/os-release')) {
             const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
+
+            // Check if this is Amazon Linux 2023 (not AL2)
+            if (osRelease.includes('VERSION_ID="2023"') || osRelease.includes('PLATFORM_ID="platform:al2023"')) {
+                // This is Amazon Linux 2023, not AL2
+                return false
+            }
+
             // Check if this is actually Amazon Linux 2
+            // Must be specifically version 2, not 2023 or other versions
             const isAL2 =
                 osRelease.includes('Amazon Linux 2') ||
                 (osRelease.includes('ID="amzn"') && osRelease.includes('VERSION_ID="2"'))
