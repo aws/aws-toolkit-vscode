@@ -28,6 +28,23 @@ import { ToolkitError } from '../../../../../shared/errors'
 
 describe('generateLambdaNodeFromResource', () => {
     let generateDeployedNodeStub: sinon.SinonStub
+    const resourceMock = {
+        deployedResource: {
+            LogicalResourceId: 'TestFunction',
+            PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+        },
+        region: 'us-west-2',
+        stackName: 'TestStack',
+        resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+        projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
+        location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
+        workspaceFolder: {
+            uri: vscode.Uri.parse('myworkspace'),
+            name: 'my-workspace',
+            index: 0,
+        },
+        functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+    }
 
     beforeEach(() => {
         generateDeployedNodeStub = sinon.stub(DeployedResourceNodeModule, 'generateDeployedNode')
@@ -46,25 +63,7 @@ describe('generateLambdaNodeFromResource', () => {
         } as DeployedResourceNode
 
         generateDeployedNodeStub.resolves([mockDeployedNode])
-
-        const resource = {
-            deployedResource: {
-                LogicalResourceId: 'TestFunction',
-                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-            },
-            region: 'us-west-2',
-            stackName: 'TestStack',
-            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
-            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
-            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
-            workspaceFolder: {
-                uri: vscode.Uri.parse('myworkspace'),
-                name: 'my-workspace',
-                index: 0,
-            },
-            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-        }
-
+        const resource = resourceMock
         const result = await generateLambdaNodeFromResource(resource)
 
         assert.strictEqual(result, mockLambdaNode)
@@ -110,23 +109,7 @@ describe('generateLambdaNodeFromResource', () => {
     it('should throw error when generateDeployedNode returns no nodes', async () => {
         generateDeployedNodeStub.resolves([])
 
-        const resource = {
-            deployedResource: {
-                LogicalResourceId: 'TestFunction',
-                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-            },
-            region: 'us-west-2',
-            stackName: 'TestStack',
-            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
-            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
-            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
-            workspaceFolder: {
-                uri: vscode.Uri.parse('myworkspace'),
-                name: 'my-workspace',
-                index: 0,
-            },
-            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-        }
+        const resource = resourceMock
 
         await assert.rejects(
             async () => await generateLambdaNodeFromResource(resource),
@@ -140,23 +123,7 @@ describe('generateLambdaNodeFromResource', () => {
         const mockDeployedNode2 = {} as DeployedResourceNode
         generateDeployedNodeStub.resolves([mockDeployedNode1, mockDeployedNode2])
 
-        const resource = {
-            deployedResource: {
-                LogicalResourceId: 'TestFunction',
-                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-            },
-            region: 'us-west-2',
-            stackName: 'TestStack',
-            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
-            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
-            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
-            workspaceFolder: {
-                uri: vscode.Uri.parse('myworkspace'),
-                name: 'my-workspace',
-                index: 0,
-            },
-            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
-        }
+        const resource = resourceMock
 
         await assert.rejects(
             async () => await generateLambdaNodeFromResource(resource),
