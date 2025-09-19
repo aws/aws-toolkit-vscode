@@ -1,3 +1,7 @@
+## 1.95.0 2025-09-19
+
+- **Bug Fix** Amazon Q automatically refreshes expired IAM Credentials in Sagemaker instances
+
 ## 1.94.0 2025-09-11
 
 - Miscellaneous non-user-facing changes
