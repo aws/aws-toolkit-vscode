@@ -11,6 +11,38 @@ import * as treeNodeUtils from '../../shared/utilities/treeNodeUtils'
 import * as resourceNode from '../../awsService/appBuilder/explorer/nodes/resourceNode'
 import * as invokeLambdaModule from '../../lambda/vue/remoteInvoke/invokeLambda'
 import * as tailLogGroupModule from '../../awsService/cloudWatchLogs/commands/tailLogGroup'
+import { LogDataRegistry } from '../../awsService/cloudWatchLogs/registry/logDataRegistry'
+import * as searchLogGroupModule from '../../awsService/cloudWatchLogs/commands/searchLogGroup'
+
+const mockGeneratedLambdaNode: LambdaFunctionNode = {
+    functionName: 'generatedFunction',
+    regionCode: 'us-east-1',
+    configuration: {
+        FunctionName: 'generatedFunction',
+        FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:generatedFunction',
+    },
+} as LambdaFunctionNode
+
+const mockTreeNode = {
+    resource: {
+        deployedResource: { LogicalResourceId: 'TestFunction' },
+        region: 'us-east-1',
+        stackName: 'TestStack',
+        resource: { Id: 'TestFunction', Type: 'AWS::Serverless::Function' },
+    },
+}
+
+const mockLambdaNode: LambdaFunctionNode = {
+    functionName: 'testFunction',
+    regionCode: 'us-west-2',
+    configuration: {
+        FunctionName: 'testFunction',
+        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
+        LoggingConfig: {
+            LogGroup: '/aws/lambda/custom-log-group',
+        },
+    },
+} as LambdaFunctionNode
 
 describe('Lambda activation', () => {
     let sandbox: sinon.SinonSandbox
@@ -19,9 +51,13 @@ describe('Lambda activation', () => {
     let invokeRemoteLambdaStub: sinon.SinonStub
     let tailLogGroupStub: sinon.SinonStub
     let isTreeNodeStub: sinon.SinonStub
+    let searchLogGroupStub: sinon.SinonStub
+    let registry: LogDataRegistry
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
+        searchLogGroupStub = sandbox.stub(searchLogGroupModule, 'searchLogGroup')
+        registry = LogDataRegistry.instance
         getSourceNodeStub = sandbox.stub(treeNodeUtils, 'getSourceNode')
         generateLambdaNodeFromResourceStub = sandbox.stub(resourceNode, 'generateLambdaNodeFromResource')
         invokeRemoteLambdaStub = sandbox.stub(invokeLambdaModule, 'invokeRemoteLambda')
@@ -32,18 +68,56 @@ describe('Lambda activation', () => {
     afterEach(() => {
         sandbox.restore()
     })
+    describe('aws.appBuilder.searchLogs command', () => {
+        it('should handle LambdaFunctionNode directly', async () => {
+            getSourceNodeStub.returns(mockLambdaNode)
+            isTreeNodeStub.returns(false)
+            searchLogGroupStub.resolves()
+
+            const node = {}
+            await vscode.commands.executeCommand('aws.appBuilder.searchLogs', node)
+
+            assert(searchLogGroupStub.calledOnce)
+            assert(
+                searchLogGroupStub.calledWith(registry, 'AppBuilderSearchLogs', {
+                    regionName: 'us-west-2',
+                    groupName: '/aws/lambda/custom-log-group',
+                })
+            )
+        })
+
+        it('should generate LambdaFunctionNode from TreeNode when getSourceNode returns undefined', async () => {
+            getSourceNodeStub.returns(undefined)
+            isTreeNodeStub.returns(true)
+            generateLambdaNodeFromResourceStub.resolves(mockGeneratedLambdaNode)
+            searchLogGroupStub.resolves()
+
+            await vscode.commands.executeCommand('aws.appBuilder.searchLogs', mockTreeNode)
+
+            assert(generateLambdaNodeFromResourceStub.calledOnce)
+            assert(generateLambdaNodeFromResourceStub.calledWith(mockTreeNode.resource))
+            assert(searchLogGroupStub.calledOnce)
+            assert(
+                searchLogGroupStub.calledWith(registry, 'AppBuilderSearchLogs', {
+                    regionName: 'us-east-1',
+                    groupName: '/aws/lambda/generatedFunction',
+                })
+            )
+        })
+
+        it('should log error and throw ToolkitError when generateLambdaNodeFromResource fails', async () => {
+            getSourceNodeStub.returns(undefined)
+            isTreeNodeStub.returns(true)
+            generateLambdaNodeFromResourceStub.rejects(new Error('Failed to generate node'))
+            searchLogGroupStub.resolves()
+
+            await vscode.commands.executeCommand('aws.appBuilder.searchLogs', mockTreeNode)
+            assert(searchLogGroupStub.notCalled)
+        })
+    })
 
     describe('aws.invokeLambda command', () => {
         it('should handle LambdaFunctionNode directly from AWS Explorer', async () => {
-            const mockLambdaNode: LambdaFunctionNode = {
-                functionName: 'testFunction',
-                regionCode: 'us-west-2',
-                configuration: {
-                    FunctionName: 'testFunction',
-                    FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-                },
-            } as LambdaFunctionNode
-
             isTreeNodeStub.returns(false)
             invokeRemoteLambdaStub.resolves()
 
@@ -56,24 +130,6 @@ describe('Lambda activation', () => {
         })
 
         it('should generate LambdaFunctionNode from TreeNode when coming from AppBuilder', async () => {
-            const mockGeneratedLambdaNode: LambdaFunctionNode = {
-                functionName: 'generatedFunction',
-                regionCode: 'us-east-1',
-                configuration: {
-                    FunctionName: 'generatedFunction',
-                    FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:generatedFunction',
-                },
-            } as LambdaFunctionNode
-
-            const mockTreeNode = {
-                resource: {
-                    deployedResource: { LogicalResourceId: 'TestFunction' },
-                    region: 'us-east-1',
-                    stackName: 'TestStack',
-                    resource: { Id: 'TestFunction', Type: 'AWS::Serverless::Function' },
-                },
-            }
-
             isTreeNodeStub.returns(true)
             getSourceNodeStub.returns(undefined)
             generateLambdaNodeFromResourceStub.resolves(mockGeneratedLambdaNode)
@@ -90,15 +146,6 @@ describe('Lambda activation', () => {
         })
 
         it('should handle existing LambdaFunctionNode from TreeNode', async () => {
-            const mockLambdaNode: LambdaFunctionNode = {
-                functionName: 'existingFunction',
-                regionCode: 'us-west-2',
-                configuration: {
-                    FunctionName: 'existingFunction',
-                    FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:existingFunction',
-                },
-            } as LambdaFunctionNode
-
             const mockTreeNode = {
                 resource: {},
             }
@@ -119,17 +166,6 @@ describe('Lambda activation', () => {
 
     describe('aws.appBuilder.tailLogs command', () => {
         it('should handle LambdaFunctionNode directly', async () => {
-            const mockLambdaNode: LambdaFunctionNode = {
-                functionName: 'testFunction',
-                regionCode: 'us-west-2',
-                configuration: {
-                    FunctionName: 'testFunction',
-                    LoggingConfig: {
-                        LogGroup: '/aws/lambda/custom-log-group',
-                    },
-                },
-            } as LambdaFunctionNode
-
             isTreeNodeStub.returns(false)
             getSourceNodeStub.returns(mockLambdaNode)
             tailLogGroupStub.resolves()
@@ -154,15 +190,6 @@ describe('Lambda activation', () => {
                     FunctionName: 'generatedFunction',
                 },
             } as LambdaFunctionNode
-
-            const mockTreeNode = {
-                resource: {
-                    deployedResource: { LogicalResourceId: 'TestFunction' },
-                    region: 'us-east-1',
-                    stackName: 'TestStack',
-                    resource: { Id: 'TestFunction', Type: 'AWS::Serverless::Function' },
-                },
-            }
 
             isTreeNodeStub.returns(true)
             getSourceNodeStub.returns(undefined)
