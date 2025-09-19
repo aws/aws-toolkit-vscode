@@ -460,8 +460,8 @@ describe('RemoteInvokeWebview', () => {
                 projectRoot: vscode.Uri.file(tempFolder),
             } as any
 
-            const buildPath = path.join(tempFolder, '.aws-sam', 'build', 'MyFunction')
-            await fs.mkdir(buildPath)
+            const buildPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), '.aws-sam', 'build', 'MyFunction')
+            await fs.mkdir(buildPath.fsPath)
 
             getLambdaHandlerFileStub.resolves(vscode.Uri.file(handlerPath))
             fsExistsStub.withArgs(vscode.Uri.file(handlerPath)).resolves(true)
@@ -472,7 +472,7 @@ describe('RemoteInvokeWebview', () => {
             const result = await remoteInvokeWebview.tryOpenHandlerFile()
 
             assert.strictEqual(result, true)
-            assert.strictEqual(remoteInvokeWebview.getOutFile(), buildPath)
+            assert.strictEqual(remoteInvokeWebview.getOutFile(), buildPath.fsPath)
             assert.strictEqual(openLambdaFileStub.called, true)
             await fs.delete(tempFolder, { recursive: true })
         })
