@@ -10,7 +10,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { FunctionUrlConfigList } from 'aws-sdk/clients/lambda'
+import { FunctionUrlConfig } from '@aws-sdk/client-lambda'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { lambdaFunctionUrlConfigUrl } from '../../shared/constants'
 
@@ -40,7 +40,7 @@ export async function copyLambdaUrl(
     }
 }
 
-async function _quickPickUrl(configList: FunctionUrlConfigList): Promise<string | undefined> {
+async function _quickPickUrl(configList: FunctionUrlConfig[]): Promise<string | undefined> {
     const res = await createLambdaFuncUrlPrompter(configList).prompt()
     if (!isValidResponse(res)) {
         throw new CancellationError('user')
@@ -48,10 +48,12 @@ async function _quickPickUrl(configList: FunctionUrlConfigList): Promise<string 
     return res
 }
 
-export function createLambdaFuncUrlPrompter(configList: FunctionUrlConfigList): QuickPickPrompter<string> {
-    const items = configList.map((c) => ({
-        label: c.FunctionArn,
-        data: c.FunctionUrl,
-    }))
+export function createLambdaFuncUrlPrompter(configList: FunctionUrlConfig[]): QuickPickPrompter<string> {
+    const items = configList
+        .filter((c) => c.FunctionArn && c.FunctionUrl)
+        .map((c) => ({
+            label: c.FunctionArn!,
+            data: c.FunctionUrl!,
+        }))
     return createQuickPick(items, { title: 'Select function to copy url from.' })
 }

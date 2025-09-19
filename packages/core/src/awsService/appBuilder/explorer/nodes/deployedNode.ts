@@ -13,7 +13,7 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import globals from '../../../../shared/extensionGlobals'
 import { defaultPartition } from '../../../../shared/regions/regionProvider'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { RestApi } from '@aws-sdk/client-api-gateway'
 import { LambdaNode } from '../../../../lambda/explorer/lambdaNodes'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
@@ -89,10 +89,10 @@ export async function generateDeployedNode(
             case SERVERLESS_FUNCTION_TYPE: {
                 const defaultClient = new DefaultLambdaClient(regionCode)
                 const lambdaNode = new LambdaNode(regionCode, defaultClient)
-                let configuration: Lambda.FunctionConfiguration
+                let configuration: FunctionConfiguration
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
-                        .Configuration as Lambda.FunctionConfiguration
+                        .Configuration as FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(
                         lambdaNode,
                         regionCode,

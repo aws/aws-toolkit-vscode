@@ -34,7 +34,7 @@ describe('ResourceNode', () => {
                 Method: undefined,
             },
         ],
-    }
+    } satisfies ResourceTreeEntity
     const workspaceFolder = {
         uri: vscode.Uri.parse('myworkspace'),
         name: 'my-workspace',
