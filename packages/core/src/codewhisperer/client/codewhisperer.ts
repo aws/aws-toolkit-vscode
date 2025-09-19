@@ -227,6 +227,7 @@ export class DefaultCodeWhispererClient {
                 product: 'CodeWhisperer', // TODO: update this?
                 clientId: getClientId(globals.globalState),
                 ideVersion: extensionVersion,
+                pluginVersion: extensionVersion,
             },
             profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
         }
