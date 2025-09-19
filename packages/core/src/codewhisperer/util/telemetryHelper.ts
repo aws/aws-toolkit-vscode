@@ -392,6 +392,7 @@ export class TelemetryHelper {
             generatedLine: generatedLines,
             numberOfRecommendations: suggestionCount,
             acceptedCharacterCount: acceptedRecommendationContent.length,
+            suggestionType: 'COMPLETIONS',
         }
         this.resetUserTriggerDecisionTelemetry()
 
