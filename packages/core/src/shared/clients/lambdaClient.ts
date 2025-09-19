@@ -3,18 +3,45 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
-import { _Blob } from 'aws-sdk/clients/lambda'
+import { BlobPayloadInputTypes } from '@smithy/types'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-import { LambdaClient as LambdaSdkClient, GetFunctionCommand, GetFunctionCommandOutput } from '@aws-sdk/client-lambda'
+import {
+    LambdaClient as LambdaSdkClient,
+    GetFunctionCommand,
+    GetFunctionCommandOutput,
+    FunctionConfiguration,
+    InvocationResponse,
+    ListFunctionsRequest,
+    ListFunctionsResponse,
+    GetFunctionResponse,
+    GetLayerVersionResponse,
+    ListLayerVersionsRequest,
+    LayerVersionsListItem,
+    ListLayerVersionsResponse,
+    UpdateFunctionConfigurationRequest,
+    FunctionUrlConfig,
+    GetFunctionConfigurationCommand,
+    PublishVersionCommand,
+    UpdateFunctionConfigurationCommand,
+    UpdateFunctionCodeCommand,
+    ListFunctionUrlConfigsCommand,
+    ListLayerVersionsCommand,
+    GetLayerVersionCommand,
+    ListFunctionsCommand,
+    DeleteFunctionCommand,
+    InvokeCommand,
+    waitUntilFunctionUpdatedV2,
+    waitUntilFunctionActiveV2,
+} from '@aws-sdk/client-lambda'
 import { CancellationError } from '../utilities/timeoutUtils'
 import { fromSSO } from '@aws-sdk/credential-provider-sso'
 import { getIAMConnection } from '../../auth/utils'
 import { WaiterConfiguration } from 'aws-sdk/lib/service'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
 
@@ -31,39 +58,35 @@ export class DefaultLambdaClient {
     public async deleteFunction(name: string, qualifier?: string): Promise<void> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient
-            .deleteFunction({
+        await sdkClient.send(
+            new DeleteFunctionCommand({
                 FunctionName: name,
                 Qualifier: qualifier,
             })
-            .promise()
-
-        if (response.$response.error) {
-            throw response.$response.error
-        }
+        )
     }
 
-    public async invoke(name: string, payload?: _Blob, version?: string): Promise<Lambda.InvocationResponse> {
+    public async invoke(name: string, payload?: BlobPayloadInputTypes, version?: string): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
-        const response = await sdkClient
-            .invoke({
+        const response = await sdkClient.send(
+            new InvokeCommand({
                 FunctionName: name,
                 LogType: 'Tail',
                 Payload: payload,
                 Qualifier: version,
             })
-            .promise()
+        )
 
         return response
     }
 
-    public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+    public async *listFunctions(): AsyncIterableIterator<FunctionConfiguration> {
         const client = await this.createSdkClient()
 
-        const request: Lambda.ListFunctionsRequest = {}
+        const request: ListFunctionsRequest = {}
         do {
-            const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
+            const response: ListFunctionsResponse = await client.send(new ListFunctionsCommand(request))
 
             if (response.Functions) {
                 yield* response.Functions
@@ -73,12 +96,12 @@ export class DefaultLambdaClient {
         } while (request.Marker)
     }
 
-    public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+    public async getFunction(name: string): Promise<GetFunctionResponse> {
         getLogger().debug(`GetFunction called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const response = await client.getFunction({ FunctionName: name }).promise()
+            const response = await client.send(new GetFunctionCommand({ FunctionName: name }))
             // prune `Code` from logs so we don't reveal a signed link to customer resources.
             getLogger().debug('GetFunction returned response (code section pruned): %O', {
                 ...response,
@@ -91,12 +114,12 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getLayerVersion(name: string, version: number): Promise<Lambda.GetLayerVersionResponse> {
+    public async getLayerVersion(name: string, version: number): Promise<GetLayerVersionResponse> {
         getLogger().debug(`getLayerVersion called for LayerName: ${name}, VersionNumber ${version}`)
         const client = await this.createSdkClient()
 
         try {
-            const response = await client.getLayerVersion({ LayerName: name, VersionNumber: version }).promise()
+            const response = await client.send(new GetLayerVersionCommand({ LayerName: name, VersionNumber: version }))
             // prune `Code` from logs so we don't reveal a signed link to customer resources.
             getLogger().debug('getLayerVersion returned response (code section pruned): %O', {
                 ...response,
@@ -109,12 +132,12 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async *listLayerVersions(name: string): AsyncIterableIterator<Lambda.LayerVersionsListItem> {
+    public async *listLayerVersions(name: string): AsyncIterableIterator<LayerVersionsListItem> {
         const client = await this.createSdkClient()
 
-        const request: Lambda.ListLayerVersionsRequest = { LayerName: name }
+        const request: ListLayerVersionsRequest = { LayerName: name }
         do {
-            const response: Lambda.ListLayerVersionsResponse = await client.listLayerVersions(request).promise()
+            const response: ListLayerVersionsResponse = await client.send(new ListLayerVersionsCommand(request))
 
             if (response.LayerVersions) {
                 yield* response.LayerVersions
@@ -124,38 +147,37 @@ export class DefaultLambdaClient {
         } while (request.Marker)
     }
 
-    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+    public async getFunctionUrlConfigs(name: string): Promise<FunctionUrlConfig[]> {
         getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const request = client.listFunctionUrlConfigs({ FunctionName: name })
-            const response = await request.promise()
+            const response = await client.send(new ListFunctionUrlConfigsCommand({ FunctionName: name }))
             // prune `Code` from logs so we don't reveal a signed link to customer resources.
             getLogger().debug('GetFunctionUrlConfig returned response (code section pruned): %O', {
                 ...response,
                 Code: 'Pruned',
             })
-            return response.FunctionUrlConfigs
+            return response.FunctionUrlConfigs ?? []
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to get Lambda function URLs')
         }
     }
 
-    public async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<Lambda.FunctionConfiguration> {
+    public async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<FunctionConfiguration> {
         getLogger().debug(`updateFunctionCode called for function: ${name}`)
         const client = await this.createSdkClient()
 
         try {
-            const response = await client
-                .updateFunctionCode({
+            const response = await client.send(
+                new UpdateFunctionCodeCommand({
                     FunctionName: name,
                     Publish: true,
                     ZipFile: zipFile,
                 })
-                .promise()
+            )
             getLogger().debug('updateFunctionCode returned response: %O', response)
-            await client.waitFor('functionUpdated', { FunctionName: name }).promise()
+            await waitUntilFunctionUpdatedV2({ client, maxWaitTime: 300 }, { FunctionName: name })
 
             return response
         } catch (e) {
@@ -165,14 +187,14 @@ export class DefaultLambdaClient {
     }
 
     public async updateFunctionConfiguration(
-        params: Lambda.UpdateFunctionConfigurationRequest,
+        params: UpdateFunctionConfigurationRequest,
         options: {
             maxRetries?: number
             initialDelayMs?: number
             backoffMultiplier?: number
             waitForUpdate?: boolean
         } = {}
-    ): Promise<Lambda.FunctionConfiguration> {
+    ): Promise<FunctionConfiguration> {
         const client = await this.createSdkClient()
         const maxRetries = options.maxRetries ?? 5
         const initialDelayMs = options.initialDelayMs ?? 1000
@@ -186,7 +208,7 @@ export class DefaultLambdaClient {
         // there could be race condition, if function is being updated, wait and retry
         while (retryCount <= maxRetries) {
             try {
-                const response = await client.updateFunctionConfiguration(params).promise()
+                const response = await client.send(new UpdateFunctionConfigurationCommand(params))
                 getLogger().debug('updateFunctionConfiguration returned response: %O', response)
                 if (waitForUpdate) {
                     // don't return if wait for result
@@ -219,7 +241,9 @@ export class DefaultLambdaClient {
             let lastUpdateStatus = 'InProgress'
             while (lastUpdateStatus === 'InProgress') {
                 await new Promise((resolve) => setTimeout(resolve, 1000))
-                const response = await client.getFunctionConfiguration({ FunctionName: params.FunctionName }).promise()
+                const response = await client.send(
+                    new GetFunctionConfigurationCommand({ FunctionName: params.FunctionName })
+                )
                 lastUpdateStatus = response.LastUpdateStatus ?? 'Failed'
                 if (lastUpdateStatus === 'Successful') {
                     return response
@@ -237,23 +261,23 @@ export class DefaultLambdaClient {
     public async publishVersion(
         name: string,
         options: { waitForUpdate?: boolean } = {}
-    ): Promise<Lambda.FunctionConfiguration> {
+    ): Promise<FunctionConfiguration> {
         const client = await this.createSdkClient()
         // return until lambda update is completed
         const waitForUpdate = options.waitForUpdate ?? false
-        const response = await client
-            .publishVersion({
+        const response = await client.send(
+            new PublishVersionCommand({
                 FunctionName: name,
             })
-            .promise()
+        )
 
         if (waitForUpdate) {
             let state = 'Pending'
             while (state === 'Pending') {
                 await new Promise((resolve) => setTimeout(resolve, 1000))
-                const statusResponse = await client
-                    .getFunctionConfiguration({ FunctionName: name, Qualifier: response.Version })
-                    .promise()
+                const statusResponse = await client.send(
+                    new GetFunctionConfigurationCommand({ FunctionName: name, Qualifier: response.Version })
+                )
                 state = statusResponse.State ?? 'Failed'
                 if (state === 'Active' || state === 'InActive') {
                     // version creation finished
@@ -280,27 +304,24 @@ export class DefaultLambdaClient {
     public async waitForActive(functionName: string, waiter?: WaiterConfiguration): Promise<void> {
         const sdkClient = await this.createSdkClient()
 
-        await sdkClient
-            .waitFor('functionActive', {
-                FunctionName: functionName,
-                $waiter: waiter ?? {
-                    delay: 1,
-                    // In LocalStack, it requires 2 MBit/s connection to download ~150 MB Lambda image in 600 seconds
-                    maxAttempts: 600,
-                },
-            })
-            .promise()
+        await waitUntilFunctionActiveV2(
+            { client: sdkClient, maxWaitTime: (waiter?.maxAttempts ?? 600) * (waiter?.delay ?? 1) },
+            { FunctionName: functionName }
+        )
     }
 
-    private async createSdkClient(): Promise<Lambda> {
-        return await globals.sdkClientBuilder.createAwsService(
-            Lambda,
-            {
-                httpOptions: { timeout: this.defaultTimeoutInMs },
-                customUserAgent: this.userAgent,
+    private async createSdkClient(): Promise<LambdaSdkClient> {
+        return globals.sdkClientBuilderV3.createAwsService({
+            serviceClient: LambdaSdkClient,
+            userAgent: !this.userAgent,
+            clientOptions: {
+                userAgent: this.userAgent ? [[this.userAgent]] : undefined,
+                region: this.regionCode,
+                requestHandler: new NodeHttpHandler({
+                    requestTimeout: this.defaultTimeoutInMs,
+                }),
             },
-            this.regionCode
-        )
+        })
     }
 }
 
