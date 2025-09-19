@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import type { Lambda } from 'aws-sdk'
+import { FunctionConfiguration, Runtime } from '@aws-sdk/client-lambda'
 import { getRegionFromArn, LdkClient } from './ldkClient'
 import { getFamily, mapFamilyToDebugType } from '../models/samLambdaRuntime'
 import { findJavaPath } from '../../shared/utilities/pathFind'
@@ -35,8 +35,8 @@ const mapExtensionToBackup = new Map<string, string>([['ms-vscode.js-debug', 'ms
 
 // Helper function to create a human-readable diff message
 function createDiffMessage(
-    config: Lambda.FunctionConfiguration,
-    currentConfig: Lambda.FunctionConfiguration,
+    config: FunctionConfiguration,
+    currentConfig: FunctionConfiguration,
     isRevert: boolean = true
 ): string {
     let message = isRevert ? 'The following changes will be reverted:\n\n' : 'The following changes will be made:\n\n'
@@ -248,7 +248,7 @@ function processOutFiles(outFiles: string[], localRoot: string): string[] {
 }
 
 async function getVscodeDebugConfig(
-    functionConfig: Lambda.FunctionConfiguration,
+    functionConfig: FunctionConfiguration,
     debugConfig: DebugConfig
 ): Promise<vscode.DebugConfiguration> {
     // Parse and validate otherDebugParams if provided
@@ -283,7 +283,7 @@ async function getVscodeDebugConfig(
     const debugSessionName = `Debug ${functionConfig.FunctionArn!.split(':').pop()}`
 
     // Define debugConfig before the try block
-    const debugType = mapFamilyToDebugType.get(getFamily(functionConfig.Runtime ?? ''), 'unknown')
+    const debugType = mapFamilyToDebugType.get(getFamily(functionConfig.Runtime!), 'unknown')
     let vsCodeDebugConfig: vscode.DebugConfiguration
     switch (debugType) {
         case 'node':
@@ -410,7 +410,7 @@ export class RemoteDebugController {
         }
     }
 
-    public supportCodeDownload(runtime: string | undefined, codeSha256: string | undefined = ''): boolean {
+    public supportCodeDownload(runtime: Runtime | undefined, codeSha256: string | undefined = ''): boolean {
         if (!runtime) {
             return false
         }
@@ -426,7 +426,7 @@ export class RemoteDebugController {
         }
     }
 
-    public supportRuntimeRemoteDebug(runtime: string | undefined): boolean {
+    public supportRuntimeRemoteDebug(runtime: Runtime | undefined): boolean {
         if (!runtime) {
             return false
         }
@@ -437,7 +437,7 @@ export class RemoteDebugController {
         }
     }
 
-    public async installDebugExtension(runtime: string | undefined): Promise<boolean | undefined> {
+    public async installDebugExtension(runtime: Runtime | undefined): Promise<boolean | undefined> {
         if (!runtime) {
             throw new ToolkitError('Runtime is undefined')
         }
@@ -551,7 +551,7 @@ export class RemoteDebugController {
                     }
 
                     // Check if runtime / region is supported for remote debugging
-                    if (!this.supportRuntimeRemoteDebug(runtime)) {
+                    if (!this.supportRuntimeRemoteDebug(runtime as Runtime)) {
                         throw new ToolkitError(
                             `Runtime ${runtime} is not supported for remote debugging. ` +
                                 `Only Python, Node.js, and Java runtimes are supported.`

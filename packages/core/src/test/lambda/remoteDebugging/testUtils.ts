@@ -4,7 +4,7 @@
  */
 
 import sinon from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { Architecture, FunctionConfiguration, Runtime, SnapStartApplyOn } from '@aws-sdk/client-lambda'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { InitialData } from '../../../lambda/vue/remoteInvoke/invokeLambda'
 import type { DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger'
@@ -12,19 +12,17 @@ import type { DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger
 /**
  * Creates a mock Lambda function configuration for testing
  */
-export function createMockFunctionConfig(
-    overrides: Partial<Lambda.FunctionConfiguration> = {}
-): Lambda.FunctionConfiguration {
+export function createMockFunctionConfig(overrides: Partial<FunctionConfiguration> = {}): FunctionConfiguration {
     return {
         FunctionName: 'testFunction',
         FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
-        Runtime: 'nodejs18.x',
+        Runtime: Runtime.nodejs18x,
         Handler: 'index.handler',
         Timeout: 30,
         Layers: [],
         Environment: { Variables: {} },
-        Architectures: ['x86_64'],
-        SnapStart: { ApplyOn: 'None' },
+        Architectures: [Architecture.x86_64],
+        SnapStart: { ApplyOn: SnapStartApplyOn.None },
         ...overrides,
     }
 }

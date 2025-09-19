@@ -18,6 +18,7 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/perfLogger'
 import { showMessageWithCancel } from '../utilities/messages'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     public name: string = 'CloudFormationTemplateRegistry'
@@ -188,7 +189,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                 resource.Properties,
                 'Runtime',
                 templateDatum.item
-            )
+            ) as Runtime
             const registeredCodeUri = CloudFormation.getStringForProperty(
                 resource.Properties,
                 'CodeUri',
