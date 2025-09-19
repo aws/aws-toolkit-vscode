@@ -451,7 +451,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 errorMessage.includes('lambda-testevent-schemas registry not found') ||
                 errorMessage.includes('There are no saved events')
             ) {
-                getLogger().debug('No remote test events found for function (this is normal): %s', functionArn)
+                getLogger().debug('No remote test events found for function: %s', functionArn)
                 return []
             }
             // Re-throw other errors
@@ -486,7 +486,7 @@ export class RemoteInvokeWebview extends VueWebview {
 
         const selected = await vscode.window.showQuickPick(events, {
             placeHolder: localize('AWS.lambda.remoteInvoke.selectRemoteEvent', 'Select a remote test event'),
-            title: localize('AWS.lambda.remoteInvoke.loadRemoteEvent', 'Load Remote Event'),
+            title: localize('AWS.lambda.remoteInvoke.loadRemoteEvent', 'Load Remote Test Event'),
         })
 
         if (selected) {
@@ -571,15 +571,17 @@ export class RemoteInvokeWebview extends VueWebview {
         }
 
         if (eventName) {
-            const eventData = {
-                name: eventName,
-                event: eventContent,
-                region: region,
-                arn: functionArn,
-            }
             // Use force flag when overwriting existing events
             const isOverwriting = selected !== createNewOption
-            await this.createRemoteTestEvents(eventData, isOverwriting)
+            const params: SamCliRemoteTestEventsParameters = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.Put,
+                name: eventName,
+                eventSample: eventContent,
+                region: region,
+                force: isOverwriting,
+            }
+            await this.remoteTestEvents(params)
             return eventName
         }
 
