@@ -11,7 +11,11 @@ import {
 } from '../../../../../shared/cloudformation/cloudformation'
 import assert from 'assert'
 import { ResourceTreeEntity, SamAppLocation } from '../../../../../awsService/appBuilder/explorer/samProject'
-import { generateResourceNodes, ResourceNode } from '../../../../../awsService/appBuilder/explorer/nodes/resourceNode'
+import {
+    generateResourceNodes,
+    ResourceNode,
+    generateLambdaNodeFromResource,
+} from '../../../../../awsService/appBuilder/explorer/nodes/resourceNode'
 import { getIcon } from '../../../../../shared/icons'
 import * as DeployedResourceNodeModule from '../../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 import * as sinon from 'sinon'
@@ -19,6 +23,148 @@ import { afterEach } from 'mocha'
 import { DeployedResourceNode } from '../../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 import { PropertyNode } from '../../../../../awsService/appBuilder/explorer/nodes/propertyNode'
 import { StackResource } from '../../../../../lambda/commands/listSamResources'
+import { LambdaFunctionNode } from '../../../../../lambda/explorer/lambdaFunctionNode'
+import { ToolkitError } from '../../../../../shared/errors'
+
+describe('generateLambdaNodeFromResource', () => {
+    let generateDeployedNodeStub: sinon.SinonStub
+
+    beforeEach(() => {
+        generateDeployedNodeStub = sinon.stub(DeployedResourceNodeModule, 'generateDeployedNode')
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    it('should successfully generate LambdaFunctionNode from resource', async () => {
+        const mockLambdaNode = {} as LambdaFunctionNode
+        const mockDeployedNode = {
+            resource: {
+                explorerNode: mockLambdaNode,
+            },
+        } as DeployedResourceNode
+
+        generateDeployedNodeStub.resolves([mockDeployedNode])
+
+        const resource = {
+            deployedResource: {
+                LogicalResourceId: 'TestFunction',
+                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+            },
+            region: 'us-west-2',
+            stackName: 'TestStack',
+            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
+            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
+            workspaceFolder: {
+                uri: vscode.Uri.parse('myworkspace'),
+                name: 'my-workspace',
+                index: 0,
+            },
+            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+        }
+
+        const result = await generateLambdaNodeFromResource(resource)
+
+        assert.strictEqual(result, mockLambdaNode)
+        assert(
+            generateDeployedNodeStub.calledOnceWith(
+                resource.deployedResource,
+                resource.region,
+                resource.stackName,
+                resource.resource,
+                resource.projectRoot
+            )
+        )
+    })
+
+    it('should throw error when deployedResource is missing', async () => {
+        const resource = {
+            region: 'us-west-2',
+            stackName: 'TestStack',
+            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+        }
+
+        await assert.rejects(
+            async () => await generateLambdaNodeFromResource(resource as any),
+            ToolkitError,
+            'Error getting Lambda info from Appbuilder Node, please check your connection'
+        )
+    })
+
+    it('should throw error when region is missing', async () => {
+        const resource = {
+            deployedResource: { LogicalResourceId: 'TestFunction' },
+            stackName: 'TestStack',
+            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+        }
+
+        await assert.rejects(
+            async () => await generateLambdaNodeFromResource(resource as any),
+            ToolkitError,
+            'Error getting Lambda info from Appbuilder Node, please check your connection'
+        )
+    })
+
+    it('should throw error when generateDeployedNode returns no nodes', async () => {
+        generateDeployedNodeStub.resolves([])
+
+        const resource = {
+            deployedResource: {
+                LogicalResourceId: 'TestFunction',
+                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+            },
+            region: 'us-west-2',
+            stackName: 'TestStack',
+            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
+            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
+            workspaceFolder: {
+                uri: vscode.Uri.parse('myworkspace'),
+                name: 'my-workspace',
+                index: 0,
+            },
+            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+        }
+
+        await assert.rejects(
+            async () => await generateLambdaNodeFromResource(resource),
+            ToolkitError,
+            'Error getting Lambda info from Appbuilder Node, please check your connection'
+        )
+    })
+
+    it('should throw error when generateDeployedNode returns multiple nodes', async () => {
+        const mockDeployedNode1 = {} as DeployedResourceNode
+        const mockDeployedNode2 = {} as DeployedResourceNode
+        generateDeployedNodeStub.resolves([mockDeployedNode1, mockDeployedNode2])
+
+        const resource = {
+            deployedResource: {
+                LogicalResourceId: 'TestFunction',
+                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+            },
+            region: 'us-west-2',
+            stackName: 'TestStack',
+            resource: { Id: 'TestFunction', Type: SERVERLESS_FUNCTION_TYPE },
+            projectRoot: vscode.Uri.parse('myworkspace/myprojectrootfolder'),
+            location: vscode.Uri.parse('myworkspace/myprojectrootfolder/template.yaml'),
+            workspaceFolder: {
+                uri: vscode.Uri.parse('myworkspace'),
+                name: 'my-workspace',
+                index: 0,
+            },
+            functionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+        }
+
+        await assert.rejects(
+            async () => await generateLambdaNodeFromResource(resource),
+            ToolkitError,
+            'Error getting Lambda info from Appbuilder Node, please check your connection'
+        )
+    })
+})
 
 describe('ResourceNode', () => {
     const lambdaResourceTreeEntity = {
@@ -175,7 +321,7 @@ describe('ResourceNode', () => {
     })
 
     describe('getTreeItem', () => {
-        it('should generate correct TreeItem without none collapsible state given no deployed resource', () => {
+        it('should generate correct TreeItem with collapsible state given no deployed resource', () => {
             const resourceNode = new ResourceNode(samAppLocation, lambdaResourceTreeEntity)
             const treeItem = resourceNode.getTreeItem()
 
@@ -184,10 +330,10 @@ describe('ResourceNode', () => {
             assert.strictEqual(treeItem.resourceUri, samAppLocation.samTemplateUri)
             assert.strictEqual(treeItem.contextValue, 'awsAppBuilderResourceNode.function')
             assert.strictEqual(treeItem.iconPath, getIcon('aws-lambda-function'))
-            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
         })
 
-        it('should generate correct TreeItem without collapsed  state given node with deployed resource', () => {
+        it('should generate correct TreeItem without collapsed state given node with deployed resource', () => {
             const resourceNode = new ResourceNode(
                 samAppLocation,
                 lambdaResourceTreeEntity,
@@ -201,8 +347,8 @@ describe('ResourceNode', () => {
             assert.strictEqual(treeItem.label, 'MyFunction')
             assert.strictEqual(treeItem.tooltip, samAppLocation.samTemplateUri.toString())
             assert.strictEqual(treeItem.resourceUri, samAppLocation.samTemplateUri)
-            assert.strictEqual(treeItem.contextValue, 'awsAppBuilderResourceNode.function')
-            assert.strictEqual(treeItem.iconPath, getIcon('aws-lambda-function'))
+            assert.strictEqual(treeItem.contextValue, 'awsAppBuilderResourceNode.deployed-function')
+            assert.strictEqual(treeItem.iconPath, getIcon('aws-lambda-deployed-function'))
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
         })
     })

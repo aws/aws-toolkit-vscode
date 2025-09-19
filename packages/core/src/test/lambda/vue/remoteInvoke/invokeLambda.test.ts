@@ -420,6 +420,96 @@ describe('RemoteInvokeWebview', () => {
             assert.strictEqual(result, undefined)
         })
     })
+    describe('tryOpenHandlerFile', () => {
+        let sandbox: sinon.SinonSandbox
+        let fsExistsStub: sinon.SinonStub
+        let openLambdaFileStub: sinon.SinonStub
+        let getLambdaHandlerFileStub: sinon.SinonStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            fsExistsStub = sandbox.stub(fs, 'exists')
+            openLambdaFileStub = sandbox.stub(require('../../../../lambda/commands/downloadLambda'), 'openLambdaFile')
+            getLambdaHandlerFileStub = sandbox.stub(
+                require('../../../../awsService/appBuilder/utils'),
+                'getLambdaHandlerFile'
+            )
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should return false when LocalRootPath is not set', async () => {
+            const result = await remoteInvokeWebview.tryOpenHandlerFile()
+            assert.strictEqual(result, false)
+        })
+
+        it('should auto-populate outFile for TypeScript files with SAM build directory', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const handlerPath = path.join(tempFolder, 'handler.ts')
+            await fs.writeFile(handlerPath, 'export const handler = () => {}')
+
+            data.LocalRootPath = tempFolder
+            data.LambdaFunctionNode = {
+                configuration: {
+                    Handler: 'handler.handler',
+                    CodeSha256: 'abc123',
+                },
+                logicalId: 'MyFunction',
+                projectRoot: vscode.Uri.file(tempFolder),
+            } as any
+
+            const buildPath = path.join(tempFolder, '.aws-sam', 'build', 'MyFunction')
+            await fs.mkdir(buildPath)
+
+            getLambdaHandlerFileStub.resolves(vscode.Uri.file(handlerPath))
+            fsExistsStub.withArgs(vscode.Uri.file(handlerPath)).resolves(true)
+            fsExistsStub
+                .withArgs(vscode.Uri.joinPath(vscode.Uri.file(tempFolder), '.aws-sam', 'build', 'MyFunction'))
+                .resolves(true)
+
+            const result = await remoteInvokeWebview.tryOpenHandlerFile()
+
+            assert.strictEqual(result, true)
+            assert.strictEqual(remoteInvokeWebview.getOutFile(), buildPath)
+            assert.strictEqual(openLambdaFileStub.called, true)
+            await fs.delete(tempFolder, { recursive: true })
+        })
+
+        it('should not watch for updates when LocalRootPath is already set (appbuilder case)', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const handlerPath = path.join(tempFolder, 'handler.js')
+            await fs.writeFile(handlerPath, 'exports.handler = () => {}')
+
+            // Set LocalRootPath first to simulate appbuilder case
+            data.LocalRootPath = tempFolder
+            data.LambdaFunctionNode = {
+                configuration: {
+                    Handler: 'handler.handler',
+                    CodeSha256: 'abc123',
+                },
+            } as any
+
+            getLambdaHandlerFileStub.resolves(vscode.Uri.file(handlerPath))
+            fsExistsStub.resolves(true)
+
+            const result = await remoteInvokeWebview.tryOpenHandlerFile(tempFolder)
+
+            assert.strictEqual(result, true)
+            // In appbuilder case, watchForUpdates should be false
+
+            await fs.delete(tempFolder, { recursive: true })
+        })
+    })
+
+    describe('getOutFile', () => {
+        it('should return empty string when outFile is not set', () => {
+            const result = remoteInvokeWebview.getOutFile()
+            assert.strictEqual(result, '')
+        })
+    })
+
     describe('invokeRemoteLambda', () => {
         let sandbox: sinon.SinonSandbox
         let outputChannel: vscode.OutputChannel
