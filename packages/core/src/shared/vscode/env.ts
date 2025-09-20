@@ -146,36 +146,128 @@ export function hasSageMakerEnvVars(): boolean {
 /**
  * Checks if the current environment is running on Amazon Linux 2.
  *
- * This function attempts to detect if we're running in a container on an AL2 host
- * by checking both the OS release and container-specific indicators.
+ * This function detects if we're actually running on AL2, not just if the host is AL2.
+ * In containerized environments, we check the container's OS, not the host's.
  *
- * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
+ * Detection Process (in order):
+ * 1. Returns false for web environments (browser-based)
+ * 2. Returns false for SageMaker environments (even if host is AL2)
+ * 3. Checks `/etc/image-id` for Amazon Linux specific identification
+ *    - Most reliable method for Amazon Linux systems
+ *    - Contains `image_name="Amazon Linux 2"` for AL2
+ *    - Returns false for Amazon Linux 2023 or other versions
+ * 4. Checks `/etc/os-release` with fallback to `/usr/lib/os-release`
+ *    - Standard Linux OS identification files
+ *    - Explicitly checks for and rejects Amazon Linux 2023
+ *    - Looks for `ID="amzn"` and `VERSION_ID="2"` for AL2
+ * 5. Falls back to kernel version check as last resort
+ *    - Checks for `.amzn2.` or `.amzn2int.` in kernel release
+ *    - Only used if file-based detection fails or confirms AL2
+ *
+ * This approach ensures correct detection in:
+ * - Containerized environments (detects container OS, not host)
+ * - Web/browser environments (returns false)
+ * - Amazon Linux 2023 systems (properly distinguished from AL2)
+ * - SageMaker environments (returns false)
+ *
+ * References:
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-amazon-linux-specific.html
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-os-release.html
+ *
+ * Example kernel versions:
+ * - `5.10.220-188.869.amzn2int.x86_64` (internal AL2)
+ * - `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
 export function isAmazonLinux2() {
+    // Skip AL2 detection for web environments
+    // In web mode, we're running in a browser, not on AL2
+    if (isWeb()) {
+        return false
+    }
+
     // First check if we're in a SageMaker environment, which should not be treated as AL2
     // even if the underlying host is AL2
     if (hasSageMakerEnvVars()) {
         return false
     }
 
-    // Check if we're in a container environment that's not AL2
-    if (process.env.container === 'docker' || process.env.DOCKER_HOST || process.env.DOCKER_BUILDKIT) {
-        // Additional check for container OS - if we can determine it's not AL2
-        try {
-            const fs = require('fs')
-            if (fs.existsSync('/etc/os-release')) {
-                const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
-                if (!osRelease.includes('Amazon Linux 2') && !osRelease.includes('amzn2')) {
-                    return false
-                }
-            }
-        } catch (e) {
-            // If we can't read the file, fall back to the os.release() check
-        }
+    // Only proceed with file checks on Linux platforms
+    if (process.platform !== 'linux') {
+        return false
     }
 
-    // Standard check for AL2 in the OS release string
-    return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
+    // For containerized environments, check the actual container OS
+    // not the host kernel version
+    try {
+        const fs = require('fs')
+
+        // First, try Amazon Linux specific file /etc/image-id. This is the most reliable way to identify Amazon Linux
+        if (fs.existsSync('/etc/image-id')) {
+            try {
+                const imageId = fs.readFileSync('/etc/image-id', 'utf8')
+                // Check if this is Amazon Linux 2 (not 2023 or other versions)
+                // Example content: image_name="Amazon Linux 2"
+                if (imageId.includes('image_name="Amazon Linux 2"')) {
+                    return true
+                }
+                // If it's Amazon Linux but not version 2, return false
+                if (imageId.includes('image_name="Amazon Linux')) {
+                    return false
+                }
+            } catch (e) {
+                // Continue to other checks if we can't read the file
+                getLogger().error(`Checking for Amazon Linux specific file /etc/image-id failed with error: ${e}`)
+            }
+        }
+
+        // Check /etc/os-release with fallback to /usr/lib/os-release as per https://docs.aws.amazon.com/linux/al2/ug/ident-os-release.html
+        const osReleasePaths = ['/etc/os-release', '/usr/lib/os-release']
+        for (const osReleasePath of osReleasePaths) {
+            if (fs.existsSync(osReleasePath)) {
+                try {
+                    const osRelease = fs.readFileSync(osReleasePath, 'utf8')
+
+                    // Check if this is Amazon Linux 2023 (not AL2)
+                    if (
+                        osRelease.includes('VERSION_ID="2023"') ||
+                        osRelease.includes('PLATFORM_ID="platform:al2023"')
+                    ) {
+                        // This is Amazon Linux 2023, not AL2
+                        return false
+                    }
+
+                    // Check if this is actually Amazon Linux 2
+                    // Must be specifically version 2, not 2023 or other versions
+                    const isAL2 =
+                        osRelease.includes('Amazon Linux 2') ||
+                        (osRelease.includes('ID="amzn"') && osRelease.includes('VERSION_ID="2"'))
+
+                    // If we found os-release file, trust its content over kernel version
+                    if (!isAL2) {
+                        // Explicitly not AL2 based on os-release
+                        return false
+                    }
+                    // If it is AL2 according to os-release, continue to kernel check for confirmation
+                    break // Found and processed os-release, no need to check fallback
+                } catch (e) {
+                    // Continue to next path or fallback check
+                    getLogger().error(`Checking for Amazon Linux 2023 (not AL2) failed with error: ${e}`)
+                }
+            }
+        }
+    } catch (e) {
+        // If we can't read the files, fall back to the os.release() check
+        // This might happen in some restricted environments
+        getLogger().error(`Checking the current environment failed with error: ${e}`)
+    }
+
+    // Check kernel version as a fallback or confirmation
+    // This should only be trusted if we couldn't determine from files above
+    // or if files confirmed it's AL2
+    const kernelRelease = os.release()
+    const hasAL2Kernel = kernelRelease.includes('.amzn2int.') || kernelRelease.includes('.amzn2.')
+
+    return hasAL2Kernel
 }
 
 /**
@@ -217,9 +309,9 @@ export function getExtRuntimeContext(): {
     extensionHost: ExtensionHostLocation
 } {
     const extensionHost =
-        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
-        // should be used
-        typeof navigator === 'undefined'
+        // Check if we're in a Node.js environment (desktop/remote) vs web worker
+        // Updated to be compatible with Node.js v22 which includes navigator global
+        typeof process === 'object' && process.versions?.node
             ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
                 ? 'local'
                 : 'remote'
