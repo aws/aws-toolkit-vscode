@@ -56,8 +56,14 @@ export const SmusErrorCodes = {
     UserCancelled: 'UserCancelled',
     /** Error code for when domain account Id is missing */
     AccountIdNotFound: 'AccountIdNotFound',
+    /** Error code for when resource ARN is missing */
+    ResourceArnNotFound: 'ResourceArnNotFound',
     /** Error code for when fails to get domain account Id */
     GetDomainAccountIdFailed: 'GetDomainAccountIdFailed',
+    /** Error code for when fails to get project account Id */
+    GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
+    /** Error code for when region is missing */
+    RegionNotFound: 'RegionNotFound',
 } as const
 
 /**
@@ -369,7 +375,7 @@ export class SmusUtils {
  * @returns The account ID from the ARN
  * @throws If the ARN format is invalid
  */
-export function extractAccountIdFromArn(arn: string): string {
+export function extractAccountIdFromSageMakerArn(arn: string): string {
     // Match the ARN components to extract account ID
     const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space|domain)\/.+$/i
     const match = arn.match(regex)

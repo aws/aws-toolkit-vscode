@@ -1462,6 +1462,14 @@
                 {
                     "type": "smusDomainRegion",
                     "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
                 }
             ]
         },
@@ -1488,6 +1496,14 @@
                 {
                     "type": "smusDomainRegion",
                     "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
                 }
             ]
         },
@@ -1513,6 +1529,10 @@
                 },
                 {
                     "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
                     "required": false
                 },
                 {
@@ -1550,6 +1570,10 @@
                     "required": false
                 },
                 {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
                     "type": "smusConnectionId",
                     "required": false
                 },
@@ -1581,6 +1605,10 @@
                 },
                 {
                     "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
                     "required": false
                 },
                 {

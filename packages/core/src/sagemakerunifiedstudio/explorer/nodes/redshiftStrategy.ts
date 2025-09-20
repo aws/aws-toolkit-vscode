@@ -24,7 +24,7 @@ import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { GlueCatalog } from '../../shared/client/glueCatalogClient'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { getContext } from '../../../shared/vscode/setContext'
+import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 
 /**
  * Redshift data node for SageMaker Unified Studio
@@ -119,6 +119,7 @@ export function createRedshiftConnectionNode(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ): RedshiftNode {
+    const logger = getLogger()
     return new RedshiftNode(
         {
             id: connection.connectionId,
@@ -130,19 +131,8 @@ export function createRedshiftConnectionNode(
         },
         async (node) => {
             return telemetry.smus_renderRedshiftNode.run(async (span) => {
-                const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-                const accountId = await connectionCredentialsProvider.getDomainAccountId()
-                span.record({
-                    smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
-                    smusDomainId: connection.domainId,
-                    smusDomainAccountId: accountId,
-                    smusProjectId: connection.projectId,
-                    smusConnectionId: connection.connectionId,
-                    smusConnectionType: connection.type,
-                    smusProjectRegion: connection.location?.awsRegion,
-                })
-                const logger = getLogger()
                 logger.info(`Loading Redshift resources for connection ${connection.name}`)
+                await recordDataConnectionTelemetry(span, connection, connectionCredentialsProvider)
 
                 const connectionParams = extractConnectionParams(connection)
                 if (!connectionParams) {

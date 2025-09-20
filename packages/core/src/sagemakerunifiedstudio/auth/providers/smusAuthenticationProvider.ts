@@ -14,7 +14,7 @@ import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { getLogger } from '../../../shared/logger/logger'
-import { SmusUtils, SmusErrorCodes, extractAccountIdFromArn } from '../../shared/smusUtils'
+import { SmusUtils, SmusErrorCodes, extractAccountIdFromSageMakerArn } from '../../shared/smusUtils'
 import { createSmusProfile, isValidSmusConnection, SmusConnection } from '../model'
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
@@ -24,6 +24,7 @@ import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { fromIni } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { DataZoneClient } from '../../shared/client/datazoneClient'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -55,6 +56,7 @@ export class SmusAuthenticationProvider {
     private projectCredentialProvidersCache = new Map<string, ProjectRoleCredentialsProvider>()
     private connectionCredentialProvidersCache = new Map<string, ConnectionCredentialsProvider>()
     private cachedDomainAccountId: string | undefined
+    private cachedProjectAccountIds = new Map<string, string>()
 
     public constructor(
         public readonly auth = Auth.instance,
@@ -79,6 +81,8 @@ export class SmusAuthenticationProvider {
             this.connectionCredentialProvidersCache.clear()
             // Clear cached domain account ID when connection changes
             this.cachedDomainAccountId = undefined
+            // Clear cached project account IDs when connection changes
+            this.cachedProjectAccountIds.clear()
             // Clear all clients in client store when connection changes
             ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
@@ -428,6 +432,34 @@ export class SmusAuthenticationProvider {
     }
 
     /**
+     * Extracts account ID from ResourceArn in SMUS space environment
+     * @returns Promise resolving to the account ID
+     * @throws ToolkitError if unable to extract account ID
+     */
+    private async extractAccountIdFromResourceMetadata(): Promise<string> {
+        const logger = getLogger()
+
+        try {
+            logger.debug('SMUS: Extracting account ID from ResourceArn in resource-metadata file')
+
+            const resourceMetadata = getResourceMetadata()!
+            const resourceArn = resourceMetadata.ResourceArn
+
+            if (!resourceArn) {
+                throw new Error('ResourceArn not found in metadata file')
+            }
+
+            const accountId = extractAccountIdFromSageMakerArn(resourceArn)
+            logger.debug(`Successfully extracted account ID from resource-metadata file: ${accountId}`)
+
+            return accountId
+        } catch (err) {
+            logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
+            throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
+        }
+    }
+
+    /**
      * Gets the AWS account ID for the active domain connection
      * In SMUS space environment, extracts from ResourceArn in metadata
      * Otherwise, makes an STS GetCallerIdentity call using DER credentials and caches the result
@@ -445,37 +477,13 @@ export class SmusAuthenticationProvider {
 
         // If in SMUS space environment, extract account ID from resource-metadata file
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
-            try {
-                logger.debug('SMUS: Extracting domain account ID from ResourceArn in resource-metadata file')
+            const accountId = await this.extractAccountIdFromResourceMetadata()
 
-                const resourceMetadata = getResourceMetadata()!
-                const resourceArn = resourceMetadata.ResourceArn
+            // Cache the account ID
+            this.cachedDomainAccountId = accountId
+            logger.debug(`Successfully cached domain account ID: ${accountId}`)
 
-                if (!resourceArn) {
-                    throw new ToolkitError('ResourceArn not found in metadata file', {
-                        code: SmusErrorCodes.AccountIdNotFound,
-                    })
-                }
-
-                // Extract account ID from ResourceArn using SmusUtils
-                const accountId = extractAccountIdFromArn(resourceArn)
-
-                // Cache the account ID
-                this.cachedDomainAccountId = accountId
-
-                logger.debug(
-                    `Successfully extracted and cached domain account ID from resource-metadata file: ${accountId}`
-                )
-
-                return accountId
-            } catch (err) {
-                logger.error(`Failed to extract domain account ID from ResourceArn: %s`, err)
-
-                throw new ToolkitError('Failed to extract AWS account ID from ResourceArn in SMUS space environment', {
-                    code: SmusErrorCodes.GetDomainAccountIdFailed,
-                    cause: err instanceof Error ? err : undefined,
-                })
-            }
+            return accountId
         }
 
         if (!this.activeConnection) {
@@ -516,6 +524,81 @@ export class SmusAuthenticationProvider {
             throw new ToolkitError('Failed to retrieve AWS account ID for active domain connection', {
                 code: SmusErrorCodes.GetDomainAccountIdFailed,
                 cause: err instanceof Error ? err : undefined,
+            })
+        }
+    }
+
+    /**
+     * Gets the AWS account ID for a specific project using project credentials
+     * In SMUS space environment, extracts from ResourceArn in metadata (same as domain account)
+     * Otherwise, makes an STS GetCallerIdentity call using project credentials
+     * @param projectId The DataZone project ID
+     * @returns Promise resolving to the project's AWS account ID
+     */
+    public async getProjectAccountId(projectId: string): Promise<string> {
+        const logger = getLogger()
+
+        // Return cached value if available
+        if (this.cachedProjectAccountIds.has(projectId)) {
+            logger.debug(`SMUS: Using cached project account ID for project ${projectId}`)
+            return this.cachedProjectAccountIds.get(projectId)!
+        }
+
+        // If in SMUS space environment, extract account ID from resource-metadata file
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            const accountId = await this.extractAccountIdFromResourceMetadata()
+
+            // Cache the account ID
+            this.cachedProjectAccountIds.set(projectId, accountId)
+            logger.debug(`Successfully cached project account ID for project ${projectId}: ${accountId}`)
+
+            return accountId
+        }
+
+        if (!this.activeConnection) {
+            throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
+        }
+
+        // For non-SMUS space environments, use project credentials with STS
+        try {
+            logger.debug('Fetching project account ID via STS GetCallerIdentity with project credentials')
+
+            // Get project credentials
+            const projectCredProvider = await this.getProjectCredentialProvider(projectId)
+            const projectCreds = await projectCredProvider.getCredentials()
+
+            // Get project region from tooling environment
+            const dzClient = await DataZoneClient.getInstance(this)
+            const toolingEnv = await dzClient.getToolingEnvironment(projectId)
+            const projectRegion = toolingEnv.awsAccountRegion
+
+            if (!projectRegion) {
+                throw new ToolkitError('No AWS account region found in tooling environment', {
+                    code: SmusErrorCodes.RegionNotFound,
+                })
+            }
+
+            // Use STS to get account ID from project credentials
+            const stsClient = new DefaultStsClient(projectRegion, projectCreds)
+            const callerIdentity = await stsClient.getCallerIdentity()
+
+            if (!callerIdentity.Account) {
+                throw new ToolkitError('Account ID not found in STS GetCallerIdentity response', {
+                    code: SmusErrorCodes.AccountIdNotFound,
+                })
+            }
+
+            // Cache the account ID
+            this.cachedProjectAccountIds.set(projectId, callerIdentity.Account)
+            logger.debug(
+                `Successfully retrieved and cached project account ID for project ${projectId}: ${callerIdentity.Account}`
+            )
+
+            return callerIdentity.Account
+        } catch (err) {
+            logger.error('Failed to get project account ID: %s', err as Error)
+            throw new ToolkitError(`Failed to get project account ID: ${(err as Error).message}`, {
+                code: SmusErrorCodes.GetProjectAccountIdFailed,
             })
         }
     }
@@ -617,6 +700,10 @@ export class SmusAuthenticationProvider {
         // Clear cached domain account ID
         this.cachedDomainAccountId = undefined
         logger.debug('SMUS: Cleared cached domain account ID')
+
+        // Clear cached project account IDs
+        this.cachedProjectAccountIds.clear()
+        logger.debug('SMUS: Cleared cached project account IDs')
     }
 
     /**
@@ -664,6 +751,9 @@ export class SmusAuthenticationProvider {
 
         // Clear cached domain account ID
         this.cachedDomainAccountId = undefined
+
+        // Clear cached project account IDs
+        this.cachedProjectAccountIds.clear()
 
         this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
     }

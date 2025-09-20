@@ -418,7 +418,6 @@ describe('SmusAuthenticationProvider', function () {
     describe('getDomainAccountId', function () {
         let getContextStub: sinon.SinonStub
         let getResourceMetadataStub: sinon.SinonStub
-        let extractAccountIdFromArnStub: sinon.SinonStub
         let getDerCredentialsProviderStub: sinon.SinonStub
         let getDomainRegionStub: sinon.SinonStub
         let mockStsClient: any
@@ -428,7 +427,6 @@ describe('SmusAuthenticationProvider', function () {
             // Mock dependencies
             getContextStub = sinon.stub(vscodeSetContext, 'getContext')
             getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
-            extractAccountIdFromArnStub = sinon.stub(smusUtils, 'extractAccountIdFromArn')
 
             // Mock STS client
             mockStsClient = {
@@ -476,41 +474,32 @@ describe('SmusAuthenticationProvider', function () {
         })
 
         describe('in SMUS space environment', function () {
+            let extractAccountIdFromResourceMetadataStub: sinon.SinonStub
+
             beforeEach(function () {
                 getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(true)
+                extractAccountIdFromResourceMetadataStub = sinon
+                    .stub(smusAuthProvider as any, 'extractAccountIdFromResourceMetadata')
+                    .resolves('123456789012')
             })
 
-            it('should extract account ID from ResourceArn and cache it', async function () {
+            it('should use extractAccountIdFromResourceMetadata helper and cache result', async function () {
                 const testAccountId = '123456789012'
-                const testResourceArn = `arn:aws:sagemaker:us-east-1:${testAccountId}:domain/test-domain`
-
-                getResourceMetadataStub.returns({
-                    ResourceArn: testResourceArn,
-                })
-                extractAccountIdFromArnStub.returns(testAccountId)
 
                 const result = await smusAuthProvider.getDomainAccountId()
 
                 assert.strictEqual(result, testAccountId)
                 assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], testAccountId)
-                assert.ok(getResourceMetadataStub.called)
-                assert.ok(extractAccountIdFromArnStub.calledWith(testResourceArn))
+                assert.ok(extractAccountIdFromResourceMetadataStub.called)
                 assert.ok(mockStsClient.getCallerIdentity.notCalled)
             })
 
-            it('should throw error when ResourceArn is missing from metadata', async function () {
-                getResourceMetadataStub.returns({})
+            it('should throw error when extractAccountIdFromResourceMetadata fails', async function () {
+                extractAccountIdFromResourceMetadataStub.rejects(new ToolkitError('Metadata extraction failed'))
 
                 await assert.rejects(
                     () => smusAuthProvider.getDomainAccountId(),
-                    (err: ToolkitError) => {
-                        return (
-                            err.code === 'GetDomainAccountIdFailed' &&
-                            err.message.includes(
-                                'Failed to extract AWS account ID from ResourceArn in SMUS space environment'
-                            )
-                        )
-                    }
+                    (err: ToolkitError) => err.message.includes('Metadata extraction failed')
                 )
 
                 assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], undefined)
@@ -573,6 +562,246 @@ describe('SmusAuthenticationProvider', function () {
                 )
 
                 assert.strictEqual(smusAuthProvider['cachedDomainAccountId'], undefined)
+            })
+        })
+    })
+
+    describe('extractAccountIdFromResourceMetadata', function () {
+        let getResourceMetadataStub: sinon.SinonStub
+        let extractAccountIdFromSageMakerArnStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+            extractAccountIdFromSageMakerArnStub = sinon.stub(smusUtils, 'extractAccountIdFromSageMakerArn')
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should extract account ID from ResourceArn successfully', async function () {
+            const testAccountId = '123456789012'
+            const testResourceArn = `arn:aws:sagemaker:us-east-1:${testAccountId}:domain/test-domain`
+
+            getResourceMetadataStub.returns({
+                ResourceArn: testResourceArn,
+            })
+            extractAccountIdFromSageMakerArnStub.returns(testAccountId)
+
+            // Access private method using bracket notation
+            const result = await (smusAuthProvider as any).extractAccountIdFromResourceMetadata()
+
+            assert.strictEqual(result, testAccountId)
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(extractAccountIdFromSageMakerArnStub.calledWith(testResourceArn))
+        })
+
+        it('should throw error when extractAccountIdFromSageMakerArn fails', async function () {
+            const testResourceArn = 'invalid-arn'
+            getResourceMetadataStub.returns({
+                ResourceArn: testResourceArn,
+            })
+            extractAccountIdFromSageMakerArnStub.throws(new Error('Invalid ARN format'))
+
+            await assert.rejects(
+                () => (smusAuthProvider as any).extractAccountIdFromResourceMetadata(),
+                (err: Error) => {
+                    return err.message.includes(
+                        'Failed to extract AWS account ID from ResourceArn in SMUS space environment'
+                    )
+                }
+            )
+        })
+    })
+
+    describe('getProjectAccountId', function () {
+        let getContextStub: sinon.SinonStub
+        let extractAccountIdFromResourceMetadataStub: sinon.SinonStub
+        let getProjectCredentialProviderStub: sinon.SinonStub
+        let mockProjectCredentialsProvider: any
+        let mockStsClient: any
+        let mockDataZoneClientForProject: any
+
+        const testProjectId = 'test-project-id'
+        const testAccountId = '123456789012'
+        const testRegion = 'us-east-1'
+
+        beforeEach(function () {
+            // Mock dependencies
+            getContextStub = sinon.stub(vscodeSetContext, 'getContext')
+            extractAccountIdFromResourceMetadataStub = sinon
+                .stub(smusAuthProvider as any, 'extractAccountIdFromResourceMetadata')
+                .resolves(testAccountId)
+
+            // Mock project credentials provider
+            mockProjectCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }
+            getProjectCredentialProviderStub = sinon
+                .stub(smusAuthProvider, 'getProjectCredentialProvider')
+                .resolves(mockProjectCredentialsProvider)
+
+            // Update the existing mockDataZoneClient to include getToolingEnvironment
+            mockDataZoneClientForProject = {
+                getToolingEnvironment: sinon.stub().resolves({
+                    awsAccountRegion: testRegion,
+                    projectId: testProjectId,
+                    domainId: testDomainId,
+                    createdBy: 'test-user',
+                    name: 'test-environment',
+                    id: 'test-env-id',
+                    status: 'ACTIVE',
+                }),
+            }
+            // Update the existing mockDataZoneClient instead of creating a new stub
+            Object.assign(mockDataZoneClient, mockDataZoneClientForProject)
+
+            // Mock STS client
+            mockStsClient = {
+                getCallerIdentity: sinon.stub().resolves({
+                    Account: testAccountId,
+                    UserId: 'test-user-id',
+                    Arn: 'arn:aws:sts::123456789012:assumed-role/test-role/test-session',
+                }),
+            }
+
+            // Clear cache
+            smusAuthProvider['cachedProjectAccountIds'].clear()
+            mockSecondaryAuthState.activeConnection = mockSmusConnection
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        describe('when cached value exists', function () {
+            it('should return cached project account ID without making any calls', async function () {
+                smusAuthProvider['cachedProjectAccountIds'].set(testProjectId, testAccountId)
+
+                const result = await smusAuthProvider.getProjectAccountId(testProjectId)
+
+                assert.strictEqual(result, testAccountId)
+                assert.ok(getContextStub.notCalled)
+                assert.ok(extractAccountIdFromResourceMetadataStub.notCalled)
+                assert.ok(getProjectCredentialProviderStub.notCalled)
+                assert.ok(mockStsClient.getCallerIdentity.notCalled)
+            })
+        })
+
+        describe('in SMUS space environment', function () {
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(true)
+            })
+
+            it('should extract account ID from resource metadata and cache it', async function () {
+                const result = await smusAuthProvider.getProjectAccountId(testProjectId)
+
+                assert.strictEqual(result, testAccountId)
+                assert.strictEqual(smusAuthProvider['cachedProjectAccountIds'].get(testProjectId), testAccountId)
+                assert.ok(extractAccountIdFromResourceMetadataStub.called)
+                assert.ok(getProjectCredentialProviderStub.notCalled)
+                assert.ok(mockStsClient.getCallerIdentity.notCalled)
+            })
+
+            it('should throw error when extractAccountIdFromResourceMetadata fails', async function () {
+                extractAccountIdFromResourceMetadataStub.rejects(new ToolkitError('Metadata extraction failed'))
+
+                await assert.rejects(
+                    () => smusAuthProvider.getProjectAccountId(testProjectId),
+                    (err: ToolkitError) => err.message.includes('Metadata extraction failed')
+                )
+
+                assert.ok(!smusAuthProvider['cachedProjectAccountIds'].has(testProjectId))
+            })
+        })
+
+        describe('in non-SMUS space environment', function () {
+            let stsConstructorStub: sinon.SinonStub
+
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
+                // Stub the DefaultStsClient constructor to return our mock instance
+                const stsClientModule = require('../../../shared/clients/stsClient')
+                stsConstructorStub = sinon.stub(stsClientModule, 'DefaultStsClient').callsFake(() => mockStsClient)
+            })
+
+            afterEach(function () {
+                if (stsConstructorStub) {
+                    stsConstructorStub.restore()
+                }
+            })
+
+            it('should use project credentials with STS to get account ID and cache it', async function () {
+                const result = await smusAuthProvider.getProjectAccountId(testProjectId)
+
+                assert.strictEqual(result, testAccountId)
+                assert.strictEqual(smusAuthProvider['cachedProjectAccountIds'].get(testProjectId), testAccountId)
+                assert.ok(getProjectCredentialProviderStub.calledWith(testProjectId))
+                assert.ok(mockProjectCredentialsProvider.getCredentials.called)
+                assert.ok((DataZoneClient.getInstance as sinon.SinonStub).called)
+                assert.ok(mockDataZoneClientForProject.getToolingEnvironment.calledWith(testProjectId))
+                assert.ok(mockStsClient.getCallerIdentity.called)
+            })
+
+            it('should throw error when no active connection exists', async function () {
+                mockSecondaryAuthState.activeConnection = undefined
+
+                await assert.rejects(
+                    () => smusAuthProvider.getProjectAccountId(testProjectId),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'NoActiveConnection' &&
+                            err.message.includes('No active SMUS connection available')
+                        )
+                    }
+                )
+
+                assert.ok(!smusAuthProvider['cachedProjectAccountIds'].has(testProjectId))
+            })
+
+            it('should throw error when tooling environment has no region', async function () {
+                mockDataZoneClientForProject.getToolingEnvironment.resolves({
+                    id: 'env-123',
+                    awsAccountRegion: undefined,
+                    projectId: undefined,
+                    domainId: undefined,
+                    createdBy: undefined,
+                    name: undefined,
+                    provider: undefined,
+                    $metadata: {},
+                })
+
+                await assert.rejects(
+                    () => smusAuthProvider.getProjectAccountId(testProjectId),
+                    (err: ToolkitError) => {
+                        return (
+                            err.message.includes('Failed to get project account ID') &&
+                            err.message.includes('No AWS account region found in tooling environment')
+                        )
+                    }
+                )
+
+                assert.ok(!smusAuthProvider['cachedProjectAccountIds'].has(testProjectId))
+            })
+
+            it('should throw error when STS GetCallerIdentity fails', async function () {
+                mockStsClient.getCallerIdentity.rejects(new Error('STS call failed'))
+
+                await assert.rejects(
+                    () => smusAuthProvider.getProjectAccountId(testProjectId),
+                    (err: ToolkitError) => {
+                        return (
+                            err.message.includes('Failed to get project account ID') &&
+                            err.message.includes('STS call failed')
+                        )
+                    }
+                )
+
+                assert.ok(!smusAuthProvider['cachedProjectAccountIds'].has(testProjectId))
             })
         })
     })
