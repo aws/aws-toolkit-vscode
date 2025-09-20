@@ -10,7 +10,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../../shared/filesystemUtilities'
-import { Iot } from 'aws-sdk'
+import { CreateKeysAndCertificateResponse } from '@aws-sdk/client-iot'
 import { fs } from '../../../shared/fs/fs'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -34,7 +34,7 @@ export async function createCertificateCommand(
         return
     }
 
-    let certificate: Iot.CreateKeysAndCertificateResponse
+    let certificate: CreateKeysAndCertificateResponse
 
     try {
         certificate = await node.iot.createCertificateAndKeys({
