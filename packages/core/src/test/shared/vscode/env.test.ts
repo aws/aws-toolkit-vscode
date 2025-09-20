@@ -354,8 +354,24 @@ VERSION_ID="22.04"
     })
 
     it('isCloudDesktop', async function () {
+        // Mock fs module for isAmazonLinux2() calls
+        const fsMock = {
+            existsSync: sandbox.stub().returns(false),
+            readFileSync: sandbox.stub().returns(''),
+        }
+        const fsExistsStub = fsMock.existsSync
+
+        // Stub Module._load to intercept require calls
+        const Module = require('module')
+        const moduleLoadStub = sandbox.stub(Module, '_load').callThrough()
+        moduleLoadStub.withArgs('fs').returns(fsMock)
+
         sandbox.stub(process, 'platform').value('linux')
+        sandbox.stub(globals, 'isWeb').returns(false)
         stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
+
+        // Mock fs to return false so it falls back to kernel check (which should return true for AL2)
+        fsExistsStub.returns(false)
 
         const runStub = sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 0 } as any)
         assert.strictEqual(await isCloudDesktop(), true)
@@ -365,11 +381,32 @@ VERSION_ID="22.04"
     })
 
     describe('getComputeEnvType', async function () {
+        let fsExistsStub: sinon.SinonStub
+        let moduleLoadStub: sinon.SinonStub
+
+        beforeEach(function () {
+            // Mock fs module for isAmazonLinux2() calls
+            const fsMock = {
+                existsSync: sandbox.stub().returns(false),
+                readFileSync: sandbox.stub().returns(''),
+            }
+            fsExistsStub = fsMock.existsSync
+
+            // Stub Module._load to intercept require calls
+            const Module = require('module')
+            moduleLoadStub = sandbox.stub(Module, '_load').callThrough()
+            moduleLoadStub.withArgs('fs').returns(fsMock)
+        })
+
         it('cloudDesktop', async function () {
             sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
+            sandbox.stub(globals, 'isWeb').returns(false)
             stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
             sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 0 } as any)
+
+            // Mock fs to return false so it falls back to kernel check (which should return true for AL2)
+            fsExistsStub.returns(false)
 
             assert.deepStrictEqual(await getComputeEnvType(), 'cloudDesktop-amzn')
         })
@@ -377,8 +414,12 @@ VERSION_ID="22.04"
         it('ec2-internal', async function () {
             sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
+            sandbox.stub(globals, 'isWeb').returns(false)
             stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
             sandbox.stub(ChildProcess.prototype, 'run').resolves({ exitCode: 1 } as any)
+
+            // Mock fs to return false so it falls back to kernel check (which should return true for AL2)
+            fsExistsStub.returns(false)
 
             assert.deepStrictEqual(await getComputeEnvType(), 'ec2-amzn')
         })
@@ -386,7 +427,11 @@ VERSION_ID="22.04"
         it('ec2', async function () {
             sandbox.stub(process, 'platform').value('linux')
             sandbox.stub(vscode.env, 'remoteName').value('ssh-remote')
+            sandbox.stub(globals, 'isWeb').returns(false)
             stubOsVersion('5.10.220-188.869.NOT_INTERNAL.x86_64')
+
+            // Mock fs to return false so it falls back to kernel check (which should return false for non-AL2)
+            fsExistsStub.returns(false)
 
             assert.deepStrictEqual(await getComputeEnvType(), 'ec2')
         })
