@@ -139,18 +139,45 @@ describe('env', function () {
         })
 
         it('returns false in SageMaker environment with SAGEMAKER_APP_TYPE', function () {
-            sandbox.stub(process.env, 'SAGEMAKER_APP_TYPE').value('JupyterLab')
-            assert.strictEqual(isAmazonLinux2(), false)
+            const originalValue = process.env.SAGEMAKER_APP_TYPE
+            process.env.SAGEMAKER_APP_TYPE = 'JupyterLab'
+            try {
+                assert.strictEqual(isAmazonLinux2(), false)
+            } finally {
+                if (originalValue === undefined) {
+                    delete process.env.SAGEMAKER_APP_TYPE
+                } else {
+                    process.env.SAGEMAKER_APP_TYPE = originalValue
+                }
+            }
         })
 
         it('returns false in SageMaker environment with SM_APP_TYPE', function () {
-            sandbox.stub(process.env, 'SM_APP_TYPE').value('JupyterLab')
-            assert.strictEqual(isAmazonLinux2(), false)
+            const originalValue = process.env.SM_APP_TYPE
+            process.env.SM_APP_TYPE = 'JupyterLab'
+            try {
+                assert.strictEqual(isAmazonLinux2(), false)
+            } finally {
+                if (originalValue === undefined) {
+                    delete process.env.SM_APP_TYPE
+                } else {
+                    process.env.SM_APP_TYPE = originalValue
+                }
+            }
         })
 
         it('returns false in SageMaker environment with SERVICE_NAME', function () {
-            sandbox.stub(process.env, 'SERVICE_NAME').value('SageMakerUnifiedStudio')
-            assert.strictEqual(isAmazonLinux2(), false)
+            const originalValue = process.env.SERVICE_NAME
+            process.env.SERVICE_NAME = 'SageMakerUnifiedStudio'
+            try {
+                assert.strictEqual(isAmazonLinux2(), false)
+            } finally {
+                if (originalValue === undefined) {
+                    delete process.env.SERVICE_NAME
+                } else {
+                    process.env.SERVICE_NAME = originalValue
+                }
+            }
         })
 
         it('returns false when /etc/os-release indicates Ubuntu in container', function () {
