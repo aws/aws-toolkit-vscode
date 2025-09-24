@@ -310,6 +310,87 @@ VERSION_ID="22.04"
             // Should trust container OS over kernel
             assert.strictEqual(isAmazonLinux2(), false)
         })
+
+        it('handles os-release with comments correctly', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+# This is a comment with VERSION_ID="2023" that should be ignored
+NAME="Amazon Linux 2"
+VERSION="2"
+ID="amzn"
+# Another comment with PLATFORM_ID="platform:al2023"
+VERSION_ID="2"
+PRETTY_NAME="Amazon Linux 2"
+            `)
+
+            // Should correctly identify as AL2 despite comments containing AL2023 identifiers
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('handles os-release with quoted values correctly', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Amazon Linux 2"
+VERSION='2'
+ID=amzn
+VERSION_ID="2"
+PRETTY_NAME='Amazon Linux 2'
+            `)
+
+            // Should correctly parse both single and double quoted values
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('handles os-release with empty lines and whitespace', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+
+NAME="Amazon Linux 2"
+
+VERSION="2"
+   ID="amzn"   
+VERSION_ID="2"
+
+PRETTY_NAME="Amazon Linux 2"
+
+            `)
+
+            // Should correctly parse despite empty lines and whitespace
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
+
+        it('rejects Amazon Linux 2023 even with misleading comments', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+# This comment mentions Amazon Linux 2 but should not affect parsing
+NAME="Amazon Linux"
+VERSION="2023"
+ID="amzn"
+# Comment with VERSION_ID="2" should be ignored
+VERSION_ID="2023"
+PLATFORM_ID="platform:al2023"
+PRETTY_NAME="Amazon Linux 2023"
+            `)
+
+            // Should correctly identify as AL2023 (not AL2) despite misleading comments
+            assert.strictEqual(isAmazonLinux2(), false)
+        })
+
+        it('handles malformed os-release lines gracefully', function () {
+            fsExistsStub.returns(true)
+            fsReadFileStub.returns(`
+NAME="Amazon Linux 2"
+VERSION="2"
+ID="amzn"
+INVALID_LINE_WITHOUT_EQUALS
+=INVALID_LINE_STARTING_WITH_EQUALS
+VERSION_ID="2"
+PRETTY_NAME="Amazon Linux 2"
+            `)
+
+            // Should correctly parse valid lines and ignore malformed ones
+            assert.strictEqual(isAmazonLinux2(), true)
+        })
     })
 
     describe('hasSageMakerEnvVars', function () {
