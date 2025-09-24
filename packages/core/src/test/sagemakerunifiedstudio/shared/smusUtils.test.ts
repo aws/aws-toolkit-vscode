@@ -11,7 +11,8 @@ import {
     SmusTimeouts,
     SmusCredentialExpiry,
     validateCredentialFields,
-    extractAccountIdFromArn,
+    extractAccountIdFromSageMakerArn,
+    extractAccountIdFromResourceMetadata,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
@@ -463,11 +464,11 @@ describe('SmusUtils', () => {
     })
 })
 
-describe('extractAccountIdFromArn', () => {
+describe('extractAccountIdFromSageMakerArn', () => {
     describe('valid ARN formats', () => {
         it('should extract account ID from valid ARN', () => {
             const arn = 'arn:aws:sagemaker:us-west-2:123456789012:app/domain-id/ce/CodeEditor/default'
-            const result = extractAccountIdFromArn(arn)
+            const result = extractAccountIdFromSageMakerArn(arn)
 
             assert.strictEqual(result, '123456789012')
         })
@@ -476,7 +477,7 @@ describe('extractAccountIdFromArn', () => {
     describe('invalid ARN formats', () => {
         it('should throw error for empty ARN', () => {
             assert.throws(
-                () => extractAccountIdFromArn(''),
+                () => extractAccountIdFromSageMakerArn(''),
                 (error: any) => {
                     assert.ok(error instanceof ToolkitError)
                     assert.ok(error.message.includes('Invalid SageMaker ARN format'))
@@ -487,7 +488,7 @@ describe('extractAccountIdFromArn', () => {
 
         it('should throw error for non-ARN string', () => {
             assert.throws(
-                () => extractAccountIdFromArn('not-an-arn'),
+                () => extractAccountIdFromSageMakerArn('not-an-arn'),
                 (error: any) => {
                     assert.ok(error instanceof ToolkitError)
                     assert.ok(error.message.includes('Invalid SageMaker ARN format'))
@@ -499,7 +500,7 @@ describe('extractAccountIdFromArn', () => {
         it('should throw error for wrong service', () => {
             const arn = 'arn:aws:s3:us-east-1:123456789012:bucket/my-bucket'
             assert.throws(
-                () => extractAccountIdFromArn(arn),
+                () => extractAccountIdFromSageMakerArn(arn),
                 (error: any) => {
                     assert.ok(error instanceof ToolkitError)
                     assert.ok(error.message.includes('Invalid SageMaker ARN format'))
@@ -511,7 +512,7 @@ describe('extractAccountIdFromArn', () => {
         it('should throw error for missing account ID', () => {
             const arn = 'arn:aws:sagemaker:us-east-1::space/domain/space'
             assert.throws(
-                () => extractAccountIdFromArn(arn),
+                () => extractAccountIdFromSageMakerArn(arn),
                 (error: any) => {
                     assert.ok(error instanceof ToolkitError)
                     assert.ok(error.message.includes('Invalid SageMaker ARN format'))
@@ -519,5 +520,60 @@ describe('extractAccountIdFromArn', () => {
                 }
             )
         })
+    })
+})
+
+describe('extractAccountIdFromResourceMetadata', () => {
+    let getResourceMetadataStub: sinon.SinonStub
+
+    beforeEach(() => {
+        getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    it('should extract account ID from ResourceArn successfully', async () => {
+        const testAccountId = '123456789012'
+        const testResourceArn = `arn:aws:sagemaker:us-east-1:${testAccountId}:app/domain-id/appName/CodeEditor/default`
+
+        getResourceMetadataStub.returns({
+            ResourceArn: testResourceArn,
+        })
+
+        const result = await extractAccountIdFromResourceMetadata()
+
+        assert.strictEqual(result, testAccountId)
+        assert.ok(getResourceMetadataStub.called)
+    })
+
+    it('should throw error when ResourceArn is missing', async () => {
+        getResourceMetadataStub.returns({})
+
+        await assert.rejects(
+            () => extractAccountIdFromResourceMetadata(),
+            (err: Error) => {
+                return err.message.includes(
+                    'Failed to extract AWS account ID from ResourceArn in SMUS space environment'
+                )
+            }
+        )
+    })
+
+    it('should throw error when extractAccountIdFromSageMakerArn fails', async () => {
+        const testResourceArn = 'invalid-arn'
+        getResourceMetadataStub.returns({
+            ResourceArn: testResourceArn,
+        })
+
+        await assert.rejects(
+            () => extractAccountIdFromResourceMetadata(),
+            (err: Error) => {
+                return err.message.includes(
+                    'Failed to extract AWS account ID from ResourceArn in SMUS space environment'
+                )
+            }
+        )
     })
 })
