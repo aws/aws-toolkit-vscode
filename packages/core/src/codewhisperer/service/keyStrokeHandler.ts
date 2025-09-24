@@ -87,9 +87,6 @@ export class KeyStrokeHandler {
         client: DefaultCodeWhispererClient,
         config: ConfigurationEntry
     ): Promise<void> {
-        // Call report user decisions once to report recommendations leftover from last invocation.
-        RecommendationHandler.instance.reportUserDecisions(-1)
-
         try {
             if (!config.isAutomatedTriggerEnabled) {
                 return
