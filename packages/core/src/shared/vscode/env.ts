@@ -11,6 +11,7 @@ import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
 import globals, { isWeb } from '../extensionGlobals'
 import * as devConfig from '../../dev/config'
+import * as os from 'os'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -245,9 +246,12 @@ export function isAmazonLinux2() {
         getLogger().error(`Checking os-release files failed: ${e}`)
     }
 
-    // If no os-release files found or all failed to parse, assume not AL2
-    // We do NOT fall back to kernel version as it reflects host OS, not container OS
-    return false
+    // Fall back to kernel version check if os-release files are unavailable or failed
+    // This is needed for environments where os-release might not be accessible
+    const kernelRelease = os.release()
+    const hasAL2Kernel = kernelRelease.includes('.amzn2int.') || kernelRelease.includes('.amzn2.')
+
+    return hasAL2Kernel
 }
 
 /**
