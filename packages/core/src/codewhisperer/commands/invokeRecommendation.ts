@@ -20,9 +20,6 @@ export async function invokeRecommendation(
     client: DefaultCodeWhispererClient,
     config: ConfigurationEntry
 ) {
-    // Call report user decisions once to report recommendations leftover from last invocation.
-    RecommendationHandler.instance.reportUserDecisions(-1)
-
     if (!editor || !config.isManualTriggerEnabled) {
         return
     }
