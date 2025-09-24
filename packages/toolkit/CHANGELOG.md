@@ -1,3 +1,13 @@
+## 3.75.0 2025-09-19
+
+- Miscellaneous non-user-facing changes
+
+## 3.74.0 2025-09-10
+
+- **Feature** Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE
+- **Feature** AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile
+- **Feature** Lambda AppBuilder: Now you can install LocalStack VS Code extension from the AppBuilder walkthrough
+
 ## 3.73.0 2025-09-05
 
 - Miscellaneous non-user-facing changes

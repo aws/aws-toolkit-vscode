@@ -240,6 +240,23 @@
             "description": "The number of executed operations"
         },
         {
+            "name": "amazonqAutoDebugCommandType",
+            "type": "string",
+            "allowedValues": ["fixWithQ", "fixAllWithQ", "explainProblem"],
+            "description": "The type of auto debug command executed"
+        },
+        {
+            "name": "amazonqAutoDebugAction",
+            "type": "string",
+            "allowedValues": ["invoked", "completed"],
+            "description": "The action performed (invoked or completed)"
+        },
+        {
+            "name": "amazonqAutoDebugProblemCount",
+            "type": "int",
+            "description": "Number of problems being processed"
+        },
+        {
             "name": "smusDomainId",
             "type": "string",
             "description": "SMUS domain identifier"
@@ -278,6 +295,16 @@
             "name": "smusConnectionType",
             "type": "string",
             "description": "SMUS connection type"
+        },
+        {
+            "name": "smusDomainAccountId",
+            "type": "string",
+            "description": "SMUS domain account id"
+        },
+        {
+            "name": "smusProjectAccountId",
+            "type": "string",
+            "description": "SMUS project account id"
         }
     ],
     "metrics": [
@@ -1307,11 +1334,44 @@
             ]
         },
         {
+            "name": "amazonq_autoDebugCommand",
+            "description": "Tracks usage of Amazon Q auto debug commands (fixWithQ, fixAllWithQ, explainProblem)",
+            "metadata": [
+                {
+                    "type": "amazonqAutoDebugCommandType",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugAction",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugProblemCount",
+                    "required": false
+                },
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "reasonDesc",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "smus_login",
             "description": "Emitted whenever a user signin to SMUS",
             "metadata": [
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 }
             ]
@@ -1323,6 +1383,10 @@
                 {
                     "type": "smusDomainId",
                     "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
                 }
             ]
         },
@@ -1332,6 +1396,10 @@
             "metadata": [
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 },
                 {
@@ -1357,6 +1425,10 @@
                     "required": false
                 },
                 {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
                     "type": "smusProjectId",
                     "required": false
                 },
@@ -1368,11 +1440,15 @@
             "passive": true
         },
         {
-            "name": "smus_startSpace",
+            "name": "smus_openRemoteConnection",
             "description": "Emitted whenever a user starts a SMUS space",
             "metadata": [
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 },
                 {
@@ -1395,6 +1471,10 @@
             "metadata": [
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 },
                 {
@@ -1421,6 +1501,10 @@
                 },
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 },
                 {
@@ -1454,6 +1538,10 @@
                     "required": false
                 },
                 {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
                     "type": "smusProjectId",
                     "required": false
                 },
@@ -1481,6 +1569,10 @@
                 },
                 {
                     "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
                     "required": false
                 },
                 {
