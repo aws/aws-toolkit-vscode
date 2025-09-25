@@ -118,7 +118,8 @@ export class AmazonQLspAuth {
         )
         if (credentials) {
             getLogger().info(
-                `[SageMaker Debug] IAM credentials structure: accessKeyId=${credentials.accessKeyId ? 'present' : 'missing'}, secretAccessKey=${credentials.secretAccessKey ? 'present' : 'missing'}, sessionToken=${credentials.sessionToken ? 'present' : 'missing'}`
+                `[SageMaker Debug] IAM credentials structure: accessKeyId=${credentials.accessKeyId ? 'present' : 'missing'}, secretAccessKey=${credentials.secretAccessKey ? 'present' : 'missing'}, sessionToken=${credentials.sessionToken ? 'present' : 'missing'},  expiration=${credentials.expiration} ? 'pr
+esent' : 'missing'}`
             )
         }
 
@@ -163,6 +164,7 @@ export class AmazonQLspAuth {
             accessKeyId: credentials.accessKeyId,
             secretAccessKey: credentials.secretAccessKey,
             sessionToken: credentials.sessionToken,
+            expiration: credentials.expiration,
         }
         const payload = new TextEncoder().encode(JSON.stringify({ data: iamCredentials }))
 
