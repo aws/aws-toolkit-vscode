@@ -1,3 +1,7 @@
+## 1.96.0 2025-09-25
+
+- **Bug Fix** Amazon Q support web/container environments running Ubuntu/Linux, even when the host machine is Amazon Linux 2.
+
 ## 1.95.0 2025-09-19
 
 - **Bug Fix** Amazon Q automatically refreshes expired IAM Credentials in Sagemaker instances
