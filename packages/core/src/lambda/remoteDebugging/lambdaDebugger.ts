@@ -30,6 +30,8 @@ export interface DebugConfig {
     lambdaTimeout?: number
     layerArn?: string
     handlerFile?: string
+    samProjectLogicalId?: string // SAM project logical ID for auto-detecting outFiles
+    samProjectRoot?: vscode.Uri // SAM project root for auto-detecting outFiles
     isLambdaRemote: boolean // false if LocalStack connection
 }
 

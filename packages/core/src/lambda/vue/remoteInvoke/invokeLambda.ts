@@ -151,7 +151,6 @@ export class RemoteInvokeWebview extends VueWebview {
     private handlerFileAvailable: boolean = false
     private isStartingDebug: boolean = false
     private handlerFile: string | undefined
-    private outFile: string | undefined
     public constructor(
         private readonly channel: vscode.OutputChannel,
         private readonly client: LambdaClient,
@@ -412,25 +411,6 @@ export class RemoteInvokeWebview extends VueWebview {
         if (watchForUpdates && !isHotReloadingFunction(this.data.LambdaFunctionNode?.configuration.CodeSha256)) {
             this.setupFileWatcher()
         }
-        // try auto populate outFile for ts here
-        if (
-            (handlerFile.fsPath.endsWith('ts') || handlerFile.fsPath.endsWith('tsx')) &&
-            this.data.LambdaFunctionNode?.logicalId &&
-            this.data.LambdaFunctionNode.projectRoot
-        ) {
-            // if proj root is ..../sam-proj/
-            // build dir will be ..../sam-proj/.aws-sam/build/{LogicalID}/
-            const tmpPath = vscode.Uri.joinPath(
-                this.data.LambdaFunctionNode.projectRoot,
-                '.aws-sam',
-                'build',
-                this.data.LambdaFunctionNode.logicalId
-            )
-            if (await fs.exists(tmpPath)) {
-                this.outFile = tmpPath.fsPath
-                this.onStateChange.fire({})
-            }
-        }
         await openLambdaFile(handlerFile.fsPath)
         this.handlerFile = handlerFile.fsPath
         return true
@@ -651,6 +631,8 @@ export class RemoteInvokeWebview extends VueWebview {
             await RemoteDebugController.instance.startDebugging(this.data.FunctionArn, this.data.Runtime ?? 'unknown', {
                 ...config,
                 handlerFile: this.handlerFile,
+                samProjectLogicalId: this.data.LambdaFunctionNode.logicalId,
+                samProjectRoot: this.data.LambdaFunctionNode.projectRoot,
             })
         } catch (e) {
             throw ToolkitError.chain(
@@ -693,10 +675,6 @@ export class RemoteInvokeWebview extends VueWebview {
 
     public getLocalPath(): string {
         return this.data.LocalRootPath ?? ''
-    }
-
-    public getOutFile(): string {
-        return this.outFile ?? ''
     }
 
     public getHandlerAvailable(): boolean {
