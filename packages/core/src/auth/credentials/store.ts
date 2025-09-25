@@ -95,6 +95,7 @@ export class CredentialsStore {
         credentialsId: CredentialsId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {
+        getLogger().debug(`store: Fetch new credentials from provider with id: ${asString(credentialsId)}`)
         const credentials = {
             credentials: await credentialsProvider.getCredentials(),
             credentialsHashCode: credentialsProvider.getHashCode(),
@@ -102,7 +103,6 @@ export class CredentialsStore {
         }
 
         this.credentialsCache[asString(credentialsId)] = credentials
-
         return credentials
     }
 }
