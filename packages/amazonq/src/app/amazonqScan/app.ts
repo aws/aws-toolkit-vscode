@@ -12,6 +12,7 @@ import { AppToWebViewMessageDispatcher } from './chat/views/connector/connector'
 import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
+import { ReviewTelemetryHelper } from './telemetryHelper'
 
 export function init(appContext: AmazonQAppInitContext) {
     const scanChatControllerEventEmitters: ScanChatControllerEventEmitters = {
