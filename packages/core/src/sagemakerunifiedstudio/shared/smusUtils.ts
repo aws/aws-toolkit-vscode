@@ -56,8 +56,14 @@ export const SmusErrorCodes = {
     UserCancelled: 'UserCancelled',
     /** Error code for when domain account Id is missing */
     AccountIdNotFound: 'AccountIdNotFound',
+    /** Error code for when resource ARN is missing */
+    ResourceArnNotFound: 'ResourceArnNotFound',
     /** Error code for when fails to get domain account Id */
     GetDomainAccountIdFailed: 'GetDomainAccountIdFailed',
+    /** Error code for when fails to get project account Id */
+    GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
+    /** Error code for when region is missing */
+    RegionNotFound: 'RegionNotFound',
 } as const
 
 /**
@@ -369,9 +375,9 @@ export class SmusUtils {
  * @returns The account ID from the ARN
  * @throws If the ARN format is invalid
  */
-export function extractAccountIdFromArn(arn: string): string {
+export function extractAccountIdFromSageMakerArn(arn: string): string {
     // Match the ARN components to extract account ID
-    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space|domain)\/.+$/i
+    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space)\/.+$/i
     const match = arn.match(regex)
 
     if (!match?.groups) {
@@ -379,4 +385,32 @@ export function extractAccountIdFromArn(arn: string): string {
     }
 
     return match.groups.accountId
+}
+
+/**
+ * Extracts account ID from ResourceArn in SMUS space environment
+ * @returns Promise resolving to the account ID
+ * @throws ToolkitError if unable to extract account ID
+ */
+export async function extractAccountIdFromResourceMetadata(): Promise<string> {
+    const logger = getLogger()
+
+    try {
+        logger.debug('SMUS: Extracting account ID from ResourceArn in resource-metadata file')
+
+        const resourceMetadata = getResourceMetadata()!
+        const resourceArn = resourceMetadata.ResourceArn
+
+        if (!resourceArn) {
+            throw new Error('ResourceArn not found in metadata file')
+        }
+
+        const accountId = extractAccountIdFromSageMakerArn(resourceArn)
+        logger.debug(`Successfully extracted account ID from resource-metadata file: ${accountId}`)
+
+        return accountId
+    } catch (err) {
+        logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
+        throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
+    }
 }
