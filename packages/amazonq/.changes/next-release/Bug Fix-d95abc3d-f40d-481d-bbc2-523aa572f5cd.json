@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q support web/container environments running Ubuntu/Linux, even when the host machine is Amazon Linux 2."
-}
