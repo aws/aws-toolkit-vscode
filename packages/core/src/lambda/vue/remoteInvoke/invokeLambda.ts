@@ -631,7 +631,7 @@ export class RemoteInvokeWebview extends VueWebview {
             await RemoteDebugController.instance.startDebugging(this.data.FunctionArn, this.data.Runtime ?? 'unknown', {
                 ...config,
                 handlerFile: this.handlerFile,
-                samProjectLogicalId: this.data.LambdaFunctionNode.logicalId,
+                samFunctionLogicalId: this.data.LambdaFunctionNode.logicalId,
                 samProjectRoot: this.data.LambdaFunctionNode.projectRoot,
             })
         } catch (e) {

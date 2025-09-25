@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam outFiles for typescript debug."
+	"description": "Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug."
 }

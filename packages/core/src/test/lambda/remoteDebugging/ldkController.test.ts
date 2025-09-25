@@ -502,7 +502,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.ts',
             samProjectRoot: testSamProjectRoot,
-            samProjectLogicalId: testSamLogicalId,
+            samFunctionLogicalId: testSamLogicalId,
         })
         const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
 
@@ -518,7 +518,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.ts',
             samProjectRoot: testSamProjectRoot,
-            samProjectLogicalId: testSamLogicalId,
+            samFunctionLogicalId: testSamLogicalId,
         })
         const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
 
@@ -571,55 +571,26 @@ describe('tryAutoDetectOutFile', () => {
                 },
             },
         }
-        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockTemplate))
+        const readTextStub = sandbox.stub(fs, 'readFileText')
+        readTextStub.resolves(JSON.stringify(mockTemplate))
         sandbox.stub(fs, 'exists').resolves(true)
 
         const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
 
         assert.strictEqual(result, expectedAssetDir.fsPath, 'Should return CDK asset directory path')
-    })
 
-    it('should return undefined when function name is not in template', async () => {
-        const debugConfig: DebugConfig = createMockDebugConfig({
-            handlerFile: '/path/to/cdk-project/src/handler.ts',
-        })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const functionNonExistConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
             FunctionName: 'NonExistentFunction',
         })
+        const result2 = await tryAutoDetectOutFile(debugConfig, functionNonExistConfig)
 
-        // Mock workspace folder
-        sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(testMockWorkspaceFolder)
+        assert.strictEqual(result2, undefined, 'Should return undefined when function not found in template')
 
-        // Mock CDK project detection
-        const detectCdkProjectsStub = sandbox.stub(detectCdkProjects, 'detectCdkProjects')
-        detectCdkProjectsStub.resolves([
-            {
-                cdkJsonUri: vscode.Uri.joinPath(testMockWorkspaceFolder.uri, 'cdk.json'),
-                treeUri: vscode.Uri.joinPath(testMockWorkspaceFolder.uri, 'cdk.out', 'tree.json'),
-            },
-        ])
+        readTextStub.resolves('{ invalid json }')
 
-        // Mock finding template files
-        sandbox
-            .stub(vscode.workspace, 'findFiles')
-            .resolves([vscode.Uri.joinPath(testCdkOutDir, 'stack.template.json')])
+        const result3 = await tryAutoDetectOutFile(debugConfig, functionConfig)
 
-        // Mock reading template file with different function
-        const mockTemplate = {
-            Resources: {
-                OtherFunction: {
-                    Type: 'AWS::Lambda::Function',
-                    Properties: {
-                        FunctionName: 'OtherFunction',
-                    },
-                },
-            },
-        }
-        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockTemplate))
-
-        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
-
-        assert.strictEqual(result, undefined, 'Should return undefined when function not found in template')
+        assert.strictEqual(result3, undefined, 'Should return undefined on template parsing error')
     })
 
     it('should return undefined when no workspace folder is found', async () => {
@@ -636,46 +607,13 @@ describe('tryAutoDetectOutFile', () => {
         assert.strictEqual(result, undefined, 'Should return undefined when no workspace folder')
     })
 
-    it('should handle template parsing errors gracefully', async () => {
-        const debugConfig: DebugConfig = createMockDebugConfig({
-            handlerFile: '/path/to/cdk-project/src/handler.ts',
-        })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
-            FunctionName: testFunctionName,
-        })
-
-        // Mock workspace folder
-        sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(testMockWorkspaceFolder)
-
-        // Mock CDK project detection
-        const detectCdkProjectsStub = sandbox.stub(detectCdkProjects, 'detectCdkProjects')
-        detectCdkProjectsStub.resolves([
-            {
-                cdkJsonUri: vscode.Uri.joinPath(testMockWorkspaceFolder.uri, 'cdk.json'),
-                treeUri: vscode.Uri.joinPath(testMockWorkspaceFolder.uri, 'cdk.out', 'tree.json'),
-            },
-        ])
-
-        // Mock finding template files
-        sandbox
-            .stub(vscode.workspace, 'findFiles')
-            .resolves([vscode.Uri.joinPath(testCdkOutDir, 'stack.template.json')])
-
-        // Mock reading template file with invalid JSON
-        sandbox.stub(fs, 'readFileText').resolves('{ invalid json }')
-
-        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
-
-        assert.strictEqual(result, undefined, 'Should return undefined on template parsing error')
-    })
-
     it('should prioritize SAM detection over CDK detection', async () => {
         const samPath = vscode.Uri.joinPath(testSamProjectRoot, '.aws-sam', 'build', testSamLogicalId)
 
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.ts',
             samProjectRoot: testSamProjectRoot,
-            samProjectLogicalId: testSamLogicalId,
+            samFunctionLogicalId: testSamLogicalId,
         })
         const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
             FunctionName: testFunctionName,
@@ -697,7 +635,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.tsx', // TSX file
             samProjectRoot: testSamProjectRoot,
-            samProjectLogicalId: testSamLogicalId,
+            samFunctionLogicalId: testSamLogicalId,
         })
         const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
 

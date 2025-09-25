@@ -186,14 +186,14 @@ export async function tryAutoDetectOutFile(
     }
 
     // Try SAM detection first using the provided parameters
-    if (debugConfig.samProjectLogicalId && debugConfig.samProjectRoot) {
+    if (debugConfig.samFunctionLogicalId && debugConfig.samProjectRoot) {
         // if proj root is ..../sam-proj/
         // build dir will be ..../sam-proj/.aws-sam/build/{LogicalID}/
         const samBuildPath = vscode.Uri.joinPath(
             debugConfig.samProjectRoot,
             '.aws-sam',
             'build',
-            debugConfig.samProjectLogicalId
+            debugConfig.samFunctionLogicalId
         )
 
         if (await fs.exists(samBuildPath)) {
@@ -220,7 +220,10 @@ export async function tryAutoDetectOutFile(
         for (const project of cdkProjects) {
             // Check if CDK project contains the handler file
             const cdkProjectDir = vscode.Uri.joinPath(project.cdkJsonUri, '..')
-            if (!debugConfig.handlerFile.startsWith(cdkProjectDir.fsPath)) {
+            // Normalize paths for comparison (handles Windows path separators and case)
+            const normalizedHandlerPath = path.normalize(debugConfig.handlerFile).toLowerCase()
+            const normalizedCdkPath = path.normalize(cdkProjectDir.fsPath).toLowerCase()
+            if (!normalizedHandlerPath.startsWith(normalizedCdkPath)) {
                 continue
             }
 
