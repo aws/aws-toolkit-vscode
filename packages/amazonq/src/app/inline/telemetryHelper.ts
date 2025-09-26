@@ -41,7 +41,7 @@ export class TelemetryHelper {
 
     public setInvokeSuggestionStartTime() {
         this.resetClientComponentLatencyTime()
-        this._invokeSuggestionStartTime = performance.now()
+        this._invokeSuggestionStartTime = Date.now()
     }
 
     get invokeSuggestionStartTime(): number {
@@ -49,7 +49,7 @@ export class TelemetryHelper {
     }
 
     public setPreprocessEndTime() {
-        this._preprocessEndTime = performance.now()
+        this._preprocessEndTime = Date.now()
     }
 
     get preprocessEndTime(): number {
@@ -58,7 +58,7 @@ export class TelemetryHelper {
 
     public setSdkApiCallStartTime() {
         if (this._sdkApiCallStartTime === 0) {
-            this._sdkApiCallStartTime = performance.now()
+            this._sdkApiCallStartTime = Date.now()
         }
     }
 
@@ -68,7 +68,7 @@ export class TelemetryHelper {
 
     public setSdkApiCallEndTime() {
         if (this._sdkApiCallEndTime === 0 && this._sdkApiCallStartTime !== 0) {
-            this._sdkApiCallEndTime = performance.now()
+            this._sdkApiCallEndTime = Date.now()
         }
     }
 
@@ -78,7 +78,7 @@ export class TelemetryHelper {
 
     public setAllPaginationEndTime() {
         if (this._allPaginationEndTime === 0 && this._sdkApiCallEndTime !== 0) {
-            this._allPaginationEndTime = performance.now()
+            this._allPaginationEndTime = Date.now()
         }
     }
 
@@ -88,7 +88,7 @@ export class TelemetryHelper {
 
     public setFirstSuggestionShowTime() {
         if (this._firstSuggestionShowTime === 0 && this._sdkApiCallEndTime !== 0) {
-            this._firstSuggestionShowTime = performance.now()
+            this._firstSuggestionShowTime = Date.now()
         }
     }
 
