@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { CreateDocumentRequest, UpdateDocumentRequest } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -75,7 +75,7 @@ export async function createDocument(
     logger.info(`Creating Systems Manager Document '${wizardResponse.name}'`)
 
     try {
-        const request: SSM.CreateDocumentRequest = {
+        const request: CreateDocumentRequest = {
             Content: textDocument.getText(),
             Name: wizardResponse.name,
             DocumentType: wizardResponse.documentType,
@@ -109,7 +109,7 @@ export async function updateDocument(
     logger.info(`Updating Systems Manager Document '${wizardResponse.name}'`)
 
     try {
-        const request: SSM.UpdateDocumentRequest = {
+        const request: UpdateDocumentRequest = {
             Content: textDocument.getText(),
             Name: wizardResponse.name,
             DocumentVersion: '$LATEST',
