@@ -102,8 +102,8 @@
                         class="handler-status-message"
                     >
                         <info-wrap
-                            >Specify the path to your local directory that contains the handler file for debugging, or
-                            download the handler file from your deployed function.</info-wrap
+                            >Specify the absolute path to your local directory that contains the handler file for
+                            debugging, or download the handler file from your deployed function.</info-wrap
                         >
                     </div>
                     <div v-else style="margin-bottom: 3px" class="handler-status-message">
