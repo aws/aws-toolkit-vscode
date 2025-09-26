@@ -53,7 +53,7 @@ export class UserWrittenCodeTracker {
     // for all Q features
     public onQFeatureInvoked() {
         this._qUsageCount += 1
-        this._lastQInvocationTime = performance.now()
+        this._lastQInvocationTime = Date.now()
     }
 
     public onQStartsMakingEdits() {
@@ -129,10 +129,10 @@ export class UserWrittenCodeTracker {
             this.reset()
             return
         }
-        const startTime = performance.now()
+        const startTime = Date.now()
         this._timer = setTimeout(() => {
             try {
-                const currentTime = performance.now()
+                const currentTime = Date.now()
                 const delay: number = UserWrittenCodeTracker.defaultCheckPeriodMillis
                 const diffTime: number = startTime + delay
                 if (diffTime <= currentTime) {
@@ -169,7 +169,7 @@ export class UserWrittenCodeTracker {
             // due to unhandled edge cases or early terminated code paths
             // reset it back to false after a reasonable period of time
             if (this._qIsMakingEdits) {
-                if (performance.now() - this._lastQInvocationTime > UserWrittenCodeTracker.resetQIsEditingTimeoutMs) {
+                if (Date.now() - this._lastQInvocationTime > UserWrittenCodeTracker.resetQIsEditingTimeoutMs) {
                     getLogger().warn(`Reset Q is editing state to false.`)
                     this._qIsMakingEdits = false
                 }

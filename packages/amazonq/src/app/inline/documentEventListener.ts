@@ -20,7 +20,7 @@ export class DocumentEventListener {
                 if (this.lastDocumentChangeEventMap.size > this._maxDocument) {
                     this.lastDocumentChangeEventMap.clear()
                 }
-                this.lastDocumentChangeEventMap.set(e.document.uri.fsPath, { event: e, timestamp: performance.now() })
+                this.lastDocumentChangeEventMap.set(e.document.uri.fsPath, { event: e, timestamp: Date.now() })
                 // The VS Code provideInlineCompletionCallback may not trigger when Enter is pressed, especially in Python files
                 // manually make this trigger. In case of duplicate, the provideInlineCompletionCallback is already debounced
                 if (this.isEnter(e) && vscode.window.activeTextEditor) {
@@ -37,7 +37,7 @@ export class DocumentEventListener {
             const eventTime = result.timestamp
             const isDelete =
                 (event && event.contentChanges.length === 1 && event.contentChanges[0].text === '') || false
-            const timeDiff = Math.abs(performance.now() - eventTime)
+            const timeDiff = Math.abs(Date.now() - eventTime)
             return timeDiff < 500 && isDelete
         }
         return false
