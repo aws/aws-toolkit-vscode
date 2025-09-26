@@ -16,7 +16,7 @@ import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../../shared/ui/common/region'
 import { ClustersMessage } from 'aws-sdk/clients/redshift'
 import { Prompter } from '../../../shared/ui/prompter'
-import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
+import { ListSecretsResponse } from '@aws-sdk/client-secrets-manager'
 import { SecretsManagerClient } from '../../../shared/clients/secretsManagerClient'
 import { redshiftHelpUrl } from '../../../shared/constants'
 
