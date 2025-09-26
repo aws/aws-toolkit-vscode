@@ -102,7 +102,7 @@ export class RecommendationService {
         if (document.uri.scheme === 'vscode-notebook-cell') {
             request.fileContextOverride = extractFileContextInNotebooks(document, position)
         }
-        const requestStartTime = performance.now()
+        const requestStartTime = Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -126,7 +126,7 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
-            const t0 = performance.now()
+            const t0 = Date.now()
 
             // Best effort estimate of deletion
             const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
@@ -176,7 +176,7 @@ export class RecommendationService {
 
             getLogger().info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
-                latency: performance.now() - t0,
+                latency: Date.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -228,7 +228,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = performance.now() - requestStartTime
+            const firstCompletionDisplayLatency = Date.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
