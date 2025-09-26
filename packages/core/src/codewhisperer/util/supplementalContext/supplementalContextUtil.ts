@@ -20,7 +20,7 @@ export async function fetchSupplementalContext(
     cancellationToken: vscode.CancellationToken,
     languageClient?: LanguageClient
 ): Promise<CodeWhispererSupplementalContext | undefined> {
-    const timesBeforeFetching = performance.now()
+    const timesBeforeFetching = Date.now()
 
     const isUtg = await isTestFile(editor.document.uri.fsPath, {
         languageId: editor.document.languageId,
@@ -47,7 +47,7 @@ export async function fetchSupplementalContext(
                         (item) => item.content.trim().length !== 0
                     ),
                     contentsLength: value.supplementalContextItems.reduce((acc, curr) => acc + curr.content.length, 0),
-                    latency: performance.now() - timesBeforeFetching,
+                    latency: Date.now() - timesBeforeFetching,
                     strategy: value.strategy,
                 }
 
@@ -63,7 +63,7 @@ export async function fetchSupplementalContext(
                     isProcessTimeout: true,
                     supplementalContextItems: [],
                     contentsLength: 0,
-                    latency: performance.now() - timesBeforeFetching,
+                    latency: Date.now() - timesBeforeFetching,
                     strategy: 'empty',
                 }
             } else {
