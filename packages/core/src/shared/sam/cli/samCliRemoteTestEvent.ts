@@ -24,6 +24,7 @@ export interface SamCliRemoteTestEventsParameters {
     projectRoot?: vscode.Uri
     stackName?: string
     logicalId?: string
+    force?: boolean
 }
 
 export async function runSamCliRemoteTestEvents(
@@ -51,8 +52,14 @@ export async function runSamCliRemoteTestEvents(
 
     if (remoteTestEventsParameters.operation === TestEventsOperation.Put && remoteTestEventsParameters.eventSample) {
         const tempFileUri = vscode.Uri.file(path.join(os.tmpdir(), 'event-sample.json'))
-        await vscode.workspace.fs.writeFile(tempFileUri, Buffer.from(remoteTestEventsParameters.eventSample, 'utf8'))
+        const encoder = new TextEncoder()
+        await vscode.workspace.fs.writeFile(tempFileUri, encoder.encode(remoteTestEventsParameters.eventSample))
         args.push('--file', tempFileUri.fsPath)
+
+        // Add --force flag when updating existing events
+        if (remoteTestEventsParameters.force) {
+            args.push('--force')
+        }
     }
 
     const childProcessResult = await invoker.invoke({
