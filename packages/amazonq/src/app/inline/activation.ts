@@ -98,10 +98,10 @@ export async function activate(languageClient: LanguageClient) {
 
                 if (vsCodeState.lastUserModificationTime) {
                     TelemetryHelper.instance.setTimeSinceLastModification(
-                        performance.now() - vsCodeState.lastUserModificationTime
+                        Date.now() - vsCodeState.lastUserModificationTime
                     )
                 }
-                vsCodeState.lastUserModificationTime = performance.now()
+                vsCodeState.lastUserModificationTime = Date.now()
                 /**
                  * Important:  Doing this sleep(10) is to make sure
                  * 1. this event is processed by vs code first
