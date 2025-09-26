@@ -11,7 +11,7 @@ import { clearChatInput } from '../utils/generalUtils'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
-    this.timeout(150000)
+    this.timeout(300000)
     let webviewView: WebviewView
 
     before(async function () {
@@ -31,6 +31,10 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     })
     it('/compact Test', async () => {
         await clickQuickActionsCommand(webviewView, '/compact')
+        await clearChatInput(webviewView)
+    })
+    it('/tramsform Test', async () => {
+        await clickQuickActionsCommand(webviewView, '/transform')
         await clearChatInput(webviewView)
     })
 })
