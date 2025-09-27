@@ -28,6 +28,7 @@ import globals from '../../../../shared/extensionGlobals'
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
+    public override supportsLoadTelemetry: boolean = true
     private isCodeCatalystLogin = false
 
     override onActiveConnectionModified: vscode.EventEmitter<void> = new vscode.EventEmitter()
