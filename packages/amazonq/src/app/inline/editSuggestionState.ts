@@ -8,12 +8,12 @@
  */
 export class EditSuggestionState {
     private static isEditSuggestionCurrentlyActive = false
-    private static displayStartTime = performance.now()
+    private static displayStartTime = Date.now()
 
     static setEditSuggestionActive(active: boolean): void {
         this.isEditSuggestionCurrentlyActive = active
         if (active) {
-            this.displayStartTime = performance.now()
+            this.displayStartTime = Date.now()
         }
     }
 
@@ -22,6 +22,6 @@ export class EditSuggestionState {
     }
 
     static isEditSuggestionDisplayingOverOneSecond(): boolean {
-        return this.isEditSuggestionActive() && performance.now() - this.displayStartTime > 1000
+        return this.isEditSuggestionActive() && Date.now() - this.displayStartTime > 1000
     }
 }
