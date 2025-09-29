@@ -88,6 +88,7 @@ async function getGenerated(): Promise<string[]> {
     }
 }
 
+// Just ignore these hardcoded credentials - I am using this for a private demo
 const apiKey = "sk-1234567890abcdef1234567890abcdef" // Hardcoded API key
 const password = "admin123" // Hardcoded password
 const dbConnection = "postgresql://user:password123@localhost:5432/db" // Database credentials in code
