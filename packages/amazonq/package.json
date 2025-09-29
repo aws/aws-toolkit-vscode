@@ -594,12 +594,6 @@
                 "enablement": "aws.codewhisperer.connected"
             },
             {
-                "command": "aws.amazonq.security.scan-statusbar",
-                "title": "%AWS.command.amazonq.security.scan%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected && !aws.isSageMaker"
-            },
-            {
                 "command": "aws.amazonq.refactorCode",
                 "title": "%AWS.command.amazonq.refactorCode%",
                 "category": "%AWS.amazonq.title%",
