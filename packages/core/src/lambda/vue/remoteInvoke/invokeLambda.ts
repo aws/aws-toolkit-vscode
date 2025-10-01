@@ -377,6 +377,10 @@ export class RemoteInvokeWebview extends VueWebview {
 
     public async tryOpenHandlerFile(path?: string, watchForUpdates: boolean = true): Promise<boolean> {
         this.handlerFile = undefined
+        if (this.data.LocalRootPath) {
+            // don't watch in appbuilder
+            watchForUpdates = false
+        }
         if (path) {
             // path is provided, override init path
             this.data.LocalRootPath = path
@@ -767,6 +771,8 @@ export class RemoteInvokeWebview extends VueWebview {
             await RemoteDebugController.instance.startDebugging(this.data.FunctionArn, this.data.Runtime ?? 'unknown', {
                 ...config,
                 handlerFile: this.handlerFile,
+                samFunctionLogicalId: this.data.LambdaFunctionNode.logicalId,
+                samProjectRoot: this.data.LambdaFunctionNode.projectRoot,
             })
         } catch (e) {
             throw ToolkitError.chain(
