@@ -102,19 +102,12 @@ export interface RuntimeDebugSettings {
 // UI state sub-interface
 export interface UIState {
     isCollapsed: boolean
-    showNameInput: boolean
-    payload: string
     extraRegionInfo: string
 }
 
 // Payload/Event handling sub-interface
 export interface PayloadData {
-    selectedSampleRequest: string
     sampleText: string
-    selectedFile: string
-    selectedFilePath: string
-    selectedTestEvent: string
-    newTestEventName: string
 }
 
 export interface RemoteInvokeData {
@@ -377,7 +370,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 this.data.LambdaFunctionNode?.configuration.Handler
             )
             getLogger().warn(warning)
-            void vscode.window.showWarningMessage(warning)
+            void showMessage('warn', warning)
         }
         return fileLocations[0].fsPath
     }
@@ -447,22 +440,166 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
-        const params: SamCliRemoteTestEventsParameters = {
-            functionArn: functionArn,
-            operation: TestEventsOperation.List,
-            region: region,
+        try {
+            const params: SamCliRemoteTestEventsParameters = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.List,
+                region: region,
+            }
+            const result = await this.remoteTestEvents(params)
+            return result.split('\n').filter((event) => event.trim() !== '')
+        } catch (error) {
+            // Suppress "lambda-testevent-schemas registry not found" error - this is normal when no test events exist
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            if (
+                errorMessage.includes('lambda-testevent-schemas registry not found') ||
+                errorMessage.includes('There are no saved events')
+            ) {
+                getLogger().debug('No remote test events found for function: %s', functionArn)
+                return []
+            }
+            // Re-throw other errors
+            throw error
         }
-        const result = await this.remoteTestEvents(params)
-        return result.split('\n')
     }
 
-    public async createRemoteTestEvents(putEvent: Event) {
+    public async selectRemoteTestEvent(functionArn: string, region: string): Promise<string | undefined> {
+        let events: string[] = []
+
+        try {
+            events = await this.listRemoteTestEvents(functionArn, region)
+        } catch (error) {
+            getLogger().error('Failed to list remote test events: %O', error)
+            void showMessage(
+                'error',
+                localize('AWS.lambda.remoteInvoke.failedToListEvents', 'Failed to list remote test events')
+            )
+            return undefined
+        }
+
+        if (events.length === 0) {
+            void showMessage(
+                'info',
+                localize(
+                    'AWS.lambda.remoteInvoke.noRemoteEvents',
+                    'No remote test events found. You can create one using "Save as remote event".'
+                )
+            )
+            return undefined
+        }
+
+        const selected = await vscode.window.showQuickPick(events, {
+            placeHolder: localize('AWS.lambda.remoteInvoke.selectRemoteEvent', 'Select a remote test event'),
+            title: localize('AWS.lambda.remoteInvoke.loadRemoteEvent', 'Load Remote Test Event'),
+        })
+
+        if (selected) {
+            const eventData = {
+                name: selected,
+                region: region,
+                arn: functionArn,
+            }
+            const resp = await this.getRemoteTestEvents(eventData)
+            return resp
+        }
+
+        return undefined
+    }
+
+    public async saveRemoteTestEvent(
+        functionArn: string,
+        region: string,
+        eventContent: string
+    ): Promise<string | undefined> {
+        let events: string[] = []
+
+        try {
+            events = await this.listRemoteTestEvents(functionArn, region)
+        } catch (error) {
+            // Log error but continue - user can still create new events
+            getLogger().debug('Failed to list existing remote test events (may not exist yet): %O', error)
+        }
+
+        // Create options for quickpick
+        const createNewOption = '$(add) Create new test event'
+        const options = events.length > 0 ? [createNewOption, ...events] : [createNewOption]
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: localize(
+                'AWS.lambda.remoteInvoke.saveEventChoice',
+                'Create new or overwrite existing test event'
+            ),
+            title: localize('AWS.lambda.remoteInvoke.saveRemoteEvent', 'Save as Remote Event'),
+        })
+
+        if (!selected) {
+            return undefined
+        }
+
+        let eventName: string | undefined
+
+        if (selected === createNewOption) {
+            // Prompt for new event name
+            eventName = await vscode.window.showInputBox({
+                prompt: localize('AWS.lambda.remoteInvoke.enterEventName', 'Enter a name for the test event'),
+                placeHolder: localize('AWS.lambda.remoteInvoke.eventNamePlaceholder', 'MyTestEvent'),
+                validateInput: (value) => {
+                    if (!value || value.trim() === '') {
+                        return localize('AWS.lambda.remoteInvoke.eventNameRequired', 'Event name is required')
+                    }
+                    if (events.includes(value)) {
+                        return localize(
+                            'AWS.lambda.remoteInvoke.eventNameExists',
+                            'An event with this name already exists'
+                        )
+                    }
+                    return undefined
+                },
+            })
+        } else {
+            // Use selected existing event name
+            const confirm = await showConfirmationMessage({
+                prompt: localize(
+                    'AWS.lambda.remoteInvoke.overwriteEvent',
+                    'Overwrite existing test event "{0}"?',
+                    selected
+                ),
+                confirm: localize('AWS.lambda.remoteInvoke.overwrite', 'Overwrite'),
+                cancel: 'Cancel',
+                type: 'warning',
+            })
+
+            if (confirm) {
+                eventName = selected
+            }
+        }
+
+        if (eventName) {
+            // Use force flag when overwriting existing events
+            const isOverwriting = selected !== createNewOption
+            const params: SamCliRemoteTestEventsParameters = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.Put,
+                name: eventName,
+                eventSample: eventContent,
+                region: region,
+                force: isOverwriting,
+            }
+            await this.remoteTestEvents(params)
+            return eventName
+        }
+
+        return undefined
+    }
+
+    public async createRemoteTestEvents(putEvent: Event, force: boolean = false) {
         const params: SamCliRemoteTestEventsParameters = {
             functionArn: putEvent.arn,
             operation: TestEventsOperation.Put,
             name: putEvent.name,
             eventSample: putEvent.event,
             region: putEvent.region,
+            force: force,
         }
         return await this.remoteTestEvents(params)
     }
@@ -553,7 +690,8 @@ export class RemoteInvokeWebview extends VueWebview {
     // this serves as a lock for invoke
     public checkReadyToInvoke(): boolean {
         if (this.isInvoking) {
-            void vscode.window.showWarningMessage(
+            void showMessage(
+                'warn',
                 localize(
                     'AWS.lambda.remoteInvoke.invokeInProgress',
                     'A remote invoke is already in progress, please wait for previous invoke, or remove debug setup'
@@ -562,12 +700,14 @@ export class RemoteInvokeWebview extends VueWebview {
             return false
         }
         if (this.isStartingDebug) {
-            void vscode.window.showWarningMessage(
+            void showMessage(
+                'warn',
                 localize(
                     'AWS.lambda.remoteInvoke.debugSetupInProgress',
                     'A debugger setup is already in progress, please wait for previous setup to complete, or remove debug setup'
                 )
             )
+            return false
         }
         return true
     }
