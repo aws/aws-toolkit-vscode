@@ -97,11 +97,11 @@
                         file for debugging.
                     </info-wrap>
                     <info-wrap v-else-if="initialData.supportCodeDownload">
-                        <b>Browse</b> to specify the path to your local directory that contains the handler file for
+                        <b>Browse</b> to specify the absolute path to your local directory that contains the handler file for
                         debugging. Or <b>Download</b> the handler file from your deployed function.
                     </info-wrap>
                     <info-wrap v-else>
-                        <b>Browse</b> to specify the path to your local directory that contains the handler file for
+                        <b>Browse</b> to specify the absolute path to your local directory that contains the handler file for
                         debugging.
                     </info-wrap>
                 </div>
