@@ -179,12 +179,12 @@ describe('generateDeployedNode', () => {
             const expectedFunctionName = 'my-project-lambda-function'
             const expectedFunctionExplorerNodeTooltip = `${expectedFunctionName}${os.EOL}${expectedFunctionArn}`
 
-            const deployedResourceNodes = await generateDeployedNode(
+            const deployedResourceNodes = (await generateDeployedNode(
                 lambdaDeployedNodeInput.deployedResource,
                 lambdaDeployedNodeInput.regionCode,
                 lambdaDeployedNodeInput.stackName,
                 lambdaDeployedNodeInput.resourceTreeEntity
-            )
+            )) as DeployedResourceNode[]
 
             const deployedResourceNodeExplorerNode: LambdaFunctionNode = validateBasicProperties(
                 deployedResourceNodes,
@@ -259,7 +259,7 @@ describe('generateDeployedNode', () => {
             const expectedS3BucketName = 'my-project-source-bucket-physical-id'
 
             const deployedResourceNodeExplorerNode: S3BucketNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedS3BucketArn,
                 'awsS3BucketNode',
                 expectedRegionCode,
@@ -334,7 +334,7 @@ describe('generateDeployedNode', () => {
             )
 
             const deployedResourceNodeExplorerNode: RestApiNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedApiGatewayArn,
                 'awsApiGatewayNode',
                 expectedRegionCode,
