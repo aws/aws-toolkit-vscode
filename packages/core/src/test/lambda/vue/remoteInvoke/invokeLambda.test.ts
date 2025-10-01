@@ -816,6 +816,55 @@ describe('RemoteInvokeWebview', () => {
             assert.strictEqual(result, undefined)
         })
     })
+    describe('tryOpenHandlerFile', () => {
+        let sandbox: sinon.SinonSandbox
+        let fsExistsStub: sinon.SinonStub
+        let getLambdaHandlerFileStub: sinon.SinonStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            fsExistsStub = sandbox.stub(fs, 'exists')
+            getLambdaHandlerFileStub = sandbox.stub(
+                require('../../../../awsService/appBuilder/utils'),
+                'getLambdaHandlerFile'
+            )
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should return false when LocalRootPath is not set', async () => {
+            const result = await remoteInvokeWebview.tryOpenHandlerFile()
+            assert.strictEqual(result, false)
+        })
+
+        it('should not watch for updates when LocalRootPath is already set (appbuilder case)', async () => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            const handlerPath = path.join(tempFolder, 'handler.js')
+            await fs.writeFile(handlerPath, 'exports.handler = () => {}')
+
+            // Set LocalRootPath first to simulate appbuilder case
+            data.LocalRootPath = tempFolder
+            data.LambdaFunctionNode = {
+                configuration: {
+                    Handler: 'handler.handler',
+                    CodeSha256: 'abc123',
+                },
+            } as any
+
+            getLambdaHandlerFileStub.resolves(vscode.Uri.file(handlerPath))
+            fsExistsStub.resolves(true)
+
+            const result = await remoteInvokeWebview.tryOpenHandlerFile(tempFolder)
+
+            assert.strictEqual(result, true)
+            // In appbuilder case, watchForUpdates should be false
+
+            await fs.delete(tempFolder, { recursive: true })
+        })
+    })
+
     describe('invokeRemoteLambda', () => {
         let sandbox: sinon.SinonSandbox
         let outputChannel: vscode.OutputChannel
