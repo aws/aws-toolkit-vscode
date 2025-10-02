@@ -44,9 +44,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
     // Register the commands
     extensionContext.subscriptions.push(
-        smusLoginCommand.register(),
+        smusLoginCommand.register(extensionContext),
         smusLearnMoreCommand.register(),
-        smusSignOutCommand.register(),
+        smusSignOutCommand.register(extensionContext),
         treeView,
         vscode.commands.registerCommand('aws.smus.rootView.refresh', () => {
             treeDataProvider.refresh()

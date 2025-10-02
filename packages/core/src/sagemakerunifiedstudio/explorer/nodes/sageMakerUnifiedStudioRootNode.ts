@@ -13,10 +13,12 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
+import { SmusErrorCodes } from '../../shared/smusUtils'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
 import { recordAuthTelemetry } from '../../shared/telemetry'
+import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
+import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -220,76 +222,71 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
 /**
  * Command to login to SageMaker Unified Studio
  */
-export const smusLoginCommand = Commands.declare('aws.smus.login', () => async () => {
+export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vscode.ExtensionContext) => async () => {
     const logger = getLogger()
     return telemetry.smus_login.run(async (span) => {
         try {
-            // Get DataZoneClient instance for URL validation
+            // Get the authentication provider instance
+            const authProvider = SmusAuthenticationProvider.fromContext()
 
-            // Show domain URL input dialog
-            const domainUrl = await vscode.window.showInputBox({
-                title: 'SageMaker Unified Studio Authentication',
-                prompt: 'Enter your SageMaker Unified Studio Domain URL',
-                placeHolder: 'https://<dzd_xxxxxxxxx>.sagemaker.<region>.on.aws',
-                validateInput: (value) => SmusUtils.validateDomainUrl(value),
-            })
+            // Import authentication method selection components
+            const { SmusAuthenticationMethodSelector } = await import('../../auth/ui/authenticationMethodSelection.js')
+            const { SmusAuthenticationPreferencesManager } = await import(
+                '../../auth/preferences/authenticationPreferences.js'
+            )
 
-            if (!domainUrl) {
-                // User cancelled
-                logger.debug('User cancelled domain URL input')
-                throw new ToolkitError('User cancelled domain URL input', {
-                    cancelled: true,
-                    code: SmusErrorCodes.UserCancelled,
-                })
-            }
+            // Check for preferred authentication method
+            const preferredMethod = SmusAuthenticationPreferencesManager.getPreferredMethod(context)
+            logger.debug(`SMUS Auth: Retrieved preferred method: ${preferredMethod}`)
 
-            // Show a simple status bar message instead of progress dialog
-            vscode.window.setStatusBarMessage('Connecting to SageMaker Unified Studio...', 10000)
+            let selectedMethod: SmusAuthenticationMethod | undefined = preferredMethod
+            let authCompleted = false
 
-            try {
-                // Get the authentication provider instance
-                const authProvider = SmusAuthenticationProvider.fromContext()
-
-                // Connect to SMUS using the authentication provider
-                const connection = await authProvider.connectToSmus(domainUrl)
-
-                if (!connection) {
-                    throw new ToolkitError('Failed to establish connection', {
-                        code: SmusErrorCodes.FailedAuthConnecton,
-                    })
+            // Main authentication loop - handles back navigation
+            while (!authCompleted) {
+                // Check if we should skip method selection (user has a remembered preference)
+                if (selectedMethod) {
+                    logger.debug(`SMUS Auth: Using authentication method: ${selectedMethod}`)
+                } else {
+                    // Show authentication method selection dialog
+                    logger.debug('SMUS Auth: Showing authentication method selection dialog')
+                    const methodSelection = await SmusAuthenticationMethodSelector.showAuthenticationMethodSelection()
+                    selectedMethod = methodSelection.method
                 }
 
-                // Extract domain account ID, domain ID, and region for logging
-                const domainId = connection.domainId
-                const region = connection.ssoRegion
+                // Handle the selected authentication method
+                logger.debug(`SMUS Auth: Processing authentication method: ${selectedMethod}`)
+                if (selectedMethod === 'sso') {
+                    // SSO Authentication - use SSO flow
+                    const ssoResult = await SmusAuthenticationOrchestrator.handleSsoAuthentication(
+                        authProvider,
+                        span,
+                        context
+                    )
 
-                logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
-                await recordAuthTelemetry(span, authProvider, domainId, region)
+                    if (ssoResult === 'BACK') {
+                        // User wants to go back to authentication method selection
+                        selectedMethod = undefined // Reset to show method selection again
+                        continue // Restart the loop
+                    }
 
-                // Show success message
-                void vscode.window.showInformationMessage(
-                    `Successfully connected to SageMaker Unified Studio domain: ${domainId}`
-                )
+                    authCompleted = true
+                } else {
+                    // IAM Authentication - use new IAM profile selection flow
+                    const iamResult = await SmusAuthenticationOrchestrator.handleIamAuthentication(
+                        authProvider,
+                        span,
+                        context
+                    )
 
-                // Clear the status bar message
-                vscode.window.setStatusBarMessage('Connected to SageMaker Unified Studio', 3000)
+                    if (iamResult === 'BACK') {
+                        // User wants to go back to authentication method selection
+                        selectedMethod = undefined // Reset to show method selection again
+                        continue // Restart the loop
+                    }
 
-                // Immediately refresh the tree view to show authenticated state
-                try {
-                    await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-                } catch (refreshErr) {
-                    logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+                    authCompleted = true
                 }
-            } catch (connectionErr) {
-                // Clear the status bar message
-                vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
-
-                // Log the error and re-throw to be handled by the outer catch block
-                logger.error('Connection failed: %s', (connectionErr as Error).message)
-                throw new ToolkitError('Connection failed.', {
-                    cause: connectionErr as Error,
-                    code: (connectionErr as Error).name,
-                })
             }
         } catch (err) {
             const isUserCancelled = err instanceof ToolkitError && err.code === SmusErrorCodes.UserCancelled
@@ -297,12 +294,9 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
                 void vscode.window.showErrorMessage(
                     `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
                 )
+                logger.error('Failed to initiate login: %s', (err as Error).message)
             }
-            logger.error('Failed to initiate login: %s', (err as Error).message)
-            throw new ToolkitError('Failed to initiate login.', {
-                cause: err as Error,
-                code: (err as Error).name,
-            })
+            throw err
         }
     })
 })
@@ -310,66 +304,75 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', () => async (
 /**
  * Command to sign out from SageMaker Unified Studio
  */
-export const smusSignOutCommand = Commands.declare('aws.smus.signOut', () => async () => {
-    const logger = getLogger()
-    return telemetry.smus_signOut.run(async (span) => {
-        try {
-            // Get the authentication provider instance
-            const authProvider = SmusAuthenticationProvider.fromContext()
-
-            // Check if there's an active connection to sign out from
-            if (!authProvider.isConnected()) {
-                void vscode.window.showInformationMessage(
-                    'No active SageMaker Unified Studio connection to sign out from.'
-                )
-                return
-            }
-
-            // Get connection details for logging
-            const activeConnection = authProvider.activeConnection
-            const domainId = activeConnection?.domainId
-            const region = activeConnection?.ssoRegion
-
-            // Show status message
-            vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
-            await recordAuthTelemetry(span, authProvider, domainId, region)
-
-            // Delete the connection (this will also invalidate tokens and clear cache)
-            if (activeConnection) {
-                await authProvider.secondaryAuth.deleteConnection()
-                logger.info(`Signed out from SageMaker Unified Studio${domainId}`)
-            }
-
-            // Show success message
-            void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
-
-            // Clear the status bar message
-            vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
-
-            // Refresh the tree view to show the sign-in state
+export const smusSignOutCommand = Commands.declare(
+    'aws.smus.signOut',
+    (context: vscode.ExtensionContext) => async () => {
+        const logger = getLogger()
+        return telemetry.smus_signOut.run(async (span) => {
             try {
-                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
-            } catch (refreshErr) {
-                logger.debug(`Failed to refresh views after sign out: ${(refreshErr as Error).message}`)
-                throw new ToolkitError('Failed to refresh views after sign out.', {
-                    cause: refreshErr as Error,
-                    code: (refreshErr as Error).name,
+                // Get the authentication provider instance
+                const authProvider = SmusAuthenticationProvider.fromContext()
+
+                // Check if there's an active connection to sign out from
+                if (!authProvider.isConnected()) {
+                    void vscode.window.showInformationMessage(
+                        'No active SageMaker Unified Studio connection to sign out from.'
+                    )
+                    return
+                }
+
+                // Get connection details for logging
+                const activeConnection = authProvider.activeConnection
+                const domainId = activeConnection?.domainId
+                const region = activeConnection?.ssoRegion
+
+                // Show status message
+                vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
+                await recordAuthTelemetry(span, authProvider, domainId, region)
+
+                // Delete the connection (this will also invalidate tokens and clear cache)
+                if (activeConnection) {
+                    await authProvider.secondaryAuth.deleteConnection()
+                    logger.info(`Signed out from SageMaker Unified Studio: ${domainId}`)
+
+                    // Clear connection-specific preferences on sign out (but keep auth method preference)
+                    const { SmusAuthenticationPreferencesManager } = await import(
+                        '../../auth/preferences/authenticationPreferences.js'
+                    )
+                    await SmusAuthenticationPreferencesManager.clearConnectionPreferences(context)
+                }
+
+                // Show success message
+                void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
+
+                // Clear the status bar message
+                vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
+
+                // Refresh the tree view to show the sign-in state
+                try {
+                    await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+                } catch (refreshErr) {
+                    logger.debug(`Failed to refresh views after sign out: ${(refreshErr as Error).message}`)
+                    throw new ToolkitError('Failed to refresh views after sign out.', {
+                        cause: refreshErr as Error,
+                        code: (refreshErr as Error).name,
+                    })
+                }
+            } catch (err) {
+                void vscode.window.showErrorMessage(
+                    `SageMaker Unified Studio: Failed to sign out: ${(err as Error).message}`
+                )
+                logger.error('Failed to sign out: %s', (err as Error).message)
+
+                // Log failure telemetry
+                throw new ToolkitError('Failed to sign out.', {
+                    cause: err as Error,
+                    code: (err as Error).name,
                 })
             }
-        } catch (err) {
-            void vscode.window.showErrorMessage(
-                `SageMaker Unified Studio: Failed to sign out: ${(err as Error).message}`
-            )
-            logger.error('Failed to sign out: %s', (err as Error).message)
-
-            // Log failure telemetry
-            throw new ToolkitError('Failed to sign out.', {
-                cause: err as Error,
-                code: (err as Error).name,
-            })
-        }
-    })
-})
+        })
+    }
+)
 
 function isAccessDenied(error: Error): boolean {
     return error.name.includes('AccessDenied')
