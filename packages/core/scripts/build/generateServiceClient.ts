@@ -249,6 +249,10 @@ void (async () => {
             serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/sqlworkbench.json',
             serviceName: 'SQLWorkbench',
         },
+        {
+            serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/datazonedomainpreferences.json',
+            serviceName: 'DataZoneDomainPreferences',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()
