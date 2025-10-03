@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "[Step Functions] Start Execution from Execution Details tab now fills the existing Execution Input in the Start Execution tab."
+}

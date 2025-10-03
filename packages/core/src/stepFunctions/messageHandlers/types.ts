@@ -105,6 +105,10 @@ export interface SyncFileRequestMessage extends SaveFileRequestMessage {
     fileContents: string
 }
 
+export interface StartExecutionMessage extends Message {
+    executionInput?: string
+}
+
 export enum ApiAction {
     IAMListRoles = 'iam:ListRoles',
     SFNTestState = 'sfn:TestState',

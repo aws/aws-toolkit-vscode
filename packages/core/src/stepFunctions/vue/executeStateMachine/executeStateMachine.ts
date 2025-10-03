@@ -22,6 +22,7 @@ interface StateMachine {
     arn: string
     name: string
     region: string
+    executionInput?: string
 }
 
 export class ExecuteStateMachineWebview extends VueWebview {
@@ -89,11 +90,16 @@ export class ExecuteStateMachineWebview extends VueWebview {
     }
 }
 
-export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
+export async function executeStateMachine(
+    context: ExtContext,
+    node: StateMachineNode,
+    executionInput?: string
+): Promise<void> {
     await showExecuteStateMachineWebview({
         arn: node.details.stateMachineArn || '',
         name: node.details.name || '',
         region: node.regionCode,
+        executionInput,
     })
     telemetry.stepfunctions_executeStateMachineView.emit()
 }

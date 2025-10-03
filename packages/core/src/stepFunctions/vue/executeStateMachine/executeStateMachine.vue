@@ -55,11 +55,15 @@ const defaultInitialData = {
     name: '',
     region: '',
     arn: '',
+    executionInput: '',
 }
 
 export default defineComponent({
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
+        if (this.initialData.executionInput) {
+            this.executionInput = this.initialData.executionInput
+        }
     },
     data: () => ({
         initialData: defaultInitialData,
@@ -89,7 +93,9 @@ export default defineComponent({
                     break
                 case 'textarea':
                     this.placeholderJson = defaultJsonPlaceholder
-                    this.executionInput = ''
+                    if (!this.initialData.executionInput) {
+                        this.executionInput = ''
+                    }
                     this.fileInputVisible = false
                     break
             }
