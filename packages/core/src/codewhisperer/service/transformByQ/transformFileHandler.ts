@@ -153,7 +153,6 @@ export function validateCustomVersionsFile(fileContents: string) {
 }
 
 // return an error message, or undefined if item is valid
-// validate each dependency and plugin: identifier should be in format groupId:artifactId and originType should be FIRST_PARTY or THIRD_PARTY
 function validateItem(item: any, validOriginTypes: string[] = ['FIRST_PARTY', 'THIRD_PARTY']) {
     if (!/^[^\s:]+:[^\s:]+$/.test(item.identifier)) {
         getLogger().info(`CodeTransformation: Invalid identifier format: ${item.identifier}`)
