@@ -25,9 +25,7 @@ const request = {
         wrappedFetch = crossFetch
     ): FetchRequest {
         const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
-
         const updateParams: any = { ...params }
-
         if (proxy) {
             const proxyAgent = new HttpsProxyAgent(proxy)
 
