@@ -13,7 +13,6 @@ export {
     focusAmazonQChatWalkthrough,
     openAmazonQWalkthrough,
     walkthroughInlineSuggestionsExample,
-    walkthroughSecurityScanExample,
 } from './onboardingPage/walkthrough'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'
@@ -36,7 +35,6 @@ export { ChatItemType, referenceLogText } from './commons/model'
 export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
-export { Messenger } from './commons/connector/baseMessenger'
 export * as secondaryAuth from '../auth/secondaryAuth'
 export * as authConnection from '../auth/connection'
 export * as featureConfig from './webview/generators/featureConfig'

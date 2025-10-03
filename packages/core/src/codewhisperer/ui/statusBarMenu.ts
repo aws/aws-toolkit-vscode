@@ -21,7 +21,6 @@ import {
     createAutoScans,
     createSignIn,
     switchToAmazonQNode,
-    createSecurityScan,
     createSelectRegionProfileNode,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials, hasVendedCredentialsFromMetadata } from '../../auth/auth'
@@ -52,12 +51,7 @@ function getAmazonQCodeWhispererNodes() {
         if (hasVendedIamCredentials()) {
             return [createFreeTierLimitMet(), createOpenReferenceLog()]
         }
-        return [
-            createFreeTierLimitMet(),
-            createOpenReferenceLog(),
-            createSeparator('Other Features'),
-            createSecurityScan(),
-        ]
+        return [createFreeTierLimitMet(), createOpenReferenceLog(), createSeparator('Other Features')]
     }
 
     if (hasVendedIamCredentials()) {
@@ -74,7 +68,6 @@ function getAmazonQCodeWhispererNodes() {
         // Security scans
         createSeparator('Code Reviews'),
         ...(AuthUtil.instance.isBuilderIdInUse() ? [] : [createAutoScans(autoScansEnabled)]),
-        createSecurityScan(),
 
         // Amazon Q + others
         createSeparator('Other Features'),

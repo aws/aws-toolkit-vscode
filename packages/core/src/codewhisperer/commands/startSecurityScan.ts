@@ -108,6 +108,9 @@ export async function startSecurityScan(
     zipUtil: ZipUtil = new ZipUtil(),
     scanUuid?: string
 ) {
+    if (scope === CodeAnalysisScope.AGENTIC) {
+        throw new CreateCodeScanFailedError('Cannot use Agentic scope')
+    }
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     const logger = getLoggerForScope(scope)
     /**
@@ -401,7 +404,7 @@ export function showSecurityScanResults(
     zipMetadata: ZipMetadata,
     totalIssues: number
 ) {
-    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    initSecurityScanRender(securityRecommendationCollection, editor, scope)
 
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
@@ -439,7 +442,7 @@ export function showScanResultsInChat(
             break
     }
 
-    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    initSecurityScanRender(securityRecommendationCollection, editor, scope)
     if (totalIssues > 0) {
         SecurityIssueTreeViewProvider.focus()
     }

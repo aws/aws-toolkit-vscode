@@ -4,13 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { VirtualFileSystem } from '../../shared/virtualFilesystem'
-import type { CancellationTokenSource } from 'vscode'
-import { CodeReference, UploadHistory } from '../webview/ui/connector'
 import { DiffTreeFileInfo } from '../webview/ui/diffTree/types'
-import { Messenger } from './connector/baseMessenger'
 import { FeatureClient } from '../client/client'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { MynahUI } from '@aws/mynah-ui'
 
 export enum FollowUpTypes {
@@ -56,12 +51,6 @@ export type Interaction = {
     responseType?: LLMResponseType
 }
 
-export interface SessionStateInteraction {
-    nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
-    interaction: Interaction
-    currentCodeGenerationId?: string
-}
-
 export enum Intent {
     DEV = 'DEV',
     DOC = 'DOC',
@@ -86,24 +75,6 @@ export type SessionStatePhase = DevPhase.INIT | DevPhase.CODEGEN
 
 export type CurrentWsFolders = [vscode.WorkspaceFolder, ...vscode.WorkspaceFolder[]]
 
-export interface SessionState {
-    readonly filePaths?: NewFileInfo[]
-    readonly deletedFiles?: DeletedFileInfo[]
-    readonly references?: CodeReference[]
-    readonly phase?: SessionStatePhase
-    readonly uploadId: string
-    readonly currentIteration?: number
-    currentCodeGenerationId?: string
-    tokenSource?: CancellationTokenSource
-    readonly codeGenerationId?: string
-    readonly tabID: string
-    interact(action: SessionStateAction): Promise<SessionStateInteraction>
-    updateWorkspaceRoot?: (workspaceRoot: string) => void
-    codeGenerationRemainingIterationCount?: number
-    codeGenerationTotalIterationCount?: number
-    uploadHistory?: UploadHistory
-}
-
 export interface SessionStateConfig {
     workspaceRoots: string[]
     workspaceFolders: CurrentWsFolders
@@ -111,16 +82,6 @@ export interface SessionStateConfig {
     proxyClient: FeatureClient
     uploadId: string
     currentCodeGenerationId?: string
-}
-
-export interface SessionStateAction {
-    task: string
-    msg: string
-    messenger: Messenger
-    fs: VirtualFileSystem
-    telemetry: TelemetryHelper
-    uploadHistory?: UploadHistory
-    tokenSource?: CancellationTokenSource
 }
 
 export type NewFileZipContents = { zipFilePath: string; fileContent: string }

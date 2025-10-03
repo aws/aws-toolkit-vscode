@@ -5,6 +5,7 @@
 
 import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../telemetry/telemetry'
 import { tryFunctions } from '../../utilities/tsUtils'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 /**
  * Runs the designated stage within a telemetry span and optionally uses the getMetadata extractor to record metadata from the result of the stage.
@@ -20,6 +21,7 @@ export async function lspSetupStage<Result>(
 ) {
     return await telemetry.languageServer_setup.run(async (span) => {
         span.record({ languageServerSetupStage: stageName })
+        span.record({ credentialStartUrl: AuthUtil.instance.startUrl ?? 'Undefined' })
         const result = await runStage()
         if (getMetadata) {
             span.record(getMetadata(result))

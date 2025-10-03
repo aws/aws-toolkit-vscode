@@ -24,6 +24,10 @@ import { randomUUID } from 'crypto'
 import { isUuid } from '../../../shared/crypto'
 import { MetricDatum } from '../../../shared/telemetry/clienttelemetry'
 import { assertLogsContain } from '../../globalSetup.test'
+import { getClientName } from '../../../shared/telemetry/util'
+import * as extensionUtilities from '../../../shared/extensionUtilities'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -389,5 +393,72 @@ describe('validateMetricEvent', function () {
 
         validateMetricEvent(metricEvent, false)
         assertLogsContain('invalid Metric', false, 'warn')
+    })
+})
+
+describe('getClientName', function () {
+    let sandbox: sinon.SinonSandbox
+    let isSageMakerStub: sinon.SinonStub
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        isSageMakerStub = sandbox.stub(extensionUtilities, 'isSageMaker')
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns "AmazonQ-For-SMUS-CE" when in SMUS environment', function () {
+        isSageMakerStub.withArgs('SMUS').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMUS-CE')
+        assert.ok(isSageMakerStub.calledOnceWith('SMUS'))
+    })
+
+    it('returns "AmazonQ-For-SMAI-CE" when in SMAI environment', function () {
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        isSageMakerStub.withArgs('SMAI').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMAI-CE')
+        assert.ok(isSageMakerStub.calledWith('SMUS'))
+        assert.ok(isSageMakerStub.calledWith('SMAI'))
+    })
+
+    it('returns vscode app name when not in SMUS environment', function () {
+        const mockAppName = 'Visual Studio Code'
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        isSageMakerStub.withArgs('SMAI').returns(false)
+        sandbox.stub(vscode.env, 'appName').value(mockAppName)
+
+        const result = getClientName()
+
+        assert.strictEqual(result, mockAppName)
+        assert.ok(isSageMakerStub.calledWith('SMUS'))
+        assert.ok(isSageMakerStub.calledWith('SMAI'))
+    })
+
+    it('handles undefined app name gracefully', function () {
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        sandbox.stub(vscode.env, 'appName').value(undefined)
+
+        const result = getClientName()
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('prioritizes SMUS detection over app name', function () {
+        isSageMakerStub.withArgs('SMUS').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMUS-CE')
     })
 })

@@ -8,11 +8,18 @@ import path from 'path'
 import { FolderInfo, transformByQState } from '../../models/model'
 import fs from '../../../shared/fs/fs'
 import { createPomCopy, replacePomVersion } from './transformFileHandler'
-import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
+
+export interface IManifestFile {
+    pomArtifactId: string
+    pomFolderName: string
+    hilCapability: string
+    pomGroupId: string
+    sourcePomVersion: string
+}
 
 /**
  * @description This class helps encapsulate the "human in the loop" behavior of Amazon Q transform. Users

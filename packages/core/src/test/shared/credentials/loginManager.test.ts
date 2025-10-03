@@ -12,7 +12,9 @@ import { CredentialsProviderManager } from '../../../auth/providers/credentialsP
 import { AwsContext } from '../../../shared/awsContext'
 import { CredentialsStore } from '../../../auth/credentials/store'
 import { assertTelemetryCurried } from '../../testUtil'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { DefaultStsClient, GetCallerIdentityResponse } from '../../../shared/clients/stsClient'
+import globals from '../../../shared/extensionGlobals'
+import { localStackConnectionHeader, localStackConnectionString } from '../../../auth/utils'
 
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
@@ -104,17 +106,21 @@ describe('LoginManager', async function () {
         assertTelemetry({ result: 'Succeeded', passive, credentialType, credentialSourceId })
     })
 
-    it('logs out if credentials could not be retrieved', async function () {
-        const passive = true
-        getCredentialsProviderStub.reset()
-        getCredentialsProviderStub.resolves(undefined)
+    // Helper function to avoid duplicating code
+    async function assertUndefinedCredentialsOnLogin(passive: boolean, sampleCredentialsId: CredentialsId) {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
             // Verify that logout is called
             assert.strictEqual(credentials, undefined)
         })
-
         await loginManager.login({ passive, providerId: sampleCredentialsId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+    }
+
+    it('logs out if credentials could not be retrieved', async function () {
+        const passive = true
+        getCredentialsProviderStub.reset()
+        getCredentialsProviderStub.resolves(undefined)
+        await assertUndefinedCredentialsOnLogin(passive, sampleCredentialsId)
         assertTelemetry({ result: 'Failed', passive })
     })
 
@@ -122,13 +128,7 @@ describe('LoginManager', async function () {
         const passive = false
         getAccountIdStub.reset()
         getAccountIdStub.resolves(undefined)
-        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
-            // Verify that logout is called
-            assert.strictEqual(credentials, undefined)
-        })
-
-        await loginManager.login({ passive, providerId: sampleCredentialsId })
-        assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+        await assertUndefinedCredentialsOnLogin(passive, sampleCredentialsId)
         assertTelemetry({ result: 'Failed', passive, credentialType, credentialSourceId })
     })
 
@@ -136,13 +136,142 @@ describe('LoginManager', async function () {
         const passive = false
         getAccountIdStub.reset()
         getAccountIdStub.throws('Simulating getAccountId throwing an Error')
-        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async (credentials) => {
-            // Verify that logout is called
-            assert.strictEqual(credentials, undefined)
+        await assertUndefinedCredentialsOnLogin(passive, sampleCredentialsId)
+        assertTelemetry({ result: 'Failed', passive, credentialType, credentialSourceId })
+    })
+
+    describe('validateCredentials', function () {
+        let globalStateUpdateStub: sinon.SinonStub
+
+        beforeEach(function () {
+            globalStateUpdateStub = sandbox.stub(globals.globalState, 'update')
         })
 
-        await loginManager.login({ passive, providerId: sampleCredentialsId })
-        assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
-        assertTelemetry({ result: 'Failed', passive, credentialType, credentialSourceId })
+        it('validates credentials successfully and returns account ID', async function () {
+            const mockCallerIdentity: GetCallerIdentityResponse = {
+                Account: 'AccountId1234',
+                Arn: 'arn:aws:iam::AccountId1234:user/test-user',
+                UserId: 'AIDACKCEXAMPLEEXAMPLE',
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentity)
+
+            const result = await loginManager.validateCredentials(sampleCredentials)
+
+            assert.strictEqual(result, 'AccountId1234')
+            assert.strictEqual(getAccountIdStub.callCount, 1)
+            assert.strictEqual(globalStateUpdateStub.callCount, 1)
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[0], 'aws.toolkit.externalConnection')
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[1], undefined)
+        })
+
+        it('validates credentials with custom endpoint URL', async function () {
+            const customEndpoint = 'https://custom-endpoint.example.com'
+            const mockCallerIdentity: GetCallerIdentityResponse = {
+                Account: 'AccountId1234',
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentity)
+
+            const result = await loginManager.validateCredentials(sampleCredentials, customEndpoint)
+
+            assert.strictEqual(result, 'AccountId1234')
+            assert.strictEqual(getAccountIdStub.callCount, 1)
+        })
+
+        it('throws error when account ID is missing', async function () {
+            const mockCallerIdentity: GetCallerIdentityResponse = {
+                Arn: 'arn:aws:iam::AccountId1234:user/test-user',
+                UserId: 'AIDACKCEXAMPLEEXAMPLE',
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentity)
+
+            await assert.rejects(async () => await loginManager.validateCredentials(sampleCredentials), {
+                message: 'Could not determine Account Id for credentials',
+            })
+        })
+
+        it('propagates STS client errors', async function () {
+            const testError = new Error('STS service unavailable')
+            getAccountIdStub.reset()
+            getAccountIdStub.rejects(testError)
+
+            await assert.rejects(async () => await loginManager.validateCredentials(sampleCredentials), testError)
+        })
+    })
+
+    describe('detectExternalConnection', function () {
+        let globalStateUpdateStub: sinon.SinonStub
+
+        beforeEach(function () {
+            globalStateUpdateStub = sandbox.stub(globals.globalState, 'update')
+        })
+
+        it('detects LocalStack connection and updates global state', async function () {
+            const mockCallerIdentityWithLocalStack: GetCallerIdentityResponse = {
+                Account: 'AccountId1234',
+                Arn: 'arn:aws:iam::AccountId1234:user/test-user',
+                UserId: 'AIDACKCEXAMPLEEXAMPLE',
+                // @ts-ignore - Adding the $response property for testing
+                $response: {
+                    httpResponse: {
+                        headers: {
+                            [localStackConnectionHeader]: 'true',
+                            'content-type': 'application/json',
+                        },
+                    },
+                },
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentityWithLocalStack)
+
+            await loginManager.validateCredentials(sampleCredentials)
+
+            assert.strictEqual(globalStateUpdateStub.callCount, 1)
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[0], 'aws.toolkit.externalConnection')
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[1], localStackConnectionString)
+        })
+
+        it('does not detect external connection when LocalStack header is missing', async function () {
+            const mockCallerIdentityWithoutLocalStack: GetCallerIdentityResponse = {
+                Account: 'AccountId1234',
+                Arn: 'arn:aws:iam::AccountId1234:user/test-user',
+                UserId: 'AIDACKCEXAMPLEEXAMPLE',
+                // @ts-ignore - Adding the $response property for testing
+                $response: {
+                    httpResponse: {
+                        headers: {
+                            'content-type': 'application/json',
+                            'x-amzn-requestid': 'test-request-id',
+                        },
+                    },
+                },
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentityWithoutLocalStack)
+
+            await loginManager.validateCredentials(sampleCredentials)
+
+            assert.strictEqual(globalStateUpdateStub.callCount, 1)
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[0], 'aws.toolkit.externalConnection')
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[1], undefined)
+        })
+
+        it('handles response with no $response property', async function () {
+            const mockCallerIdentityWithoutResponse: GetCallerIdentityResponse = {
+                Account: 'AccountId1234',
+                Arn: 'arn:aws:iam::AccountId1234:user/test-user',
+                UserId: 'AIDACKCEXAMPLEEXAMPLE',
+            }
+            getAccountIdStub.reset()
+            getAccountIdStub.resolves(mockCallerIdentityWithoutResponse)
+
+            await loginManager.validateCredentials(sampleCredentials)
+
+            assert.strictEqual(globalStateUpdateStub.callCount, 1)
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[0], 'aws.toolkit.externalConnection')
+            assert.strictEqual(globalStateUpdateStub.firstCall.args[1], undefined)
+        })
     })
 })

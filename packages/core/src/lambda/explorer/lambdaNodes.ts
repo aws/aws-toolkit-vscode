@@ -14,12 +14,15 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { listLambdaFunctions } from '../utils'
-import { LambdaFunctionNode } from './lambdaFunctionNode'
+import { listLambdaFunctions, isHotReloadingFunction } from '../utils'
+import {
+    contextValueLambdaFunction,
+    contextValueLambdaFunctionImportable,
+    contextValueLambdaFunctionDownloadOnly,
+    LambdaFunctionNode,
+} from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
-
-export const contextValueLambdaFunction = 'awsRegionFunctionNode'
-export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable'
+import { isLocalStackConnection } from '../../auth/utils'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -70,10 +73,16 @@ function makeLambdaFunctionNode(
     regionCode: string,
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
-    const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')
-        ? contextValueLambdaFunctionImportable
-        : contextValueLambdaFunction
+    let contextValue = contextValueLambdaFunction
+    const isImportableRuntime = samLambdaImportableRuntimes.contains(configuration.Runtime ?? '')
+    if (isLocalStackConnection()) {
+        if (isImportableRuntime && !isHotReloadingFunction(configuration?.CodeSha256)) {
+            contextValue = contextValueLambdaFunctionDownloadOnly
+        }
+    } else if (isImportableRuntime) {
+        contextValue = contextValueLambdaFunctionImportable
+    }
+    const node = new LambdaFunctionNode(parent, regionCode, configuration, contextValue)
 
     return node
 }

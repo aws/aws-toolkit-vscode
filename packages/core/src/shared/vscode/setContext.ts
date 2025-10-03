@@ -30,6 +30,8 @@ export type contextKey =
     | 'aws.stepFunctions.isWorkflowStudioFocused'
     | 'aws.toolkit.notifications.show'
     | 'aws.amazonq.editSuggestionActive'
+    | 'aws.smus.connected'
+    | 'aws.smus.inSmusSpaceEnvironment'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'
@@ -40,6 +42,7 @@ export type contextKey =
     | 'gumby.wasQCodeTransformationUsed'
     | 'amazonq.inline.codelensShortcutEnabled'
     | 'aws.toolkit.lambda.walkthroughSelected'
+    | 'aws.amazonq.amazonqChatLSP.isFocus'
 
 const contextMap: Partial<Record<contextKey, any>> = {}
 

@@ -46,7 +46,7 @@ import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from './shar
 import { isValidResponse } from './shared/wizards/wizard'
 import { CancellationError } from './shared/utilities/timeoutUtils'
 import { ToolkitError } from './shared/errors'
-import { setContext } from './shared/vscode/setContext'
+import { getContext, setContext } from './shared/vscode/setContext'
 
 function switchConnections(auth: Auth | TreeNode | unknown) {
     if (!(auth instanceof Auth)) {
@@ -103,7 +103,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
 
     const manageConnections = Commands.register(
         { id: 'aws.toolkit.auth.manageConnections', compositeKey: { 1: 'source' } },
-        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId, blocking?: boolean) => {
             if (_ !== placeholder) {
                 source = AuthSources.vscodeComponent
             }
@@ -124,7 +124,23 @@ export function registerCommands(context: vscode.ExtensionContext) {
             CommonAuthWebview.authSource = source
             await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
             await setContext('aws.explorer.showAuthView', true)
+
+            // While the auth view is open, we want to be blocking (if the command has been specified to be blocking)
+            const authWindowPromise = new Promise<void>((resolve) => {
+                if (!blocking) {
+                    resolve()
+                }
+
+                const check = globals.clock.setInterval(() => {
+                    if (getContext('aws.explorer.showAuthView') === false) {
+                        clearInterval(check)
+                        resolve()
+                    }
+                }, 500)
+            })
+
             await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
+            await authWindowPromise
         }
     )
 

@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import path from 'path'
-import { tempDirPath, testGenerationLogsDir } from '../../shared/filesystemUtilities'
+import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { ToolkitError } from '../../shared/errors'
@@ -21,7 +21,6 @@ import {
 } from '../models/errors'
 import { FeatureUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
@@ -570,56 +569,6 @@ export class ZipUtil {
         }
     }
 
-    public async generateZipTestGen(projectPath: string, initialExecution: boolean): Promise<ZipMetadata> {
-        try {
-            // const repoMapFile = await LspClient.instance.getRepoMapJSON()
-            const zipDirPath = this.getZipDirPath(FeatureUseCase.TEST_GENERATION)
-
-            const metadataDir = path.join(zipDirPath, 'utgRequiredArtifactsDir')
-
-            // Create directories
-            const dirs = {
-                metadata: metadataDir,
-                buildAndExecuteLogDir: path.join(metadataDir, 'buildAndExecuteLogDir'),
-                repoMapDir: path.join(metadataDir, 'repoMapData'),
-                testCoverageDir: path.join(metadataDir, 'testCoverageDir'),
-            }
-            await Promise.all(Object.values(dirs).map((dir) => fs.mkdir(dir)))
-
-            // if (await fs.exists(repoMapFile)) {
-            //     await fs.copy(repoMapFile, path.join(dirs.repoMapDir, 'repoMapData.json'))
-            //     await fs.delete(repoMapFile)
-            // }
-
-            if (!initialExecution) {
-                await this.processTestCoverageFiles(dirs.testCoverageDir)
-
-                const sourcePath = path.join(testGenerationLogsDir, 'output.log')
-                const targetPath = path.join(dirs.buildAndExecuteLogDir, 'output.log')
-                if (await fs.exists(sourcePath)) {
-                    await fs.copy(sourcePath, targetPath)
-                }
-            }
-
-            const zipFilePath: string = await this.zipProject(FeatureUseCase.TEST_GENERATION, projectPath, metadataDir)
-            const zipFileSize = (await fs.stat(zipFilePath)).size
-            return {
-                rootDir: zipDirPath,
-                zipFilePath: zipFilePath,
-                srcPayloadSizeInBytes: this._totalSize,
-                scannedFiles: new Set(this._pickedSourceFiles),
-                zipFileSizeInBytes: zipFileSize,
-                buildPayloadSizeInBytes: this._totalBuildSize,
-                lines: this._totalLines,
-                language: this._language,
-            }
-        } catch (error) {
-            getLogger().error('Zip error caused by: %s', error)
-            throw new ProjectZipError(
-                error instanceof Error ? error.message : 'Unknown error occurred during zip operation'
-            )
-        }
-    }
     // TODO: Refactor this
     public async removeTmpFiles(zipMetadata: ZipMetadata, scope?: CodeWhispererConstants.CodeAnalysisScope) {
         const logger = getLoggerForScope(scope)

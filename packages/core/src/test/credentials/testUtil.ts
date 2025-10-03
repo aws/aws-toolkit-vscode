@@ -35,6 +35,7 @@ export const ssoConnection: SsoConnection = {
     startUrl: 'https://nkomonen.awsapps.com/start',
     getToken: sinon.stub(),
     getRegistration: async () => mockRegistration as ClientRegistration,
+    endpointUrl: undefined,
 }
 export const builderIdConnection: SsoConnection = {
     ...ssoConnection,
@@ -46,6 +47,7 @@ export const iamConnection: IamConnection = {
     id: '0',
     label: 'iam',
     getCredentials: sinon.stub(),
+    endpointUrl: undefined,
 }
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {

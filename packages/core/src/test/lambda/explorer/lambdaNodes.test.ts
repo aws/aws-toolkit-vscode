@@ -4,8 +4,8 @@
  */
 
 import assert from 'assert'
-import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
+import { contextValueLambdaFunction, LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import { LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
@@ -17,7 +17,7 @@ import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 const regionCode = 'someregioncode'
 
 function createLambdaClient(...functionNames: string[]) {
-    const client = stub(DefaultLambdaClient, { regionCode })
+    const client = stub(DefaultLambdaClient, { regionCode, userAgent: undefined })
     client.listFunctions.returns(asyncGenerator(functionNames.map((name) => ({ FunctionName: name }))))
 
     return client

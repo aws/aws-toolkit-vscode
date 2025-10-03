@@ -37,11 +37,16 @@ export class DefaultDocumentDBClient {
 
     private async getSdkConfig() {
         const credentials = await globals.awsContext.getCredentials()
-        return {
+        const endpointUrl = globals.awsContext.getCredentialEndpointUrl()
+        const config = {
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             credentials: credentials,
             region: this.regionCode,
         }
+        if (endpointUrl !== undefined) {
+            return { ...config, endpoint: endpointUrl }
+        }
+        return config
     }
 
     public async getClient(): Promise<DocDB.DocDBClient> {

@@ -267,16 +267,10 @@ function getTabTypeIcon(tabType: TabType): MynahIconsType {
     switch (tabType) {
         case 'cwc':
             return 'chat'
-        case 'doc':
-            return 'file'
         case 'review':
             return 'bug'
         case 'gumby':
             return 'transform'
-        case 'testgen':
-            return 'check-list'
-        case 'featuredev':
-            return 'code-block'
         default:
             return 'chat'
     }

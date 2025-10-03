@@ -5,9 +5,10 @@
 import * as vscode from 'vscode'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../../shared/icons'
-import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation'
+import { CloudFormationClient, DescribeStacksCommand, CloudFormationClientConfig } from '@aws-sdk/client-cloudformation'
 import { ToolkitError } from '../../../../shared/errors'
 import { getIAMConnection } from '../../../../auth/utils'
+import globals from '../../../../shared/extensionGlobals'
 
 export class StackNameNode implements TreeNode {
     public readonly id = this.stackName
@@ -46,7 +47,12 @@ export async function generateStackNode(stackName?: string, regionCode?: string)
         return []
     }
     const cred = await connection.getCredentials()
-    const client = new CloudFormationClient({ region: regionCode, credentials: cred })
+    const endpointUrl = globals.awsContext.getCredentialEndpointUrl()
+    const opts: CloudFormationClientConfig = { region: regionCode, credentials: cred }
+    if (endpointUrl !== undefined) {
+        opts.endpoint = endpointUrl
+    }
+    const client = new CloudFormationClient(opts)
     try {
         const command = new DescribeStacksCommand({ StackName: stackName })
         const response = await client.send(command)

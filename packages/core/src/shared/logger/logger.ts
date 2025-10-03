@@ -22,6 +22,7 @@ export type LogTopic =
     | 'resourceCache'
     | 'telemetry'
     | 'proxyUtil'
+    | 'sagemaker'
 
 class ErrorLog {
     constructor(

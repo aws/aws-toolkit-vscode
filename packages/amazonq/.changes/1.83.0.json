@@ -1,0 +1,18 @@
+{
+	"date": "2025-07-09",
+	"version": "1.83.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Amazon Q /test, /doc, and /dev capabilities integrated into Agentic coding."
+		},
+		{
+			"type": "Feature",
+			"description": "Added image support to Amazon Q chat, users can now upload images from their local file system"
+		},
+		{
+			"type": "Removal",
+			"description": "Deprecate \"amazon q is generating...\" UI for inline suggestion"
+		}
+	]
+}

@@ -36,6 +36,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 import { openAwsCFNConsoleCommand, openAwsConsoleCommand } from '../shared/awsConsole'
 import { StackNameNode } from '../awsService/appBuilder/explorer/nodes/deployedStack'
+import { LambdaFunctionNodeDecorationProvider } from '../lambda/explorer/lambdaFunctionNodeDecorationProvider'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -65,7 +66,10 @@ export async function activate(args: {
             telemetry.aws_expandExplorerNode.emit({ serviceType: element.element.serviceId, result: 'Succeeded' })
         }
     })
-    globals.context.subscriptions.push(view)
+    globals.context.subscriptions.push(
+        view,
+        vscode.window.registerFileDecorationProvider(LambdaFunctionNodeDecorationProvider.getInstance())
+    )
 
     await registerAwsExplorerCommands(args.context, awsExplorer, args.toolkitOutputChannel)
 

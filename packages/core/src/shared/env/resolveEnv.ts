@@ -19,6 +19,7 @@ import { IamConnection } from '../../auth/connection'
 import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { getIAMConnection } from '../../auth/utils'
 import { ChildProcess } from '../utilities/processUtils'
+import globals from '../extensionGlobals'
 
 let unixShellEnvPromise: Promise<typeof process.env | void> | undefined = undefined
 let envCacheExpireTime: number
@@ -65,7 +66,8 @@ function getSystemShellUnixLike(env: IProcessEnvironment): string {
 
 export async function injectCredentials(conn: IamConnection, env = process.env): Promise<NodeJS.ProcessEnv> {
     const creds = await conn.getCredentials()
-    return { ...env, ...asEnvironmentVariables(creds) }
+    const endpointUrl = globals.awsContext.getCredentialEndpointUrl()
+    return { ...env, ...asEnvironmentVariables(creds, endpointUrl) }
 }
 
 export interface getEnvOptions {

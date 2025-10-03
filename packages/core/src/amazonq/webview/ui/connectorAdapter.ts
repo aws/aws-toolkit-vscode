@@ -70,13 +70,7 @@ export class HybridChatAdapter implements ChatClientAdapter {
     }
 
     isSupportedQuickAction(command: string): boolean {
-        return (
-            command === '/dev' ||
-            command === '/test' ||
-            command === '/review' ||
-            command === '/doc' ||
-            command === '/transform'
-        )
+        return command === '/review' || command === '/transform'
     }
 
     handleQuickAction(prompt: ChatPrompt, tabId: string, eventId: string | undefined): void {
@@ -85,11 +79,8 @@ export class HybridChatAdapter implements ChatClientAdapter {
 
     get initialQuickActions(): QuickActionCommandGroup[] {
         const tabDataGenerator = new TabDataGenerator({
-            isDocEnabled: this.enableAgents,
-            isFeatureDevEnabled: this.enableAgents,
             isGumbyEnabled: this.enableAgents,
             isScanEnabled: this.enableAgents,
-            isTestEnabled: this.enableAgents,
             disabledCommands: this.disabledCommands,
             commandHighlight: this.featureConfigsSerialized.find(([name]) => name === 'highlightCommand')?.[1],
         })

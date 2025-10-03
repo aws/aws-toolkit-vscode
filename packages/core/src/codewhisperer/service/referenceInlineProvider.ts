@@ -35,7 +35,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
     }
 
     public setInlineReference(line: number, suggestion: string, references: References | undefined) {
-        const startTime = performance.now()
+        const startTime = Date.now()
         this.ranges = []
         this.refs = []
         if (
@@ -53,7 +53,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
         const licenses = [...n].join(', ')
         this.ranges.push(new vscode.Range(line, 0, line, 1))
         this.refs.push(CodeWhispererConstants.suggestionDetailReferenceText(licenses))
-        const duration = performance.now() - startTime
+        const duration = Date.now() - startTime
         if (duration > 100) {
             getLogger().warn(`setInlineReference takes ${duration}ms`)
         }
@@ -70,7 +70,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-        const startTime = performance.now()
+        const startTime = Date.now()
         const codeLenses: vscode.CodeLens[] = []
         for (let i = 0; i < this.ranges.length; i++) {
             const codeLens = new vscode.CodeLens(this.ranges[i])
@@ -82,7 +82,7 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
             }
             codeLenses.push(codeLens)
         }
-        const duration = performance.now() - startTime
+        const duration = Date.now() - startTime
         if (duration > 100) {
             getLogger().warn(`setInlineReference takes ${duration}ms`)
         }

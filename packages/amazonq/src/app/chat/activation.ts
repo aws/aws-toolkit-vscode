@@ -17,7 +17,6 @@ export async function activate(context: ExtensionContext) {
     context.subscriptions.push(
         amazonq.focusAmazonQChatWalkthrough.register(),
         amazonq.walkthroughInlineSuggestionsExample.register(),
-        amazonq.walkthroughSecurityScanExample.register(),
         amazonq.openAmazonQWalkthrough.register(),
         amazonq.listCodeWhispererCommandsWalkthrough.register(),
         amazonq.focusAmazonQPanel.register(),

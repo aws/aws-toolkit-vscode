@@ -29,7 +29,6 @@ const tasks: CopyTask[] = [
     ...['LICENSE', 'NOTICE'].map((f) => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
-
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
     {
         target: path.join('../core/', 'package.nls.json'),
@@ -67,6 +66,21 @@ const tasks: CopyTask[] = [
             'aslServer.js'
         ),
         destination: path.join('src', 'stepFunctions', 'asl', 'aslServer.js'),
+    },
+
+    // Sagemaker local server
+    {
+        target: path.join(
+            '../../node_modules',
+            'aws-core-vscode',
+            'dist',
+            'src',
+            'awsService',
+            'sagemaker',
+            'detached-server',
+            'server.js'
+        ),
+        destination: path.join('src', 'awsService', 'sagemaker', 'detached-server', 'server.js'),
     },
 
     // Serverless Land

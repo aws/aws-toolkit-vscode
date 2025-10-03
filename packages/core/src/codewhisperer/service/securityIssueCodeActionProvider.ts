@@ -66,7 +66,7 @@ export class SecurityIssueCodeActionProvider implements vscode.CodeActionProvide
                         `Amazon Q: Explain "${issue.title}"`,
                         vscode.CodeActionKind.QuickFix
                     )
-                    const explainWithQArgs = [issue]
+                    const explainWithQArgs = [issue, group.filePath]
                     explainWithQ.command = {
                         title: 'Explain with Amazon Q',
                         command: 'aws.amazonq.explainIssue',

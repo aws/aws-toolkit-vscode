@@ -182,6 +182,10 @@ export class Auth implements AuthService, ConnectionManager {
         return Object.values(this._declaredConnections)
     }
 
+    public getCurrentProfileId() {
+        return this.store.getCurrentProfileId()
+    }
+
     @withTelemetryContext({ name: 'restorePreviousSession', class: authClassName })
     public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
@@ -211,8 +215,32 @@ export class Auth implements AuthService, ConnectionManager {
             const provider = await this.getCredentialsProvider(id, profile)
             await this.authenticate(id, () => this.createCachedCredentials(provider), shouldInvalidate)
 
-            return this.getIamConnection(id, profile)
+            return await this.getIamConnection(id, profile)
         }
+    }
+
+    /**
+     * Gets the SSO access token for a connection
+     * @param connection The SSO connection to get the token for
+     * @returns Promise resolving to the access token string
+     */
+    @withTelemetryContext({ name: 'getSsoAccessToken', class: authClassName })
+    public async getSsoAccessToken(connection: Pick<SsoConnection, 'id'>): Promise<string> {
+        const profile = this.store.getProfileOrThrow(connection.id)
+
+        if (profile.type !== 'sso') {
+            throw new Error(`Connection ${connection.id} is not an SSO connection`)
+        }
+
+        const provider = this.getSsoTokenProvider(connection.id, profile)
+        // Calling existing getToken private method - It will handle setting the connection state etc.
+        const token = await this._getToken(connection.id, provider)
+
+        if (!token?.accessToken) {
+            throw new Error(`No access token available for connection ${connection.id}`)
+        }
+
+        return token.accessToken
     }
 
     public async useConnection({ id }: Pick<SsoConnection, 'id'>): Promise<SsoConnection>
@@ -225,7 +253,8 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile === undefined) {
             throw new Error(`Connection does not exist: ${id}`)
         }
-        const conn = profile.type === 'sso' ? this.getSsoConnection(id, profile) : this.getIamConnection(id, profile)
+        const conn =
+            profile.type === 'sso' ? this.getSsoConnection(id, profile) : await this.getIamConnection(id, profile)
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
@@ -677,7 +706,7 @@ export class Auth implements AuthService, ConnectionManager {
         if (profile.type === 'sso') {
             return this.getSsoConnection(id, profile)
         } else {
-            return this.getIamConnection(id, profile)
+            return await this.getIamConnection(id, profile)
         }
     }
 
@@ -777,10 +806,13 @@ export class Auth implements AuthService, ConnectionManager {
         )
     }
 
-    private getIamConnection(
+    private async getIamConnection(
         id: Connection['id'],
         profile: StoredProfile<IamProfile>
-    ): IamConnection & StatefulConnection {
+    ): Promise<IamConnection & StatefulConnection> {
+        // Get the provider to extract the endpoint URL
+        const provider = await this.getCredentialsProvider(id, profile)
+        const endpointUrl = provider.getEndpointUrl?.()
         return {
             id,
             type: 'iam',
@@ -788,6 +820,7 @@ export class Auth implements AuthService, ConnectionManager {
             label:
                 profile.metadata.label ?? (profile.type === 'iam' && profile.subtype === 'linked' ? profile.name : id),
             getCredentials: async () => this.getCredentials(id, await this.getCredentialsProvider(id, profile)),
+            endpointUrl,
         }
     }
 
@@ -804,6 +837,8 @@ export class Auth implements AuthService, ConnectionManager {
             label: profile.metadata?.label ?? this.getSsoProfileLabel(profile),
             getToken: () => this.getToken(id, provider),
             getRegistration: () => provider.getClientRegistration(),
+            // SsoConnection is managed internally in the AWS Toolkit, so the endpointUrl can't be configured
+            endpointUrl: undefined,
         }
     }
 
@@ -827,9 +862,10 @@ export class Auth implements AuthService, ConnectionManager {
 
     private async createCachedCredentials(provider: CredentialsProvider) {
         const providerId = provider.getCredentialsId()
+        getLogger().debug(`credentials: create cache credentials for ${provider.getProviderType()}`)
         globals.loginManager.store.invalidateCredentials(providerId)
-        const { credentials } = await globals.loginManager.store.upsertCredentials(providerId, provider)
-        await globals.loginManager.validateCredentials(credentials, provider.getDefaultRegion())
+        const { credentials, endpointUrl } = await globals.loginManager.store.upsertCredentials(providerId, provider)
+        await globals.loginManager.validateCredentials(credentials, endpointUrl, provider.getDefaultRegion())
 
         return credentials
     }
@@ -919,9 +955,21 @@ export class Auth implements AuthService, ConnectionManager {
         if (previousState === 'valid') {
             // Non-token expiration errors can happen. We must log it here, otherwise they are lost.
             getLogger().warn(`auth: valid connection became invalid. Last error: %s`, this.#validationErrors.get(id))
-
             const timeout = new Timeout(60000)
             this.#invalidCredentialsTimeouts.set(id, timeout)
+
+            // Check if this is a SMUS profile - if so, skip the generic prompt
+            // as SMUS has its own reauthentication flow
+            const isSmusConnection = profile.type === 'sso' && 'domainUrl' in profile && 'domainId' in profile
+            if (isSmusConnection) {
+                getLogger().debug(`auth: Skipping generic reauthentication prompt for SMUS connection ${id}`)
+                // For SMUS connections, just throw the InvalidConnection error
+                // The SMUS auth provider will handle showing the appropriate prompt
+                throw new ToolkitError('Connection is invalid or expired. Try logging in again.', {
+                    code: errorCode.invalidConnection,
+                    cause: this.#validationErrors.get(id),
+                })
+            }
 
             const connLabel = profile.metadata.label ?? (profile.type === 'sso' ? this.getSsoProfileLabel(profile) : id)
             const message = localize(
@@ -1026,6 +1074,16 @@ export class Auth implements AuthService, ConnectionManager {
                         getLogger().warn('CredentialsSettings.delete("profile") failed: %s', (e as Error).message)
                     })
                 }
+            }
+        }
+
+        // Add conditional auto-login logic for SageMaker (jmkeyes@ guidance)
+        if (hasVendedIamCredentials() && isSageMaker()) {
+            // SageMaker auto-login logic - use 'ec2' source since SageMaker uses EC2-like instance credentials
+            const sagemakerProfileId = asString({ credentialSource: 'ec2', credentialTypeId: 'sagemaker-instance' })
+            if ((await tryConnection(sagemakerProfileId)) === true) {
+                getLogger().info(`auth: automatically connected with SageMaker credentials`)
+                return
             }
         }
     }

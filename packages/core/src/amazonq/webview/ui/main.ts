@@ -32,7 +32,6 @@ import { DiffTreeFileInfo } from './diffTree/types'
 import { FeatureContext } from '../../../shared/featureConfig'
 import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
-import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
@@ -91,11 +90,8 @@ export class WebviewUIHandler {
     tabDataGenerator?: TabDataGenerator
 
     // are agents enabled
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
-    isTestEnabled: boolean
-    isDocEnabled: boolean
 
     isSMUS: boolean
     isSM: boolean
@@ -166,21 +162,15 @@ export class WebviewUIHandler {
             },
         })
 
-        this.isFeatureDevEnabled = enableAgents
         this.isGumbyEnabled = enableAgents
         this.isScanEnabled = enableAgents
-        this.isTestEnabled = enableAgents
-        this.isDocEnabled = enableAgents
 
         this.featureConfigs = tryNewMap(featureConfigsSerialized)
         const highlightCommand = this.featureConfigs.get('highlightCommand')
 
         this.tabDataGenerator = new TabDataGenerator({
-            isFeatureDevEnabled: enableAgents,
             isGumbyEnabled: enableAgents,
             isScanEnabled: enableAgents,
-            isTestEnabled: enableAgents,
-            isDocEnabled: enableAgents,
             disabledCommands,
             commandHighlight: highlightCommand,
             regionProfile, // TODO
@@ -195,31 +185,22 @@ export class WebviewUIHandler {
                 this.quickActionHandler?.handle(chatPrompt, tabId)
             },
             onUpdateAuthentication: (isAmazonQEnabled: boolean, authenticatingTabIDs: string[]): void => {
-                this.isFeatureDevEnabled = isAmazonQEnabled
                 this.isGumbyEnabled = isAmazonQEnabled
                 this.isScanEnabled = isAmazonQEnabled
-                this.isTestEnabled = isAmazonQEnabled
-                this.isDocEnabled = isAmazonQEnabled
 
                 this.quickActionHandler = new QuickActionHandler({
                     mynahUIRef: this.mynahUIRef,
                     connector: this.connector!,
                     tabsStorage: this.tabsStorage,
-                    isFeatureDevEnabled: this.isFeatureDevEnabled,
                     isGumbyEnabled: this.isGumbyEnabled,
                     isScanEnabled: this.isScanEnabled,
-                    isTestEnabled: this.isTestEnabled,
-                    isDocEnabled: this.isDocEnabled,
                     hybridChat,
                     disabledCommands,
                 })
 
                 this.tabDataGenerator = new TabDataGenerator({
-                    isFeatureDevEnabled: this.isFeatureDevEnabled,
                     isGumbyEnabled: this.isGumbyEnabled,
                     isScanEnabled: this.isScanEnabled,
-                    isTestEnabled: this.isTestEnabled,
-                    isDocEnabled: this.isDocEnabled,
                     disabledCommands,
                     commandHighlight: highlightCommand,
                     regionProfile, // TODO
@@ -244,8 +225,7 @@ export class WebviewUIHandler {
 
                         if (
                             this.tabsStorage.getTab(tabID)?.type === 'gumby' ||
-                            this.tabsStorage.getTab(tabID)?.type === 'review' ||
-                            this.tabsStorage.getTab(tabID)?.type === 'testgen'
+                            this.tabsStorage.getTab(tabID)?.type === 'review'
                         ) {
                             this.mynahUI?.updateStore(tabID, {
                                 promptInputDisabledState: false,
@@ -567,7 +547,6 @@ export class WebviewUIHandler {
                     return
                 }
                 this.tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
-                this.connector?.onKnownTabOpen(newTabID)
                 this.connector?.onUpdateTabType(newTabID)
 
                 this.mynahUI?.updateStore(newTabID, {
@@ -716,11 +695,7 @@ export class WebviewUIHandler {
                 }
 
                 const tabType = this.tabsStorage.getTab(tabID)?.type
-                if (tabType === 'featuredev') {
-                    this.mynahUI?.addChatItem(tabID, {
-                        type: ChatItemType.ANSWER_STREAM,
-                    })
-                } else if (tabType === 'gumby') {
+                if (tabType === 'gumby') {
                     this.connector?.requestAnswer(tabID, {
                         chatMessage: prompt.prompt ?? '',
                     })
@@ -805,19 +780,6 @@ export class WebviewUIHandler {
                         })
 
                         this.postMessage(createClickTelemetry('amazonq-welcome-quick-start-button'))
-                        return
-                    }
-                    case 'explore': {
-                        const newTabId = this.mynahUI?.updateStore('', agentWalkthroughDataModel)
-                        if (newTabId === undefined) {
-                            this.mynahUI?.notify({
-                                content: uiComponentsTexts.noMoreTabsTooltip,
-                                type: NotificationType.WARNING,
-                            })
-                            return
-                        }
-                        this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'agentWalkthrough')
-                        this.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
                         return
                     }
                     default: {
@@ -973,9 +935,6 @@ export class WebviewUIHandler {
             onFollowUpClicked: (tabID, messageId, followUp) => {
                 this.followUpsInteractionHandler?.onFollowUpClicked(tabID, messageId, followUp)
             },
-            onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
-                this.connector?.onFileActionClick(tabID, messageId, filePath, actionName)
-            },
             onFileClick: this.connector.onFileClick,
             tabs: {
                 'tab-1': {
@@ -1037,11 +996,8 @@ export class WebviewUIHandler {
             mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
-            isFeatureDevEnabled: this.isFeatureDevEnabled,
             isGumbyEnabled: this.isGumbyEnabled,
             isScanEnabled: this.isScanEnabled,
-            isTestEnabled: this.isTestEnabled,
-            isDocEnabled: this.isDocEnabled,
             hybridChat,
         })
         this.textMessageHandler = new TextMessageHandler({
@@ -1053,11 +1009,8 @@ export class WebviewUIHandler {
             mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
-            isFeatureDevEnabled: this.isFeatureDevEnabled,
             isGumbyEnabled: this.isGumbyEnabled,
             isScanEnabled: this.isScanEnabled,
-            isTestEnabled: this.isTestEnabled,
-            isDocEnabled: this.isDocEnabled,
         })
     }
 
@@ -1100,12 +1053,6 @@ export class WebviewUIHandler {
                     icon: MynahIcons.EYE,
                     data: messageData,
                 },
-            }
-        }
-        // Show only "Copy" option for codeblocks in Q Test Tab
-        if (tab?.type === 'testgen') {
-            return {
-                'insert-to-cursor': undefined,
             }
         }
         // Default will show "Copy" and "Insert at cursor" for codeblocks

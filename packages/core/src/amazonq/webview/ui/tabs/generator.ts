@@ -8,16 +8,12 @@ import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
 import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
-import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 export interface TabDataGeneratorProps {
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
-    isTestEnabled: boolean
-    isDocEnabled: boolean
     disabledCommands?: string[]
     commandHighlight?: FeatureContext
     regionProfile?: RegionProfile
@@ -32,11 +28,8 @@ export class TabDataGenerator {
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
         this.quickActionsGenerator = new QuickActionGenerator({
-            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
             isScanEnabled: props.isScanEnabled,
-            isTestEnabled: props.isTestEnabled,
-            isDocEnabled: props.isDocEnabled,
             disableCommands: props.disabledCommands,
         })
         this.highlightCommand = props.commandHighlight
@@ -49,10 +42,6 @@ export class TabDataGenerator {
         taskName?: string,
         isSMUS?: boolean
     ): MynahUIDataModel {
-        if (tabType === 'agentWalkthrough') {
-            return agentWalkthroughDataModel
-        }
-
         if (tabType === 'welcome') {
             return {}
         }
@@ -92,7 +81,7 @@ export class TabDataGenerator {
     }
 
     private getContextCommands(tabType: TabType): QuickActionCommandGroup[] | undefined {
-        if (tabType === 'agentWalkthrough' || tabType === 'welcome') {
+        if (tabType === 'welcome') {
             return
         }
 

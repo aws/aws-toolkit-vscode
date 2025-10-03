@@ -8,80 +8,24 @@ import { TabType } from '../storages/tabsStorage'
 import { MynahIcons } from '@aws/mynah-ui'
 
 export interface QuickActionGeneratorProps {
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
-    isTestEnabled: boolean
-    isDocEnabled: boolean
     disableCommands?: string[]
 }
 
 export class QuickActionGenerator {
-    public isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
-    private isScanEnabled: boolean
-    private isTestEnabled: boolean
-    private isDocEnabled: boolean
     private disabledCommands: string[]
 
     constructor(props: QuickActionGeneratorProps) {
-        this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled
-        this.isScanEnabled = props.isScanEnabled
-        this.isTestEnabled = props.isTestEnabled
-        this.isDocEnabled = props.isDocEnabled
         this.disabledCommands = props.disableCommands ?? []
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
-        // agentWalkthrough is static and doesn't have any quick actions
-        if (tabType === 'agentWalkthrough') {
-            return []
-        }
-
-        // TODO: Update acc to UX
         const quickActionCommands = [
             {
-                groupName: `Q Developer agentic capabilities`,
                 commands: [
-                    ...(this.isFeatureDevEnabled && !this.disabledCommands.includes('/dev')
-                        ? [
-                              {
-                                  command: '/dev',
-                                  icon: MynahIcons.CODE_BLOCK,
-                                  placeholder: 'Describe your task or issue in as much detail as possible',
-                                  description: 'Generate code to make a change in your project',
-                              },
-                          ]
-                        : []),
-                    ...(this.isTestEnabled && !this.disabledCommands.includes('/test')
-                        ? [
-                              {
-                                  command: '/test',
-                                  icon: MynahIcons.CHECK_LIST,
-                                  placeholder: 'Specify a function(s) in the current file (optional)',
-                                  description: 'Generate unit tests for selected code',
-                              },
-                          ]
-                        : []),
-                    ...(this.isScanEnabled && !this.disabledCommands.includes('/review')
-                        ? [
-                              {
-                                  command: '/review',
-                                  icon: MynahIcons.BUG,
-                                  description: 'Identify and fix code issues before committing',
-                              },
-                          ]
-                        : []),
-                    ...(this.isDocEnabled && !this.disabledCommands.includes('/doc')
-                        ? [
-                              {
-                                  command: '/doc',
-                                  icon: MynahIcons.FILE,
-                                  description: 'Generate documentation',
-                              },
-                          ]
-                        : []),
                     ...(this.isGumbyEnabled && !this.disabledCommands.includes('/transform')
                         ? [
                               {
@@ -111,7 +55,7 @@ export class QuickActionGenerator {
         ].filter((section) => section.commands.length > 0)
 
         const commandUnavailability: Record<
-            Exclude<TabType, 'agentWalkthrough'>,
+            Exclude<TabType, []>,
             {
                 description: string
                 unavailableItems: string[]
@@ -121,10 +65,6 @@ export class QuickActionGenerator {
                 description: '',
                 unavailableItems: [],
             },
-            featuredev: {
-                description: "This command isn't available in /dev",
-                unavailableItems: ['/help', '/clear'],
-            },
             review: {
                 description: "This command isn't available in /review",
                 unavailableItems: ['/help', '/clear'],
@@ -132,14 +72,6 @@ export class QuickActionGenerator {
             gumby: {
                 description: "This command isn't available in /transform",
                 unavailableItems: ['/dev', '/test', '/doc', '/review', '/help', '/clear'],
-            },
-            testgen: {
-                description: "This command isn't available in /test",
-                unavailableItems: ['/help', '/clear'],
-            },
-            doc: {
-                description: "This command isn't available in /doc",
-                unavailableItems: ['/help', '/clear'],
             },
             welcome: {
                 description: '',

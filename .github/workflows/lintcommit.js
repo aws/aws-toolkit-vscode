@@ -57,6 +57,7 @@ const scopes = new Set([
     'telemetry',
     'toolkit',
     'ui',
+    'sagemakerunifiedstudio',
 ])
 void scopes
 

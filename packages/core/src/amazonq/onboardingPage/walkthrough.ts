@@ -7,7 +7,6 @@ import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerComm
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { getLogger } from '../../shared/logger/logger'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import vscode from 'vscode'
 
@@ -64,13 +63,5 @@ fake_users = [
         await editor.edit((editBuilder) => {
             editBuilder.insert(new vscode.Position(0, 0), fileContents)
         })
-    }
-)
-
-export const walkthroughSecurityScanExample = Commands.declare(
-    `_aws.amazonq.walkthrough.securityScanExample`,
-    () => async () => {
-        const filterText = localize('AWS.command.amazonq.security.scan', 'Run Project Review')
-        void vscode.commands.executeCommand('workbench.action.quickOpen', `> ${filterText}`)
     }
 )

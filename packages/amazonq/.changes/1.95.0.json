@@ -1,0 +1,10 @@
+{
+	"date": "2025-09-19",
+	"version": "1.95.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q automatically refreshes expired IAM Credentials in Sagemaker instances"
+		}
+	]
+}

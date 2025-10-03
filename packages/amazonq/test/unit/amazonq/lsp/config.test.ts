@@ -77,3 +77,151 @@ describe('getAmazonQLspConfig', () => {
         delete process.env.__AMAZONQLSP_UI
     }
 })
+
+describe('pushConfigUpdate', () => {
+    let sandbox: sinon.SinonSandbox
+    let mockClient: any
+    let loggerStub: any
+    let getLoggerStub: sinon.SinonStub
+    let pushConfigUpdate: any
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+
+        // Mock LanguageClient
+        mockClient = {
+            sendRequest: sandbox.stub().resolves(),
+            sendNotification: sandbox.stub(),
+        }
+
+        // Create logger stub
+        loggerStub = {
+            debug: sandbox.stub(),
+        }
+
+        // Clear all relevant module caches
+        const configModuleId = require.resolve('../../../../src/lsp/config')
+        const sharedModuleId = require.resolve('aws-core-vscode/shared')
+        delete require.cache[configModuleId]
+        delete require.cache[sharedModuleId]
+
+        // jscpd:ignore-start
+        // Create getLogger stub and store reference for test verification
+        getLoggerStub = sandbox.stub().returns(loggerStub)
+
+        // Create a mock shared module with stubbed getLogger
+        const mockSharedModule = {
+            getLogger: getLoggerStub,
+        }
+
+        // Override the require cache with our mock
+        require.cache[sharedModuleId] = {
+            id: sharedModuleId,
+            filename: sharedModuleId,
+            loaded: true,
+            parent: undefined,
+            children: [],
+            exports: mockSharedModule,
+            paths: [],
+        } as any
+
+        // Now require the module - it should use our mocked getLogger
+        // jscpd:ignore-end
+        const configModule = require('../../../../src/lsp/config')
+        pushConfigUpdate = configModule.pushConfigUpdate
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should send profile configuration with logging', async () => {
+        const config = {
+            type: 'profile' as const,
+            profileArn: 'test-profile-arn',
+        }
+
+        await pushConfigUpdate(mockClient, config)
+
+        // Verify logging
+        assert(loggerStub.debug.calledWith('Pushing profile configuration: test-profile-arn'))
+        assert(loggerStub.debug.calledWith('Profile configuration pushed successfully'))
+
+        // Verify client call
+        assert(mockClient.sendRequest.calledOnce)
+        assert(
+            mockClient.sendRequest.calledWith(sinon.match.string, {
+                section: 'aws.q',
+                settings: { profileArn: 'test-profile-arn' },
+            })
+        )
+    })
+
+    it('should send customization configuration with logging', async () => {
+        const config = {
+            type: 'customization' as const,
+            customization: 'test-customization-arn',
+        }
+
+        await pushConfigUpdate(mockClient, config)
+
+        // Verify logging
+        assert(loggerStub.debug.calledWith('Pushing customization configuration: test-customization-arn'))
+        assert(loggerStub.debug.calledWith('Customization configuration pushed successfully'))
+
+        // Verify client call
+        assert(mockClient.sendNotification.calledOnce)
+        assert(
+            mockClient.sendNotification.calledWith(sinon.match.string, {
+                section: 'aws.q',
+                settings: { customization: 'test-customization-arn' },
+            })
+        )
+    })
+
+    it('should handle undefined profile ARN', async () => {
+        const config = {
+            type: 'profile' as const,
+            profileArn: undefined,
+        }
+
+        await pushConfigUpdate(mockClient, config)
+
+        // Verify logging with undefined
+        assert(loggerStub.debug.calledWith('Pushing profile configuration: undefined'))
+        assert(loggerStub.debug.calledWith('Profile configuration pushed successfully'))
+    })
+
+    it('should handle undefined customization ARN', async () => {
+        const config = {
+            type: 'customization' as const,
+            customization: undefined,
+        }
+
+        await pushConfigUpdate(mockClient, config)
+
+        // Verify logging with undefined
+        assert(loggerStub.debug.calledWith('Pushing customization configuration: undefined'))
+        assert(loggerStub.debug.calledWith('Customization configuration pushed successfully'))
+    })
+
+    it('should send logLevel configuration with logging', async () => {
+        const config = {
+            type: 'logLevel' as const,
+        }
+
+        await pushConfigUpdate(mockClient, config)
+
+        // Verify logging
+        assert(loggerStub.debug.calledWith('Pushing log level configuration'))
+        assert(loggerStub.debug.calledWith('Log level configuration pushed successfully'))
+
+        // Verify client call
+        assert(mockClient.sendNotification.calledOnce)
+        assert(
+            mockClient.sendNotification.calledWith(sinon.match.string, {
+                section: 'aws.logLevel',
+            })
+        )
+    })
+})

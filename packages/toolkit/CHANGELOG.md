@@ -1,3 +1,61 @@
+## 3.78.0 2025-10-02
+
+- **Feature** Refactor and optimize Lambda Remote Invoke UI with enhanced payload management
+- **Feature** Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug.
+
+## 3.77.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 3.76.0 2025-09-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.75.0 2025-09-19
+
+- Miscellaneous non-user-facing changes
+
+## 3.74.0 2025-09-10
+
+- **Feature** Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE
+- **Feature** AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile
+- **Feature** Lambda AppBuilder: Now you can install LocalStack VS Code extension from the AppBuilder walkthrough
+
+## 3.73.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 3.72.0 2025-08-22
+
+- Miscellaneous non-user-facing changes
+
+## 3.71.0 2025-08-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.70.0 2025-07-30
+
+- **Feature** Improved connection actions for SSO
+
+## 3.69.0 2025-07-16
+
+- **Bug Fix** SageMaker: Enable per-region manual filtering of Spaces
+- **Bug Fix** SageMaker: Show error message when connecting remotely from a remote workspace
+- **Bug Fix** SageMaker: Prompt user to use upgraded instance type if the chosen one has insufficient memory
+- **Bug Fix** Lambda upload from directory doesn't allow selection of directory
+- **Bug Fix** Toolkit fails to recognize it's logged in when editing Lambda function
+- **Bug Fix** SageMaker: Resolve race condition when reconnecting from multiple remote windows.
+- **Bug Fix** SageMaker: Resolve connection issues to SageMaker Spaces with capital letters in the name
+- **Feature** SageMaker: Add support for deep-linked Space reconnection
+- **Feature** Lambda Remote Debugging: Remote invoke configuration webview now supports attaching a debugger to directly debug your lambda function in the cloud.
+- **Feature** SageMaker: Enable auto-shutdown support for Spaces
+
+## 3.68.0 2025-07-03
+
+- **Bug Fix** [StepFunctions]: Cannot call TestState with variables in Workflow Studio
+- **Feature** Lambda to SAM Transformation: AWS Toolkit Explorer now can convert existing Lambda functions into SAM (Serverless Application Model) projects. This conversion creates a project structure that's ready for local development and can be managed using Application Builder
+- **Feature** Lambda Quick Edit: AWS Toolkit Explorer now offers a streamlined editing experience for Lambda functions. Download a function's code with double-click, make local modifications, and easily synchronize changes back to the cloud.
+
 ## 3.67.0 2025-06-25
 
 - **Bug Fix** State Machine deployments can now be initiated directly from Workflow Studio without closing the editor

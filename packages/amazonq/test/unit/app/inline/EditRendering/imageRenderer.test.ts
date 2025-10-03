@@ -30,9 +30,7 @@ describe('showEdits', function () {
             svgImage: vscode.Uri.file('/path/to/generated.svg'),
             startLine: 5,
             newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
+            originalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
             ...overrides,
         }
     }
@@ -54,6 +52,7 @@ describe('showEdits', function () {
         delete require.cache[moduleId]
         delete require.cache[sharedModuleId]
 
+        // jscpd:ignore-start
         // Create getLogger stub and store reference for test verification
         getLoggerStub = sandbox.stub().returns(loggerStub)
 
@@ -74,6 +73,7 @@ describe('showEdits', function () {
         } as any
 
         // Now require the module - it should use our mocked getLogger
+        // jscpd:ignore-end
         const imageRendererModule = require('../../../../../src/app/inline/EditRendering/imageRenderer')
         showEdits = imageRendererModule.showEdits
 
@@ -167,12 +167,10 @@ describe('showEdits', function () {
             mockSvgResult.svgImage,
             mockSvgResult.startLine,
             mockSvgResult.newCode,
-            mockSvgResult.origionalCodeHighlightRange,
+            mockSvgResult.originalCodeHighlightRange,
             sessionStub,
             languageClientStub,
-            itemStub,
-            mockSvgResult.addedCharacterCount,
-            mockSvgResult.deletedCharacterCount
+            itemStub
         )
 
         // Verify no errors were logged

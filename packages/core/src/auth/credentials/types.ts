@@ -12,6 +12,7 @@ export const SharedCredentialsKeys = {
     AWS_SESSION_TOKEN: 'aws_session_token',
     CREDENTIAL_PROCESS: 'credential_process',
     CREDENTIAL_SOURCE: 'credential_source',
+    ENDPOINT_URL: 'endpoint_url',
     REGION: 'region',
     ROLE_ARN: 'role_arn',
     SOURCE_PROFILE: 'source_profile',

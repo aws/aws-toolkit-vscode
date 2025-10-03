@@ -150,7 +150,7 @@ describe('SvgGenerationService', function () {
     })
 
     describe('highlight ranges', function () {
-        it('should generate highlight ranges for character-level changes', function () {
+        it('should generate highlight ranges for word-level changes', function () {
             const originalCode = ['function test() {', '  return 42;', '}']
             const afterCode = ['function test() {', '  return 100;', '}']
             const modifiedLines = new Map([['  return 42;', '  return 100;']])
@@ -172,32 +172,6 @@ describe('SvgGenerationService', function () {
             assert.ok(addedRange.line >= 0)
             assert.ok(addedRange.start >= 0)
             assert.ok(addedRange.end > addedRange.start)
-        })
-
-        it('should merge adjacent highlight ranges', function () {
-            const originalCode = ['function test() {', '  return 42;', '}']
-            const afterCode = ['function test() {', '  return 100;', '}']
-            const modifiedLines = new Map([['  return 42;', '  return 100;']])
-
-            const generateHighlightRanges = (service as any).generateHighlightRanges.bind(service)
-            const result = generateHighlightRanges(originalCode, afterCode, modifiedLines)
-
-            // Adjacent ranges should be merged
-            const sortedRanges = [...result.addedRanges].sort((a, b) => {
-                if (a.line !== b.line) {
-                    return a.line - b.line
-                }
-                return a.start - b.start
-            })
-
-            // Check that no adjacent ranges exist
-            for (let i = 0; i < sortedRanges.length - 1; i++) {
-                const current = sortedRanges[i]
-                const next = sortedRanges[i + 1]
-                if (current.line === next.line) {
-                    assert.ok(next.start - current.end > 1, 'Adjacent ranges should be merged')
-                }
-            }
         })
 
         it('should handle HTML escaping in highlight edits', function () {

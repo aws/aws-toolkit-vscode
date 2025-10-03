@@ -60,6 +60,54 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.region, 'us-west-2')
     })
 
+    it('adds endpoint URL from context to client', function () {
+        const testEndpointUrl = 'https://custom-endpoint.example.com'
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: testEndpointUrl,
+            },
+        })
+        const builderWithEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, testEndpointUrl)
+    })
+
+    it('does not set endpoint when context has no endpoint URL', function () {
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+            },
+        })
+        const builderWithoutEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithoutEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, undefined)
+    })
+
+    it('does not set endpoint when context has undefined endpoint URL', function () {
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: undefined,
+            },
+        })
+        const builderWithUndefinedEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithUndefinedEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, undefined)
+    })
+
     it('adds Client-Id to user agent', function () {
         const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
@@ -193,6 +241,41 @@ describe('AwsClientBuilderV3', function () {
 
             assert.notStrictEqual(firstClient.id, secondClient.id)
             assert.strictEqual(firstClient.id, thirdClient.id)
+        })
+
+        it('recreates client when context endpoint URL changes', async function () {
+            const contextCredentials = {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: 'https://endpoint1.example.com',
+            }
+            const contextWithEndpoint = new FakeAwsContext({
+                contextCredentials,
+            })
+
+            const builder = new AWSClientBuilderV3(contextWithEndpoint)
+            const firstClient = builder.getAwsService({ serviceClient: TestClient })
+            // set different endpointUrl
+            await contextWithEndpoint.setCredentials({
+                ...contextCredentials,
+                endpointUrl: 'https://enpdoint2.example.com',
+            })
+            const secondClient = builder.getAwsService({ serviceClient: TestClient })
+            // no endpointUrl
+            await contextWithEndpoint.setCredentials({ ...contextCredentials, endpointUrl: undefined })
+            const thirdClient = builder.getAwsService({ serviceClient: TestClient })
+            // use the same endpointUrl again
+            await contextWithEndpoint.setCredentials({ ...contextCredentials })
+            const fourthClient = builder.getAwsService({ serviceClient: TestClient })
+
+            // Different endpoint URLs should create different clients
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.notStrictEqual(firstClient.id, thirdClient.id)
+            assert.notStrictEqual(secondClient.id, thirdClient.id)
+
+            // Same endpoint URL should create same client
+            assert.strictEqual(firstClient.id, fourthClient.id)
         })
     })
 
