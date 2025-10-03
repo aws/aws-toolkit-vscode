@@ -58,3 +58,6 @@ packages/*/resources/css/icons.css
 
 # Created by `npm run webRun` when testing extension in web mode
 .vscode-test-web
+
+# License scanning output
+licenses-full.json

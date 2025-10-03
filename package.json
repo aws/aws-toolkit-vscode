@@ -38,7 +38,8 @@
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
         "mergeReports": "ts-node ./scripts/mergeReports.ts",
-        "skippedTestReport": "ts-node ./scripts/skippedTestReport.ts ./packages/amazonq/test/e2e/"
+        "skippedTestReport": "ts-node ./scripts/skippedTestReport.ts ./packages/amazonq/test/e2e/",
+        "scan-licenses": "ts-node ./scripts/scan-licenses.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "^1.0.329",
