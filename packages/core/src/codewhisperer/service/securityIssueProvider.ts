@@ -5,6 +5,9 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
+import { randomUUID } from '../../shared/crypto'
+import { displayFindingsDetectorName } from '../models/constants'
+
 export class SecurityIssueProvider {
     static #instance: SecurityIssueProvider
     public static get instance() {
@@ -18,6 +21,15 @@ export class SecurityIssueProvider {
 
     public set issues(issues: AggregatedCodeScanIssue[]) {
         this._issues = issues
+    }
+
+    private _id: string = randomUUID()
+    public get id() {
+        return this._id
+    }
+
+    public set id(id: string) {
+        this._id = id
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
@@ -145,6 +157,30 @@ export class SecurityIssueProvider {
                       issues: [
                           ...group.issues,
                           ...newIssues.issues.filter((issue) => !this.isExistingIssue(issue, newIssues.filePath)),
+                      ],
+                  }
+        )
+    }
+
+    public mergeIssuesDisplayFindings(newIssues: AggregatedCodeScanIssue, fromQCA: boolean) {
+        const existingGroup = this._issues.find((group) => group.filePath === newIssues.filePath)
+        if (!existingGroup) {
+            this._issues.push(newIssues)
+            return
+        }
+
+        this._issues = this._issues.map((group) =>
+            group.filePath !== newIssues.filePath
+                ? group
+                : {
+                      ...group,
+                      issues: [
+                          ...group.issues.filter(
+                              // if the incoming findings are from QCA review, then keep only existing findings from displayFindings
+                              // if the incoming findings are not from QCA review, then keep only the existing QCA findings
+                              (issue) => fromQCA === (issue.detectorName === displayFindingsDetectorName)
+                          ),
+                          ...newIssues.issues,
                       ],
                   }
         )

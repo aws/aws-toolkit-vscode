@@ -32,6 +32,8 @@ import { getEcsRootNode } from '../awsService/ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
 import { Ec2ParentNode } from '../awsService/ec2/explorer/ec2ParentNode'
 import { Ec2Client } from '../shared/clients/ec2'
+import { SagemakerParentNode } from '../awsService/sagemaker/explorer/sagemakerParentNode'
+import { SagemakerClient } from '../shared/clients/sagemaker'
 
 interface ServiceNode {
     allRegions?: boolean
@@ -95,6 +97,10 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 's3',
         createFn: (regionCode: string) => new S3Node(new S3Client(regionCode)),
+    },
+    {
+        serviceId: 'api.sagemaker',
+        createFn: (regionCode: string) => new SagemakerParentNode(regionCode, new SagemakerClient(regionCode)),
     },
     {
         serviceId: 'schemas',

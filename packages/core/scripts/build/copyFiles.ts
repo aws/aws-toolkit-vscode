@@ -31,6 +31,11 @@ const tasks: CopyTask[] = [
     { target: path.join('src', 'testFixtures') },
     { target: 'src/auth/sso/vue' },
 
+    // Vue.js for webviews
+    {
+        target: path.join('../../node_modules', 'vue', 'dist', 'vue.global.prod.js'),
+        destination: path.join('libs', 'vue.min.js'),
+    },
     // SSM
     {
         target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js'),

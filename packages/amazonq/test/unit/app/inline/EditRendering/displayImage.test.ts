@@ -6,7 +6,30 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { EditDecorationManager } from '../../../../../src/app/inline/EditRendering/displayImage'
+import { EditDecorationManager, displaySvgDecoration } from '../../../../../src/app/inline/EditRendering/displayImage'
+import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
+
+// Shared helper function to create common stubs
+function createCommonStubs(sandbox: sinon.SinonSandbox) {
+    const documentStub = {
+        getText: sandbox.stub().returns('Original code content'),
+        uri: vscode.Uri.file('/test/file.ts'),
+        lineAt: sandbox.stub().returns({
+            text: 'Line text content',
+            range: new vscode.Range(0, 0, 0, 18),
+            rangeIncludingLineBreak: new vscode.Range(0, 0, 0, 19),
+            firstNonWhitespaceCharacterIndex: 0,
+            isEmptyOrWhitespace: false,
+        }),
+    } as unknown as sinon.SinonStubbedInstance<vscode.TextDocument>
+
+    const editorStub = {
+        document: documentStub,
+        setDecorations: sandbox.stub(),
+    } as unknown as sinon.SinonStubbedInstance<vscode.TextEditor>
+
+    return { documentStub, editorStub }
+}
 
 describe('EditDecorationManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -25,23 +48,13 @@ describe('EditDecorationManager', function () {
             dispose: sandbox.stub(),
         } as unknown as sinon.SinonStubbedInstance<vscode.TextEditorDecorationType>
 
-        documentStub = {
-            getText: sandbox.stub().returns('Original code content'),
-            lineCount: 5,
-            lineAt: sandbox.stub().returns({
-                text: 'Line text content',
-                range: new vscode.Range(0, 0, 0, 18),
-                rangeIncludingLineBreak: new vscode.Range(0, 0, 0, 19),
-                firstNonWhitespaceCharacterIndex: 0,
-                isEmptyOrWhitespace: false,
-            }),
-        } as unknown as sinon.SinonStubbedInstance<vscode.TextDocument>
+        const commonStubs = createCommonStubs(sandbox)
+        documentStub = commonStubs.documentStub
+        editorStub = commonStubs.editorStub
 
-        editorStub = {
-            document: documentStub,
-            setDecorations: sandbox.stub(),
-            edit: sandbox.stub().resolves(true),
-        } as unknown as sinon.SinonStubbedInstance<vscode.TextEditor>
+        // Add additional properties needed for this test suite - extend the stub objects
+        Object.assign(documentStub, { lineCount: 5 })
+        Object.assign(editorStub, { edit: sandbox.stub().resolves(true) })
 
         windowStub = sandbox.stub(vscode.window)
         windowStub.createTextEditorDecorationType.returns(decorationTypeStub as any)
@@ -57,7 +70,7 @@ describe('EditDecorationManager', function () {
         sandbox.restore()
     })
 
-    it('should display SVG decorations in the editor', function () {
+    it('should display SVG decorations in the editor', async function () {
         // Create a fake SVG image URI
         const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
 
@@ -69,7 +82,7 @@ describe('EditDecorationManager', function () {
         editorStub.setDecorations.reset()
 
         // Call displayEditSuggestion
-        manager.displayEditSuggestion(
+        await manager.displayEditSuggestion(
             editorStub as unknown as vscode.TextEditor,
             svgUri,
             0,
@@ -94,7 +107,7 @@ describe('EditDecorationManager', function () {
     })
 
     // Helper function to setup edit suggestion test
-    function setupEditSuggestionTest() {
+    async function setupEditSuggestionTest() {
         // Create a fake SVG image URI
         const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
 
@@ -103,7 +116,7 @@ describe('EditDecorationManager', function () {
         const rejectHandler = sandbox.stub()
 
         // Display the edit suggestion
-        manager.displayEditSuggestion(
+        await manager.displayEditSuggestion(
             editorStub as unknown as vscode.TextEditor,
             svgUri,
             0,
@@ -117,8 +130,8 @@ describe('EditDecorationManager', function () {
         return { acceptHandler, rejectHandler }
     }
 
-    it('should trigger accept handler when command is executed', function () {
-        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
+    it('should trigger accept handler when command is executed', async function () {
+        const { acceptHandler, rejectHandler } = await setupEditSuggestionTest()
 
         // Find the command handler that was registered for accept
         const acceptCommandArgs = commandsStub.registerCommand.args.find(
@@ -138,8 +151,8 @@ describe('EditDecorationManager', function () {
         }
     })
 
-    it('should trigger reject handler when command is executed', function () {
-        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
+    it('should trigger reject handler when command is executed', async function () {
+        const { acceptHandler, rejectHandler } = await setupEditSuggestionTest()
 
         // Find the command handler that was registered for reject
         const rejectCommandArgs = commandsStub.registerCommand.args.find(
@@ -159,12 +172,12 @@ describe('EditDecorationManager', function () {
         }
     })
 
-    it('should clear decorations when requested', function () {
+    it('should clear decorations when requested', async function () {
         // Reset the setDecorations stub to clear any previous calls
         editorStub.setDecorations.reset()
 
         // Call clearDecorations
-        manager.clearDecorations(editorStub as unknown as vscode.TextEditor)
+        await manager.clearDecorations(editorStub as unknown as vscode.TextEditor)
 
         // Verify decorations were cleared
         assert.strictEqual(editorStub.setDecorations.callCount, 2)
@@ -172,5 +185,126 @@ describe('EditDecorationManager', function () {
         // Verify both decoration types were cleared
         sinon.assert.calledWith(editorStub.setDecorations.firstCall, manager['imageDecorationType'], [])
         sinon.assert.calledWith(editorStub.setDecorations.secondCall, manager['removedCodeDecorationType'], [])
+    })
+})
+
+describe('displaySvgDecoration cursor distance auto-reject', function () {
+    let sandbox: sinon.SinonSandbox
+    let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
+    let windowStub: sinon.SinonStub
+    let commandsStub: sinon.SinonStub
+    let editSuggestionStateStub: sinon.SinonStub
+    let onDidChangeTextEditorSelectionStub: sinon.SinonStub
+    let selectionChangeListener: (e: vscode.TextEditorSelectionChangeEvent) => void
+
+    // Helper function to setup displaySvgDecoration
+    async function setupDisplaySvgDecoration(startLine: number) {
+        return await displaySvgDecoration(
+            editorStub as unknown as vscode.TextEditor,
+            vscode.Uri.parse('data:image/svg+xml;base64,test'),
+            startLine,
+            'new code',
+            [],
+            {} as any,
+            {} as any,
+            { itemId: 'test', insertText: 'patch' } as any
+        )
+    }
+
+    // Helper function to create selection change event
+    function createSelectionChangeEvent(line: number): vscode.TextEditorSelectionChangeEvent {
+        const position = new vscode.Position(line, 0)
+        const selection = new vscode.Selection(position, position)
+        return {
+            textEditor: editorStub,
+            selections: [selection],
+            kind: vscode.TextEditorSelectionChangeKind.Mouse,
+        } as vscode.TextEditorSelectionChangeEvent
+    }
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+
+        const commonStubs = createCommonStubs(sandbox)
+        editorStub = commonStubs.editorStub
+
+        // Mock vscode.window.onDidChangeTextEditorSelection
+        onDidChangeTextEditorSelectionStub = sandbox.stub()
+        onDidChangeTextEditorSelectionStub.returns({ dispose: sandbox.stub() })
+        windowStub = sandbox.stub(vscode.window, 'onDidChangeTextEditorSelection')
+        windowStub.callsFake((callback) => {
+            selectionChangeListener = callback
+            return { dispose: sandbox.stub() }
+        })
+
+        // Mock vscode.commands.executeCommand
+        commandsStub = sandbox.stub(vscode.commands, 'executeCommand')
+
+        // Mock EditSuggestionState
+        editSuggestionStateStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive')
+        editSuggestionStateStub.returns(true)
+
+        // Mock other required dependencies
+        sandbox.stub(vscode.workspace, 'onDidChangeTextDocument').returns({ dispose: sandbox.stub() })
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('should not reject when cursor moves less than 25 lines away', async function () {
+        const startLine = 50
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(startLine + 24))
+
+        sinon.assert.notCalled(commandsStub)
+    })
+
+    it('should not reject when cursor moves exactly 25 lines away', async function () {
+        const startLine = 50
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(startLine + 25))
+
+        sinon.assert.notCalled(commandsStub)
+    })
+
+    it('should reject when cursor moves more than 25 lines away', async function () {
+        const startLine = 50
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(startLine + 26))
+
+        sinon.assert.calledOnceWithExactly(commandsStub, 'aws.amazonq.inline.rejectEdit')
+    })
+
+    it('should reject when cursor moves more than 25 lines before the edit', async function () {
+        const startLine = 50
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(startLine - 26))
+
+        sinon.assert.calledOnceWithExactly(commandsStub, 'aws.amazonq.inline.rejectEdit')
+    })
+
+    it('should not reject when edit is near beginning of file and cursor cannot move far enough', async function () {
+        const startLine = 10
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(0))
+
+        sinon.assert.notCalled(commandsStub)
+    })
+
+    it('should not reject when edit suggestion is not active', async function () {
+        editSuggestionStateStub.returns(false)
+
+        const startLine = 50
+        await setupDisplaySvgDecoration(startLine)
+
+        selectionChangeListener(createSelectionChangeEvent(startLine + 100))
+
+        sinon.assert.notCalled(commandsStub)
     })
 })

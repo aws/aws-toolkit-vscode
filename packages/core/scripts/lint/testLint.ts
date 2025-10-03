@@ -9,7 +9,9 @@ void (async () => {
     try {
         console.log('Running linting tests...')
 
-        const mocha = new Mocha()
+        const mocha = new Mocha({
+            timeout: 5000,
+        })
 
         const testFiles = await glob('dist/src/testLint/**/*.test.js')
         for (const file of testFiles) {

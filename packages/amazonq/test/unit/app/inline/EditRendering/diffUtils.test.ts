@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { applyUnifiedDiff, getAddedAndDeletedCharCount } from '../../../../../src/app/inline/EditRendering/diffUtils'
+import { applyUnifiedDiff } from '../../../../../src/app/inline/EditRendering/diffUtils'
 
 describe('diffUtils', function () {
     describe('applyUnifiedDiff', function () {
@@ -27,32 +27,10 @@ describe('diffUtils', function () {
             const expectedResult = 'function add(a, b) {\n  // Add two numbers\n  return a + b; // Return the sum\n}'
 
             // Apply the diff
-            const { appliedCode } = applyUnifiedDiff(originalCode, unifiedDiff)
+            const appliedCode = applyUnifiedDiff(originalCode, unifiedDiff)
 
             // Verify the result
             assert.strictEqual(appliedCode, expectedResult)
-        })
-    })
-
-    describe('getAddedAndDeletedCharCount', function () {
-        it('should correctly calculate added and deleted character counts', function () {
-            // Unified diff with additions and deletions
-            const unifiedDiff =
-                '--- a/file.js\n' +
-                '+++ b/file.js\n' +
-                '@@ -1,3 +1,4 @@\n' +
-                ' function add(a, b) {\n' +
-                '+  // Add two numbers\n' +
-                '-  return a + b;\n' +
-                '+  return a + b; // Return the sum\n' +
-                ' }'
-
-            // Calculate character counts
-            const { addedCharacterCount, deletedCharacterCount } = getAddedAndDeletedCharCount(unifiedDiff)
-
-            // Verify the counts with the actual values from the implementation
-            assert.strictEqual(addedCharacterCount, 20)
-            assert.strictEqual(deletedCharacterCount, 15)
         })
     })
 
@@ -96,7 +74,7 @@ describe('diffUtils', function () {
                 '}'
 
             // Apply the diff
-            const { appliedCode } = applyUnifiedDiff(originalCode, unifiedDiff)
+            const appliedCode = applyUnifiedDiff(originalCode, unifiedDiff)
 
             // Verify the result
             assert.strictEqual(appliedCode, expectedResult)

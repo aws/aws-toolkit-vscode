@@ -7,13 +7,7 @@ import { ChatItem, ChatItemAction, ChatItemType, ChatPrompt } from '@aws/mynah-u
 import { ExtensionMessage } from '../commands'
 import { AuthFollowUpType } from '../followUps/generator'
 import { getTabCommandFromTabType, isTabType, TabType } from '../storages/tabsStorage'
-import {
-    docUserGuide,
-    userGuideURL as featureDevUserGuide,
-    helpMessage,
-    reviewGuideUrl,
-    testGuideUrl,
-} from '../texts/constants'
+import { helpMessage, reviewGuideUrl } from '../texts/constants'
 import { linkToDocsHome } from '../../../../codewhisperer/models/constants'
 import { createClickTelemetry, createOpenAgentTelemetry } from '../telemetry/actions'
 
@@ -39,14 +33,12 @@ export interface CodeReference {
 export class Connector {
     private readonly sendMessageToExtension
     private readonly onWelcomeFollowUpClicked
-    private readonly onNewTab
     private readonly handleCommand
     private readonly sendStaticMessage
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onWelcomeFollowUpClicked = props.onWelcomeFollowUpClicked
-        this.onNewTab = props.onNewTab
         this.handleCommand = props.handleCommand
         this.sendStaticMessage = props.sendStaticMessages
     }
@@ -67,10 +59,7 @@ export class Connector {
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
-        if (messageData.command === 'showExploreAgentsView') {
-            this.onNewTab('agentWalkthrough')
-            return
-        } else if (messageData.command === 'review') {
+        if (messageData.command === 'review') {
             // tabID does not exist when calling from QuickAction Menu bar
             this.handleCommand({ command: '/review' }, '')
             return
@@ -110,17 +99,8 @@ export class Connector {
     private processUserGuideLink(tabType: TabType, actionId: string) {
         let userGuideLink = ''
         switch (tabType) {
-            case 'featuredev':
-                userGuideLink = featureDevUserGuide
-                break
-            case 'testgen':
-                userGuideLink = testGuideUrl
-                break
             case 'review':
                 userGuideLink = reviewGuideUrl
-                break
-            case 'doc':
-                userGuideLink = docUserGuide
                 break
             case 'gumby':
                 userGuideLink = linkToDocsHome

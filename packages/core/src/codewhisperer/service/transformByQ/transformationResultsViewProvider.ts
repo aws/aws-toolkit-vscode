@@ -22,6 +22,7 @@ import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
+import { copyArtifacts } from './transformFileHandler'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -164,6 +165,8 @@ export class DiffModel {
             getLogger().error(`CodeTransformation: diff.patch file is empty`)
             throw new Error(CodeWhispererConstants.noChangesMadeMessage)
         }
+
+        getLogger().info(`CodeTransformation: parsing patch file at ${pathToDiff}`)
 
         let changedFiles = parsePatch(diffContents)
         // exclude dependency_upgrade.yml from patch application
@@ -426,6 +429,7 @@ export class ProposedTransformationExplorer {
             let deserializeErrorMessage = undefined
             let pathContainingArchive = ''
             patchFiles = [] // reset patchFiles if there was a previous transformation
+
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
@@ -441,6 +445,9 @@ export class ProposedTransformationExplorer {
                 transformByQState.setSummaryFilePath(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
+
+                await copyArtifacts(pathContainingArchive, transformByQState.getJobHistoryPath())
+
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
 

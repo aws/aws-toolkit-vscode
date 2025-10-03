@@ -137,6 +137,7 @@ describe('generateDeployedNode', () => {
             label: 'iam',
             getCredentials: sinon.stub(),
             state: 'valid',
+            endpointUrl: undefined,
         }
 
         const lambdaDeployedNodeInput = {
@@ -147,6 +148,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'MyLambdaFunction',
                 Type: 'AWS::Serverless::Function',
             },
         }
@@ -177,12 +179,12 @@ describe('generateDeployedNode', () => {
             const expectedFunctionName = 'my-project-lambda-function'
             const expectedFunctionExplorerNodeTooltip = `${expectedFunctionName}${os.EOL}${expectedFunctionArn}`
 
-            const deployedResourceNodes = await generateDeployedNode(
+            const deployedResourceNodes = (await generateDeployedNode(
                 lambdaDeployedNodeInput.deployedResource,
                 lambdaDeployedNodeInput.regionCode,
                 lambdaDeployedNodeInput.stackName,
                 lambdaDeployedNodeInput.resourceTreeEntity
-            )
+            )) as DeployedResourceNode[]
 
             const deployedResourceNodeExplorerNode: LambdaFunctionNode = validateBasicProperties(
                 deployedResourceNodes,
@@ -237,6 +239,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-project-source-bucket-physical-id',
                 Type: 'AWS::S3::Bucket',
             },
         }
@@ -256,7 +259,7 @@ describe('generateDeployedNode', () => {
             const expectedS3BucketName = 'my-project-source-bucket-physical-id'
 
             const deployedResourceNodeExplorerNode: S3BucketNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedS3BucketArn,
                 'awsS3BucketNode',
                 expectedRegionCode,
@@ -284,6 +287,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-project-apigw-physical-id',
                 Type: 'AWS::Serverless::Api',
             },
         }
@@ -330,7 +334,7 @@ describe('generateDeployedNode', () => {
             )
 
             const deployedResourceNodeExplorerNode: RestApiNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedApiGatewayArn,
                 'awsApiGatewayNode',
                 expectedRegionCode,
@@ -356,6 +360,7 @@ describe('generateDeployedNode', () => {
             regionCode: expectedRegionCode,
             stackName: expectedStackName,
             resourceTreeEntity: {
+                Id: 'my-unsupported-resource-physical-id',
                 Type: 'AWS::Serverless::UnsupportType',
             },
         }

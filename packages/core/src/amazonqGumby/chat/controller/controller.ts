@@ -57,6 +57,8 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
+import { setContext } from '../../../shared/vscode/setContext'
+import { readHistoryFile } from '../../../codewhisperer/service/transformByQ/transformationHistoryHandler'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -188,6 +190,15 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
+        // check if any jobs potentially still in progress on backend
+        const history = await readHistoryFile()
+        const numInProgress = history.filter((job) => job.status === 'FAILED').length
+        this.messenger.sendViewHistoryMessage(message.tabID, numInProgress)
+        if (transformByQState.isRefreshInProgress()) {
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
+            return
+        }
+
         // silently check for projects eligible for SQL conversion
         let embeddedSQLProjects: TransformationCandidateProject[] = []
         try {
@@ -383,6 +394,11 @@ export class GumbyController {
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 break
+            case ButtonActions.VIEW_JOB_HISTORY:
+                await setContext('gumby.wasQCodeTransformationUsed', true)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_JOB_HISTORY, CancelActionPositions.Chat)
+                break
             case ButtonActions.VIEW_SUMMARY:
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
                 break
@@ -432,20 +448,30 @@ export class GumbyController {
 
     private promptJavaHome(type: 'source' | 'target', tabID: any) {
         let jdkVersion = undefined
+        let currJavaHome = undefined
         if (type === 'source') {
             this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_SOURCE_JAVA_HOME
             jdkVersion = transformByQState.getSourceJDKVersion()
+            currJavaHome = transformByQState.getPathFromJdkVersion(transformByQState.getSourceJDKVersion())
         } else if (type === 'target') {
             this.sessionStorage.getSession().conversationState = ConversationState.PROMPT_TARGET_JAVA_HOME
             jdkVersion = transformByQState.getTargetJDKVersion()
+            currJavaHome = transformByQState.getPathFromJdkVersion(transformByQState.getTargetJDKVersion())
         }
-        const message = MessengerUtils.createJavaHomePrompt(jdkVersion)
+        let message = MessengerUtils.createJavaHomePrompt(jdkVersion)
+        if (currJavaHome) {
+            message += `\n\ncurrent:\n\n\`${currJavaHome}\``
+        }
         this.messenger.sendMessage(message, tabID, 'ai-prompt')
         this.messenger.sendChatInputEnabled(tabID, true)
         this.messenger.sendUpdatePlaceholder(tabID, CodeWhispererConstants.enterJavaHomePlaceholder)
     }
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
+        if (transformByQState.isRefreshInProgress()) {
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
+            return
+        }
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformLanguageUpgradeProjectForm']
             const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
@@ -478,6 +504,10 @@ export class GumbyController {
     }
 
     private async handleUserSQLConversionProjectSelection(message: any) {
+        if (transformByQState.isRefreshInProgress()) {
+            this.messenger.sendMessage(CodeWhispererConstants.refreshInProgressChatMessage, message.tabID, 'ai-prompt')
+            return
+        }
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformSQLConversionProjectForm']
             const schema: string = message.formSelectedValues['GumbyTransformSQLSchemaForm']
@@ -550,10 +580,14 @@ export class GumbyController {
             return
         }
         const fileContents = await fs.readFileText(fileUri[0].fsPath)
-        const isValidFile = await validateCustomVersionsFile(fileContents)
+        const missingKey = await validateCustomVersionsFile(fileContents)
 
-        if (!isValidFile) {
-            this.messenger.sendUnrecoverableErrorResponse('invalid-custom-versions-file', message.tabID)
+        if (missingKey) {
+            this.messenger.sendMessage(
+                CodeWhispererConstants.invalidCustomVersionsFileMessage(missingKey),
+                message.tabID,
+                'ai-prompt'
+            )
             return
         }
         this.messenger.sendMessage(CodeWhispererConstants.receivedValidConfigFileMessage, message.tabID, 'ai-prompt')
@@ -640,6 +674,7 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setSourceJavaHome(pathToJavaHome)
+                    transformByQState.setJdkVersionToPath(transformByQState.getSourceJDKVersion(), pathToJavaHome)
                     // if source and target JDK versions are the same, just re-use the source JAVA_HOME and start the build
                     if (transformByQState.getTargetJDKVersion() === transformByQState.getSourceJDKVersion()) {
                         transformByQState.setTargetJavaHome(pathToJavaHome)
@@ -657,6 +692,7 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setTargetJavaHome(pathToJavaHome)
+                    transformByQState.setJdkVersionToPath(transformByQState.getTargetJDKVersion(), pathToJavaHome)
                     await this.prepareLanguageUpgradeProject(data.tabID) // build right after we get target JDK path
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)

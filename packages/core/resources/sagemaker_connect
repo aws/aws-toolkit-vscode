@@ -1,0 +1,145 @@
+#!/bin/bash
+
+set -x
+
+_get_ssm_session_info() {
+    local credentials_type="$1"
+    local aws_resource_arn="$2"
+    local local_endpoint_port="$3"
+
+    local url_to_get_session_info="http://localhost:${local_endpoint_port}/get_session?connection_identifier=${aws_resource_arn}&credentials_type=${credentials_type}"
+
+    # Generate unique temporary file name to avoid conflicts
+    local temp_file="/tmp/ssm_session_response_$$_$(date +%s%N).json"
+
+    # Use curl with --write-out to capture HTTP status
+    response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url_to_get_session_info")
+    http_status="${response: -3}"
+    session_json=$(cat "$temp_file")
+    
+    # Clean up temporary file
+    rm -f "$temp_file"
+
+    if [[ "$http_status" -ne 200 ]]; then
+        echo "Error: Failed to get SSM session info. HTTP status: $http_status"
+        echo "Response: $session_json"
+        exit 1
+    fi
+
+    if [ -z "$session_json" ]; then
+        echo "Error: SSM connection info is empty."
+        exit 1
+    fi
+
+    export SSM_SESSION_JSON="$session_json"
+}
+
+_get_ssm_session_info_async() {
+    local credentials_type="$1"
+    local aws_resource_arn="$2"
+    local local_endpoint_port="$3"
+
+    local request_id=$(date +%s%3N)
+    local url_base="http://localhost:${local_endpoint_port}/get_session_async"
+    local url_to_get_session_info="${url_base}?connection_identifier=${aws_resource_arn}&credentials_type=${credentials_type}&request_id=${request_id}"
+
+    # Generate unique temporary file name to avoid conflicts
+    local temp_file="/tmp/ssm_session_response_$$_$(date +%s%N).json"
+
+    local max_retries=8
+    local retry_interval=5
+    local attempt=1
+
+    while (( attempt <= max_retries )); do
+        response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url_to_get_session_info")
+        http_status="${response: -3}"
+        session_json=$(cat "$temp_file")
+
+        if [[ "$http_status" -eq 200 ]]; then
+            # Clean up temporary file on success
+            rm -f "$temp_file"
+            export SSM_SESSION_JSON="$session_json"
+            return 0
+        elif [[ "$http_status" -eq 202 || "$http_status" -eq 204 ]]; then
+            echo "Info: Session not ready (HTTP $http_status). Retrying in $retry_interval seconds... [$attempt/$max_retries]"
+            sleep $retry_interval
+            ((attempt++))
+        else
+            echo "Error: Failed to get SSM session info. HTTP status: $http_status"
+            echo "Response: $session_json"
+            # Clean up temporary file on error
+            rm -f "$temp_file"
+            exit 1
+        fi
+    done
+
+    # Clean up temporary file on timeout
+    rm -f "$temp_file"
+    echo "Error: Timed out after $max_retries attempts waiting for session to be ready."
+    exit 1
+}
+
+
+# Validate input
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <hostname>"
+    exit 1
+fi
+
+HOSTNAME="$1"
+
+# Parse creds_type and AWS resource ARN from HOSTNAME
+if [[ "$HOSTNAME" =~ ^sm_([^_]+)_(arn_._aws.*)$ ]]; then
+    CREDS_TYPE="${BASH_REMATCH[1]}"
+    AWS_RESOURCE_ARN="${BASH_REMATCH[2]}"
+else
+    echo "Hostname: $HOSTNAME"
+    echo "Invalid hostname format. Expected format: sm_<creds-type>_<AWSResourceARN>"
+    exit 1
+fi
+
+# Workaround: Replace "__" with "/" in ARN
+AWS_RESOURCE_ARN=$(echo "${AWS_RESOURCE_ARN}" | sed 's|__|/|g; s|_._|:|g; s|jupyterlab/default|JupyterLab/default|g')
+REGION=$(echo "$AWS_RESOURCE_ARN" | cut -d: -f4)
+
+# Validate credentials type
+if [[ "$CREDS_TYPE" != "lc" && "$CREDS_TYPE" != "dl" ]]; then
+    echo "Invalid creds_type. Must be 'lc' or 'dl'."
+    exit 1
+fi
+
+# Validate required env var and file
+if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+    echo "[Error] SAGEMAKER_LOCAL_SERVER_FILE_PATH is not set"
+    exit 1
+fi
+
+if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+    echo "[Error] File not found at SAGEMAKER_LOCAL_SERVER_FILE_PATH: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+    exit 1
+fi
+
+# Extract port from file
+LOCAL_ENDPOINT_PORT=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+if [ -z "$LOCAL_ENDPOINT_PORT" ] || [ "$LOCAL_ENDPOINT_PORT" == "null" ]; then
+    echo "[Error] 'port' field is missing or invalid in $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+    exit 1
+fi
+
+# Determine region from ARN
+if [ "$CREDS_TYPE" == "lc" ]; then
+    credentials_type="local"
+    _get_ssm_session_info "$credentials_type" "$AWS_RESOURCE_ARN" "$LOCAL_ENDPOINT_PORT"
+elif [ "$CREDS_TYPE" == "dl" ]; then
+    credentials_type="deeplink"
+    _get_ssm_session_info_async "$credentials_type" "$AWS_RESOURCE_ARN" "$LOCAL_ENDPOINT_PORT"
+else
+    echo "[Error] Invalid creds_type. Must be 'lc' or 'dl'."
+    exit 1
+fi
+
+echo "Extracting AWS_SSM_CLI: $AWS_SSM_CLI"
+
+# Execute the session
+AWS_SSM_CLI="${AWS_SSM_CLI:=session-manager-plugin}" 
+exec "${AWS_SSM_CLI}" "$SSM_SESSION_JSON" "$REGION" StartSession

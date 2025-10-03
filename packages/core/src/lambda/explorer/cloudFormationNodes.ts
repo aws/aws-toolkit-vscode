@@ -153,8 +153,7 @@ function makeCloudFormationLambdaFunctionNode(
     regionCode: string,
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
-    const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = contextValueCloudformationLambdaFunction
+    const node = new LambdaFunctionNode(parent, regionCode, configuration, contextValueCloudformationLambdaFunction)
 
     return node
 }

@@ -23,7 +23,10 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
     ) {}
 
     protected getClient(ignoreCache: boolean = false) {
-        const args = { serviceClient: this.clientType, region: this.regionCode }
+        const args = {
+            serviceClient: this.clientType,
+            region: this.regionCode,
+        }
         return ignoreCache
             ? globals.sdkClientBuilderV3.createAwsService(args)
             : globals.sdkClientBuilderV3.getAwsService(args)

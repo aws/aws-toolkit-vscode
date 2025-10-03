@@ -11,7 +11,7 @@ import { stub } from '../../utilities/stubber'
 
 describe('deleteLambda', async function () {
     function createLambdaClient() {
-        const client = stub(DefaultLambdaClient, { regionCode: 'region-1' })
+        const client = stub(DefaultLambdaClient, { regionCode: 'region-1', userAgent: undefined })
         client.deleteFunction.resolves()
 
         return client
