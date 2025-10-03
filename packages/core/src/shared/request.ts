@@ -4,6 +4,7 @@
  */
 
 import crossFetch from 'cross-fetch'
+const { HttpsProxyAgent } = require('https-proxy-agent')
 
 const request = {
     /**
@@ -23,7 +24,21 @@ const request = {
         params?: RequestParamsArg,
         wrappedFetch = crossFetch
     ): FetchRequest {
-        return new FetchRequest(url, { ...params, method }, wrappedFetch)
+        const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
+
+        const updateParams: any = { ...params }
+
+        if (proxy) {
+            const proxyAgent = new HttpsProxyAgent(proxy)
+
+            updateParams.agent = proxyAgent
+
+            updateParams.headers = {
+                ...(params?.headers || {}),
+            }
+        }
+
+        return new FetchRequest(url, { ...updateParams, method }, wrappedFetch)
     },
 }
 export default request
