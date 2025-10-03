@@ -4,7 +4,6 @@
  */
 
 import crossFetch from 'cross-fetch'
-import { getLogger } from './logger'
 const { HttpsProxyAgent } = require('https-proxy-agent')
 
 const request = {
@@ -26,9 +25,6 @@ const request = {
         wrappedFetch = crossFetch
     ): FetchRequest {
         const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
-        if (proxy) {
-            getLogger().info(`detectied proxy being used via env variable and is attaching ${proxy} to userAgent`)
-        }
         const updateParams: any = { ...params }
         if (proxy) {
             const proxyAgent = new HttpsProxyAgent(proxy)
