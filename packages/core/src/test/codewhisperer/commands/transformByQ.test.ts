@@ -67,7 +67,8 @@ dependencyManagement:
   plugins:
     - identifier: "com.example:plugin"
       targetVersion: "1.2.0"
-      versionProperty: "plugin.version"  # Optional`
+      versionProperty: "plugin.version"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"`
 
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
