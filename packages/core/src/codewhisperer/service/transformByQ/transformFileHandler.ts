@@ -162,7 +162,7 @@ function validateItem(item: any, validOriginTypes: string[] = ['FIRST_PARTY', 'T
         getLogger().info(`CodeTransformation: Invalid originType: ${item.originType}`)
         return `Invalid originType: \`${item.originType}\`. Must be either \`FIRST_PARTY\` or \`THIRD_PARTY\``
     }
-    if (!item.targetVersion.trim()) {
+    if (!item.targetVersion?.trim()) {
         getLogger().info(`CodeTransformation: Missing targetVersion in: ${item.identifier}`)
         return `Missing \`targetVersion\` in: \`${item.identifier}\``
     }
