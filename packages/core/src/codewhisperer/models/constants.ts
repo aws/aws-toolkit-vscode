@@ -588,8 +588,8 @@ export const invalidMetadataFileUnsupportedSourceDB =
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
-export const invalidCustomVersionsFileMessage = (missingKey: string) =>
-    `The dependency upgrade file provided is missing required field \`${missingKey}\`. Check that it is configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).`
+export const invalidCustomVersionsFileMessage = (errorMessage: string) =>
+    `The dependency upgrade file provided is malformed: ${errorMessage}. Check that it is configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).`
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
