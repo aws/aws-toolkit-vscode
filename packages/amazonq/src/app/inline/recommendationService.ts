@@ -189,6 +189,9 @@ export class RecommendationService {
             })
 
             if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
+                if (isTriggerByDeletion) {
+                    return []
+                }
                 // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
                 if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
                     const session = this.sessionManager.getActiveSession()
