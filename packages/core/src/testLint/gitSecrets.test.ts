@@ -23,7 +23,12 @@ describe('git-secrets', function () {
 
     /** git-secrets patterns that will not cause a failure during the scan */
     function setAllowListPatterns(gitSecrets: string) {
-        const allowListPatterns: string[] = ['"accountId": "123456789012"']
+        const allowListPatterns: string[] = [
+            '"accountId": "123456789012"',
+            "'accountId': '123456789012'",
+            "Account: '123456789012'",
+            "accountId: '123456789012'",
+        ]
 
         for (const pattern of allowListPatterns) {
             // Returns non-zero exit code if pattern already exists

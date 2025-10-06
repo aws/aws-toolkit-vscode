@@ -277,7 +277,7 @@ export class UploadLambdaWizard extends Wizard<UploadLambdaWizardState> {
  * @param type Whether to zip or sam build the directory
  * @param window Wrapper around vscode.window functionality for testing
  */
-async function runUploadDirectory(lambda: LambdaFunction, type: 'zip' | 'sam', parentDir: vscode.Uri) {
+export async function runUploadDirectory(lambda: LambdaFunction, type: 'zip' | 'sam', parentDir: vscode.Uri) {
     if (type === 'sam' && lambda.configuration) {
         return await runUploadLambdaWithSamBuild({ ...lambda, configuration: lambda.configuration }, parentDir)
     } else {

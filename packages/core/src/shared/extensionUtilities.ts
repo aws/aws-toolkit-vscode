@@ -150,12 +150,25 @@ function createCloud9Properties(company: string): IdeProperties {
     }
 }
 
-function isSageMakerUnifiedStudio(): boolean {
+/**
+ * export method - for testing purposes only
+ * @internal
+ */
+export function isSageMakerUnifiedStudio(): boolean {
     if (serviceName === notInitialized) {
         serviceName = process.env.SERVICE_NAME ?? ''
         isSMUS = serviceName === sageMakerUnifiedStudio
     }
     return isSMUS
+}
+
+/**
+ * Reset cached SageMaker state - for testing purposes only
+ * @internal
+ */
+export function resetSageMakerState(): void {
+    serviceName = notInitialized
+    isSMUS = false
 }
 
 /**
@@ -175,26 +188,39 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
  * @param appName to identify the proper SM instance
  * @returns true if the current system is SageMaker(SMAI or SMUS)
  */
-export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
+export function isSageMaker(appName: 'SMAI' | 'SMUS' | 'SMUS-SPACE-REMOTE-ACCESS' = 'SMAI'): boolean {
     // Check for SageMaker-specific environment variables first
+    let hasSMEnvVars: boolean = false
     if (hasSageMakerEnvVars()) {
         getLogger().debug('SageMaker environment detected via environment variables')
-        return true
+        hasSMEnvVars = true
     }
 
-    // Fall back to app name checks
     switch (appName) {
         case 'SMAI':
-            return vscode.env.appName === sageMakerAppname
+            return vscode.env.appName === sageMakerAppname && hasSMEnvVars
         case 'SMUS':
-            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio()
+            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
+        case 'SMUS-SPACE-REMOTE-ACCESS':
+            // When is true, the AWS toolkit is running in remote SSH conenction to SageMaker Unified Studio space
+            return vscode.env.appName !== sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
         default:
             return false
     }
 }
 
 export function isCn(): boolean {
-    return getComputeRegion()?.startsWith('cn') ?? false
+    try {
+        const region = getComputeRegion()
+        if (!region || region === 'notInitialized') {
+            getLogger().debug('isCn called before compute region initialized, defaulting to false')
+            return false
+        }
+        return region.startsWith('cn')
+    } catch (err) {
+        getLogger().error(`Error in isCn method: ${err}`)
+        return false
+    }
 }
 
 /**

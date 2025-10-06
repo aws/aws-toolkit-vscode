@@ -25,10 +25,14 @@ export const securityScanRender: SecurityScanRender = {
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext,
     editor: vscode.TextEditor | undefined,
-    scope: CodeAnalysisScope
+    scope: CodeAnalysisScope,
+    fromQCA: boolean = true
 ) {
+    // fromQCA parameter is used to determine if the findings are coming from QCA or from displayFindings tool.
+    // if the incoming findings are from QCA review, then keep only existing findings from displayFindings
+    // if the incoming findings are not from QCA review, then keep only the existing QCA findings
+    securityScanRender.securityDiagnosticCollection = createSecurityDiagnosticCollection()
     securityScanRender.initialized = false
     if (scope === CodeAnalysisScope.FILE_ON_DEMAND && editor) {
         securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
@@ -37,22 +41,20 @@ export function initSecurityScanRender(
     }
     for (const securityRecommendation of securityRecommendationList) {
         updateSecurityDiagnosticCollection(securityRecommendation)
-        updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO)
+        updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO, fromQCA)
     }
     securityScanRender.initialized = true
 }
 
-function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue, isAutoScope?: boolean) {
+function updateSecurityIssuesForProviders(
+    securityRecommendation: AggregatedCodeScanIssue,
+    isAutoScope?: boolean,
+    fromQCA: boolean = true
+) {
     if (isAutoScope) {
         SecurityIssueProvider.instance.mergeIssues(securityRecommendation)
     } else {
-        const updatedSecurityRecommendationList = [
-            ...SecurityIssueProvider.instance.issues.filter(
-                (group) => group.filePath !== securityRecommendation.filePath
-            ),
-            securityRecommendation,
-        ]
-        SecurityIssueProvider.instance.issues = updatedSecurityRecommendationList
+        SecurityIssueProvider.instance.mergeIssuesDisplayFindings(securityRecommendation, fromQCA)
     }
     SecurityIssueTreeViewProvider.instance.refresh()
 }

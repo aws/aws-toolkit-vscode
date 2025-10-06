@@ -56,6 +56,22 @@ We want your feedback!
 -   [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
 -   Or [send a pull request](CONTRIBUTING.md)!
 
+## License Scanning
+
+To generate license reports and attribution documents for third-party dependencies:
+
+```bash
+npm run scan-licenses
+
+# Or run directly
+./scripts/scan-licenses.sh
+```
+
+This generates:
+
+-   `LICENSE-THIRD-PARTY` - Attribution document for distribution
+-   `licenses-full.json` - Complete license data
+
 ## License
 
 This project and the subprojects within **(AWS Toolkit for Visual Studio Code, Amazon Q for Visual Studio Code)** is distributed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

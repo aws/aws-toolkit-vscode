@@ -39,6 +39,8 @@ export const Features = {
     dataCollectionFeature: 'IDEProjectContextDataCollection',
     projectContextFeature: 'ProjectContextV2',
     workspaceContextFeature: 'WorkspaceContext',
+    preFlareRollbackBIDFeature: 'PreflareRollbackExperiment_BID',
+    preFlareRollbackIDCFeature: 'PreflareRollbackExperiment_IDC',
     test: 'testFeature',
     highlightCommand: 'highlightCommand',
 } as const
@@ -55,6 +57,9 @@ export const featureDefinitions = new Map<FeatureName, FeatureContext>([
 
 export class FeatureConfigProvider {
     private featureConfigs = new Map<string, FeatureContext>()
+    private fetchPromise: Promise<void> | undefined = undefined
+    private lastFetchTime = 0
+    private readonly minFetchInterval = 5000 // 5 seconds minimum between fetches
 
     static #instance: FeatureConfigProvider
 
@@ -103,6 +108,16 @@ export class FeatureConfigProvider {
         }
     }
 
+    getPreFlareRollbackGroup(): 'control' | 'treatment' | 'default' {
+        const variationBid = this.featureConfigs.get(Features.preFlareRollbackBIDFeature)?.variation
+        const variationIdc = this.featureConfigs.get(Features.preFlareRollbackIDCFeature)?.variation
+        if (variationBid === 'TREATMENT' || variationIdc === 'TREATMENT') {
+            return 'treatment'
+        } else {
+            return 'control'
+        }
+    }
+
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
         const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const request: ListFeatureEvaluationsRequest = {
@@ -123,6 +138,28 @@ export class FeatureConfigProvider {
             return
         }
 
+        // Debounce multiple concurrent calls
+        const now = performance.now()
+        if (this.fetchPromise && now - this.lastFetchTime < this.minFetchInterval) {
+            getLogger().debug('amazonq: Debouncing feature config fetch')
+            return this.fetchPromise
+        }
+
+        if (this.fetchPromise) {
+            return this.fetchPromise
+        }
+
+        this.lastFetchTime = now
+        this.fetchPromise = this._fetchFeatureConfigsInternal()
+
+        try {
+            await this.fetchPromise
+        } finally {
+            this.fetchPromise = undefined
+        }
+    }
+
+    private async _fetchFeatureConfigsInternal(): Promise<void> {
         getLogger().debug('amazonq: Fetching feature configs')
         try {
             const response = await this.listFeatureEvaluations()

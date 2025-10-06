@@ -3,15 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, setContext } from 'aws-core-vscode/shared'
+import { getContext, getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
-import { diffLines } from 'diff'
+import { applyPatch, diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
+import { EditSuggestionState } from '../editSuggestionState'
+import type { AmazonQInlineCompletionItemProvider } from '../completion'
+import { vsCodeState } from 'aws-core-vscode/codewhisperer'
+
+const autoRejectEditCursorDistance = 25
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -19,7 +24,7 @@ export class EditDecorationManager {
     private currentImageDecoration: vscode.DecorationOptions | undefined
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
-    private rejectHandler: (() => void) | undefined
+    private rejectHandler: ((isDiscard: boolean) => void) | undefined
 
     constructor() {
         this.registerCommandHandlers()
@@ -121,19 +126,21 @@ export class EditDecorationManager {
     /**
      * Displays an edit suggestion as an SVG image in the editor and highlights removed code
      */
-    public displayEditSuggestion(
+    public async displayEditSuggestion(
         editor: vscode.TextEditor,
         svgImage: vscode.Uri,
         startLine: number,
-        onAccept: () => void,
-        onReject: () => void,
+        onAccept: () => Promise<void>,
+        onReject: (isDiscard: boolean) => Promise<void>,
         originalCode: string,
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
-    ): void {
-        this.clearDecorations(editor)
-
-        void setContext('aws.amazonq.editSuggestionActive' as any, true)
+    ): Promise<void> {
+        // Clear old decorations but don't reset state (state is already set in displaySvgDecoration)
+        editor.setDecorations(this.imageDecorationType, [])
+        editor.setDecorations(this.removedCodeDecorationType, [])
+        this.currentImageDecoration = undefined
+        this.currentRemovedCodeDecorations = []
 
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -156,14 +163,15 @@ export class EditDecorationManager {
     /**
      * Clears all edit suggestion decorations
      */
-    public clearDecorations(editor: vscode.TextEditor): void {
+    public async clearDecorations(editor: vscode.TextEditor): Promise<void> {
         editor.setDecorations(this.imageDecorationType, [])
         editor.setDecorations(this.removedCodeDecorationType, [])
         this.currentImageDecoration = undefined
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
-        void setContext('aws.amazonq.editSuggestionActive' as any, false)
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
     }
 
     /**
@@ -178,9 +186,9 @@ export class EditDecorationManager {
         })
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', (isDiscard: boolean = false) => {
             if (this.rejectHandler) {
-                this.rejectHandler()
+                this.rejectHandler(isDiscard)
             }
         })
     }
@@ -210,7 +218,7 @@ export const decorationManager = EditDecorationManager.getDecorationManager()
 /**
  * Function to replace editor's content with new code
  */
-function replaceEditorContent(editor: vscode.TextEditor, newCode: string): void {
+async function replaceEditorContent(editor: vscode.TextEditor, newCode: string): Promise<void> {
     const document = editor.document
     const fullRange = new vscode.Range(
         0,
@@ -219,7 +227,7 @@ function replaceEditorContent(editor: vscode.TextEditor, newCode: string): void 
         document.lineAt(document.lineCount - 1).text.length
     )
 
-    void editor.edit((editBuilder) => {
+    await editor.edit((editBuilder) => {
         editBuilder.replace(fullRange, newCode)
     })
 }
@@ -269,6 +277,28 @@ function getEndOfEditPosition(originalCode: string, newCode: string): vscode.Pos
 }
 
 /**
+ * Helper function to create discard telemetry params
+ */
+function createDiscardTelemetryParams(
+    session: CodeWhispererSession,
+    item: InlineCompletionItemWithReferences
+): LogInlineCompletionSessionResultsParams {
+    return {
+        sessionId: session.sessionId,
+        completionSessionResult: {
+            [item.itemId]: {
+                seen: false,
+                accepted: false,
+                discarded: true,
+            },
+        },
+        totalSessionDisplayTime: Date.now() - session.requestStartTime,
+        firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+        isInlineEdit: true,
+    }
+}
+
+/**
  * Helper function to display SVG decorations
  */
 export async function displaySvgDecoration(
@@ -280,21 +310,90 @@ export async function displaySvgDecoration(
     session: CodeWhispererSession,
     languageClient: LanguageClient,
     item: InlineCompletionItemWithReferences,
-    addedCharacterCount: number,
-    deletedCharacterCount: number
+    inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
     const originalCode = editor.document.getText()
 
-    decorationManager.displayEditSuggestion(
+    // Set edit state immediately to prevent race condition with completion requests
+    await setContext('aws.amazonq.editSuggestionActive' as any, true)
+    EditSuggestionState.setEditSuggestionActive(true)
+
+    // Check if a completion suggestion is currently active - if so, discard edit suggestion
+    if (inlineCompletionProvider && (await inlineCompletionProvider.isCompletionActive())) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
+        // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
+        const params = createDiscardTelemetryParams(session, item)
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        getLogger('nextEditPrediction').debug(
+            `Auto discarded  edit suggestion for active completion suggestion: ${item.insertText as string}`
+        )
+        return
+    }
+
+    const isPatchValid = applyPatch(editor.document.getText(), item.insertText as string)
+    if (!isPatchValid) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
+        const params = createDiscardTelemetryParams(session, item)
+        // TODO: this session is closed on flare side hence discarded is not emitted in flare
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        return
+    }
+    const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
+        if (e.contentChanges.length <= 0) {
+            return
+        }
+        if (e.document !== editor.document) {
+            return
+        }
+        if (vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        if (getContext('aws.amazonq.editSuggestionActive') === false) {
+            return
+        }
+
+        const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
+        if (!isPatchValid) {
+            getLogger('nextEditPrediction').debug(
+                `Auto rejected edit suggestion for invalid patch: ${item.insertText as string}}`
+            )
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
+    const cursorChangeListener = vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (!EditSuggestionState.isEditSuggestionActive()) {
+            return
+        }
+        if (e.textEditor !== editor) {
+            return
+        }
+        const currentPosition = e.selections[0].active
+        const distance = Math.abs(currentPosition.line - startLine)
+        if (distance > autoRejectEditCursorDistance) {
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
+    await decorationManager.displayEditSuggestion(
         editor,
         svgImage,
         startLine,
-        () => {
+        async () => {
             // Handle accept
             getLogger().info('Edit suggestion accepted')
 
             // Replace content
-            replaceEditorContent(editor, newCode)
+            try {
+                vsCodeState.isCodeWhispererEditing = true
+                await replaceEditorContent(editor, newCode)
+            } finally {
+                vsCodeState.isCodeWhispererEditing = false
+            }
 
             // Move cursor to end of the actual changed content
             const endPosition = getEndOfEditPosition(originalCode, newCode)
@@ -303,7 +402,9 @@ export async function displaySvgDecoration(
             // Move cursor to end of the actual changed content
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
-            decorationManager.clearDecorations(editor)
+            await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
+            cursorChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
@@ -315,26 +416,53 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                addedCharacterCount: addedCharacterCount,
-                deletedCharacterCount: deletedCharacterCount,
+                isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            session.triggerOnAcceptance = true
+            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
+            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
+            //     await inlineCompletionProvider.provideInlineCompletionItems(
+            //         editor.document,
+            //         endPosition,
+            //         {
+            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+            //             selectedCompletionInfo: undefined,
+            //         },
+            //         new vscode.CancellationTokenSource().token,
+            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
+            //     )
+            // }
         },
-        () => {
+        async (isDiscard: boolean) => {
             // Handle reject
-            getLogger().info('Edit suggestion rejected')
-            decorationManager.clearDecorations(editor)
+            if (isDiscard) {
+                getLogger().info('Edit suggestion discarded')
+            } else {
+                getLogger().info('Edit suggestion rejected')
+            }
+            await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
+            cursorChangeListener.dispose()
+            const suggestionState = isDiscard
+                ? {
+                      seen: false,
+                      accepted: false,
+                      discarded: true,
+                  }
+                : {
+                      seen: true,
+                      accepted: false,
+                      discarded: false,
+                  }
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
+                    [item.itemId]: suggestionState,
                 },
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },

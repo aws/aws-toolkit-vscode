@@ -10,20 +10,21 @@ import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument } from 'aws-core-vscode/test'
-import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
-import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 // Import CursorUpdateManager directly instead of the interface
 import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateManager'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
+import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
+
+const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
+const editApi = 'aws/textDocument/editCompletion'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
     let sendRequestStub: sinon.SinonStub
     let sandbox: sinon.SinonSandbox
     let sessionManager: SessionManager
-    let lineTracker: LineTracker
-    let activeStateController: InlineGeneratingMessage
     let service: RecommendationService
     let cursorUpdateManager: CursorUpdateManager
     let statusBarStub: any
@@ -32,6 +33,10 @@ describe('RecommendationService', () => {
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: InlineCompletionTriggerKind.Automatic, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
+    const mockDocumentEventListener = {
+        isLastEventDeletion: (filepath: string) => false,
+        getLastDocumentChangeEvent: (filepath: string) => undefined,
+    } as DocumentEventListener
     const mockInlineCompletionItemOne = {
         insertText: 'ItemOne',
     } as InlineCompletionItem
@@ -69,8 +74,6 @@ describe('RecommendationService', () => {
         } as unknown as LanguageClient
 
         sessionManager = new SessionManager()
-        lineTracker = new LineTracker()
-        activeStateController = new InlineGeneratingMessage(lineTracker)
 
         // Create cursor update manager mock
         cursorUpdateManager = {
@@ -94,7 +97,7 @@ describe('RecommendationService', () => {
         sandbox.stub(CodeWhispererStatusBarManager, 'instance').get(() => statusBarStub)
 
         // Create the service without cursor update recorder initially
-        service = new RecommendationService(sessionManager, activeStateController)
+        service = new RecommendationService(sessionManager)
     })
 
     afterEach(() => {
@@ -104,11 +107,7 @@ describe('RecommendationService', () => {
 
     describe('constructor', () => {
         it('should initialize with optional cursorUpdateRecorder', () => {
-            const serviceWithRecorder = new RecommendationService(
-                sessionManager,
-                activeStateController,
-                cursorUpdateManager
-            )
+            const serviceWithRecorder = new RecommendationService(sessionManager, cursorUpdateManager)
 
             // Verify the service was created with the recorder
             assert.strictEqual(serviceWithRecorder['cursorUpdateRecorder'], cursorUpdateManager)
@@ -130,6 +129,9 @@ describe('RecommendationService', () => {
 
     describe('getAllRecommendations', () => {
         it('should handle single request with no partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -138,17 +140,33 @@ describe('RecommendationService', () => {
 
             sendRequestStub.resolves(mockFirstResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledOnce)
-            const requestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 2)
+            assert.strictEqual(completionCalls.length, 1)
+            assert.strictEqual(editCalls.length, 1)
+
+            const requestArgs = completionCalls[0].args[1]
             assert.deepStrictEqual(requestArgs, {
                 textDocument: {
                     uri: 'file:///test.py',
                 },
                 position: mockPosition,
                 context: mockContext,
+                documentChangeParams: undefined,
+                openTabFilepaths: [],
             })
 
             // Verify session management
@@ -157,6 +175,9 @@ describe('RecommendationService', () => {
         })
 
         it('should handle multiple request with partial result token', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -172,19 +193,35 @@ describe('RecommendationService', () => {
             sendRequestStub.onFirstCall().resolves(mockFirstResult)
             sendRequestStub.onSecondCall().resolves(mockSecondResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
 
             // Verify sendRequest was called with correct parameters
-            assert(sendRequestStub.calledTwice)
-            const firstRequestArgs = sendRequestStub.firstCall.args[1]
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+            assert.strictEqual(cs.length, 3)
+            assert.strictEqual(completionCalls.length, 2)
+            assert.strictEqual(editCalls.length, 1)
+
+            const firstRequestArgs = completionCalls[0].args[1]
             const expectedRequestArgs = {
                 textDocument: {
                     uri: 'file:///test.py',
                 },
                 position: mockPosition,
                 context: mockContext,
+                documentChangeParams: undefined,
+                openTabFilepaths: [],
             }
-            const secondRequestArgs = sendRequestStub.secondCall.args[1]
+            const secondRequestArgs = completionCalls[1].args[1]
             assert.deepStrictEqual(firstRequestArgs, expectedRequestArgs)
             assert.deepStrictEqual(secondRequestArgs, {
                 ...expectedRequestArgs,
@@ -204,55 +241,55 @@ describe('RecommendationService', () => {
 
             sendRequestStub.resolves(mockFirstResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
 
             // Verify recordCompletionRequest was called
             // eslint-disable-next-line @typescript-eslint/unbound-method
             sinon.assert.calledOnce(cursorUpdateManager.recordCompletionRequest as sinon.SinonStub)
         })
 
-        // Helper function to setup UI test
-        function setupUITest() {
-            const mockFirstResult = {
-                sessionId: 'test-session',
-                items: [mockInlineCompletionItemOne],
-                partialResultToken: undefined,
-            }
-
-            sendRequestStub.resolves(mockFirstResult)
-
-            // Spy on the UI methods
-            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
-            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
-
-            return { showGeneratingStub, hideGeneratingStub }
-        }
-
         it('should not show UI indicators when showUi option is false', async () => {
-            const { showGeneratingStub, hideGeneratingStub } = setupUITest()
-
             // Call with showUi: false option
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken, {
-                showUi: false,
-                emitTelemetry: true,
-            })
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener,
+                {
+                    showUi: false,
+                    emitTelemetry: true,
+                }
+            )
 
             // Verify UI methods were not called
-            sinon.assert.notCalled(showGeneratingStub)
-            sinon.assert.notCalled(hideGeneratingStub)
             sinon.assert.notCalled(statusBarStub.setLoading)
             sinon.assert.notCalled(statusBarStub.refreshStatusBar)
         })
 
         it('should show UI indicators when showUi option is true (default)', async () => {
-            const { showGeneratingStub, hideGeneratingStub } = setupUITest()
-
             // Call with default options (showUi: true)
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
 
             // Verify UI methods were called
-            sinon.assert.calledOnce(showGeneratingStub)
-            sinon.assert.calledOnce(hideGeneratingStub)
             sinon.assert.calledOnce(statusBarStub.setLoading)
             sinon.assert.calledOnce(statusBarStub.refreshStatusBar)
         })
@@ -268,10 +305,6 @@ describe('RecommendationService', () => {
             // Set up UI options
             const options = { showUi: true }
 
-            // Stub the UI methods to avoid errors
-            // const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
-            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
-
             // Temporarily replace console.error with a no-op function to prevent test failure
             const originalConsoleError = console.error
             console.error = () => {}
@@ -284,6 +317,8 @@ describe('RecommendationService', () => {
                     mockPosition,
                     mockContext,
                     mockToken,
+                    true,
+                    mockDocumentEventListener,
                     options
                 )
 
@@ -291,12 +326,75 @@ describe('RecommendationService', () => {
                 assert.deepStrictEqual(result, [])
 
                 // Verify the UI indicators were hidden even when an error occurs
-                sinon.assert.calledOnce(hideGeneratingStub)
                 sinon.assert.calledOnce(statusBarStub.refreshStatusBar)
             } finally {
                 // Restore the original console.error function
                 console.error = originalConsoleError
             }
+        })
+
+        it('should not make completion request when edit suggestion is active', async () => {
+            // Mock EditSuggestionState to return true (edit suggestion is active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called only for edit API, not completion API
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 1) // Only edit call
+            assert.strictEqual(completionCalls.length, 0) // No completion calls
+            assert.strictEqual(editCalls.length, 1) // One edit call
+        })
+
+        it('should make completion request when edit suggestion is not active', async () => {
+            // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
+            const mockResult = {
+                sessionId: 'test-session',
+                items: [mockInlineCompletionItemOne],
+                partialResultToken: undefined,
+            }
+
+            sendRequestStub.resolves(mockResult)
+
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                mockDocumentEventListener
+            )
+
+            // Verify sendRequest was called for both APIs
+            const cs = sendRequestStub.getCalls()
+            const completionCalls = cs.filter((c) => c.firstArg === completionApi)
+            const editCalls = cs.filter((c) => c.firstArg === editApi)
+
+            assert.strictEqual(cs.length, 2) // Both calls
+            assert.strictEqual(completionCalls.length, 1) // One completion call
+            assert.strictEqual(editCalls.length, 1) // One edit call
         })
     })
 })

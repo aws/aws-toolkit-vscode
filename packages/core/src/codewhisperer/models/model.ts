@@ -18,7 +18,6 @@ import globals from '../../shared/extensionGlobals'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
 import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
-import { TestChatControllerEventEmitters } from '../../amazonqTest/chat/controller/controller'
 import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -43,6 +42,8 @@ interface VsCodeState {
     lastUserModificationTime: number
 
     isFreeTierLimitReached: boolean
+
+    lastManualTriggerTime: number
 }
 
 export const vsCodeState: VsCodeState = {
@@ -53,6 +54,7 @@ export const vsCodeState: VsCodeState = {
     isRecommendationsActive: false,
     lastUserModificationTime: 0,
     isFreeTierLimitReached: false,
+    lastManualTriggerTime: 0,
 }
 
 export interface CodeWhispererConfig {
@@ -372,55 +374,6 @@ export interface CodeLine {
     number: number
 }
 
-/**
- * Unit Test Generation
- */
-enum TestGenStatus {
-    NotStarted,
-    Running,
-    Cancelling,
-}
-// TODO: Refactor model of /scan and /test
-export class TestGenState {
-    // Define a constructor for this class
-    private testGenState: TestGenStatus = TestGenStatus.NotStarted
-
-    protected chatControllers: TestChatControllerEventEmitters | undefined = undefined
-
-    public isNotStarted() {
-        return this.testGenState === TestGenStatus.NotStarted
-    }
-
-    public isRunning() {
-        return this.testGenState === TestGenStatus.Running
-    }
-
-    public isCancelling() {
-        return this.testGenState === TestGenStatus.Cancelling
-    }
-
-    public setToNotStarted() {
-        this.testGenState = TestGenStatus.NotStarted
-    }
-
-    public setToCancelling() {
-        this.testGenState = TestGenStatus.Cancelling
-    }
-
-    public setToRunning() {
-        this.testGenState = TestGenStatus.Running
-    }
-
-    public setChatControllers(controllers: TestChatControllerEventEmitters) {
-        this.chatControllers = controllers
-    }
-    public getChatControllers() {
-        return this.chatControllers
-    }
-}
-
-export const testGenState: TestGenState = new TestGenState()
-
 enum CodeFixStatus {
     NotStarted,
     Running,
@@ -680,7 +633,7 @@ export class ZipManifest {
     dependenciesRoot: string = 'dependencies/'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD', 'IDE']
     noInteractiveMode: boolean = true
     dependencyUpgradeConfigFile?: string = undefined
     compilationsJsonFile: string = 'compilations.json'
@@ -754,6 +707,8 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion | undefined = undefined
 
+    private jdkVersionToPath: Map<JDKVersion, string> = new Map()
+
     private customBuildCommand: string = ''
 
     private sourceDB: DB | undefined = undefined
@@ -775,6 +730,7 @@ export class TransformByQState {
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
+    private jobHistoryPath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -806,6 +762,8 @@ export class TransformByQState {
 
     private intervalId: NodeJS.Timeout | undefined = undefined
 
+    private refreshInProgress: boolean = false
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -828,6 +786,10 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public isRefreshInProgress() {
+        return this.refreshInProgress
     }
 
     public getHasSeenTransforming() {
@@ -874,6 +836,14 @@ export class TransformByQState {
         return this.targetJDKVersion
     }
 
+    public getPathFromJdkVersion(version: JDKVersion | undefined) {
+        if (version) {
+            return this.jdkVersionToPath.get(version)
+        } else {
+            return undefined
+        }
+    }
+
     public getSourceDB() {
         return this.sourceDB
     }
@@ -918,6 +888,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getJobHistoryPath() {
+        return this.jobHistoryPath
+    }
+
     public getResultArchiveFilePath() {
         return this.resultArchiveFilePath
     }
@@ -952,6 +926,12 @@ export class TransformByQState {
 
     public getTargetJavaHome() {
         return this.targetJavaHome
+    }
+
+    public setJdkVersionToPath(jdkVersion: JDKVersion | undefined, path: string) {
+        if (jdkVersion) {
+            this.jdkVersionToPath.set(jdkVersion, path)
+        }
     }
 
     public getChatControllers() {
@@ -1004,6 +984,10 @@ export class TransformByQState {
 
     public setToPartiallySucceeded() {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
+    }
+
+    public setRefreshInProgress(inProgress: boolean) {
+        this.refreshInProgress = inProgress
     }
 
     public setHasSeenTransforming(hasSeen: boolean) {
@@ -1086,6 +1070,10 @@ export class TransformByQState {
         this.summaryFilePath = filePath
     }
 
+    public setJobHistoryPath(filePath: string) {
+        this.jobHistoryPath = filePath
+    }
+
     public setResultArchiveFilePath(filePath: string) {
         this.resultArchiveFilePath = filePath
     }
@@ -1152,6 +1140,7 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.refreshInProgress = false
         this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
@@ -1168,6 +1157,7 @@ export class TransformByQState {
         this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
+        this.jobHistoryPath = ''
     }
 }
 
