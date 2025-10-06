@@ -333,7 +333,7 @@ describe('RecommendationService', () => {
             }
         })
 
-        it('should make completion request when edit suggestion is active', async () => {
+        it('should not make completion request when edit suggestion is active', async () => {
             // Mock EditSuggestionState to return true (edit suggestion is active)
             sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
 
@@ -360,13 +360,15 @@ describe('RecommendationService', () => {
             const completionCalls = cs.filter((c) => c.firstArg === completionApi)
             const editCalls = cs.filter((c) => c.firstArg === editApi)
 
-            assert.strictEqual(cs.length, 2) // Only edit call
-            assert.strictEqual(completionCalls.length, 1) // No completion calls
+            assert.strictEqual(cs.length, 1) // Only edit call
+            assert.strictEqual(completionCalls.length, 0) // No completion calls
             assert.strictEqual(editCalls.length, 1) // One edit call
         })
 
         it('should make completion request when edit suggestion is not active', async () => {
             // Mock EditSuggestionState to return false (no edit suggestion active)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
+
             const mockResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
