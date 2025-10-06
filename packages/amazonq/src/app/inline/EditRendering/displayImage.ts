@@ -136,10 +136,11 @@ export class EditDecorationManager {
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
     ): Promise<void> {
-        await this.clearDecorations(editor)
-
-        await setContext('aws.amazonq.editSuggestionActive' as any, true)
-        EditSuggestionState.setEditSuggestionActive(true)
+        // Clear old decorations but don't reset state (state is already set in displaySvgDecoration)
+        editor.setDecorations(this.imageDecorationType, [])
+        editor.setDecorations(this.removedCodeDecorationType, [])
+        this.currentImageDecoration = undefined
+        this.currentRemovedCodeDecorations = []
 
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -313,8 +314,16 @@ export async function displaySvgDecoration(
 ) {
     const originalCode = editor.document.getText()
 
+    // Set edit state immediately to prevent race condition with completion requests
+    await setContext('aws.amazonq.editSuggestionActive' as any, true)
+    EditSuggestionState.setEditSuggestionActive(true)
+
     // Check if a completion suggestion is currently active - if so, discard edit suggestion
     if (inlineCompletionProvider && (await inlineCompletionProvider.isCompletionActive())) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
@@ -326,6 +335,10 @@ export async function displaySvgDecoration(
 
     const isPatchValid = applyPatch(editor.document.getText(), item.insertText as string)
     if (!isPatchValid) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
         const params = createDiscardTelemetryParams(session, item)
         // TODO: this session is closed on flare side hence discarded is not emitted in flare
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
