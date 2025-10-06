@@ -196,11 +196,6 @@ export async function startLanguageServer(
                     textDocument: {
                         inlineCompletionWithReferences: textDocSection,
                     },
-                    textDocument: {
-                        inlineCompletionWithReferences: {
-                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
-                        },
-                    },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,

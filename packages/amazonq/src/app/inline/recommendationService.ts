@@ -63,13 +63,6 @@ export class RecommendationService {
         )
     }
 
-    /**
-     * Set the recommendation service
-     */
-    public setCursorUpdateRecorder(recorder: ICursorUpdateRecorder): void {
-        this.cursorUpdateRecorder = recorder
-    }
-
     async getAllRecommendations(
         languageClient: LanguageClient,
         document: TextDocument,
@@ -109,7 +102,7 @@ export class RecommendationService {
         if (document.uri.scheme === 'vscode-notebook-cell') {
             request.fileContextOverride = extractFileContextInNotebooks(document, position)
         }
-        const requestStartTime = globals.clock.Date.now()
+        const requestStartTime = Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -238,7 +231,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
+            const firstCompletionDisplayLatency = Date.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
