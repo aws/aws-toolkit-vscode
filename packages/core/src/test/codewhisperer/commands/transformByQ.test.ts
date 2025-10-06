@@ -592,7 +592,7 @@ dependencyManagement:
     })
 
     it(`WHEN validateCustomVersionsFile on .yaml file with missing plugin identifier format THEN fails validation`, function () {
-        const invalidFile = validCustomVersionsFile.replace('plugin.id', '""')
+        const invalidFile = validCustomVersionsFile.replace('plugin.id', '')
         const errorMessage = validateCustomVersionsFile(invalidFile)
         assert.strictEqual(errorMessage, 'Missing `identifier` in plugin')
     })
