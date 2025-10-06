@@ -11,6 +11,7 @@ import {
     ExecutionDetailsContext,
     ApiCallRequestMessage,
     InitResponseMessage,
+    StartExecutionMessage,
 } from '../messageHandlers/types'
 import {
     loadStageMessageHandler,
@@ -39,7 +40,7 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
                 break
             }
             case Command.START_EXECUTION:
-                void startExecutionMessageHandler(context)
+                void startExecutionMessageHandler(message as StartExecutionMessage, context)
                 break
             case Command.EDIT_STATE_MACHINE:
                 void editStateMachineMessageHandler(context)
@@ -85,7 +86,7 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
     }
 }
 
-async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
+async function startExecutionMessageHandler(message: StartExecutionMessage, context: ExecutionDetailsContext) {
     const logger = getLogger('stepfunctions')
     try {
         // Parsing execution ARN to get state machine info
@@ -100,6 +101,7 @@ async function startExecutionMessageHandler(context: ExecutionDetailsContext) {
             arn: stateMachineArn,
             name: stateMachineName,
             region: region,
+            executionInput: message.executionInput,
         })
     } catch (error) {
         logger.error('Start execution failed: %O', error)

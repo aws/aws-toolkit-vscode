@@ -55,11 +55,15 @@ const defaultInitialData = {
     name: '',
     region: '',
     arn: '',
+    executionInput: '',
 }
 
 export default defineComponent({
     async created() {
         this.initialData = (await client.init()) ?? this.initialData
+        if (this.initialData.executionInput) {
+            this.executionInput = this.formatJson(this.initialData.executionInput)
+        }
     },
     data: () => ({
         initialData: defaultInitialData,
@@ -89,7 +93,9 @@ export default defineComponent({
                     break
                 case 'textarea':
                     this.placeholderJson = defaultJsonPlaceholder
-                    this.executionInput = ''
+                    if (!this.initialData.executionInput) {
+                        this.executionInput = ''
+                    }
                     this.fileInputVisible = false
                     break
             }
@@ -104,7 +110,7 @@ export default defineComponent({
                 reader.onload = (event) => {
                     if (event.target) {
                         const result = event.target.result
-                        this.executionInput = result as string
+                        this.executionInput = this.formatJson(result as string)
                     }
                 } // desired file content
                 reader.onerror = (error) => {
@@ -113,6 +119,15 @@ export default defineComponent({
                 reader.readAsText(inputFile.files[0])
                 this.selectedFile = inputFile.files[0].name
                 this.textAreaVisible = true
+            }
+        },
+        formatJson: function (jsonString: string): string {
+            try {
+                const parsed = JSON.parse(jsonString)
+                return JSON.stringify(parsed, null, 2)
+            } catch (error) {
+                console.warn('Failed to format JSON:', error)
+                return jsonString
             }
         },
         sendInput: function () {

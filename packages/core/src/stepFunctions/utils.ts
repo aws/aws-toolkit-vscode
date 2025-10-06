@@ -177,19 +177,21 @@ export const openWorkflowStudioWithDefinition = async (
  * Shows the Execute State Machine webview with the provided state machine data
  * @param extensionContext The extension context
  * @param outputChannel The output channel for logging
- * @param stateMachineData Object containing arn, name, and region of the state machine
+ * @param stateMachineData Object containing arn, name, region, and optional executionInput of the state machine
  * @returns The webview instance
  */
 export const showExecuteStateMachineWebview = async (stateMachineData: {
     arn: string
     name: string
     region: string
+    executionInput?: string
 }) => {
     const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
     const wv = new Panel(globals.context, globals.outputChannel, {
         arn: stateMachineData.arn,
         name: stateMachineData.name,
         region: stateMachineData.region,
+        executionInput: stateMachineData.executionInput,
     })
 
     await wv.show({
