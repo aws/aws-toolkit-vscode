@@ -587,7 +587,7 @@ dependencyManagement:
         const errorMessage = validateCustomVersionsFile(invalidFile)
         assert.strictEqual(
             errorMessage,
-            `Invalid identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
+            `Invalid dependency identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
         )
     })
 
