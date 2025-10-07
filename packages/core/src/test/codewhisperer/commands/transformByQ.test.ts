@@ -65,7 +65,7 @@ dependencyManagement:
       targetVersion: "3.0.0"
       originType: "THIRD_PARTY"
   plugins:
-    - identifier: "com.example:plugin"
+    - identifier: "plugin.id"
       targetVersion: "1.2.0"
       versionProperty: "plugin.version"  # Optional
       originType: "FIRST_PARTY" # or "THIRD_PARTY"`
@@ -582,13 +582,19 @@ dependencyManagement:
         assert.strictEqual(errorMessage, `Missing required key: \`dependencyManagement\``)
     })
 
-    it(`WHEN validateCustomVersionsFile on .yaml file with invalid identifier format THEN fails validation`, function () {
+    it(`WHEN validateCustomVersionsFile on .yaml file with invalid dependency identifier format THEN fails validation`, function () {
         const invalidFile = validCustomVersionsFile.replace('com.example:library1', 'com.example-library1')
         const errorMessage = validateCustomVersionsFile(invalidFile)
         assert.strictEqual(
             errorMessage,
-            `Invalid identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
+            `Invalid dependency identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
         )
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing plugin identifier format THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('plugin.id', '')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, 'Missing `identifier` in plugin')
     })
 
     it(`WHEN validateCustomVersionsFile on .yaml file with invalid originType THEN fails validation`, function () {
