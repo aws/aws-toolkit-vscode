@@ -246,12 +246,12 @@ export class RecommendationService {
             if (result.partialResultToken) {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    getLogger().info(
-                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                    )
-                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
-                        languageClient.warn(`Error when getting suggestions: ${error}`)
-                    })
+                    // getLogger().info(
+                    //     'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
+                    // )
+                    // this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
+                    //     languageClient.warn(`Error when getting suggestions: ${error}`)
+                    // })
                 } else {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
@@ -283,7 +283,7 @@ export class RecommendationService {
         }
     }
 
-    private async processRemainingRequests(
+    async processRemainingRequests(
         languageClient: LanguageClient,
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,
