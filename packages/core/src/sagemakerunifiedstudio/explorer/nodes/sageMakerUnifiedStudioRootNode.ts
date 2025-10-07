@@ -16,9 +16,9 @@ import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuth
 import { SmusErrorCodes } from '../../shared/smusUtils'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
-import { recordAuthTelemetry } from '../../shared/telemetry'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
 import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
+import { isSmusSsoConnection } from '../../auth/model'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -179,9 +179,14 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             const hasExpiredConnection = activeConnection && !isConnectionValid
 
             if (hasExpiredConnection) {
-                this.logger.debug('SMUS Root Node: Connection is expired, showing reauthentication prompt')
-                // Show reauthentication prompt to user
-                void this.authProvider.showReauthenticationPrompt(activeConnection as any)
+                this.logger.debug('SMUS Root Node: Connection is expired')
+                // Only show reauthentication prompt for SSO connections, not IAM connections
+                if (isSmusSsoConnection(activeConnection)) {
+                    this.logger.debug('SMUS Root Node: Showing reauthentication prompt for SSO connection')
+                    void this.authProvider.showReauthenticationPrompt(activeConnection)
+                } else {
+                    this.logger.debug('SMUS Root Node: Skipping reauthentication prompt for non-SSO connection')
+                }
                 return true
             }
             return false
@@ -264,7 +269,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
                         context
                     )
 
-                    if (ssoResult === 'BACK') {
+                    if (ssoResult.status === 'BACK') {
                         // User wants to go back to authentication method selection
                         selectedMethod = undefined // Reset to show method selection again
                         continue // Restart the loop
@@ -279,10 +284,50 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
                         context
                     )
 
-                    if (iamResult === 'BACK') {
+                    if (iamResult.status === 'BACK') {
                         // User wants to go back to authentication method selection
                         selectedMethod = undefined // Reset to show method selection again
                         continue // Restart the loop
+                    }
+
+                    if (iamResult.status === 'EDITING') {
+                        // User is editing credentials, show helpful message with option to return to profile selection
+                        const action = await vscode.window.showInformationMessage(
+                            'Complete your AWS credential setup and try again, or return to profile selection.',
+                            'Select Profile',
+                            'Done'
+                        )
+
+                        if (action === 'Select Profile') {
+                            // User wants to return to profile selection, continue the loop
+                            continue
+                        } else {
+                            // User chose "Done" or dismissed, exit the authentication flow
+                            throw new ToolkitError('User cancelled credential setup', {
+                                code: SmusErrorCodes.UserCancelled,
+                                cancelled: true,
+                            })
+                        }
+                    }
+
+                    if (iamResult.status === 'INVALID_PROFILE') {
+                        // Profile validation failed, show error with option to select another profile
+                        const action = await vscode.window.showErrorMessage(
+                            `${iamResult.error}`,
+                            'Select Another Profile',
+                            'Cancel'
+                        )
+
+                        if (action === 'Select Another Profile') {
+                            // User wants to select a different profile, continue the loop
+                            continue
+                        } else {
+                            // User chose "Cancel" or dismissed, exit the authentication flow
+                            throw new ToolkitError('User cancelled profile selection', {
+                                code: SmusErrorCodes.UserCancelled,
+                                cancelled: true,
+                            })
+                        }
                     }
 
                     authCompleted = true
@@ -291,9 +336,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
         } catch (err) {
             const isUserCancelled = err instanceof ToolkitError && err.code === SmusErrorCodes.UserCancelled
             if (!isUserCancelled) {
-                void vscode.window.showErrorMessage(
-                    `SageMaker Unified Studio: Failed to initiate login: ${(err as Error).message}`
-                )
+                void vscode.window.showErrorMessage(`Failed to initiate login: ${(err as Error).message}`)
                 logger.error('Failed to initiate login: %s', (err as Error).message)
             }
             throw err
@@ -323,16 +366,11 @@ export const smusSignOutCommand = Commands.declare(
 
                 // Get connection details for logging
                 const activeConnection = authProvider.activeConnection
-                const domainId = activeConnection?.domainId
-                const region = activeConnection?.ssoRegion
+                const domainId = authProvider.getDomainId?.() || 'Unknown'
 
-                // Show status message
-                vscode.window.setStatusBarMessage('Signing out from SageMaker Unified Studio...', 5000)
-                await recordAuthTelemetry(span, authProvider, domainId, region)
-
-                // Delete the connection (this will also invalidate tokens and clear cache)
+                // Sign out from SMUS (behavior depends on connection type)
                 if (activeConnection) {
-                    await authProvider.secondaryAuth.deleteConnection()
+                    await authProvider.signOut()
                     logger.info(`Signed out from SageMaker Unified Studio: ${domainId}`)
 
                     // Clear connection-specific preferences on sign out (but keep auth method preference)
@@ -344,9 +382,6 @@ export const smusSignOutCommand = Commands.declare(
 
                 // Show success message
                 void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
-
-                // Clear the status bar message
-                vscode.window.setStatusBarMessage('Signed out from SageMaker Unified Studio', 3000)
 
                 // Refresh the tree view to show the sign-in state
                 try {

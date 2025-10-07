@@ -22,6 +22,18 @@ import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthen
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 /**
+ * Represents a DataZone domain
+ */
+export interface DataZoneDomain {
+    id: string
+    name: string
+    description?: string
+    status?: string
+    createdAt?: Date
+    updatedAt?: Date
+}
+
+/**
  * Represents a DataZone project
  */
 export interface DataZoneProject {
@@ -163,8 +175,8 @@ export class DataZoneClient {
             throw new Error('SMUS authentication provider is not connected')
         }
 
-        const activeConnection = authProvider.activeConnection!
-        const instanceKey = `${activeConnection.domainId}:${activeConnection.ssoRegion}`
+        const region = authProvider.getDomainRegion()
+        const instanceKey = `${authProvider.getDomainId()}:${region}`
 
         logger.debug(`DataZoneClient: Getting instance for domain: ${instanceKey}`)
 
@@ -177,7 +189,7 @@ export class DataZoneClient {
 
         // Create new instance
         logger.debug('DataZoneClient: Creating new instance')
-        const instance = new DataZoneClient(authProvider, activeConnection.domainId, activeConnection.ssoRegion)
+        const instance = new DataZoneClient(authProvider, authProvider.getDomainId(), region)
         DataZoneClient.instances.set(instanceKey, instance)
 
         // Set up cleanup when connection changes
@@ -188,7 +200,7 @@ export class DataZoneClient {
             disposable.dispose()
         })
 
-        logger.info(`DataZoneClient: Created instance for domain ${activeConnection.domainId}`)
+        logger.info(`DataZoneClient: Created instance for domain ${authProvider.getDomainId()}`)
         return instance
     }
 

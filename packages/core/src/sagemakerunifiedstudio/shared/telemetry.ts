@@ -51,7 +51,7 @@ export async function recordSpaceTelemetry(
         span.record({
             smusSpaceKey: node.resource.DomainSpaceKey,
             smusDomainRegion: node.resource.regionCode,
-            smusDomainId: parent?.getAuthProvider()?.activeConnection?.domainId,
+            smusDomainId: parent?.getAuthProvider()?.getDomainId(),
             smusDomainAccountId: accountId,
             smusProjectId: projectId,
             smusProjectAccountId: projectAccountId,

@@ -4,229 +4,247 @@
  */
 
 import assert from 'assert'
+import { Credentials } from '@aws-sdk/types'
 import {
-    createSmusProfile,
+    SmusSsoConnection,
+    SmusIamConnection,
+    isSmusIamConnection,
+    isSmusSsoConnection,
     isValidSmusConnection,
+    createSmusProfile,
     scopeSmus,
-    SmusConnection,
 } from '../../../sagemakerunifiedstudio/auth/model'
-import { SsoConnection } from '../../../auth/connection'
 
-describe('SMUS Auth Model', function () {
-    const testDomainUrl = 'https://dzd_domainId.sagemaker.us-east-2.on.aws'
-    const testDomainId = 'dzd_domainId'
-    const testStartUrl = 'https://identitycenter.amazonaws.com/ssoins-testInstanceId'
-    const testRegion = 'us-east-2'
+describe('SMUS Connection Model', function () {
+    const mockCredentials: Credentials = {
+        accessKeyId: 'test-access-key',
+        secretAccessKey: 'test-secret-key',
+    }
 
-    describe('scopeSmus', function () {
-        it('should have correct scope value', function () {
-            assert.strictEqual(scopeSmus, 'datazone:domain:access')
+    const mockCredentialsProvider = async (): Promise<Credentials> => mockCredentials
+
+    const mockGetToken = async () => ({
+        accessToken: 'mock-access-token',
+        expiresAt: new Date(Date.now() + 3600000), // 1 hour from now
+    })
+
+    const mockGetRegistration = async () => ({
+        clientId: 'mock-client-id',
+        clientSecret: 'mock-client-secret',
+        expiresAt: new Date(Date.now() + 86400000), // 24 hours from now
+        startUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+    })
+
+    describe('isSmusIamConnection', function () {
+        it('should return true for valid SMUS IAM connection', function () {
+            const connection: SmusIamConnection = {
+                type: 'iam',
+                profileName: 'test-profile',
+                region: 'us-east-1',
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test IAM Connection',
+                endpointUrl: undefined,
+                getCredentials: mockCredentialsProvider,
+            }
+
+            assert.strictEqual(isSmusIamConnection(connection), true)
+        })
+
+        it('should return false for SSO connection', function () {
+            const connection: SmusSsoConnection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: [scopeSmus],
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+                getToken: mockGetToken,
+                getRegistration: mockGetRegistration,
+            }
+
+            assert.strictEqual(isSmusIamConnection(connection), false)
+        })
+
+        it('should return false for connection missing required IAM properties', function () {
+            const connection = {
+                type: 'iam',
+                profileName: 'test-profile',
+                // Missing region, domainUrl, domainId, getCredentials
+                id: 'test-id',
+                label: 'Test IAM Connection',
+                endpointUrl: undefined,
+            }
+
+            assert.strictEqual(isSmusIamConnection(connection as any), false)
+        })
+
+        it('should return false for undefined connection', function () {
+            assert.strictEqual(isSmusIamConnection(undefined), false)
+        })
+
+        it('should return false for connection with wrong type', function () {
+            const connection = {
+                type: 'other',
+                profileName: 'test-profile',
+                region: 'us-east-1',
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test Connection',
+            }
+
+            assert.strictEqual(isSmusIamConnection(connection as any), false)
         })
     })
 
-    describe('createSmusProfile', function () {
-        it('should create profile with default scopes', function () {
-            const profile = createSmusProfile(testDomainUrl, testDomainId, testStartUrl, testRegion)
+    describe('isSmusSsoConnection', function () {
+        it('should return true for valid SMUS SSO connection', function () {
+            const connection: SmusSsoConnection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: [scopeSmus],
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+                getToken: mockGetToken,
+                getRegistration: mockGetRegistration,
+            }
 
-            assert.strictEqual(profile.domainUrl, testDomainUrl)
-            assert.strictEqual(profile.domainId, testDomainId)
-            assert.strictEqual(profile.startUrl, testStartUrl)
-            assert.strictEqual(profile.ssoRegion, testRegion)
-            assert.strictEqual(profile.type, 'sso')
-            assert.deepStrictEqual(profile.scopes, [scopeSmus])
+            assert.strictEqual(isSmusSsoConnection(connection), true)
         })
 
-        it('should create profile with custom scopes', function () {
-            const customScopes = ['custom:scope', 'another:scope']
-            const profile = createSmusProfile(testDomainUrl, testDomainId, testStartUrl, testRegion, customScopes)
+        it('should return false for IAM connection', function () {
+            const connection: SmusIamConnection = {
+                type: 'iam',
+                profileName: 'test-profile',
+                region: 'us-east-1',
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test IAM Connection',
+                endpointUrl: undefined,
+                getCredentials: mockCredentialsProvider,
+            }
 
-            assert.strictEqual(profile.domainUrl, testDomainUrl)
-            assert.strictEqual(profile.domainId, testDomainId)
-            assert.strictEqual(profile.startUrl, testStartUrl)
-            assert.strictEqual(profile.ssoRegion, testRegion)
-            assert.strictEqual(profile.type, 'sso')
-            assert.deepStrictEqual(profile.scopes, customScopes)
+            assert.strictEqual(isSmusSsoConnection(connection), false)
         })
 
-        it('should create profile with all required properties', function () {
-            const profile = createSmusProfile(testDomainUrl, testDomainId, testStartUrl, testRegion)
+        it('should return false for SSO connection without SMUS scope', function () {
+            const connection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: ['other:scope'],
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+            }
 
-            // Check SsoProfile properties
-            assert.strictEqual(profile.type, 'sso')
-            assert.strictEqual(profile.startUrl, testStartUrl)
-            assert.strictEqual(profile.ssoRegion, testRegion)
-            assert.ok(Array.isArray(profile.scopes))
+            assert.strictEqual(isSmusSsoConnection(connection as any), false)
+        })
 
-            // Check SmusProfile properties
-            assert.strictEqual(profile.domainUrl, testDomainUrl)
-            assert.strictEqual(profile.domainId, testDomainId)
+        it('should return false for SSO connection missing SMUS properties', function () {
+            const connection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: [scopeSmus],
+                // Missing domainUrl and domainId
+                id: 'test-id',
+                label: 'Test SSO Connection',
+            }
+
+            assert.strictEqual(isSmusSsoConnection(connection as any), false)
+        })
+
+        it('should return false for undefined connection', function () {
+            assert.strictEqual(isSmusSsoConnection(undefined), false)
         })
     })
 
     describe('isValidSmusConnection', function () {
-        it('should return true for valid SMUS connection', function () {
-            const validConnection = {
-                id: 'test-connection-id',
+        it('should return true for valid SMUS SSO connection', function () {
+            const connection: SmusSsoConnection = {
                 type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
                 scopes: [scopeSmus],
-                label: 'Test SMUS Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            } as SmusConnection
-
-            assert.strictEqual(isValidSmusConnection(validConnection), true)
-        })
-
-        it('should return false for connection without SMUS scope', function () {
-            const connectionWithoutScope = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: ['sso:account:access'],
-                label: 'Test Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            } as any
-
-            assert.strictEqual(isValidSmusConnection(connectionWithoutScope), false)
-        })
-
-        it('should return false for connection without SMUS properties', function () {
-            const connectionWithoutSmusProps = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: [scopeSmus],
-                label: 'Test Connection',
-            } as SsoConnection
-
-            assert.strictEqual(isValidSmusConnection(connectionWithoutSmusProps), false)
-        })
-
-        it('should return false for non-SSO connection', function () {
-            const nonSsoConnection = {
-                id: 'test-connection-id',
-                type: 'iam',
-                label: 'Test IAM Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-                scopes: [scopeSmus],
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+                getToken: mockGetToken,
+                getRegistration: mockGetRegistration,
             }
 
-            assert.strictEqual(isValidSmusConnection(nonSsoConnection), false)
+            assert.strictEqual(isValidSmusConnection(connection), true)
+        })
+
+        it('should return true for valid SMUS IAM connection', function () {
+            const connection: SmusIamConnection = {
+                type: 'iam',
+                profileName: 'test-profile',
+                region: 'us-east-1',
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test IAM Connection',
+                endpointUrl: undefined,
+                getCredentials: mockCredentialsProvider,
+            }
+
+            assert.strictEqual(isValidSmusConnection(connection), true)
+        })
+
+        it('should return false for invalid connection', function () {
+            const connection = {
+                type: 'other',
+                id: 'test-id',
+                label: 'Test Connection',
+            }
+
+            assert.strictEqual(isValidSmusConnection(connection), false)
         })
 
         it('should return false for undefined connection', function () {
             assert.strictEqual(isValidSmusConnection(undefined), false)
         })
-
-        it('should return false for null connection', function () {
-            assert.strictEqual(isValidSmusConnection(undefined), false)
-        })
-
-        it('should return false for connection without scopes', function () {
-            const connectionWithoutScopes = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                label: 'Test Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            }
-
-            assert.strictEqual(isValidSmusConnection(connectionWithoutScopes), false)
-        })
-
-        it('should return false for connection with empty scopes array', function () {
-            const connectionWithEmptyScopes = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: [],
-                label: 'Test Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            }
-
-            assert.strictEqual(isValidSmusConnection(connectionWithEmptyScopes), false)
-        })
-
-        it('should return true for connection with SMUS scope among other scopes', function () {
-            const connectionWithMultipleScopes = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: ['sso:account:access', scopeSmus, 'other:scope'],
-                label: 'Test SMUS Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            } as SmusConnection
-
-            assert.strictEqual(isValidSmusConnection(connectionWithMultipleScopes), true)
-        })
-
-        it('should return false for connection missing domainUrl', function () {
-            const connectionMissingDomainUrl = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: [scopeSmus],
-                label: 'Test Connection',
-                domainId: testDomainId,
-            }
-
-            assert.strictEqual(isValidSmusConnection(connectionMissingDomainUrl), false)
-        })
-
-        it('should return false for connection missing domainId', function () {
-            const connectionMissingDomainId = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: [scopeSmus],
-                label: 'Test Connection',
-                domainUrl: testDomainUrl,
-            }
-
-            assert.strictEqual(isValidSmusConnection(connectionMissingDomainId), false)
-        })
     })
 
-    describe('SmusConnection interface', function () {
-        it('should extend both SmusProfile and SsoConnection', function () {
-            const connection = {
-                id: 'test-connection-id',
-                type: 'sso',
-                startUrl: testStartUrl,
-                ssoRegion: testRegion,
-                scopes: [scopeSmus],
-                label: 'Test SMUS Connection',
-                domainUrl: testDomainUrl,
-                domainId: testDomainId,
-            } as SmusConnection
+    describe('createSmusProfile', function () {
+        it('should create a valid SMUS profile with default scope', function () {
+            const domainUrl = 'https://test.sagemaker.us-east-1.on.aws/'
+            const domainId = 'test-domain-id'
+            const startUrl = 'https://test.awsapps.com/start'
+            const region = 'us-east-1'
 
-            // Should have Connection properties
-            assert.strictEqual(connection.id, 'test-connection-id')
-            assert.strictEqual(connection.label, 'Test SMUS Connection')
+            const profile = createSmusProfile(domainUrl, domainId, startUrl, region)
 
-            // Should have SsoConnection properties
-            assert.strictEqual(connection.type, 'sso')
-            assert.strictEqual(connection.startUrl, testStartUrl)
-            assert.strictEqual(connection.ssoRegion, testRegion)
-            assert.ok(Array.isArray(connection.scopes))
+            assert.strictEqual(profile.domainUrl, domainUrl)
+            assert.strictEqual(profile.domainId, domainId)
+            assert.strictEqual(profile.startUrl, startUrl)
+            assert.strictEqual(profile.ssoRegion, region)
+            assert.strictEqual(profile.type, 'sso')
+            assert.deepStrictEqual(profile.scopes, [scopeSmus])
+        })
 
-            // Should have SmusProfile properties
-            assert.strictEqual(connection.domainUrl, testDomainUrl)
-            assert.strictEqual(connection.domainId, testDomainId)
+        it('should create a valid SMUS profile with custom scopes', function () {
+            const domainUrl = 'https://test.sagemaker.us-east-1.on.aws/'
+            const domainId = 'test-domain-id'
+            const startUrl = 'https://test.awsapps.com/start'
+            const region = 'us-east-1'
+            const customScopes = ['custom:scope1', 'custom:scope2']
+
+            const profile = createSmusProfile(domainUrl, domainId, startUrl, region, customScopes)
+
+            assert.deepStrictEqual(profile.scopes, customScopes)
         })
     })
 })

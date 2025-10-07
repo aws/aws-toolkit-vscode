@@ -194,7 +194,13 @@ describe('SmusRootNode', function () {
             const mockAuthProvider = {
                 isConnected: sinon.stub().returns(true),
                 isConnectionValid: sinon.stub().returns(false),
-                activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+                activeConnection: {
+                    type: 'sso',
+                    domainId: testDomainId,
+                    ssoRegion: 'us-west-2',
+                    domainUrl: 'https://test-domain.datazone.aws.amazon.com',
+                    scopes: ['datazone:domain:access'],
+                },
                 onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
                 showReauthenticationPrompt: sinon.stub(),
             } as any

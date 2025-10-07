@@ -38,9 +38,8 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         let region = 'Unknown'
 
         if (isConnected && this.authProvider.activeConnection) {
-            const conn = this.authProvider.activeConnection
-            domainId = conn.domainId || 'Unknown'
-            region = conn.ssoRegion || 'Unknown'
+            domainId = this.authProvider.getDomainId() || 'Unknown'
+            region = this.authProvider.getDomainRegion() || 'Unknown'
         }
 
         // Create display based on connection status

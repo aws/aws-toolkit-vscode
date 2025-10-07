@@ -88,6 +88,10 @@ describe('SmusAuthenticationProvider', function () {
             get isConnectionExpired() {
                 return mockSecondaryAuthState.isConnectionExpired
             },
+            state: {
+                get: sinon.stub().returns({}),
+                update: sinon.stub().resolves(),
+            },
             onDidChangeActiveConnection: sinon.stub().returns({ dispose: sinon.stub() }),
             restoreConnection: sinon.stub().resolves(),
             useNewConnection: sinon.stub().resolves(mockSmusConnection),
@@ -108,7 +112,7 @@ describe('SmusAuthenticationProvider', function () {
         executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
         sinon.stub(require('../../../auth/secondaryAuth'), 'getSecondaryAuth').returns(mockSecondaryAuth)
 
-        smusAuthProvider = new SmusAuthenticationProvider(mockAuth, mockSecondaryAuth)
+        smusAuthProvider = new SmusAuthenticationProvider(mockAuth)
 
         // Reset the executeCommand stub for clean state
         executeCommandStub.resetHistory()
@@ -755,6 +759,459 @@ describe('SmusAuthenticationProvider', function () {
 
                 assert.ok(!smusAuthProvider['cachedProjectAccountIds'].has(testProjectId))
             })
+        })
+    })
+
+    describe('signOut', function () {
+        let mockState: any
+
+        beforeEach(function () {
+            mockState = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            mockSecondaryAuth.state = mockState
+            mockSecondaryAuth.forgetConnection = sinon.stub().resolves()
+        })
+
+        it('should do nothing when no active connection exists', async function () {
+            mockSecondaryAuthState.activeConnection = undefined
+
+            await smusAuthProvider.signOut()
+
+            assert.ok(mockState.get.notCalled)
+            assert.ok(mockState.update.notCalled)
+            assert.ok(mockSecondaryAuth.deleteConnection.notCalled)
+            assert.ok(mockSecondaryAuth.forgetConnection.notCalled)
+        })
+
+        it('should delete SSO connection and clear metadata', async function () {
+            const ssoConnection = {
+                ...mockSmusConnection,
+                type: 'sso' as const,
+                id: 'sso-connection-id',
+            }
+            mockSecondaryAuthState.activeConnection = ssoConnection
+
+            const smusConnections = {
+                'sso-connection-id': {
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+
+            await smusAuthProvider.signOut()
+
+            assert.ok(mockState.get.calledWith('smus.connections'))
+            assert.ok(mockState.update.calledWith('smus.connections', {}))
+            assert.ok(mockSecondaryAuth.deleteConnection.called)
+            assert.ok(mockSecondaryAuth.forgetConnection.notCalled)
+        })
+
+        it('should forget IAM connection without deleting and clear metadata', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            const smusConnections = {
+                'profile:test-profile': {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+
+            await smusAuthProvider.signOut()
+
+            assert.ok(mockState.get.calledWith('smus.connections'))
+            assert.ok(mockState.update.calledWith('smus.connections', {}))
+            assert.ok(mockSecondaryAuth.forgetConnection.called)
+            assert.ok(mockSecondaryAuth.deleteConnection.notCalled)
+        })
+
+        it('should handle mock connection in SMUS space environment', async function () {
+            const mockConnection = {
+                id: 'mock-connection-id',
+                // No 'type' property - simulates mock connection
+            }
+            mockSecondaryAuthState.activeConnection = mockConnection as any
+
+            const smusConnections = {
+                'mock-connection-id': {
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+
+            await smusAuthProvider.signOut()
+
+            assert.ok(mockState.get.calledWith('smus.connections'))
+            assert.ok(mockState.update.calledWith('smus.connections', {}))
+            assert.ok(mockSecondaryAuth.deleteConnection.notCalled)
+            assert.ok(mockSecondaryAuth.forgetConnection.notCalled)
+        })
+
+        it('should handle missing metadata gracefully', async function () {
+            const ssoConnection = {
+                ...mockSmusConnection,
+                type: 'sso' as const,
+                id: 'sso-connection-id',
+            }
+            mockSecondaryAuthState.activeConnection = ssoConnection
+
+            mockState.get.withArgs('smus.connections').returns({})
+
+            await smusAuthProvider.signOut()
+
+            assert.ok(mockState.get.calledWith('smus.connections'))
+            // When there's no metadata to delete, update should not be called
+            assert.ok(mockState.update.notCalled)
+            assert.ok(mockSecondaryAuth.deleteConnection.called)
+        })
+
+        it('should throw ToolkitError when deleteConnection fails', async function () {
+            const ssoConnection = {
+                ...mockSmusConnection,
+                type: 'sso' as const,
+                id: 'sso-connection-id',
+            }
+            mockSecondaryAuthState.activeConnection = ssoConnection
+
+            mockState.get.withArgs('smus.connections').returns({})
+            mockSecondaryAuth.deleteConnection.rejects(new Error('Delete failed'))
+
+            await assert.rejects(
+                () => smusAuthProvider.signOut(),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'SignOutFailed' &&
+                        err.message.includes('Failed to sign out from SageMaker Unified Studio')
+                    )
+                }
+            )
+        })
+
+        it('should throw ToolkitError when forgetConnection fails', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            mockState.get.withArgs('smus.connections').returns({})
+            mockSecondaryAuth.forgetConnection.rejects(new Error('Forget failed'))
+
+            await assert.rejects(
+                () => smusAuthProvider.signOut(),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'SignOutFailed' &&
+                        err.message.includes('Failed to sign out from SageMaker Unified Studio')
+                    )
+                }
+            )
+        })
+    })
+
+    describe('connectWithIamProfile', function () {
+        let mockState: any
+        const testProfileName = 'test-profile'
+        const testIamConnection = {
+            id: 'profile:test-profile',
+            type: 'iam' as const,
+            label: 'Test IAM Profile',
+        }
+
+        beforeEach(function () {
+            mockState = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            mockSecondaryAuth.state = mockState
+            mockAuth.getConnection = sinon.stub()
+            mockAuth.refreshConnectionState = sinon.stub().resolves()
+        })
+
+        it('should connect with existing IAM profile and store metadata', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+            mockState.get.withArgs('smus.connections').returns({})
+
+            const result = await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
+
+            assert.strictEqual(result.id, testIamConnection.id)
+            assert.strictEqual(result.type, 'iam')
+            assert.strictEqual(result.profileName, testProfileName)
+            assert.strictEqual(result.region, testRegion)
+            assert.strictEqual(result.domainUrl, testDomainUrl)
+            assert.strictEqual(result.domainId, testDomainId)
+
+            assert.ok(mockAuth.getConnection.calledWith({ id: `profile:${testProfileName}` }))
+            assert.ok(mockSecondaryAuth.useNewConnection.calledWith(testIamConnection))
+            assert.ok(mockAuth.refreshConnectionState.calledWith(testIamConnection))
+            assert.ok(
+                mockState.update.calledWith('smus.connections', {
+                    [testIamConnection.id]: {
+                        profileName: testProfileName,
+                        region: testRegion,
+                        domainUrl: testDomainUrl,
+                        domainId: testDomainId,
+                        isExpressDomain: false,
+                    },
+                })
+            )
+        })
+
+        it('should trigger project selection after successful connection', async function () {
+            isInSmusSpaceEnvironmentStub.returns(false)
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+            mockState.get.withArgs('smus.connections').returns({})
+
+            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
+
+            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
+        })
+
+        it('should not trigger project selection in SMUS space environment', async function () {
+            isInSmusSpaceEnvironmentStub.returns(true)
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+            mockState.get.withArgs('smus.connections').returns({})
+
+            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
+
+            assert.ok(executeCommandStub.notCalled)
+        })
+
+        it('should merge with existing SMUS connections metadata', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+
+            const existingConnections = {
+                'other-connection-id': {
+                    domainUrl: 'https://other-domain.sagemaker.us-west-2.on.aws',
+                    domainId: 'other-domain-id',
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(existingConnections)
+
+            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
+
+            assert.ok(
+                mockState.update.calledWith('smus.connections', {
+                    'other-connection-id': existingConnections['other-connection-id'],
+                    [testIamConnection.id]: {
+                        profileName: testProfileName,
+                        region: testRegion,
+                        domainUrl: testDomainUrl,
+                        domainId: testDomainId,
+                        isExpressDomain: false,
+                    },
+                })
+            )
+        })
+
+        it('should throw error for invalid domain URL', async function () {
+            extractDomainInfoStub.returns({ domainId: undefined, region: testRegion })
+
+            await assert.rejects(
+                () => smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, 'invalid-url'),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'FailedToConnect' &&
+                        err.message.includes('Failed to connect to SageMaker Unified Studio with IAM profile')
+                    )
+                }
+            )
+
+            assert.ok(mockAuth.getConnection.notCalled)
+            assert.ok(mockSecondaryAuth.useNewConnection.notCalled)
+        })
+
+        it('should throw error when IAM connection not found', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(undefined)
+
+            await assert.rejects(
+                () => smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'FailedToConnect' &&
+                        err.message.includes('Failed to connect to SageMaker Unified Studio with IAM profile') &&
+                        (err.cause as any)?.code === 'ConnectionNotFound'
+                    )
+                }
+            )
+
+            assert.ok(mockSecondaryAuth.useNewConnection.notCalled)
+        })
+
+        it('should throw error when connection is not IAM type', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            const nonIamConnection = {
+                id: 'profile:test-profile',
+                type: 'sso' as const,
+                label: 'Test SSO Connection',
+            }
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(nonIamConnection)
+
+            await assert.rejects(
+                () => smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'FailedToConnect' &&
+                        err.message.includes('Failed to connect to SageMaker Unified Studio with IAM profile')
+                    )
+                }
+            )
+        })
+
+        it('should handle useNewConnection failure', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+            mockState.get.withArgs('smus.connections').returns({})
+            mockSecondaryAuth.useNewConnection.rejects(new Error('Failed to use connection'))
+
+            await assert.rejects(
+                () => smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'FailedToConnect' &&
+                        err.message.includes('Failed to connect to SageMaker Unified Studio with IAM profile')
+                    )
+                }
+            )
+        })
+
+        it('should handle refreshConnectionState failure', async function () {
+            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
+            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
+            mockState.get.withArgs('smus.connections').returns({})
+            mockAuth.refreshConnectionState.rejects(new Error('Failed to refresh state'))
+
+            await assert.rejects(
+                () => smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl),
+                (err: ToolkitError) => {
+                    return (
+                        err.code === 'FailedToConnect' &&
+                        err.message.includes('Failed to connect to SageMaker Unified Studio with IAM profile')
+                    )
+                }
+            )
+        })
+    })
+
+    describe('activeConnection with IAM metadata', function () {
+        let mockState: any
+
+        beforeEach(function () {
+            mockState = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            mockSecondaryAuth.state = mockState
+        })
+
+        it('should return IAM connection with SMUS metadata when available', function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            const smusConnections = {
+                'profile:test-profile': {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+
+            const result = smusAuthProvider.activeConnection
+
+            assert.strictEqual(result?.id, iamConnection.id)
+            assert.strictEqual((result as any)?.type, 'iam')
+            assert.strictEqual((result as any).profileName, 'test-profile')
+            assert.strictEqual((result as any).region, testRegion)
+            assert.strictEqual((result as any).domainUrl, testDomainUrl)
+            assert.strictEqual((result as any).domainId, testDomainId)
+        })
+
+        it('should return SSO connection with SMUS metadata when available', function () {
+            const ssoConnection = {
+                ...mockSmusConnection,
+                type: 'sso' as const,
+            }
+            mockSecondaryAuthState.activeConnection = ssoConnection
+
+            const smusConnections = {
+                [ssoConnection.id]: {
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+
+            const result = smusAuthProvider.activeConnection
+
+            assert.strictEqual(result?.id, ssoConnection.id)
+            assert.strictEqual((result as any)?.type, 'sso')
+            assert.strictEqual((result as any)?.domainUrl, testDomainUrl)
+            assert.strictEqual((result as any)?.domainId, testDomainId)
+        })
+
+        it('should return base connection when no metadata available', function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            mockState.get.withArgs('smus.connections').returns({})
+
+            const result = smusAuthProvider.activeConnection
+
+            assert.strictEqual(result?.id, iamConnection.id)
+            assert.strictEqual((result as any)?.type, 'iam')
+            assert.strictEqual((result as any).profileName, undefined)
+            assert.strictEqual((result as any).domainUrl, undefined)
+        })
+
+        it('should return undefined when no active connection', function () {
+            mockSecondaryAuthState.activeConnection = undefined
+
+            const result = smusAuthProvider.activeConnection
+
+            assert.strictEqual(result, undefined)
+        })
+
+        it('should handle missing smus.connections state gracefully', function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            mockState.get.withArgs('smus.connections').returns(undefined)
+
+            const result = smusAuthProvider.activeConnection
+
+            assert.strictEqual(result?.id, iamConnection.id)
+            assert.strictEqual((result as any)?.type, 'iam')
         })
     })
 })

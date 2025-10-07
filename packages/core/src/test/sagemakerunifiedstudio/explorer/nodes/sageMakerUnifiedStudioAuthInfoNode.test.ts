@@ -8,12 +8,12 @@ import sinon from 'sinon'
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
-import { SmusConnection } from '../../../../sagemakerunifiedstudio/auth/model'
+import { SmusConnection, SmusSsoConnection } from '../../../../sagemakerunifiedstudio/auth/model'
 
 describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     let authInfoNode: SageMakerUnifiedStudioAuthInfoNode
     let mockAuthProvider: any
-    let mockConnection: SmusConnection
+    let mockConnection: SmusSsoConnection
     let currentActiveConnection: SmusConnection | undefined
 
     beforeEach(function () {
@@ -39,6 +39,17 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             onDidChange: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
+            getDomainId: sinon.stub().callsFake(() => {
+                return currentActiveConnection?.domainId
+            }),
+            getDomainRegion: sinon.stub().callsFake(() => {
+                if (currentActiveConnection?.type === 'sso') {
+                    return (currentActiveConnection as any).ssoRegion
+                } else if (currentActiveConnection?.type === 'iam') {
+                    return (currentActiveConnection as any).region
+                }
+                return undefined
+            }),
             get activeConnection() {
                 return currentActiveConnection
             },

@@ -8,11 +8,20 @@ import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { SmusErrorCodes } from '../shared/smusUtils'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
+
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
 import { SmusIamProfileSelector } from './ui/iamProfileSelection'
 import { SmusAuthenticationPreferencesManager } from './preferences/authenticationPreferences'
+import { DataZoneDomainPreferencesClient } from '../shared/client/datazoneDomainPreferencesClient'
+import { recordAuthTelemetry } from '../shared/telemetry'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
+
+export type SmusAuthenticationResult =
+    | { status: 'SUCCESS' }
+    | { status: 'BACK' }
+    | { status: 'EDITING' }
+    | { status: 'INVALID_PROFILE'; error: string }
 
 /**
  * Orchestrates SMUS authentication flows
@@ -27,9 +36,8 @@ export class SmusAuthenticationOrchestrator {
         authProvider: SmusAuthenticationProvider,
         span: any,
         context: vscode.ExtensionContext
-    ): Promise<'SUCCESS' | 'BACK'> {
+    ): Promise<SmusAuthenticationResult> {
         const logger = this.logger
-        logger.debug('SMUS Auth: Starting IAM authentication flow')
 
         try {
             // Show IAM profile selection dialog
@@ -39,55 +47,73 @@ export class SmusAuthenticationOrchestrator {
             if ('isBack' in profileSelection) {
                 // User chose to go back to authentication method selection
                 logger.debug('SMUS Auth: User chose to go back to authentication method selection')
-                return 'BACK'
+                return { status: 'BACK' }
             }
 
             if ('isEditing' in profileSelection) {
                 // User chose to edit credentials or is in editing mode
                 logger.debug('SMUS Auth: User is editing credentials')
-                throw new ToolkitError('User is editing credentials. Please complete setup and try again.', {
-                    code: SmusErrorCodes.UserCancelled,
-                    cancelled: true,
-                })
+                return { status: 'EDITING' }
             }
 
-            // At this point, we have a valid profile selection
+            // At this point, we have a profile selected
             logger.debug(
                 `SMUS Auth: Selected profile: ${profileSelection.profileName}, region: ${profileSelection.region}`
             )
 
             // Validate the selected profile
-            const validation = await SmusIamProfileSelector.validateProfile(profileSelection.profileName)
+            const validation = await authProvider.validateIamProfile(profileSelection.profileName)
             if (!validation.isValid) {
-                throw new ToolkitError(`Profile validation failed: ${validation.error}`, {
-                    code: 'InvalidProfile',
+                logger.debug(`SMUS Auth: Profile validation failed: ${validation.error}`)
+                return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
+            }
+
+            // Discover Express domain using IAM credential. If Express Domain is not present, we should throw an appropriate error
+            // and exit
+            logger.debug('SMUS Auth: Discovering Express domain using IAM credentials')
+
+            const domainUrl = await this.findSmusExpressDomain(
+                authProvider,
+                profileSelection.profileName,
+                profileSelection.region
+            )
+            if (!domainUrl) {
+                throw new ToolkitError('No SMUS Express domains found in the specified region', {
+                    code: SmusErrorCodes.ExpressDomainNotFound,
+                    cancelled: true,
                 })
             }
 
-            // Show status message
-            vscode.window.setStatusBarMessage('IAM profile selected successfully', 3000)
-
-            // Show friendly message about selected profile and feature status
-            void vscode.window.showInformationMessage(
-                `Profile '${profileSelection.profileName}' (${profileSelection.region}) has been selected. ` +
-                    'IAM authentication with SageMaker Unified Studio is not yet fully implemented. ' +
-                    'Please use SSO authentication for now.',
-                'OK'
+            // Connect using IAM profile with Express domain flag
+            const connection = await authProvider.connectWithIamProfile(
+                profileSelection.profileName,
+                profileSelection.region,
+                domainUrl,
+                true // isExpressDomain - we found an Express domain
             )
 
+            if (!connection) {
+                throw new ToolkitError('Failed to establish IAM connection', {
+                    code: SmusErrorCodes.FailedAuthConnecton,
+                })
+            }
+
             logger.info(
-                `SMUS Auth: Profile selected - ${profileSelection.profileName} in ${profileSelection.region}. Feature not yet implemented.`
+                `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to Express domain`
             )
 
             // Ask to remember authentication method preference
             await this.askToRememberAuthMethod(context, 'iam')
 
             // Return success to complete the authentication flow gracefully
-            return 'SUCCESS'
+            return { status: 'SUCCESS' }
         } catch (error) {
             // Handle user cancellation (including editing mode)
-            if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
-                logger.debug('IAM authentication cancelled by user')
+            if (
+                error instanceof ToolkitError &&
+                (error.code === SmusErrorCodes.UserCancelled || error.code === SmusErrorCodes.ExpressDomainNotFound)
+            ) {
+                logger.debug('IAM authentication cancelled by user or failed due to customer error')
                 throw error // Re-throw to be handled by the main loop
             } else {
                 // Log the error for actual failures
@@ -104,7 +130,7 @@ export class SmusAuthenticationOrchestrator {
         authProvider: SmusAuthenticationProvider,
         span: any,
         context: vscode.ExtensionContext
-    ): Promise<'SUCCESS' | 'BACK'> {
+    ): Promise<SmusAuthenticationResult> {
         const logger = this.logger
         logger.debug('SMUS Auth: Starting SSO authentication flow')
 
@@ -116,7 +142,7 @@ export class SmusAuthenticationOrchestrator {
         if (domainUrl === 'BACK') {
             // User wants to go back to authentication method selection
             logger.debug('User chose to go back from domain URL input')
-            return 'BACK'
+            return { status: 'BACK' }
         }
 
         if (!domainUrl) {
@@ -140,7 +166,7 @@ export class SmusAuthenticationOrchestrator {
 
             // Extract domain account ID, domain ID, and region for logging
             const domainId = connection.domainId
-            const region = connection.ssoRegion
+            const region = authProvider.getDomainRegion() // Use the auth provider method that handles both connection types
 
             logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
             await this.recordAuthTelemetry(span, authProvider, domainId, region)
@@ -155,7 +181,7 @@ export class SmusAuthenticationOrchestrator {
                 logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
             }
 
-            return 'SUCCESS'
+            return { status: 'SUCCESS' }
         } catch (connectionErr) {
             // Clear the status bar message
             vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
@@ -199,6 +225,53 @@ export class SmusAuthenticationOrchestrator {
     }
 
     /**
+     * Finds SMUS Express domain using IAM credentials
+     * @param authProvider The SMUS authentication provider
+     * @param profileName The AWS credential profile name
+     * @param region The AWS region
+     * @returns Promise resolving to domain URL or undefined if no Express domain found
+     */
+    private static async findSmusExpressDomain(
+        authProvider: SmusAuthenticationProvider,
+        profileName: string,
+        region: string
+    ): Promise<string | undefined> {
+        const logger = this.logger
+
+        try {
+            logger.debug(`SMUS Auth: Finding Express domain in region ${region} using profile ${profileName}`)
+
+            // Get DataZoneDomainPreferencesClient instance
+            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+                await authProvider.getCredentialsProviderForIamProfile(profileName),
+                region
+            )
+
+            // Find the Express domain using the client
+            const expressDomain = await domainPreferencesClient.getExpressDomain()
+
+            if (!expressDomain) {
+                logger.warn(`SMUS Auth: No Express domain found in region ${region}`)
+                return undefined
+            }
+
+            logger.debug(`SMUS Auth: Found Express domain: ${expressDomain.name} (${expressDomain.id})`)
+
+            // Construct domain URL from the Express domain
+            const domainUrl = expressDomain.portalUrl || `https://${expressDomain.id}.sagemaker.${region}.on.aws/`
+            logger.info(`SMUS Auth: Discovered Express domain URL: ${domainUrl}`)
+
+            return domainUrl
+        } catch (error) {
+            logger.error(`SMUS Auth: Failed to find Express domain: %s`, error)
+            throw new ToolkitError(`Failed to find SMUS Express domain: ${(error as Error).message}`, {
+                code: SmusErrorCodes.ApiTimeout,
+                cause: error instanceof Error ? error : undefined,
+            })
+        }
+    }
+
+    /**
      * Records authentication telemetry
      */
     private static async recordAuthTelemetry(
@@ -207,8 +280,6 @@ export class SmusAuthenticationOrchestrator {
         domainId: string,
         region: string
     ): Promise<void> {
-        // Import the telemetry function from the shared module
-        const { recordAuthTelemetry } = await import('../shared/telemetry.js')
         await recordAuthTelemetry(span, authProvider, domainId, region)
     }
 }

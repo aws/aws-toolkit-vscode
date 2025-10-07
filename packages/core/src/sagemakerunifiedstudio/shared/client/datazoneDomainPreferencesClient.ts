@@ -6,11 +6,11 @@
 import { getLogger } from '../../../shared/logger/logger'
 import apiConfig = require('./datazonedomainpreferences.json')
 import globals from '../../../shared/extensionGlobals'
-import { Service, AWSError } from 'aws-sdk'
+import { Service } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import * as DataZoneDomainPreferences from './datazonedomainpreferences'
-import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
-import * as AWS from 'aws-sdk'
+import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
+import { CredentialsProvider } from '../../../auth/providers/credentials'
 
 export type ListDomainsOutput = DataZoneDomainPreferences.Types.ListDomainsOutput
 export type GetDomainOutput = DataZoneDomainPreferences.Types.GetDomainOutput
@@ -38,7 +38,7 @@ export class DataZoneDomainPreferencesClient {
     private readonly logger = getLogger()
 
     private constructor(
-        private readonly authProvider: SmusAuthenticationProvider,
+        private readonly credentialProvider: CredentialsProvider,
         private readonly region: string
     ) {}
 
@@ -47,7 +47,7 @@ export class DataZoneDomainPreferencesClient {
      * @returns DataZoneDomainPreferencesClient instance
      */
     public static getInstance(
-        authProvider: SmusAuthenticationProvider,
+        credentialProvider: CredentialsProvider,
         region: string
     ): DataZoneDomainPreferencesClient {
         const logger = getLogger()
@@ -63,18 +63,8 @@ export class DataZoneDomainPreferencesClient {
 
         // Create new instance
         logger.debug('DataZoneDomainPreferencesClient: Creating new instance')
-        const instance = new DataZoneDomainPreferencesClient(authProvider, region)
+        const instance = new DataZoneDomainPreferencesClient(credentialProvider, region)
         DataZoneDomainPreferencesClient.instances.set(instanceKey, instance)
-
-        // Set up cleanup when connection changes
-        const disposable = authProvider.onDidChangeActiveConnection(() => {
-            logger.debug(
-                `DataZoneDomainPreferencesClient: Connection changed, cleaning up instance for: ${instanceKey}`
-            )
-            DataZoneDomainPreferencesClient.instances.delete(instanceKey)
-            instance.datazoneDomainPreferencesClient = undefined
-            disposable.dispose()
-        })
 
         logger.debug(`DataZoneDomainPreferencesClient: Created instance with instanceKey ${instanceKey}`)
 
@@ -112,50 +102,13 @@ export class DataZoneDomainPreferencesClient {
             try {
                 this.logger.info('DataZoneDomainPreferencesClient: Creating authenticated DataZone client')
 
-                // dummmy call to silence the 'authProvider' is declared but its value is never read
-                this.authProvider.isConnected()
-
-                // Stubbed credentials - replace with actual credential provider
-                const provider = () => {
-                    const credentials = new AWS.Credentials({
-                        accessKeyId: '',
-                        secretAccessKey: '',
-                        sessionToken: '',
-                    })
-
-                    credentials.get = (callback) => {
-                        try {
-                            credentials.accessKeyId = 'xyz'
-                            credentials.secretAccessKey = 'xyz'
-                            credentials.sessionToken = 'xyz'
-                            credentials.expireTime = new Date('2025-10-01T04:48:46+00:00')
-
-                            callback(undefined)
-                        } catch (err) {
-                            callback(err as AWSError)
-                        }
-                    }
-
-                    // Override needsRefresh to delegate to the connection credentials provider
-                    credentials.needsRefresh = () => {
-                        return true // Always call refresh, this is okay because there is caching existing in credential provider
-                    }
-
-                    // Override refresh to use the connection credentials provider
-                    credentials.refresh = (callback) => {
-                        credentials.get(callback)
-                    }
-
-                    return credentials
-                }
-
                 this.datazoneDomainPreferencesClient = (await globals.sdkClientBuilder.createAwsService(
                     Service,
                     {
                         apiConfig: apiConfig,
                         endpoint: `https://datazone.${this.region}.api.aws`,
                         region: this.region,
-                        credentialProvider: new AWS.CredentialProviderChain([provider]),
+                        credentialProvider: adaptConnectionCredentialsProvider(this.credentialProvider),
                     } as ServiceConfigurationOptions,
                     undefined,
                     false

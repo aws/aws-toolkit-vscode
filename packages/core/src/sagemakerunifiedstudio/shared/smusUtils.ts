@@ -64,6 +64,16 @@ export const SmusErrorCodes = {
     GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
     /** Error code for when region is missing */
     RegionNotFound: 'RegionNotFound',
+    /** Error code for when Express domain is not found in the specified region */
+    ExpressDomainNotFound: 'ExpressDomainNotFound',
+    /** Error code for when IAM profile is not found */
+    ProfileNotFound: 'ProfileNotFound',
+    /** Error code for when IAM credential retrieval fails */
+    CredentialRetrievalFailed: 'CredentialRetrievalFailed',
+    /** Error code for when IAM credential provider initialization fails */
+    CredentialProviderInitFailed: 'CredentialProviderInitFailed',
+    /** Error code for when IAM profile type is invalid */
+    InvalidProfileType: 'InvalidProfileType',
 } as const
 
 /**
