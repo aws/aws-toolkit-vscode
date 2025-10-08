@@ -419,7 +419,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            session.triggerOnAcceptance = true
+            // session.triggerOnAcceptance = true
             // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
             // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
             //     await inlineCompletionProvider.provideInlineCompletionItems(
