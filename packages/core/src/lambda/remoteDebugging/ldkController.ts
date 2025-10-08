@@ -20,6 +20,8 @@ import { Commands } from '../../shared/vscode/commands2'
 import { getLambdaSnapshot, persistLambdaSnapshot, type LambdaDebugger, type DebugConfig } from './lambdaDebugger'
 import { RemoteLambdaDebugger } from './remoteLambdaDebugger'
 import { LocalStackLambdaDebugger } from './localStackLambdaDebugger'
+import { fs } from '../../shared/fs/fs'
+import { detectCdkProjects } from '../../awsService/cdk/explorer/detectCdkProjects'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger()
@@ -166,6 +168,111 @@ export async function activateRemoteDebugging(): Promise<void> {
 }
 
 /**
+ * Try to auto-detect outFile for TypeScript debugging (SAM or CDK)
+ * @param debugConfig Debug configuration
+ * @param functionConfig Lambda function configuration
+ * @returns The auto-detected outFile path or undefined
+ */
+export async function tryAutoDetectOutFile(
+    debugConfig: DebugConfig,
+    functionConfig: FunctionConfiguration
+): Promise<string | undefined> {
+    // Only works for TypeScript files
+    if (
+        !debugConfig.handlerFile ||
+        (!debugConfig.handlerFile.endsWith('.ts') && !debugConfig.handlerFile.endsWith('.tsx'))
+    ) {
+        return undefined
+    }
+
+    // Try SAM detection first using the provided parameters
+    if (debugConfig.samFunctionLogicalId && debugConfig.samProjectRoot) {
+        // if proj root is ..../sam-proj/
+        // build dir will be ..../sam-proj/.aws-sam/build/{LogicalID}/
+        const samBuildPath = vscode.Uri.joinPath(
+            debugConfig.samProjectRoot,
+            '.aws-sam',
+            'build',
+            debugConfig.samFunctionLogicalId
+        )
+
+        if (await fs.exists(samBuildPath)) {
+            getLogger().info(`SAM outFile auto-detected: ${samBuildPath.fsPath}`)
+            return samBuildPath.fsPath
+        }
+    }
+
+    // If SAM detection didn't work, try CDK detection using the function name
+    if (!functionConfig.FunctionName) {
+        return undefined
+    }
+
+    try {
+        // Find which workspace contains the handler file
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(debugConfig.handlerFile))
+        if (!workspaceFolder) {
+            return undefined
+        }
+
+        // Detect CDK projects in the workspace
+        const cdkProjects = await detectCdkProjects([workspaceFolder])
+
+        for (const project of cdkProjects) {
+            // Check if CDK project contains the handler file
+            const cdkProjectDir = vscode.Uri.joinPath(project.cdkJsonUri, '..')
+            // Normalize paths for comparison (handles Windows path separators and case)
+            const normalizedHandlerPath = path.normalize(debugConfig.handlerFile).toLowerCase()
+            const normalizedCdkPath = path.normalize(cdkProjectDir.fsPath).toLowerCase()
+            if (!normalizedHandlerPath.startsWith(normalizedCdkPath)) {
+                continue
+            }
+
+            // Get the cdk.out directory
+            const cdkOutDir = vscode.Uri.joinPath(project.treeUri, '..')
+
+            // Look for template.json files in cdk.out directory
+            const pattern = new vscode.RelativePattern(cdkOutDir.fsPath, '*.template.json')
+            const templateFiles = await vscode.workspace.findFiles(pattern)
+
+            for (const templateFile of templateFiles) {
+                try {
+                    // Read and parse the template.json file
+                    const templateContent = await fs.readFileText(templateFile)
+                    const template = JSON.parse(templateContent)
+
+                    // Search through resources for a Lambda function with matching FunctionName
+                    for (const [_, resource] of Object.entries(template.Resources || {})) {
+                        const res = resource as any
+                        if (
+                            res.Type === 'AWS::Lambda::Function' &&
+                            res.Properties?.FunctionName === functionConfig.FunctionName
+                        ) {
+                            // Found the matching function, extract the asset path from metadata
+                            const assetPath = res.Metadata?.['aws:asset:path']
+                            if (assetPath) {
+                                const assetDir = vscode.Uri.joinPath(cdkOutDir, assetPath)
+
+                                // Check if the asset directory exists
+                                if (await fs.exists(assetDir)) {
+                                    getLogger().info(`CDK outFile auto-detected from template.json: ${assetDir.fsPath}`)
+                                    return assetDir.fsPath
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    getLogger().debug(`Failed to parse template file ${templateFile.fsPath}: ${error}`)
+                }
+            }
+        }
+    } catch (error) {
+        getLogger().warn(`Failed to auto-detect CDK outFile: ${error}`)
+    }
+
+    return undefined
+}
+
+/**
  * Helper function to check if a string is a valid VSCode glob pattern
  */
 function isVscodeGlob(pattern: string): boolean {
@@ -287,6 +394,15 @@ async function getVscodeDebugConfig(
     let vsCodeDebugConfig: vscode.DebugConfiguration
     switch (debugType) {
         case 'node':
+            // Try to auto-detect outFiles for TypeScript if not provided
+            if (debugConfig.sourceMap && !debugConfig.outFiles && debugConfig.handlerFile) {
+                const autoDetectedOutFile = await tryAutoDetectOutFile(debugConfig, functionConfig)
+                if (autoDetectedOutFile) {
+                    debugConfig.outFiles = [autoDetectedOutFile]
+                    getLogger().info(`outFile auto-detected: ${autoDetectedOutFile}`)
+                }
+            }
+
             // source map support
             if (debugConfig.sourceMap && debugConfig.outFiles) {
                 // process outFiles first, if they are relative path (not starting with /),
