@@ -1,6 +1,20 @@
 {
     "types": [
         {
+            "name": "toolId",
+            "type": "string",
+            "description": "The tool being installed",
+            "allowedValues": [
+                "session-manager-plugin",
+                "dotnet-lambda-deploy",
+                "dotnet-deploy-cli",
+                "aws-cli",
+                "sam-cli",
+                "docker",
+                "finch"
+            ]
+        },
+        {
             "name": "amazonQProfileRegion",
             "type": "string",
             "description": "Region of the Q Profile associated with a metric\n- \"n/a\" if metric is not associated with a profile or region.\n- \"not-set\" if metric is associated with a profile, but profile is unknown."
