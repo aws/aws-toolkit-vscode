@@ -9,6 +9,7 @@ import assert from 'assert'
 import {
     openApplicationComposerAfterReload,
     templateToOpenAppComposer,
+    activate,
 } from '../../../awsService/appBuilder/activation'
 import globals from '../../../shared/extensionGlobals'
 import {
@@ -28,6 +29,7 @@ import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpRe
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
 import type { ToolId } from '../../../shared/telemetry/telemetry'
 import { CodeScansState } from '../../../codewhisperer'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 interface TestScenario {
     toolID: AwsClis
@@ -52,6 +54,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'win32',
+        shouldSucceed: false,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'darwin',
         shouldSucceed: true,
@@ -67,6 +74,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'darwin',
+        shouldSucceed: true,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'linux',
         shouldSucceed: false,
@@ -80,6 +92,11 @@ const scenarios: TestScenario[] = [
         toolID: 'docker',
         platform: 'linux',
         shouldSucceed: false,
+    },
+    {
+        toolID: 'finch',
+        platform: 'linux',
+        shouldSucceed: true,
     },
 ]
 
@@ -554,5 +571,40 @@ describe('AppBuilder Walkthrough', function () {
                 })
             })
         })
+    })
+})
+describe('Platform-specific walkthrough ID', function () {
+    let sandbox: sinon.SinonSandbox
+    const originalPlatform = process.platform
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+    afterEach(function () {
+        sandbox.restore()
+        Object.defineProperty(process, 'platform', { value: originalPlatform })
+    })
+    it('uses standard walkthrough ID on non-Windows platforms', async function () {
+        Object.defineProperty(process, 'platform', { value: 'darwin' })
+        const executeCommandSpy = sandbox.spy(vscode.commands, 'executeCommand')
+        const mockContext = await FakeExtensionContext.getFakeExtContext()
+        await activate(mockContext)
+        await vscode.commands.executeCommand('aws.toolkit.lambda.openWalkthrough')
+        sandbox.assert.calledWith(
+            executeCommandSpy,
+            'workbench.action.openWalkthrough',
+            'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
+        )
+    })
+    it('uses Windows-specific walkthrough ID on Windows platform', async function () {
+        Object.defineProperty(process, 'platform', { value: 'win32' })
+        const executeCommandSpy = sandbox.spy(vscode.commands, 'executeCommand')
+        const mockContext = await FakeExtensionContext.getFakeExtContext()
+        await activate(mockContext)
+        await vscode.commands.executeCommand('aws.toolkit.lambda.openWalkthrough')
+        sandbox.assert.calledWith(
+            executeCommandSpy,
+            'workbench.action.openWalkthrough',
+            'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough.windows'
+        )
     })
 })
