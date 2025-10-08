@@ -13,6 +13,7 @@ import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import path from 'path'
 import globals from '../../../shared/extensionGlobals'
+import os from 'os'
 
 function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingDirPath: string) {
     getLogger().info('CodeTransformation: running mvn clean test-compile with maven JAR')
@@ -22,9 +23,11 @@ function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingD
 
     getLogger().info('CodeTransformation: running Maven extension with JAR')
 
+    const quotePath = (p: string) => (os.platform() === 'win32' ? `"${p}"` : p)
+
     const args = [
-        `-Dmaven.ext.class.path=${jarPath}`,
-        `-Dcom.amazon.aws.developer.transform.jobDirectory=${dependenciesFolderPath}`,
+        `-Dmaven.ext.class.path=${quotePath(jarPath)}`,
+        `-Dcom.amazon.aws.developer.transform.jobDirectory=${quotePath(dependenciesFolderPath)}`,
         'clean',
         'test-compile',
     ]
@@ -33,6 +36,14 @@ function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingD
     if (transformByQState.getSourceJavaHome() !== undefined) {
         environment = { ...process.env, JAVA_HOME: transformByQState.getSourceJavaHome() }
     }
+
+    getLogger().info(`CodeTransformation: JAVA_HOME = ${environment.JAVA_HOME}`)
+    getLogger().info(`CodeTransformation: baseCommand = ${baseCommand}`)
+    getLogger().info(`CodeTransformation: jarPath = ${jarPath}`)
+    getLogger().info(`CodeTransformation: args = ${args.join(' ')}`)
+    getLogger().info(
+        `CodeTransformation: shell info --> SHELL=${process.env.SHELL}, COMSPEC=${process.env.COMSPEC}, PSModulePath=${process.env.PSModulePath ? 'PowerShell' : 'not set'}`
+    )
 
     const spawnResult = spawnSync(baseCommand, args, {
         cwd: workingDirPath,
