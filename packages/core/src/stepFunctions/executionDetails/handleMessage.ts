@@ -18,8 +18,9 @@ import {
     handleUnsupportedMessage,
     apiCallMessageHandler,
 } from '../messageHandlers/handleMessageHelpers'
-import { parseExecutionArnForStateMachine, openWorkflowStudio, showExecuteStateMachineWebview } from '../utils'
+import { parseExecutionArnForStateMachine } from '../utils'
 import { getLogger } from '../../shared/logger/logger'
+import { openWorkflowStudio } from '../stepFunctionsWorkflowStudioUtils'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -97,6 +98,8 @@ async function startExecutionMessageHandler(message: StartExecutionMessage, cont
 
         const { region, stateMachineName, stateMachineArn } = parsedArn
 
+        const executeStateMachineUtils = await import('../vue/executeStateMachine/executeStateMachine.js')
+        const { showExecuteStateMachineWebview } = executeStateMachineUtils
         await showExecuteStateMachineWebview({
             arn: stateMachineArn,
             name: stateMachineName,

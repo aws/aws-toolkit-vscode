@@ -16,7 +16,7 @@ import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ExecutionDetailProvider } from '../../executionDetails/executionDetailProvider'
-import { showExecuteStateMachineWebview } from '../../utils'
+import globals from '../../../shared/extensionGlobals'
 
 interface StateMachine {
     arn: string
@@ -88,6 +88,35 @@ export class ExecuteStateMachineWebview extends VueWebview {
             telemetry.stepfunctions_executeStateMachine.emit({ result: executeResult })
         }
     }
+}
+
+/**
+ * Shows the Execute State Machine webview with the provided state machine data
+ * @param extensionContext The extension context
+ * @param outputChannel The output channel for logging
+ * @param stateMachineData Object containing arn, name, region, and optional executionInput of the state machine
+ * @returns The webview instance
+ */
+export const showExecuteStateMachineWebview = async (stateMachineData: {
+    arn: string
+    name: string
+    region: string
+    executionInput?: string
+}) => {
+    const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
+    const wv = new Panel(globals.context, globals.outputChannel, {
+        arn: stateMachineData.arn,
+        name: stateMachineData.name,
+        region: stateMachineData.region,
+        executionInput: stateMachineData.executionInput,
+    })
+
+    await wv.show({
+        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+        cssFiles: ['executeStateMachine.css'],
+    })
+
+    return wv
 }
 
 export async function executeStateMachine(
