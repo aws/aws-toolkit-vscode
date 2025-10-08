@@ -33,9 +33,22 @@
 
         <!-- Remote Debugging Configuration -->
         <div>
-            <div class="form-row">
-                <div><label for="attachDebugger">Remote debugging</label></div>
-                <div style="display: flex; align-items: center; gap: 5px">
+            <div class="vscode-setting-item">
+                <div class="setting-header">
+                    <label class="setting-title">Remote debugging</label>
+                    <button
+                        v-if="debugState.isDebugging"
+                        class="button-theme-inline"
+                        v-on:click="removeDebugSetup"
+                        style="margin-left: 10px"
+                    >
+                        Remove Debug Setup
+                    </button>
+                    <info v-if="debugState.isDebugging && debugState.showDebugTimer" style="margin-left: 10px"
+                        >Auto remove after 60 second of inactive time</info
+                    >
+                </div>
+                <div class="setting-body">
                     <input
                         type="checkbox"
                         id="attachDebugger"
@@ -43,94 +56,84 @@
                         @change="debugPreCheck"
                         :disabled="!initialData.runtimeSupportsRemoteDebug || !initialData.remoteDebugLayer"
                         class="remote-debug-checkbox"
-                        style="margin-right: 5px; vertical-align: middle"
                     />
-                    <button v-if="debugState.isDebugging" class="button-theme-inline" v-on:click="removeDebugSetup">
-                        Remove Debug Setup
-                    </button>
-
-                    <!-- <span>Timeout: {{ debugState.debugTimeRemaining }}s ⏱️</span> -->
-                    <info v-if="debugState.isDebugging && debugState.showDebugTimer"
-                        >Auto remove after 60 second of inactive time</info
-                    >
-                    <info
-                        v-if="!initialData.runtimeSupportsRemoteDebug && !initialData.remoteDebugLayer"
-                        style="color: var(--vscode-errorForeground)"
-                    >
-                        Runtime {{ initialData.Runtime }} and region {{ initialData.FunctionRegion }} don't support
-                        remote debugging yet
-                    </info>
-                    <info
-                        v-else-if="!initialData.runtimeSupportsRemoteDebug"
-                        style="color: var(--vscode-errorForeground)"
-                    >
-                        Runtime {{ initialData.Runtime }} doesn't support remote debugging
-                    </info>
-                    <info v-else-if="!initialData.remoteDebugLayer" style="color: var(--vscode-errorForeground)">
-                        Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
-                    </info>
+                    <div class="setting-description">
+                        <info-wrap v-if="initialData.runtimeSupportsRemoteDebug && initialData.remoteDebugLayer">
+                            Remote debugging is not recommended for production environments. The AWS Toolkit modifies
+                            your function by deploying it with an additional layer to enable remote debugging. Your
+                            local code breakpoints are then used to step through the remote function invocation.
+                            <a
+                                href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/lambda-remote-debug.html"
+                                >Learn more</a
+                            >
+                        </info-wrap>
+                        <info
+                            v-if="!initialData.runtimeSupportsRemoteDebug && !initialData.remoteDebugLayer"
+                            style="color: var(--vscode-errorForeground)"
+                        >
+                            Runtime {{ initialData.Runtime }} and region {{ initialData.FunctionRegion }} don't support
+                            remote debugging yet
+                        </info>
+                        <info
+                            v-else-if="!initialData.runtimeSupportsRemoteDebug"
+                            style="color: var(--vscode-errorForeground)"
+                        >
+                            Runtime {{ initialData.Runtime }} doesn't support remote debugging
+                        </info>
+                        <info v-else-if="!initialData.remoteDebugLayer" style="color: var(--vscode-errorForeground)">
+                            Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
+                        </info>
+                    </div>
                 </div>
             </div>
 
-            <div style="margin-bottom: 10px">
-                <info-wrap v-if="initialData.runtimeSupportsRemoteDebug && initialData.remoteDebugLayer">
-                    Remote debugging is not recommended for production environments. The AWS Toolkit modifies your
-                    function by deploying it with an additional layer to enable remote debugging. Your local code
-                    breakpoints are then used to step through the remote function invocation.
-                    <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/lambda-remote-debug.html"
-                        >Learn more</a
+            <div class="vscode-setting-item" v-if="debugState.remoteDebuggingEnabled">
+                <div class="setting-header">
+                    <label class="setting-title">Local root path</label>
+                </div>
+                <div class="setting-description-full">
+                    <info-wrap v-if="debugState.handlerFileAvailable">
+                        Your handler file has been located. You can now <b>open handler</b> to set breakpoints in this
+                        file for debugging.
+                    </info-wrap>
+                    <info-wrap v-else-if="initialData.supportCodeDownload">
+                        <b>Browse</b> to specify the absolute path to your local directory that contains the handler
+                        file for debugging. Or <b>Download</b> the handler file from your deployed function.
+                    </info-wrap>
+                    <info-wrap v-else>
+                        <b>Browse</b> to specify the absolute path to your local directory that contains the handler
+                        file for debugging.
+                    </info-wrap>
+                </div>
+                <div class="setting-input-group-full">
+                    <input
+                        type="text"
+                        v-model="debugConfig.localRootPath"
+                        placeholder="Enter local root path"
+                        title="The path to your local project root directory containing the source code"
+                        @input="openHandlerWithDelay"
+                        class="setting-input"
+                    />
+                    <button
+                        @click="openHandler"
+                        class="button-theme-inline"
+                        :disabled="!debugState.handlerFileAvailable"
+                        :title="
+                            !debugState.handlerFileAvailable
+                                ? 'Handler file not found. Please specify the correct local root path first.'
+                                : 'Open handler file'
+                        "
                     >
-                </info-wrap>
-            </div>
-
-            <div class="form-row-no-align" v-if="debugState.remoteDebuggingEnabled">
-                <label>Local root path</label>
-                <div>
-                    <div
-                        v-if="debugState.handlerFileAvailable"
-                        style="margin-bottom: 3px"
-                        class="handler-status-message"
+                        Open Handler
+                    </button>
+                    <button @click="promptForFolderLocation" class="button-theme-inline">Browse</button>
+                    <button
+                        v-if="initialData.supportCodeDownload"
+                        @click="downloadRemoteCode"
+                        class="button-theme-inline"
                     >
-                        <info-wrap
-                            >Your handler file has been located. You can now set breakpoints in this file for debugging.
-                            <a @click="openHandler">(open handler)</a>
-                        </info-wrap>
-                    </div>
-                    <div
-                        v-else-if="initialData.supportCodeDownload"
-                        style="margin-bottom: 3px"
-                        class="handler-status-message"
-                    >
-                        <info-wrap
-                            >Specify the path to your local directory that contains the handler file for debugging, or
-                            download the handler file from your deployed function.</info-wrap
-                        >
-                    </div>
-                    <div v-else style="margin-bottom: 3px" class="handler-status-message">
-                        <info-wrap
-                            >Specify the path to your local directory that contains the handler file for
-                            debugging.</info-wrap
-                        >
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 5px">
-                        <input
-                            type="text"
-                            v-model="debugConfig.localRootPath"
-                            placeholder="Enter local root path"
-                            title="The path to your local project root directory containing the source code"
-                            @input="openHandlerWithDelay"
-                            style="flex-grow: 1; margin-right: 2px"
-                        />
-                        <button @click="promptForFolderLocation" class="button-theme-inline">Browse local code</button>
-                        <button
-                            v-if="initialData.supportCodeDownload"
-                            @click="downloadRemoteCode"
-                            class="button-theme-inline"
-                            style="margin-left: 2px"
-                        >
-                            Download remote code
-                        </button>
-                    </div>
+                        Download
+                    </button>
                 </div>
             </div>
 
@@ -299,121 +302,37 @@
             </div>
         </div>
 
-        <!-- Payload Section (moved to bottom) -->
-        <div>
-            <div class="form-row-no-align">
-                <div><label>Payload</label></div>
-                <div class="payload-options">
-                    <div>
-                        <form>
-                            <div class="formfield">
-                                <input
-                                    class="radio-selector"
-                                    type="radio"
-                                    id="sampleEvents"
-                                    value="sampleEvents"
-                                    v-model="uiState.payload"
-                                    name="payload_request"
-                                    checked
-                                />
-                                <label class="label-selector" for="sampleEvents">Inline</label><br />
-                            </div>
-                            <div class="formfield">
-                                <input
-                                    class="radio-selector"
-                                    type="radio"
-                                    id="localFile"
-                                    value="localFile"
-                                    v-model="uiState.payload"
-                                    name="payload_request"
-                                />
-                                <label class="label-selector" for="localFile"> Local file</label><br />
-                            </div>
-                            <div v-if="initialData.isLambdaRemote" class="formfield">
-                                <input
-                                    class="radio-selector"
-                                    type="radio"
-                                    id="savedEvents"
-                                    value="savedEvents"
-                                    v-model="uiState.payload"
-                                    name="payload_request"
-                                    @change="loadRemoteTestEvents"
-                                />
-                                <label class="label-selector" for="savedEvents"> Remote saved events</label>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+        <!-- Payload Section -->
+        <div class="vscode-setting-item">
+            <div class="setting-header">
+                <label class="setting-title">Payload</label>
             </div>
-            <div v-if="uiState.payload === 'sampleEvents'" class="form-row-no-align">
-                <label>Sample event</label>
-                <div>
-                    <div>
-                        <button class="button-theme-secondary" style="width: 140px" @click="loadSampleEvent">
-                            Select an event
-                        </button>
-                    </div>
-                    <br />
-                </div>
-                <br />
-                <textarea
-                    style="margin-bottom: 10px"
-                    :rows="textareaRows"
-                    cols="60"
-                    v-model="payloadData.sampleText"
-                ></textarea>
+            <div class="setting-description-full">
+                <info-wrap>
+                    Enter the JSON payload for your Lambda function invocation. You can <b>Load sample event</b> from
+                    AWS event templates, <b>Load local file</b> from your computer
+                </info-wrap>
+                <info-wrap v-if="initialData.isLambdaRemote"
+                    ><b>Load remote event</b> from your saved test events. You can <b>Save as remote event</b> to save
+                    the event below for future use</info-wrap
+                >
             </div>
-            <div v-if="uiState.payload === 'localFile'" class="form-row-no-align">
-                <div><label>File</label></div>
-                <div>
-                    <input type="file" id="file" @change="onFileChange" style="display: none" ref="fileInput" />
-                    <button @click="promptForFileLocation" class="button-theme-secondary">Choose file</button>
-                    &nbsp; {{ payloadData.selectedFile || 'No file selected' }}
-                </div>
+            <div class="payload-button-group">
+                <button @click="loadSampleEvent" class="button-theme-inline">Load sample event</button>
+                <button @click="promptForFileLocation" class="button-theme-inline">Load local file</button>
+                <button v-if="initialData.isLambdaRemote" @click="loadRemoteTestEvents" class="button-theme-inline">
+                    Load remote event
+                </button>
+                <button v-if="initialData.isLambdaRemote" @click="saveEvent" class="button-theme-inline">
+                    Save as remote event
+                </button>
             </div>
-            <div v-if="uiState.payload === 'savedEvents'" class="form-row-no-align">
-                <div><label>Remote event</label></div>
-                <div class="form-row-no-align">
-                    <div>
-                        <select
-                            class="form-row-event-select"
-                            v-model="payloadData.selectedTestEvent"
-                            v-on:change="newSelection"
-                        >
-                            <option disabled value="">Select an event</option>
-                            <option v-for="item in initialData.TestEvents">
-                                {{ item }}
-                            </option>
-                        </select>
-                    </div>
-                    <div style="margin-left: 105px">
-                        <button @click="showNameField" class="button-theme-secondary">Create</button>&nbsp;
-                        <button @click="saveEvent" class="button-theme-secondary">Save</button>
-                    </div>
-                </div>
-                <div class="form-row" v-if="uiState.showNameInput">
-                    <label>Name</label>
-                    <input
-                        :style="{ zIndex: '2' }"
-                        type="text"
-                        v-model="payloadData.newTestEventName"
-                        placeholder="Enter event name"
-                    />
-                </div>
-                <br />
-                <div class="form-row-no-align" v-if="uiState.showNameInput">
-                    <label :style="{ fontSize: '13px', fontWeight: 500 }">Sample event</label>
-                    <button class="button-theme-secondary" style="width: 140px" @click="loadSampleEvent">
-                        Select an event
-                    </button>
-                </div>
-                <textarea
-                    style="margin-bottom: 10px"
-                    :rows="textareaRows"
-                    cols="60"
-                    v-model="payloadData.sampleText"
-                ></textarea>
-            </div>
+            <textarea
+                class="payload-textarea"
+                :rows="textareaRows"
+                v-model="payloadData.sampleText"
+                placeholder='{"key": "value"}'
+            ></textarea>
         </div>
     </div>
 </template>

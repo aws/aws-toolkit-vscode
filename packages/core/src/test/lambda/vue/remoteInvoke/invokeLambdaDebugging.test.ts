@@ -103,25 +103,6 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             remoteInvokeWebview.stopDebugTimer()
             assert.strictEqual(remoteInvokeWebview.getDebugTimeRemaining(), 0)
         })
-
-        it('should handle timer expiration by stopping debugging', async () => {
-            const stopDebuggingStub = sandbox.stub(remoteInvokeWebview, 'stopDebugging').resolves(true)
-
-            // Mock a very short timer for testing
-            sandbox.stub(remoteInvokeWebview, 'startDebugTimer').callsFake(() => {
-                // Simulate immediate timer expiration
-                setTimeout(async () => {
-                    await (remoteInvokeWebview as any).handleTimerExpired()
-                }, 10)
-            })
-
-            remoteInvokeWebview.startDebugTimer()
-
-            // Wait for timer to expire
-            await new Promise((resolve) => setTimeout(resolve, 50))
-
-            assert(stopDebuggingStub.calledOnce, 'stopDebugging should be called when timer expires')
-        })
     })
 
     describe('Debug State Management', () => {

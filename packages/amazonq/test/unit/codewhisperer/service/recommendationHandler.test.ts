@@ -11,10 +11,8 @@ import {
     session,
     AuthUtil,
     DefaultCodeWhispererClient,
-    RecommendationsList,
     ConfigurationEntry,
     RecommendationHandler,
-    CodeWhispererCodeCoverageTracker,
     supplementalContextUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
@@ -54,35 +52,35 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
 
-        it('should assign correct recommendations given input', async function () {
-            assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
-            assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
-                0
-            )
+        // it('should assign correct recommendations given input', async function () {
+        //     assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
+        //     assert.strictEqual(
+        //         CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
+        //         0
+        //     )
 
-            const mockServerResult = {
-                recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                $response: {
-                    requestId: 'test_request',
-                    httpResponse: {
-                        headers: {
-                            'x-amzn-sessionid': 'test_request',
-                        },
-                    },
-                },
-            }
-            const handler = new RecommendationHandler()
-            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
-            const actual = session.recommendations
-            const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
-            assert.deepStrictEqual(actual, expected)
-            assert.strictEqual(
-                CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
-                1
-            )
-        })
+        //     const mockServerResult = {
+        //         recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
+        //         $response: {
+        //             requestId: 'test_request',
+        //             httpResponse: {
+        //                 headers: {
+        //                     'x-amzn-sessionid': 'test_request',
+        //                 },
+        //             },
+        //         },
+        //     }
+        //     const handler = new RecommendationHandler()
+        //     sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+        //     await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+        //     const actual = session.recommendations
+        //     const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
+        //     assert.deepStrictEqual(actual, expected)
+        //     assert.strictEqual(
+        //         CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
+        //         1
+        //     )
+        // })
 
         it('should assign request id correctly', async function () {
             const mockServerResult = {

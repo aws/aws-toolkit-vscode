@@ -1,3 +1,11 @@
+## 1.98.0 2025-10-02
+
+- Miscellaneous non-user-facing changes
+
+## 1.97.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
 ## 1.96.0 2025-09-25
 
 - **Bug Fix** Amazon Q support web/container environments running Ubuntu/Linux, even when the host machine is Amazon Linux 2.
