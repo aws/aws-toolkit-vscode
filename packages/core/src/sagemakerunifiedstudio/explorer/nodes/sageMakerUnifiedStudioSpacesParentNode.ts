@@ -18,6 +18,7 @@ import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusUtils } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
+import { getContext } from '../../../shared/vscode/setContext'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -179,19 +180,27 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
 
     private async updateChildren(): Promise<void> {
         const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
-        // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
-        const userId = await datazoneClient.getUserId()
-        const ssoUserProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+
+        let userProfileId
+        if (getContext('aws.smus.isExpressMode')) {
+            userProfileId = await datazoneClient?.getUserProfileId()
+        } else {
+            // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
+            const userId = await datazoneClient.getUserId()
+            userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+        }
+
         const sagemakerDomainId = await this.getSageMakerDomainId()
         const [spaceApps, domains] = await this.sagemakerClient.fetchSpaceAppsAndDomains(
             sagemakerDomainId,
             false /* filterSmusDomains */
         )
         // Filter spaceApps to only show spaces owned by current user
+        this.logger.debug(`SMUS: Filtering spaces for user profile ID: ${userProfileId}`)
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            if (ssoUserProfileId === userProfile) {
+            if (userProfileId === userProfile) {
                 filteredSpaceApps.set(key, app)
             }
         }

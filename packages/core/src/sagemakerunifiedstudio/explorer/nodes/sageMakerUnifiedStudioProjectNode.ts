@@ -17,6 +17,8 @@ import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioCompu
 import { getIcon } from '../../../shared/icons'
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { getContext } from '../../../shared/vscode/setContext'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusErrorCodes } from '../../shared/smusUtils'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -231,10 +233,29 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         if (!this.project) {
             throw new Error('No project selected for initializing SageMaker client')
         }
-        const projectProvider = await this.authProvider.getProjectCredentialProvider(this.project.id)
-        this.logger.info(`Successfully obtained project credentials provider for project ${this.project.id}`)
-        const awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
-            return await projectProvider.getCredentials()
+        let awsCredentialProvider
+        if (getContext('aws.smus.isExpressMode')) {
+            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+            const projectId = this.project.id
+            awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
+                const creds = await datazoneClient.getProjectDefaultEnvironmentCreds(projectId)
+                if (!creds.accessKeyId || !creds.secretAccessKey) {
+                    throw new ToolkitError('Missing default environment credentials', {
+                        code: SmusErrorCodes.CredentialRetrievalFailed,
+                    })
+                }
+                return {
+                    accessKeyId: creds.accessKeyId!,
+                    secretAccessKey: creds.secretAccessKey!,
+                    sessionToken: creds.sessionToken,
+                }
+            }
+        } else {
+            const projectProvider = await this.authProvider.getProjectCredentialProvider(this.project.id)
+            this.logger.info(`Successfully obtained project credentials provider for project ${this.project.id}`)
+            awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
+                return await projectProvider.getCredentials()
+            }
         }
         const sagemakerClient = new SagemakerClient(regionCode, awsCredentialProvider)
         return sagemakerClient

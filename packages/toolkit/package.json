@@ -1270,6 +1270,10 @@
                 {
                     "command": "aws.smus.refreshProject",
                     "when": "false"
+                },
+                {
+                    "command": "aws.smus.refresh",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1334,12 +1338,17 @@
             "view/title": [
                 {
                     "command": "aws.smus.switchProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment && !aws.smus.isExpressMode",
                     "group": "smus@0"
                 },
                 {
                     "command": "aws.smus.refreshProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.isExpressMode",
+                    "group": "smus@1"
+                },
+                {
+                    "command": "aws.smus.refresh",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && aws.smus.isExpressMode",
                     "group": "smus@1"
                 },
                 {
@@ -2775,6 +2784,16 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
+                }
+            },
+            {
+                "command": "aws.smus.refresh",
+                "title": "%AWS.command.smus.refresh%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
                 }
             },
             {

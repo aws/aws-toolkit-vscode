@@ -379,6 +379,25 @@ export class SmusUtils {
         const resourceMetadata = getResourceMetadata()
         return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
     }
+
+    /**
+     * Converts an STS assumed-role ARN to its corresponding IAM role ARN.
+     * Example:
+     *   Input:  arn:aws:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws:iam::123456789012:role/MyRole
+     */
+    public static convertAssumedRoleArnToIamRoleArn(stsArn: string): string {
+        const arnRegex = /^arn:aws:sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
+
+        const match = stsArn.match(arnRegex)
+        if (!match) {
+            throw new Error(`Invalid STS ARN format: ${stsArn}`)
+        }
+
+        const [, accountId, roleName] = match
+
+        return `arn:aws:iam::${accountId}:role/${roleName}`
+    }
 }
 
 /**
