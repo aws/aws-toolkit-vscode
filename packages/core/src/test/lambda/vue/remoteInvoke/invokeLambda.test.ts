@@ -853,7 +853,7 @@ describe('RemoteInvokeWebview', () => {
                     CodeSha256: 'abc123',
                 },
             } as any
-            data.Runtime = 'nodejs18.x'
+            data.Runtime = 'nodejs24.x'
 
             getLambdaHandlerFileStub.resolves(vscode.Uri.file(handlerPath))
             fsExistsStub.resolves(true)
