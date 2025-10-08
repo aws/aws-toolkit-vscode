@@ -7,7 +7,7 @@ import {
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
-    editCompletionRequestType,
+    // editCompletionRequestType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
@@ -150,12 +150,12 @@ export class RecommendationService {
             /**
              * Though Edit request is sent on keystrokes everytime, the language server will execute the request in a debounced manner so that it won't be immediately executed.
              */
-            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-                editCompletionRequestType.method,
-                request,
-                token
-            )
-            ps.push(editPromise)
+            // const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            //     editCompletionRequestType.method,
+            //     request,
+            //     token
+            // )
+            // ps.push(editPromise)
 
             /**
              * First come first serve, ideally we should simply return the first response returned. However there are some caviar here because either
