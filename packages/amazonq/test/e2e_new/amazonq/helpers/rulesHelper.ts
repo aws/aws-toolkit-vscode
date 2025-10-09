@@ -3,26 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By } from 'vscode-extension-tester'
-import { sleep, waitForElement } from '../utils/generalUtils'
+import { clickButton, sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Clicks the Rules button in the top bar
  * @param webview The WebviewView instance
  */
 export async function clickRulesButton(webview: WebviewView): Promise<void> {
-    const chatPromptWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-wrapper'))
-    const topBar = await chatPromptWrapper.findElement(By.css('[data-testid="prompt-input-top-bar"]'))
-    const buttons = await topBar.findElements(By.css('.mynah-button.mynah-button-secondary'))
-
-    for (const button of buttons) {
-        const labelElement = await button.findElement(By.css('.mynah-button-label'))
-        const text = await labelElement.getText()
-        if (text.trim() === 'Rules') {
-            await button.click()
-            return
-        }
-    }
-    throw new Error('Rules button not found')
+    await clickButton(
+        webview,
+        '[data-testid="prompt-input-top-bar-button"]',
+        '.mynah-ui-icon-check-list',
+        'Rules button'
+    )
 }
 
 /**
@@ -31,7 +24,7 @@ export async function clickRulesButton(webview: WebviewView): Promise<void> {
  */
 export async function clickCreateNewRuleOption(webview: WebviewView): Promise<void> {
     // needs a bit of time because the overlay has to load
-    await sleep(1000)
+    await sleep(10000)
     const overlayContainer = await waitForElement(webview, By.css('.mynah-overlay-container'))
     const quickPickItems = await overlayContainer.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
 

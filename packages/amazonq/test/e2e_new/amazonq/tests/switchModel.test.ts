@@ -23,6 +23,7 @@ describe('Amazon Q Switch Model Functionality', function () {
 
     it('Switch Model Test', async () => {
         await listModels(webviewView)
-        await selectModel(webviewView, 'Claude Sonnet 3.7')
+        await selectModel(webviewView, 'Claude Sonnet 4.5 - experimental')
+        await selectModel(webviewView, 'Claude Sonnet 4')
     })
 })

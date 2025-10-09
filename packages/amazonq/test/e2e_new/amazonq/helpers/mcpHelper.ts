@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By, WebElement } from 'vscode-extension-tester'
-import { clickButton, waitForElement } from '../utils/generalUtils'
-import { dismissOverlayIfPresent } from '../utils/cleanupUtils'
+import { clickButton, sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Clicks the tools to get to the MCP server overlay
@@ -209,10 +208,11 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
 export async function saveMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
     await clickButton(
         webviewView,
-        '[data-testid="chat-item-action-button"][action-id="save-mcp"]',
-        'span.mynah-button-label',
+        '[data-testid="chat-item-buttons-wrapper"]',
+        '[action-id="save-mcp"] .mynah-button-label',
         'save button'
     )
+    await sleep(50000)
 }
 
 export async function cancelMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
@@ -236,18 +236,13 @@ export async function cancelMCPServerConfiguration(webviewView: WebviewView): Pr
  */
 export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<void> {
     try {
-        // First dismiss any overlay that might be present
-        await dismissOverlayIfPresent(webviewView)
-
         await clickButton(
             webviewView,
             '.mynah-sheet-header-actions-container',
             'i.mynah-ui-icon-refresh',
             'MCP refresh button'
         )
-
-        // Dismiss any overlay that might appear after clicking
-        await dismissOverlayIfPresent(webviewView)
+        await sleep(5000)
     } catch (e) {
         console.error('Error clicking the MCP refresh button:', e)
         throw e
@@ -261,10 +256,70 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
  */
 export async function clickMCPCloseButton(webviewView: WebviewView): Promise<void> {
     try {
-        await dismissOverlayIfPresent(webviewView)
         await clickButton(webviewView, '.mynah-sheet-header', 'i.mynah-ui-icon-cancel', 'MCP close button')
     } catch (e) {
         console.error('Error closing the MCP overlay:', e)
         throw e
+    }
+}
+
+/**
+ * Finds MCP items in the list
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of MCP list items
+ * @throws Error if no MCP items are found in the list
+ */
+export async function findMCPListItems(webviewView: WebviewView): Promise<WebElement[]> {
+    await sleep(2000)
+    const list = await webviewView.findWebElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
+    if (list.length === 0) {
+        throw new Error('No mcp in the list')
+    }
+    return list
+}
+/**
+ * Checks MCP server status by looking for success icon
+ * @param webviewView The WebviewView instance
+ * @throws Error if status icon not found
+ */
+export async function checkMCPServerStatus(webviewView: WebviewView): Promise<void> {
+    try {
+        await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-ok-circled.status-success'))
+    } catch {
+        throw new Error('Failed: Status icon not found')
+    }
+}
+/**
+ * Validates that all tools have 'ask' permission (except claude-sonnet-4)
+ * @param webviewView The WebviewView instance
+ * @throws Error if any tool has permission other than 'ask' (excluding claude-sonnet-4)
+ */
+export async function validateToolPermissions(webviewView: WebviewView): Promise<void> {
+    const selectElements = await webviewView.findWebElements(By.css('select.mynah-form-input'))
+    for (const select of selectElements) {
+        const selectedOption = await select.findElement(By.css('option:checked'))
+        const selectedValue = await selectedOption.getAttribute('value')
+        if (selectedValue !== 'claude-sonnet-4' && selectedValue !== 'ask') {
+            throw new Error(`Tool has permission '${selectedValue}' instead of 'ask'`)
+        }
+    }
+}
+
+/**
+ * Validates MCP dropdown options
+ * @param webviewView The WebviewView instance
+ * @param expectedValues Array of expected option values
+ * @throws Error if any option is not in expectedValues
+ */
+export async function validateMCPDropdownOptions(webviewView: WebviewView, expectedValues: string[]): Promise<void> {
+    const select = await webviewView.findWebElement(By.css('.mynah-form-input-wrapper select'))
+    const options = await select.findElements(
+        By.css('option[data-testid="chat-item-form-item-select"]:not(.description-option):not([disabled])')
+    )
+    for (const option of options) {
+        const text = await option.getText()
+        if (!expectedValues.includes(text)) {
+            throw new Error(`Option "${text}" should be one of: ${expectedValues.join(', ')}`)
+        }
     }
 }

@@ -33,7 +33,7 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
         await clickQuickActionsCommand(webviewView, '/compact')
         await clearChatInput(webviewView)
     })
-    it('/tramsform Test', async () => {
+    it('/transform Test', async () => {
         await clickQuickActionsCommand(webviewView, '/transform')
         await clearChatInput(webviewView)
     })

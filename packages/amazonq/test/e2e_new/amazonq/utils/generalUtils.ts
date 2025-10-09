@@ -50,6 +50,7 @@ export async function waitForElements(
  * @param buttonContentSelector CSS selector for the content inside the button (icon, text, etc.)
  * @param buttonName Descriptive name for the button (used in error messages)
  * @param timeout Timeout in milliseconds (defaults to 5000)
+ * @param scrollIntoView Whether to scroll the button into view before clicking (defaults to false)
  * @returns Promise<void>
  */
 export async function clickButton(
@@ -57,6 +58,7 @@ export async function clickButton(
     buttonWrapperSelector: string,
     buttonContentSelector: string,
     buttonName: string = 'button',
+    scrollIntoView: boolean = false,
     timeout: number = 5000
 ): Promise<void> {
     try {
@@ -74,6 +76,12 @@ export async function clickButton(
 
         const button = await buttonContent.findElement(By.xpath('./..'))
         await webviewView.getDriver().wait(until.elementIsEnabled(button), timeout, `${buttonName} not clickable`)
+
+        if (scrollIntoView) {
+            await webviewView.getDriver().executeScript('arguments[0].scrollIntoView(true);', button)
+            await sleep(1000)
+        }
+
         await button.click()
         await webviewView.getDriver().sleep(300)
     } catch (e) {
@@ -252,19 +260,35 @@ export async function waitForInlineGeneration(editor: TextEditor, timeout = 1500
  * @param items WebElement array to search
  * @param text The text of the item
  * @returns Promise<WebElement> The first element that contains the specified text
- * TO-DO: Make this function more general by eliminated the By.css('.title')
  */
 export async function findItemByText(items: WebElement[], text: string) {
     for (const item of items) {
-        const titleDivs = await item.findElements(By.css('.title'))
-        for (const titleDiv of titleDivs) {
-            const titleText = await titleDiv.getText()
-            if (titleText?.trim().startsWith(text)) {
-                return item
-            }
+        const itemText = await item.getText()
+        if (itemText?.trim().startsWith(text)) {
+            return item
         }
     }
     throw new Error(`Item with text "${text}" not found`)
+}
+
+/**
+ * Finds mynah card elements
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of mynah card elements
+ */
+export async function findMynahCards(webviewView: WebviewView): Promise<WebElement[]> {
+    const elements = await webviewView.findWebElements(By.css('.mynah-card'))
+    await sleep(100)
+    return elements
+}
+
+/**
+ * Finds mynah card elements
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of mynah card elements
+ */
+export async function findMynahCardsBody(webviewView: WebviewView): Promise<WebElement[]> {
+    return await webviewView.findWebElements(By.css('.mynah-card-body'))
 }
 
 /**

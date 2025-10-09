@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import '../utils/setup'
-import { WebviewView, By } from 'vscode-extension-tester'
+import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { waitForChatResponse, writeToChat, waitForElement } from '../utils/generalUtils'
+import { waitForChatResponse, writeToChat } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
+import { addNewChatTab, viewHistoryTab, waitForHistoryList, closeHistoryTab } from '../helpers/chatHelper'
 
 describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -28,17 +29,13 @@ describe('Amazon Q Chat Basic Functionality', function () {
     it('Allows User to Add Multiple Chat Tabs', async () => {
         console.log('Starting Multiple Chat Test')
         for (let i = 0; i < 3; i++) {
-            const addChat = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-plus'))
-            await addChat.click()
+            await addNewChatTab(webviewView)
         }
     })
     it('Allows User to View Chat History', async () => {
         console.log('Starting View History Test')
-        const viewHistory = await webviewView.findWebElement(By.css('.mynah-ui-icon.mynah-ui-icon-history'))
-        await viewHistory.click()
-        await waitForElement(webviewView, By.css('.mynah-detailed-list-item-groups-wrapper'))
-        console.log('History wrapper found successfully')
-        const closeHistory = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-cancel'))
-        await closeHistory.click()
+        await viewHistoryTab(webviewView)
+        await waitForHistoryList(webviewView)
+        await closeHistoryTab(webviewView)
     })
 })

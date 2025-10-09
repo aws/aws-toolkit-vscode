@@ -22,7 +22,6 @@ export async function clickPinContextButton(webview: WebviewView): Promise<void>
         const labelText = await label.getText()
         console.log('THE BUTTON TEXT LABEL IS:', labelText)
         if (labelText === '@Pin Context') {
-            console.log('Found Pin Context button, clicking...')
             await button.click()
             return
         }
@@ -70,7 +69,6 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
             `//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]//div[contains(@class, 'mynah-detailed-list-item-name') and text()='${itemName}']`
         )
     )
-    console.log(`Clicking Pin Context menu item: ${itemName}`)
     await item.click()
 }
 /**
@@ -114,6 +112,23 @@ export async function clickSubMenuItem(webview: WebviewView, itemName: string): 
             `//div[contains(@class, 'mynah-detailed-list-item') and contains(@class, 'mynah-ui-clickable-item')]//div[contains(@class, 'mynah-detailed-list-item-name') and text()='${itemName}']`
         )
     )
-    console.log(`Clicking Pin Context menu item: ${itemName}`)
     await item.click()
+}
+
+export async function clickAddPromptButton(webviewView: WebviewView): Promise<void> {
+    const addPrompt = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-list-add'))
+    await addPrompt.click()
+}
+
+export async function enterChatInput(webviewView: WebviewView): Promise<void> {
+    const chatInput = await waitForElement(webviewView, By.css('[data-testid="chat-item-form-item-text-input"]'))
+    await chatInput.sendKeys('test')
+}
+
+export async function clickCreatePromptButton(webviewView: WebviewView): Promise<void> {
+    const createPrompt = await waitForElement(
+        webviewView,
+        By.css('.mynah-button.fill-state-always.status-primary.mynah-ui-clickable-item')
+    )
+    await createPrompt.click()
 }
