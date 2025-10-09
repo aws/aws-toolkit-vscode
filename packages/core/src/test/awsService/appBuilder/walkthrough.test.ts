@@ -9,7 +9,6 @@ import assert from 'assert'
 import {
     openApplicationComposerAfterReload,
     templateToOpenAppComposer,
-    activate,
 } from '../../../awsService/appBuilder/activation'
 import globals from '../../../shared/extensionGlobals'
 import {
@@ -29,7 +28,6 @@ import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpRe
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
 import type { ToolId } from '../../../shared/telemetry/telemetry'
 import { CodeScansState } from '../../../codewhisperer'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 interface TestScenario {
     toolID: AwsClis
