@@ -86,7 +86,8 @@ export async function deeplinkConnect(
     session: string,
     wsUrl: string,
     token: string,
-    domain: string
+    domain: string,
+    appType?: string
 ) {
     getLogger().debug(
         `sm:deeplinkConnect: connectionIdentifier: ${connectionIdentifier} session: ${session} wsUrl: ${wsUrl} token: ${token}`
@@ -107,7 +108,8 @@ export async function deeplinkConnect(
             session,
             wsUrl,
             token,
-            domain
+            domain,
+            appType
         )
 
         await startVscodeRemote(
