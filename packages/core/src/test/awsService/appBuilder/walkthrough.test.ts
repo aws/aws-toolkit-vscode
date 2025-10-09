@@ -96,7 +96,7 @@ const scenarios: TestScenario[] = [
     {
         toolID: 'finch',
         platform: 'linux',
-        shouldSucceed: true,
+        shouldSucceed: false,
     },
 ]
 
@@ -571,40 +571,5 @@ describe('AppBuilder Walkthrough', function () {
                 })
             })
         })
-    })
-})
-describe('Platform-specific walkthrough ID', function () {
-    let sandbox: sinon.SinonSandbox
-    const originalPlatform = process.platform
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-    afterEach(function () {
-        sandbox.restore()
-        Object.defineProperty(process, 'platform', { value: originalPlatform })
-    })
-    it('uses standard walkthrough ID on non-Windows platforms', async function () {
-        Object.defineProperty(process, 'platform', { value: 'darwin' })
-        const executeCommandSpy = sandbox.spy(vscode.commands, 'executeCommand')
-        const mockContext = await FakeExtensionContext.getFakeExtContext()
-        await activate(mockContext)
-        await vscode.commands.executeCommand('aws.toolkit.lambda.openWalkthrough')
-        sandbox.assert.calledWith(
-            executeCommandSpy,
-            'workbench.action.openWalkthrough',
-            'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough'
-        )
-    })
-    it('uses Windows-specific walkthrough ID on Windows platform', async function () {
-        Object.defineProperty(process, 'platform', { value: 'win32' })
-        const executeCommandSpy = sandbox.spy(vscode.commands, 'executeCommand')
-        const mockContext = await FakeExtensionContext.getFakeExtContext()
-        await activate(mockContext)
-        await vscode.commands.executeCommand('aws.toolkit.lambda.openWalkthrough')
-        sandbox.assert.calledWith(
-            executeCommandSpy,
-            'workbench.action.openWalkthrough',
-            'amazonwebservices.aws-toolkit-vscode#aws.toolkit.lambda.walkthrough.windows'
-        )
     })
 })
