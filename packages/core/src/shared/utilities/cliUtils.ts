@@ -170,7 +170,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         manualInstallLink: 'https://docs.docker.com/desktop',
         exec: 'docker',
     },
-    // Currently Finch is available for MacOS and Linux; Windows support will be added when available
+    // Currently Finch is available for MacOS and Linux; Windows support will be added if/when available
     finch: {
         command: {
             unix: ['finch', path.join('/', 'usr', 'bin', 'finch'), path.join('/', 'usr', 'local', 'bin', 'finch')],
@@ -179,10 +179,6 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
             macos: {
                 x86: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-x86_64.pkg',
                 arm: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-aarch64.pkg',
-            },
-            linux: {
-                x86: 'https://github.com/runfinch/finch/releases/download/v1.11.0/runfinch-finch_1.11.0_amd64.deb',
-                arm: 'https://github.com/runfinch/finch/releases/download/v1.11.0/runfinch-finch_1.11.0_arm64.deb',
             },
         },
         name: 'Finch',
@@ -540,9 +536,6 @@ async function installGui(
                 return await getCliCommand(awsClis[cli])
             case 'win32':
                 await new TimedProcess(guiInstaller, []).run()
-                return await getCliCommand(awsClis[cli])
-            case 'linux':
-                await new TimedProcess('dpkg', ['-i', guiInstaller]).run()
                 return await getCliCommand(awsClis[cli])
             // customer shouldn't reach this point as they will be directed to manual install link in entrypoint.
             default:
