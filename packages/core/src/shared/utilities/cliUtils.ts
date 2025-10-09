@@ -541,6 +541,9 @@ async function installGui(
             case 'win32':
                 await new TimedProcess(guiInstaller, []).run()
                 return await getCliCommand(awsClis[cli])
+            case 'linux':
+                await new TimedProcess('dpkg', ['-i', guiInstaller]).run()
+                return await getCliCommand(awsClis[cli])
             // customer shouldn't reach this point as they will be directed to manual install link in entrypoint.
             default:
                 throw new InvalidPlatformError(
