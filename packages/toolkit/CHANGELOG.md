@@ -1,3 +1,16 @@
+## 3.78.0 2025-10-02
+
+- **Feature** Refactor and optimize Lambda Remote Invoke UI with enhanced payload management
+- **Feature** Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug.
+
+## 3.77.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 3.76.0 2025-09-25
+
+- Miscellaneous non-user-facing changes
+
 ## 3.75.0 2025-09-19
 
 - Miscellaneous non-user-facing changes
