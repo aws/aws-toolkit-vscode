@@ -208,7 +208,7 @@ Host ${this.configHostName}
 
     protected createSSHConfigSection(proxyCommand: string): string {
         if (this.scriptPrefix === 'sagemaker_connect') {
-            return `${this.getSageMakerSSHConfig(proxyCommand)}User '%r'\n`
+            return `${this.getSageMakerSSHConfig(proxyCommand)}`
         } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }
