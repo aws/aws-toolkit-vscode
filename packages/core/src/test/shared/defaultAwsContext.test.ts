@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import * as AWS from 'aws-sdk'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 import { AwsContextCredentials } from '../../shared/awsContext'
 import { DefaultAwsContext } from '../../shared/awsContext'
 
@@ -125,7 +125,7 @@ describe('DefaultAwsContext', function () {
 
     function makeSampleAwsContextCredentials(endpointUrl?: string): AwsContextCredentials {
         return {
-            credentials: {} as any as AWS.Credentials,
+            credentials: {} as AwsCredentialIdentity,
             credentialsId: 'qwerty',
             accountId: testAccountIdValue,
             endpointUrl,

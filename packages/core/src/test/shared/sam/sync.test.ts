@@ -43,7 +43,7 @@ import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
 import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
-import S3 from 'aws-sdk/clients/s3'
+import { Bucket } from '@aws-sdk/client-s3'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
@@ -2174,7 +2174,7 @@ describe('SAM sync helper functions', () => {
 })
 
 const s3BucketListSummary: Array<
-    RequiredProps<S3.Bucket, 'Name'> & {
+    RequiredProps<Bucket, 'Name'> & {
         readonly region: string
     }
 > = [
