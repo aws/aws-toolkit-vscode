@@ -135,10 +135,12 @@ export async function stopSpace(
 ) {
     await tryRefreshNode(node)
     if (node.getStatus() === 'Stopped' || node.getStatus() === 'Stopping') {
-        void vscode.window.showWarningMessage('This space is already in Stopped/Stopping state')
+        void vscode.window.showWarningMessage(`Space ${node.spaceApp.SpaceName} is already in Stopped/Stopping state.`)
         return
     } else if (node.getStatus() === 'Starting') {
-        void vscode.window.showWarningMessage('This space is starting, please stop it later')
+        void vscode.window.showWarningMessage(
+            `Space ${node.spaceApp.SpaceName} is in Starting state. Wait until it is Running to attempt stop again.`
+        )
         return
     }
     const spaceName = node.spaceApp.SpaceName!
