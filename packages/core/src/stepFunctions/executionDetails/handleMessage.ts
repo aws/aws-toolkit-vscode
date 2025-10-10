@@ -21,6 +21,7 @@ import {
 import { parseExecutionArnForStateMachine } from '../utils'
 import { getLogger } from '../../shared/logger/logger'
 import { openWorkflowStudio } from '../stepFunctionsWorkflowStudioUtils'
+import { showExecuteStateMachineWebview } from '../vue/executeStateMachine/executeStateMachine'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -98,12 +99,11 @@ async function startExecutionMessageHandler(message: StartExecutionMessage, cont
 
         const { region, stateMachineName, stateMachineArn } = parsedArn
 
-        const executeStateMachineUtils = await import('../vue/executeStateMachine/executeStateMachine.js')
-        const { showExecuteStateMachineWebview } = executeStateMachineUtils
         await showExecuteStateMachineWebview({
             arn: stateMachineArn,
             name: stateMachineName,
             region: region,
+            openExecutionDetails: context.openExecutionDetails,
             executionInput: message.executionInput,
         })
     } catch (error) {

@@ -15,13 +15,14 @@ import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { ExecutionDetailProvider } from '../../executionDetails/executionDetailProvider'
 import globals from '../../../shared/extensionGlobals'
+import { OpenExecutionDetailsCallBack } from '../../messageHandlers/types'
 
 interface StateMachine {
     arn: string
     name: string
     region: string
+    openExecutionDetails: OpenExecutionDetailsCallBack
     executionInput?: string
 }
 
@@ -64,7 +65,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
                 stateMachineArn: this.stateMachine.arn,
                 input,
             })
-            await ExecutionDetailProvider.openExecutionDetails(
+            await this.stateMachine.openExecutionDetails(
                 startExecResponse.executionArn!,
                 startExecResponse.startDate!.toString()
             )
@@ -101,6 +102,7 @@ export const showExecuteStateMachineWebview = async (stateMachineData: {
     arn: string
     name: string
     region: string
+    openExecutionDetails: OpenExecutionDetailsCallBack
     executionInput?: string
 }) => {
     const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
@@ -108,6 +110,7 @@ export const showExecuteStateMachineWebview = async (stateMachineData: {
         arn: stateMachineData.arn,
         name: stateMachineData.name,
         region: stateMachineData.region,
+        openExecutionDetails: stateMachineData.openExecutionDetails,
         executionInput: stateMachineData.executionInput,
     })
 
@@ -122,12 +125,14 @@ export const showExecuteStateMachineWebview = async (stateMachineData: {
 export async function executeStateMachine(
     context: ExtContext,
     node: StateMachineNode,
+    openExecutionDetails: OpenExecutionDetailsCallBack,
     executionInput?: string
 ): Promise<void> {
     await showExecuteStateMachineWebview({
         arn: node.details.stateMachineArn || '',
         name: node.details.name || '',
         region: node.regionCode,
+        openExecutionDetails,
         executionInput,
     })
     telemetry.stepfunctions_executeStateMachineView.emit()
