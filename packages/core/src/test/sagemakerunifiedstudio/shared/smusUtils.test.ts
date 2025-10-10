@@ -462,6 +462,39 @@ describe('SmusUtils', () => {
             assert.strictEqual(result, false)
         })
     })
+
+    describe('convertAssumedRoleArnToIamRoleArn', () => {
+        it('should convert basic assumed role ARN to IAM role ARN', () => {
+            const stsArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should throw error for invalid ARN format - missing components', () => {
+            const invalidArn = 'arn:aws:sts::123456789012:assumed-role/MyRole'
+
+            assert.throws(
+                () => SmusUtils.convertAssumedRoleArnToIamRoleArn(invalidArn),
+                (error: Error) => {
+                    assert.ok(error.message.includes('Invalid STS ARN format'))
+                    assert.ok(error.message.includes(invalidArn))
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for empty string', () => {
+            assert.throws(
+                () => SmusUtils.convertAssumedRoleArnToIamRoleArn(''),
+                (error: Error) => {
+                    assert.ok(error.message.includes('Invalid STS ARN format'))
+                    return true
+                }
+            )
+        })
+    })
 })
 
 describe('extractAccountIdFromSageMakerArn', () => {

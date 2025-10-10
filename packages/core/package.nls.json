@@ -231,6 +231,7 @@
     "AWS.command.s3.uploadFileToParent": "Upload to Parent...",
     "AWS.command.smus.switchProject": "Switch Project",
     "AWS.command.smus.refreshProject": "Refresh Project",
+    "AWS.command.smus.refresh": "Refresh",
     "AWS.command.smus.signOut": "Sign Out",
     "AWS.command.sagemaker.filterSpaces": "Filter Sagemaker Spaces",
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",

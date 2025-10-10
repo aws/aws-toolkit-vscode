@@ -8,6 +8,8 @@ import * as sinon from 'sinon'
 import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types/commands/GetEnvironmentCommand'
+import { DefaultStsClient } from '../../../../shared/clients/stsClient'
+import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 
 describe('DataZoneClient', () => {
     let dataZoneClient: DataZoneClient
@@ -18,6 +20,7 @@ describe('DataZoneClient', () => {
     beforeEach(async () => {
         // Create mock connection object
         const mockConnection = {
+            id: 'connection-id',
             domainId: testDomainId,
             ssoRegion: testRegion,
         }
@@ -31,6 +34,16 @@ describe('DataZoneClient', () => {
             onDidChangeActiveConnection: sinon.stub().returns({
                 dispose: sinon.stub(),
             }),
+            secondaryAuth: {
+                state: {
+                    get: sinon.stub().returns({
+                        'connection-id': {
+                            profileName: 'test-profile',
+                        },
+                    }),
+                },
+            },
+            getCredentialsProviderForIamProfile: sinon.stub(),
         } as any
 
         // Set up the DataZoneClient using getInstance since constructor is private
@@ -478,6 +491,117 @@ describe('DataZoneClient', () => {
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             await assert.rejects(() => dataZoneClient.fetchAllProjectMemberships('project-1'), error)
+        })
+    })
+
+    describe('getUserProfileId', () => {
+        let stsClientStub: sinon.SinonStub
+        let convertAssumedRoleArnStub: sinon.SinonStub
+        let mockCredentialsProvider: any
+
+        beforeEach(() => {
+            // Mock connection with ID
+            mockAuthProvider.activeConnection = { id: 'connection-id' }
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'id',
+                    secretAccessKey: 'secret',
+                    sessionToken: 'token',
+                }),
+            }
+
+            mockAuthProvider.getCredentialsProviderForIamProfile.resolves(mockCredentialsProvider)
+
+            // Stub STS client
+            stsClientStub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity')
+
+            // Stub SmusUtils method
+            convertAssumedRoleArnStub = sinon.stub(SmusUtils, 'convertAssumedRoleArnToIamRoleArn')
+        })
+
+        afterEach(() => {
+            stsClientStub.restore()
+            convertAssumedRoleArnStub.restore()
+        })
+
+        it('should successfully get user profile ID', async () => {
+            const mockStsResponse = {
+                Arn: 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession',
+                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
+            }
+
+            const mockIamRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const mockUserProfileId = 'user-profile-123'
+
+            stsClientStub.resolves(mockStsResponse)
+            convertAssumedRoleArnStub.returns(mockIamRoleArn)
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockIamRoleArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileId()
+
+            assert.strictEqual(result, mockUserProfileId)
+
+            // Verify the flow
+            assert.ok(mockAuthProvider.getCredentialsProviderForIamProfile.calledWith('test-profile'))
+            assert.ok(stsClientStub.calledOnce)
+            assert.ok(convertAssumedRoleArnStub.calledWith(mockStsResponse.Arn))
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockIamRoleArn,
+                })
+            )
+        })
+
+        it('should handle STS getCallerIdentity failure', async () => {
+            const stsError = new Error('STS API Error')
+            stsClientStub.rejects(stsError)
+
+            await assert.rejects(() => dataZoneClient.getUserProfileId(), stsError)
+        })
+
+        it('should handle convertAssumedRoleArnToIamRoleArn failure', async () => {
+            const mockStsResponse = {
+                Arn: 'invalid-arn-format',
+                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
+            }
+
+            const conversionError = new Error('Invalid STS ARN format')
+            stsClientStub.resolves(mockStsResponse)
+            convertAssumedRoleArnStub.throws(conversionError)
+
+            await assert.rejects(() => dataZoneClient.getUserProfileId(), conversionError)
+        })
+
+        it('should handle DataZone getUserProfile failure', async () => {
+            const mockStsResponse = {
+                Arn: 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession',
+                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
+            }
+
+            const mockIamRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const datazoneError = new Error('DataZone API Error')
+
+            stsClientStub.resolves(mockStsResponse)
+            convertAssumedRoleArnStub.returns(mockIamRoleArn)
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().rejects(datazoneError),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getUserProfileId(), datazoneError)
         })
     })
 })

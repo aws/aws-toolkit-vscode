@@ -64,6 +64,10 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             await projectNode.refreshNode()
         }),
 
+        vscode.commands.registerCommand('aws.smus.refresh', async () => {
+            treeDataProvider.refresh()
+        }),
+
         vscode.commands.registerCommand('aws.smus.switchProject', async () => {
             // Get the project node from the root node to ensure we're using the same instance
             const projectNode = smusRootNode.getProjectSelectNode()

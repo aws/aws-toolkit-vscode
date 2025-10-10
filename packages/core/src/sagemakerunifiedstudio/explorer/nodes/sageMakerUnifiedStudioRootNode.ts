@@ -19,6 +19,7 @@ import { ToolkitError } from '../../../../src/shared/errors'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
 import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
 import { isSmusSsoConnection } from '../../auth/model'
+import { getContext } from '../../../shared/vscode/setContext'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -132,6 +133,16 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
                     getParent: () => this,
                 },
             ]
+        }
+
+        if (getContext('aws.smus.isExpressMode')) {
+            // In Express mode, immediately show data and compute nodes (project node's children)
+            if (!this.projectNode.project) {
+                await selectSMUSProject(this.projectNode)
+            }
+
+            const projectChildren = await this.projectNode.getChildren()
+            return projectChildren
         }
 
         // When authenticated, show auth info and projects
@@ -461,7 +472,25 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 return
             }
 
-            const selectedProject = await showQuickPick(items)
+            let selectedProject
+            if (getContext('aws.smus.isExpressMode')) {
+                // In express mode, automatically select the express project
+                logger.debug('Auto-selecting the express project')
+                const userProfileId = await client.getUserProfileId()
+                selectedProject = items.find((item) => item.data.createdBy === userProfileId)?.data
+                if (!selectedProject) {
+                    logger.info(`No project found created by the current user (${userProfileId})`)
+                    void vscode.window.showInformationMessage('No accessible projects found')
+                    return
+                }
+                logger.info(
+                    `Selected project ${(selectedProject as DataZoneProject).name} (${(selectedProject as DataZoneProject).id})`
+                )
+            } else {
+                // Show project picker
+                selectedProject = await showQuickPick(items)
+            }
+
             const accountId = await authProvider.getDomainAccountId()
             span.record({
                 smusDomainId: authProvider.getDomainId(),

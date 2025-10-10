@@ -20,6 +20,9 @@ import {
 import { getLogger } from '../../../shared/logger/logger'
 import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { getContext } from '../../../shared/vscode/setContext'
+import { SmusUtils } from '../smusUtils'
+import { SmusIamConnection } from '../../auth/model'
 
 /**
  * Represents a DataZone domain
@@ -41,6 +44,7 @@ export interface DataZoneProject {
     name: string
     description?: string
     domainId: string
+    createdBy?: string
     createdAt?: Date
     updatedAt?: Date
 }
@@ -252,7 +256,7 @@ export class DataZoneClient {
             const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
                 domainIdentifier: this.domainId,
                 managed: true,
-                name: toolingBlueprintName,
+                name: this.getToolingBlueprintName(),
             })
 
             const toolingBlueprint = domainBlueprints.items?.[0]
@@ -269,7 +273,7 @@ export class DataZoneClient {
                 provider: sageMakerProviderName,
             })
 
-            const defaultEnv = listEnvs.items?.find((env) => env.name === toolingBlueprintName)
+            const defaultEnv = listEnvs.items?.find((env) => env.name === this.getToolingBlueprintName())
             if (!defaultEnv) {
                 this.logger.error('Failed to find default Tooling environment')
                 throw new Error('Failed to find default Tooling environment')
@@ -294,10 +298,22 @@ export class DataZoneClient {
     private async getDataZoneClient(): Promise<DataZone> {
         if (!this.datazoneClient) {
             try {
-                this.logger.debug('DataZoneClient: Creating authenticated DataZone client with DER credentials')
-
                 const credentialsProvider = async () => {
-                    const credentials = await (await this.authProvider.getDerCredentialsProvider()).getCredentials()
+                    let credentials
+                    if (getContext('aws.smus.isExpressMode')) {
+                        this.logger.info(
+                            'DataZoneClient: Creating authenticated DataZone client with Iam profile credentials'
+                        )
+                        const activeConnection = this.authProvider.activeConnection!
+                        credentials = await (
+                            await this.authProvider.getCredentialsProviderForIamProfile(
+                                (activeConnection as SmusIamConnection).profileName
+                            )
+                        ).getCredentials()
+                    } else {
+                        this.logger.debug('DataZoneClient: Creating authenticated DataZone client with DER credentials')
+                        credentials = await (await this.authProvider.getDerCredentialsProvider()).getCredentials()
+                    }
                     return {
                         accessKeyId: credentials.accessKeyId,
                         secretAccessKey: credentials.secretAccessKey,
@@ -426,6 +442,7 @@ export class DataZoneClient {
                 name: project.name || '',
                 description: project.description,
                 domainId: this.domainId,
+                createdBy: project.createdBy,
                 createdAt: project.createdAt ? new Date(project.createdAt) : undefined,
                 updatedAt: project.updatedAt ? new Date(project.updatedAt) : undefined,
             }))
@@ -688,7 +705,7 @@ export class DataZoneClient {
             domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
                 domainIdentifier: domainId,
                 managed: true,
-                name: toolingBlueprintName,
+                name: this.getToolingBlueprintName(),
             })
         } catch (err) {
             this.logger.error(
@@ -725,7 +742,7 @@ export class DataZoneClient {
             throw err
         }
 
-        const defaultEnv = listEnvs.items?.find((env) => env.name === toolingBlueprintName)
+        const defaultEnv = listEnvs.items?.find((env) => env.name === this.getToolingBlueprintName())
         if (!defaultEnv || !defaultEnv.id) {
             this.logger.error(
                 'No default Tooling environment found for domainId: %s, projectId: %s',
@@ -800,5 +817,33 @@ export class DataZoneClient {
         const callerIdentity = await stsClient.getCallerIdentity()
         this.logger.debug(`Retrieved caller identity, UserId: ${callerIdentity.UserId}`)
         return callerIdentity.UserId
+    }
+
+    public async getUserProfileId(): Promise<string | undefined> {
+        const activeConnection = this.authProvider.activeConnection!
+        const smusConnections = (this.authProvider.secondaryAuth.state.get('smus.connections') as any) || {}
+        const profileName = smusConnections[activeConnection.id].profileName
+        const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(profileName)
+
+        const stsClient = new DefaultStsClient(this.getRegion(), await credentialsProvider.getCredentials())
+        const callerIdentity = await stsClient.getCallerIdentity()
+        this.logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
+
+        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
+        this.logger.debug(`Retrieved user identity, Iam role Arn: ${callerIdentity.Arn}`)
+
+        const datazoneClient = await this.getDataZoneClient()
+        const userProfile = await datazoneClient.getUserProfile({
+            domainIdentifier: this.getDomainId(),
+            userIdentifier: roleArn,
+        })
+        return userProfile.id
+    }
+
+    /**
+     * Gets the correct tooling blueprint name
+     */
+    private getToolingBlueprintName(): string {
+        return getContext('aws.smus.isExpressMode') ? 'ToolingLite' : toolingBlueprintName
     }
 }

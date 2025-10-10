@@ -864,14 +864,19 @@ export class SmusAuthenticationProvider {
         try {
             logger.debug('Fetching domain account ID via STS GetCallerIdentity')
 
-            // Get DER credentials provider
-            const derCredProvider = await this.getDerCredentialsProvider()
-
+            let credentialsProvider
+            if (getContext('aws.smus.isExpressMode')) {
+                credentialsProvider = await this.getCredentialsProviderForIamProfile(
+                    (this.activeConnection as SmusIamConnection).profileName
+                )
+            } else {
+                credentialsProvider = await this.getDerCredentialsProvider()
+            }
             // Get the region for STS client
             const region = this.getDomainRegion()
 
             // Create STS client with DER credentials
-            const stsClient = new DefaultStsClient(region, await derCredProvider.getCredentials())
+            const stsClient = new DefaultStsClient(region, await credentialsProvider.getCredentials())
 
             // Make GetCallerIdentity call
             const callerIdentity = await stsClient.getCallerIdentity()
