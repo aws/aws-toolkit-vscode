@@ -38,8 +38,8 @@ export class SmusAuthenticationMethodSelector {
 
         const iamOption: vscode.QuickPickItem = {
             label: '$(key) IAM Role',
-            description: 'SageMaker Unified Studio Lightning/Express',
-            detail: 'Use Lightning IAM role credentials to access your Unified Studio Lightning resources',
+            description: 'SageMaker Unified Studio Express',
+            detail: 'Use login IAM role credentials to access your Unified Studio Express resources',
         }
 
         const ssoOption: vscode.QuickPickItem = {

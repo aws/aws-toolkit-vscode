@@ -9,8 +9,35 @@ import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
 import { loadSharedCredentialsProfiles } from '../../../auth/credentials/sharedCredentials'
 import { getCredentialsFilename, getConfigFilename } from '../../../auth/credentials/sharedCredentialsFile'
-import { SmusErrorCodes } from '../../shared/smusUtils'
+import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
+import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
+
+/**
+ * Actions available in the credential management dialog
+ */
+enum CredentialManagementAction {
+    EditCredentialsFile = 'EDIT_CREDENTIALS_FILE',
+    EditConfigFile = 'EDIT_CONFIG_FILE',
+    AddNewProfile = 'ADD_NEW_PROFILE',
+}
+
+/**
+ * Actions available in the profile selection dialog
+ */
+enum ProfileSelectionAction {
+    SelectProfile = 'SELECT_PROFILE',
+    ManageCredentials = 'MANAGE_CREDENTIALS',
+}
+
+/**
+ * Actions available in the session token input dialog
+ */
+enum SessionTokenAction {
+    Skip = 'SKIP',
+    UseToken = 'USE_TOKEN',
+    Warning = 'WARNING',
+}
 
 /**
  * Result of IAM profile selection
@@ -42,6 +69,30 @@ export interface IamProfileBackNavigation {
 export class SmusIamProfileSelector {
     private static readonly logger = getLogger()
 
+    // Validation regex patterns (based on AWS STS API specifications)
+    // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
+    private static readonly profileNamePattern = /^[a-zA-Z0-9_-]+$/
+    // AWS AccessKeyId: 16-128 chars, pattern [\w]* (alphanumeric + underscore)
+    private static readonly accessKeyIdPattern = /^[a-zA-Z0-9_]*$/
+    // AWS SecretAccessKey and SessionToken: Required per STS API, but no pattern/length constraints specified
+    private static readonly regionLinePattern = /^region\s*=.*$/m
+
+    /**
+     * Creates a QuickPick with common settings for input dialogs
+     * @param title Title for the QuickPick
+     * @param placeholder Placeholder text
+     * @returns Configured QuickPick instance
+     */
+    private static createInputQuickPick(title: string, placeholder: string): vscode.QuickPick<vscode.QuickPickItem> {
+        const quickPick = vscode.window.createQuickPick()
+        quickPick.title = title
+        quickPick.placeholder = placeholder
+        quickPick.canSelectMany = false
+        quickPick.ignoreFocusOut = true
+        quickPick.buttons = [vscode.QuickInputButtons.Back]
+        return quickPick
+    }
+
     /**
      * Shows the IAM profile selection dialog matching the Figma design
      * @returns Promise resolving to the selected profile and region, editing status, or back navigation
@@ -57,7 +108,11 @@ export class SmusIamProfileSelector {
             const profileNames = Object.keys(profiles)
 
             // Create QuickPick items for profiles
-            const profileItems: vscode.QuickPickItem[] = profileNames.map((profileName) => {
+            const profileItems: (vscode.QuickPickItem & {
+                action: ProfileSelectionAction
+                profileName: string
+                region: string
+            })[] = profileNames.map((profileName) => {
                 const profile = profiles[profileName]
                 const region = profile.region || 'not-set'
 
@@ -65,17 +120,18 @@ export class SmusIamProfileSelector {
                     label: `$(key) ${profileName}`,
                     description: `IAM Credentials, configured locally (${region})`,
                     detail: `Profile: ${profileName} | Region: ${region}`,
-                    // Store profile data for easy access
+                    action: ProfileSelectionAction.SelectProfile,
                     profileName,
                     region,
-                } as vscode.QuickPickItem & { profileName: string; region: string }
+                }
             })
 
-            // Add "Add and edit credentials" option
-            const addCredentialsItem: vscode.QuickPickItem = {
-                label: '$(add) Add and edit credentials',
+            // Add "Add or edit credentials" option
+            const addCredentialsItem: vscode.QuickPickItem & { action: ProfileSelectionAction } = {
+                label: '$(add) Add or edit credentials',
                 description: 'Manage AWS credential profiles',
                 detail: 'Add new profiles or edit existing credential files',
+                action: ProfileSelectionAction.ManageCredentials,
             }
 
             const options = [...profileItems, addCredentialsItem]
@@ -110,14 +166,28 @@ export class SmusIamProfileSelector {
                     isCompleted = true
                     quickPick.dispose()
 
-                    // Check if user selected "Add and edit credentials"
-                    if (selectedItem === addCredentialsItem) {
+                    const itemWithAction = selectedItem as vscode.QuickPickItem & {
+                        action: ProfileSelectionAction
+                        profileName?: string
+                        region?: string
+                    }
+
+                    // Check if user selected "Add or edit credentials"
+                    if (itemWithAction.action === ProfileSelectionAction.ManageCredentials) {
                         // Handle the async credential management flow
                         void (async () => {
                             try {
-                                const shouldRestart = await SmusIamProfileSelector.showCredentialManagement()
-                                if (shouldRestart) {
-                                    // Only restart if user completed the "Add New Profile" flow
+                                const managementResult = await SmusIamProfileSelector.showCredentialManagement()
+
+                                // Check if a new profile was created (returns IamProfileSelection)
+                                if (typeof managementResult === 'object' && 'profileName' in managementResult) {
+                                    // User created a new profile, use it directly
+                                    logger.debug(
+                                        `SMUS Auth: Using newly created profile: ${managementResult.profileName}`
+                                    )
+                                    resolve(managementResult)
+                                } else if (managementResult === true) {
+                                    // User wants to restart profile selection (e.g., clicked back)
                                     const result = await SmusIamProfileSelector.showIamProfileSelection()
                                     resolve(result)
                                 } else {
@@ -144,24 +214,37 @@ export class SmusIamProfileSelector {
                     }
 
                     // User selected an existing profile
-                    const profileItem = selectedItem as vscode.QuickPickItem & { profileName: string; region: string }
+                    // Ensure we have profile data (should always be present for SelectProfile action)
+                    if (!itemWithAction.profileName || !itemWithAction.region) {
+                        reject(new ToolkitError('Invalid profile selection', { code: 'InvalidProfileSelection' }))
+                        return
+                    }
 
-                    logger.debug(`SMUS Auth: User selected profile: ${profileItem.profileName}`)
+                    const profileName = itemWithAction.profileName
+                    const profileRegion = itemWithAction.region
+
+                    logger.debug(`SMUS Auth: User selected profile: ${profileName}`)
 
                     // Check if region is not set and prompt for region selection
-                    if (profileItem.region === 'not-set') {
+                    if (profileRegion === 'not-set') {
                         void (async () => {
                             try {
                                 const selectedRegion = await SmusIamProfileSelector.showRegionSelection()
 
+                                // Check if user clicked back on region selection
+                                if (selectedRegion === 'BACK') {
+                                    resolve({
+                                        isBack: true,
+                                        message: 'User chose to go back from region selection.',
+                                    })
+                                    return
+                                }
+
                                 // Update the profile with the selected region
-                                await SmusIamProfileSelector.updateProfileRegion(
-                                    profileItem.profileName,
-                                    selectedRegion
-                                )
+                                await SmusIamProfileSelector.updateProfileRegion(profileName, selectedRegion)
 
                                 resolve({
-                                    profileName: profileItem.profileName,
+                                    profileName: profileName,
                                     region: selectedRegion,
                                 })
                             } catch (error) {
@@ -170,14 +253,14 @@ export class SmusIamProfileSelector {
                         })()
                     } else {
                         resolve({
-                            profileName: profileItem.profileName,
-                            region: profileItem.region,
+                            profileName: profileName,
+                            region: profileRegion,
                         })
                     }
                 })
 
                 quickPick.onDidTriggerButton((button) => {
-                    if (button === backButton) {
+                    if (button === vscode.QuickInputButtons.Back) {
                         isCompleted = true
                         quickPick.dispose()
                         resolve({
@@ -213,50 +296,45 @@ export class SmusIamProfileSelector {
 
     /**
      * Shows region selection dialog for IAM authentication
-     * @param defaultRegion Optional default region to pre-select
+     * @param options Configuration options for the region selection dialog
      * @returns Promise resolving to the selected region or 'BACK' if user wants to go back
      */
-    public static async showRegionSelection(defaultRegion?: string): Promise<string> {
+    public static async showRegionSelection(options?: {
+        defaultRegion?: string
+        title?: string
+        placeholder?: string
+        returnBackOnCancel?: boolean
+    }): Promise<string> {
         const logger = this.logger
 
-        // Common AWS regions
-        const regions = [
-            { name: 'US East (N. Virginia)', code: 'us-east-1' },
-            { name: 'US East (Ohio)', code: 'us-east-2' },
-            { name: 'US West (Oregon)', code: 'us-west-2' },
-            { name: 'US West (N. California)', code: 'us-west-1' },
-            { name: 'Europe (Ireland)', code: 'eu-west-1' },
-            { name: 'Europe (London)', code: 'eu-west-2' },
-            { name: 'Europe (Frankfurt)', code: 'eu-central-1' },
-            { name: 'Asia Pacific (Singapore)', code: 'ap-southeast-1' },
-            { name: 'Asia Pacific (Sydney)', code: 'ap-southeast-2' },
-            { name: 'Asia Pacific (Tokyo)', code: 'ap-northeast-1' },
-        ]
+        // Get regions where DataZone service is available
+        const allRegions = globals.regionProvider.getRegions()
+        const dataZoneRegions = allRegions.filter((region) =>
+            globals.regionProvider.isServiceInRegion(DataZoneServiceId, region.id)
+        )
+
+        // If no regions found with DataZone service, fall back to all regions
+        const regions = dataZoneRegions.length > 0 ? dataZoneRegions : allRegions
 
         const regionItems: vscode.QuickPickItem[] = regions.map(
             (region) =>
                 ({
                     label: region.name,
-                    description: region.code,
-                    detail: `AWS Region: ${region.code}`,
-                    regionCode: region.code,
+                    description: region.id,
+                    detail: `AWS Region: ${region.id}`,
+                    regionCode: region.id,
                 }) as vscode.QuickPickItem & { regionCode: string }
         )
 
-        const quickPick = vscode.window.createQuickPick()
-        quickPick.title = 'Select AWS Region'
-        quickPick.placeholder = 'Choose the AWS region for SageMaker Unified Studio'
+        const quickPick = this.createInputQuickPick(
+            options?.title ?? 'Select AWS Region',
+            options?.placeholder ?? 'Choose the AWS region for SageMaker Unified Studio'
+        )
         quickPick.items = regionItems
-        quickPick.canSelectMany = false
-        quickPick.ignoreFocusOut = true
-
-        // Add back button
-        const backButton = vscode.QuickInputButtons.Back
-        quickPick.buttons = [backButton]
 
         // Pre-select default region if provided
-        if (defaultRegion) {
-            const defaultItem = regionItems.find((item) => (item as any).regionCode === defaultRegion)
+        if (options?.defaultRegion) {
+            const defaultItem = regionItems.find((item) => (item as any).regionCode === options.defaultRegion)
             if (defaultItem) {
                 quickPick.activeItems = [defaultItem]
             }
@@ -268,10 +346,18 @@ export class SmusIamProfileSelector {
             quickPick.onDidAccept(() => {
                 const selectedItem = quickPick.selectedItems[0]
                 if (!selectedItem) {
-                    quickPick.dispose()
-                    reject(
-                        new ToolkitError('No region selected', { code: SmusErrorCodes.UserCancelled, cancelled: true })
-                    )
+                    if (options?.returnBackOnCancel) {
+                        quickPick.dispose()
+                        resolve('BACK')
+                    } else {
+                        quickPick.dispose()
+                        reject(
+                            new ToolkitError('No region selected', {
+                                code: SmusErrorCodes.UserCancelled,
+                                cancelled: true,
+                            })
+                        )
+                    }
                     return
                 }
 
@@ -286,7 +372,7 @@ export class SmusIamProfileSelector {
             })
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     resolve('BACK')
@@ -296,12 +382,16 @@ export class SmusIamProfileSelector {
             quickPick.onDidHide(() => {
                 if (!isCompleted) {
                     quickPick.dispose()
-                    reject(
-                        new ToolkitError('Region selection cancelled', {
-                            code: SmusErrorCodes.UserCancelled,
-                            cancelled: true,
-                        })
-                    )
+                    if (options?.returnBackOnCancel) {
+                        resolve('BACK')
+                    } else {
+                        reject(
+                            new ToolkitError('Region selection cancelled', {
+                                code: SmusErrorCodes.UserCancelled,
+                                cancelled: true,
+                            })
+                        )
+                    }
                 }
             })
 
@@ -310,73 +400,32 @@ export class SmusIamProfileSelector {
     }
 
     /**
-     * Validates an IAM credential profile
-     * @param profileName Profile name to validate
-     * @returns Promise resolving to validation result
-     */
-    public static async validateProfile(profileName: string): Promise<{ isValid: boolean; error?: string }> {
-        const logger = this.logger
-
-        try {
-            logger.debug(`SMUS Auth: Validating profile: ${profileName}`)
-
-            // Load profiles to check if the profile exists
-            const profiles = await loadSharedCredentialsProfiles()
-
-            if (!profiles[profileName]) {
-                return {
-                    isValid: false,
-                    error: `Profile '${profileName}' not found in AWS credentials`,
-                }
-            }
-
-            const profile = profiles[profileName]
-
-            // Basic validation - check for required fields
-            if (!profile.aws_access_key_id && !profile.role_arn && !profile.sso_start_url) {
-                return {
-                    isValid: false,
-                    error: `Profile '${profileName}' is missing required credentials`,
-                }
-            }
-
-            logger.debug(`SMUS Auth: Profile validation successful: ${profileName}`)
-
-            return { isValid: true }
-        } catch (error) {
-            logger.error(`SMUS Auth: Profile validation failed: ${profileName}`, error)
-
-            return {
-                isValid: false,
-                error: `Failed to validate profile '${profileName}': ${(error as Error).message}`,
-            }
-        }
-    }
-
-    /**
      * Shows credential management options (Add/Edit credentials)
-     * @returns Promise resolving to boolean indicating if profile selection should restart
+     * @returns Promise resolving to boolean indicating if profile selection should restart, or profile data if a new profile was created
      */
-    public static async showCredentialManagement(): Promise<boolean> {
+    public static async showCredentialManagement(): Promise<boolean | IamProfileSelection> {
         const logger = this.logger
 
         logger.debug('SMUS Auth: Showing credential management options')
 
-        const options: vscode.QuickPickItem[] = [
+        const options: (vscode.QuickPickItem & { action: CredentialManagementAction })[] = [
             {
                 label: '$(file-text) Edit AWS Credentials File',
                 description: 'Open ~/.aws/credentials file for editing',
                 detail: 'Edit existing credential profiles or add new ones',
+                action: CredentialManagementAction.EditCredentialsFile,
             },
             {
                 label: '$(file-text) Edit AWS Config File',
                 description: 'Open ~/.aws/config file for editing',
                 detail: 'Edit AWS configuration settings and profiles',
+                action: CredentialManagementAction.EditConfigFile,
             },
             {
                 label: '$(add) Add New Profile',
                 description: 'Create a new AWS credential profile',
                 detail: 'Interactive setup for a new credential profile',
+                action: CredentialManagementAction.AddNewProfile,
             },
         ]
 
@@ -410,18 +459,29 @@ export class SmusIamProfileSelector {
                 // Handle the async operations after disposing the quick pick
                 void (async () => {
                     try {
-                        if (selectedItem.label.includes('Edit AWS Credentials File')) {
-                            const result = await this.openCredentialsFile()
-                            // If user clicked "Select Profile", restart profile selection
-                            resolve(result === 'RESTART_PROFILE_SELECTION')
-                        } else if (selectedItem.label.includes('Edit AWS Config File')) {
-                            const result = await this.openConfigFile()
-                            // If user clicked "Select Profile", restart profile selection
-                            resolve(result === 'RESTART_PROFILE_SELECTION')
-                        } else if (selectedItem.label.includes('Add New Profile')) {
-                            await this.addNewProfile()
-                            // Restart profile selection after adding new profile
-                            resolve(true)
+                        const itemWithAction = selectedItem as vscode.QuickPickItem & {
+                            action: CredentialManagementAction
+                        }
+
+                        switch (itemWithAction.action) {
+                            case CredentialManagementAction.EditCredentialsFile: {
+                                const result = await this.openAwsFile('credentials')
+                                // If user clicked "Select Profile", restart profile selection
+                                resolve(result === 'RESTART_PROFILE_SELECTION')
+                                break
+                            }
+                            case CredentialManagementAction.EditConfigFile: {
+                                const result = await this.openAwsFile('config')
+                                // If user clicked "Select Profile", restart profile selection
+                                resolve(result === 'RESTART_PROFILE_SELECTION')
+                                break
+                            }
+                            case CredentialManagementAction.AddNewProfile: {
+                                const newProfile = await this.addNewProfile()
+                                // Return the newly created profile data to use it directly
+                                resolve(newProfile)
+                                break
+                            }
                         }
                     } catch (error) {
                         if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
@@ -435,7 +495,7 @@ export class SmusIamProfileSelector {
             })
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     // User wants to go back to profile selection
@@ -462,105 +522,48 @@ export class SmusIamProfileSelector {
     /**
      * Opens the AWS credentials file in VS Code editor
      */
-    private static async openCredentialsFile(): Promise<void | 'RESTART_PROFILE_SELECTION'> {
-        const logger = this.logger
-
-        try {
-            const credentialsPath = getCredentialsFilename()
-            logger.debug(`SMUS Auth: Opening credentials file: ${credentialsPath}`)
-
-            // Ensure the .aws directory exists
-            await this.ensureAwsDirectoryExists()
-
-            // Create the file if it doesn't exist
-            if (!(await fs.existsFile(credentialsPath))) {
-                await fs.writeFile(credentialsPath, this.getDefaultCredentialsContent())
-                logger.debug('SMUS Auth: Created new credentials file')
-            }
-
-            // Open the file in VS Code
-            const document = await vscode.workspace.openTextDocument(credentialsPath)
-            await vscode.window.showTextDocument(document)
-
-            // Show helpful message with options
-            const action = await vscode.window.showInformationMessage(
-                'AWS credentials file opened. You can edit your profiles or select an existing one.',
-                'Select Profile',
-                'Open Credentials File',
-                'Done'
-            )
-
-            if (action === 'Select Profile') {
-                // Directly restart profile selection - much cleaner than throwing errors
-                return 'RESTART_PROFILE_SELECTION'
-            } else if (action === 'Open Credentials File') {
-                // Keep the file open and let user edit
-                // File is already open, nothing more to do
-            }
-            // If "Done" or dismissed, just continue
-
-            logger.debug('SMUS Auth: Credentials file opened successfully')
-        } catch (error) {
-            logger.error('SMUS Auth: Failed to open credentials file: %s', error)
-            throw new ToolkitError(`Failed to open AWS credentials file: ${(error as Error).message}`, {
-                code: 'CredentialsFileError',
-            })
-        }
-    }
-
     /**
-     * Opens the AWS config file in VS Code editor
+     * Opens an AWS configuration file in VS Code editor
+     * @param fileType Type of file to open ('credentials' or 'config')
      */
-    private static async openConfigFile(): Promise<void | 'RESTART_PROFILE_SELECTION'> {
+    private static async openAwsFile(fileType: 'credentials' | 'config'): Promise<void | 'RESTART_PROFILE_SELECTION'> {
         const logger = this.logger
+        const isCredentials = fileType === 'credentials'
 
         try {
-            const configPath = getConfigFilename()
-            logger.debug(`SMUS Auth: Opening config file: ${configPath}`)
+            const filePath = isCredentials ? getCredentialsFilename() : getConfigFilename()
+            const fileLabel = isCredentials ? 'credentials' : 'config'
+
+            logger.debug(`SMUS Auth: Opening ${fileLabel} file: ${filePath}`)
 
             // Ensure the .aws directory exists
             await this.ensureAwsDirectoryExists()
 
             // Create the file if it doesn't exist
-            if (!(await fs.existsFile(configPath))) {
-                await fs.writeFile(configPath, this.getDefaultConfigContent())
-                logger.debug('SMUS Auth: Created new config file')
+            if (!(await fs.existsFile(filePath))) {
+                await fs.writeFile(filePath, '')
+                logger.debug(`SMUS Auth: Created new ${fileLabel} file`)
             }
 
             // Open the file in VS Code
-            const document = await vscode.workspace.openTextDocument(configPath)
+            const document = await vscode.workspace.openTextDocument(filePath)
             await vscode.window.showTextDocument(document)
 
-            // Show helpful message with options
-            const action = await vscode.window.showInformationMessage(
-                'AWS config file opened. You can edit your configuration or select an existing profile.',
-                'Select Profile',
-                'Open Config File',
-                'Done'
-            )
-
-            if (action === 'Select Profile') {
-                // Directly restart profile selection - much cleaner than throwing errors
-                return 'RESTART_PROFILE_SELECTION'
-            } else if (action === 'Open Config File') {
-                // Keep the file open and let user edit
-                // File is already open, nothing more to do
-            }
-            // If "Done" or dismissed, just continue
-
-            logger.debug('SMUS Auth: Config file opened successfully')
+            logger.debug(`SMUS Auth: ${fileLabel} file opened successfully`)
         } catch (error) {
-            logger.error('SMUS Auth: Failed to open config file: %s', error)
-            throw new ToolkitError(`Failed to open AWS config file: ${(error as Error).message}`, {
-                code: 'ConfigFileError',
+            const fileLabel = isCredentials ? 'credentials' : 'config'
+            logger.error(`SMUS Auth: Failed to open ${fileLabel} file: %s`, error)
+            throw new ToolkitError(`Failed to open AWS ${fileLabel} file: ${(error as Error).message}`, {
+                code: isCredentials ? 'CredentialsFileError' : 'ConfigFileError',
             })
         }
     }
 
     /**
      * Interactive flow to add a new AWS credential profile with back navigation
+     * @returns Promise resolving to the newly created profile data
      */
-    private static async addNewProfile(): Promise<void> {
+    private static async addNewProfile(): Promise<IamProfileSelection> {
         const logger = this.logger
 
         try {
@@ -583,17 +586,17 @@ export class SmusIamProfileSelector {
             )
 
             // Show success message
-            const openFile = await vscode.window.showInformationMessage(
-                `AWS profile '${profileData.profileName}' has been added successfully!`,
-                'Open Credentials File',
-                'Done'
+            void vscode.window.showInformationMessage(
+                `AWS profile '${profileData.profileName}' has been added successfully and will be used for authentication.`
             )
 
-            if (openFile === 'Open Credentials File') {
-                await this.openCredentialsFile()
-            }
-
             logger.debug(`SMUS Auth: Successfully added new profile: ${profileData.profileName}`)
+
+            // Return the profile data to use it directly
+            return {
+                profileName: profileData.profileName,
+                region: profileData.region,
+            }
         } catch (error) {
             // Only log actual errors, not user cancellations
             if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
@@ -616,7 +619,7 @@ export class SmusIamProfileSelector {
               accessKeyId: string
               secretAccessKey: string
               sessionToken?: string
-              region?: string
+              region: string
           }
         | 'BACK'
     > {
@@ -633,7 +636,7 @@ export class SmusIamProfileSelector {
                     // Step 1: Profile Name
                     const result = await this.getProfileNameInput()
                     if (result === 'BACK') {
-                        return 'BACK' // Exit the entire flow
+                        return 'BACK' // User wants to go back - exit to credential management menu
                     }
                     profileName = result
                     currentStep = 2
@@ -673,8 +676,12 @@ export class SmusIamProfileSelector {
                     break
                 }
                 case 5: {
-                    // Step 5: Region (optional)
-                    const result = await this.getRegionInput()
+                    // Step 5: Region
+                    const result = await this.showRegionSelection({
+                        title: 'Add New AWS Profile - Step 5 of 5',
+                        placeholder: 'Select a default region',
+                        returnBackOnCancel: true,
+                    })
                     if (result === 'BACK') {
                         currentStep = 4 // Go back to step 4
                     } else {
@@ -691,7 +698,7 @@ export class SmusIamProfileSelector {
             accessKeyId,
             secretAccessKey,
             sessionToken: sessionToken || undefined,
-            region: region || undefined,
+            region, // Region is always set since step 5 is required
         }
     }
 
@@ -700,23 +707,16 @@ export class SmusIamProfileSelector {
      */
     private static async getProfileNameInput(): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
-            const quickPick = vscode.window.createQuickPick()
-            quickPick.title = 'Add New AWS Profile - Step 1 of 5'
-            quickPick.placeholder = 'Type a profile name (e.g., my-profile, dev, prod)'
-            quickPick.canSelectMany = false
-            quickPick.ignoreFocusOut = true
-
-            // Add back button
-            const backButton = vscode.QuickInputButtons.Back
-            quickPick.buttons = [backButton]
-
-            // Enable text input
+            const quickPick = this.createInputQuickPick(
+                'Add New AWS Profile - Step 1 of 5',
+                'Type a profile name (e.g., my-profile, dev, prod)'
+            )
             quickPick.items = []
 
             let isCompleted = false
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     resolve('BACK')
@@ -740,25 +740,25 @@ export class SmusIamProfileSelector {
                 if (value.includes(' ')) {
                     quickPick.items = [
                         {
-                            label: '$(error) Profile name cannot contain spaces',
-                            description: 'Remove spaces from the profile name',
+                            label: `${value}`,
+                            description: '$(error) Cannot contain spaces',
                             detail: 'Valid characters: letters, numbers, hyphens, underscores',
                         },
                     ]
-                } else if (!/^[a-zA-Z0-9_-]*$/.test(value)) {
+                } else if (!this.profileNamePattern.test(value)) {
                     quickPick.items = [
                         {
-                            label: '$(error) Invalid characters in profile name',
-                            description: 'Profile names can only contain letters, numbers, hyphens, and underscores',
-                            detail: `Current input: "${value}"`,
+                            label: `${value}`,
+                            description: '$(error) Invalid characters',
+                            detail: 'Profile names can only contain letters, numbers, hyphens, and underscores',
                         },
                     ]
                 } else if (value.length < 2) {
                     quickPick.items = [
                         {
-                            label: '$(info) Profile name is too short',
-                            description: 'Profile names should be at least 2 characters long',
-                            detail: `Current length: ${value.length} characters`,
+                            label: `${value}`,
+                            description: `$(info) Too short (${value.length}/2 min)`,
+                            detail: 'Profile names should be at least 2 characters long',
                         },
                     ]
                 } else {
@@ -770,17 +770,17 @@ export class SmusIamProfileSelector {
                         if (profileExists) {
                             quickPick.items = [
                                 {
-                                    label: `$(warning) ${value}`,
-                                    description: 'Profile already exists - will be overwritten',
+                                    label: `${value}`,
+                                    description: '$(warning) Profile exists - will be overwritten',
                                     detail: 'Press Enter to overwrite the existing profile',
                                 },
                             ]
                         } else {
                             quickPick.items = [
                                 {
-                                    label: `$(check) ${value}`,
-                                    description: 'Press Enter to use this profile name',
-                                    detail: `Valid profile name (${value.length} characters)`,
+                                    label: `${value}`,
+                                    description: `$(check) Valid (${value.length} characters)`,
+                                    detail: 'Press Enter to use this profile name',
                                 },
                             ]
                         }
@@ -788,9 +788,9 @@ export class SmusIamProfileSelector {
                         // If we can't load profiles, just show as valid
                         quickPick.items = [
                             {
-                                label: `$(check) ${value}`,
-                                description: 'Press Enter to use this profile name',
-                                detail: `Valid profile name (${value.length} characters)`,
+                                label: `${value}`,
+                                description: `$(check) Valid (${value.length} characters)`,
+                                detail: 'Press Enter to use this profile name',
                             },
                         ]
                     }
@@ -807,7 +807,7 @@ export class SmusIamProfileSelector {
                 if (value.includes(' ')) {
                     return // Don't accept names with spaces
                 }
-                if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+                if (!this.profileNamePattern.test(value)) {
                     return // Don't accept invalid characters
                 }
 
@@ -861,23 +861,16 @@ export class SmusIamProfileSelector {
      */
     private static async getAccessKeyIdInput(): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
-            const quickPick = vscode.window.createQuickPick()
-            quickPick.title = 'Add New AWS Profile - Step 2 of 5'
-            quickPick.placeholder = 'Type your AWS Access Key ID (e.g., AKIAIOSFODNN7EXAMPLE)'
-            quickPick.canSelectMany = false
-            quickPick.ignoreFocusOut = true
-
-            // Add back button
-            const backButton = vscode.QuickInputButtons.Back
-            quickPick.buttons = [backButton]
-
-            // Enable text input
+            const quickPick = this.createInputQuickPick(
+                'Add New AWS Profile - Step 2 of 5',
+                'Type your AWS Access Key ID (e.g., AKIAIOSFODNN7EXAMPLE)'
+            )
             quickPick.items = []
 
             let isCompleted = false
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     resolve('BACK')
@@ -897,37 +890,38 @@ export class SmusIamProfileSelector {
                     return
                 }
 
-                // Validate input as user types
-                if (!/^[A-Z0-9]*$/.test(value)) {
+                // Validate input as user types (AWS STS API: 16-128 chars, pattern [\w]*)
+                // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
+                if (!this.accessKeyIdPattern.test(value)) {
                     quickPick.items = [
                         {
-                            label: '$(error) Invalid characters in Access Key ID',
-                            description: 'Access Key IDs should only contain uppercase letters and numbers',
-                            detail: `Current input: "${value}"`,
+                            label: `${value}`,
+                            description: '$(error) Invalid characters',
+                            detail: 'Access Key IDs can only contain letters, numbers, and underscores',
                         },
                     ]
                 } else if (value.length < 16) {
                     quickPick.items = [
                         {
-                            label: '$(info) Access Key ID seems short',
-                            description: 'Access Key IDs are typically 16-32 characters long',
-                            detail: `Current length: ${value.length} characters`,
+                            label: `${value}`,
+                            description: `$(info) Too short (${value.length}/16 min)`,
+                            detail: 'AWS Access Key IDs must be 16-128 characters long',
                         },
                     ]
-                } else if (value.length > 32) {
+                } else if (value.length > 128) {
                     quickPick.items = [
                         {
-                            label: '$(error) Access Key ID seems too long',
-                            description: 'Access Key IDs are typically 16-32 characters long',
-                            detail: `Current length: ${value.length} characters`,
+                            label: `${value}`,
+                            description: `$(error) Too long (${value.length}/128 max)`,
+                            detail: 'AWS Access Key IDs must be 16-128 characters long',
                         },
                     ]
                 } else {
                     quickPick.items = [
                         {
-                            label: `$(check) ${value}`,
-                            description: 'Press Enter to use this Access Key ID',
-                            detail: `Valid Access Key ID (${value.length} characters)`,
+                            label: `${value}`,
+                            description: `$(check) Valid (${value.length} characters)`,
+                            detail: 'Press Enter to use this Access Key ID',
                         },
                     ]
                 }
@@ -936,11 +930,15 @@ export class SmusIamProfileSelector {
             quickPick.onDidAccept(() => {
                 const value = quickPick.value.trim()
 
-                // Validate final input
+                // Validate final input (AWS STS API: 16-128 chars, pattern [\w]*)
+                // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
                 if (!value) {
                     return // Don't accept empty input
                 }
-                if (value.length < 16 || value.length > 32) {
+                if (!this.accessKeyIdPattern.test(value)) {
+                    return // Don't accept invalid characters
+                }
+                if (value.length < 16 || value.length > 128) {
                     return // Don't accept invalid length
                 }
 
@@ -965,23 +963,16 @@ export class SmusIamProfileSelector {
      */
     private static async getSecretAccessKeyInput(): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
-            const quickPick = vscode.window.createQuickPick()
-            quickPick.title = 'Add New AWS Profile - Step 3 of 5'
-            quickPick.placeholder = 'Type your AWS Secret Access Key (will be hidden when typing)'
-            quickPick.canSelectMany = false
-            quickPick.ignoreFocusOut = true
-
-            // Add back button
-            const backButton = vscode.QuickInputButtons.Back
-            quickPick.buttons = [backButton]
-
-            // Enable text input
+            const quickPick = this.createInputQuickPick(
+                'Add New AWS Profile - Step 3 of 5',
+                'Type your AWS Secret Access Key (will be hidden when typing)'
+            )
             quickPick.items = []
 
             let isCompleted = false
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     resolve('BACK')
@@ -994,42 +985,31 @@ export class SmusIamProfileSelector {
                     quickPick.items = [
                         {
                             label: '$(lock) Enter AWS Secret Access Key',
-                            description: 'e.g., wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-                            detail: 'Secret Access Keys are typically 40+ characters long',
+                            description: 'Required field',
+                            detail: 'Enter your AWS Secret Access Key',
                         },
                     ]
                     return
                 }
 
-                // Validate input as user types (but don't show the actual value for security)
-                if (value.length < 20) {
-                    quickPick.items = [
-                        {
-                            label: '$(info) Secret Access Key seems short',
-                            description: 'Secret Access Keys are typically 40+ characters long',
-                            detail: `Current length: ${value.length} characters`,
-                        },
-                    ]
-                } else if (value.length >= 20) {
-                    quickPick.items = [
-                        {
-                            label: `$(check) Secret Access Key entered (${value.length} characters)`,
-                            description: 'Press Enter to use this Secret Access Key',
-                            detail: 'Secret key length looks good',
-                        },
-                    ]
-                }
+                // AWS STS API: Required, no specific pattern/length constraints in docs
+                // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
+                quickPick.items = [
+                    {
+                        label: '•'.repeat(Math.min(value.length, 40)),
+                        description: `$(check) ${value.length} characters entered`,
+                        detail: 'Press Enter to continue',
+                    },
+                ]
             })
 
             quickPick.onDidAccept(() => {
                 const value = quickPick.value.trim()
 
-                // Validate final input
+                // Validate final input - AWS STS API only requires non-empty
+                // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
                 if (!value) {
                     return // Don't accept empty input
-                }
-                if (value.length < 20) {
-                    return // Don't accept keys that are too short
                 }
 
                 isCompleted = true
@@ -1053,14 +1033,10 @@ export class SmusIamProfileSelector {
      */
     private static async getSessionTokenInput(): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
-            const quickPick = vscode.window.createQuickPick()
-            quickPick.title = 'Add New AWS Profile - Step 4 of 5'
-            quickPick.placeholder = 'Enter your AWS Session Token (optional for temporary credentials)'
-            quickPick.canSelectMany = false
-            quickPick.ignoreFocusOut = true
-
-            const backButton = vscode.QuickInputButtons.Back
-            quickPick.buttons = [backButton]
+            const quickPick = this.createInputQuickPick(
+                'Add New AWS Profile - Step 4 of 5',
+                'Enter your AWS Session Token (optional for temporary credentials)'
+            )
 
             // Start with skip option only
             quickPick.items = [
@@ -1068,13 +1044,14 @@ export class SmusIamProfileSelector {
                     label: '$(arrow-right) Skip',
                     description: 'Skip session token (for permanent credentials)',
                     detail: 'Use this for regular IAM user access keys',
-                },
+                    action: SessionTokenAction.Skip,
+                } as vscode.QuickPickItem & { action: SessionTokenAction },
             ]
 
             let isCompleted = false
 
             quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
+                if (button === vscode.QuickInputButtons.Back) {
                     isCompleted = true
                     quickPick.dispose()
                     resolve('BACK')
@@ -1089,39 +1066,28 @@ export class SmusIamProfileSelector {
                             label: '$(arrow-right) Skip',
                             description: 'Skip session token (for permanent credentials)',
                             detail: 'Use this for regular IAM user access keys',
-                        },
+                            action: SessionTokenAction.Skip,
+                        } as vscode.QuickPickItem & { action: SessionTokenAction },
                     ]
                     return
                 }
 
-                // Validate input as user types
-                if (value.length < 50) {
-                    quickPick.items = [
-                        {
-                            label: '$(warning) Session token seems too short',
-                            description: 'AWS session tokens are typically much longer',
-                            detail: `Current length: ${value.length} characters`,
-                        },
-                        {
-                            label: '$(arrow-right) Skip',
-                            description: 'Skip session token (for permanent credentials)',
-                            detail: 'Use this for regular IAM user access keys',
-                        },
-                    ]
-                } else {
-                    quickPick.items = [
-                        {
-                            label: '$(check) Use this session token',
-                            description: 'Session token looks valid',
-                            detail: `Length: ${value.length} characters`,
-                        },
-                        {
-                            label: '$(arrow-right) Skip',
-                            description: 'Skip session token (for permanent credentials)',
-                            detail: 'Use this for regular IAM user access keys',
-                        },
-                    ]
-                }
+                // AWS STS API: Required for temporary credentials, no specific pattern/length constraints in docs
+                // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
+                quickPick.items = [
+                    {
+                        label: '•'.repeat(Math.min(value.length, 40)),
+                        description: `$(check) ${value.length} characters entered`,
+                        detail: 'Press Enter to use this session token',
+                        action: SessionTokenAction.UseToken,
+                    } as vscode.QuickPickItem & { action: SessionTokenAction },
+                    {
+                        label: '$(arrow-right) Skip',
+                        description: 'Skip session token (for permanent credentials)',
+                        detail: 'Use this for regular IAM user access keys',
+                        action: SessionTokenAction.Skip,
+                    } as vscode.QuickPickItem & { action: SessionTokenAction },
+                ]
             })
 
             quickPick.onDidAccept(() => {
@@ -1137,99 +1103,28 @@ export class SmusIamProfileSelector {
                     return
                 }
 
-                // If user selected skip or no selection with empty value
-                if (!selectedItem || selectedItem.label.includes('Skip')) {
-                    resolve('')
-                    return
-                }
-
-                // If user selected "Use this session token", use the typed value (trimmed)
-                if (selectedItem.label.includes('Use this session token')) {
-                    resolve(currentValue.trim())
-                    return
-                }
-
-                // Default to empty
-                resolve('')
-            })
-
-            quickPick.onDidHide(() => {
-                if (!isCompleted) {
-                    quickPick.dispose()
-                    resolve('BACK')
-                }
-            })
-
-            quickPick.show()
-        })
-    }
-
-    /**
-     * Gets region input with back navigation
-     */
-    private static async getRegionInput(): Promise<string | 'BACK'> {
-        return new Promise((resolve) => {
-            const quickPick = vscode.window.createQuickPick()
-            quickPick.title = 'Add New AWS Profile - Step 5 of 5'
-            quickPick.placeholder = 'Select a default region (optional)'
-            quickPick.canSelectMany = false
-            quickPick.ignoreFocusOut = true
-
-            const backButton = vscode.QuickInputButtons.Back
-            quickPick.buttons = [backButton]
-
-            const regions = [
-                { name: 'US East (N. Virginia)', code: 'us-east-1' },
-                { name: 'US East (Ohio)', code: 'us-east-2' },
-                { name: 'US West (Oregon)', code: 'us-west-2' },
-                { name: 'US West (N. California)', code: 'us-west-1' },
-                { name: 'Europe (Ireland)', code: 'eu-west-1' },
-                { name: 'Europe (London)', code: 'eu-west-2' },
-                { name: 'Europe (Frankfurt)', code: 'eu-central-1' },
-                { name: 'Asia Pacific (Singapore)', code: 'ap-southeast-1' },
-                { name: 'Asia Pacific (Sydney)', code: 'ap-southeast-2' },
-                { name: 'Asia Pacific (Tokyo)', code: 'ap-northeast-1' },
-            ]
-
-            const regionItems = regions.map((region) => ({
-                label: region.name,
-                description: region.code,
-                detail: `AWS Region: ${region.code}`,
-                regionCode: region.code,
-            }))
-
-            const skipItem = {
-                label: '$(arrow-right) Skip',
-                description: 'No default region',
-                detail: 'You can set this later if needed',
-            }
-
-            quickPick.items = [...regionItems, skipItem]
-
-            let isCompleted = false
-
-            quickPick.onDidTriggerButton((button) => {
-                if (button === backButton) {
-                    isCompleted = true
-                    quickPick.dispose()
-                    resolve('BACK')
-                }
-            })
-
-            quickPick.onDidAccept(() => {
-                const selectedItem = quickPick.selectedItems[0]
+                // If no selection with empty value, skip
                 if (!selectedItem) {
+                    resolve('')
                     return
                 }
 
-                isCompleted = true
-                quickPick.dispose()
+                const itemWithAction = selectedItem as vscode.QuickPickItem & { action: SessionTokenAction }
 
-                if (selectedItem === skipItem) {
-                    resolve('')
-                } else {
-                    const regionItem = selectedItem as any
-                    resolve(regionItem.regionCode)
+                // Handle based on action
+                switch (itemWithAction.action) {
+                    case SessionTokenAction.Skip:
+                        resolve('')
+                        break
+                    case SessionTokenAction.UseToken:
+                        resolve(currentValue.trim())
+                        break
+                    case SessionTokenAction.Warning:
+                        // User can still proceed with warning, use the typed value
+                        resolve(currentValue.trim())
+                        break
+                    default:
+                        resolve('')
                 }
             })
 
@@ -1375,12 +1270,11 @@ export class SmusIamProfileSelector {
             const profileSection = content.slice(profileStartIndex, profileEndIndex)
 
             // Check if region already exists in the profile
-            const regionRegex = /^region\s*=.*$/m
             let updatedProfileSection: string
 
-            if (regionRegex.test(profileSection)) {
+            if (this.regionLinePattern.test(profileSection)) {
                 // Replace existing region
-                updatedProfileSection = profileSection.replace(regionRegex, `region = ${region}`)
+                updatedProfileSection = profileSection.replace(this.regionLinePattern, `region = ${region}`)
             } else {
                 // Add region to the profile (before any empty lines at the end)
                 const lines = profileSection.split('\n')
@@ -1410,57 +1304,5 @@ export class SmusIamProfileSelector {
                 code: 'UpdateProfileError',
             })
         }
-    }
-
-    /**
-     * Returns default content for a new credentials file
-     */
-    private static getDefaultCredentialsContent(): string {
-        return `# AWS Credentials File
-# 
-# This file stores your AWS access credentials.
-# Each profile should have the following format:
-#
-# For permanent credentials:
-# [profile-name]
-# aws_access_key_id = YOUR_ACCESS_KEY_ID
-# aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
-# region = us-east-1
-#
-# For temporary/role-based credentials:
-# [temp-profile]
-# aws_access_key_id = YOUR_ACCESS_KEY_ID
-# aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
-# aws_session_token = YOUR_SESSION_TOKEN
-# region = us-east-1
-#
-# Example:
-# [default]
-# aws_access_key_id = AKIAIOSFODNN7EXAMPLE
-# aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-# region = us-east-1
-
-`
-    }
-
-    /**
-     * Returns default content for a new config file
-     */
-    private static getDefaultConfigContent(): string {
-        return `# AWS Config File
-#
-# This file stores AWS configuration settings.
-# Each profile should have the following format:
-#
-# [profile profile-name]
-# region = us-east-1
-# output = json
-#
-# For the default profile, use:
-# [default]
-# region = us-east-1
-# output = json
-
-`
     }
 }

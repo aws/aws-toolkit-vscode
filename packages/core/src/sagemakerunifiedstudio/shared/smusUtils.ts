@@ -85,6 +85,11 @@ export const SmusTimeouts = {
 } as const
 
 /**
+ * DataZone service ID used for filtering regions
+ */
+export const DataZoneServiceId = 'datazone'
+
+/**
  * Interface for AWS credential objects that need validation
  */
 interface CredentialObject {

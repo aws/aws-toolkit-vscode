@@ -156,7 +156,7 @@ export class SmusAuthenticationOrchestrator {
 
         try {
             // Connect to SMUS using the authentication provider
-            const connection = await authProvider.connectToSmus(domainUrl)
+            const connection = await authProvider.connectToSmusWithSso(domainUrl)
 
             if (!connection) {
                 throw new ToolkitError('Failed to establish connection', {

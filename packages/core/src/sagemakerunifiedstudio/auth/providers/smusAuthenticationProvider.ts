@@ -333,12 +333,12 @@ export class SmusAuthenticationProvider {
     }
 
     /**
-     * Authenticates with SageMaker Unified Studio using a domain URL
+     * Authenticates with SageMaker Unified Studio using SSO and a domain URL
      * @param domainUrl The SageMaker Unified Studio domain URL
-     * @returns Promise resolving to the connection
+     * @returns Promise resolving to the SSO connection
      */
-    @withTelemetryContext({ name: 'connectToSmus', class: authClassName })
-    public async connectToSmus(domainUrl: string): Promise<SmusConnection> {
+    @withTelemetryContext({ name: 'connectToSmusWithSso', class: authClassName })
+    public async connectToSmusWithSso(domainUrl: string): Promise<SmusConnection> {
         const logger = getLogger()
 
         try {
@@ -366,7 +366,7 @@ export class SmusAuthenticationProvider {
                 if (connectionState === 'valid') {
                     logger.info('SMUS: Using existing valid connection')
 
-                    // Only SSO connections can be used with connectToSmus
+                    // Only SSO connections can be used with connectToSmusWithSso
                     if (isSmusSsoConnection(existingConn)) {
                         // Use the existing SSO connection
                         const result = await this.secondaryAuth.useNewConnection(existingConn)
@@ -377,14 +377,6 @@ export class SmusAuthenticationProvider {
                         }
 
                         return result as SmusConnection
-                    } else {
-                        // For IAM connections, we can't use connectToSmus - this method is only for SSO connections
-                        throw new ToolkitError(
-                            'Cannot connect to SMUS with SSO method using an existing IAM connection. Please use connectWithIamProfile instead.',
-                            {
-                                code: 'InvalidConnectionType',
-                            }
-                        )
                     }
                 }
 
@@ -411,10 +403,6 @@ export class SmusAuthenticationProvider {
                         }
 
                         return result as SmusConnection
-                    } else {
-                        // For IAM connections, we can't reauthenticate - need to create a new connection
-                        logger.info('SMUS: Existing IAM connection is invalid, will create new SSO connection')
-                        // Fall through to create new SSO connection logic
                     }
                 }
             }

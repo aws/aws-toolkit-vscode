@@ -197,11 +197,11 @@ describe('SmusAuthenticationProvider', function () {
         })
     })
 
-    describe('connectToSmus', function () {
+    describe('connectToSmusWithSso', function () {
         it('should create new connection when none exists', async function () {
             mockAuth.listConnections.resolves([])
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(extractDomainInfoStub.calledWith(testDomainUrl))
@@ -216,7 +216,7 @@ describe('SmusAuthenticationProvider', function () {
             mockAuth.listConnections.resolves([existingConnection])
             mockAuth.getConnectionState.returns('valid')
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.createConnection.notCalled)
@@ -229,7 +229,7 @@ describe('SmusAuthenticationProvider', function () {
             mockAuth.listConnections.resolves([existingConnection])
             mockAuth.getConnectionState.returns('invalid')
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.reauthenticate.calledWith(existingConnection))
@@ -241,7 +241,7 @@ describe('SmusAuthenticationProvider', function () {
             extractDomainInfoStub.returns({ domainId: undefined, region: testRegion })
 
             await assert.rejects(
-                () => smusAuthProvider.connectToSmus('invalid-url'),
+                () => smusAuthProvider.connectToSmusWithSso('invalid-url'),
                 (err: ToolkitError) => {
                     // The error is wrapped with FailedToConnect, but the original error should be in the cause
                     return err.code === 'FailedToConnect' && (err.cause as any)?.code === 'InvalidDomainUrl'
@@ -256,7 +256,7 @@ describe('SmusAuthenticationProvider', function () {
             getSsoInstanceInfoStub.rejects(error)
 
             await assert.rejects(
-                () => smusAuthProvider.connectToSmus(testDomainUrl),
+                () => smusAuthProvider.connectToSmusWithSso(testDomainUrl),
                 (err: ToolkitError) => err.code === 'FailedToConnect'
             )
             // Should not trigger project selection on error
@@ -268,7 +268,7 @@ describe('SmusAuthenticationProvider', function () {
             mockAuth.createConnection.rejects(error)
 
             await assert.rejects(
-                () => smusAuthProvider.connectToSmus(testDomainUrl),
+                () => smusAuthProvider.connectToSmusWithSso(testDomainUrl),
                 (err: ToolkitError) => err.code === 'FailedToConnect'
             )
             // Should not trigger project selection on error
@@ -279,7 +279,7 @@ describe('SmusAuthenticationProvider', function () {
             isInSmusSpaceEnvironmentStub.returns(true)
             mockAuth.listConnections.resolves([])
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.createConnection.called)
@@ -293,7 +293,7 @@ describe('SmusAuthenticationProvider', function () {
             mockAuth.listConnections.resolves([existingConnection])
             mockAuth.getConnectionState.returns('valid')
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockSecondaryAuth.useNewConnection.calledWith(existingConnection))
@@ -306,7 +306,7 @@ describe('SmusAuthenticationProvider', function () {
             mockAuth.listConnections.resolves([existingConnection])
             mockAuth.getConnectionState.returns('invalid')
 
-            const result = await smusAuthProvider.connectToSmus(testDomainUrl)
+            const result = await smusAuthProvider.connectToSmusWithSso(testDomainUrl)
 
             assert.strictEqual(result, mockSmusConnection)
             assert.ok(mockAuth.reauthenticate.calledWith(existingConnection))
