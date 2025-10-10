@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { AWSError } from 'aws-sdk'
+import { ServiceException } from '@smithy/smithy-client'
 import {
     AttachPolicyCommand,
     AttachPolicyRequest,
@@ -79,11 +79,16 @@ import {
 import { DefaultIotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'
 import { AwsStub, mockClient } from 'aws-sdk-client-mock'
 
-class FakeAwsError extends Error {
+class FakeServiceException extends ServiceException {
     public region: string = 'us-west-2'
 
     public constructor(message: string) {
-        super(message)
+        super({
+            name: 'FakeServiceException',
+            $fault: 'client',
+            $metadata: {},
+            message,
+        })
     }
 }
 
@@ -102,7 +107,7 @@ describe('DefaultIotClient', function () {
         mockIot = mockClient(IoTClient)
     })
 
-    const error: AWSError = new FakeAwsError('Expected failure') as AWSError
+    const error: ServiceException = new FakeServiceException('Expected failure') as ServiceException
 
     function createClient({ regionCode = region }: { regionCode?: string } = {}): DefaultIotClient {
         return new DefaultIotClient(regionCode, () => new IoTClient())

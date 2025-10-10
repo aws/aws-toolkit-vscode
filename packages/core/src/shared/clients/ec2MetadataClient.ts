@@ -5,7 +5,8 @@
 
 import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
-import { AWSError, MetadataService } from 'aws-sdk'
+import { MetadataService } from 'aws-sdk'
+import { ServiceException } from '@smithy/smithy-client'
 
 export interface IamInfo {
     Code: string
@@ -37,7 +38,7 @@ export class DefaultEc2MetadataClient {
             // fetchMetadataToken is private for some reason, but has the exact token functionality
             // that we want out of the metadata service.
             // https://github.com/aws/aws-sdk-js/blob/3333f8b49283f5bbff823ab8a8469acedb7fe3d5/lib/metadata_service.js#L116-L136
-            ;(this.metadata as any).fetchMetadataToken((tokenErr: AWSError, token: string) => {
+            ;(this.metadata as any).fetchMetadataToken((tokenErr: ServiceException, token: string) => {
                 let options
                 if (tokenErr) {
                     getLogger().warn(
