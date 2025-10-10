@@ -10,10 +10,14 @@ import { waitForElement } from '../utils/generalUtils'
  * @param webviewView The WebviewView instance
  */
 export async function listModels(webviewView: WebviewView): Promise<void> {
-    const selectElement = await waitForElement(webviewView, By.css('.mynah-form-input.auto-width'))
-    const options = await selectElement.findElements(By.css('option'))
-    const optionTexts = await Promise.all(options.map(async (option) => await option.getText()))
-    console.log('Available model options:', optionTexts)
+    try {
+        const selectElement = await waitForElement(webviewView, By.css('.mynah-form-input.auto-width'))
+        const options = await selectElement.findElements(By.css('option'))
+        const optionTexts = await Promise.all(options.map(async (option) => await option.getText()))
+        console.log('Available model options:', optionTexts)
+    } catch (e) {
+        throw new Error(`Failed to list models: ${e}`)
+    }
 }
 
 /**
@@ -22,19 +26,23 @@ export async function listModels(webviewView: WebviewView): Promise<void> {
  * @param modelName The exact name of the model to select
  */
 export async function selectModel(webviewView: WebviewView, modelName: string): Promise<void> {
-    const selectElement = await waitForElement(webviewView, By.css('.mynah-form-input.auto-width'))
-    await selectElement.click()
-    const options = await selectElement.findElements(By.css('option'))
-    let targetOption: WebElement | undefined
-    for (const option of options) {
-        const optionText = await option.getText()
-        if (optionText === modelName) {
-            targetOption = option
-            break
+    try {
+        const selectElement = await waitForElement(webviewView, By.css('.mynah-form-input.auto-width'))
+        await selectElement.click()
+        const options = await selectElement.findElements(By.css('option'))
+        let targetOption: WebElement | undefined
+        for (const option of options) {
+            const optionText = await option.getText()
+            if (optionText === modelName) {
+                targetOption = option
+                break
+            }
         }
+        if (!targetOption) {
+            throw new Error(`Model option "${modelName}" not found`)
+        }
+        await targetOption.click()
+    } catch (e) {
+        throw new Error(`Failed to select model '${modelName}': ${e}`)
     }
-    if (!targetOption) {
-        throw new Error(`Model option "${modelName}" not found`)
-    }
-    await targetOption.click()
 }

@@ -10,21 +10,29 @@ import { clickButton, waitForElement } from '../utils/generalUtils'
  * @returns Promise<boolean> True if tools button was found and clicked, false otherwise
  */
 export async function addNewChatTab(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="tab-bar-wrapper"]',
-        '[data-testid="tab-bar-tab-add-button"] .mynah-ui-icon-plus',
-        'add chat button'
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="tab-bar-wrapper"]',
+            '[data-testid="tab-bar-tab-add-button"] .mynah-ui-icon-plus',
+            'add chat button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to add new chat tab: ${e}`)
+    }
 }
 
 export async function viewHistoryTab(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="tab-bar-buttons-wrapper"]',
-        '[data-testid="tab-bar-button"] .mynah-ui-icon-history',
-        'history button'
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="tab-bar-buttons-wrapper"]',
+            '[data-testid="tab-bar-button"] .mynah-ui-icon-history',
+            'history button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to view history tab: ${e}`)
+    }
 }
 
 export async function waitForHistoryList(webviewView: WebviewView): Promise<void> {
@@ -32,10 +40,14 @@ export async function waitForHistoryList(webviewView: WebviewView): Promise<void
 }
 
 export async function closeHistoryTab(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '.mynah-sheet-header',
-        '[data-testid="sheet-close-button"] .mynah-ui-icon-cancel',
-        'history button'
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '.mynah-sheet-header',
+            '[data-testid="sheet-close-button"] .mynah-ui-icon-cancel',
+            'history button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to close history tab: ${e}`)
+    }
 }

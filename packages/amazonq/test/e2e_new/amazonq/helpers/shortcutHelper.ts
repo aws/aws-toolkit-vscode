@@ -42,13 +42,17 @@ export async function hoverButtonAndValidateTooltip(
  * @param webviewView The WebviewView instance
  */
 export async function rejectShellCommand(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="chat-item-buttons-wrapper"]',
-        '[action-id="reject-shell-command"] .mynah-ui-icon-cancel',
-        'reject button',
-        true
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="chat-item-buttons-wrapper"]',
+            '[action-id="reject-shell-command"] .mynah-ui-icon-cancel',
+            'reject button',
+            true
+        )
+    } catch (e) {
+        throw new Error(`Failed to reject shell command: ${e}`)
+    }
 }
 
 /**
@@ -56,13 +60,17 @@ export async function rejectShellCommand(webviewView: WebviewView): Promise<void
  * @param webviewView The WebviewView instance
  */
 export async function runShellCommand(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="chat-item-buttons-wrapper"]',
-        '[action-id="run-shell-command"] .mynah-ui-icon-play',
-        'run button',
-        true
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="chat-item-buttons-wrapper"]',
+            '[action-id="run-shell-command"] .mynah-ui-icon-play',
+            'run button',
+            true
+        )
+    } catch (e) {
+        throw new Error(`Failed to run shell command: ${e}`)
+    }
 }
 
 /**
@@ -70,12 +78,16 @@ export async function runShellCommand(webviewView: WebviewView): Promise<void> {
  * @param webviewView The WebviewView instance
  */
 export async function stopShellCommand(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '.mynah-chat-prompt-button-wrapper',
-        '[data-testid="prompt-input-send-button"] .mynah-ui-icon-stop',
-        'stop button'
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '.mynah-chat-prompt-button-wrapper',
+            '[data-testid="prompt-input-send-button"] .mynah-ui-icon-stop',
+            'stop button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to stop shell command: ${e}`)
+    }
 }
 
 /**

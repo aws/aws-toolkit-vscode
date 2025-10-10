@@ -13,21 +13,27 @@ import { sleep } from '../utils/generalUtils'
  * @returns Promise<{items: WebElement[], texts: string[]}> Array of menu items and their text labels
  */
 export async function getQuickActionsCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
-    await writeToChat('/', webview, false)
-    // need to give the overlay time to load
-    await sleep(2000)
-    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
-    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
-    if (quickActionItems.length === 0) {
-        throw new Error('No quick action commands found')
-    }
-    const quickActionTexts = []
-    for (const item of quickActionItems) {
-        const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
-        quickActionTexts.push(text)
-    }
+    try {
+        await writeToChat('/', webview, false)
+        // need to give the overlay time to load
+        await sleep(2000)
+        const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+        const quickActionItems = await overlayWrapper.findElements(
+            By.css('[data-testid="prompt-input-quick-pick-item"]')
+        )
+        if (quickActionItems.length === 0) {
+            throw new Error('No quick action commands found')
+        }
+        const quickActionTexts = []
+        for (const item of quickActionItems) {
+            const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
+            quickActionTexts.push(text)
+        }
 
-    return { items: quickActionItems, texts: quickActionTexts }
+        return { items: quickActionItems, texts: quickActionTexts }
+    } catch (e) {
+        throw new Error(`Failed to get quick actions commands: ${e}`)
+    }
 }
 
 /**
@@ -36,24 +42,30 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
  * @param commandName The name of the command to click
  */
 export async function clickQuickActionsCommand(webview: WebviewView, commandName: string): Promise<void> {
-    await writeToChat('/', webview, false)
-    // need to give the overlay time to load
-    await sleep(2000)
-    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
-    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
-    if (quickActionItems.length === 0) {
-        throw new Error('No quick action commands found')
-    }
-
-    for (const item of quickActionItems) {
-        const descriptionElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
-        const description = await descriptionElement.getText()
-        if (description.includes(commandName)) {
-            await item.click()
-            await sleep(3000)
-            return
+    try {
+        await writeToChat('/', webview, false)
+        // need to give the overlay time to load
+        await sleep(2000)
+        const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+        const quickActionItems = await overlayWrapper.findElements(
+            By.css('[data-testid="prompt-input-quick-pick-item"]')
+        )
+        if (quickActionItems.length === 0) {
+            throw new Error('No quick action commands found')
         }
-    }
 
-    throw new Error(`Command "${commandName}" not found`)
+        for (const item of quickActionItems) {
+            const descriptionElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
+            const description = await descriptionElement.getText()
+            if (description.includes(commandName)) {
+                await item.click()
+                await sleep(3000)
+                return
+            }
+        }
+
+        throw new Error(`Command "${commandName}" not found`)
+    } catch (e) {
+        throw new Error(`Failed to click quick actions command '${commandName}': ${e}`)
+    }
 }

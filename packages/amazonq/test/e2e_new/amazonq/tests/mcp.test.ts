@@ -16,6 +16,8 @@ import {
     clickMCPRefreshButton,
     validateToolPermissions,
     validateMCPDropdownOptions,
+    configureRemoteMCPServer,
+    remoteFetchConfig,
 } from '../helpers/mcpHelper'
 import { closeAllTabs } from '../utils/cleanupUtils'
 import { findItemByText } from '../utils/generalUtils'
@@ -88,5 +90,25 @@ describe('Amazon Q MCP Functionality', function () {
         }
         await validateMCPDropdownOptions(webviewView, ['Ask', 'Always allow', 'Deny'])
         await clickMCPCloseButton(webviewView)
+    })
+
+    it('Add new Remote MCP Server', async () => {
+        await clickToolsButton(webviewView)
+        let mcpExists = false
+        try {
+            const list = await findMCPListItems(webviewView)
+            await findItemByText(list, 'remote-fetch')
+            mcpExists = true
+        } catch {}
+
+        if (!mcpExists) {
+            await clickMCPAddButton(webviewView)
+            await configureRemoteMCPServer(webviewView, remoteFetchConfig)
+            await saveMCPServerConfiguration(webviewView)
+            await clickMCPCloseButton(webviewView)
+            await clickToolsButton(webviewView)
+            const list = await findMCPListItems(webviewView)
+            await findItemByText(list, 'remote-fetch')
+        }
     })
 })
