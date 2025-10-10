@@ -503,6 +503,10 @@ dependencyManagement:
         await fs.mkdir(gitFolder)
         await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
 
+        const githubFolder = path.join(tempDir, '.github')
+        await fs.mkdir(githubFolder)
+        await fs.writeFile(path.join(githubFolder, 'config'), 'more sample content for the test file')
+
         const zippedFiles = getFilesRecursively(tempDir, false)
         assert.strictEqual(zippedFiles.length, 1)
     })
