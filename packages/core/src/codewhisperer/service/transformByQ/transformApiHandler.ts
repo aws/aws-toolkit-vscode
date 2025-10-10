@@ -275,7 +275,8 @@ function isExcludedSourceFile(path: string): boolean {
     return sourceExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
-// zip all dependency files and all source files excluding "target" (contains large JARs) plus ".git" and ".idea" (may appear in diff.patch)
+// zip all dependency files and all source files
+// excludes "target" (contains large JARs) plus ".git", ".idea", and ".github" (may appear in diff.patch)
 export function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
@@ -284,7 +285,12 @@ export function getFilesRecursively(dir: string, isDependenciesFolder: boolean):
             if (isDependenciesFolder) {
                 // include all dependency files
                 return getFilesRecursively(res, isDependenciesFolder)
-            } else if (entry.name !== 'target' && entry.name !== '.git' && entry.name !== '.idea') {
+            } else if (
+                entry.name !== 'target' &&
+                entry.name !== '.git' &&
+                entry.name !== '.idea' &&
+                entry.name !== '.github'
+            ) {
                 // exclude the above directories when zipping source code
                 return getFilesRecursively(res, isDependenciesFolder)
             } else {
