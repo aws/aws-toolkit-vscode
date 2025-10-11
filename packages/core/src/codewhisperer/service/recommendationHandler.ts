@@ -106,7 +106,7 @@ export class RecommendationHandler {
     constructor() {
         this.requestId = ''
         this.nextToken = ''
-        this.lastInvocationTime = performance.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
+        this.lastInvocationTime = Date.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.prev = new vscode.Disposable(() => {})
         this.next = new vscode.Disposable(() => {})
@@ -256,7 +256,7 @@ export class RecommendationHandler {
         }
 
         try {
-            startTime = performance.now()
+            startTime = Date.now()
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
@@ -265,7 +265,7 @@ export class RecommendationHandler {
                     : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
-            latency = startTime !== 0 ? performance.now() - startTime : 0
+            latency = startTime !== 0 ? Date.now() - startTime : 0
             if ('recommendations' in resp) {
                 recommendations = (resp && resp.recommendations) || []
             } else {
@@ -277,7 +277,7 @@ export class RecommendationHandler {
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
-                session.setTimeToFirstRecommendation(performance.now())
+                session.setTimeToFirstRecommendation(Date.now())
             }
             if (nextToken === '') {
                 TelemetryHelper.instance.setAllPaginationEndTime()
@@ -287,7 +287,7 @@ export class RecommendationHandler {
                 shouldRecordServiceInvocation = false
             }
             if (latency === 0) {
-                latency = startTime !== 0 ? performance.now() - startTime : 0
+                latency = startTime !== 0 ? Date.now() - startTime : 0
             }
             getLogger().error('amazonq inline-suggest: Invocation Exception : %s', (error as Error).message)
             if (isAwsError(error)) {
@@ -721,7 +721,7 @@ export class RecommendationHandler {
                 codewhispererCompletionType: session.getCompletionType(0),
                 codewhispererCustomizationArn: getSelectedCustomization().arn,
                 codewhispererLanguage: languageContext.language,
-                duration: performance.now() - this.lastInvocationTime,
+                duration: Date.now() - this.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 result: 'Succeeded',

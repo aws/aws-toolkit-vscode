@@ -52,6 +52,11 @@ import { yes, no, continueText, cancel } from '../localizedText'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 
+const appTypeSettingsMap: Record<string, string> = {
+    [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
+    [AppType.CodeEditor as string]: 'CodeEditorAppSettings',
+} as const
+
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
     DomainSpaceKey: string
@@ -136,13 +141,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
         // Get app type
         const appType = spaceDetails.SpaceSettings?.AppType
-        if (appType !== 'JupyterLab' && appType !== 'CodeEditor') {
+        if (!appType || !(appType in appTypeSettingsMap)) {
             throw new ToolkitError(`Unsupported AppType "${appType}" for space "${spaceName}"`)
         }
 
         // Get app resource spec
         const requestedResourceSpec =
-            appType === 'JupyterLab'
+            appType === AppType.JupyterLab
                 ? spaceDetails.SpaceSettings?.JupyterLabAppSettings?.DefaultResourceSpec
                 : spaceDetails.SpaceSettings?.CodeEditorAppSettings?.DefaultResourceSpec
 
@@ -187,14 +192,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         const instanceTypeChanged = requestedResourceSpec?.InstanceType !== instanceType
 
         if (needsRemoteAccess || instanceTypeChanged) {
-            const settingsPropName = appType === 'JupyterLab' ? 'JupyterLabAppSettings' : 'CodeEditorAppSettings'
             const updateSpaceRequest: UpdateSpaceCommandInput = {
                 DomainId: domainId,
                 SpaceName: spaceName,
                 SpaceSettings: {
                     ...(needsRemoteAccess && { RemoteAccess: 'ENABLED' }),
                     ...(instanceTypeChanged && {
-                        [settingsPropName]: {
+                        [appTypeSettingsMap[appType]]: {
                             DefaultResourceSpec: {
                                 InstanceType: instanceType,
                             },

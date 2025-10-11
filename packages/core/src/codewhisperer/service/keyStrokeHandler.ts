@@ -56,7 +56,7 @@ export class KeyStrokeHandler {
             return
         }
         this.idleTriggerTimer = setInterval(() => {
-            const duration = (performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
+            const duration = (Date.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
             if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) {
                 return
             }
