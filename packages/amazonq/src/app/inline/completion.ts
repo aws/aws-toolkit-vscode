@@ -213,6 +213,8 @@ export class InlineCompletionManager implements Disposable {
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     private logger = getLogger()
+    private pendingRequest: Promise<InlineCompletionItem[]> | undefined
+
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
@@ -300,6 +302,48 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             options: JSON.stringify(getAllRecommendationsOptions),
         })
 
+        // If there's already a pending request, wait for it to complete instead of starting a new one
+        // This prevents race conditions where multiple concurrent calls cause the later (empty) response
+        // to override the earlier (valid) response
+        if (this.pendingRequest) {
+            getLogger().info('Reusing pending inline completion request to avoid race condition')
+            try {
+                const result = await this.pendingRequest
+                // Check if THIS call's token was cancelled (not the original call's token)
+                if (token.isCancellationRequested) {
+                    getLogger().info('Reused request completed but this call was cancelled')
+                    return []
+                }
+                return result
+            } catch (e) {
+                // If the pending request failed, continue with a new request
+                getLogger().info('Pending request failed, starting new request: %O', e)
+            }
+        }
+
+        // Start a new request and track it
+        this.pendingRequest = this._provideInlineCompletionItemsImpl(
+            document,
+            position,
+            context,
+            token,
+            getAllRecommendationsOptions
+        )
+
+        try {
+            return await this.pendingRequest
+        } finally {
+            this.pendingRequest = undefined
+        }
+    }
+
+    private async _provideInlineCompletionItemsImpl(
+        document: TextDocument,
+        position: Position,
+        context: InlineCompletionContext,
+        token: CancellationToken,
+        getAllRecommendationsOptions?: GetAllRecommendationsOptions
+    ): Promise<InlineCompletionItem[]> {
         if (vsCodeState.isCodeWhispererEditing) {
             getLogger().info('Q is editing, returning empty')
             return []
@@ -411,6 +455,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.documentEventListener,
                 getAllRecommendationsOptions
             )
+
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
             const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
