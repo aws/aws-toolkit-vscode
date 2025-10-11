@@ -181,16 +181,31 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             instanceType = InstanceTypeMinimum
         }
 
-        // Get remote access flag
-        if (!spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED') {
+        // First, update the space if needed
+        const needsRemoteAccess =
+            !spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED'
+        const instanceTypeChanged = requestedResourceSpec?.InstanceType !== instanceType
+
+        if (needsRemoteAccess || instanceTypeChanged) {
+            const settingsPropName = appType === 'JupyterLab' ? 'JupyterLabAppSettings' : 'CodeEditorAppSettings'
+            const updateSpaceRequest: UpdateSpaceCommandInput = {
+                DomainId: domainId,
+                SpaceName: spaceName,
+                SpaceSettings: {
+                    ...(needsRemoteAccess && { RemoteAccess: 'ENABLED' }),
+                    ...(instanceTypeChanged && {
+                        [settingsPropName]: {
+                            DefaultResourceSpec: {
+                                InstanceType: instanceType,
+                            },
+                        },
+                    }),
+                },
+            }
+
             try {
-                await this.updateSpace({
-                    DomainId: domainId,
-                    SpaceName: spaceName,
-                    SpaceSettings: {
-                        RemoteAccess: 'ENABLED',
-                    },
-                })
+                getLogger().debug('SagemakerClient: Updating space: domainId=%s, spaceName=%s', domainId, spaceName)
+                await this.updateSpace(updateSpaceRequest)
                 await this.waitForSpaceInService(spaceName, domainId)
             } catch (err) {
                 throw this.handleStartSpaceError(err)
@@ -214,6 +229,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 ? { ...resourceSpec, EnvironmentArn: undefined, EnvironmentVersionArn: undefined }
                 : resourceSpec
 
+        // Second, create the App
         const createAppRequest: CreateAppCommandInput = {
             DomainId: domainId,
             SpaceName: spaceName,
@@ -223,6 +239,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         }
 
         try {
+            getLogger().debug('SagemakerClient: Creating app: domainId=%s, spaceName=%s', domainId, spaceName)
             await this.createApp(createAppRequest)
         } catch (err) {
             throw this.handleStartSpaceError(err)
