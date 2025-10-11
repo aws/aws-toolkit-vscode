@@ -17,13 +17,36 @@ import { generatePropertyNodes } from './propertyNode'
 import { generateDeployedNode } from './deployedNode'
 import { StackResource } from '../../../../lambda/commands/listSamResources'
 import { DeployedResourceNode } from './deployedNode'
+import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
+import { ToolkitError } from '../../../../shared/errors'
 
 enum ResourceTypeId {
     Function = 'function',
+    DeployedFunction = 'deployed-function',
     Api = 'api',
     Other = '',
 }
 
+export async function generateLambdaNodeFromResource(resource: ResourceNode['resource']): Promise<LambdaFunctionNode> {
+    if (!resource.deployedResource || !resource.region || !resource.stackName || !resource.resource) {
+        throw new ToolkitError('Error getting Lambda info from Appbuilder Node, please check your connection')
+    }
+    const nodes = (await generateDeployedNode(
+        resource.deployedResource,
+        resource.region,
+        resource.stackName,
+        resource.resource,
+        resource.projectRoot
+    )) as DeployedResourceNode[]
+    if (nodes.length !== 1) {
+        throw new ToolkitError('Error getting Lambda info from Appbuilder Node, please check your connection')
+    }
+    // lambda function node or undefined
+    return nodes[0].resource?.explorerNode
+}
+
+// from here, we should have a helper function to detect if lambda is deployed
+// then return deployed node/normal node on each condition.
 export class ResourceNode implements TreeNode {
     public readonly id = this.resourceTreeEntity.Id
     private readonly type = this.resourceTreeEntity.Type
@@ -43,6 +66,7 @@ export class ResourceNode implements TreeNode {
         return {
             resource: this.resourceTreeEntity,
             location: this.location.samTemplateUri,
+            projectRoot: this.location.projectRoot,
             workspaceFolder: this.location.workspaceFolder,
             region: this.region,
             stackName: this.stackName,
@@ -56,13 +80,13 @@ export class ResourceNode implements TreeNode {
         let propertyNodes: TreeNode[] = []
 
         if (this.deployedResource && this.region && this.stackName) {
-            deployedNodes = await generateDeployedNode(
+            deployedNodes = (await generateDeployedNode(
                 this.deployedResource,
                 this.region,
                 this.stackName,
                 this.resourceTreeEntity,
                 this.location.projectRoot
-            )
+            )) as DeployedResourceNode[]
         }
         if (this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE) {
             propertyNodes = generatePropertyNodes(this.resourceTreeEntity)
@@ -72,10 +96,7 @@ export class ResourceNode implements TreeNode {
     }
 
     public getTreeItem(): vscode.TreeItem {
-        // Determine the initial TreeItem collapsible state based on the type
-        const collapsibleState = this.deployedResource
-            ? vscode.TreeItemCollapsibleState.Collapsed
-            : vscode.TreeItemCollapsibleState.None
+        const collapsibleState = vscode.TreeItemCollapsibleState.Collapsed
 
         // Create the TreeItem with the determined collapsible state
         const item = new vscode.TreeItem(this.resourceTreeEntity.Id, collapsibleState)
@@ -100,7 +121,11 @@ export class ResourceNode implements TreeNode {
     private getIconPath(): IconPath | undefined {
         switch (this.type) {
             case SERVERLESS_FUNCTION_TYPE:
+                if (this.deployedResource) {
+                    return getIcon('aws-lambda-deployed-function')
+                }
                 return getIcon('aws-lambda-function')
+            // add deployed lambda function type
             case s3BucketType:
                 return getIcon('aws-s3-bucket')
             case appRunnerType:
@@ -115,6 +140,9 @@ export class ResourceNode implements TreeNode {
     private getResourceId(): ResourceTypeId {
         switch (this.type) {
             case SERVERLESS_FUNCTION_TYPE:
+                if (this.deployedResource) {
+                    return ResourceTypeId.DeployedFunction
+                }
                 return ResourceTypeId.Function
             case 'Api':
                 return ResourceTypeId.Api

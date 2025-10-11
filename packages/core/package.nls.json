@@ -249,7 +249,7 @@
     "AWS.command.ssmDocument.openLocalDocumentJson": "Download as JSON",
     "AWS.command.ssmDocument.openLocalDocumentYaml": "Download as YAML",
     "AWS.command.ssmDocument.publishDocument": "Publish a Systems Manager Document",
-    "AWS.command.launchConfigForm.title": "Local Invoke and Debug Configuration",
+    "AWS.command.launchConfigForm.title": "Invoke Locally",
     "AWS.command.addSamDebugConfig": "Add Local Invoke and Debug Configuration",
     "AWS.command.toggleSamCodeLenses": "Toggle SAM hints in source files",
     "AWS.command.apprunner.createService": "Create Service",

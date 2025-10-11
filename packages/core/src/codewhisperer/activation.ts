@@ -157,21 +157,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             }
 
-            if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
-                if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessageShareData,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async (resp) => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
-                }
-            }
-
             if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
                     .showInformationMessage(

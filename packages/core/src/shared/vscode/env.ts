@@ -6,12 +6,12 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
-import * as os from 'os'
 import { getLogger } from '../logger/logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
 import globals, { isWeb } from '../extensionGlobals'
 import * as devConfig from '../../dev/config'
+import * as os from 'os'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -125,6 +125,35 @@ export function isRemoteWorkspace(): boolean {
 }
 
 /**
+ * Parses an os-release file according to the freedesktop.org standard.
+ *
+ * @param content The content of the os-release file
+ * @returns A record of key-value pairs from the os-release file
+ *
+ * @see https://www.freedesktop.org/software/systemd/man/latest/os-release.html
+ */
+function parseOsRelease(content: string): Record<string, string> {
+    const result: Record<string, string> = {}
+
+    for (let line of content.split('\n')) {
+        line = line.trim()
+        // Skip empty lines and comments
+        if (!line || line.startsWith('#')) {
+            continue
+        }
+
+        const eqIndex = line.indexOf('=')
+        if (eqIndex > 0) {
+            const key = line.slice(0, eqIndex)
+            const value = line.slice(eqIndex + 1).replace(/^["']|["']$/g, '')
+            result[key] = value
+        }
+    }
+
+    return result
+}
+
+/**
  * Checks if the current environment has SageMaker-specific environment variables
  * @returns true if SageMaker environment variables are detected
  */
@@ -146,36 +175,83 @@ export function hasSageMakerEnvVars(): boolean {
 /**
  * Checks if the current environment is running on Amazon Linux 2.
  *
- * This function attempts to detect if we're running in a container on an AL2 host
- * by checking both the OS release and container-specific indicators.
+ * This function detects the container/runtime OS, not the host OS.
+ * In containerized environments, we check the container's OS identity.
  *
- * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
+ * Detection Process (in order):
+ * 1. Returns false for web environments (browser-based)
+ * 2. Returns false for SageMaker environments (even if container is AL2)
+ * 3. Checks `/etc/os-release` with fallback to `/usr/lib/os-release`
+ *    - Standard Linux OS identification files per freedesktop.org spec
+ *    - Looks for `ID="amzn"` and `VERSION_ID="2"` for AL2
+ *    - This correctly identifies AL2 containers regardless of host OS
+ *
+ * This approach ensures correct detection in:
+ * - Containerized environments (detects container OS, not host)
+ * - AL2 containers on any host OS (Ubuntu, AL2023, etc.)
+ * - Web/browser environments (returns false)
+ * - SageMaker environments (returns false)
+ *
+ * Note: We intentionally do NOT check kernel version as it reflects the host OS,
+ * not the container OS. AL2 containers should be treated as AL2 environments
+ * regardless of whether they run on AL2, Ubuntu, or other host kernels.
+ *
+ * References:
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-amazon-linux-specific.html
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-os-release.html
+ * - https://www.freedesktop.org/software/systemd/man/latest/os-release.html
  */
 export function isAmazonLinux2() {
+    // Skip AL2 detection for web environments
+    // In web mode, we're running in a browser, not on AL2
+    if (isWeb()) {
+        return false
+    }
+
     // First check if we're in a SageMaker environment, which should not be treated as AL2
-    // even if the underlying host is AL2
+    // even if the underlying container is AL2
     if (hasSageMakerEnvVars()) {
         return false
     }
 
-    // Check if we're in a container environment that's not AL2
-    if (process.env.container === 'docker' || process.env.DOCKER_HOST || process.env.DOCKER_BUILDKIT) {
-        // Additional check for container OS - if we can determine it's not AL2
-        try {
-            const fs = require('fs')
-            if (fs.existsSync('/etc/os-release')) {
-                const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
-                if (!osRelease.includes('Amazon Linux 2') && !osRelease.includes('amzn2')) {
-                    return false
-                }
-            }
-        } catch (e) {
-            // If we can't read the file, fall back to the os.release() check
-        }
+    // Only proceed with file checks on Linux platforms
+    if (process.platform !== 'linux') {
+        return false
     }
 
-    // Standard check for AL2 in the OS release string
-    return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
+    // Check the container/runtime OS identity via os-release files
+    // This correctly identifies AL2 containers regardless of host OS
+    try {
+        const fs = require('fs')
+        // Check /etc/os-release with fallback to /usr/lib/os-release as per freedesktop.org spec
+        const osReleasePaths = ['/etc/os-release', '/usr/lib/os-release']
+
+        for (const osReleasePath of osReleasePaths) {
+            if (fs.existsSync(osReleasePath)) {
+                try {
+                    const osReleaseContent = fs.readFileSync(osReleasePath, 'utf8')
+                    const osRelease = parseOsRelease(osReleaseContent)
+
+                    // Check if this is Amazon Linux 2
+                    // We trust os-release as the authoritative source for container OS identity
+                    return osRelease.VERSION_ID === '2' && osRelease.ID === 'amzn'
+                } catch (e) {
+                    // Continue to next path if parsing fails
+                    getLogger().error(`Parsing os-release file ${osReleasePath} failed: ${e}`)
+                }
+            }
+        }
+    } catch (e) {
+        // If we can't read the files, we cannot determine AL2 status
+        getLogger().error(`Checking os-release files failed: ${e}`)
+    }
+
+    // Fall back to kernel version check if os-release files are unavailable or failed
+    // This is needed for environments where os-release might not be accessible
+    const kernelRelease = os.release()
+    const hasAL2Kernel = kernelRelease.includes('.amzn2int.') || kernelRelease.includes('.amzn2.')
+
+    return hasAL2Kernel
 }
 
 /**
@@ -217,9 +293,9 @@ export function getExtRuntimeContext(): {
     extensionHost: ExtensionHostLocation
 } {
     const extensionHost =
-        // taken from https://github.com/microsoft/vscode/blob/7c9e4bb23992c63f20cd86bbe7a52a3aa4bed89d/extensions/github-authentication/src/githubServer.ts#L121 to help determine which auth flows
-        // should be used
-        typeof navigator === 'undefined'
+        // Check if we're in a Node.js environment (desktop/remote) vs web worker
+        // Updated to be compatible with Node.js v22 which includes navigator global
+        typeof process === 'object' && process.versions?.node
             ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
                 ? 'local'
                 : 'remote'

@@ -115,7 +115,7 @@ export class InlineCompletionManager implements Disposable {
                 const startLine = position.line
                 // TODO: also log the seen state for other suggestions in session
                 // Calculate timing metrics before diagnostic delay
-                const totalSessionDisplayTime = performance.now() - requestStartTime
+                const totalSessionDisplayTime = Date.now() - requestStartTime
                 await sleep(500)
                 const diagnosticDiff = getDiagnosticsDifferences(
                     this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
@@ -175,7 +175,7 @@ export class InlineCompletionManager implements Disposable {
                     return
                 }
                 const requestStartTime = session.requestStartTime
-                const totalSessionDisplayTime = performance.now() - requestStartTime
+                const totalSessionDisplayTime = Date.now() - requestStartTime
                 await commands.executeCommand('editor.action.inlineSuggest.hide')
                 // TODO: also log the seen state for other suggestions in session
                 this.disposable.dispose()
@@ -249,7 +249,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // Use VS Code command to check if inline suggestion is actually visible on screen
         // This command only executes when inlineSuggestionVisible context is true
         await vscode.commands.executeCommand('aws.amazonq.checkInlineSuggestionVisibility')
-        const isInlineSuggestionVisible = performance.now() - session.lastVisibleTime < 50
+        const isInlineSuggestionVisible = Date.now() - session.lastVisibleTime < 50
         return isInlineSuggestionVisible
     }
 
@@ -278,7 +278,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 sessionId: session.sessionId,
                 completionSessionResult,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                totalSessionDisplayTime: performance.now() - session.requestStartTime,
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
         }
@@ -309,7 +309,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // when hitting other keystrokes, the context.triggerKind is Automatic (1)
         // we only mark option + C as manual trigger
         // this is a workaround since the inlineSuggest.trigger command take no params
-        const isAutoTrigger = performance.now() - vsCodeState.lastManualTriggerTime > 50
+        const isAutoTrigger = Date.now() - vsCodeState.lastManualTriggerTime > 50
         if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
             // return early when suggestions are disabled with auto trigger
             return []
@@ -318,9 +318,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // yield event loop to let the document listen catch updates
         await sleep(1)
 
-        let logstr = `GenerateCompletion metadata:\\n`
+        let logstr = `GenerateCompletion activity:\\n`
         try {
-            const t0 = performance.now()
+            const t0 = Date.now()
             vsCodeState.isRecommendationsActive = true
             // handling previous session
             const prevSession = this.sessionManager.getActiveSession()
@@ -365,7 +365,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 // re-use previous suggestions as long as new typed prefix matches
                 if (prevItemMatchingPrefix.length > 0) {
                     logstr += `- not call LSP and reuse previous suggestions that match user typed characters
-                    - duration between trigger to completion suggestion is displayed ${performance.now() - t0}`
+                    - duration between trigger to completion suggestion is displayed ${Date.now() - t0}`
                     void this.checkWhetherInlineCompletionWasShown()
                     return prevItemMatchingPrefix
                 }
@@ -381,7 +381,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                         },
                     },
                     firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
-                    totalSessionDisplayTime: performance.now() - prevSession.requestStartTime,
+                    totalSessionDisplayTime: Date.now() - prevSession.requestStartTime,
                 }
                 this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
@@ -396,7 +396,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
-            const t1 = performance.now()
+            const t1 = Date.now()
 
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
@@ -418,7 +418,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             // eslint-disable-next-line @typescript-eslint/no-base-to-string
             const itemLog = items[0] ? `${items[0].insertText.toString()}` : `no suggestion`
 
-            const t2 = performance.now()
+            const t2 = Date.now()
 
             logstr += `- number of suggestions: ${items.length}
 - sessionId: ${this.sessionManager.getActiveSession()?.sessionId}
@@ -468,7 +468,7 @@ ${itemLog}
                 const lastDocumentChange = this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)
                 if (
                     lastDocumentChange &&
-                    performance.now() - lastDocumentChange.timestamp < CodeWhispererConstants.inlineSuggestionShowDelay
+                    Date.now() - lastDocumentChange.timestamp < CodeWhispererConstants.inlineSuggestionShowDelay
                 ) {
                     await sleep(CodeWhispererConstants.showRecommendationTimerPollPeriod)
                 } else {
@@ -486,7 +486,7 @@ ${itemLog}
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
                         await showEdits(item, editor, session, this.languageClient, this)
-                        logstr += `- duration between trigger to edits suggestion is displayed: ${performance.now() - t0}ms`
+                        logstr += `- duration between trigger to edits suggestion is displayed: ${Date.now() - t0}ms`
                     }
                     return []
                 }
@@ -530,7 +530,7 @@ ${itemLog}
 
             this.sessionManager.updateCodeReferenceAndImports()
             // suggestions returned here will be displayed on screen
-            logstr += `- duration between trigger to completion suggestion is displayed: ${performance.now() - t0}ms`
+            logstr += `- duration between trigger to completion suggestion is displayed: ${Date.now() - t0}ms`
             void this.checkWhetherInlineCompletionWasShown()
             return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {

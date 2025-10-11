@@ -55,7 +55,7 @@ export class InlineCompletionService {
             this._showRecommendationTimer = undefined
         }
         this._showRecommendationTimer = setInterval(() => {
-            const delay = performance.now() - vsCodeState.lastUserModificationTime
+            const delay = Date.now() - vsCodeState.lastUserModificationTime
             if (delay < CodeWhispererConstants.inlineSuggestionShowDelay) {
                 return
             }

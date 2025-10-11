@@ -580,11 +580,11 @@ export class GumbyController {
             return
         }
         const fileContents = await fs.readFileText(fileUri[0].fsPath)
-        const missingKey = await validateCustomVersionsFile(fileContents)
+        const errorMessage = validateCustomVersionsFile(fileContents)
 
-        if (missingKey) {
+        if (errorMessage) {
             this.messenger.sendMessage(
-                CodeWhispererConstants.invalidCustomVersionsFileMessage(missingKey),
+                CodeWhispererConstants.invalidCustomVersionsFileMessage(errorMessage),
                 message.tabID,
                 'ai-prompt'
             )

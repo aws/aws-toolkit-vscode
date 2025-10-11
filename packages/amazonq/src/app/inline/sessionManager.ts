@@ -137,7 +137,7 @@ export class SessionManager {
     public checkInlineSuggestionVisibility() {
         if (this.activeSession) {
             this.activeSession.displayed = true
-            this.activeSession.lastVisibleTime = performance.now()
+            this.activeSession.lastVisibleTime = Date.now()
         }
     }
 

@@ -43,7 +43,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             const session = {
                 sessionId: 'test-session',
                 firstCompletionDisplayLatency: 100,
-                requestStartTime: performance.now() - 1000,
+                requestStartTime: Date.now() - 1000,
             }
 
             provider.batchDiscardTelemetryForEditSuggestion(items, session)
@@ -84,7 +84,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             const session = {
                 sessionId: 'test-session',
                 firstCompletionDisplayLatency: 100,
-                requestStartTime: performance.now() - 1000,
+                requestStartTime: Date.now() - 1000,
             }
 
             provider.batchDiscardTelemetryForEditSuggestion(items, session)
@@ -108,7 +108,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             const session = {
                 sessionId: 'test-session',
                 firstCompletionDisplayLatency: 100,
-                requestStartTime: performance.now() - 1000,
+                requestStartTime: Date.now() - 1000,
             }
 
             provider.batchDiscardTelemetryForEditSuggestion(items, session)
@@ -166,7 +166,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: true }],
-                lastVisibleTime: performance.now(),
+                lastVisibleTime: Date.now(),
             })
 
             const result = await provider.isCompletionActive()
@@ -176,7 +176,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
         })
 
         it('should return true when VS Code command executes successfully', async function () {
-            const currentTime = performance.now()
+            const currentTime = Date.now()
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: false }],
@@ -192,7 +192,7 @@ describe('AmazonQInlineCompletionItemProvider', function () {
         })
 
         it('should return false when VS Code command fails', async function () {
-            const oldTime = performance.now() - 100 // Old timestamp (>50ms ago)
+            const oldTime = Date.now() - 100 // Old timestamp (>50ms ago)
             mockSessionManager.getActiveSession.returns({
                 displayed: true,
                 suggestions: [{ isInlineEdit: false }],

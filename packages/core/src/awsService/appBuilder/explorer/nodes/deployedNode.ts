@@ -80,7 +80,7 @@ export async function generateDeployedNode(
     stackName: string,
     resourceTreeEntity: ResourceTreeEntity,
     location?: vscode.Uri
-): Promise<any[]> {
+): Promise<DeployedResourceNode[] | TreeNode[]> {
     let newDeployedResource: any
     const partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition
     try {
@@ -97,7 +97,9 @@ export async function generateDeployedNode(
                         regionCode,
                         configuration,
                         undefined,
-                        location ? vscode.Uri.joinPath(location, resourceTreeEntity.CodeUri ?? '').fsPath : undefined
+                        location ? vscode.Uri.joinPath(location, resourceTreeEntity.CodeUri ?? '').fsPath : undefined,
+                        location,
+                        deployedResource.LogicalResourceId
                     )
                 } catch (error: any) {
                     getLogger().error('Error getting Lambda configuration: %O', error)
