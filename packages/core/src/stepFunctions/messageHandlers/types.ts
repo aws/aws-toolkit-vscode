@@ -35,9 +35,16 @@ export interface WebviewContext extends BaseContext {
     fileId: string
 }
 
+export type OpenExecutionDetailsCallBack = (
+    executionArn: string,
+    startTime?: string,
+    params?: vscode.WebviewPanelOptions & vscode.WebviewOptions
+) => Promise<void>
+
 export interface ExecutionDetailsContext extends BaseContext {
     executionArn: string
     startTime?: string
+    openExecutionDetails: OpenExecutionDetailsCallBack
 }
 
 export type LoaderNotification = {
@@ -103,6 +110,10 @@ export interface SaveFileRequestMessage extends Message {
 
 export interface SyncFileRequestMessage extends SaveFileRequestMessage {
     fileContents: string
+}
+
+export interface StartExecutionMessage extends Message {
+    executionInput?: string
 }
 
 export enum ApiAction {

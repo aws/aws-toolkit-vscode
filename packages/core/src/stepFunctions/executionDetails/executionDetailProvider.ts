@@ -115,6 +115,7 @@ export class ExecutionDetailProvider {
                 loaderNotification: undefined,
                 executionArn,
                 startTime,
+                openExecutionDetails: ExecutionDetailProvider.openExecutionDetails.bind(ExecutionDetailProvider),
             }
 
             // Handle messages from the webview
