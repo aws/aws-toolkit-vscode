@@ -14,7 +14,7 @@ import * as diagnosticsProvider from '../../codewhisperer/service/diagnosticsPro
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
 import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../testUtil'
-import { ServiceException } from '@smithy/smithy-client'
+import { AWSError } from 'aws-sdk'
 import { getTestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
 import { cancel } from '../../shared/localizedText'
@@ -334,11 +334,11 @@ describe('startSecurityScan', function () {
         getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
         const mockClient = createClient()
         mockClient.createCodeScan.throws({
-            name: 'ThrottlingException',
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
             message: scansLimitReachedErrorMessage,
-            $fault: 'client',
-            $metadata: {},
-        } satisfies ServiceException)
+        } satisfies AWSError)
         sinon.stub(errors, 'isAwsError').returns(true)
         const testWindow = getTestWindow()
         await startSecurityScan.startSecurityScan(
@@ -365,11 +365,11 @@ describe('startSecurityScan', function () {
         await model.CodeScansState.instance.setScansEnabled(true)
         const mockClient = createClient()
         mockClient.createCodeScan.throws({
-            name: 'ThrottlingException',
+            code: 'ThrottlingException',
+            time: new Date(),
+            name: 'error name',
             message: 'Maximum file scans count reached for this month',
-            $fault: 'client',
-            $metadata: {},
-        } satisfies ServiceException)
+        } satisfies AWSError)
         sinon.stub(errors, 'isAwsError').returns(true)
         assert.equal(model.CodeScansState.instance.isMonthlyQuotaExceeded(), false)
         await startSecurityScan.startSecurityScan(
