@@ -18,7 +18,8 @@ export function register(ctx: ExtContext) {
                 params.session,
                 `${params.ws_url}&cell-number=${params['cell-number']}`,
                 params.token,
-                params.domain
+                params.domain,
+                params.app_type
             )
         })
     }
@@ -27,7 +28,7 @@ export function register(ctx: ExtContext) {
 }
 
 export function parseConnectParams(query: SearchParams) {
-    const params = query.getFromKeysOrThrow(
+    const requiredParams = query.getFromKeysOrThrow(
         'connection_identifier',
         'domain',
         'user_profile',
@@ -36,5 +37,7 @@ export function parseConnectParams(query: SearchParams) {
         'cell-number',
         'token'
     )
-    return params
+    const optionalParams = query.getFromKeys('app_type')
+
+    return { ...requiredParams, ...optionalParams }
 }
