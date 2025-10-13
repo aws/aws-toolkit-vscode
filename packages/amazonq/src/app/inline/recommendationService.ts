@@ -7,7 +7,7 @@ import {
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
-    editCompletionRequestType,
+    // editCompletionRequestType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
@@ -150,12 +150,12 @@ export class RecommendationService {
             /**
              * Though Edit request is sent on keystrokes everytime, the language server will execute the request in a debounced manner so that it won't be immediately executed.
              */
-            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-                editCompletionRequestType.method,
-                request,
-                token
-            )
-            ps.push(editPromise)
+            // const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            //     editCompletionRequestType.method,
+            //     request,
+            //     token
+            // )
+            // ps.push(editPromise)
 
             /**
              * First come first serve, ideally we should simply return the first response returned. However there are some caviar here because either
@@ -246,12 +246,12 @@ export class RecommendationService {
             if (result.partialResultToken) {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    getLogger().info(
-                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                    )
-                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
-                        languageClient.warn(`Error when getting suggestions: ${error}`)
-                    })
+                    // getLogger().info(
+                    //     'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
+                    // )
+                    // this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
+                    //     languageClient.warn(`Error when getting suggestions: ${error}`)
+                    // })
                 } else {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
@@ -283,7 +283,7 @@ export class RecommendationService {
         }
     }
 
-    private async processRemainingRequests(
+    async processRemainingRequests(
         languageClient: LanguageClient,
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,

@@ -292,6 +292,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken,
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        getLogger().info('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         getLogger().info('_provideInlineCompletionItems called with: %O', {
             documentUri: document.uri.toString(),
             position,
