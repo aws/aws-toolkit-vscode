@@ -139,8 +139,14 @@ export function validateCustomVersionsFile(fileContents: string) {
             getLogger().info('CodeTransformation: .YAML file must contain at least dependencies or plugins')
             return `YAML file must contain at least \`dependencies\` or \`plugins\` under \`dependencyManagement\``
         }
-        for (const item of dependenciesAndPlugins) {
-            const errorMessage = validateItem(item)
+        for (const item of dependencies) {
+            const errorMessage = validateItem(item, false)
+            if (errorMessage) {
+                return errorMessage
+            }
+        }
+        for (const item of plugins) {
+            const errorMessage = validateItem(item, true)
             if (errorMessage) {
                 return errorMessage
             }
@@ -153,10 +159,15 @@ export function validateCustomVersionsFile(fileContents: string) {
 }
 
 // return an error message, or undefined if item is valid
-function validateItem(item: any, validOriginTypes: string[] = ['FIRST_PARTY', 'THIRD_PARTY']) {
-    if (!/^[^\s:]+:[^\s:]+$/.test(item.identifier)) {
+function validateItem(item: any, isPlugin: boolean) {
+    const validOriginTypes = ['FIRST_PARTY', 'THIRD_PARTY']
+    if (!isPlugin && !/^[^\s:]+:[^\s:]+$/.test(item.identifier)) {
         getLogger().info(`CodeTransformation: Invalid identifier format: ${item.identifier}`)
-        return `Invalid identifier format: \`${item.identifier}\`. Must be in format \`groupId:artifactId\` without spaces`
+        return `Invalid dependency identifier format: \`${item.identifier}\`. Must be in format \`groupId:artifactId\` without spaces`
+    }
+    if (isPlugin && !item.identifier?.trim()) {
+        getLogger().info('CodeTransformation: Missing identifier in plugin')
+        return 'Missing `identifier` in plugin'
     }
     if (!validOriginTypes.includes(item.originType)) {
         getLogger().info(`CodeTransformation: Invalid originType: ${item.originType}`)
