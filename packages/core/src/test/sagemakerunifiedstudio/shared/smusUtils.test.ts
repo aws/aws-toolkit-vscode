@@ -472,6 +472,58 @@ describe('SmusUtils', () => {
             assert.strictEqual(result, expected)
         })
 
+        it('should convert assumed role ARN with aws-cn partition', () => {
+            const stsArn = 'arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-cn:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should convert assumed role ARN with aws-us-gov partition', () => {
+            const stsArn = 'arn:aws-us-gov:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-us-gov:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should return IAM user ARN as-is', () => {
+            const iamUserArn = 'arn:aws:iam::619071339486:user/vabharga-test'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-cn partition as-is', () => {
+            const iamUserArn = 'arn:aws-cn:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-us-gov partition as-is', () => {
+            const iamUserArn = 'arn:aws-us-gov:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM role ARN as-is', () => {
+            const iamRoleArn = 'arn:aws:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should return IAM role ARN with aws-cn partition as-is', () => {
+            const iamRoleArn = 'arn:aws-cn:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should handle IAM user ARN with special characters', () => {
+            const iamUserArn = 'arn:aws:iam::123456789012:user/path/to/user-name_123'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
         it('should throw error for invalid ARN format - missing components', () => {
             const invalidArn = 'arn:aws:sts::123456789012:assumed-role/MyRole'
 

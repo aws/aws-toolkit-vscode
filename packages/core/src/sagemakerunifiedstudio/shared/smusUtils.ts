@@ -381,22 +381,42 @@ export class SmusUtils {
     }
 
     /**
-     * Converts an STS assumed-role ARN to its corresponding IAM role ARN.
-     * Example:
+     * Converts an STS assumed-role ARN to its corresponding IAM role ARN, or returns IAM user ARN as-is.
+     * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
+     * Examples:
      *   Input:  arn:aws:sts::123456789012:assumed-role/MyRole/MySession
      *   Output: arn:aws:iam::123456789012:role/MyRole
+     *
+     *   Input:  arn:aws:iam::123456789012:user/MyUser
+     *   Output: arn:aws:iam::123456789012:user/MyUser
+     *
+     *   Input:  arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws-cn:iam::123456789012:role/MyRole
      */
     public static convertAssumedRoleArnToIamRoleArn(stsArn: string): string {
-        const arnRegex = /^arn:aws:sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
+        // Check if it's already an IAM user ARN - return as-is
+        // Supports all AWS partitions: aws, aws-cn, aws-us-gov, etc.
+        const iamUserRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):user\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamUserRegex.test(stsArn)) {
+            return stsArn
+        }
 
+        // Check if it's already an IAM role ARN - return as-is
+        const iamRoleRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):role\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamRoleRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Try to convert STS assumed-role ARN to IAM role ARN
+        const arnRegex = /^arn:(aws[a-z-]*):sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
         const match = stsArn.match(arnRegex)
         if (!match) {
             throw new Error(`Invalid STS ARN format: ${stsArn}`)
         }
 
-        const [, accountId, roleName] = match
+        const [, partition, accountId, roleName] = match
 
-        return `arn:aws:iam::${accountId}:role/${roleName}`
+        return `arn:${partition}:iam::${accountId}:role/${roleName}`
     }
 }
 

@@ -830,7 +830,7 @@ export class DataZoneClient {
         this.logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
 
         const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-        this.logger.debug(`Retrieved user identity, Iam role Arn: ${callerIdentity.Arn}`)
+        this.logger.debug(`Retrieved user identity, IAM ARN: ${roleArn}`)
 
         const datazoneClient = await this.getDataZoneClient()
         const userProfile = await datazoneClient.getUserProfile({
