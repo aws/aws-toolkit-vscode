@@ -35,6 +35,8 @@ export interface GetAllRecommendationsOptions {
 }
 
 export class RecommendationService {
+    private logger = getLogger()
+
     constructor(
         private readonly sessionManager: SessionManager,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
@@ -117,7 +119,7 @@ export class RecommendationService {
             }
 
             // Handle first request
-            getLogger().info('Sending inline completion request: %O', {
+            this.logger.info('Sending inline completion request: %O', {
                 method: inlineCompletionWithReferencesRequestType.method,
                 request: {
                     textDocument: request.textDocument,
@@ -174,7 +176,7 @@ export class RecommendationService {
                 }
             }
 
-            getLogger().info('Received inline completion response from LSP: %O', {
+            this.logger.info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
                 latency: Date.now() - t0,
                 itemCount: result.items?.length || 0,
@@ -190,12 +192,14 @@ export class RecommendationService {
 
             if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
                 if (isTriggerByDeletion) {
+                    this.logger.info(`Suggestions were discarded; reason: triggerByDeletion`)
                     return []
                 }
                 // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
                 if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
                     const session = this.sessionManager.getActiveSession()
                     if (!session) {
+                        this.logger.error(`Suggestions were discarded; reason: undefined conflicting session`)
                         return []
                     }
                     const params: LogInlineCompletionSessionResultsParams = {
@@ -213,14 +217,14 @@ export class RecommendationService {
                     }
                     languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
                     this.sessionManager.clear()
-                    getLogger().info(
-                        'Completion discarded due to active edit suggestion displayed longer than 1 second'
+                    this.logger.info(
+                        'Suggetions were discarded; reason: active edit suggestion displayed longer than 1 second'
                     )
                     return []
                 } else if (EditSuggestionState.isEditSuggestionActive()) {
                     // discard the current edit suggestion if its display time is less than 1 sec
                     await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
-                    getLogger().info('Discarding active edit suggestion displaying less than 1 second')
+                    this.logger.info('Discarding active edit suggestion displaying less than 1 second')
                 }
             }
 
@@ -244,11 +248,10 @@ export class RecommendationService {
 
             // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
+                let logstr = `found non null next token; `
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    getLogger().info(
-                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                    )
+                    logstr += 'Suggestion type is COMPLETIONS. Start pulling more items'
                     this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
                         languageClient.warn(`Error when getting suggestions: ${error}`)
                     })
@@ -256,12 +259,14 @@ export class RecommendationService {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
                     // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                    getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                    logstr += 'Suggestion type is EDITS. Skip pulling more items'
                     this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
+
+                this.logger.info(logstr)
             }
         } catch (error: any) {
-            getLogger().error('Error getting recommendations: %O', error)
+            this.logger.error('Error getting recommendations: %O', error)
             // bearer token expired
             if (error.data && error.data.awsErrorCode === 'E_AMAZON_Q_CONNECTION_EXPIRED') {
                 // ref: https://github.com/aws/aws-toolkit-vscode/blob/amazonq/v1.74.0/packages/core/src/codewhisperer/service/inlineCompletionService.ts#L104
