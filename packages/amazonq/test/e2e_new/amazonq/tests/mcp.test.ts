@@ -18,9 +18,14 @@ import {
     validateMCPDropdownOptions,
     configureRemoteMCPServer,
     remoteFetchConfig,
+    updateMCPTimeout,
+    clickMCPEditButton,
+    updateMCPCommand,
+    clickMCPFixConfigurationButton,
+    checkMCPServerErrorStatus,
 } from '../helpers/mcpHelper'
 import { closeAllTabs } from '../utils/cleanupUtils'
-import { findItemByText } from '../utils/generalUtils'
+import { findItemByText, sleep } from '../utils/generalUtils'
 
 describe('Amazon Q MCP Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -110,5 +115,30 @@ describe('Amazon Q MCP Functionality', function () {
             const list = await findMCPListItems(webviewView)
             await findItemByText(list, 'remote-fetch')
         }
+    })
+
+    it('Edit Remote MCP Server timeout', async () => {
+        await clickToolsButton(webviewView)
+        const list = await findMCPListItems(webviewView)
+        await (await findItemByText(list, 'remote-fetch')).click()
+        await clickMCPEditButton(webviewView)
+        await updateMCPTimeout(webviewView, 60)
+        await saveMCPServerConfiguration(webviewView)
+    })
+
+    it('Edit MCP Server with Fault Automation', async () => {
+        await clickToolsButton(webviewView)
+        const list = await findMCPListItems(webviewView)
+        await (await findItemByText(list, 'aws-documentation')).click()
+        await sleep(100)
+        await clickMCPEditButton(webviewView)
+        await updateMCPCommand(webviewView, 'uv')
+        await saveMCPServerConfiguration(webviewView)
+        await clickMCPCloseButton(webviewView)
+        await clickToolsButton(webviewView)
+        await checkMCPServerErrorStatus(webviewView, 'aws-documentation')
+        await clickMCPFixConfigurationButton(webviewView)
+        await updateMCPCommand(webviewView, 'uvx')
+        await saveMCPServerConfiguration(webviewView)
     })
 })

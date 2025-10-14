@@ -317,6 +317,18 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
 }
 
 /**
+ * Clicks the edit button in the MCP server configuration panel
+ * @param webviewView The WebviewView instance
+ */
+export async function clickMCPEditButton(webviewView: WebviewView): Promise<void> {
+    try {
+        await clickButton(webviewView, '.mynah-sheet-header-actions-container', '.mynah-ui-icon-pencil', 'Edit button')
+    } catch (e) {
+        throw new Error(`Failed to click MCP edit button: ${e}`)
+    }
+}
+
+/**
  * Clicks the close/cancel button in the MCP server configuration panel
  * @param webviewView The WebviewView instance
  * @returns Promise<boolean> True if close button was found and clicked, false otherwise
@@ -359,6 +371,46 @@ export async function checkMCPServerStatus(webviewView: WebviewView): Promise<vo
         await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-ok-circled.status-success'))
     } catch {
         throw new Error('Failed: Status icon not found')
+    }
+}
+
+/**
+ * Checks MCP server error status for a specific server name
+ * @param webviewView The WebviewView instance
+ * @param serverName The name of the server to check
+ * @throws Error if server not found or error status not detected
+ */
+export async function checkMCPServerErrorStatus(webviewView: WebviewView, serverName: string): Promise<void> {
+    try {
+        const list = await findMCPListItems(webviewView)
+        for (const item of list) {
+            const itemText = await item.getText()
+            if (itemText?.trim().startsWith(serverName)) {
+                await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-cancel-circle.status-error'))
+                return
+            }
+        }
+        throw new Error(`Server '${serverName}' not found in MCP list`)
+    } catch (e) {
+        throw new Error(`Failed to check MCP server error status: ${e}`)
+    }
+}
+
+/**
+ * Clicks the fix configuration button for MCP server
+ * @param webviewView The WebviewView instance
+ * @throws Error if fix configuration button cannot be clicked
+ */
+export async function clickMCPFixConfigurationButton(webviewView: WebviewView): Promise<void> {
+    try {
+        await clickButton(
+            webviewView,
+            '.mynah-detailed-list-item-actions-item',
+            '.mynah-ui-icon-pencil',
+            'Fix Configuration button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to click fix configuration button: ${e}`)
     }
 }
 
@@ -407,4 +459,29 @@ export async function validateMCPDropdownOptions(webviewView: WebviewView, expec
 
 export async function configureRemoteMCPServer(webviewView: WebviewView, config: MCPServerConfig): Promise<void> {
     await configureMCPServer(webviewView, config)
+}
+
+export async function updateMCPTimeout(webviewView: WebviewView, timeout: number): Promise<void> {
+    try {
+        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
+        const formContainer = await getFormContainer(sheetWrapper)
+        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+        await inputTimeout(items[items.length - 1], timeout)
+    } catch (e) {
+        throw new Error(`Failed to update MCP timeout: ${e}`)
+    }
+}
+
+export async function updateMCPCommand(webviewView: WebviewView, command: string): Promise<void> {
+    try {
+        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
+        const formContainer = await getFormContainer(sheetWrapper)
+        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+        const commandContainer = items[formItemsMap.COMMAND]
+        const input = await commandContainer.findElement(By.css('.mynah-form-input'))
+        await input.clear()
+        await input.sendKeys(command)
+    } catch (e) {
+        throw new Error(`Failed to update MCP command: ${e}`)
+    }
 }
