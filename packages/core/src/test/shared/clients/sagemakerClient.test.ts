@@ -360,6 +360,7 @@ describe('SagemakerClient.startSpace', function () {
         getTestWindow().getFirstMessage().selectItem('Yes')
 
         await promise
+        sinon.assert.calledOnce(updateSpaceStub)
         sinon.assert.calledOnce(createAppStub)
     })
 
