@@ -83,7 +83,7 @@ const scenarios: TestScenario[] = [
     },
 ]
 
-describe.skip('AppBuilder Walkthrough', function () {
+describe('AppBuilder Walkthrough', function () {
     before(async function () {
         // ensure auto scan is disabled before testrun
         await CodeScansState.instance.setScansEnabled(false)
