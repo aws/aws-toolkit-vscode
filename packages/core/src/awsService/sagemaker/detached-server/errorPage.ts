@@ -70,8 +70,8 @@ export const ErrorText = {
                 'Your session has expired. This is likely due to network connectivity issues after machine sleep/resume. Please wait 10-30 seconds for automatic credential refresh, then try again. If the issue persists, try reconnecting through AWS Toolkit.',
         },
         [ExceptionType.INTERNAL_FAILURE]: {
-            Title: 'Failed to connect remotely to VSCode',
-            Text: 'Unable to establish remote connection to VSCode. This could be due to several factors. Please try again by clicking the VSCode button. If the problem persists, please contact your admin.',
+            Title: 'Failed to connect remotely to the Space',
+            Text: 'Unable to establish remote connection to the Space. This could be due to several factors. Please try again by clicking the connect button. If the problem persists, please contact your admin.',
         },
         [ExceptionType.RESOURCE_LIMIT_EXCEEDED]: {
             Title: 'Connection limit reached',

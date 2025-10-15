@@ -57,7 +57,7 @@
     },
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
-        "buildScripts": "npm run generateNonCodeFiles && npm run copyFiles && npm run generateIcons && npm run generateSettings && npm run generateConfigurationAttributes && tsc -p ./ --noEmit",
+        "buildScripts": "npm run build:sagemaker-ssh-kiro && npm run generateNonCodeFiles && npm run copyFiles && npm run generateIcons && npm run generateSettings && npm run generateConfigurationAttributes && tsc -p ./ --noEmit",
         "generateConfigurationAttributes": "ts-node ./scripts/build/generateConfigurationAttributes.ts",
         "generateNonCodeFiles": "ts-node ../../scripts/generateNonCodeFiles.ts",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
@@ -73,6 +73,7 @@
         "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testInteg": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts integration dist/test/integ/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "package": "ts-node ../../scripts/package.ts",
+        "build:sagemaker-ssh-kiro": "npm run package -w sagemaker-ssh-kiro",
         "lint": "true",
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "newChange": "ts-node ../../scripts/newChange.ts",

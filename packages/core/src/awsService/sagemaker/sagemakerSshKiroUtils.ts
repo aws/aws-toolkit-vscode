@@ -1,0 +1,159 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+
+import { glob } from 'glob'
+import * as path from 'path'
+import * as semver from 'semver'
+import * as vscode from 'vscode'
+import { ToolkitError } from '../../shared/errors'
+import fs from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
+
+const logger = getLogger('sagemaker')
+
+const pluginTechnicalName = 'sagemaker-ssh-kiro'
+const pluginDisplayName = 'Amazon SageMaker SSH Plugin for Kiro'
+const minKiroVersion = '0.3.0'
+
+let vscodeProductJson: any
+
+async function getEditorProductJson() {
+    if (!vscodeProductJson) {
+        const productJsonPath = path.join(vscode.env.appRoot, 'product.json')
+        logger.info(`Reading vscode product.json at ${productJsonPath}`)
+        const productJsonStr = await fs.readFileText(productJsonPath)
+        vscodeProductJson = JSON.parse(productJsonStr)
+    }
+
+    return vscodeProductJson
+}
+
+export async function getKiroVersion(): Promise<string> {
+    return (await getEditorProductJson()).version
+}
+
+/**
+ * Finds the embedded SageMaker SSH Kiro extension VSIX file and extracts its version.
+ */
+export async function findEmbeddedSageMakerSshKiroExtension(
+    ctx: vscode.ExtensionContext
+): Promise<{ path: string; version: string }> {
+    const resourcesDir = ctx.asAbsolutePath('resources')
+
+    try {
+        // Use forward slashes for glob pattern
+        const globPattern = path.join(resourcesDir, 'sagemaker-ssh-kiro-*.vsix').replace(/\\/g, '/')
+        const matches = await glob(globPattern)
+        if (matches.length === 0) {
+            throw new ToolkitError(`The ${pluginTechnicalName} extension VSIX file not found in: ${resourcesDir}.`)
+        }
+
+        if (matches.length > 1) {
+            // Multiple files could only happen if we built the toolkit extension incorrectly or if the user modified the extension directory.
+            throw new ToolkitError(
+                `Unexpectedly found multiple (${matches.length}) ${pluginTechnicalName} extension VSIX files in: ${resourcesDir}`
+            )
+        }
+
+        const filePath = matches[0]
+        const fileName = path.basename(filePath)
+        const versionMatch = fileName.match(/^sagemaker-ssh-kiro-(.+)\.vsix$/)
+
+        if (!versionMatch) {
+            throw new ToolkitError(`Failed to extract version number from VSIX filename: ${fileName}`)
+        }
+
+        const version = versionMatch[1]
+        logger.info(`Found the ${pluginTechnicalName} extension VSIX file: ${fileName} (version ${version})`)
+        return { path: filePath, version }
+    } catch (error) {
+        if (error instanceof ToolkitError) {
+            throw error
+        }
+        throw new ToolkitError(
+            `An error occurred while searching for the ${pluginTechnicalName} extension VSIX file: ${error}`
+        )
+    }
+}
+
+/**
+ * Ensures the SageMaker SSH Kiro extension is installed and up-to-date.
+ */
+export async function ensureSageMakerSshKiroExtension(ctx: vscode.ExtensionContext): Promise<void> {
+    const kiroVersion = await getKiroVersion()
+
+    if (semver.lt(kiroVersion, minKiroVersion)) {
+        throw new ToolkitError(
+            `SageMaker remote access requires Kiro version ${minKiroVersion} or higher (current: ${kiroVersion}). Update Kiro to continue.`
+        )
+    }
+
+    logger.info(`Kiro version ${kiroVersion} meets minimum requirement (${minKiroVersion})`)
+
+    // Find the embedded extension file and extract its version
+    const { path: embeddedPath, version: embeddedVersion } = await findEmbeddedSageMakerSshKiroExtension(ctx)
+
+    // Check if extension is already installed with the correct version
+    const installedExtension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.sagemakerSshKiro)
+
+    if (installedExtension) {
+        if (installedExtension.packageJSON.version === embeddedVersion) {
+            logger.info(
+                `The ${pluginTechnicalName} extension is already installed with expected version ${embeddedVersion}.`
+            )
+            return
+        } else {
+            logger.info(
+                `The ${pluginTechnicalName} extension is installed with version ${installedExtension.packageJSON.version}, but expected version ${embeddedVersion}`
+            )
+        }
+    } else {
+        logger.info(
+            `The ${pluginTechnicalName} extension is not installed. Attempting to install version ${embeddedVersion}...`
+        )
+    }
+
+    // Determine if this is an update or new installation
+    const isUpdate = installedExtension !== undefined
+    const currentVersion = installedExtension?.packageJSON.version
+
+    // Prompt user for confirmation
+    const actionText = isUpdate ? 'update' : 'install'
+    const confirmButtonText = isUpdate ? 'Update' : 'Install'
+    const installOrUpdateQuestion = isUpdate
+        ? `update from version ${currentVersion} to ${embeddedVersion}`
+        : `install version ${embeddedVersion}`
+
+    const ok = await showConfirmationMessage({
+        prompt: `The ${pluginDisplayName} needs to be ${isUpdate ? 'updated' : 'installed'} to connect to the Space. Would you like to ${installOrUpdateQuestion}?`,
+        confirm: confirmButtonText,
+    })
+
+    if (!ok) {
+        void vscode.window.showInformationMessage(
+            `Aborted connecting to the Space because you declined to ${actionText} the ${pluginDisplayName}.`
+        )
+        const cancellationErrorMessage = `User declined to ${actionText} the ${pluginTechnicalName} extension (version ${embeddedVersion}).`
+        logger.info(cancellationErrorMessage)
+        throw new ToolkitError(cancellationErrorMessage, { cancelled: true })
+    }
+
+    logger.info(`Installing the ${pluginTechnicalName} extension (version ${embeddedVersion}) from: ${embeddedPath}`)
+
+    // Install the extension
+    await vscode.commands.executeCommand('workbench.extensions.installExtension', vscode.Uri.file(embeddedPath))
+
+    logger.info(`Installed the ${pluginTechnicalName} extension (version ${embeddedVersion}).`)
+
+    // Show success notification
+    const successMessage = isUpdate
+        ? `${pluginDisplayName} updated to version ${embeddedVersion}`
+        : `${pluginDisplayName} installed (version ${embeddedVersion})`
+
+    void vscode.window.showInformationMessage(successMessage)
+}

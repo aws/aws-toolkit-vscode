@@ -8,7 +8,7 @@
 import * as vscode from 'vscode'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
-import { SshConfig } from '../../shared/sshConfig'
+import { ensureConnectScript, SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
 import * as os from 'os'
@@ -22,6 +22,10 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { isKiro } from '../../shared/extensionUtilities'
+import { getIdeType } from '../../shared/extensionUtilities'
+import { ChildProcess } from '../../shared/utilities/processUtils'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -29,17 +33,28 @@ export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
     ctx: vscode.ExtensionContext
 ) {
+    if (useSageMakerSshKiroExtension()) {
+        await ensureSageMakerSshKiroExtension(ctx)
+    }
+
+    const path = '/home/sagemaker-user'
+    const username = 'sagemaker-user'
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
     const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
+
     try {
-        await startVscodeRemote(
-            remoteEnv.SessionProcess,
-            remoteEnv.hostname,
-            '/home/sagemaker-user',
-            remoteEnv.vscPath,
-            'sagemaker-user'
-        )
+        if (useSageMakerSshKiroExtension()) {
+            await startRemoteViaSageMakerSshKiro(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                path,
+                remoteEnv.vscPath,
+                username
+            )
+        } else {
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, path, remoteEnv.vscPath, username)
+        }
     } catch (err) {
         getLogger().info(
             `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${await node.getAppArn()} error: ${err}`
@@ -59,16 +74,21 @@ export async function prepareDevEnvConnection(
     domain?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
-    const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+    // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
+    const { ssm, vsc, ssh } = (
+        await ensureDependencies({ skipRemoteSshCheck: useSageMakerSshKiroExtension() })
+    ).unwrap()
 
-    // Check timeout setting for remote SSH connections
-    const remoteSshConfig = vscode.workspace.getConfiguration('remote.SSH')
-    const current = remoteSshConfig.get<number>('connectTimeout')
-    if (typeof current === 'number' && current < 120) {
-        await remoteSshConfig.update('connectTimeout', 120, vscode.ConfigurationTarget.Global)
-        void vscode.window.showInformationMessage(
-            'Updated "remote.SSH.connectTimeout" to 120 seconds to improve stability.'
-        )
+    if (!useSageMakerSshKiroExtension()) {
+        // Check timeout setting for remote SSH connections
+        const remoteSshConfig = vscode.workspace.getConfiguration('remote.SSH')
+        const current = remoteSshConfig.get<number>('connectTimeout')
+        if (typeof current === 'number' && current < 120) {
+            await remoteSshConfig.update('connectTimeout', 120, vscode.ConfigurationTarget.Global)
+            void vscode.window.showInformationMessage(
+                'Updated "remote.SSH.connectTimeout" to 120 seconds to improve stability.'
+            )
+        }
     }
 
     const hostnamePrefix = connectionType
@@ -86,14 +106,24 @@ export async function prepareDevEnvConnection(
     }
 
     await startLocalServer(ctx)
-    await removeKnownHost(hostname)
 
-    const sshConfig = new SshConfig(ssh, 'sm_', 'sagemaker_connect')
-    const config = await sshConfig.ensureValid()
-    if (config.isErr()) {
-        const err = config.err()
-        logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
-        throw err
+    if (useSageMakerSshKiroExtension()) {
+        // Skip SSH Config and known host changes when using the SageMaker SSH
+        // Kiro uses the embedded SageMaker SSH Kiro extension which handles SSH connections differently
+        const scriptResult = await ensureConnectScript('sagemaker_connect')
+        if (scriptResult.isErr()) {
+            throw scriptResult
+        }
+    } else {
+        await removeKnownHost(hostname)
+
+        const sshConfig = new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+        const config = await sshConfig.ensureValid()
+        if (config.isErr()) {
+            const err = config.err()
+            logger.error(`failed to add ssh config section: ${err.message}`)
+            throw err
+        }
     }
 
     // set envirionment variables
@@ -145,6 +175,7 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
             ...process.env,
             SAGEMAKER_ENDPOINT: customEndpoint,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: infoFilePath,
+            PARENT_IDE_TYPE: getIdeType(),
         },
     })
 
@@ -235,4 +266,20 @@ export async function removeKnownHost(hostname: string): Promise<void> {
             throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
         }
     }
+}
+
+export function useSageMakerSshKiroExtension(): boolean {
+    return isKiro()
+}
+
+export async function startRemoteViaSageMakerSshKiro(
+    ProcessClass: typeof ChildProcess,
+    hostname: string,
+    targetDirectory: string,
+    vscPath: string,
+    user?: string
+): Promise<void> {
+    const userAt = user ? `${user}@` : ''
+    const workspaceUri = `vscode-remote://sagemaker-ssh-kiro+${userAt}${hostname}${targetDirectory}`
+    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()
 }

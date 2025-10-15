@@ -12,6 +12,7 @@ import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
 import { matchesPattern } from './textUtilities'
+import { getIdeType } from '../extensionUtilities'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -53,7 +54,7 @@ export async function tryRun(
 
 /**
  * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
- * absolute) if it works.
+ * absolute) if it works. For Kiro on Windows, looks for `kiro.cmd` instead.
  *
  * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
  */
@@ -63,6 +64,10 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
     }
 
     const vscExe = process.argv0
+    const ideType = getIdeType()
+    const isKiro = ideType === 'kiro'
+    const isWindows = process.platform === 'win32'
+
     // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
     const vscs = [
         // Special case for flatpak (steamdeck). #V896741845
@@ -72,6 +77,13 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
         path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
         path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
         path.resolve(`${vscode.env.appRoot}/../../bin/code-insiders`), // Windows
+        // Kiro-specific paths for Windows
+        ...(isKiro && isWindows
+            ? [
+                  path.resolve(`${vscode.env.appRoot}/../../bin/kiro.cmd`),
+                  path.resolve(`${vscode.env.appRoot}/../../bin/kiro`),
+              ]
+            : []),
         // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
         path.resolve(`${vscode.env.appRoot}/code`),
         path.resolve(vscExe, '../bin/code-insiders'),
@@ -79,6 +91,8 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
         path.resolve(vscExe, '../../bin/code-insiders'),
         path.resolve(vscExe, '../../bin/code'),
         '/usr/bin/code',
+        // Kiro fallbacks
+        ...(isKiro ? ['kiro', 'kiro.cmd'] : []),
         'code', // $PATH
     ]
     for (const vsc of vscs) {
