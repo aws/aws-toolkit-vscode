@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
 import { getLogger } from '../../../shared/logger/logger'
@@ -19,6 +18,7 @@ import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticat
 import { SmusUtils } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
 import { getContext } from '../../../shared/vscode/setContext'
+import { createDZClientBaseOnDomainMode } from './utils'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -142,7 +142,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         }
 
         this.logger.debug('SMUS: Getting DataZone client instance')
-        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
         }
@@ -179,7 +179,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     }
 
     private async updateChildren(): Promise<void> {
-        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
         if (getContext('aws.smus.isExpressMode')) {

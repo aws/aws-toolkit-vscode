@@ -12,7 +12,6 @@ import {
     SageMakerUnifiedStudioRootNode,
     selectSMUSProject,
 } from './nodes/sageMakerUnifiedStudioRootNode'
-import { DataZoneClient } from '../shared/client/datazoneClient'
 import { openRemoteConnect, stopSpace } from '../../awsService/sagemaker/commands'
 import { SagemakerUnifiedStudioSpaceNode } from './nodes/sageMakerUnifiedStudioSpaceNode'
 import { SageMakerUnifiedStudioProjectNode } from './nodes/sageMakerUnifiedStudioProjectNode'
@@ -22,6 +21,7 @@ import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemake
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { recordSpaceTelemetry } from '../shared/telemetry'
+import { DataZoneClient } from '../shared/client/datazoneClient'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider

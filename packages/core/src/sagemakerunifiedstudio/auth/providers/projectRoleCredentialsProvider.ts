@@ -8,11 +8,11 @@ import { ToolkitError } from '../../../shared/errors'
 import * as AWS from '@aws-sdk/types'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from '../../../auth/providers/credentials'
 
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
 import { loadMappings, saveMappings } from '../../../awsService/sagemaker/credentialMapping'
+import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 
 /**
  * Credentials provider for SageMaker Unified Studio Project Role credentials
@@ -123,7 +123,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
         this.logger.debug(`SMUS Project: Fetching project credentials from API for project ${this.projectId}`)
 
         try {
-            const dataZoneClient = await DataZoneClient.getInstance(this.smusAuthProvider)
+            const dataZoneClient = await createDZClientBaseOnDomainMode(this.smusAuthProvider)
             const response = await dataZoneClient.getProjectDefaultEnvironmentCreds(this.projectId)
 
             this.logger.debug(

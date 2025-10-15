@@ -11,6 +11,7 @@ import { SageMakerUnifiedStudioProjectNode } from '../../../../sagemakerunifieds
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
+import * as setContext from '../../../../shared/vscode/setContext'
 
 describe('SageMakerUnifiedStudioComputeNode', function () {
     let computeNode: SageMakerUnifiedStudioComputeNode
@@ -71,9 +72,12 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             assert.deepStrictEqual(children, [])
         })
 
-        it('returns connection nodes and spaces node when project is selected', async function () {
+        it('returns connection nodes and spaces node when project is selected (non-express mode)', async function () {
             const mockProject = { id: 'project-123', name: 'Test Project' }
             ;(mockParent.getProject as sinon.SinonStub).returns(mockProject)
+
+            // Mock express mode to be false
+            sinon.stub(setContext, 'getContext').returns(false)
 
             const children = await computeNode.getChildren()
 
@@ -81,6 +85,19 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             assert.strictEqual(children[0].id, 'Data warehouse')
             assert.strictEqual(children[1].id, 'Data processing')
             assert.ok(children[2] instanceof SageMakerUnifiedStudioSpacesParentNode)
+        })
+
+        it('returns only spaces node when project is selected (express mode)', async function () {
+            const mockProject = { id: 'project-123', name: 'Test Project' }
+            ;(mockParent.getProject as sinon.SinonStub).returns(mockProject)
+
+            // Mock express mode to be true
+            sinon.stub(setContext, 'getContext').returns(true)
+
+            const children = await computeNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.ok(children[0] instanceof SageMakerUnifiedStudioSpacesParentNode)
         })
     })
 

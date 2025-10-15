@@ -103,7 +103,7 @@ describe('SmusAuthenticationProvider', function () {
         } as any
 
         // Stub static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
         extractDomainInfoStub = sinon
             .stub(SmusUtils, 'extractDomainInfoFromUrl')
             .returns({ domainId: testDomainId, region: testRegion })
@@ -698,7 +698,7 @@ describe('SmusAuthenticationProvider', function () {
                 assert.strictEqual(smusAuthProvider['cachedProjectAccountIds'].get(testProjectId), testAccountId)
                 assert.ok(getProjectCredentialProviderStub.calledWith(testProjectId))
                 assert.ok(mockProjectCredentialsProvider.getCredentials.called)
-                assert.ok((DataZoneClient.getInstance as sinon.SinonStub).called)
+                assert.ok((DataZoneClient.createWithCredentials as sinon.SinonStub).called)
                 assert.ok(mockDataZoneClientForProject.getToolingEnvironment.calledWith(testProjectId))
                 assert.ok(mockStsClient.getCallerIdentity.called)
             })

@@ -46,40 +46,50 @@ describe('DataZoneClient', () => {
             getCredentialsProviderForIamProfile: sinon.stub(),
         } as any
 
-        // Set up the DataZoneClient using getInstance since constructor is private
-        DataZoneClient.dispose()
-        dataZoneClient = await DataZoneClient.getInstance(mockAuthProvider)
+        // Create mock credentials provider
+        const mockCredentialsProvider = {
+            getCredentials: sinon.stub().resolves({
+                accessKeyId: 'test-key',
+                secretAccessKey: 'test-secret',
+                sessionToken: 'test-token',
+            }),
+            getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+            getProviderType: () => 'temp' as const,
+            getTelemetryType: () => 'other' as any,
+            getDefaultRegion: () => testRegion,
+            getHashCode: () => 'test-hash',
+            canAutoConnect: () => Promise.resolve(false),
+            isAvailable: () => Promise.resolve(true),
+        }
+
+        // Set up the DataZoneClient using createWithCredentials
+        dataZoneClient = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
     })
 
     afterEach(() => {
         sinon.restore()
     })
 
-    describe('getInstance', () => {
-        it('should return singleton instance', async () => {
-            const instance1 = await DataZoneClient.getInstance(mockAuthProvider)
-            const instance2 = await DataZoneClient.getInstance(mockAuthProvider)
+    describe('createWithCredentials', () => {
+        it('should create new instance with credentials', () => {
+            const mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+                getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+                getProviderType: () => 'temp' as const,
+                getTelemetryType: () => 'other' as any,
+                getDefaultRegion: () => testRegion,
+                getHashCode: () => 'test-hash',
+                canAutoConnect: () => Promise.resolve(false),
+                isAvailable: () => Promise.resolve(true),
+            }
 
-            assert.strictEqual(instance1, instance2)
-        })
-
-        it('should create new instance after dispose', async () => {
-            const instance1 = await DataZoneClient.getInstance(mockAuthProvider)
-            DataZoneClient.dispose()
-            const instance2 = await DataZoneClient.getInstance(mockAuthProvider)
-
-            assert.notStrictEqual(instance1, instance2)
-        })
-    })
-
-    describe('dispose', () => {
-        it('should clear singleton instance', async () => {
-            const instance = await DataZoneClient.getInstance(mockAuthProvider)
-            DataZoneClient.dispose()
-
-            // Should create new instance after dispose
-            const newInstance = await DataZoneClient.getInstance(mockAuthProvider)
-            assert.notStrictEqual(instance, newInstance)
+            const instance = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
+            assert.ok(instance)
+            assert.strictEqual(instance.getRegion(), testRegion)
+            assert.strictEqual(instance.getDomainId(), testDomainId)
         })
     })
 
@@ -164,6 +174,9 @@ describe('DataZoneClient', () => {
                 getEnvironmentCredentials: sinon.stub().resolves(mockCredentials),
             }
 
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getProjectDefaultEnvironmentCreds('project-1')
@@ -228,9 +241,7 @@ describe('DataZoneClient', () => {
 
     describe('fetchAllProjects', function () {
         it('fetches all projects by handling pagination', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
-            // Create a stub for listProjects that returns paginated results
+            // Create a stub for listProjects that returns paginated resultssults
             const listProjectsStub = sinon.stub()
 
             // First call returns first page with nextToken
@@ -260,10 +271,10 @@ describe('DataZoneClient', () => {
             })
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects
-            const result = await client.fetchAllProjects()
+            const result = await dataZoneClient.fetchAllProjects()
 
             // Verify results
             assert.strictEqual(result.length, 2)
@@ -283,8 +294,6 @@ describe('DataZoneClient', () => {
         })
 
         it('returns empty array when no projects found', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
             // Create a stub for listProjects that returns empty results
             const listProjectsStub = sinon.stub().resolves({
                 projects: [],
@@ -292,10 +301,10 @@ describe('DataZoneClient', () => {
             })
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects
-            const result = await client.fetchAllProjects()
+            const result = await dataZoneClient.fetchAllProjects()
 
             // Verify results
             assert.strictEqual(result.length, 0)
@@ -303,16 +312,14 @@ describe('DataZoneClient', () => {
         })
 
         it('handles errors gracefully', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
             // Create a stub for listProjects that throws an error
             const listProjectsStub = sinon.stub().rejects(new Error('API error'))
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects and expect it to throw
-            await assert.rejects(() => client.fetchAllProjects(), /API error/)
+            await assert.rejects(() => dataZoneClient.fetchAllProjects(), /API error/)
         })
     })
 
@@ -326,6 +333,9 @@ describe('DataZoneClient', () => {
                     items: [{ id: 'env-1', name: 'Tooling' }],
                 }),
             }
+
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
@@ -387,6 +397,9 @@ describe('DataZoneClient', () => {
                 getEnvironment: sinon.stub().resolves(mockEnvironment),
             }
 
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getToolingEnvironment('project-123')
@@ -408,7 +421,7 @@ describe('DataZoneClient', () => {
 
             await assert.rejects(
                 () => dataZoneClient.getToolingEnvironment('project-123'),
-                /Failed to get tooling environment ID: No default Tooling environment found for project/
+                /No default Tooling environment found for project/
             )
         })
 
@@ -518,7 +531,7 @@ describe('DataZoneClient', () => {
             stsClientStub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity')
 
             // Stub SmusUtils method
-            convertAssumedRoleArnStub = sinon.stub(SmusUtils, 'convertAssumedRoleArnToIamRoleArn')
+            convertAssumedRoleArnStub = sinon.stub(SmusUtils as any, 'convertAssumedRoleArnToIamRoleArn')
         })
 
         afterEach(() => {
@@ -552,7 +565,6 @@ describe('DataZoneClient', () => {
             assert.strictEqual(result, mockUserProfileId)
 
             // Verify the flow
-            assert.ok(mockAuthProvider.getCredentialsProviderForIamProfile.calledWith('test-profile'))
             assert.ok(stsClientStub.calledOnce)
             assert.ok(convertAssumedRoleArnStub.calledWith(mockStsResponse.Arn))
             assert.ok(

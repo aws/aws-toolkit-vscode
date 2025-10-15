@@ -11,7 +11,6 @@ import {
     SmusAuthenticationProvider,
     setSmusConnectedContext,
 } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
-import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
 import { SageMakerUnifiedStudioRootNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
 import { getLogger } from '../../../shared/logger/logger'
@@ -19,6 +18,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
 import { createMockSpaceNode } from '../testUtils'
+import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 
 describe('SMUS Explorer Activation', function () {
     let mockExtensionContext: vscode.ExtensionContext
@@ -69,7 +69,7 @@ describe('SMUS Explorer Activation', function () {
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockSmusAuthProvider as any)
 
-        // Stub DataZoneClient
+        // Stub DataZoneClient.dispose
         dataZoneDisposeStub = sinon.stub(DataZoneClient, 'dispose')
 
         // Stub SageMakerUnifiedStudioRootNode constructor
@@ -151,7 +151,7 @@ describe('SMUS Explorer Activation', function () {
         it('should register DataZone client disposal', async function () {
             await activate(mockExtensionContext)
 
-            // Find the DataZone dispose subscription - it should be the last one added
+            // Find the DataZone dispose subscription
             const subscriptions = mockExtensionContext.subscriptions
             assert.ok(subscriptions.length > 0)
 

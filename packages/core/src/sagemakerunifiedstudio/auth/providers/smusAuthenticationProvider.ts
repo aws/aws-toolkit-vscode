@@ -36,8 +36,9 @@ import globals from '../../../shared/extensionGlobals'
 import { fromIni } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDomainPreferencesClient'
+import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
+import { DataZoneClient } from '../../shared/client/datazoneClient'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -779,7 +780,7 @@ export class SmusAuthenticationProvider {
 
         logger.debug('SMUS: Creating new connection provider')
         // Create a new connection provider and cache it
-        const connectionProvider = new ConnectionCredentialsProvider(this, connectionId)
+        const connectionProvider = new ConnectionCredentialsProvider(this, connectionId, projectId)
         this.connectionCredentialProvidersCache.set(cacheKey, connectionProvider)
 
         logger.debug('SMUS: Cached new connection provider')
@@ -943,7 +944,7 @@ export class SmusAuthenticationProvider {
             const projectCreds = await projectCredProvider.getCredentials()
 
             // Get project region from tooling environment
-            const dzClient = await DataZoneClient.getInstance(this)
+            const dzClient = await createDZClientBaseOnDomainMode(this)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
             const projectRegion = toolingEnv.awsAccountRegion
 
@@ -1152,6 +1153,7 @@ export class SmusAuthenticationProvider {
         // Clear cached project account IDs
         this.cachedProjectAccountIds.clear()
 
+        DataZoneClient.dispose()
         DataZoneDomainPreferencesClient.dispose()
 
         this.logger.debug('SMUS Auth: Successfully disposed authentication provider')

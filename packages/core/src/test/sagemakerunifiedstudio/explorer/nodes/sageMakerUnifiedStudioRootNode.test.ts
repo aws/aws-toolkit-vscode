@@ -81,7 +81,7 @@ describe('SmusRootNode', function () {
         } as any
 
         // Stub DataZoneClient static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
     })
 
     afterEach(function () {
@@ -271,7 +271,7 @@ describe('SelectSMUSProject', function () {
         } as any
 
         // Stub DataZoneClient static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
 
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
@@ -281,6 +281,13 @@ describe('SelectSMUSProject', function () {
             getDomainAccountId: sinon.stub().resolves('123456789012'),
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns('us-west-2'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any)
 
         // Stub quickPick - return the project directly (not wrapped in an item)
@@ -458,12 +465,19 @@ describe('selectSMUSProject - Additional Tests', function () {
             setProject: sinon.stub(),
         } as any
 
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
             getDomainAccountId: sinon.stub().resolves('123456789012'),
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns('us-west-2'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any)
 
         const mockQuickPick = {
