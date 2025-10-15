@@ -40,7 +40,6 @@ import {
 import { CancellationError } from '../utilities/timeoutUtils'
 import { fromSSO } from '@aws-sdk/credential-provider-sso'
 import { getIAMConnection } from '../../auth/utils'
-import { WaiterConfiguration } from 'aws-sdk/lib/service'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
@@ -301,11 +300,19 @@ export class DefaultLambdaClient {
         )
     }
 
-    public async waitForActive(functionName: string, waiter?: WaiterConfiguration): Promise<void> {
+    public async waitForActive(
+        functionName: string,
+        waiter?: { maxWaitTime?: number; minDelay?: number; maxDelay?: number }
+    ): Promise<void> {
         const sdkClient = await this.createSdkClient()
 
         await waitUntilFunctionActiveV2(
-            { client: sdkClient, maxWaitTime: (waiter?.maxAttempts ?? 600) * (waiter?.delay ?? 1) },
+            {
+                client: sdkClient,
+                maxWaitTime: waiter?.maxWaitTime ?? 600,
+                minDelay: waiter?.minDelay ?? 1,
+                maxDelay: waiter?.maxDelay ?? 120,
+            },
             { FunctionName: functionName }
         )
     }
