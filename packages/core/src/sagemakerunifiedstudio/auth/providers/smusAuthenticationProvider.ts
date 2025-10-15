@@ -15,7 +15,12 @@ import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { getLogger } from '../../../shared/logger/logger'
-import { SmusUtils, SmusErrorCodes, extractAccountIdFromResourceMetadata } from '../../shared/smusUtils'
+import {
+    SmusUtils,
+    SmusErrorCodes,
+    extractAccountIdFromResourceMetadata,
+    convertToToolkitCredentialProvider,
+} from '../../shared/smusUtils'
 import {
     createSmusProfile,
     isValidSmusConnection,
@@ -39,6 +44,8 @@ import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDomainPreferencesClient'
 import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
+import { fromContainerMetadata, fromNodeProviderChain } from '@aws-sdk/credential-providers'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -1019,9 +1026,58 @@ export class SmusAuthenticationProvider {
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             // When in SMUS space, DomainExecutionRoleCreds can be found in config file
             // Read the credentials from credential profile DomainExecutionRoleCreds
-            const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
-            return {
-                getCredentials: async () => await credentials(),
+            try {
+                // Load AWS config file to check profile configuration
+                const { configFile } = await loadSharedConfigFiles()
+                const profileConfig = configFile['DomainExecutionRoleCreds']
+
+                if (profileConfig?.credential_process) {
+                    // Normal SMUS domain: Use the profile with credential_process
+                    logger.debug('SMUS: Using DomainExecutionRoleCreds profile with credential_process')
+                    const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'DomainExecutionRoleCreds',
+                        `smus-der-profile:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                } else if (profileConfig?.credential_source === 'EcsContainer') {
+                    // Express domain with EcsContainer: Use ECS container credentials directly
+                    // The environment has AWS_CONTAINER_CREDENTIALS_RELATIVE_URI set, so use fromContainerMetadata
+                    // which properly handles the ECS credential endpoint
+                    logger.debug('SMUS: Express domain detected, using ECS container credentials')
+                    const credentials = fromContainerMetadata({
+                        timeout: 5000,
+                        maxRetries: 3,
+                    })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'EcsContainer',
+                        `smus-ecs-container:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                } else {
+                    // Fallback: try the profile anyway
+                    logger.debug(
+                        'SMUS: Unknown profile configuration, attempting to use DomainExecutionRoleCreds profile'
+                    )
+                    const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'DomainExecutionRoleCreds-fallback',
+                        `smus-der-fallback:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                }
+            } catch (error) {
+                logger.error('SMUS: Failed to load config file, falling back to default credential chain: %s', error)
+                const credentials = fromNodeProviderChain()
+                return convertToToolkitCredentialProvider(
+                    async () => await credentials(),
+                    'NodeProviderChain',
+                    `smus-node-provider-chain:${this.getDomainId()}:${this.getDomainRegion()}`,
+                    this.getDomainRegion()
+                )
             }
         }
 

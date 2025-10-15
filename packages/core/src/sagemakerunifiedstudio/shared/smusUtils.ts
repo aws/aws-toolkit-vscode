@@ -8,6 +8,9 @@ import { ToolkitError } from '../../shared/errors'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { getResourceMetadata } from './utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
+import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
+import { CredentialType } from '../../shared/telemetry/telemetry'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -466,5 +469,31 @@ export async function extractAccountIdFromResourceMetadata(): Promise<string> {
     } catch (err) {
         logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
         throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
+    }
+}
+
+/**
+ * Creates a CredentialsProvider from an AWS credentials function
+ * @param credentialsFunction Function that returns AWS credentials
+ * @param credentialTypeId Identifier for the credential type
+ * @param hashCode Unique hash code for caching
+ * @param region Domain region
+ * @returns Complete CredentialsProvider object
+ */
+export function convertToToolkitCredentialProvider(
+    credentialsFunction: () => Promise<AwsCredentialIdentity>,
+    credentialTypeId: string,
+    hashCode: string,
+    region: string
+): CredentialsProvider {
+    return {
+        getCredentials: credentialsFunction,
+        getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId }),
+        getProviderType: () => 'temp' as CredentialsProviderType,
+        getTelemetryType: () => 'other' as CredentialType,
+        getDefaultRegion: () => region,
+        getHashCode: () => hashCode,
+        canAutoConnect: () => Promise.resolve(false),
+        isAvailable: () => Promise.resolve(true),
     }
 }

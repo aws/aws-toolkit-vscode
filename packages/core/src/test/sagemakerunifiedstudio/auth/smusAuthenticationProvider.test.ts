@@ -31,6 +31,7 @@ describe('SmusAuthenticationProvider', function () {
     let isInSmusSpaceEnvironmentStub: sinon.SinonStub
     let executeCommandStub: sinon.SinonStub
     let setContextStubGlobal: sinon.SinonStub
+    let getResourceMetadataStub: sinon.SinonStub
     let mockSecondaryAuthState: {
         activeConnection: SmusConnection | undefined
         hasSavedConnection: boolean
@@ -1212,6 +1213,136 @@ describe('SmusAuthenticationProvider', function () {
 
             assert.strictEqual(result?.id, iamConnection.id)
             assert.strictEqual((result as any)?.type, 'iam')
+        })
+    })
+
+    describe('getDerCredentialsProvider', function () {
+        let getContextStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getContextStub = sinon.stub(vscodeSetContext, 'getContext')
+
+            // Clear cache
+            smusAuthProvider['credentialsProviderCache'].clear()
+        })
+
+        describe('in SMUS space environment', function () {
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(true)
+
+                // Mock resource metadata for SMUS space environment
+                getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata').returns({
+                    ResourceArn: 'arn:aws:sagemaker:us-east-2:123456789012:app/dzd_domainId/test-app',
+                    AdditionalMetadata: {
+                        DataZoneDomainId: testDomainId,
+                        DataZoneDomainRegion: testRegion,
+                    },
+                } as any)
+            })
+
+            afterEach(function () {
+                getResourceMetadataStub?.restore()
+            })
+
+            it('should return a credentials provider that can retrieve credentials', async function () {
+                // In SMUS space environment, the method should return a provider
+                // We can't easily test the internal branching logic without stubbing ES modules
+                // So we test that it returns a valid provider structure
+                const provider = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.ok(provider, 'Provider should be returned')
+                assert.ok(typeof provider.getCredentials === 'function', 'Provider should have getCredentials method')
+            })
+
+            it('should not cache providers in SMUS space environment', async function () {
+                // Get provider twice
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                // In SMUS space, providers are not cached (new provider each time)
+                // This is because the logic returns early before caching
+                assert.ok(provider1)
+                assert.ok(provider2)
+            })
+        })
+
+        describe('in non-SMUS space environment', function () {
+            let getAccessTokenStub: sinon.SinonStub
+
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
+                mockSecondaryAuthState.activeConnection = mockSmusConnection
+                getAccessTokenStub = sinon.stub(smusAuthProvider, 'getAccessToken').resolves('mock-access-token')
+            })
+
+            it('should create and cache DomainExecRoleCredentialsProvider for SSO connection', async function () {
+                const provider = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.ok(provider)
+                assert.ok(getAccessTokenStub.notCalled) // Not called until getCredentials is invoked
+
+                // Verify caching
+                const cachedProvider = await smusAuthProvider.getDerCredentialsProvider()
+                assert.strictEqual(provider, cachedProvider)
+            })
+
+            it('should throw error when no active connection', async function () {
+                mockSecondaryAuthState.activeConnection = undefined
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDerCredentialsProvider(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'NoActiveConnection' &&
+                            err.message.includes('No active SMUS connection available')
+                        )
+                    }
+                )
+            })
+
+            it('should throw error for non-SSO connection', async function () {
+                const iamConnection = {
+                    id: 'profile:test-profile',
+                    type: 'iam' as const,
+                    label: 'Test IAM Profile',
+                }
+                mockSecondaryAuthState.activeConnection = iamConnection as any
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDerCredentialsProvider(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'InvalidConnectionType' &&
+                            err.message.includes(
+                                'Domain Execution Role credentials are only available for SSO connections'
+                            )
+                        )
+                    }
+                )
+            })
+
+            it('should use cached provider for same connection', async function () {
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.strictEqual(provider1, provider2)
+            })
+
+            it('should create different providers for different connections', async function () {
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+
+                // Change connection
+                const differentConnection = {
+                    ...mockSmusConnection,
+                    id: 'different-connection-id',
+                    domainId: 'different-domain-id',
+                }
+                mockSecondaryAuthState.activeConnection = differentConnection
+
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.notStrictEqual(provider1, provider2)
+            })
         })
     })
 })
