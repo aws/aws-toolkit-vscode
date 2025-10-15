@@ -52,6 +52,11 @@ import { yes, no, continueText, cancel } from '../localizedText'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 
+const appTypeSettingsMap: Record<string, string> = {
+    [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
+    [AppType.CodeEditor as string]: 'CodeEditorAppSettings',
+} as const
+
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
     DomainSpaceKey: string
@@ -136,13 +141,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
         // Get app type
         const appType = spaceDetails.SpaceSettings?.AppType
-        if (appType !== 'JupyterLab' && appType !== 'CodeEditor') {
+        if (!appType || !(appType in appTypeSettingsMap)) {
             throw new ToolkitError(`Unsupported AppType "${appType}" for space "${spaceName}"`)
         }
 
         // Get app resource spec
         const requestedResourceSpec =
-            appType === 'JupyterLab'
+            appType === AppType.JupyterLab
                 ? spaceDetails.SpaceSettings?.JupyterLabAppSettings?.DefaultResourceSpec
                 : spaceDetails.SpaceSettings?.CodeEditorAppSettings?.DefaultResourceSpec
 
@@ -181,16 +186,30 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             instanceType = InstanceTypeMinimum
         }
 
-        // Get remote access flag
-        if (!spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED') {
+        // First, update the space if needed
+        const needsRemoteAccess =
+            !spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED'
+        const instanceTypeChanged = requestedResourceSpec?.InstanceType !== instanceType
+
+        if (needsRemoteAccess || instanceTypeChanged) {
+            const updateSpaceRequest: UpdateSpaceCommandInput = {
+                DomainId: domainId,
+                SpaceName: spaceName,
+                SpaceSettings: {
+                    ...(needsRemoteAccess && { RemoteAccess: 'ENABLED' }),
+                    ...(instanceTypeChanged && {
+                        [appTypeSettingsMap[appType]]: {
+                            DefaultResourceSpec: {
+                                InstanceType: instanceType,
+                            },
+                        },
+                    }),
+                },
+            }
+
             try {
-                await this.updateSpace({
-                    DomainId: domainId,
-                    SpaceName: spaceName,
-                    SpaceSettings: {
-                        RemoteAccess: 'ENABLED',
-                    },
-                })
+                getLogger().debug('SagemakerClient: Updating space: domainId=%s, spaceName=%s', domainId, spaceName)
+                await this.updateSpace(updateSpaceRequest)
                 await this.waitForSpaceInService(spaceName, domainId)
             } catch (err) {
                 throw this.handleStartSpaceError(err)
@@ -214,6 +233,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 ? { ...resourceSpec, EnvironmentArn: undefined, EnvironmentVersionArn: undefined }
                 : resourceSpec
 
+        // Second, create the App
         const createAppRequest: CreateAppCommandInput = {
             DomainId: domainId,
             SpaceName: spaceName,
@@ -223,6 +243,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         }
 
         try {
+            getLogger().debug('SagemakerClient: Creating app: domainId=%s, spaceName=%s', domainId, spaceName)
             await this.createApp(createAppRequest)
         } catch (err) {
             throw this.handleStartSpaceError(err)
