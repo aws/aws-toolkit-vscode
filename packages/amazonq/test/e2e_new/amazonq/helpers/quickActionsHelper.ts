@@ -24,10 +24,17 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
         if (quickActionItems.length === 0) {
             throw new Error('No quick action commands found')
         }
-        const quickActionTexts = []
+        const quickActionTexts: string[] = []
         for (const item of quickActionItems) {
             const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
             quickActionTexts.push(text)
+        }
+
+        const requiredTexts = ['/help', '/transform', '/clear', '/compact']
+        const missingTexts = requiredTexts.filter((text) => !quickActionTexts.includes(text))
+
+        if (missingTexts.length > 0) {
+            throw new Error(`Missing required texts: ${missingTexts.join(', ')}`)
         }
 
         return { items: quickActionItems, texts: quickActionTexts }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView, WebElement } from 'vscode-extension-tester'
-import { waitForElement } from '../utils/generalUtils'
+import { sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Lists all available model options in the dropdown
@@ -42,6 +42,7 @@ export async function selectModel(webviewView: WebviewView, modelName: string): 
             throw new Error(`Model option "${modelName}" not found`)
         }
         await targetOption.click()
+        await sleep(50)
     } catch (e) {
         throw new Error(`Failed to select model '${modelName}': ${e}`)
     }
