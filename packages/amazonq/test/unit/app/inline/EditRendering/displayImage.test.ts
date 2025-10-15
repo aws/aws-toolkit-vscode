@@ -188,6 +188,89 @@ describe('EditDecorationManager', function () {
     })
 })
 
+describe('displaySvgDecoration cursor distance auto-discard', function () {
+    let sandbox: sinon.SinonSandbox
+    let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
+    let languageClientStub: any
+    let sessionStub: any
+    let itemStub: any
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        const commonStubs = createCommonStubs(sandbox)
+        editorStub = commonStubs.editorStub
+
+        languageClientStub = {
+            sendNotification: sandbox.stub(),
+        }
+
+        sessionStub = {
+            sessionId: 'test-session',
+            requestStartTime: Date.now(),
+            firstCompletionDisplayLatency: 100,
+        }
+
+        itemStub = {
+            itemId: 'test-item',
+            insertText: 'test content',
+        }
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('should send discard telemetry and return early when edit is 10+ lines away from cursor', async function () {
+        // Set cursor at line 5
+        editorStub.selection = {
+            active: new vscode.Position(5, 0),
+        } as any
+        // Try to display edit at line 20 (15 lines away)
+        await displaySvgDecoration(
+            editorStub as unknown as vscode.TextEditor,
+            vscode.Uri.parse('data:image/svg+xml;base64,test'),
+            20,
+            'new code',
+            [],
+            sessionStub,
+            languageClientStub,
+            itemStub
+        )
+
+        // Verify discard telemetry was sent
+        sinon.assert.calledOnce(languageClientStub.sendNotification)
+        const call = languageClientStub.sendNotification.getCall(0)
+        assert.strictEqual(call.args[0], 'aws/logInlineCompletionSessionResults')
+        assert.strictEqual(call.args[1].sessionId, 'test-session')
+        assert.strictEqual(call.args[1].completionSessionResult['test-item'].discarded, true)
+    })
+
+    it('should proceed normally when edit is within 10 lines of cursor', async function () {
+        // Set cursor at line 5
+        editorStub.selection = {
+            active: new vscode.Position(5, 0),
+        } as any
+        // Mock required dependencies for normal flow
+        sandbox.stub(vscode.workspace, 'onDidChangeTextDocument').returns({ dispose: sandbox.stub() })
+        sandbox.stub(vscode.window, 'onDidChangeTextEditorSelection').returns({ dispose: sandbox.stub() })
+
+        // Try to display edit at line 10 (5 lines away)
+        await displaySvgDecoration(
+            editorStub as unknown as vscode.TextEditor,
+            vscode.Uri.parse('data:image/svg+xml;base64,test'),
+            10,
+            'new code',
+            [],
+            sessionStub,
+            languageClientStub,
+            itemStub
+        )
+
+        // Verify no discard telemetry was sent (function should proceed normally)
+        sinon.assert.notCalled(languageClientStub.sendNotification)
+    })
+})
+
 describe('displaySvgDecoration cursor distance auto-reject', function () {
     let sandbox: sinon.SinonSandbox
     let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
@@ -253,6 +336,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should not reject when cursor moves less than 25 lines away', async function () {
+        // Set cursor at line 50
+        editorStub.selection = {
+            active: new vscode.Position(50, 0),
+        } as any
         const startLine = 50
         await setupDisplaySvgDecoration(startLine)
 
@@ -262,6 +349,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should not reject when cursor moves exactly 25 lines away', async function () {
+        // Set cursor at line 50
+        editorStub.selection = {
+            active: new vscode.Position(50, 0),
+        } as any
         const startLine = 50
         await setupDisplaySvgDecoration(startLine)
 
@@ -271,6 +362,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should reject when cursor moves more than 25 lines away', async function () {
+        // Set cursor at line 50
+        editorStub.selection = {
+            active: new vscode.Position(50, 0),
+        } as any
         const startLine = 50
         await setupDisplaySvgDecoration(startLine)
 
@@ -280,6 +375,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should reject when cursor moves more than 25 lines before the edit', async function () {
+        // Set cursor at line 50
+        editorStub.selection = {
+            active: new vscode.Position(50, 0),
+        } as any
         const startLine = 50
         await setupDisplaySvgDecoration(startLine)
 
@@ -289,6 +388,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should not reject when edit is near beginning of file and cursor cannot move far enough', async function () {
+        // Set cursor at line 10
+        editorStub.selection = {
+            active: new vscode.Position(10, 0),
+        } as any
         const startLine = 10
         await setupDisplaySvgDecoration(startLine)
 
@@ -298,6 +401,10 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
     })
 
     it('should not reject when edit suggestion is not active', async function () {
+        // Set cursor at line 50
+        editorStub.selection = {
+            active: new vscode.Position(50, 0),
+        } as any
         editSuggestionStateStub.returns(false)
 
         const startLine = 50
