@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import {
     Command,
     Message,
@@ -124,7 +123,7 @@ async function editStateMachineMessageHandler(context: ExecutionDetailsContext) 
 async function redriveExecutionMessageHandler(message: RedriveMessage, context: ExecutionDetailsContext) {
     const executionArn = message.executionArn
     if (!message.openInNewTab) {
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        context.panel.dispose()
     }
     await context.openExecutionDetails(executionArn)
 }
