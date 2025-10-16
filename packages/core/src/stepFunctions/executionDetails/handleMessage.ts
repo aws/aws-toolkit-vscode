@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import {
     Command,
     Message,
@@ -12,6 +13,7 @@ import {
     ApiCallRequestMessage,
     InitResponseMessage,
     StartExecutionMessage,
+    RedriveMessage,
 } from '../messageHandlers/types'
 import {
     loadStageMessageHandler,
@@ -46,6 +48,9 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
                 break
             case Command.EDIT_STATE_MACHINE:
                 void editStateMachineMessageHandler(context)
+                break
+            case Command.REDRIVE:
+                void redriveExecutionMessageHandler(message as RedriveMessage, context)
                 break
             default:
                 void handleUnsupportedMessage(context, message)
@@ -114,4 +119,12 @@ async function startExecutionMessageHandler(message: StartExecutionMessage, cont
 async function editStateMachineMessageHandler(context: ExecutionDetailsContext) {
     const params = parseExecutionArnForStateMachine(context.executionArn)
     await openWorkflowStudio(params!.stateMachineArn, params!.region)
+}
+
+async function redriveExecutionMessageHandler(message: RedriveMessage, context: ExecutionDetailsContext) {
+    const executionArn = message.executionArn
+    if (!message.openInNewTab) {
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+    await context.openExecutionDetails(executionArn)
 }
