@@ -17,7 +17,7 @@ import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared/fs/fs'
-import { openWorkflowStudioWithDefinition } from '../utils'
+import { openWorkflowStudioWithDefinition } from '../stepFunctionsWorkflowStudioUtils'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel

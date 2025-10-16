@@ -15,13 +15,15 @@ import { ExtContext } from '../../../shared/extensions'
 import { VueWebview } from '../../../webviews/main'
 import * as vscode from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { ExecutionDetailProvider } from '../../executionDetails/executionDetailProvider'
-import { showExecuteStateMachineWebview } from '../../utils'
+import globals from '../../../shared/extensionGlobals'
+import { OpenExecutionDetailsCallBack } from '../../messageHandlers/types'
 
 interface StateMachine {
     arn: string
     name: string
     region: string
+    openExecutionDetails: OpenExecutionDetailsCallBack
+    executionInput?: string
 }
 
 export class ExecuteStateMachineWebview extends VueWebview {
@@ -63,7 +65,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
                 stateMachineArn: this.stateMachine.arn,
                 input,
             })
-            await ExecutionDetailProvider.openExecutionDetails(
+            await this.stateMachine.openExecutionDetails(
                 startExecResponse.executionArn!,
                 startExecResponse.startDate!.toString()
             )
@@ -89,11 +91,49 @@ export class ExecuteStateMachineWebview extends VueWebview {
     }
 }
 
-export async function executeStateMachine(context: ExtContext, node: StateMachineNode): Promise<void> {
+/**
+ * Shows the Execute State Machine webview with the provided state machine data
+ * @param extensionContext The extension context
+ * @param outputChannel The output channel for logging
+ * @param stateMachineData Object containing arn, name, region, and optional executionInput of the state machine
+ * @returns The webview instance
+ */
+export const showExecuteStateMachineWebview = async (stateMachineData: {
+    arn: string
+    name: string
+    region: string
+    openExecutionDetails: OpenExecutionDetailsCallBack
+    executionInput?: string
+}) => {
+    const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
+    const wv = new Panel(globals.context, globals.outputChannel, {
+        arn: stateMachineData.arn,
+        name: stateMachineData.name,
+        region: stateMachineData.region,
+        openExecutionDetails: stateMachineData.openExecutionDetails,
+        executionInput: stateMachineData.executionInput,
+    })
+
+    await wv.show({
+        title: localize('AWS.executeStateMachine.title', 'Start Execution'),
+        cssFiles: ['executeStateMachine.css'],
+    })
+
+    return wv
+}
+
+export async function executeStateMachine(
+    context: ExtContext,
+    node: StateMachineNode,
+    openExecutionDetails: OpenExecutionDetailsCallBack,
+    executionInput?: string
+): Promise<void> {
     await showExecuteStateMachineWebview({
         arn: node.details.stateMachineArn || '',
         name: node.details.name || '',
         region: node.regionCode,
+        openExecutionDetails,
+        executionInput,
     })
     telemetry.stepfunctions_executeStateMachineView.emit()
 }

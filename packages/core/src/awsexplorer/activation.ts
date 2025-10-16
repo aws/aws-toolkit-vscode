@@ -37,6 +37,7 @@ import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 import { openAwsCFNConsoleCommand, openAwsConsoleCommand } from '../shared/awsConsole'
 import { StackNameNode } from '../awsService/appBuilder/explorer/nodes/deployedStack'
 import { LambdaFunctionNodeDecorationProvider } from '../lambda/explorer/lambdaFunctionNodeDecorationProvider'
+import { ExecutionDetailProvider } from '../stepFunctions/executionDetails/executionDetailProvider'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -192,7 +193,12 @@ async function registerAwsExplorerCommands(
     context.extensionContext.subscriptions.push(
         Commands.register(
             'aws.executeStateMachine',
-            async (node: StateMachineNode) => await executeStateMachine(context, node)
+            async (node: StateMachineNode) =>
+                await executeStateMachine(
+                    context,
+                    node,
+                    ExecutionDetailProvider.openExecutionDetails.bind(ExecutionDetailProvider)
+                )
         ),
         Commands.register('aws.copyArn', async (node: AWSResourceNode | TreeNode) => {
             const sourceNode = getSourceNode<AWSResourceNode>(node)
