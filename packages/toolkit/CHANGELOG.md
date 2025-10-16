@@ -1,3 +1,7 @@
+## 3.80.0 2025-10-16
+
+- **Bug Fix** The space is updated upon creation of a new app with the requested settings
+
 ## 3.79.0 2025-10-10
 
 - Miscellaneous non-user-facing changes
