@@ -49,7 +49,8 @@ jobs:
 
                   # Add generated license files
                   git add LICENSE-THIRD-PARTY
-                  git commit -m "Update third-party license attribution for $BRANCH_NAME"
+                  # If there are no changes, then we don't need a new attribution commit
+                  git commit -m "Update third-party license attribution for $BRANCH_NAME" || true
 
                   # Push RC branch
                   git push origin $BRANCH_NAME
