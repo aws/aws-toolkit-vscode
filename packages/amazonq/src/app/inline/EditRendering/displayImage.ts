@@ -17,6 +17,7 @@ import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 const autoRejectEditCursorDistance = 25
+const autoDiscardEditCursorDistance = 10
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -312,6 +313,18 @@ export async function displaySvgDecoration(
     item: InlineCompletionItemWithReferences,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
+    // Check if edit is too far from current cursor position
+    const currentCursorLine = editor.selection.active.line
+    if (Math.abs(startLine - currentCursorLine) >= autoDiscardEditCursorDistance) {
+        // Emit DISCARD telemetry for edit suggestion that can't be shown because the suggestion is too far away
+        const params = createDiscardTelemetryParams(session, item)
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        getLogger('nextEditPrediction').debug(
+            `Auto discarded edit suggestion for suggestion that is too far away: ${item.insertText as string}`
+        )
+        return
+    }
+
     const originalCode = editor.document.getText()
 
     // Set edit state immediately to prevent race condition with completion requests
@@ -399,9 +412,6 @@ export async function displaySvgDecoration(
             const endPosition = getEndOfEditPosition(originalCode, newCode)
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
-            // Move cursor to end of the actual changed content
-            editor.selection = new vscode.Selection(endPosition, endPosition)
-
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
             cursorChangeListener.dispose()
@@ -420,19 +430,6 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             // session.triggerOnAcceptance = true
-            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
-            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-            //     await inlineCompletionProvider.provideInlineCompletionItems(
-            //         editor.document,
-            //         endPosition,
-            //         {
-            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-            //             selectedCompletionInfo: undefined,
-            //         },
-            //         new vscode.CancellationTokenSource().token,
-            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-            //     )
-            // }
         },
         async (isDiscard: boolean) => {
             // Handle reject
