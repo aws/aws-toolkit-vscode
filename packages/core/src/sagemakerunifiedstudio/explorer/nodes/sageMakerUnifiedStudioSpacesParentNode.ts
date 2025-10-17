@@ -18,6 +18,7 @@ import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusUtils } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
+import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -29,7 +30,10 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
-    public readonly pollingSet: PollingSet<string> = new PollingSet(5, this.updatePendingNodes.bind(this))
+    public readonly pollingSet: PollingSet<string> = new PollingSet(
+        PENDING_NODE_POLLING_INTERVAL_MS,
+        this.updatePendingNodes.bind(this)
+    )
     private spaceAwsAccountRegion: string | undefined
 
     public constructor(
