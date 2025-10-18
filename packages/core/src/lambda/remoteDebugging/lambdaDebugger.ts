@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import type { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { getLogger } from '../../shared/logger/logger'
 
 const logger = getLogger()
@@ -48,20 +48,20 @@ export interface LambdaDebugger {
     checkHealth(): Promise<void>
     setup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void>
     waitForSetup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void>
     waitForFunctionUpdates(progress: vscode.Progress<{ message?: string; increment?: number }>): Promise<void>
-    cleanup(functionConfig: Lambda.FunctionConfiguration): Promise<void>
+    cleanup(functionConfig: FunctionConfiguration): Promise<void>
 }
 
 // this should be called when the debug session is started
-export async function persistLambdaSnapshot(config: Lambda.FunctionConfiguration | undefined): Promise<void> {
+export async function persistLambdaSnapshot(config: FunctionConfiguration | undefined): Promise<void> {
     try {
         await globals.globalState.update(remoteDebugSnapshotString, config)
     } catch (error) {
@@ -70,6 +70,6 @@ export async function persistLambdaSnapshot(config: Lambda.FunctionConfiguration
     }
 }
 
-export function getLambdaSnapshot(): Lambda.FunctionConfiguration | undefined {
-    return globals.globalState.get<Lambda.FunctionConfiguration>(remoteDebugSnapshotString)
+export function getLambdaSnapshot(): FunctionConfiguration | undefined {
+    return globals.globalState.get<FunctionConfiguration>(remoteDebugSnapshotString)
 }

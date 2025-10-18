@@ -21,8 +21,51 @@ import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
 import { showMessage } from '../../shared/utilities/messages'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import AdmZip from 'adm-zip'
-import { CloudFormation, Lambda } from 'aws-sdk'
+import {
+    CloudFormationClient,
+    CreateChangeSetCommand,
+    CreateChangeSetInput,
+    CreateChangeSetOutput,
+    DescribeChangeSetCommand,
+    DescribeChangeSetInput,
+    DescribeChangeSetOutput,
+    DescribeGeneratedTemplateCommand,
+    DescribeGeneratedTemplateInput,
+    DescribeGeneratedTemplateOutput,
+    DescribeStackResourceCommand,
+    DescribeStackResourceInput,
+    DescribeStackResourceOutput,
+    DescribeStackResourcesCommand,
+    DescribeStackResourcesInput,
+    DescribeStackResourcesOutput,
+    DescribeStacksCommand,
+    DescribeStacksInput,
+    DescribeStacksOutput,
+    ExecuteChangeSetCommand,
+    ExecuteChangeSetInput,
+    ExecuteChangeSetOutput,
+    GetGeneratedTemplateCommand,
+    GetGeneratedTemplateInput,
+    GetGeneratedTemplateOutput,
+    GetTemplateCommand,
+    GetTemplateInput,
+    GetTemplateOutput,
+    waitUntilChangeSetCreateComplete,
+    waitUntilStackImportComplete,
+    waitUntilStackUpdateComplete,
+} from '@aws-sdk/client-cloudformation'
+import {
+    FunctionConfiguration,
+    FunctionUrlConfig,
+    GetFunctionResponse,
+    GetLayerVersionResponse,
+    InvocationRequest,
+    InvocationResponse,
+    LayerVersionsListItem,
+    Runtime,
+} from '@aws-sdk/client-lambda'
 import { isAwsError, UnknownError } from '../../shared/errors'
+import { WaiterConfiguration } from '@aws-sdk/types'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -230,7 +273,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async invoke(name: string, payload?: Lambda.InvocationRequest['Payload']): Promise<Lambda.InvocationResponse> {
+    async invoke(name: string, payload?: InvocationRequest['Payload']): Promise<InvocationResponse> {
         try {
             return await this.client.invoke(name, payload)
         } catch (error) {
@@ -246,7 +289,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+    async *listFunctions(): AsyncIterableIterator<FunctionConfiguration> {
         try {
             yield* this.client.listFunctions()
         } catch (error) {
@@ -257,7 +300,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+    async getFunction(name: string): Promise<GetFunctionResponse> {
         try {
             return await this.client.getFunction(name)
         } catch (error) {
@@ -273,7 +316,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async getLayerVersion(name: string, version: number): Promise<Lambda.GetLayerVersionResponse> {
+    async getLayerVersion(name: string, version: number): Promise<GetLayerVersionResponse> {
         try {
             return await this.client.getLayerVersion(name, version)
         } catch (error) {
@@ -289,7 +332,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async *listLayerVersions(name: string): AsyncIterableIterator<Lambda.LayerVersionsListItem> {
+    async *listLayerVersions(name: string): AsyncIterableIterator<LayerVersionsListItem> {
         try {
             yield* this.client.listLayerVersions(name)
         } catch (error) {
@@ -305,7 +348,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+    async getFunctionUrlConfigs(name: string): Promise<FunctionUrlConfig[]> {
         try {
             return await this.client.getFunctionUrlConfigs(name)
         } catch (error) {
@@ -321,7 +364,7 @@ export class EnhancedLambdaClient {
         }
     }
 
-    async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<Lambda.FunctionConfiguration> {
+    async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<FunctionConfiguration> {
         try {
             return await this.client.updateFunctionCode(name, zipFile)
         } catch (error) {
@@ -343,13 +386,13 @@ export class EnhancedLambdaClient {
  */
 export class EnhancedCloudFormationClient {
     constructor(
-        private readonly client: CloudFormation,
+        private readonly client: CloudFormationClient,
         private readonly regionCode: string
     ) {}
 
-    async describeStacks(params: CloudFormation.DescribeStacksInput): Promise<CloudFormation.DescribeStacksOutput> {
+    async describeStacks(params: DescribeStacksInput): Promise<DescribeStacksOutput> {
         try {
-            return await this.client.describeStacks(params).promise()
+            return await this.client.send(new DescribeStacksCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -361,9 +404,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async getTemplate(params: CloudFormation.GetTemplateInput): Promise<CloudFormation.GetTemplateOutput> {
+    async getTemplate(params: GetTemplateInput): Promise<GetTemplateOutput> {
         try {
-            return await this.client.getTemplate(params).promise()
+            return await this.client.send(new GetTemplateCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -375,9 +418,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async createChangeSet(params: CloudFormation.CreateChangeSetInput): Promise<CloudFormation.CreateChangeSetOutput> {
+    async createChangeSet(params: CreateChangeSetInput): Promise<CreateChangeSetOutput> {
         try {
-            return await this.client.createChangeSet(params).promise()
+            return await this.client.send(new CreateChangeSetCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -389,11 +432,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async executeChangeSet(
-        params: CloudFormation.ExecuteChangeSetInput
-    ): Promise<CloudFormation.ExecuteChangeSetOutput> {
+    async executeChangeSet(params: ExecuteChangeSetInput): Promise<ExecuteChangeSetOutput> {
         try {
-            return await this.client.executeChangeSet(params).promise()
+            return await this.client.send(new ExecuteChangeSetCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -405,11 +446,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async describeChangeSet(
-        params: CloudFormation.DescribeChangeSetInput
-    ): Promise<CloudFormation.DescribeChangeSetOutput> {
+    async describeChangeSet(params: DescribeChangeSetInput): Promise<DescribeChangeSetOutput> {
         try {
-            return await this.client.describeChangeSet(params).promise()
+            return await this.client.send(new DescribeChangeSetCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -421,11 +460,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async describeStackResources(
-        params: CloudFormation.DescribeStackResourcesInput
-    ): Promise<CloudFormation.DescribeStackResourcesOutput> {
+    async describeStackResources(params: DescribeStackResourcesInput): Promise<DescribeStackResourcesOutput> {
         try {
-            return await this.client.describeStackResources(params).promise()
+            return await this.client.send(new DescribeStackResourcesCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -437,11 +474,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async describeStackResource(
-        params: CloudFormation.DescribeStackResourceInput
-    ): Promise<CloudFormation.DescribeStackResourceOutput> {
+    async describeStackResource(params: DescribeStackResourceInput): Promise<DescribeStackResourceOutput> {
         try {
-            return await this.client.describeStackResource(params).promise()
+            return await this.client.send(new DescribeStackResourceCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 const stackArn = params.StackName
@@ -453,11 +488,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async getGeneratedTemplate(
-        params: CloudFormation.GetGeneratedTemplateInput
-    ): Promise<CloudFormation.GetGeneratedTemplateOutput> {
+    async getGeneratedTemplate(params: GetGeneratedTemplateInput): Promise<GetGeneratedTemplateOutput> {
         try {
-            return await this.client.getGeneratedTemplate(params).promise()
+            return await this.client.send(new GetGeneratedTemplateCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 throw createEnhancedPermissionError(error, 'cloudformation', 'getGeneratedTemplate')
@@ -466,11 +499,9 @@ export class EnhancedCloudFormationClient {
         }
     }
 
-    async describeGeneratedTemplate(
-        params: CloudFormation.DescribeGeneratedTemplateInput
-    ): Promise<CloudFormation.DescribeGeneratedTemplateOutput> {
+    async describeGeneratedTemplate(params: DescribeGeneratedTemplateInput): Promise<DescribeGeneratedTemplateOutput> {
         try {
-            return await this.client.describeGeneratedTemplate(params).promise()
+            return await this.client.send(new DescribeGeneratedTemplateCommand(params))
         } catch (error) {
             if (isPermissionError(error)) {
                 throw createEnhancedPermissionError(error, 'cloudformation', 'describeGeneratedTemplate')
@@ -481,7 +512,20 @@ export class EnhancedCloudFormationClient {
 
     async waitFor(state: string, params: any): Promise<any> {
         try {
-            return await this.client.waitFor(state as any, params).promise()
+            const waiterConfig = {
+                client: this.client,
+                maxWaitTime: 900,
+            } satisfies WaiterConfiguration<CloudFormationClient>
+            switch (state) {
+                case 'changeSetCreateComplete':
+                    return await waitUntilChangeSetCreateComplete(waiterConfig, params)
+                case 'stackImportComplete':
+                    return await waitUntilStackImportComplete(waiterConfig, params)
+                case 'stackUpdateComplete':
+                    return await waitUntilStackUpdateComplete(waiterConfig, params)
+                default:
+                    throw new Error(`Unsupported waiter state: ${state}`)
+            }
         } catch (error) {
             if (isPermissionError(error)) {
                 // For waitFor operations, we'll provide a generic permission error since the specific action varies
@@ -560,7 +604,7 @@ export async function getLambdaHandlerFile(
     folderUri: vscode.Uri,
     codeUri: string,
     handler: string,
-    runtime: string
+    runtime: Runtime
 ): Promise<vscode.Uri | undefined> {
     const family = getFamily(runtime)
     if (!supportedRuntimeForHandler.has(family)) {
@@ -704,6 +748,9 @@ export function getLambdaClient(region: string): EnhancedLambdaClient {
 }
 
 export async function getCFNClient(regionCode: string): Promise<EnhancedCloudFormationClient> {
-    const originalClient = await globals.sdkClientBuilder.createAwsService(CloudFormation, {}, regionCode)
+    const originalClient = globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: CloudFormationClient,
+        region: regionCode,
+    })
     return new EnhancedCloudFormationClient(originalClient, regionCode)
 }

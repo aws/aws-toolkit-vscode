@@ -10,7 +10,7 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { env } from 'vscode'
-import { FunctionUrlConfig } from 'aws-sdk/clients/lambda'
+import { FunctionUrlConfig } from '@aws-sdk/client-lambda'
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -22,11 +22,11 @@ import { getTestWindow } from '../../shared/vscode/window'
  */
 export function buildFunctionUrlConfig(options: Partial<FunctionUrlConfig>): FunctionUrlConfig {
     return {
-        AuthType: options.AuthType ?? '',
-        CreationTime: options.CreationTime ?? '',
-        FunctionArn: options.FunctionArn ?? '',
-        FunctionUrl: options.FunctionUrl ?? '',
-        LastModifiedTime: options.LastModifiedTime ?? '',
+        AuthType: options.AuthType,
+        CreationTime: options.CreationTime,
+        FunctionArn: options.FunctionArn,
+        FunctionUrl: options.FunctionUrl,
+        LastModifiedTime: options.LastModifiedTime,
     }
 }
 
@@ -94,10 +94,10 @@ describe('lambda func url prompter', async () => {
         const tester = createQuickPickPrompterTester(prompter)
         tester.assertItems(
             configList.map((c) => {
-                return { label: c.FunctionArn, data: c.FunctionUrl } // order matters
+                return { label: c.FunctionArn!, data: c.FunctionUrl } // order matters
             })
         )
-        tester.acceptItem(configList[1].FunctionArn)
+        tester.acceptItem(configList[1].FunctionArn!)
         await tester.result(configList[1].FunctionUrl)
     })
 })

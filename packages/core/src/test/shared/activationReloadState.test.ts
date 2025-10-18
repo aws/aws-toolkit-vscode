@@ -8,6 +8,7 @@
 import assert from 'assert'
 import { ActivationReloadState } from '../../shared/activationReloadState'
 import globals, { checkDidReload } from '../../shared/extensionGlobals'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 describe('ActivationReloadState', async function () {
     const activationReloadState = new ActivationReloadState()
@@ -64,7 +65,7 @@ describe('ActivationReloadState', async function () {
             activationReloadState.setSamInitState({
                 template: 'sometemplate',
                 readme: 'somepath',
-                runtime: 'someruntime',
+                runtime: 'someruntime' as Runtime,
                 isImage: false,
                 architecture: 'arm64',
             })
@@ -95,7 +96,7 @@ describe('ActivationReloadState', async function () {
             activationReloadState.setSamInitState({
                 template: 'sometemplate',
                 readme: 'somepath',
-                runtime: 'someruntime',
+                runtime: 'someruntime' as Runtime,
                 isImage: true,
                 architecture: 'arm64',
             })
@@ -211,7 +212,7 @@ describe('ActivationReloadState', async function () {
         activationReloadState.setSamInitState({
             template: 'sometemplate',
             readme: 'somepath',
-            runtime: 'someruntime',
+            runtime: 'someruntime' as Runtime,
             isImage: true,
             architecture: 'x86_64',
         })

@@ -32,6 +32,7 @@ import { SamCliError } from './cli/samCliInvokerUtils'
 import fs from '../fs/fs'
 import { getSpawnEnv } from '../env/resolveEnv'
 import { asEnvironmentVariables } from '../../auth/credentials/utils'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 const localize = nls.loadMessageBundle()
 
@@ -247,7 +248,7 @@ async function invokeLambdaHandler(
             parameterOverrides: config.parameterOverrides,
             name: config.name,
             region: config.region,
-            runtime: config.lambda?.runtime,
+            runtime: config.lambda?.runtime as Runtime,
         }
 
         // sam local invoke ...
@@ -524,7 +525,7 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     }
 }
 
-export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean {
+export function shouldAppendRelativePathToFuncHandler(runtime: Runtime): boolean {
     // getFamily will throw an error if the runtime doesn't exist
     switch (getFamily(runtime)) {
         case RuntimeFamily.NodeJS:

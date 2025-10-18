@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
+import { GetCallerIdentityCommandOutput } from '@aws-sdk/client-sts'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
@@ -34,7 +34,7 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     public override readonly contextValue: string = parentContextValue
     domainUserProfiles: Map<string, UserProfileMetadata> = new Map()
     spaceApps: Map<string, SagemakerSpaceApp> = new Map()
-    callerIdentity: GetCallerIdentityResponse = {}
+    callerIdentity: Partial<GetCallerIdentityCommandOutput> = {}
     public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
 
     public constructor(

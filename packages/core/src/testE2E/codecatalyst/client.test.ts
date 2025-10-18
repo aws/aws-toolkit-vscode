@@ -20,7 +20,7 @@ import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
-import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetDevEnvironmentRequest, _InstanceType } from '@aws-sdk/client-codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { patchObject, registerAuthHook, skipTest, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
@@ -37,7 +37,6 @@ import {
     SsoConnection,
 } from '../../auth/connection'
 import { hasKey } from '../../shared/utilities/tsUtils'
-import { _InstanceType } from '@aws-sdk/client-codecatalyst'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
@@ -615,6 +614,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
     ): Promise<void> {
         const result = await waitUntil(
             async function () {
+                if (!devEnv.spaceName || !devEnv.projectName) {
+                    return false
+                }
                 const devEnvData = await client.getDevEnvironment({
                     spaceName: devEnv.spaceName,
                     projectName: devEnv.projectName,

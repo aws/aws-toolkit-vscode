@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import IoTSecureTunneling from 'aws-sdk/clients/iotsecuretunneling'
+import { IoTSecureTunnelingClient } from '@aws-sdk/client-iotsecuretunneling'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { getUserAgent } from '../../shared/telemetry/util'
 import globals from '../../shared/extensionGlobals'
@@ -29,13 +29,14 @@ export function getLambdaUserAgent(): string {
     return `${getUserAgent({ includePlatform: true, includeClientId: true })}`
 }
 
-export function getIoTSTClientWithAgent(region: string): Promise<IoTSecureTunneling> {
+export function getIoTSTClientWithAgent(region: string): IoTSecureTunnelingClient {
     const customUserAgent = `${customUserAgentBase} ${getUserAgent({ includePlatform: true, includeClientId: true })}`
-    return globals.sdkClientBuilder.createAwsService(
-        IoTSecureTunneling,
-        {
-            customUserAgent,
+    return globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: IoTSecureTunnelingClient,
+        clientOptions: {
+            userAgent: [[customUserAgent]],
+            region,
         },
-        region
-    )
+        userAgent: false,
+    })
 }

@@ -43,7 +43,8 @@ import { getIdeProperties, getDebugNewSamAppDocUrl, getLaunchConfigDocUrl } from
 import { checklogs } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
+import { LambdaArchitecture, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
 import { fs } from '../../shared/fs/fs'
@@ -88,7 +89,7 @@ export async function resumeCreateNewSamApp(
             extContext,
             folder,
             templateUri,
-            samInitState?.isImage ? (samInitState?.runtime as Runtime | undefined) : undefined
+            samInitState?.isImage ? samInitState?.runtime : undefined
         )
         const tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, configs)
         if (tryOpenReadme) {
@@ -112,7 +113,7 @@ export async function resumeCreateNewSamApp(
             lambdaArchitecture: arch,
             result: createResult,
             reason: reason,
-            runtime: samInitState?.runtime as Runtime,
+            runtime: samInitState?.runtime as TelemetryRuntime,
             version: samVersion,
         })
     }
@@ -194,7 +195,7 @@ export async function createNewSamApplication(
             initArguments.baseImage = `amazon/${createRuntime}-base`
         } else {
             lambdaPackageType = 'Zip'
-            initArguments.runtime = createRuntime
+            initArguments.runtime! = createRuntime
             // in theory, templates could be provided with image-based lambdas, but that is currently not supported by SAM
             initArguments.template = config.template
         }
@@ -348,7 +349,7 @@ export async function createNewSamApplication(
             lambdaArchitecture: initArguments?.architecture,
             result: createResult,
             reason: reason,
-            runtime: createRuntime,
+            runtime: createRuntime as TelemetryRuntime,
             version: samVersion,
         })
     }

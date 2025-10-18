@@ -11,7 +11,7 @@ import * as picker from '../../../shared/ui/picker'
 import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
-import { Stage } from 'aws-sdk/clients/apigateway'
+import { Stage } from '@aws-sdk/client-api-gateway'
 import { ApiGatewayClient } from '../../../shared/clients/apiGateway'
 import { defaultDnsSuffix, RegionProvider } from '../../../shared/regions/regionProvider'
 import { getLogger } from '../../../shared/logger/logger'

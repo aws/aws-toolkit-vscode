@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import type { Lambda } from 'aws-sdk'
+import { Architecture, FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { persistLambdaSnapshot, type LambdaDebugger, type DebugConfig } from './lambdaDebugger'
 import { getLogger } from '../../shared/logger/logger'
 import { isTunnelInfo, LdkClient } from './ldkClient'
@@ -14,7 +14,7 @@ import { getRemoteDebugLayerForArch } from './ldkLayers'
 
 export function getRemoteDebugLayer(
     region: string | undefined,
-    architectures: Lambda.ArchitecturesList | undefined
+    architectures: Architecture[] | undefined
 ): string | undefined {
     if (!region || !architectures) {
         return undefined
@@ -50,7 +50,7 @@ export class RemoteLambdaDebugger implements LambdaDebugger {
 
     public async setup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void> {
         const ldkClient = LdkClient.instance
@@ -87,7 +87,7 @@ export class RemoteLambdaDebugger implements LambdaDebugger {
 
     public async waitForSetup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void> {
         if (!this.tunnelInfo) {
@@ -131,7 +131,7 @@ export class RemoteLambdaDebugger implements LambdaDebugger {
         }
     }
 
-    public async cleanup(functionConfig: Lambda.FunctionConfiguration): Promise<void> {
+    public async cleanup(functionConfig: FunctionConfiguration): Promise<void> {
         const ldkClient = LdkClient.instance
         if (!functionConfig?.FunctionArn) {
             throw new ToolkitError('No saved configuration found during cleanup')

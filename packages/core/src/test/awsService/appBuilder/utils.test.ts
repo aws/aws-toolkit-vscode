@@ -26,9 +26,11 @@ import { assertTextEditorContains } from '../../testUtil'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
+import { Runtime } from '@aws-sdk/client-lambda'
+import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
 
 interface TestScenario {
-    runtime: string
+    runtime: Runtime
     handler: string
     codeUri: string
     fileLocation: string
@@ -505,7 +507,7 @@ describe('AppBuilder Utils', function () {
                 mockLambdaClient.invoke.rejects(permissionError)
 
                 try {
-                    await enhancedClient.invoke('test-function', '{}')
+                    await enhancedClient.invoke('test-function', new TextEncoder().encode('{}'))
                     assert.fail('Expected error to be thrown')
                 } catch (error) {
                     assert(error instanceof ToolkitError)
@@ -571,19 +573,13 @@ describe('AppBuilder Utils', function () {
         })
 
         describe('EnhancedCloudFormationClient', function () {
-            let mockCfnClient: any
+            let mockCfnClient: sinon.SinonStubbedInstance<CloudFormationClient>
             let enhancedClient: EnhancedCloudFormationClient
 
             beforeEach(function () {
                 // Create a mock CloudFormation client with all required methods
-                mockCfnClient = {
-                    describeStacks: sandbox.stub(),
-                    getTemplate: sandbox.stub(),
-                    createChangeSet: sandbox.stub(),
-                    describeStackResource: sandbox.stub(),
-                    describeStackResources: sandbox.stub(),
-                }
-                enhancedClient = new EnhancedCloudFormationClient(mockCfnClient, 'us-east-1')
+                mockCfnClient = sandbox.createStubInstance(CloudFormationClient)
+                enhancedClient = new EnhancedCloudFormationClient(mockCfnClient as any, 'us-east-1')
             })
 
             it('should enhance permission errors for describeStacks', async function () {
@@ -592,9 +588,7 @@ describe('AppBuilder Utils', function () {
                     time: new Date(),
                     statusCode: 403,
                 })
-                mockCfnClient.describeStacks.returns({
-                    promise: sandbox.stub().rejects(permissionError),
-                } as any)
+                mockCfnClient.send.rejects(permissionError)
 
                 try {
                     await enhancedClient.describeStacks({ StackName: 'test-stack' })
@@ -619,9 +613,7 @@ describe('AppBuilder Utils', function () {
                     time: new Date(),
                     statusCode: 403,
                 })
-                mockCfnClient.getTemplate.returns({
-                    promise: sandbox.stub().rejects(permissionError),
-                } as any)
+                mockCfnClient.send.rejects(permissionError)
 
                 try {
                     await enhancedClient.getTemplate({ StackName: 'test-stack' })
@@ -644,9 +636,7 @@ describe('AppBuilder Utils', function () {
                     time: new Date(),
                     statusCode: 403,
                 })
-                mockCfnClient.createChangeSet.returns({
-                    promise: sandbox.stub().rejects(permissionError),
-                } as any)
+                mockCfnClient.send.rejects(permissionError)
 
                 try {
                     await enhancedClient.createChangeSet({
@@ -673,9 +663,7 @@ describe('AppBuilder Utils', function () {
                     time: new Date(),
                     statusCode: 403,
                 })
-                mockCfnClient.describeStackResource.returns({
-                    promise: sandbox.stub().rejects(permissionError),
-                } as any)
+                mockCfnClient.send.rejects(permissionError)
 
                 try {
                     await enhancedClient.describeStackResource({
@@ -701,9 +689,7 @@ describe('AppBuilder Utils', function () {
                     time: new Date(),
                     statusCode: 403,
                 })
-                mockCfnClient.describeStackResources.returns({
-                    promise: sandbox.stub().rejects(permissionError),
-                } as any)
+                mockCfnClient.send.rejects(permissionError)
 
                 try {
                     await enhancedClient.describeStackResources({ StackName: 'test-stack' })
@@ -722,9 +708,7 @@ describe('AppBuilder Utils', function () {
 
             it('should pass through non-permission errors', async function () {
                 const nonPermissionError = new Error('Stack not found')
-                mockCfnClient.describeStacks.returns({
-                    promise: sandbox.stub().rejects(nonPermissionError),
-                } as any)
+                mockCfnClient.send.rejects(nonPermissionError)
 
                 try {
                     await enhancedClient.describeStacks({ StackName: 'test-stack' })
@@ -736,9 +720,7 @@ describe('AppBuilder Utils', function () {
 
             it('should return successful results when no errors occur', async function () {
                 const mockResponse = { Stacks: [{ StackName: 'test-stack' }] }
-                mockCfnClient.describeStacks.returns({
-                    promise: sandbox.stub().resolves(mockResponse),
-                } as any)
+                mockCfnClient.send.resolves(mockResponse)
 
                 const result = await enhancedClient.describeStacks({ StackName: 'test-stack' })
                 assert.strictEqual(result, mockResponse)
@@ -748,7 +730,7 @@ describe('AppBuilder Utils', function () {
         describe('Client Factory Functions', function () {
             beforeEach(function () {
                 // Stub the global SDK client builder
-                sandbox.stub(globals.sdkClientBuilder, 'createAwsService').resolves({} as any)
+                sandbox.stub(globals.sdkClientBuilderV3, 'createAwsService').resolves({} as any)
             })
 
             it('should return EnhancedLambdaClient from getLambdaClient', function () {

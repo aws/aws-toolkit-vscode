@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
     RemoteDebugController,
     activateRemoteDebugging,
@@ -203,7 +203,7 @@ describe('RemoteDebugController', () => {
 
     describe('Debug Session Management', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({
@@ -409,7 +409,7 @@ describe('RemoteDebugController', () => {
 
     describe('Telemetry Verification', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({
@@ -478,7 +478,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.js', // JavaScript file, not TypeScript
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
 
@@ -489,7 +489,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: undefined,
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
 
@@ -504,7 +504,7 @@ describe('tryAutoDetectOutFile', () => {
             samProjectRoot: testSamProjectRoot,
             samFunctionLogicalId: testSamLogicalId,
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         // Mock fs.exists to return true for SAM build path
         sandbox.stub(fs, 'exists').resolves(true)
@@ -520,7 +520,7 @@ describe('tryAutoDetectOutFile', () => {
             samProjectRoot: testSamProjectRoot,
             samFunctionLogicalId: testSamLogicalId,
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         // Mock fs.exists to return false
         sandbox.stub(fs, 'exists').resolves(false)
@@ -536,7 +536,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/cdk-project/src/handler.ts',
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionName: testFunctionName,
         })
 
@@ -579,7 +579,7 @@ describe('tryAutoDetectOutFile', () => {
 
         assert.strictEqual(result, expectedAssetDir.fsPath, 'Should return CDK asset directory path')
 
-        const functionNonExistConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const functionNonExistConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionName: 'NonExistentFunction',
         })
         const result2 = await tryAutoDetectOutFile(debugConfig, functionNonExistConfig)
@@ -597,7 +597,7 @@ describe('tryAutoDetectOutFile', () => {
         const debugConfig: DebugConfig = createMockDebugConfig({
             handlerFile: '/path/to/handler.ts',
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         // Mock no workspace folder
         sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
@@ -615,7 +615,7 @@ describe('tryAutoDetectOutFile', () => {
             samProjectRoot: testSamProjectRoot,
             samFunctionLogicalId: testSamLogicalId,
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionName: testFunctionName,
         })
 
@@ -637,7 +637,7 @@ describe('tryAutoDetectOutFile', () => {
             samProjectRoot: testSamProjectRoot,
             samFunctionLogicalId: testSamLogicalId,
         })
-        const functionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig()
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
 
         // Mock fs.exists to return true
         sandbox.stub(fs, 'exists').resolves(true)

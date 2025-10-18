@@ -26,6 +26,7 @@ import { Any } from '../../../../../shared/utilities/typeConstructors'
 import { IamConnection, ProfileMetadata } from '../../../../../auth/connection'
 import * as AuthUtils from '../../../../../auth/utils'
 import { assertLogsContain } from '../../../../../test/globalSetup.test'
+import { GetFunctionResponse } from '@aws-sdk/client-lambda'
 
 describe('DeployedResourceNode', () => {
     const expectedStackName = 'myStack'
@@ -171,7 +172,7 @@ describe('generateDeployedNode', () => {
                     FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:my-project-lambda-function',
                     Runtime: 'python3.12',
                 },
-            } as AWS.Lambda.GetFunctionResponse
+            } as GetFunctionResponse
 
             mockDefaultLambdaClientInstance.getFunction.resolves(defaultLambdaClientGetFunctionResponse)
 

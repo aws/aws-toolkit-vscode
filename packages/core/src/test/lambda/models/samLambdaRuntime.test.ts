@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     compareSamLambdaRuntime,
     getDependencyManager,
@@ -16,11 +15,12 @@ import {
     getNodeMajorVersion,
     nodeJsRuntimes,
 } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 describe('compareSamLambdaRuntime', async function () {
     const scenarios: {
-        lowerRuntime: Runtime
-        higherRuntime: Runtime
+        lowerRuntime: string
+        higherRuntime: string
     }[] = [
         { lowerRuntime: 'nodejs14.x', higherRuntime: 'nodejs16.x' },
         { lowerRuntime: 'nodejs16.x', higherRuntime: 'nodejs16.x (Image)' },
@@ -48,13 +48,13 @@ describe('getDependencyManager', function () {
         assert.throws(() => getDependencyManager('nodejs'))
     })
     it('throws on unknown runtimes', function () {
-        assert.throws(() => getDependencyManager('BASIC'))
+        assert.throws(() => getDependencyManager('BASIC' as Runtime))
     })
 })
 
 describe('getFamily', function () {
     it('unknown runtime name', function () {
-        assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
+        assert.strictEqual(getFamily('foo' as Runtime), RuntimeFamily.Unknown)
     })
     it('handles all known runtimes', function () {
         for (const runtime of samZipLambdaRuntimes) {

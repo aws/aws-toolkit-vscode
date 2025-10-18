@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { CloudFormationClient, StackSummary } from '../../shared/clients/cloudFormation'
@@ -78,7 +78,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         this.iconPath = getIcon('aws-cloudformation-stack')
     }
 
-    public get stackId(): CloudFormation.StackId | undefined {
+    public get stackId(): string | undefined {
         return this.stackSummary.StackId
     }
 
@@ -94,7 +94,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         return this.stackName
     }
 
-    public get stackName(): CloudFormation.StackName {
+    public get stackName(): string {
         return this.stackSummary.StackName
     }
 
@@ -122,7 +122,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     private async updateChildren(): Promise<void> {
         const resources: string[] = await this.resolveLambdaResources()
-        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+        const functions: Map<string, FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.lambdaClient)),
             (functionInfo) => functionInfo.FunctionName
         )
@@ -151,7 +151,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 function makeCloudFormationLambdaFunctionNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration, contextValueCloudformationLambdaFunction)
 
