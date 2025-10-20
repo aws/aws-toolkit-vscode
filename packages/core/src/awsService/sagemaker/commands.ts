@@ -86,7 +86,8 @@ export async function deeplinkConnect(
     session: string,
     wsUrl: string,
     token: string,
-    domain: string
+    domain: string,
+    appType?: string
 ) {
     getLogger().debug(
         `sm:deeplinkConnect: connectionIdentifier: ${connectionIdentifier} session: ${session} wsUrl: ${wsUrl} token: ${token}`
@@ -107,7 +108,8 @@ export async function deeplinkConnect(
             session,
             wsUrl,
             token,
-            domain
+            domain,
+            appType
         )
 
         await startVscodeRemote(
@@ -133,6 +135,16 @@ export async function stopSpace(
     ctx: vscode.ExtensionContext,
     sageMakerClient?: SagemakerClient
 ) {
+    await tryRefreshNode(node)
+    if (node.getStatus() === 'Stopped' || node.getStatus() === 'Stopping') {
+        void vscode.window.showWarningMessage(`Space ${node.spaceApp.SpaceName} is already in Stopped/Stopping state.`)
+        return
+    } else if (node.getStatus() === 'Starting') {
+        void vscode.window.showWarningMessage(
+            `Space ${node.spaceApp.SpaceName} is in Starting state. Wait until it is Running to attempt stop again.`
+        )
+        return
+    }
     const spaceName = node.spaceApp.SpaceName!
     const confirmed = await showConfirmationMessage({
         prompt: `You are about to stop this space. Any active resource will also be stopped. Are you sure you want to stop the space?`,
@@ -179,7 +191,7 @@ export async function openRemoteConnect(
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
-
+    await tryRefreshNode(node)
     if (node.getStatus() === 'Stopped') {
         //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
         const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
