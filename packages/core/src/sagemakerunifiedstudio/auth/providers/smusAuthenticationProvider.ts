@@ -38,14 +38,13 @@ import { CredentialsProviderManager } from '../../../auth/providers/credentialsP
 import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
 import { CredentialsId, CredentialsProvider } from '../../../auth/providers/credentials'
 import globals from '../../../shared/extensionGlobals'
-import { fromIni } from '@aws-sdk/credential-providers'
+import { fromContainerMetadata, fromIni, fromNodeProviderChain } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDomainPreferencesClient'
 import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
-import { fromContainerMetadata, fromNodeProviderChain } from '@aws-sdk/credential-providers'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -160,6 +159,10 @@ export class SmusAuthenticationProvider {
                 // Clear Express mode context for non-IAM connections or no connection
                 await setSmusExpressModeContext(false)
             }
+            // Update Express mode context in SMUS space environment
+            if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+                void this.initExpressModeContextInSpaceEnvironment()
+            }
 
             this.onDidChangeEmitter.fire()
         })
@@ -181,6 +184,36 @@ export class SmusAuthenticationProvider {
                 await setSmusExpressModeContext(false)
             }
         })()
+
+        // Update Express mode context in SMUS space environment
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            void this.initExpressModeContextInSpaceEnvironment()
+        }
+    }
+
+    /**
+     * Initializes Express mode context in SMUS space environment
+     */
+    private async initExpressModeContextInSpaceEnvironment(): Promise<void> {
+        try {
+            const resourceMetadata = getResourceMetadata()
+            if (
+                resourceMetadata?.AdditionalMetadata?.DataZoneDomainId &&
+                resourceMetadata?.AdditionalMetadata?.DataZoneDomainRegion
+            ) {
+                const domainId = resourceMetadata.AdditionalMetadata.DataZoneDomainId
+                const region = resourceMetadata.AdditionalMetadata.DataZoneDomainRegion
+
+                const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
+
+                const isExpress = await SmusUtils.isInSmusExpressMode(domainId, region, credentialsProvider)
+                this.logger.debug(`SMUS Auth: is in express mode ${isExpress}`)
+                await setSmusExpressModeContext(isExpress)
+            }
+        } catch (error) {
+            this.logger.error('Failed to check Express mode in SMUS space environment:  %s', error)
+            await setSmusExpressModeContext(false)
+        }
     }
 
     /**

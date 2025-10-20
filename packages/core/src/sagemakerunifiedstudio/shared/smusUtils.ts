@@ -11,6 +11,7 @@ import fetch from 'node-fetch'
 import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
+import { DataZoneDomainPreferencesClient } from './client/datazoneDomainPreferencesClient'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -381,6 +382,35 @@ export class SmusUtils {
         const isSMUSspace = isSageMaker('SMUS') || isSageMaker('SMUS-SPACE-REMOTE-ACCESS')
         const resourceMetadata = getResourceMetadata()
         return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
+    }
+
+    /**
+     * Checks if we're in SMUS Express mode
+     * @param domainId The DataZone domain ID to check
+     * @param region The AWS region where the domain is located
+     * @param credentialsProvider The credentials provider to use for API calls
+     * @returns Promise resolving to true if the domain is in Express mode
+     */
+    public static async isInSmusExpressMode(
+        domainId: string,
+        region: string,
+        credentialsProvider: CredentialsProvider
+    ): Promise<boolean> {
+        try {
+            this.logger.info(`SMUS: Checking if domain ${domainId} is Express mode`)
+
+            // Get DataZoneDomainPreferencesClient instance
+            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(credentialsProvider, region)
+
+            // Check if the specific domain is an Express domain
+            const isExpress = await domainPreferencesClient.isExpressDomain(domainId)
+
+            this.logger.debug(`SMUS: Domain ${domainId} is ${isExpress ? ' Express mode' : 'not Express mode'}`)
+            return isExpress
+        } catch (error) {
+            this.logger.error('SMUS: Failed to check Express mode: %s', error as Error)
+            return false
+        }
     }
 
     /**

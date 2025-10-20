@@ -91,8 +91,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = mockConnection
             })
 
-            it('should return connected tree item', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return connected tree item', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: dzd_domainId')
                 assert.strictEqual(treeItem.description, 'us-east-2')
@@ -122,8 +122,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = mockConnection
             })
 
-            it('should return expired tree item with reauthenticate command', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return expired tree item with reauthenticate command', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: dzd_domainId (Expired) - Click to reauthenticate')
                 assert.strictEqual(treeItem.description, 'us-east-2')
@@ -153,8 +153,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = undefined
             })
 
-            it('should return not connected tree item', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return not connected tree item', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Not Connected')
                 assert.strictEqual(treeItem.description, undefined)
@@ -187,8 +187,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = incompleteConnection
             })
 
-            it('should handle missing domain ID and region gracefully', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should handle missing domain ID and region gracefully', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: Unknown')
                 assert.strictEqual(treeItem.description, 'Unknown')
@@ -231,32 +231,32 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     })
 
     describe('theme icon colors', function () {
-        it('should use green color for connected state', function () {
+        it('should use green color for connected state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
             assert.strictEqual((icon.color as any).id, 'charts.green')
         })
 
-        it('should use yellow color for expired state', function () {
+        it('should use yellow color for expired state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
             assert.strictEqual((icon.color as any).id, 'charts.yellow')
         })
 
-        it('should use red color for not connected state', function () {
+        it('should use red color for not connected state', async function () {
             mockAuthProvider.isConnected.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
@@ -265,11 +265,11 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     })
 
     describe('tooltip content', function () {
-        it('should include all relevant information for connected state', function () {
+        it('should include all relevant information for connected state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Connected to SageMaker Unified Studio'))
@@ -278,21 +278,21 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             assert.ok(tooltip.includes('Status: Connected'))
         })
 
-        it('should include expiration information for expired state', function () {
+        it('should include expiration information for expired state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Connection to SageMaker Unified Studio has expired'))
             assert.ok(tooltip.includes('Status: Expired - Click to reauthenticate'))
         })
 
-        it('should include sign-in prompt for not connected state', function () {
+        it('should include sign-in prompt for not connected state', async function () {
             mockAuthProvider.isConnected.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Not connected to SageMaker Unified Studio'))

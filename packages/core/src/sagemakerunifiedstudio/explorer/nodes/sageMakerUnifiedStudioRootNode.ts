@@ -137,13 +137,13 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         }
 
         if (getContext('aws.smus.isExpressMode')) {
-            // In Express mode, immediately show data and compute nodes (project node's children)
+            // In Express mode, immediately show auth node, and project node's children (data and compute nodes)
             if (!this.projectNode.project) {
                 await selectSMUSProject(this.projectNode)
             }
 
             const projectChildren = await this.projectNode.getChildren()
-            return projectChildren
+            return [this.authInfoNode, ...projectChildren]
         }
 
         // When authenticated, show auth info and projects

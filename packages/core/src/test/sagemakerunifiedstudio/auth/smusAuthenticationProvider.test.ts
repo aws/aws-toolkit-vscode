@@ -1345,4 +1345,102 @@ describe('SmusAuthenticationProvider', function () {
             })
         })
     })
+
+    describe('initExpressModeContextInSpaceEnvironment', function () {
+        let getResourceMetadataStub: sinon.SinonStub
+        let getDerCredentialsProviderStub: sinon.SinonStub
+        let isInSmusExpressModeStub: sinon.SinonStub
+        let mockCredentialsProvider: any
+
+        const testResourceMetadata = {
+            AdditionalMetadata: {
+                DataZoneDomainId: 'test-domain-id',
+                DataZoneDomainRegion: 'us-east-1',
+                DataZoneProjectId: 'test-project-id',
+            },
+        }
+
+        beforeEach(function () {
+            getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+            isInSmusExpressModeStub = sinon.stub(SmusUtils, 'isInSmusExpressMode')
+
+            // Reset the global setContext stub history for clean test state
+            setContextStubGlobal.resetHistory()
+
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+            }
+
+            getDerCredentialsProviderStub = sinon
+                .stub(smusAuthProvider, 'getDerCredentialsProvider')
+                .resolves(mockCredentialsProvider)
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should set express mode context to true when domain is express mode', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            isInSmusExpressModeStub.resolves(true)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(
+                isInSmusExpressModeStub.calledWith(
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
+                    mockCredentialsProvider
+                )
+            )
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', true))
+        })
+
+        it('should set express mode context to false when domain is not express mode', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            isInSmusExpressModeStub.resolves(false)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(
+                isInSmusExpressModeStub.calledWith(
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
+                    mockCredentialsProvider
+                )
+            )
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+        })
+
+        it('should not call express mode check when resource metadata is missing', async function () {
+            getResourceMetadataStub.returns(undefined)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.notCalled)
+            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(setContextStubGlobal.notCalled)
+        })
+
+        it('should handle error when getDerCredentialsProvider fails', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            const testError = new Error('Failed to get credentials provider')
+            getDerCredentialsProviderStub.rejects(testError)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+        })
+    })
 })

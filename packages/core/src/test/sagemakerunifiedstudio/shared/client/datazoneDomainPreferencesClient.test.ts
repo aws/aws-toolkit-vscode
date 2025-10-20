@@ -342,4 +342,126 @@ describe('DataZoneDomainPreferencesClient', () => {
             await assert.rejects(() => client.getExpressDomain(), /Failed to get domain info: API error/)
         })
     })
+
+    describe('getDomain', () => {
+        it('should get domain by ID successfully', async () => {
+            const mockDomainId = 'dzd_test123'
+            const mockResponse = {
+                id: mockDomainId,
+                name: 'Test Domain',
+                description: 'A test domain',
+                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
+                status: 'AVAILABLE',
+                portalUrl: 'https://test.datazone.aws',
+                createdAt: '2023-01-01T00:00:00Z',
+                lastUpdatedAt: '2023-01-02T00:00:00Z',
+                domainVersion: '1.0',
+                preferences: { DOMAIN_MODE: 'EXPRESS' },
+            }
+            const mockDataZoneClient = {
+                getDomain: sinon.stub().returns({
+                    promise: () => Promise.resolve(mockResponse),
+                }),
+            }
+
+            sinon.stub(client as any, 'getDataZoneDomainPreferencesClient').resolves(mockDataZoneClient)
+
+            const result = await client.getDomain(mockDomainId)
+
+            assert.strictEqual(result.id, mockDomainId)
+            assert.strictEqual(result.name, 'Test Domain')
+            assert.strictEqual(result.description, 'A test domain')
+            assert.strictEqual(result.arn, `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`)
+            assert.strictEqual(result.status, 'AVAILABLE')
+            assert.strictEqual(result.portalUrl, 'https://test.datazone.aws')
+            assert.strictEqual(result.domainVersion, '1.0')
+            assert.deepStrictEqual(result.preferences, { DOMAIN_MODE: 'EXPRESS' })
+
+            // Verify the API was called with correct parameters
+            assert.ok(mockDataZoneClient.getDomain.calledOnce)
+            assert.deepStrictEqual(mockDataZoneClient.getDomain.firstCall.args[0], {
+                identifier: mockDomainId,
+            })
+        })
+
+        it('should handle API errors when getting domain', async () => {
+            const mockDomainId = 'dzd_test123'
+            const error = new Error('Domain not found')
+
+            const mockDataZoneClient = {
+                getDomain: sinon.stub().returns({
+                    promise: () => Promise.reject(error),
+                }),
+            }
+
+            sinon.stub(client as any, 'getDataZoneDomainPreferencesClient').resolves(mockDataZoneClient)
+
+            await assert.rejects(() => client.getDomain(mockDomainId), error)
+
+            // Verify the API was called with correct parameters
+            assert.ok(mockDataZoneClient.getDomain.calledOnce)
+            assert.deepStrictEqual(mockDataZoneClient.getDomain.firstCall.args[0], {
+                identifier: mockDomainId,
+            })
+        })
+    })
+
+    describe('isExpressDomain', () => {
+        it('should return true for EXPRESS domain', async () => {
+            const mockDomainId = 'dzd_express123'
+            const mockResponse = {
+                id: mockDomainId,
+                name: 'Express Domain',
+                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
+                status: 'AVAILABLE',
+                preferences: { DOMAIN_MODE: 'EXPRESS' },
+            }
+
+            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
+
+            const result = await client.isExpressDomain(mockDomainId)
+
+            assert.strictEqual(result, true)
+            assert.ok(getDomainStub.calledOnce)
+            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
+        })
+
+        it('should return false for STANDARD domain', async () => {
+            const mockDomainId = 'dzd_standard123'
+            const mockResponse = {
+                id: mockDomainId,
+                name: 'Standard Domain',
+                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
+                status: 'AVAILABLE',
+                preferences: { DOMAIN_MODE: 'STANDARD' },
+            }
+
+            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
+
+            const result = await client.isExpressDomain(mockDomainId)
+
+            assert.strictEqual(result, false)
+            assert.ok(getDomainStub.calledOnce)
+            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
+        })
+
+        it('should return false for domain without preferences', async () => {
+            const mockDomainId = 'dzd_no_prefs123'
+            const mockResponse = {
+                id: mockDomainId,
+                name: 'Domain Without Preferences',
+                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
+                status: 'AVAILABLE',
+                // No preferences field
+            }
+
+            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
+
+            const result = await client.isExpressDomain(mockDomainId)
+
+            assert.strictEqual(result, false)
+            assert.ok(getDomainStub.calledOnce)
+            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
+        })
+    })
 })
