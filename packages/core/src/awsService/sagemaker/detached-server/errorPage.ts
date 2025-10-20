@@ -75,7 +75,7 @@ export const ErrorText = {
         },
         [ExceptionType.RESOURCE_LIMIT_EXCEEDED]: {
             Title: 'Connection limit reached',
-            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one.',
+            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one. If the problem persists, try restarting the Space.',
         },
         [ExceptionType.THROTTLING]: {
             Title: 'Too many connection attempts',

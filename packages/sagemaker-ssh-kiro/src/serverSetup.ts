@@ -72,14 +72,12 @@ export async function installCodeServer(
 
     const installServerScript = generateBashInstallScript(installOptions)
 
-    const serverSetupTimeoutSeconds = 120
     const commandOutput = await executeShellCommand(
         conn,
         // Fish shell does not support heredoc so let's workaround it using -c option,
         // also replace single quotes (') within the script with ('\'') as there's no quoting within single quotes, see https://unix.stackexchange.com/a/24676
         `bash -c '${installServerScript.replace(/'/g, `'\\''`)}'`,
-        envVariables,
-        serverSetupTimeoutSeconds
+        envVariables
     )
 
     if (commandOutput.stderr) {
@@ -350,29 +348,73 @@ else
     print_install_results_and_exit 1
 fi
 
-if [[ -f $SERVER_LOGFILE ]]; then
-    MAX_ATTEMPTS=60
-    SLEEP_INTERVAL_SECONDS=0.5
-    START_TIME=$(date +%s)
-    for i in $(seq 1 $MAX_ATTEMPTS); do
-        LISTENING_ON="$(cat $SERVER_LOGFILE | grep -E 'Extension host agent listening on .+' | sed 's/Extension host agent listening on //')"
-        if [[ -n $LISTENING_ON ]]; then
-            END_TIME=$(date +%s)
-            STARTUP_TIME=$((END_TIME - START_TIME))
-            echo "Server started successfully in $STARTUP_TIME seconds (attempt $i/$MAX_ATTEMPTS)"
-            break
-        fi
-        sleep $SLEEP_INTERVAL_SECONDS
-    done
+# Function to wait for server log file to be created
+wait_for_server_log_file() {
+    local logfile="$1"
+    local max_attempts=20
+    local sleep_interval=0.5
+    local start_time_ms=$(date +%s%3N)
 
-    if [[ -z $LISTENING_ON ]]; then
-        END_TIME=$(date +%s)
-        STARTUP_TIME=$((END_TIME - START_TIME))
-        echo "Error server did not start successfully after $STARTUP_TIME seconds ($MAX_ATTEMPTS attempts)"
-        print_install_results_and_exit 1
-    fi
-else
-    echo "Error server log file not found $SERVER_LOGFILE"
+    echo "Waiting for server log file to be created at $\{logfile\}..."
+    for i in $(seq 1 $max_attempts); do
+        if [[ -f "$logfile" ]]; then
+            local end_time_ms=$(date +%s%3N)
+            local elapsed_ms=$((end_time_ms - start_time_ms))
+            local seconds_part=$((elapsed_ms / 1000))
+            local decimal_part=$(((elapsed_ms % 1000) / 100))
+            echo "Log file found after $\{seconds_part\}.$\{decimal_part\} seconds (attempt $i/$max_attempts)"
+            return 0
+        fi
+        if [[ $i -ge $max_attempts ]]; then
+            local end_time_ms=$(date +%s%3N)
+            local elapsed_ms=$((end_time_ms - start_time_ms))
+            local seconds_part=$((elapsed_ms / 1000))
+            local decimal_part=$(((elapsed_ms % 1000) / 100))
+            echo "Error server log file not found after $\{seconds_part\}.$\{decimal_part\} seconds ($max_attempts attempts): $logfile"
+            return 1
+        fi
+        sleep $sleep_interval
+    done
+}
+
+# Function to wait for server to start listening
+wait_for_server_listening() {
+    local logfile="$1"
+    local max_attempts=20
+    local sleep_interval=0.5
+    local start_time_ms=$(date +%s%3N)
+
+    echo "Waiting for server to start listening..."
+    for i in $(seq 1 $max_attempts); do
+        local listening_on="$(cat "$logfile" | grep -E 'Extension host agent listening on .+' | sed 's/Extension host agent listening on //')"
+        if [[ -n "$listening_on" ]]; then
+            local end_time_ms=$(date +%s%3N)
+            local elapsed_ms=$((end_time_ms - start_time_ms))
+            local seconds_part=$((elapsed_ms / 1000))
+            local decimal_part=$(((elapsed_ms % 1000) / 100))
+            echo "Server started successfully in $\{seconds_part\}.$\{decimal_part\} seconds (attempt $i/$max_attempts)"
+            LISTENING_ON="$listening_on"  # Set global variable
+            return 0
+        fi
+        if [[ $i -ge $max_attempts ]]; then
+            local end_time_ms=$(date +%s%3N)
+            local elapsed_ms=$((end_time_ms - start_time_ms))
+            local seconds_part=$((elapsed_ms / 1000))
+            local decimal_part=$(((elapsed_ms % 1000) / 100))
+            echo "Error server did not start successfully after $\{seconds_part\}.$\{decimal_part\} seconds ($max_attempts attempts)"
+            return 1
+        fi
+        sleep $sleep_interval
+    done
+}
+
+# Wait for log file to be created first
+if ! wait_for_server_log_file "$SERVER_LOGFILE"; then
+    print_install_results_and_exit 1
+fi
+
+# Now wait for server to start listening
+if ! wait_for_server_listening "$SERVER_LOGFILE"; then
     print_install_results_and_exit 1
 fi
 

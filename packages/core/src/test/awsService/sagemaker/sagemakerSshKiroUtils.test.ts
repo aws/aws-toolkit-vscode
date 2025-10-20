@@ -240,6 +240,37 @@ describe('SageMaker SSH Kiro Utils', () => {
             )
         })
 
+        it('should not prompt for update when previously applied', async () => {
+            getExtensionStub
+                .withArgs(VSCODE_EXTENSION_ID.sagemakerSshKiro)
+                .returns({ packageJSON: { version: '0.0.9' } })
+
+            let didShowUpdatePrompt = false
+
+            getTestWindow().onDidShowMessage((message) => {
+                if (message.message.match(/needs to be updated.*from version 0.0.9 to 0.1.0/i)) {
+                    if (didShowUpdatePrompt) {
+                        throw new Error('Should not be prompted to update a second time')
+                    }
+                    message.selectItem('Update')
+                    didShowUpdatePrompt = true
+                    return
+                }
+            })
+
+            await ensureSageMakerSshKiroExtension(mockContext)
+
+            await getTestWindow().waitForMessage(/updated to version 0.1.0/i)
+            sinon.assert.calledWith(
+                executeCommandStub,
+                'workbench.extensions.installExtension',
+                vscode.Uri.file('/mock/extension/path/resources/sagemaker-ssh-kiro-0.1.0.vsix')
+            )
+
+            // Call it again to trigger the update check again (should not prompt for update)
+            await ensureSageMakerSshKiroExtension(mockContext)
+        })
+
         it('throws error when user declines installation', async () => {
             getExtensionStub.withArgs(VSCODE_EXTENSION_ID.sagemakerSshKiro).returns(undefined)
 

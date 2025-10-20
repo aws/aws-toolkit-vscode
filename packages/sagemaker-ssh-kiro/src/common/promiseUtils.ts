@@ -4,34 +4,19 @@
  */
 
 /**
- * Creates a promise that resolves/rejects when the provided promise settles, or rejects when the timeout expires.
+ * Creates a promise that rejects when the specified timeout is reached.
+ *
+ * Usage:
+ * ```
+ * await Promise.race([
+ *     rejectAfterSecondsElapsed(10, new Error('Timed out while doing X.')),
+ *     someOtherPromise
+ * ])
+ * ```
+ *
+ * Tip: If you are using the return value of the other promise, you can supply the type of its return value to this
+ * function's type parameter to the same value to avoid TypeScript warnings.
  */
-export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-        let isSettled = false
-
-        const timeoutId = setTimeout(() => {
-            if (!isSettled) {
-                isSettled = true
-                reject(new Error(`Operation timed out after ${timeoutMs}ms`))
-            }
-        }, timeoutMs)
-
-        promise.then(
-            (result) => {
-                if (!isSettled) {
-                    isSettled = true
-                    clearTimeout(timeoutId)
-                    resolve(result)
-                }
-            },
-            (error) => {
-                if (!isSettled) {
-                    isSettled = true
-                    clearTimeout(timeoutId)
-                    reject(error)
-                }
-            }
-        )
-    })
+export function rejectAfterSecondsElapsed<T>(timeoutSeconds: number, error: any): Promise<T> {
+    return new Promise((resolve, reject) => setTimeout(() => reject(error), timeoutSeconds * 1000))
 }

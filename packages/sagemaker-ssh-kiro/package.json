@@ -2,7 +2,7 @@
     "name": "sagemaker-ssh-kiro",
     "displayName": "Amazon SageMaker SSH Plugin for Kiro",
     "description": "Plugin for AWS Toolkit that enables secure remote development in Amazon SageMaker Spaces using the Kiro IDE.",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {

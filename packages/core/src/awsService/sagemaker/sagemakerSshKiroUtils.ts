@@ -20,6 +20,7 @@ const pluginTechnicalName = 'sagemaker-ssh-kiro'
 const pluginDisplayName = 'Amazon SageMaker SSH Plugin for Kiro'
 const minKiroVersion = '0.3.0'
 
+let updatedExtensionToVersion: string
 let vscodeProductJson: any
 
 async function getEditorProductJson() {
@@ -100,16 +101,17 @@ export async function ensureSageMakerSshKiroExtension(ctx: vscode.ExtensionConte
 
     // Check if extension is already installed with the correct version
     const installedExtension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.sagemakerSshKiro)
+    const installedVersion = updatedExtensionToVersion ?? installedExtension?.packageJSON.version
 
-    if (installedExtension) {
-        if (installedExtension.packageJSON.version === embeddedVersion) {
+    if (installedVersion) {
+        if (installedVersion === embeddedVersion) {
             logger.info(
                 `The ${pluginTechnicalName} extension is already installed with expected version ${embeddedVersion}.`
             )
             return
         } else {
             logger.info(
-                `The ${pluginTechnicalName} extension is installed with version ${installedExtension.packageJSON.version}, but expected version ${embeddedVersion}`
+                `The ${pluginTechnicalName} extension is installed with version ${installedVersion}, but expected version ${embeddedVersion}`
             )
         }
     } else {
@@ -119,14 +121,13 @@ export async function ensureSageMakerSshKiroExtension(ctx: vscode.ExtensionConte
     }
 
     // Determine if this is an update or new installation
-    const isUpdate = installedExtension !== undefined
-    const currentVersion = installedExtension?.packageJSON.version
+    const isUpdate = installedVersion !== undefined
 
     // Prompt user for confirmation
     const actionText = isUpdate ? 'update' : 'install'
     const confirmButtonText = isUpdate ? 'Update' : 'Install'
     const installOrUpdateQuestion = isUpdate
-        ? `update from version ${currentVersion} to ${embeddedVersion}`
+        ? `update from version ${installedVersion} to ${embeddedVersion}`
         : `install version ${embeddedVersion}`
 
     const ok = await showConfirmationMessage({
@@ -147,6 +148,16 @@ export async function ensureSageMakerSshKiroExtension(ctx: vscode.ExtensionConte
 
     // Install the extension
     await vscode.commands.executeCommand('workbench.extensions.installExtension', vscode.Uri.file(embeddedPath))
+
+    if (isUpdate) {
+        // After the extension is updated, calls to `vscode.extensions.getExtension` will not reflect the change unless
+        // the user restarts their extension host which would be disruptive as it would interrupt this entire flow, so
+        // we need to remember the version that we updated to, or else we will prompt the user to update the extension
+        // for every space connection attempt. Even if the current extension host is still running an older version of
+        // the extension, the new remote workspace window will have a new extension host process so it will always take
+        // the most recently installed version.
+        updatedExtensionToVersion = embeddedVersion
+    }
 
     logger.info(`Installed the ${pluginTechnicalName} extension (version ${embeddedVersion}).`)
 

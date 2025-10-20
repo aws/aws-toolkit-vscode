@@ -15,7 +15,9 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import { Server } from 'net'
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig, ShellOptions } from 'ssh2'
-import { withTimeout } from './common/promiseUtils'
+import { rejectAfterSecondsElapsed } from './common/promiseUtils'
+
+const establishShellTimeoutSeconds = 10
 
 export interface SSHConnectConfig extends ConnectConfig {
     /** Optional Unique ID attached to ssh connection. */
@@ -74,20 +76,19 @@ interface CommandResult {
 export async function executeShellCommand(
     connection: SSHConnection,
     command: string,
-    env: { [index: string]: string | undefined },
-    timeoutSeconds: number
+    env: { [index: string]: string | undefined }
 ): Promise<CommandResult> {
-    let stream: ClientChannel | undefined = undefined
-
-    try {
+    const stream = await Promise.race([
         // Arbitrary timeout for the shell to be established.
-        stream = await withTimeout(connection.shell({ env }), 10_000)
-    } catch (error: unknown) {
-        throw new Error(`Failed to establish a remote shell: ${error}`)
-    }
+        rejectAfterSecondsElapsed<ClientChannel>(
+            establishShellTimeoutSeconds,
+            new Error('Timed out while attempting to establish a remote shell.')
+        ),
+        connection.shell({ env }),
+    ])
 
     // Then return a promise for the command execution
-    const executionPromise = new Promise<CommandResult>((resolve, reject) => {
+    return new Promise<CommandResult>((resolve, reject) => {
         let stdout = ''
         let stderr = ''
 
@@ -111,8 +112,6 @@ export async function executeShellCommand(
         // This will lead to the `close` event being emitted after all stdout/stderr data has been received.
         stream!.end(`${command}\nexit\n`)
     })
-
-    return withTimeout(executionPromise, timeoutSeconds * 1000)
 }
 
 // This class is mostly unmodified from jeanp413/open-remote-ssh, aside from removing unused features.

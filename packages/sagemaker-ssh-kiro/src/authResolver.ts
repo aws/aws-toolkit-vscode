@@ -14,12 +14,15 @@ import * as vscode from 'vscode'
 import SSHConnection from './sshConnection'
 import { findRandomPort } from './common/ports'
 import { disposeAll } from './common/disposable'
-import { installCodeServer, ServerInstallError } from './serverSetup'
+import { installCodeServer, ServerInstallResult } from './serverSetup'
 import { waitForMatchingStreamOutput as waitForStreamOutput } from './common/streamUtils'
-import { withTimeout } from './common/promiseUtils'
+import { rejectAfterSecondsElapsed } from './common/promiseUtils'
 
-// This mirrors the timeout value that the AWS Toolkit writes into the remote.SSH configuration for VS Code.
-const connectTimeoutSeconds = 120
+// The SSH client timeout mirrors the timeout value that the AWS Toolkit writes into the remote.SSH configuration for VS Code.
+const ssmSessionReadyTimeoutSeconds = 30
+const sshClientConnectTimeoutSeconds = 120
+const installCommandTimeoutSeconds = 120
+const openTunnelTimeoutSeconds = 10
 
 // This is hard-coded rather than imported from the AWS Toolkit core/ package to keep the bundle size low.
 const awsToolkitExtensionId = 'amazonwebservices.aws-toolkit-vscode'
@@ -57,7 +60,7 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
     resolve(authority: string, context: vscode.RemoteAuthorityResolverContext): Thenable<vscode.ResolverResult> {
         const { hostname: hostname, user } = validateAuthority(authority)
 
-        this.logger.info(`Resolving ssh remote authority '${authority}' (attemp #${context.resolveAttempt})`)
+        this.logger.info(`Resolving SSH remote authority '${authority}' (attempt #${context.resolveAttempt})`)
 
         const awsSagemakerConfig = vscode.workspace.getConfiguration('aws.sagemaker.ssh.kiro')
         const serverDownloadUrlTemplate = awsSagemakerConfig.get<string>('serverDownloadUrlTemplate')
@@ -128,36 +131,51 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                         this.logger.info(`SageMaker Connect stderr: ${errorText}`)
                     })
 
-                    if (isWindows) {
-                        // For Windows, we have to wait until the SSM session provides an appropriate ready signal,
-                        // or else the SSH2 client handshake will fail for some unknown reason.
-                        this.logger.info('Waiting for SSM session to be ready...')
-                        const readySignals = ['Starting session with SessionId:', 'SSH-2.0-Go']
+                    // This promise will be rejected if the sagemaker_connect script exits (it's not supposed to exit unless we are disconnecting)
+                    // This is used later in Promise.race() calls in order to fail fast while waiting for other operations if the connection closes prematurely
+                    const rejectWhenProxyCommandExits = new Promise((resolve, reject) => {
+                        this.proxyCommandProcess!.on('exit', () =>
+                            reject(new Error('SageMaker Connect script exited prematurely'))
+                        )
+                    })
 
-                        try {
-                            await withTimeout(
-                                waitForStreamOutput(this.proxyCommandProcess.stdout, (data: Buffer) => {
-                                    const output = data.toString()
+                    // For Windows, we have to wait until the SSM session provides an appropriate ready signal,
+                    // or else the SSH2 client handshake will fail for some unknown reason.
+                    // We also do this for non-Windows because we have seen occasional SSH connection failures
+                    // if the SSH client is given access to the stream while the remote-access-server is still booting.
+                    this.logger.info('Waiting for SSM session to be ready...')
+                    const readySignals = ['Starting session with SessionId:', 'SSH-2.0-Go']
+
+                    try {
+                        await Promise.race([
+                            rejectWhenProxyCommandExits,
+                            rejectAfterSecondsElapsed(
+                                ssmSessionReadyTimeoutSeconds,
+                                new Error('Timed out waiting for the SSM session to be ready.')
+                            ),
+                            waitForStreamOutput(this.proxyCommandProcess.stdout, (data: Buffer) => {
+                                const output = data.toString()
+
+                                if (isWindows) {
                                     // The stderr 'data' callback doesn't emit on Windows for some reason (possibly due to the way the sagemaker_connect
                                     // powershell script is written), so logging stdout is the only way to see what is happening.
                                     this.logger.info(`SageMaker Connect output: ${output}`)
+                                }
 
-                                    for (const signal of readySignals) {
-                                        if (output.includes(signal)) {
-                                            this.logger.info(`Tunnel ready signal detected: [${signal}]`)
-                                            return true
-                                        }
+                                for (const signal of readySignals) {
+                                    if (output.includes(signal)) {
+                                        this.logger.info(`Tunnel ready signal detected: [${signal}]`)
+                                        return true
                                     }
+                                }
 
-                                    return false
-                                }),
-                                30_000
-                            )
-                        } catch (error: unknown) {
-                            const errorMessage = `Failed to establish SSM session: ${error}`
-                            this.logger.error(errorMessage)
-                            throw new Error(errorMessage)
-                        }
+                                return false
+                            }),
+                        ])
+                    } catch (error: unknown) {
+                        const errorMessage = `Failed to establish SSM session: ${error}`
+                        this.logger.error(errorMessage)
+                        throw new Error(errorMessage)
                     }
 
                     const proxyStream = stream.Duplex.from({
@@ -169,18 +187,33 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                     this.sshConnection = new SSHConnection({
                         sock: proxyStream,
                         username: user,
-                        readyTimeout: connectTimeoutSeconds * 1000,
+                        readyTimeout: sshClientConnectTimeoutSeconds * 1000,
                     })
-                    await this.sshConnection.connect()
 
-                    const installResult = await installCodeServer(
-                        this.sshConnection,
-                        serverDownloadUrlTemplate,
-                        defaultExtensions,
-                        false
-                    )
+                    this.logger.info(`Initiating SSH connection with ${sshClientConnectTimeoutSeconds}s timeout...`)
 
-                    const tunnelConfig = await this.openTunnel(0, installResult.listeningOn)
+                    // The connect() function has built-in timeout handling (configured above)
+                    await Promise.race([rejectWhenProxyCommandExits, this.sshConnection.connect()])
+
+                    this.logger.info('Established SSH connection. Setting up remote server...')
+
+                    const installResult = await Promise.race([
+                        rejectWhenProxyCommandExits as Promise<ServerInstallResult>,
+                        rejectAfterSecondsElapsed<ServerInstallResult>(
+                            installCommandTimeoutSeconds,
+                            new Error('Timed out while setting up remote server.')
+                        ),
+                        installCodeServer(this.sshConnection, serverDownloadUrlTemplate, defaultExtensions, false),
+                    ])
+
+                    const tunnelConfig = await Promise.race([
+                        rejectWhenProxyCommandExits as Promise<TunnelInfo>,
+                        rejectAfterSecondsElapsed<TunnelInfo>(
+                            openTunnelTimeoutSeconds,
+                            new Error('Timed out while attempting to open a tunnel.')
+                        ),
+                        this.openTunnel(0, installResult.listeningOn),
+                    ])
                     this.tunnels.push(tunnelConfig)
 
                     this.labelFormatterDisposable?.dispose()
@@ -224,13 +257,8 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                         }
                     }
 
-                    if (e instanceof ServerInstallError || !(e instanceof Error)) {
-                        throw vscode.RemoteAuthorityResolverError.NotAvailable(
-                            e instanceof Error ? e.message : String(e)
-                        )
-                    } else {
-                        throw vscode.RemoteAuthorityResolverError.TemporarilyNotAvailable(e.message)
-                    }
+                    // Signal to the IDE to not retry the connection.
+                    throw vscode.RemoteAuthorityResolverError.NotAvailable(e?.toString())
                 }
             }
         )
