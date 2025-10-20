@@ -80,6 +80,9 @@
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateSettings": "ts-node ../../scripts/generateSettings.ts"
     },
+    "enabledApiProposals": [
+        "embedded"
+    ],
     "contributes": {
         "configuration": {
             "type": "object",
@@ -767,22 +770,22 @@
                 {
                     "id": "aws.cdk",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "!aws.explorer.showAuthView"
+                    "when": "false"
                 },
                 {
                     "id": "aws.appBuilder",
                     "name": "%AWS.appBuilder.explorerTitle%",
-                    "when": "(isCloud9 || !aws.isWebExtHost) && !aws.explorer.showAuthView"
+                    "when": "false"
                 },
                 {
                     "id": "aws.codecatalyst",
                     "name": "%AWS.codecatalyst.explorerTitle%",
-                    "when": "(!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst) && !aws.explorer.showAuthView"
+                    "when": "false"
                 },
                 {
                     "id": "aws.smus.rootView",
                     "name": "%AWS.sagemakerunifiedstudio.explorerTitle%",
-                    "when": "!aws.explorer.showAuthView"
+                    "when": "false"
                 },
                 {
                     "type": "webview",

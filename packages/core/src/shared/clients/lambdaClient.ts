@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { ToolkitError } from '../errors'
@@ -156,6 +157,17 @@ export class DefaultLambdaClient {
                 .promise()
             getLogger().debug('updateFunctionCode returned response: %O', response)
             await client.waitFor('functionUpdated', { FunctionName: name }).promise()
+
+            vscode.window.sendMessage!({
+                channel: 'vscode.awstoolkit.lambdaUpdateFunctionCode:request',
+                type: 'application/x-ai-league-code-editor+json',
+                value: [
+                    '*',
+                    {
+                        FunctionName: name,
+                    },
+                ],
+            })
 
             return response
         } catch (e) {

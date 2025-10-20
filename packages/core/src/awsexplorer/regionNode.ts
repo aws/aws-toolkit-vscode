@@ -52,43 +52,53 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'apigateway',
         createFn: (regionCode: string, partitionId: string) => new ApiGatewayNode(partitionId, regionCode),
+        when: () => false,
     },
     {
         serviceId: 'apprunner',
         createFn: (regionCode: string) => new AppRunnerNode(regionCode, new AppRunnerClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'cloudformation',
         createFn: (regionCode: string) => new CloudFormationNode(regionCode),
+        when: () => false,
     },
     {
         serviceId: 'docdb',
         createFn: (regionCode: string) => new DocumentDBNode(DefaultDocumentDBClient.create(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'logs',
         createFn: (regionCode: string) => new CloudWatchLogsNode(regionCode),
+        when: () => false,
     },
     {
         serviceId: 'ec2',
         createFn: (regionCode: string, partitionId: string) =>
             new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'ecr',
         createFn: (regionCode: string) => new EcrNode(new DefaultEcrClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'redshift',
         createFn: (regionCode: string) => new RedshiftNode(new DefaultRedshiftClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'ecs',
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'iot',
         createFn: (regionCode: string) => new IotNode(new DefaultIotClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'lambda',
@@ -101,23 +111,28 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'api.sagemaker',
         createFn: (regionCode: string) => new SagemakerParentNode(regionCode, new SagemakerClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'schemas',
         createFn: (regionCode: string) => new SchemasNode(new DefaultSchemaClient(regionCode)),
+        when: () => false,
     },
     {
         serviceId: 'states',
         createFn: (regionCode: string) => new StepFunctionsNode(regionCode),
+        when: () => false,
     },
     {
         serviceId: 'ssm',
         createFn: (regionCode: string) => new SsmDocumentNode(regionCode),
+        when: () => false,
     },
     {
         allRegions: true,
         serviceId: 'cloudcontrol',
         createFn: (regionCode: string) => new ResourcesNode(regionCode),
+        when: () => false,
     },
 ]
 
