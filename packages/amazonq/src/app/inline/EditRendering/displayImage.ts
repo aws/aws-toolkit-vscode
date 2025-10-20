@@ -313,15 +313,18 @@ export async function displaySvgDecoration(
     item: InlineCompletionItemWithReferences,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
+    function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
+        getLogger('nextEditPrediction').debug(
+            `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
+        )
+    }
     // Check if edit is too far from current cursor position
     const currentCursorLine = editor.selection.active.line
     if (Math.abs(startLine - currentCursorLine) >= autoDiscardEditCursorDistance) {
         // Emit DISCARD telemetry for edit suggestion that can't be shown because the suggestion is too far away
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-        getLogger('nextEditPrediction').debug(
-            `Auto discarded edit suggestion for suggestion that is too far away: ${item.insertText as string}`
-        )
+        logSuggestionFailure('DISCARD', 'cursor is too far away', item.insertText as string)
         return
     }
 
@@ -340,9 +343,7 @@ export async function displaySvgDecoration(
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-        getLogger('nextEditPrediction').debug(
-            `Auto discarded  edit suggestion for active completion suggestion: ${item.insertText as string}`
-        )
+        logSuggestionFailure('DISCARD', 'Conflicting active inline completion', item.insertText as string)
         return
     }
 
@@ -355,6 +356,7 @@ export async function displaySvgDecoration(
         const params = createDiscardTelemetryParams(session, item)
         // TODO: this session is closed on flare side hence discarded is not emitted in flare
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'Invalid patch', item.insertText as string)
         return
     }
     const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
@@ -373,9 +375,7 @@ export async function displaySvgDecoration(
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
-            getLogger('nextEditPrediction').debug(
-                `Auto rejected edit suggestion for invalid patch: ${item.insertText as string}}`
-            )
+            logSuggestionFailure('REJECT', 'Invalid patch due to document change', item.insertText as string)
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
@@ -389,6 +389,11 @@ export async function displaySvgDecoration(
         const currentPosition = e.selections[0].active
         const distance = Math.abs(currentPosition.line - startLine)
         if (distance > autoRejectEditCursorDistance) {
+            logSuggestionFailure(
+                'REJECT',
+                `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
+                item.insertText as string
+            )
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
