@@ -10,8 +10,8 @@ import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { AWSError } from 'aws-sdk'
-import { isAwsError } from '../../shared/errors'
+import { ServiceException } from '@smithy/smithy-client'
+import { isServiceException } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { hasVendedIamCredentials } from '../../auth/auth'
@@ -290,14 +290,14 @@ export class RecommendationHandler {
                 latency = startTime !== 0 ? Date.now() - startTime : 0
             }
             getLogger().error('amazonq inline-suggest: Invocation Exception : %s', (error as Error).message)
-            if (isAwsError(error)) {
+            if (isServiceException(error)) {
                 errorMessage = error.message
-                requestId = error.requestId || ''
-                errorCode = error.code
-                reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
+                requestId = error.$metadata.requestId || ''
+                errorCode = error.name
+                reason = `CodeWhisperer Invocation Exception: ${error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
 
-                if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
+                if (error?.name === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
                     getLogger().error('amazonq inline-suggest: AccessDeniedException : %s', (error as Error).message)
                     void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
@@ -574,9 +574,9 @@ export class RecommendationHandler {
         return true
     }
 
-    async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {
+    async onThrottlingException(awsError: ServiceException, triggerType: CodewhispererTriggerType) {
         if (
-            awsError.code === 'ThrottlingException' &&
+            awsError.name === 'ThrottlingException' &&
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)
         ) {
             if (triggerType === 'OnDemand') {

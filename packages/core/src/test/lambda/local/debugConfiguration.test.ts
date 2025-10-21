@@ -18,7 +18,7 @@ import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegis
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import globals from '../../../shared/extensionGlobals'
-import { Runtime } from '../../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { fs } from '../../../shared'
 
 describe('makeCoreCLRDebugConfiguration', function () {
