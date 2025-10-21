@@ -123,7 +123,6 @@ function generateScenario(
 
 const scenarios: TestScenario[] = [
     // zips
-    generateScenario('nodejs', '18.x'),
     generateScenario('nodejs', '20.x'),
     generateScenario('nodejs', '22.x', { vscodeMinimum: '1.78.0' }),
     generateScenario('python', '3.10'),
@@ -135,7 +134,6 @@ const scenarios: TestScenario[] = [
     generateScenario('java', '11', { sourceTag: 'Gradle' }),
     generateScenario('java', '17', { sourceTag: 'Gradle' }),
     // images
-    generateScenario('nodejs', '18.x', { baseImage: 'amazon/nodejs18.x-base' }, true),
     generateScenario('nodejs', '20.x', { baseImage: 'amazon/nodejs20.x-base' }, true),
     generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs22.x-base', vscodeMinimum: '1.78.0' }, true),
     generateScenario('python', '3.10', { baseImage: 'amazon/python3.10-base' }, true),
