@@ -9,6 +9,7 @@ import { SamConfig, SamConfigErrorCode } from '../../../shared/sam/config'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 export interface SamApp {
     location: SamAppLocation
@@ -24,7 +25,7 @@ export interface SamAppLocation {
 export interface ResourceTreeEntity {
     Id: string
     Type: string
-    Runtime?: string
+    Runtime?: Runtime
     CodeUri?: string
     Handler?: string
     Events?: ResourceTreeEntity[]

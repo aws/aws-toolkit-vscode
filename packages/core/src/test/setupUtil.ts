@@ -4,7 +4,8 @@
  */
 
 import { parse } from '@aws-sdk/util-arn-parser'
-import { Lambda, STS } from 'aws-sdk'
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
@@ -135,13 +136,13 @@ export function patchObjectDescriptor<T extends Record<string, any>, U extends k
 
 async function createLambdaClient(functionId: string) {
     if (!functionId.startsWith('arn:aws:lambda')) {
-        return Object.assign(new Lambda(), { isCrossAccount: false })
+        return Object.assign(new LambdaClient({}), { isCrossAccount: false })
     }
 
-    const sts = new STS()
+    const sts = new STSClient({})
     const { region, accountId } = parse(functionId)
-    const identity = await sts.getCallerIdentity().promise()
-    const client = new Lambda({ region })
+    const identity = await sts.send(new GetCallerIdentityCommand({}))
+    const client = new LambdaClient({ region })
 
     return Object.assign(client, { isCrossAccount: identity.Account !== accountId })
 }
@@ -149,14 +150,15 @@ async function createLambdaClient(functionId: string) {
 export async function invokeLambda(id: string, request: unknown): Promise<unknown> {
     const client = await createLambdaClient(id)
     const response = await client
-        .invoke({
-            FunctionName: id,
-            // Setting this to `Tail` with cross account calls results in
-            // `AccessDeniedException: Cross-account log access is not allowed`
-            LogType: client.isCrossAccount ? 'None' : 'Tail',
-            Payload: JSON.stringify(request),
-        })
-        .promise()
+        .send(
+            new InvokeCommand({
+                FunctionName: id,
+                // Setting this to `Tail` with cross account calls results in
+                // `AccessDeniedException: Cross-account log access is not allowed`
+                LogType: client.isCrossAccount ? 'None' : 'Tail',
+                Payload: JSON.stringify(request),
+            })
+        )
         .catch((err) => {
             if (err instanceof Error) {
                 err.message = maskArns(err.message)
@@ -168,10 +170,10 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
         const logs = decodeBase64(response.LogResult)
         getLogger().debug('lambda invocation logs: %s', maskArns(logs))
     } else {
-        getLogger().debug('lambda invocation request id: %s', response.$response.requestId)
+        getLogger().debug('lambda invocation request id: %s', response.$metadata?.requestId)
     }
 
-    const respStr = response.Payload?.toString('utf-8')
+    const respStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined
     if (!respStr || respStr === 'null') {
         return
     }
