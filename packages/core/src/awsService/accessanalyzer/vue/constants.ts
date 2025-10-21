@@ -30,8 +30,6 @@ export type PolicyChecksCheckType = 'CheckNoNewAccess' | 'CheckAccessNotGranted'
 
 export type PolicyChecksPolicyType = 'Identity' | 'Resource'
 
-export type ValidatePolicyFindingType = 'ERROR' | 'SECURITY_WARNING' | 'SUGGESTION' | 'WARNING'
-
 export type PolicyChecksResult = 'Success' | 'Warning' | 'Error'
 
 export type PolicyChecksUiClick =

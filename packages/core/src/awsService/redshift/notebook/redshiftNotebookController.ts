@@ -7,7 +7,7 @@
 import * as vscode from 'vscode'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { ConnectionParams } from '../models/models'
-import { RedshiftData } from 'aws-sdk'
+import { ColumnMetadata, Field } from '@aws-sdk/client-redshift-data'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export class RedshiftNotebookController {
@@ -79,8 +79,8 @@ export class RedshiftNotebookController {
             }
 
             let executionId: string | undefined
-            let columnMetadata: RedshiftData.ColumnMetadataList | undefined
-            const records: RedshiftData.SqlRecords = []
+            let columnMetadata: ColumnMetadata[] | undefined
+            const records: Field[][] = []
             let nextToken: string | undefined
             // get all the pages of the result
             do {
@@ -90,7 +90,7 @@ export class RedshiftNotebookController {
                     nextToken,
                     executionId
                 )
-                if (result) {
+                if (result && result.statementResultResponse.Records) {
                     nextToken = result.statementResultResponse.NextToken
                     executionId = result.executionId
                     columnMetadata = result.statementResultResponse.ColumnMetadata
@@ -116,7 +116,7 @@ export class RedshiftNotebookController {
         })
     }
 
-    public getAsTable(connectionParams: ConnectionParams, columns: string[], records: RedshiftData.SqlRecords) {
+    public getAsTable(connectionParams: ConnectionParams, columns: string[], records: Field[][]) {
         if (!records || records.length === 0) {
             return '<p>No records to display<p>'
         }
