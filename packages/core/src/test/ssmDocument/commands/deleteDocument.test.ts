@@ -9,7 +9,7 @@ import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documen
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { SSM } from 'aws-sdk'
+import { DocumentFormat, DocumentIdentifier } from '@aws-sdk/client-ssm'
 import { getTestWindow } from '../../shared/vscode/window'
 import { stub } from '../../utilities/stubber'
 
@@ -21,9 +21,9 @@ describe('deleteDocument', async function () {
     let spyExecuteCommand: sinon.SinonSpy
     const fakeName: string = 'testDocument'
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
+    const fakeDoc: DocumentIdentifier = {
         Name: fakeName,
-        DocumentFormat: 'json',
+        DocumentFormat: DocumentFormat.JSON,
         DocumentType: 'Automation',
         Owner: 'Amazon',
     }
