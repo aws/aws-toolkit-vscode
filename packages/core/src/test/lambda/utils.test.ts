@@ -18,6 +18,7 @@ import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import path from 'path'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 describe('lambda utils', function () {
     const mockLambda = {
@@ -67,7 +68,7 @@ describe('lambda utils', function () {
                 })
             )
             // runtime that isn't present, period
-            assert.throws(() => getLambdaDetails({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' }))
+            assert.throws(() => getLambdaDetails({ Runtime: 'COBOL-60' as Runtime, Handler: 'asdf.asdf' }))
         })
     })
 

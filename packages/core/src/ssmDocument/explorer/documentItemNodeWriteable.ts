@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { DeleteDocumentResult, DocumentIdentifier, UpdateDocumentDefaultVersionResult } from '@aws-sdk/client-ssm'
 import { RegistryItemNode } from './registryItemNode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from './documentItemNode'
 
 export class DocumentItemNodeWriteable extends DocumentItemNode {
     public constructor(
-        documentItem: SSM.Types.DocumentIdentifier,
+        documentItem: DocumentIdentifier,
         public override readonly client: SsmDocumentClient,
         public override readonly regionCode: string,
         public readonly parent: RegistryItemNode
@@ -20,7 +20,7 @@ export class DocumentItemNodeWriteable extends DocumentItemNode {
         this.parent = parent
     }
 
-    public async deleteDocument(): Promise<SSM.Types.DeleteDocumentResult> {
+    public async deleteDocument(): Promise<DeleteDocumentResult> {
         if (!this.documentName || !this.documentName.length) {
             return Promise.resolve({})
         }
@@ -28,9 +28,7 @@ export class DocumentItemNodeWriteable extends DocumentItemNode {
         return await this.client.deleteDocument(this.documentName)
     }
 
-    public async updateDocumentVersion(
-        documentVersion?: string
-    ): Promise<SSM.Types.UpdateDocumentDefaultVersionResult> {
+    public async updateDocumentVersion(documentVersion?: string): Promise<UpdateDocumentDefaultVersionResult> {
         if (!documentVersion || !documentVersion.length) {
             return Promise.resolve({})
         }
