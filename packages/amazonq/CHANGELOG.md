@@ -1,3 +1,7 @@
+## 1.100.0 2025-10-16
+
+- Miscellaneous non-user-facing changes
+
 ## 1.99.0 2025-10-10
 
 - Miscellaneous non-user-facing changes
