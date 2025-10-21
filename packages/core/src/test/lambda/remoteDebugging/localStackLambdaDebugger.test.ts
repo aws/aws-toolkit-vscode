@@ -18,7 +18,7 @@ import {
     setupMockVSCodeDebugAPIs,
 } from './testUtils'
 import { DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration, Runtime } from '@aws-sdk/client-lambda'
 import { assertTelemetry } from '../../testUtil'
 import * as remoteDebuggingUtils from '../../../lambda/remoteDebugging/utils'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
@@ -31,7 +31,7 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
     let controller: RemoteDebugController
     let mockGlobalState: any
     let mockConfig: DebugConfig
-    let mockFunctionConfig: Lambda.FunctionConfiguration
+    let mockFunctionConfig: FunctionConfiguration
     let fetchStub: sinon.SinonStub
 
     beforeEach(() => {
@@ -60,7 +60,7 @@ describe('RemoteDebugController with LocalStackLambdaDebugger', () => {
             layerArn: undefined,
             lambdaTimeout: undefined,
         })
-        mockFunctionConfig = createMockFunctionConfig({ Runtime: 'nodejs22.x' })
+        mockFunctionConfig = createMockFunctionConfig({ Runtime: 'nodejs22.x' as Runtime })
     })
 
     afterEach(() => {

@@ -15,7 +15,7 @@ import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLo
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { deleteConnection, ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
-import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
+import { ListDatabasesResponse } from '@aws-sdk/client-redshift-data'
 import { getIcon } from '../../../shared/icons'
 import { AWSCommandTreeNode } from '../../../shared/treeview/nodes/awsCommandTreeNode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
