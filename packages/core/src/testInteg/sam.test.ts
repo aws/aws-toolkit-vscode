@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { mkdtempSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as semver from 'semver'
@@ -92,7 +92,7 @@ const dotnetDefaults = {
     vscodeMinimum: '1.80.0',
 }
 
-const defaults: Record<Runtime, TestScenarioDefaults> = {
+const defaults: Record<string, TestScenarioDefaults> = {
     nodejs: nodeDefaults,
     java: javaDefaults,
     python: pythonDefaults,
@@ -100,7 +100,7 @@ const defaults: Record<Runtime, TestScenarioDefaults> = {
 }
 
 function generateScenario(
-    runtime: Runtime,
+    runtime: string,
     version: string,
     options: Partial<TestScenario & { sourceTag: string }> = {},
     fromImage: boolean = false
@@ -110,7 +110,7 @@ function generateScenario(
     }
     const { sourceTag, ...defaultOverride } = options
     const source = `(${options.sourceTag ? `${options.sourceTag} ` : ''}${fromImage ? 'Image' : 'ZIP'})`
-    const fullName = `${runtime}${version}`
+    const fullName = `${runtime}${version}` as Runtime
     return {
         runtime: fullName,
         displayName: `${fullName} ${source}`,

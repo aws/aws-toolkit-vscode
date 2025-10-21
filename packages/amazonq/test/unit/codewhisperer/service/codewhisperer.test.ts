@@ -12,7 +12,8 @@ import {
     codeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
 import { globals, getClientId, getOperatingSystem } from 'aws-core-vscode/shared'
-import { AWSError, Request } from 'aws-sdk'
+import { Request } from 'aws-sdk'
+import { ServiceException } from '@smithy/smithy-client'
 import { createSpyClient } from 'aws-core-vscode/test'
 
 describe('codewhisperer', async function () {
@@ -109,7 +110,7 @@ describe('codewhisperer', async function () {
                         requestId: '',
                     },
                 }),
-        } as Request<SendTelemetryEventResponse, AWSError>)
+        } as Request<SendTelemetryEventResponse, ServiceException>)
 
         const expectedUserContext = {
             ideCategory: 'VSCODE',
@@ -134,7 +135,7 @@ describe('codewhisperer', async function () {
                         requestId: '',
                     },
                 }),
-        } as Request<SendTelemetryEventResponse, AWSError>)
+        } as Request<SendTelemetryEventResponse, ServiceException>)
 
         const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
         await globals.telemetry.setTelemetryEnabled(isTelemetryEnabled)
