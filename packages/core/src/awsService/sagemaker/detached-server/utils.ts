@@ -13,6 +13,7 @@ import os from 'os'
 import { join } from 'path'
 import { SpaceMappings } from '../types'
 import open from 'open'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 export { open }
 
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
@@ -21,6 +22,13 @@ const tempFilePath = `${mappingFilePath}.tmp`
 // Simple file lock to prevent concurrent writes
 let isWriting = false
 const writeQueue: Array<() => Promise<void>> = []
+
+// Currently SSM registration happens asynchronously with App launch, which can lead to
+// StartSession Internal Failure when connecting to a fresly-started Space.
+// To mitigate, spread out retries over multiple seconds instead of sending all retries within a second.
+// Backoff sequence: 1500ms, 2250ms, 3375ms
+// Retry timing: 1500ms, 3750ms, 7125ms
+const startSessionRetryStrategy = new ConfiguredRetryStrategy(3, (attempt: number) => 1000 * 1.5 ** attempt)
 
 /**
  * Reads the local endpoint info file (default or via env) and returns pid & port.
@@ -83,7 +91,7 @@ export function parseArn(arn: string): { region: string; accountId: string; spac
 
 export async function startSagemakerSession({ region, connectionIdentifier, credentials }: any) {
     const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${region}.amazonaws.com`
-    const client = new SageMakerClient({ region, credentials, endpoint })
+    const client = new SageMakerClient({ region, credentials, endpoint, retryStrategy: startSessionRetryStrategy })
     const command = new StartSessionCommand({ ResourceIdentifier: connectionIdentifier })
     return client.send(command)
 }
