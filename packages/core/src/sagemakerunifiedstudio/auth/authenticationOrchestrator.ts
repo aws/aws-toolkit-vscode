@@ -10,7 +10,12 @@ import { SmusErrorCodes } from '../shared/smusUtils'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
-import { SmusIamProfileSelector } from './ui/iamProfileSelection'
+import {
+    SmusIamProfileSelector,
+    IamProfileSelection,
+    IamProfileEditingInProgress,
+    IamProfileBackNavigation,
+} from './ui/iamProfileSelection'
 import { SmusAuthenticationPreferencesManager } from './preferences/authenticationPreferences'
 import { DataZoneDomainPreferencesClient } from '../shared/client/datazoneDomainPreferencesClient'
 import { recordAuthTelemetry } from '../shared/telemetry'
@@ -31,17 +36,37 @@ export class SmusAuthenticationOrchestrator {
 
     /**
      * Handles IAM authentication flow
+     * @param authProvider The SMUS authentication provider
+     * @param span Telemetry span
+     * @param context Extension context
+     * @param existingProfileName Optional profile name to re-authenticate with (skips profile selection)
+     * @param existingRegion Optional region to use (skips region selection)
      */
     public static async handleIamAuthentication(
         authProvider: SmusAuthenticationProvider,
         span: any,
-        context: vscode.ExtensionContext
+        context: vscode.ExtensionContext,
+        existingProfileName?: string,
+        existingRegion?: string
     ): Promise<SmusAuthenticationResult> {
         const logger = this.logger
 
         try {
-            // Show IAM profile selection dialog
-            const profileSelection = await SmusIamProfileSelector.showIamProfileSelection()
+            let profileSelection: IamProfileSelection | IamProfileEditingInProgress | IamProfileBackNavigation
+
+            // If profile and region are provided, skip profile selection (re-authentication case)
+            if (existingProfileName && existingRegion) {
+                logger.debug(
+                    `SMUS Auth: Re-authenticating with existing profile: ${existingProfileName}, region: ${existingRegion}`
+                )
+                profileSelection = {
+                    profileName: existingProfileName,
+                    region: existingRegion,
+                }
+            } else {
+                // Show IAM profile selection dialog
+                profileSelection = await SmusIamProfileSelector.showIamProfileSelection()
+            }
 
             // Handle different result types
             if ('isBack' in profileSelection) {

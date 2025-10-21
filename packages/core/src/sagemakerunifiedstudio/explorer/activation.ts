@@ -17,6 +17,7 @@ import { SagemakerUnifiedStudioSpaceNode } from './nodes/sageMakerUnifiedStudioS
 import { SageMakerUnifiedStudioProjectNode } from './nodes/sageMakerUnifiedStudioProjectNode'
 import { getLogger } from '../../shared/logger/logger'
 import { setSmusConnectedContext, SmusAuthenticationProvider } from '../auth/providers/smusAuthenticationProvider'
+import { isSmusIamConnection } from '../auth/model'
 import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker } from '../../shared/extensionUtilities'
@@ -101,15 +102,32 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             if (connection) {
                 try {
                     await smusAuthProvider.reauthenticate(connection)
-                    // Refresh the tree view after successful reauthentication
                     treeDataProvider.refresh()
-                    // Show success message
-                    void vscode.window.showInformationMessage(
-                        'Successfully reauthenticated with SageMaker Unified Studio'
-                    )
+
+                    // IAM connections handle their own success messages
+                    // Only show success message for SSO connections
+                    if (!isSmusIamConnection(connection)) {
+                        void vscode.window.showInformationMessage(
+                            'Successfully reauthenticated with SageMaker Unified Studio'
+                        )
+                    }
                 } catch (error) {
-                    // Show error message if reauthentication fails
-                    void vscode.window.showErrorMessage(`Failed to reauthenticate: ${error}`)
+                    // Extract the most detailed error message available
+                    let errorMessage = 'Unknown error'
+                    if (error instanceof Error) {
+                        // Check if this is a ToolkitError with a cause chain
+                        const cause = (error as any).cause
+                        if (cause instanceof Error) {
+                            // Use the cause's message as it contains the detailed validation error
+                            errorMessage = cause.message
+                        } else {
+                            // Fall back to the error's own message
+                            errorMessage = error.message
+                        }
+                    }
+
+                    // Show the detailed error message to the user
+                    void vscode.window.showErrorMessage(`${errorMessage}`)
                     logger.error('SMUS: Reauthentication failed: %O', error)
                 }
             }

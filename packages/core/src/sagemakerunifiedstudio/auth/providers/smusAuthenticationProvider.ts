@@ -27,7 +27,9 @@ import {
     SmusConnection,
     SmusIamConnection,
     isSmusSsoConnection,
+    isSmusIamConnection,
 } from '../model'
+import { IamCredentialExpiryAction, showIamCredentialExpiryOptions } from '../credentialExpiryHandler'
 
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
@@ -367,7 +369,7 @@ export class SmusAuthenticationProvider {
         } catch (error) {
             logger.error(`SMUS: Failed to sign out from connection ${connectionId}:`, error)
             throw new ToolkitError('Failed to sign out from SageMaker Unified Studio', {
-                code: 'SignOutFailed',
+                code: SmusErrorCodes.SignOutFailed,
                 cause: error instanceof Error ? error : undefined,
             })
         }
@@ -388,7 +390,7 @@ export class SmusAuthenticationProvider {
 
             // Validate domain ID
             if (!domainId) {
-                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+                throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
             logger.info(`SMUS: Connecting to domain ${domainId} in region ${region}`)
@@ -475,7 +477,7 @@ export class SmusAuthenticationProvider {
             return result as SmusConnection
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio', {
-                code: 'FailedToConnect',
+                code: SmusErrorCodes.FailedToConnect,
             })
         }
     }
@@ -503,7 +505,7 @@ export class SmusAuthenticationProvider {
 
             // Validate domain ID
             if (!domainId) {
-                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+                throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
             logger.info(`SMUS: Connecting with IAM profile ${profileName} to domain ${domainId} in region ${region}`)
@@ -560,12 +562,12 @@ export class SmusAuthenticationProvider {
             throw new ToolkitError(
                 `IAM profile connection not found for '${profileName}'. Please check your AWS credentials configuration.`,
                 {
-                    code: 'ConnectionNotFound',
+                    code: SmusErrorCodes.ConnectionNotFound,
                 }
             )
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio with IAM profile', {
-                code: 'FailedToConnect',
+                code: SmusErrorCodes.FailedToConnect,
             })
         }
     }
@@ -692,9 +694,35 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the reauthenticated connection
      */
     @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
-    public async reauthenticate(conn: SsoConnection) {
+    public async reauthenticate(conn: SmusConnection): Promise<SmusConnection> {
         try {
-            return await this.auth.reauthenticate(conn)
+            // Check if this is an IAM connection
+            if (isSmusIamConnection(conn)) {
+                // For IAM connections, show options menu
+                this.logger.debug('SMUS: Showing IAM credential expiry options for reauthentication')
+                const result = await showIamCredentialExpiryOptions(this, conn, globals.context)
+
+                // Handle the result - for most actions, return the original connection
+                // The actions have already been performed (sign out, edit credentials, etc.)
+                if (result.action === IamCredentialExpiryAction.SignOut) {
+                    throw new ToolkitError('User signed out from connection', { cancelled: true })
+                } else if (result.action === IamCredentialExpiryAction.Cancelled) {
+                    throw new ToolkitError('Reauthentication cancelled by user', { cancelled: true })
+                }
+
+                // For Reauthenticate, EditCredentials, and SwitchProfile, return the connection
+                return conn
+            } else {
+                // For SSO connections, use existing re-auth flow
+                const reauthenticatedConn = await this.auth.reauthenticate(conn)
+
+                // Re-add SMUS-specific properties that aren't preserved by the base auth system
+                return {
+                    ...reauthenticatedConn,
+                    domainUrl: conn.domainUrl,
+                    domainId: conn.domainId,
+                } as SmusConnection
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to reauthenticate SageMaker Unified Studio connection.')
         }
@@ -704,7 +732,7 @@ export class SmusAuthenticationProvider {
      * Shows a reauthentication prompt to the user
      * @param conn Connection to reauthenticate
      */
-    public async showReauthenticationPrompt(conn: SsoConnection): Promise<void> {
+    public async showReauthenticationPrompt(conn: SmusConnection): Promise<void> {
         await showReauthenticateMessage({
             message: localizedText.connectionExpired('SageMaker Unified Studio'),
             connect: localizedText.reauthenticate,
@@ -733,7 +761,7 @@ export class SmusAuthenticationProvider {
         // Only SSO connections have access tokens
         if (!isSmusSsoConnection(connection)) {
             throw new ToolkitError('Access tokens are only available for SSO connections', {
-                code: 'InvalidConnectionType',
+                code: SmusErrorCodes.InvalidConnectionType,
             })
         }
 
@@ -1122,7 +1150,7 @@ export class SmusAuthenticationProvider {
         // Domain Execution Role credentials are only available for SSO connections
         if (!isSmusSsoConnection(connection)) {
             throw new ToolkitError('Domain Execution Role credentials are only available for SSO connections', {
-                code: 'InvalidConnectionType',
+                code: SmusErrorCodes.InvalidConnectionType,
             })
         }
 

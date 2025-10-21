@@ -317,10 +317,16 @@ describe('SmusAuthenticationProvider', function () {
     })
 
     describe('reauthenticate', function () {
-        it('should call auth reauthenticate', async function () {
+        it('should call auth reauthenticate for SSO connection', async function () {
             const result = await smusAuthProvider.reauthenticate(mockSmusConnection)
 
-            assert.strictEqual(result, mockSmusConnection)
+            // Verify the result has the correct SMUS properties preserved
+            assert.strictEqual(result.id, mockSmusConnection.id)
+            assert.strictEqual(result.domainUrl, mockSmusConnection.domainUrl)
+            assert.strictEqual(result.domainId, mockSmusConnection.domainId)
+            assert.strictEqual(result.type, mockSmusConnection.type)
+            assert.strictEqual(result.startUrl, mockSmusConnection.startUrl)
+            assert.strictEqual(result.label, mockSmusConnection.label)
             assert.ok(mockAuth.reauthenticate.calledWith(mockSmusConnection))
         })
 

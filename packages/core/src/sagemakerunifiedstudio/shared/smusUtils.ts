@@ -78,6 +78,18 @@ export const SmusErrorCodes = {
     CredentialProviderInitFailed: 'CredentialProviderInitFailed',
     /** Error code for when IAM profile type is invalid */
     InvalidProfileType: 'InvalidProfileType',
+    /** Error code for when IAM credential validation fails */
+    IamValidationFailed: 'IamValidationFailed',
+    /** Error code for when sign out operation fails */
+    SignOutFailed: 'SignOutFailed',
+    /** Error code for when domain URL format is invalid */
+    InvalidDomainUrl: 'InvalidDomainUrl',
+    /** Error code for when connection to SMUS fails */
+    FailedToConnect: 'FailedToConnect',
+    /** Error code for when connection is not found */
+    ConnectionNotFound: 'ConnectionNotFound',
+    /** Error code for when connection type is invalid for the operation */
+    InvalidConnectionType: 'InvalidConnectionType',
 } as const
 
 /**
