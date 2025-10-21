@@ -18,7 +18,8 @@ import {
 import globals from '../../shared/extensionGlobals'
 import { once } from '../../shared/utilities/functionUtils'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
-import { Credentials, Service } from 'aws-sdk'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
+import { Service } from 'aws-sdk'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import userApiConfig = require('../client/user-service-2.json')
 import { createConstantMap } from '../../shared/utilities/tsUtils'
@@ -394,7 +395,7 @@ export class RegionProfileManager {
             apiConfig: userApiConfig,
             region: region,
             endpoint: endpoint,
-            credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
+            credentials: { accessKeyId: 'xxx', secretAccessKey: 'xxx' } as AwsCredentialIdentity,
             onRequestSetup: [
                 (req) => {
                     req.on('build', ({ httpRequest }) => {
