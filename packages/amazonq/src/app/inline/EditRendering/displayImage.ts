@@ -434,7 +434,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            session.triggerOnAcceptance = true
+            // session.triggerOnAcceptance = true
         },
         async (isDiscard: boolean) => {
             // Handle reject
