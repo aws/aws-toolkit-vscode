@@ -19,7 +19,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import os from 'os'
 import path from 'path'
 import { LAMBDA_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
-import { ResourcesToImport } from 'aws-sdk/clients/cloudformation'
+import { ResourceToImport } from '@aws-sdk/client-cloudformation'
 
 describe('lambda2samCoreLogic', function () {
     let sandbox: sinon.SinonSandbox
@@ -422,7 +422,7 @@ describe('lambda2samCoreLogic', function () {
             // Setup Lambda node
             const lambdaNode = mockLambdaNode()
 
-            const resourceToImport: ResourcesToImport = [
+            const resourceToImport: ResourceToImport[] = [
                 {
                     ResourceType: LAMBDA_FUNCTION_TYPE,
                     LogicalResourceId: 'TestFunc',
@@ -470,7 +470,7 @@ describe('lambda2samCoreLogic', function () {
             // Make createChangeSet fail
             cfnClientStub.createChangeSet.resolves({}) // No Id
 
-            const resourceToImport: ResourcesToImport = [
+            const resourceToImport: ResourceToImport[] = [
                 {
                     ResourceType: LAMBDA_FUNCTION_TYPE,
                     LogicalResourceId: 'TestFunc',

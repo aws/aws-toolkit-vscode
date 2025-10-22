@@ -317,7 +317,12 @@ describe('SamDebugConfigurationProvider', async function () {
             )
 
             // No workspace folder:
+            // Stub vscode.workspace.workspaceFolders to be undefined to ensure rejection
+            sandbox.stub(vscode.workspace, 'workspaceFolders').value(undefined)
             await assert.rejects(() => debugConfigProvider.makeConfig(undefined, config.config))
+            // Restore for subsequent tests
+            sandbox.restore()
+            sandbox = sinon.createSandbox()
 
             // No launch.json (vscode will pass an empty config.request):
             await assert.rejects(() => debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }))
@@ -2906,7 +2911,7 @@ describe('ensureRelativePaths', function () {
             undefined,
             'testName1',
             '/test1/project',
-            lambdaModel.getDefaultRuntime(lambdaModel.RuntimeFamily.NodeJS) ?? ''
+            lambdaModel.getDefaultRuntime(lambdaModel.RuntimeFamily.NodeJS)!
         )
         assert.strictEqual((codeConfig.invokeTarget as CodeTargetProperties).projectRoot, '/test1/project')
         ensureRelativePaths(workspace, codeConfig)

@@ -30,7 +30,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
-import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
@@ -104,22 +103,12 @@ export class OidcClient {
     }
 
     public static create(region: string) {
-        const updatedRetryDecider = (err: SdkError) => {
-            if (defaultRetryDecider(err)) {
-                return true
-            }
-
-            // As part of SIM IDE-10703, there was an assumption that retrying on InvalidGrantException
-            // may be useful. This may not be the case anymore and if more research is done, this may not be needed.
-            // TODO: setup some telemetry to see if there are any successes on a subsequent retry for this case.
-            return err.name === 'InvalidGrantException'
-        }
         const client = new SSOOIDC({
             region,
             endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
             retryStrategy: new StandardRetryStrategy(
                 () => Promise.resolve(3), // Maximum number of retries
-                { retryDecider: updatedRetryDecider }
+                { retryDecider: defaultRetryDecider }
             ),
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             requestHandler: {
