@@ -17,14 +17,7 @@ import { assertTelemetry, closeAllEditors, getFetchStubWithResponse } from '../t
 import { AWSError } from 'aws-sdk'
 import { getTestWindow } from '../shared/vscode/window'
 import { SeverityLevel } from '../shared/vscode/message'
-import { cancel } from '../../shared/localizedText'
-import {
-    showScannedFilesMessage,
-    stopScanMessage,
-    CodeAnalysisScope,
-    monthlyLimitReachedNotification,
-    scansLimitReachedErrorMessage,
-} from '../../codewhisperer/models/constants'
+import { showScannedFilesMessage, CodeAnalysisScope } from '../../codewhisperer/models/constants'
 import * as model from '../../codewhisperer/models/model'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
