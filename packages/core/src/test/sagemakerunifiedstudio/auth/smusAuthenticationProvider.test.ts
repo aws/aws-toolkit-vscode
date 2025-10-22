@@ -192,8 +192,49 @@ describe('SmusAuthenticationProvider', function () {
     })
 
     describe('restore', function () {
-        it('should call secondary auth restoreConnection', async function () {
+        let mockState: any
+        let loadSharedCredentialsProfilesStub: sinon.SinonStub
+        let validateIamProfileStub: sinon.SinonStub
+        beforeEach(function () {
+            mockState = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            mockSecondaryAuth.state = mockState
+
+            loadSharedCredentialsProfilesStub = sinon.stub(
+                require('../../../auth/credentials/sharedCredentials'),
+                'loadSharedCredentialsProfiles'
+            )
+            validateIamProfileStub = sinon.stub(smusAuthProvider, 'validateIamProfile')
+        })
+
+        it('should call secondary auth restoreConnection when no saved connection ID', async function () {
+            mockState.get.withArgs('smus.savedConnectionId').returns(undefined)
+
             await smusAuthProvider.restore()
+
+            assert.ok(mockSecondaryAuth.restoreConnection.called)
+            assert.ok(loadSharedCredentialsProfilesStub.notCalled)
+        })
+
+        it('should validate IAM profile and restore connection', async function () {
+            const savedConnectionId = 'test-connection-id'
+            const connectionMetadata = {
+                profileName: 'test-profile',
+                domainId: 'old-domain-id',
+                region: 'us-west-1',
+            }
+            const smusConnections = { [savedConnectionId]: connectionMetadata }
+
+            mockState.get.withArgs('smus.savedConnectionId').returns(savedConnectionId)
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+            loadSharedCredentialsProfilesStub.resolves({ 'test-profile': { region: 'us-east-1' } })
+            validateIamProfileStub.resolves({ isValid: true })
+
+            await smusAuthProvider.restore()
+
+            assert.ok(validateIamProfileStub.calledWith('test-profile'))
             assert.ok(mockSecondaryAuth.restoreConnection.called)
         })
     })

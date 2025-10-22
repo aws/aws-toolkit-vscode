@@ -47,6 +47,7 @@ import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDom
 import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
+import { loadSharedCredentialsProfiles } from '../../../auth/credentials/sharedCredentials'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -314,9 +315,117 @@ export class SmusAuthenticationProvider {
 
     /**
      * Restores the previous connection
-     * Uses a promise to prevent multiple simultaneous restore calls
+     * Validates domain metadata against profile and updates if needed before using saved connection
      */
     public async restore() {
+        const logger = getLogger()
+
+        // Get the saved connection ID before restoring
+        const savedConnectionId = this.secondaryAuth.state.get('smus.savedConnectionId') as string
+        if (!savedConnectionId) {
+            logger.debug('SMUS: No saved connection ID found, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        // Get the saved connection metadata
+        const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
+        const connectionMetadata = smusConnections[savedConnectionId]
+
+        // If no connection metadata exists, proceed with normal restore
+        if (!connectionMetadata) {
+            logger.debug('SMUS: No connection metadata found, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        const savedProfileName = connectionMetadata.profileName
+
+        // If no profile name in metadata, proceed with normal restore
+        if (!savedProfileName) {
+            logger.debug('SMUS: No profile name in metadata, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        const profiles = await loadSharedCredentialsProfiles()
+        const profile = profiles[savedProfileName]
+        const region = profile.region || 'not-set'
+
+        const validation = await this.validateIamProfile(savedProfileName)
+        if (!validation.isValid) {
+            logger.debug(`SMUS Auth: Profile validation failed: ${validation.error}, proceeding with normal restore`)
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        let domainUrl
+        try {
+            logger.debug(`SMUS Auth: Finding Express domain in region using profile ${savedProfileName}`)
+
+            // Get DataZoneDomainPreferencesClient instance
+            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+                await this.getCredentialsProviderForIamProfile(savedProfileName),
+                region
+            )
+
+            // Find the Express domain using the client
+            const expressDomain = await domainPreferencesClient.getExpressDomain()
+
+            if (!expressDomain) {
+                logger.warn(`SMUS Auth: No Express domain found in region ${region}, proceeding with normal restore`)
+                await this.secondaryAuth.restoreConnection()
+                return
+            }
+
+            logger.debug(`SMUS Auth: Found Express domain: ${expressDomain.name} (${expressDomain.id})`)
+
+            // Construct domain URL from the Express domain
+            domainUrl = expressDomain.portalUrl || `https://${expressDomain.id}.sagemaker.${region}.on.aws/`
+            logger.debug(`SMUS Auth: Discovered Express domain URL: ${domainUrl}`)
+        } catch (error) {
+            logger.error(`SMUS Auth: Failed to find Express domain: ${error} , proceeding with normal restore`)
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        try {
+            logger.debug(`SMUS: Validating domain metadata for saved connection ${savedConnectionId}`)
+
+            if (!domainUrl) {
+                logger.info('SMUS: No domain URL constructed, proceeding with normal restore')
+                await this.secondaryAuth.restoreConnection()
+                return
+            }
+
+            const { domainId } = SmusUtils.extractDomainInfoFromUrl(domainUrl)
+
+            // Compare with saved metadata
+            const savedDomainId = connectionMetadata.domainId
+            const savedRegion = connectionMetadata.region
+
+            if (domainId === savedDomainId && region === savedRegion) {
+                logger.debug('SMUS: Domain metadata matches, proceeding with normal restore')
+            } else {
+                logger.debug(
+                    `SMUS: Domain metadata mismatch detected. Saved: ${savedDomainId}@${savedRegion}, Profile: ${domainId}@${region}. Updating metadata.`
+                )
+
+                // Update the metadata with API values
+                connectionMetadata.domainId = domainId
+                connectionMetadata.region = region
+
+                // Save updated metadata
+                smusConnections[savedConnectionId] = connectionMetadata
+                await this.secondaryAuth.state.update('smus.connections', smusConnections)
+
+                logger.debug('SMUS: Successfully updated domain metadata')
+            }
+        } catch (error) {
+            logger.warn(`SMUS: Failed to validate domain metadata: ${error}. Proceeding with normal restore.`)
+        }
+
+        // Proceed with normal restore
         await this.secondaryAuth.restoreConnection()
     }
 
