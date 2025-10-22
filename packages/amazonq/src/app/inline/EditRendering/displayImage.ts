@@ -3,17 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, setContext } from 'aws-core-vscode/shared'
+import { getContext, getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
-import { diffLines } from 'diff'
+import { applyPatch, diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
+import { EditSuggestionState } from '../editSuggestionState'
+import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
+
+const autoRejectEditCursorDistance = 25
+const autoDiscardEditCursorDistance = 10
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -21,7 +25,7 @@ export class EditDecorationManager {
     private currentImageDecoration: vscode.DecorationOptions | undefined
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
-    private rejectHandler: (() => void) | undefined
+    private rejectHandler: ((isDiscard: boolean) => void) | undefined
 
     constructor() {
         this.registerCommandHandlers()
@@ -128,14 +132,16 @@ export class EditDecorationManager {
         svgImage: vscode.Uri,
         startLine: number,
         onAccept: () => Promise<void>,
-        onReject: () => Promise<void>,
+        onReject: (isDiscard: boolean) => Promise<void>,
         originalCode: string,
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
     ): Promise<void> {
-        await this.clearDecorations(editor)
-
-        await setContext('aws.amazonq.editSuggestionActive' as any, true)
+        // Clear old decorations but don't reset state (state is already set in displaySvgDecoration)
+        editor.setDecorations(this.imageDecorationType, [])
+        editor.setDecorations(this.removedCodeDecorationType, [])
+        this.currentImageDecoration = undefined
+        this.currentRemovedCodeDecorations = []
 
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -166,6 +172,7 @@ export class EditDecorationManager {
         this.acceptHandler = undefined
         this.rejectHandler = undefined
         await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
     }
 
     /**
@@ -180,9 +187,9 @@ export class EditDecorationManager {
         })
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', (isDiscard: boolean = false) => {
             if (this.rejectHandler) {
-                this.rejectHandler()
+                this.rejectHandler(isDiscard)
             }
         })
     }
@@ -271,6 +278,28 @@ function getEndOfEditPosition(originalCode: string, newCode: string): vscode.Pos
 }
 
 /**
+ * Helper function to create discard telemetry params
+ */
+function createDiscardTelemetryParams(
+    session: CodeWhispererSession,
+    item: InlineCompletionItemWithReferences
+): LogInlineCompletionSessionResultsParams {
+    return {
+        sessionId: session.sessionId,
+        completionSessionResult: {
+            [item.itemId]: {
+                seen: false,
+                accepted: false,
+                discarded: true,
+            },
+        },
+        totalSessionDisplayTime: Date.now() - session.requestStartTime,
+        firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+        isInlineEdit: true,
+    }
+}
+
+/**
  * Helper function to display SVG decorations
  */
 export async function displaySvgDecoration(
@@ -284,8 +313,90 @@ export async function displaySvgDecoration(
     item: InlineCompletionItemWithReferences,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
+    function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
+        getLogger('nextEditPrediction').debug(
+            `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
+        )
+    }
+    // Check if edit is too far from current cursor position
+    const currentCursorLine = editor.selection.active.line
+    if (Math.abs(startLine - currentCursorLine) >= autoDiscardEditCursorDistance) {
+        // Emit DISCARD telemetry for edit suggestion that can't be shown because the suggestion is too far away
+        const params = createDiscardTelemetryParams(session, item)
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'cursor is too far away', item.insertText as string)
+        return
+    }
+
     const originalCode = editor.document.getText()
 
+    // Set edit state immediately to prevent race condition with completion requests
+    await setContext('aws.amazonq.editSuggestionActive' as any, true)
+    EditSuggestionState.setEditSuggestionActive(true)
+
+    // Check if a completion suggestion is currently active - if so, discard edit suggestion
+    if (inlineCompletionProvider && (await inlineCompletionProvider.isCompletionActive())) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
+        // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
+        const params = createDiscardTelemetryParams(session, item)
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'Conflicting active inline completion', item.insertText as string)
+        return
+    }
+
+    const isPatchValid = applyPatch(editor.document.getText(), item.insertText as string)
+    if (!isPatchValid) {
+        // Clean up state since we're not showing the edit
+        await setContext('aws.amazonq.editSuggestionActive' as any, false)
+        EditSuggestionState.setEditSuggestionActive(false)
+
+        const params = createDiscardTelemetryParams(session, item)
+        // TODO: this session is closed on flare side hence discarded is not emitted in flare
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'Invalid patch', item.insertText as string)
+        return
+    }
+    const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
+        if (e.contentChanges.length <= 0) {
+            return
+        }
+        if (e.document !== editor.document) {
+            return
+        }
+        if (vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        if (getContext('aws.amazonq.editSuggestionActive') === false) {
+            return
+        }
+
+        const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
+        if (!isPatchValid) {
+            logSuggestionFailure('REJECT', 'Invalid patch due to document change', item.insertText as string)
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
+    const cursorChangeListener = vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (!EditSuggestionState.isEditSuggestionActive()) {
+            return
+        }
+        if (e.textEditor !== editor) {
+            return
+        }
+        const currentPosition = e.selections[0].active
+        const distance = Math.abs(currentPosition.line - startLine)
+        if (distance > autoRejectEditCursorDistance) {
+            logSuggestionFailure(
+                'REJECT',
+                `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
+                item.insertText as string
+            )
+            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+        }
+    })
     await decorationManager.displayEditSuggestion(
         editor,
         svgImage,
@@ -306,10 +417,9 @@ export async function displaySvgDecoration(
             const endPosition = getEndOfEditPosition(originalCode, newCode)
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
-            // Move cursor to end of the actual changed content
-            editor.selection = new vscode.Selection(endPosition, endPosition)
-
             await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
+            cursorChangeListener.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
@@ -325,33 +435,35 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
-            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
-            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-            //     await inlineCompletionProvider.provideInlineCompletionItems(
-            //         editor.document,
-            //         endPosition,
-            //         {
-            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-            //             selectedCompletionInfo: undefined,
-            //         },
-            //         new vscode.CancellationTokenSource().token,
-            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-            //     )
-            // }
         },
-        async () => {
+        async (isDiscard: boolean) => {
             // Handle reject
-            getLogger().info('Edit suggestion rejected')
+            if (isDiscard) {
+                getLogger().info('Edit suggestion discarded')
+            } else {
+                getLogger().info('Edit suggestion rejected')
+            }
             await decorationManager.clearDecorations(editor)
+            documentChangeListener.dispose()
+            cursorChangeListener.dispose()
+            const suggestionState = isDiscard
+                ? {
+                      seen: false,
+                      accepted: false,
+                      discarded: true,
+                  }
+                : {
+                      seen: true,
+                      accepted: false,
+                      discarded: false,
+                  }
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
+                    [item.itemId]: suggestionState,
                 },
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)

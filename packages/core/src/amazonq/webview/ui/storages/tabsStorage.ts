@@ -4,7 +4,7 @@
  */
 
 export type TabStatus = 'free' | 'busy' | 'dead'
-const TabTypes = ['cwc', 'gumby', 'review', 'agentWalkthrough', 'welcome', 'unknown'] as const
+const TabTypes = ['cwc', 'gumby', 'review', 'welcome', 'unknown'] as const
 export type TabType = (typeof TabTypes)[number]
 export function isTabType(value: string): value is TabType {
     return (TabTypes as readonly string[]).includes(value)

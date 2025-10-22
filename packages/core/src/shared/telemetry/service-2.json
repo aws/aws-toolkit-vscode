@@ -205,7 +205,8 @@
         "AWSProduct",
         "AWSProductVersion",
         "ClientID",
-        "MetricData"
+        "MetricData",
+        "CredentialStartUrl"
       ],
       "members":{
         "AWSProduct":{"shape":"AWSProduct"},
@@ -217,7 +218,8 @@
         "ComputeEnv": {"shape":"ComputeEnv"},
         "ParentProduct":{"shape":"Value"},
         "ParentProductVersion":{"shape":"Value"},
-        "MetricData":{"shape":"MetricData"}
+        "MetricData":{"shape":"MetricData"},
+        "CredentialStartUrl": {"shape":"Value"}
       }
     },
     "Sentiment":{

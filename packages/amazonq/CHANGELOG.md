@@ -1,3 +1,69 @@
+## 1.100.0 2025-10-16
+
+- Miscellaneous non-user-facing changes
+
+## 1.99.0 2025-10-10
+
+- Miscellaneous non-user-facing changes
+
+## 1.98.0 2025-10-02
+
+- Miscellaneous non-user-facing changes
+
+## 1.97.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 1.96.0 2025-09-25
+
+- **Bug Fix** Amazon Q support web/container environments running Ubuntu/Linux, even when the host machine is Amazon Linux 2.
+
+## 1.95.0 2025-09-19
+
+- **Bug Fix** Amazon Q automatically refreshes expired IAM Credentials in Sagemaker instances
+
+## 1.94.0 2025-09-11
+
+- Miscellaneous non-user-facing changes
+
+## 1.93.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 1.92.0 2025-08-28
+
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+- **Feature** Enabling dynamic model fetching capabilities in Amazon Q chat
+- **Feature** Amazon Q: Support for configuring and utilizing remote MCP servers.
+
+## 1.91.0 2025-08-22
+
+- **Bug Fix** Enable inline completion in Jupyter Notebook
+- **Feature** Amazon Q supports admin control for MCP servers to restrict MCP server usage
+
+## 1.90.0 2025-08-15
+
+- Miscellaneous non-user-facing changes
+
+## 1.89.0 2025-08-13
+
+- Miscellaneous non-user-facing changes
+
+## 1.88.0 2025-08-06
+
+- **Feature** Amazon Q Chat provides error explanations and fixes when hovering or right-clicking on error indicators and messages
+- **Feature** /transform: Show transformation history in Transformation Hub and allow users to resume jobs
+
+## 1.87.0 2025-07-31
+
+- Miscellaneous non-user-facing changes
+
+## 1.86.0 2025-07-30
+
+- **Bug Fix** Let Enter invoke auto completion more consistently
+- **Bug Fix** Faster and more responsive inline completion UX
+- **Bug Fix** Use documentChangeEvent as auto trigger condition
+
 ## 1.85.0 2025-07-19
 
 - Miscellaneous non-user-facing changes

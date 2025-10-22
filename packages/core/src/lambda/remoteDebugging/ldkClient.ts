@@ -4,7 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { IoTSecureTunneling, Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import {
+    CloseTunnelCommand,
+    IoTSecureTunnelingClient,
+    ListTunnelsCommand,
+    OpenTunnelCommand,
+    RotateTunnelAccessTokenCommand,
+} from '@aws-sdk/client-iotsecuretunneling'
 import { getClientId } from '../../shared/telemetry/util'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { LocalProxy } from './localProxy'
@@ -26,7 +33,7 @@ export function isTunnelInfo(data: TunnelInfo): data is TunnelInfo {
     )
 }
 
-interface TunnelInfo {
+export interface TunnelInfo {
     tunnelID: string
     sourceToken: string
     destinationToken: string
@@ -34,9 +41,9 @@ interface TunnelInfo {
 
 async function callUpdateFunctionConfiguration(
     lambda: DefaultLambdaClient,
-    config: Lambda.FunctionConfiguration,
+    config: FunctionConfiguration,
     waitForUpdate: boolean
-): Promise<Lambda.FunctionConfiguration> {
+): Promise<FunctionConfiguration> {
     // Update function configuration back to original values
     return await lambda.updateFunctionConfiguration(
         {
@@ -61,7 +68,7 @@ export class LdkClient {
     private localProxy: LocalProxy | undefined
     private static instanceCreating = false
     private lambdaClientCache: Map<string, DefaultLambdaClient> = new Map()
-    private iotSTClientCache: Map<string, IoTSecureTunneling> = new Map()
+    private iotSTClientCache: Map<string, IoTSecureTunnelingClient> = new Map()
 
     constructor() {}
 
@@ -97,9 +104,9 @@ export class LdkClient {
         return this.lambdaClientCache.get(region)!
     }
 
-    private async getIoTSTClient(region: string): Promise<IoTSecureTunneling> {
+    private getIoTSTClient(region: string): IoTSecureTunnelingClient {
         if (!this.iotSTClientCache.has(region)) {
-            this.iotSTClientCache.set(region, await getIoTSTClientWithAgent(region))
+            this.iotSTClientCache.set(region, getIoTSTClientWithAgent(region))
         }
         return this.iotSTClientCache.get(region)!
     }
@@ -124,13 +131,13 @@ export class LdkClient {
             const vscodeUuid = getClientId(globals.globalState)
 
             // Create IoTSecureTunneling client
-            const iotSecureTunneling = await this.getIoTSTClient(region)
+            const iotSecureTunneling = this.getIoTSTClient(region)
 
             // Define tunnel identifier
             const tunnelIdentifier = `RemoteDebugging+${vscodeUuid}`
             const timeoutInMinutes = 720
             // List existing tunnels
-            const listTunnelsResponse = await iotSecureTunneling.listTunnels({}).promise()
+            const listTunnelsResponse = await iotSecureTunneling.send(new ListTunnelsCommand({}))
 
             // Find tunnel with our identifier
             const existingTunnel = listTunnelsResponse.tunnelSummaries?.find(
@@ -150,20 +157,20 @@ export class LdkClient {
                     return rotateResponse
                 } else {
                     // Close tunnel if less than 15 minutes remaining
-                    await iotSecureTunneling
-                        .closeTunnel({
+                    await iotSecureTunneling.send(
+                        new CloseTunnelCommand({
                             tunnelId: existingTunnel.tunnelId,
                             delete: false,
                         })
-                        .promise()
+                    )
 
                     getLogger().info(`Closed tunnel ${existingTunnel.tunnelId} with less than 15 minutes remaining`)
                 }
             }
 
             // Create new tunnel
-            const openTunnelResponse = await iotSecureTunneling
-                .openTunnel({
+            const openTunnelResponse = await iotSecureTunneling.send(
+                new OpenTunnelCommand({
                     description: tunnelIdentifier,
                     timeoutConfig: {
                         maxLifetimeTimeoutMinutes: timeoutInMinutes, // 12 hours
@@ -172,7 +179,7 @@ export class LdkClient {
                         services: ['WSS'],
                     },
                 })
-                .promise()
+            )
 
             getLogger().info(`Created new tunnel with ID: ${openTunnelResponse.tunnelId}`)
 
@@ -189,13 +196,13 @@ export class LdkClient {
     // Refresh tunnel tokens
     async refreshTunnelTokens(tunnelId: string, region: string): Promise<TunnelInfo | undefined> {
         try {
-            const iotSecureTunneling = await this.getIoTSTClient(region)
-            const rotateResponse = await iotSecureTunneling
-                .rotateTunnelAccessToken({
+            const iotSecureTunneling = this.getIoTSTClient(region)
+            const rotateResponse = await iotSecureTunneling.send(
+                new RotateTunnelAccessTokenCommand({
                     tunnelId: tunnelId,
                     clientMode: 'ALL',
                 })
-                .promise()
+            )
 
             return {
                 tunnelID: tunnelId,
@@ -207,7 +214,7 @@ export class LdkClient {
         }
     }
 
-    async getFunctionDetail(functionArn: string): Promise<Lambda.FunctionConfiguration | undefined> {
+    async getFunctionDetail(functionArn: string): Promise<FunctionConfiguration | undefined> {
         try {
             const region = getRegionFromArn(functionArn)
             if (!region) {
@@ -220,7 +227,7 @@ export class LdkClient {
                 return undefined
             }
             const client = this.getLambdaClient(region)
-            const configuration = (await client.getFunction(functionArn)).Configuration as Lambda.FunctionConfiguration
+            const configuration = (await client.getFunction(functionArn)).Configuration as FunctionConfiguration
             // get function detail
             // return function detail
             return configuration
@@ -237,7 +244,7 @@ export class LdkClient {
     // 3: adding two param to lambda environment variable
     // {AWS_LAMBDA_EXEC_WRAPPER:/opt/bin/ldk_wrapper, AWS_LDK_DESTINATION_TOKEN: destinationToken }
     async createDebugDeployment(
-        config: Lambda.FunctionConfiguration,
+        config: FunctionConfiguration,
         destinationToken: string,
         lambdaTimeout: number,
         shouldPublishVersion: boolean,
@@ -302,6 +309,10 @@ export class LdkClient {
                 updatedEnv.ORIGINAL_AWS_LAMBDA_EXEC_WRAPPER = currentEnv['AWS_LAMBDA_EXEC_WRAPPER']
             }
 
+            if (getLogger().logLevelEnabled('debug')) {
+                updatedEnv.RUST_LOG = 'debug'
+            }
+
             // Create Lambda client using AWS SDK
             const lambda = this.getLambdaClient(region)
 
@@ -311,7 +322,7 @@ export class LdkClient {
             }
 
             // Create a temporary config for the update
-            const updateConfig: Lambda.FunctionConfiguration = {
+            const updateConfig: FunctionConfiguration = {
                 FunctionName: config.FunctionName,
                 Timeout: lambdaTimeout ?? 900, // 15 minutes
                 Layers: updatedLayers.map((arn) => ({ Arn: arn })),
@@ -355,7 +366,7 @@ export class LdkClient {
     // we are 1: reverting timeout to it's original snapshot
     // 2: reverting layer status according to it's original snapshot
     // 3: reverting environment back to it's original snapshot
-    async removeDebugDeployment(config: Lambda.FunctionConfiguration, check: boolean = true): Promise<boolean> {
+    async removeDebugDeployment(config: FunctionConfiguration, check: boolean = true): Promise<boolean> {
         try {
             if (!config.FunctionArn || !config.FunctionName) {
                 throw new Error('Function ARN is missing')

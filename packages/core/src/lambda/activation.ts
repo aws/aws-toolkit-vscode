@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import { deleteLambda } from './commands/deleteLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
@@ -18,7 +18,7 @@ import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from '.
 import { Commands } from '../shared/vscode/commands2'
 import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
-import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
+import { generateLambdaNodeFromResource, ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 import { tailLogGroup } from '../awsService/cloudWatchLogs/commands/tailLogGroup'
@@ -159,7 +159,13 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register('aws.invokeLambda', async (node: LambdaFunctionNode | TreeNode) => {
             let source: string = 'AwsExplorerRemoteInvoke'
             if (isTreeNode(node)) {
-                node = getSourceNode<LambdaFunctionNode>(node)
+                // if appbuilder, create lambda node on the fly
+                let tmpNode: LambdaFunctionNode | undefined = getSourceNode<LambdaFunctionNode>(node)
+                if (!tmpNode) {
+                    // failed to extract, meaning this is appbuilder function node
+                    tmpNode = await generateLambdaNodeFromResource(node.resource as any)
+                }
+                node = tmpNode
                 source = 'AppBuilderRemoteInvoke'
             }
             await invokeRemoteLambda(context, {
@@ -229,12 +235,16 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
 
         Commands.register('aws.appBuilder.tailLogs', async (node: LambdaFunctionNode | TreeNode) => {
-            let functionConfiguration: Lambda.FunctionConfiguration
+            let functionConfiguration: FunctionConfiguration
             try {
-                const sourceNode = getSourceNode<LambdaFunctionNode>(node)
-                functionConfiguration = sourceNode.configuration
+                let tmpNode: LambdaFunctionNode | undefined = getSourceNode<LambdaFunctionNode>(node)
+                if (!tmpNode && isTreeNode(node)) {
+                    // failed to extract, meaning this is appbuilder function node
+                    tmpNode = await generateLambdaNodeFromResource(node.resource as any)
+                }
+                functionConfiguration = tmpNode.configuration
                 const logGroupInfo = {
-                    regionName: sourceNode.regionCode,
+                    regionName: tmpNode.regionCode,
                     groupName: getFunctionLogGroupName(functionConfiguration),
                 }
 

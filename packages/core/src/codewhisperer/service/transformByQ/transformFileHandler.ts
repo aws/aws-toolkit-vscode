@@ -6,17 +6,20 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as os from 'os'
+import * as YAML from 'js-yaml'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { BuildSystem, DB, FolderInfo, transformByQState } from '../../models/model'
-import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
+import { IManifestFile } from './humanInTheLoopManager'
+import { ExportResultArchiveStructure } from '../../../shared/utilities/download'
+import { isFileNotFoundError } from '../../../shared/errors'
 
 export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -117,15 +120,64 @@ export async function parseBuildFile() {
     return undefined
 }
 
-export async function validateCustomVersionsFile(fileContents: string) {
-    const requiredKeys = ['dependencyManagement:', 'identifier:', 'targetVersion:']
+// return an error message, or undefined if YAML file is valid
+export function validateCustomVersionsFile(fileContents: string) {
+    const requiredKeys = ['dependencyManagement', 'identifier', 'targetVersion', 'originType']
     for (const key of requiredKeys) {
         if (!fileContents.includes(key)) {
             getLogger().info(`CodeTransformation: .YAML file is missing required key: ${key}`)
-            return false
+            return `Missing required key: \`${key}\``
         }
     }
-    return true
+    try {
+        const yaml = YAML.load(fileContents) as any
+        const dependencies = yaml?.dependencyManagement?.dependencies || []
+        const plugins = yaml?.dependencyManagement?.plugins || []
+        const dependenciesAndPlugins = dependencies.concat(plugins)
+
+        if (dependenciesAndPlugins.length === 0) {
+            getLogger().info('CodeTransformation: .YAML file must contain at least dependencies or plugins')
+            return `YAML file must contain at least \`dependencies\` or \`plugins\` under \`dependencyManagement\``
+        }
+        for (const item of dependencies) {
+            const errorMessage = validateItem(item, false)
+            if (errorMessage) {
+                return errorMessage
+            }
+        }
+        for (const item of plugins) {
+            const errorMessage = validateItem(item, true)
+            if (errorMessage) {
+                return errorMessage
+            }
+        }
+        return undefined
+    } catch (err: any) {
+        getLogger().info(`CodeTransformation: Invalid YAML format: ${err.message}`)
+        return `Invalid YAML format: ${err.message}`
+    }
+}
+
+// return an error message, or undefined if item is valid
+function validateItem(item: any, isPlugin: boolean) {
+    const validOriginTypes = ['FIRST_PARTY', 'THIRD_PARTY']
+    if (!isPlugin && !/^[^\s:]+:[^\s:]+$/.test(item.identifier)) {
+        getLogger().info(`CodeTransformation: Invalid identifier format: ${item.identifier}`)
+        return `Invalid dependency identifier format: \`${item.identifier}\`. Must be in format \`groupId:artifactId\` without spaces`
+    }
+    if (isPlugin && !item.identifier?.trim()) {
+        getLogger().info('CodeTransformation: Missing identifier in plugin')
+        return 'Missing `identifier` in plugin'
+    }
+    if (!validOriginTypes.includes(item.originType)) {
+        getLogger().info(`CodeTransformation: Invalid originType: ${item.originType}`)
+        return `Invalid originType: \`${item.originType}\`. Must be either \`FIRST_PARTY\` or \`THIRD_PARTY\``
+    }
+    if (!item.targetVersion?.trim()) {
+        getLogger().info(`CodeTransformation: Missing targetVersion in: ${item.identifier}`)
+        return `Missing \`targetVersion\` in: \`${item.identifier}\``
+    }
+    return undefined
 }
 
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
@@ -346,4 +398,41 @@ export async function parseVersionsListFromPomFile(xmlString: string): Promise<I
     const status = report.status?.[0]
 
     return { latestVersion, majorVersions, minorVersions, status }
+}
+
+/**
+ * Saves a copy of the diff patch, summary, and build logs (if any) locally
+ *
+ * @param pathToArchiveDir path to the archive directory where the artifacts are unzipped
+ * @param pathToDestinationDir destination directory (will create directories if path doesn't exist already)
+ */
+export async function copyArtifacts(pathToArchiveDir: string, pathToDestinationDir: string) {
+    // create destination path if doesn't exist already
+    // mkdir() will not raise an error if path exists
+    await fs.mkdir(pathToDestinationDir)
+
+    const diffPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToDiffPatch)
+    const summaryPath = path.join(pathToArchiveDir, ExportResultArchiveStructure.PathToSummary)
+
+    try {
+        await fs.copy(diffPath, path.join(pathToDestinationDir, 'diff.patch'))
+        // make summary directory if needed
+        await fs.mkdir(path.join(pathToDestinationDir, 'summary'))
+        await fs.copy(summaryPath, path.join(pathToDestinationDir, 'summary', 'summary.md'))
+    } catch (error) {
+        getLogger().error('Code Transformation: Error saving local copy of artifacts: %s', (error as Error).message)
+    }
+
+    const buildLogsPath = path.join(path.dirname(summaryPath), 'buildCommandOutput.log')
+    try {
+        await fs.copy(buildLogsPath, path.join(pathToDestinationDir, 'summary', 'buildCommandOutput.log'))
+    } catch (error) {
+        // build logs won't exist for SQL conversions (not an error)
+        if (!isFileNotFoundError(error)) {
+            getLogger().error(
+                'Code Transformation: Error saving local copy of build logs: %s',
+                (error as Error).message
+            )
+        }
+    }
 }

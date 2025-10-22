@@ -49,7 +49,6 @@ import {
     regenerateFix,
     ignoreAllIssues,
     focusIssue,
-    showExploreAgentsView,
     showCodeIssueGroupingQuickPick,
     selectRegionProfileCommand,
 } from './commands/basicCommands'
@@ -148,21 +147,6 @@ export async function activate(context: ExtContext): Promise<void> {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessage,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async (resp) => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                void openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
-                }
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
-                if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessageShareData,
                             CodeWhispererConstants.settingsLearnMore
                         )
                         .then(async (resp) => {
@@ -301,7 +285,6 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
         showReferenceLog.register(),
         showLogs.register(),
-        showExploreAgentsView.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance

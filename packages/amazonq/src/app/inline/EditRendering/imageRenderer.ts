@@ -10,7 +10,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
-import { AmazonQInlineCompletionItemProvider } from '../completion'
+import type { AmazonQInlineCompletionItemProvider } from '../completion'
 
 export async function showEdits(
     item: InlineCompletionItemWithReferences,
@@ -26,8 +26,10 @@ export async function showEdits(
         const svgGenerationService = new SvgGenerationService()
         // Generate your SVG image with the file contents
         const currentFile = editor.document.uri.fsPath
-        const { svgImage, startLine, newCode, origionalCodeHighlightRange } =
-            await svgGenerationService.generateDiffSvg(currentFile, item.insertText as string)
+        const { svgImage, startLine, newCode, originalCodeHighlightRange } = await svgGenerationService.generateDiffSvg(
+            currentFile,
+            item.insertText as string
+        )
 
         // TODO: To investigate why it fails and patch [generateDiffSvg]
         if (newCode.length === 0) {
@@ -42,7 +44,7 @@ export async function showEdits(
                 svgImage,
                 startLine,
                 newCode,
-                origionalCodeHighlightRange,
+                originalCodeHighlightRange,
                 session,
                 languageClient,
                 item,

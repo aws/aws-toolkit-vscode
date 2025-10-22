@@ -2,20 +2,31 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
+    editCompletionRequestType,
+    LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
-import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
+import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import {
+    AuthUtil,
+    CodeWhispererConstants,
+    CodeWhispererStatusBarManager,
+    vsCodeState,
+} from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { globals, getLogger } from 'aws-core-vscode/shared'
+import { getLogger } from 'aws-core-vscode/shared'
+import { DocumentEventListener } from './documentEventListener'
+import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
+import { asyncCallWithTimeout } from '../../util/timeoutUtil'
+import { extractFileContextInNotebooks } from './notebookUtil'
+import { EditSuggestionState } from './editSuggestionState'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -24,6 +35,8 @@ export interface GetAllRecommendationsOptions {
 }
 
 export class RecommendationService {
+    private logger = getLogger()
+
     constructor(
         private readonly sessionManager: SessionManager,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
@@ -35,6 +48,23 @@ export class RecommendationService {
         this.cursorUpdateRecorder = recorder
     }
 
+    async getRecommendationsWithTimeout(
+        languageClient: LanguageClient,
+        request: InlineCompletionWithReferencesParams,
+        token: CancellationToken
+    ) {
+        const resultPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            inlineCompletionWithReferencesRequestType.method,
+            request,
+            token
+        )
+        return await asyncCallWithTimeout<InlineCompletionListWithReferences>(
+            resultPromise,
+            `${inlineCompletionWithReferencesRequestType.method} time out`,
+            CodeWhispererConstants.promiseTimeoutLimit * 1000
+        )
+    }
+
     async getAllRecommendations(
         languageClient: LanguageClient,
         document: TextDocument,
@@ -42,9 +72,11 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken,
         isAutoTrigger: boolean,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
-        documentChangeEvent?: vscode.TextDocumentChangeEvent
+        documentEventListener: DocumentEventListener,
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
     ) {
+        const documentChangeEvent = documentEventListener?.getLastDocumentChangeEvent(document.uri.fsPath)?.event
+
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
         const documentChangeParams = documentChangeEvent
@@ -56,7 +88,7 @@ export class RecommendationService {
                   contentChanges: documentChangeEvent.contentChanges.map((x) => x as TextDocumentContentChangeEvent),
               }
             : undefined
-
+        const openTabs = await getOpenFilesInWindow()
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -64,11 +96,15 @@ export class RecommendationService {
             position,
             context,
             documentChangeParams: documentChangeParams,
+            openTabFilepaths: openTabs,
         }
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
         }
-        const requestStartTime = globals.clock.Date.now()
+        if (document.uri.scheme === 'vscode-notebook-cell') {
+            request.fileContextOverride = extractFileContextInNotebooks(document, position)
+        }
+        const requestStartTime = Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -83,7 +119,7 @@ export class RecommendationService {
             }
 
             // Handle first request
-            getLogger().info('Sending inline completion request: %O', {
+            this.logger.info('Sending inline completion request: %O', {
                 method: inlineCompletionWithReferencesRequestType.method,
                 request: {
                     textDocument: request.textDocument,
@@ -92,13 +128,57 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
-            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
+            const t0 = Date.now()
+
+            // Best effort estimate of deletion
+            const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
+
+            const ps: Promise<InlineCompletionListWithReferences>[] = []
+            /**
+             * IsTriggerByDeletion is to prevent user deletion invoking Completions.
+             * PartialResultToken is not a hack for now since only Edits suggestion use partialResultToken across different calls of [getAllRecommendations],
+             * Completions use PartialResultToken with single 1 call of [getAllRecommendations].
+             * Edits leverage partialResultToken to achieve EditStreak such that clients can pull all continuous suggestions generated by the model within 1 EOS block.
+             */
+            if (!isTriggerByDeletion && !request.partialResultToken && !EditSuggestionState.isEditSuggestionActive()) {
+                const completionPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                    inlineCompletionWithReferencesRequestType.method,
+                    request,
+                    token
+                )
+                ps.push(completionPromise)
+            }
+
+            /**
+             * Though Edit request is sent on keystrokes everytime, the language server will execute the request in a debounced manner so that it won't be immediately executed.
+             */
+            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+                editCompletionRequestType.method,
                 request,
                 token
             )
-            getLogger().info('Received inline completion response: %O', {
+            ps.push(editPromise)
+
+            /**
+             * First come first serve, ideally we should simply return the first response returned. However there are some caviar here because either
+             * (1) promise might be returned early without going through service
+             * (2) some users are not enabled with edits suggestion, therefore service will return empty result without passing through the model
+             * With the scenarios listed above or others, it's possible that 1 promise will ALWAYS win the race and users will NOT get any suggestion back.
+             * This is the hack to return first "NON-EMPTY" response
+             */
+            let result = await Promise.race(ps)
+            if (ps.length > 1 && result.items.length === 0) {
+                for (const p of ps) {
+                    const r = await p
+                    if (r.items.length > 0) {
+                        result = r
+                    }
+                }
+            }
+
+            this.logger.info('Received inline completion response from LSP: %O', {
                 sessionId: result.sessionId,
+                latency: Date.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -110,6 +190,44 @@ export class RecommendationService {
                 })),
             })
 
+            if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
+                if (isTriggerByDeletion) {
+                    this.logger.info(`Suggestions were discarded; reason: triggerByDeletion`)
+                    return []
+                }
+                // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
+                if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
+                    const session = this.sessionManager.getActiveSession()
+                    if (!session) {
+                        this.logger.error(`Suggestions were discarded; reason: undefined conflicting session`)
+                        return []
+                    }
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: Object.fromEntries(
+                            result.items.map((item) => [
+                                item.itemId,
+                                {
+                                    seen: false,
+                                    accepted: false,
+                                    discarded: true,
+                                },
+                            ])
+                        ),
+                    }
+                    languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+                    this.sessionManager.clear()
+                    this.logger.info(
+                        'Suggetions were discarded; reason: active edit suggestion displayed longer than 1 second'
+                    )
+                    return []
+                } else if (EditSuggestionState.isEditSuggestionActive()) {
+                    // discard the current edit suggestion if its display time is less than 1 sec
+                    await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
+                    this.logger.info('Discarding active edit suggestion displaying less than 1 second')
+                }
+            }
+
             TelemetryHelper.instance.setSdkApiCallEndTime()
             TelemetryHelper.instance.setSessionId(result.sessionId)
             if (result.items.length > 0 && result.items[0].itemId !== undefined) {
@@ -117,7 +235,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
+            const firstCompletionDisplayLatency = Date.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
@@ -128,12 +246,12 @@ export class RecommendationService {
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 
+            // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
+                let logstr = `found non null next token; `
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    getLogger().info(
-                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                    )
+                    logstr += 'Suggestion type is COMPLETIONS. Start pulling more items'
                     this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
                         languageClient.warn(`Error when getting suggestions: ${error}`)
                     })
@@ -141,12 +259,14 @@ export class RecommendationService {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
                     // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                    getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                    logstr += 'Suggestion type is EDITS. Skip pulling more items'
                     this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
+
+                this.logger.info(logstr)
             }
         } catch (error: any) {
-            getLogger().error('Error getting recommendations: %O', error)
+            this.logger.error('Error getting recommendations: %O', error)
             // bearer token expired
             if (error.data && error.data.awsErrorCode === 'E_AMAZON_Q_CONNECTION_EXPIRED') {
                 // ref: https://github.com/aws/aws-toolkit-vscode/blob/amazonq/v1.74.0/packages/core/src/codewhisperer/service/inlineCompletionService.ts#L104
@@ -178,11 +298,12 @@ export class RecommendationService {
         while (nextToken) {
             const request = { ...initialRequest, partialResultToken: nextToken }
 
-            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
-                request,
-                token
-            )
+            const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
+            // when pagination is in progress, but user has already accepted or rejected an inline completion
+            // then stop pagination
+            if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
+                break
+            }
             this.sessionManager.updateSessionSuggestions(result.items)
             nextToken = result.partialResultToken
         }

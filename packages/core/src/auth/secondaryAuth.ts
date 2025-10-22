@@ -18,7 +18,7 @@ import { withTelemetryContext } from '../shared/telemetry/util'
 import { isNetworkError } from '../shared/errors'
 import globals from '../shared/extensionGlobals'
 
-export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
+export type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId' | 'smus'
 
 let currentConn: Auth['activeConnection']
 const auths = new Map<string, SecondaryAuth>()

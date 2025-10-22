@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import { TestEventsOperation } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { InvocationResponse } from '@aws-sdk/client-lambda'
 
 // Tests to check that the internal integration between the functions operates correctly
 
@@ -26,15 +26,15 @@ describe('RemoteInvokeWebview', function () {
         mockData = {
             FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
         }
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, mockData)
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
     })
     describe('Invoke Remote Lambda Function with Payload', () => {
         it('should invoke with a simple payload', async function () {
             const input = '{"key": "value"}'
-            const mockResponse: Lambda.InvocationResponse = {
+            const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: '{"result": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
             await remoteInvokeWebview.invokeLambda(input)
             sinon.assert.calledOnce(client.invoke)

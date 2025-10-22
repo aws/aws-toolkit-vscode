@@ -23,10 +23,13 @@ import { clearDocument, closeSession, tailLogGroup } from './commands/tailLogGro
 import { LiveTailDocumentProvider } from './document/liveTailDocumentProvider'
 import { LiveTailSessionRegistry } from './registry/liveTailSessionRegistry'
 import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
-import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { isTreeNode, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { LiveTailCodeLensProvider } from './document/liveTailCodeLensProvider'
+import { generateLambdaNodeFromResource } from '../appBuilder/explorer/nodes/resourceNode'
+import { LambdaFunctionNode } from '../../lambda/explorer/lambdaFunctionNode'
+import { getSourceNode } from '../../shared/utilities/treeNodeUtils'
 
 export const liveTailRegistry = LiveTailSessionRegistry.instance
 export const liveTailCodeLensProvider = new LiveTailCodeLensProvider(liveTailRegistry)
@@ -132,14 +135,18 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
             await clearDocument(document)
         }),
 
-        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode) => {
+        Commands.register('aws.appBuilder.searchLogs', async (node: DeployedResourceNode | TreeNode) => {
             try {
-                const logGroupInfo = isTreeNode(node)
-                    ? {
-                          regionName: node.resource.regionCode,
-                          groupName: getFunctionLogGroupName(node.resource.explorerNode.configuration),
-                      }
-                    : undefined
+                let tmpNode: LambdaFunctionNode | undefined = getSourceNode<LambdaFunctionNode>(node)
+                if (!tmpNode && isTreeNode(node)) {
+                    // failed to extract, meaning this is appbuilder function node
+                    tmpNode = await generateLambdaNodeFromResource(node.resource as any)
+                }
+                const logGroupInfo = {
+                    regionName: tmpNode.regionCode,
+                    groupName: getFunctionLogGroupName(tmpNode.configuration),
+                }
+
                 const source: string = logGroupInfo ? 'AppBuilderSearchLogs' : 'CommandPaletteSearchLogs'
                 await searchLogGroup(registry, source, logGroupInfo)
             } catch (err) {

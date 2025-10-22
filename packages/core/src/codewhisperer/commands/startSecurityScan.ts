@@ -108,6 +108,9 @@ export async function startSecurityScan(
     zipUtil: ZipUtil = new ZipUtil(),
     scanUuid?: string
 ) {
+    if (scope === CodeAnalysisScope.AGENTIC) {
+        throw new CreateCodeScanFailedError('Cannot use Agentic scope')
+    }
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     const logger = getLoggerForScope(scope)
     /**
@@ -479,7 +482,10 @@ export function errorPromptHelper(
         })
     }
     if (error.code !== 'NoSourceFilesError') {
-        void vscode.window.showWarningMessage(getErrorMessage(error), ok)
+        // Skip showing warning messages during tests to avoid interfering with test dialogs
+        if (process.env.NODE_ENV !== 'test') {
+            void vscode.window.showWarningMessage(getErrorMessage(error), ok)
+        }
     }
 }
 

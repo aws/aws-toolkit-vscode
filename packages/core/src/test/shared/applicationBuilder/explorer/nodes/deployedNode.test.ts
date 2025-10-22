@@ -26,6 +26,7 @@ import { Any } from '../../../../../shared/utilities/typeConstructors'
 import { IamConnection, ProfileMetadata } from '../../../../../auth/connection'
 import * as AuthUtils from '../../../../../auth/utils'
 import { assertLogsContain } from '../../../../../test/globalSetup.test'
+import { GetFunctionResponse } from '@aws-sdk/client-lambda'
 
 describe('DeployedResourceNode', () => {
     const expectedStackName = 'myStack'
@@ -137,6 +138,7 @@ describe('generateDeployedNode', () => {
             label: 'iam',
             getCredentials: sinon.stub(),
             state: 'valid',
+            endpointUrl: undefined,
         }
 
         const lambdaDeployedNodeInput = {
@@ -170,7 +172,7 @@ describe('generateDeployedNode', () => {
                     FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:my-project-lambda-function',
                     Runtime: 'python3.12',
                 },
-            } as AWS.Lambda.GetFunctionResponse
+            } as GetFunctionResponse
 
             mockDefaultLambdaClientInstance.getFunction.resolves(defaultLambdaClientGetFunctionResponse)
 
@@ -178,12 +180,12 @@ describe('generateDeployedNode', () => {
             const expectedFunctionName = 'my-project-lambda-function'
             const expectedFunctionExplorerNodeTooltip = `${expectedFunctionName}${os.EOL}${expectedFunctionArn}`
 
-            const deployedResourceNodes = await generateDeployedNode(
+            const deployedResourceNodes = (await generateDeployedNode(
                 lambdaDeployedNodeInput.deployedResource,
                 lambdaDeployedNodeInput.regionCode,
                 lambdaDeployedNodeInput.stackName,
                 lambdaDeployedNodeInput.resourceTreeEntity
-            )
+            )) as DeployedResourceNode[]
 
             const deployedResourceNodeExplorerNode: LambdaFunctionNode = validateBasicProperties(
                 deployedResourceNodes,
@@ -258,7 +260,7 @@ describe('generateDeployedNode', () => {
             const expectedS3BucketName = 'my-project-source-bucket-physical-id'
 
             const deployedResourceNodeExplorerNode: S3BucketNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedS3BucketArn,
                 'awsS3BucketNode',
                 expectedRegionCode,
@@ -333,7 +335,7 @@ describe('generateDeployedNode', () => {
             )
 
             const deployedResourceNodeExplorerNode: RestApiNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedApiGatewayArn,
                 'awsApiGatewayNode',
                 expectedRegionCode,

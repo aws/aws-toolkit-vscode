@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import os from 'os'
 import path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
@@ -20,6 +19,7 @@ import {
     TransformationType,
     TransformationCandidateProject,
     RegionProfile,
+    sessionJobHistory,
 } from '../models/model'
 import {
     createZipManifest,
@@ -78,6 +78,12 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
+import {
+    cleanupTempJobFiles,
+    createMetadataFile,
+    JobMetadata,
+    writeToHistoryFile,
+} from '../service/transformByQ/transformationHistoryHandler'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -474,6 +480,23 @@ export async function startTransformationJob(
                 codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
             })
         })
+
+        // create local history folder(s) and store metadata
+        const metadata: JobMetadata = {
+            jobId: jobId,
+            projectName: transformByQState.getProjectName(),
+            transformationType: transformByQState.getTransformationType() ?? TransformationType.LANGUAGE_UPGRADE,
+            sourceJDKVersion: transformByQState.getSourceJDKVersion() ?? JDKVersion.JDK8,
+            targetJDKVersion: transformByQState.getTargetJDKVersion() ?? JDKVersion.JDK17,
+            customDependencyVersionFilePath: transformByQState.getCustomDependencyVersionFilePath(),
+            customBuildCommand: transformByQState.getCustomBuildCommand(),
+            targetJavaHome: transformByQState.getTargetJavaHome() ?? '',
+            projectPath: transformByQState.getProjectPath(),
+            startTime: transformByQState.getStartTime(),
+        }
+
+        const jobHistoryPath = await createMetadataFile(transformByQState.getPayloadFilePath(), metadata)
+        transformByQState.setJobHistoryPath(jobHistoryPath)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message.toLowerCase()
@@ -724,46 +747,42 @@ export async function postTransformationJob() {
             })
     }
 
-    if (transformByQState.getPayloadFilePath()) {
-        // delete original upload ZIP at very end of transformation
-        fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
-    }
-    // delete temporary build logs file
-    const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    if (fs.existsSync(logFilePath)) {
-        fs.rmSync(logFilePath, { force: true })
-    }
+    await cleanupTempJobFiles(
+        transformByQState.getJobHistoryPath(),
+        transformByQState.getPolledJobStatus(),
+        transformByQState.getPayloadFilePath()
+    )
 
     // attempt download for user
     // TODO: refactor as explained here https://github.com/aws/aws-toolkit-vscode/pull/6519/files#r1946873107
     if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
         await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
     }
+
+    // store job details and diff path locally (history)
+    // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
+    if (!transformByQState.isCancelled()) {
+        const latest = sessionJobHistory[transformByQState.getJobId()]
+        await writeToHistoryFile(
+            latest.startTime,
+            latest.projectName,
+            latest.status,
+            latest.duration,
+            transformByQState.getJobId(),
+            transformByQState.getJobHistoryPath()
+        )
+    }
 }
 
 export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
-        await stopJob(transformByQState.getJobId())
         transformByQState.setToFailed()
         transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
-        const displayedErrorMessage =
-            transformByQState.getJobFailureErrorNotification() ?? CodeWhispererConstants.failedToCompleteJobNotification
         transformByQState.setJobFailureErrorChatMessage(
             transformByQState.getJobFailureErrorChatMessage() ?? CodeWhispererConstants.failedToCompleteJobChatMessage
         )
-        void vscode.window
-            .showErrorMessage(displayedErrorMessage, CodeWhispererConstants.amazonQFeedbackText)
-            .then((choice) => {
-                if (choice === CodeWhispererConstants.amazonQFeedbackText) {
-                    void submitFeedback(
-                        placeholder,
-                        CodeWhispererConstants.amazonQFeedbackKey,
-                        getFeedbackCommentData()
-                    )
-                }
-            })
     } else {
         transformByQState.setToCancelled()
         transformByQState.setPolledJobStatus('CANCELLED')

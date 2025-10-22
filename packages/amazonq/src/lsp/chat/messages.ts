@@ -69,6 +69,7 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import {
@@ -81,23 +82,9 @@ import {
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import {
-    amazonQDiffScheme,
-    AmazonQPromptSettings,
-    messages,
-    openUrl,
-    isTextEditor,
-    globals,
-    setContext,
-} from 'aws-core-vscode/shared'
-import {
-    DefaultAmazonQAppInitContext,
-    messageDispatcher,
-    EditorContentController,
-    ViewDiffMessage,
-    referenceLogText,
-} from 'aws-core-vscode/amazonq'
-import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { AmazonQPromptSettings, messages, openUrl, isTextEditor, globals, setContext } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
+import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
@@ -144,10 +131,13 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
     languageClient.onTelemetry((e) => {
         const telemetryName: string = e.name
-
-        if (telemetryName in telemetry) {
-            languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
-            telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
+        languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+        try {
+            // Flare is now the source of truth for metrics instead of depending on each IDE client and toolkit-common
+            const metric = (telemetry as any).getMetric(telemetryName)
+            metric?.emit(e.data)
+        } catch (error) {
+            languageClient.warn(`[VSCode Telemetry] Failed to emit ${telemetryName}: ${error}`)
         }
     })
 }
@@ -661,31 +651,53 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-        )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
-                },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+        // Handle both file:// URIs and raw file paths, ensuring proper Windows path handling
+        let currentFileUri: vscode.Uri
+
+        // Check if it's already a proper file:// URI
+        if (params.originalFileUri.startsWith('file://')) {
+            currentFileUri = vscode.Uri.parse(params.originalFileUri)
+        } else {
+            // Decode URL-encoded characters and treat as file path
+            const decodedPath = decodeURIComponent(params.originalFileUri)
+            currentFileUri = vscode.Uri.file(decodedPath)
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
+
+        const originalContent = params.originalFileContent ?? ''
+        const fileName = path.basename(currentFileUri.fsPath)
+
+        // Use custom scheme to avoid adding to recent files
+        const originalFileUri = vscode.Uri.parse(`amazonq-diff:${fileName}_original_${Date.now()}`)
+
+        // Register content provider for the custom scheme
+        const disposable = vscode.workspace.registerTextDocumentContentProvider('amazonq-diff', {
+            provideTextDocumentContent: () => originalContent,
+        })
+
+        try {
+            // Open diff view with custom scheme URI (left) vs current file (right)
+            await vscode.commands.executeCommand(
+                'vscode.diff',
+                originalFileUri,
+                currentFileUri,
+                `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current, Editable)`,
+                { preview: false }
+            )
+
+            // Clean up content provider when diff view is closed
+            const cleanupDisposable = vscode.window.onDidChangeVisibleTextEditors(() => {
+                const isDiffViewOpen = vscode.window.visibleTextEditors.some(
+                    (editor) => editor.document.uri.toString() === originalFileUri.toString()
+                )
+                if (!isDiffViewOpen) {
+                    disposable.dispose()
+                    cleanupDisposable.dispose()
+                }
+            })
+        } catch (error) {
+            disposable.dispose()
+            languageClient.error(`[VSCode Client] Failed to open diff view: ${error}`)
+        }
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
@@ -729,7 +741,11 @@ async function handlePartialResult<T extends ChatResult>(
     // This is to filter out the message containing findings from CodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
-            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+            !(
+                message.messageId !== undefined &&
+                (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                    message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+            )
     )
 
     if (decryptedMessage.body !== undefined) {
@@ -781,7 +797,11 @@ async function handleSecurityFindings(
     }
     for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
         const message = decryptedMessage.additionalMessages[i]
-        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+        if (
+            message.messageId !== undefined &&
+            (message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix) ||
+                message.messageId.endsWith(CodeWhispererConstants.displayFindingsSuffix))
+        ) {
             if (message.body !== undefined) {
                 try {
                     const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
@@ -800,7 +820,12 @@ async function handleSecurityFindings(
                             issue.visible = !isIssueTitleIgnored && !isSingleIssueIgnored
                         }
                     }
-                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    initSecurityScanRender(
+                        aggregatedCodeScanIssues,
+                        undefined,
+                        CodeAnalysisScope.AGENTIC,
+                        message.messageId.endsWith(CodeWhispererConstants.codeReviewFindingsSuffix)
+                    )
                     SecurityIssueTreeViewProvider.focus()
                 } catch (e) {
                     languageClient.info('Failed to parse findings')

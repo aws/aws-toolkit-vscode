@@ -1,3 +1,50 @@
+## 3.80.0 2025-10-16
+
+- **Bug Fix** The space is updated upon creation of a new app with the requested settings
+
+## 3.79.0 2025-10-10
+
+- Miscellaneous non-user-facing changes
+
+## 3.78.0 2025-10-02
+
+- **Feature** Refactor and optimize Lambda Remote Invoke UI with enhanced payload management
+- **Feature** Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug.
+
+## 3.77.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 3.76.0 2025-09-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.75.0 2025-09-19
+
+- Miscellaneous non-user-facing changes
+
+## 3.74.0 2025-09-10
+
+- **Feature** Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE
+- **Feature** AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile
+- **Feature** Lambda AppBuilder: Now you can install LocalStack VS Code extension from the AppBuilder walkthrough
+
+## 3.73.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 3.72.0 2025-08-22
+
+- Miscellaneous non-user-facing changes
+
+## 3.71.0 2025-08-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.70.0 2025-07-30
+
+- **Feature** Improved connection actions for SSO
+
 ## 3.69.0 2025-07-16
 
 - **Bug Fix** SageMaker: Enable per-region manual filtering of Spaces

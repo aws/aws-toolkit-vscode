@@ -10,7 +10,7 @@ import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
-import { persistLocalCredentials, persistSSMConnection } from './credentialMapping'
+import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
 import * as os from 'os'
 import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
@@ -21,13 +21,17 @@ import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 
 const logger = getLogger('sagemaker')
 
-export async function tryRemoteConnection(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
+export async function tryRemoteConnection(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext
+) {
     const spaceArn = (await node.getSpaceArn()) as string
-    const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc')
-
+    const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
+    const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
     try {
         await startVscodeRemote(
             remoteEnv.SessionProcess,
@@ -44,13 +48,16 @@ export async function tryRemoteConnection(node: SagemakerSpaceNode, ctx: vscode.
 }
 
 export async function prepareDevEnvConnection(
-    appArn: string,
+    spaceArn: string,
     ctx: vscode.ExtensionContext,
     connectionType: string,
+    isSMUS: boolean,
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode | undefined,
     session?: string,
     wsUrl?: string,
     token?: string,
-    domain?: string
+    domain?: string,
+    appType?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -66,13 +73,17 @@ export async function prepareDevEnvConnection(
     }
 
     const hostnamePrefix = connectionType
-    const hostname = `${hostnamePrefix}_${appArn.replace(/\//g, '__').replace(/:/g, '_._')}`
+    const hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
 
     // save space credential mapping
     if (connectionType === 'sm_lc') {
-        await persistLocalCredentials(appArn)
+        if (!isSMUS) {
+            await persistLocalCredentials(spaceArn)
+        } else {
+            await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
+        }
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(appArn, domain ?? '', session, wsUrl, token)
+        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType)
     }
 
     await startLocalServer(ctx)

@@ -65,9 +65,10 @@ dependencyManagement:
       targetVersion: "3.0.0"
       originType: "THIRD_PARTY"
   plugins:
-    - identifier: "com.example:plugin"
+    - identifier: "plugin.id"
       targetVersion: "1.2.0"
-      versionProperty: "plugin.version"  # Optional`
+      versionProperty: "plugin.version"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"`
 
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
@@ -502,6 +503,10 @@ dependencyManagement:
         await fs.mkdir(gitFolder)
         await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
 
+        const githubFolder = path.join(tempDir, '.github')
+        await fs.mkdir(githubFolder)
+        await fs.writeFile(path.join(githubFolder, 'config'), 'more sample content for the test file')
+
         const zippedFiles = getFilesRecursively(tempDir, false)
         assert.strictEqual(zippedFiles.length, 1)
     })
@@ -570,15 +575,45 @@ dependencyManagement:
         assert.strictEqual(expectedWarning, warningMessage)
     })
 
-    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, async function () {
-        const isValidFile = await validateCustomVersionsFile(validCustomVersionsFile)
-        assert.strictEqual(isValidFile, true)
+    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, function () {
+        const errorMessage = validateCustomVersionsFile(validCustomVersionsFile)
+        assert.strictEqual(errorMessage, undefined)
     })
 
-    it(`WHEN validateCustomVersionsFile on invalid .yaml file THEN fails validation`, async function () {
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing key THEN fails validation`, function () {
         const invalidFile = validCustomVersionsFile.replace('dependencyManagement', 'invalidKey')
-        const isValidFile = await validateCustomVersionsFile(invalidFile)
-        assert.strictEqual(isValidFile, false)
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, `Missing required key: \`dependencyManagement\``)
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with invalid dependency identifier format THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('com.example:library1', 'com.example-library1')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(
+            errorMessage,
+            `Invalid dependency identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
+        )
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing plugin identifier format THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('plugin.id', '')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, 'Missing `identifier` in plugin')
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with invalid originType THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('FIRST_PARTY', 'INVALID_TYPE')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(
+            errorMessage,
+            `Invalid originType: \`INVALID_TYPE\`. Must be either \`FIRST_PARTY\` or \`THIRD_PARTY\``
+        )
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing targetVersion THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('targetVersion: "2.1.0"', '')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, `Missing \`targetVersion\` in: \`com.example:library1\``)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {

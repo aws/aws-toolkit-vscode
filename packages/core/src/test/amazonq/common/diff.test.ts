@@ -13,7 +13,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
 import { FileSystem } from '../../../shared/fs/fs'
-import { featureDevScheme } from '../../../amazonqFeatureDev'
 import {
     createAmazonQUri,
     getFileDiffUris,
@@ -28,6 +27,7 @@ describe('diff', () => {
     const filePath = path.join('/', 'foo', 'fi')
     const rightPath = path.join('foo', 'fee')
     const tabId = '0'
+    const featureDevScheme = 'aws-featureDev'
 
     let sandbox: sinon.SinonSandbox
     let executeCommandSpy: sinon.SinonSpy
