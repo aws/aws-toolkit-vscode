@@ -481,12 +481,14 @@ export function isFederatedConnection(connection?: DataZoneConnection): boolean 
 export async function createDZClientBaseOnDomainMode(
     smusAuthProvider: SmusAuthenticationProvider
 ): Promise<DataZoneClient> {
-    const credentialsProvider = getContext('aws.smus.isExpressMode')
-        ? await smusAuthProvider.getCredentialsProviderForIamProfile(
-              (smusAuthProvider.activeConnection as SmusIamConnection).profileName
-          )
-        : await smusAuthProvider.getDerCredentialsProvider()
-
+    let credentialsProvider
+    if (getContext('aws.smus.isExpressMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
+        credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
+            (smusAuthProvider.activeConnection as SmusIamConnection).profileName
+        )
+    } else {
+        credentialsProvider = await smusAuthProvider.getDerCredentialsProvider()
+    }
     return DataZoneClient.createWithCredentials(
         smusAuthProvider.getDomainRegion(),
         smusAuthProvider.getDomainId(),
