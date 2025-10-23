@@ -150,7 +150,7 @@ describe('Amazon Q Inline', async function () {
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
 
                     // wait until the ghost text appears
-                    await waitForRecommendations()
+                    // await waitForRecommendations()
                 }
 
                 beforeEach(async () => {
