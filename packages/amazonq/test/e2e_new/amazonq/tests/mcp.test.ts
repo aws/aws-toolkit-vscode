@@ -84,7 +84,7 @@ describe('Amazon Q MCP Functionality', function () {
         await validateToolPermissions(webviewView)
     })
 
-    it('Test MCP Tool permission default', async () => {
+    it('Test MCP Tool Dropdowns', async () => {
         await clickToolsButton(webviewView)
         const mcpItems = await findMCPListItems(webviewView)
         await (await findItemByText(mcpItems, 'aws-documentation')).click()
@@ -121,6 +121,7 @@ describe('Amazon Q MCP Functionality', function () {
         await clickToolsButton(webviewView)
         const list = await findMCPListItems(webviewView)
         await (await findItemByText(list, 'remote-fetch')).click()
+        await sleep(100)
         await clickMCPEditButton(webviewView)
         await updateMCPTimeout(webviewView, 60)
         await saveMCPServerConfiguration(webviewView)

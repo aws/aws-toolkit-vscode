@@ -5,9 +5,16 @@
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
-import { waitForChatResponse, writeToChat } from '../utils/generalUtils'
+import { sleep, waitForChatResponse, writeToChat } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
-import { addNewChatTab, viewHistoryTab, waitForHistoryList, closeHistoryTab } from '../helpers/chatHelper'
+import {
+    addNewChatTab,
+    viewHistoryTab,
+    waitForHistoryList,
+    verifyMaxTabsTooltip,
+    selectHistoryItemAndVerify,
+    verifyAmazonQResponse,
+} from '../helpers/chatHelper'
 
 describe('Amazon Q Chat Basic Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -25,17 +32,22 @@ describe('Amazon Q Chat Basic Functionality', function () {
     it('Allows User to Chat with AmazonQ', async () => {
         await writeToChat('Hello, Amazon Q!', webviewView)
         await waitForChatResponse(webviewView)
+        await sleep(4000)
+        await verifyAmazonQResponse(webviewView)
     })
+
     it('Allows User to Add Multiple Chat Tabs', async () => {
         console.log('Starting Multiple Chat Test')
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 9; i++) {
             await addNewChatTab(webviewView)
         }
+        await verifyMaxTabsTooltip(webviewView)
     })
+
     it('Allows User to View Chat History', async () => {
         console.log('Starting View History Test')
         await viewHistoryTab(webviewView)
         await waitForHistoryList(webviewView)
-        await closeHistoryTab(webviewView)
+        await selectHistoryItemAndVerify(webviewView)
     })
 })

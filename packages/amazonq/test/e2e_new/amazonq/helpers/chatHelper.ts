@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By } from 'vscode-extension-tester'
-import { clickButton, waitForElement } from '../utils/generalUtils'
+import { clickButton, waitForElement, sleep, findMynahCardsBody, findItemByText } from '../utils/generalUtils'
 /**
  * Clicks the tools to get to the MCP server overlay
  * @param webviewView The WebviewView instance
@@ -50,4 +50,46 @@ export async function closeHistoryTab(webviewView: WebviewView): Promise<void> {
     } catch (e) {
         throw new Error(`Failed to close history tab: ${e}`)
     }
+}
+
+export async function verifyMaxTabsTooltip(webviewView: WebviewView): Promise<void> {
+    // Get + icon element first
+    const addChatButton = await webviewView.findWebElement(By.css('.mynah-ui-icon-plus'))
+
+    // Move cursor away from + icon by hovering on body element
+    const body = await webviewView.findWebElement(By.css('body'))
+    await webviewView.getDriver().actions().move({ origin: body, x: 50, y: 50 }).perform()
+    await sleep(500)
+
+    // Hover back on + icon to trigger tooltip
+    await webviewView.getDriver().actions().move({ origin: addChatButton }).perform()
+    await sleep(500)
+
+    try {
+        const tooltip = await webviewView.findWebElement(By.css('.mynah-nav-tabs-max-reached-overlay'))
+        const tooltipText = await tooltip.getText()
+        const expectedText = 'You can only open ten conversation tabs at a time.'
+
+        if (!tooltipText.includes(expectedText)) {
+            throw new Error(`Expected tooltip text not found. Expected: ${expectedText}, Got: ${tooltipText}`)
+        }
+    } catch (e) {
+        console.log('✗ Tooltip element not found')
+        throw e
+    }
+}
+
+export async function verifyAmazonQResponse(webviewView: WebviewView): Promise<void> {
+    const list = await findMynahCardsBody(webviewView)
+    await sleep(500)
+    await findItemByText(list, "Hello! I'm Amazon Q")
+}
+
+export async function selectHistoryItemAndVerify(webviewView: WebviewView): Promise<void> {
+    const list = await webviewView.findWebElements(By.css('.mynah-detailed-list-item'))
+    await sleep(5000)
+    const helloItem = await findItemByText(list, 'Hello, Amazon Q!')
+    await helloItem.click()
+    await sleep(500)
+    await verifyAmazonQResponse(webviewView)
 }

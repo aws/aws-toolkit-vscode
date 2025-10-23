@@ -27,7 +27,6 @@ export async function hoverButtonAndValidateTooltip(
         for (const element of allElements) {
             const text = await element.getText()
             if (text.includes(expectedTooltip)) {
-                console.log('Success: Found expected tooltip text')
                 return
             }
         }

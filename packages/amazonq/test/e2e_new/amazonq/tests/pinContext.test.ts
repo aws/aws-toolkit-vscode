@@ -32,10 +32,12 @@ describe('Amazon Q Pin Context Functionality', function () {
         await clickPinContextMenuItem(webviewView, 'Files')
         await clickSubMenuItem(webviewView, 'Active file')
     })
+
     it('Allows User to Pin Workspace Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, '@workspace')
     })
+
     it('Allows User to Add Prompt Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Prompts')

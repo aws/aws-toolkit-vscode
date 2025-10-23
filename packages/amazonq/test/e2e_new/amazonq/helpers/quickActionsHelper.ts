@@ -4,7 +4,13 @@
  */
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
-import { waitForElement, writeToChat } from '../utils/generalUtils'
+import {
+    waitForElement,
+    writeToChat,
+    waitForChatResponse,
+    findMynahCardsBody,
+    findItemByText,
+} from '../utils/generalUtils'
 import { sleep } from '../utils/generalUtils'
 
 /**
@@ -75,4 +81,34 @@ export async function clickQuickActionsCommand(webview: WebviewView, commandName
     } catch (e) {
         throw new Error(`Failed to click quick actions command '${commandName}': ${e}`)
     }
+}
+/**
+ * Clicks on the AWS Responsible AI Policy link
+ * @param webview The WebviewView instance
+ */
+export async function clickAWSResponsibleAIPolicy(webview: WebviewView): Promise<void> {
+    try {
+        const policyLink = await webview.findWebElement(
+            By.css(`a.mynah-ui-clickable-item:contains("AWS Responsible AI Policy")`)
+        )
+        await policyLink.click()
+    } catch (error) {
+        throw new Error(`Failed to click AWS Responsible AI Policy: ${error}`)
+    }
+}
+
+/**
+ * Tests the /compact command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testCompactCommand(webviewView: WebviewView): Promise<void> {
+    await writeToChat('Hello, Amazon Q!', webviewView)
+    await waitForChatResponse(webviewView)
+    await sleep(4000)
+    await clickQuickActionsCommand(webviewView, '/compact')
+    await waitForChatResponse(webviewView)
+    await sleep(5000)
+    const list = await findMynahCardsBody(webviewView)
+    await sleep(5000)
+    await findItemByText(list, 'Conversation history has been compacted successfully!')
 }

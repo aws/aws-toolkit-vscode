@@ -6,7 +6,12 @@ import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
-import { clickQuickActionsCommand, getQuickActionsCommands } from '../helpers/quickActionsHelper'
+import {
+    clickAWSResponsibleAIPolicy,
+    clickQuickActionsCommand,
+    getQuickActionsCommands,
+    testCompactCommand,
+} from '../helpers/quickActionsHelper'
 import { clearChatInput } from '../utils/generalUtils'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
@@ -30,13 +35,21 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     it('/help Test', async () => {
         await clickQuickActionsCommand(webviewView, '/help')
     })
+
     it('/clear Test', async () => {
         await clickQuickActionsCommand(webviewView, '/clear')
     })
+
     it('/compact Test', async () => {
-        await clickQuickActionsCommand(webviewView, '/compact')
+        await testCompactCommand(webviewView)
     })
+
     it('/transform Test', async () => {
         await clickQuickActionsCommand(webviewView, '/transform')
+    })
+
+    it('Click AWS Responsible AI Policy', async () => {
+        await clickQuickActionsCommand(webviewView, '/transform')
+        await clickAWSResponsibleAIPolicy(webviewView)
     })
 })
