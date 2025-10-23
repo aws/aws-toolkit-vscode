@@ -8,6 +8,10 @@ import { ToolkitError } from '../../shared/errors'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { getResourceMetadata } from './utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
+import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
+import { CredentialType } from '../../shared/telemetry/telemetry'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
+import { DataZoneDomainPreferencesClient } from './client/datazoneDomainPreferencesClient'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -74,6 +78,18 @@ export const SmusErrorCodes = {
     CredentialProviderInitFailed: 'CredentialProviderInitFailed',
     /** Error code for when IAM profile type is invalid */
     InvalidProfileType: 'InvalidProfileType',
+    /** Error code for when IAM credential validation fails */
+    IamValidationFailed: 'IamValidationFailed',
+    /** Error code for when sign out operation fails */
+    SignOutFailed: 'SignOutFailed',
+    /** Error code for when domain URL format is invalid */
+    InvalidDomainUrl: 'InvalidDomainUrl',
+    /** Error code for when connection to SMUS fails */
+    FailedToConnect: 'FailedToConnect',
+    /** Error code for when connection is not found */
+    ConnectionNotFound: 'ConnectionNotFound',
+    /** Error code for when connection type is invalid for the operation */
+    InvalidConnectionType: 'InvalidConnectionType',
 } as const
 
 /**
@@ -381,22 +397,71 @@ export class SmusUtils {
     }
 
     /**
-     * Converts an STS assumed-role ARN to its corresponding IAM role ARN.
-     * Example:
+     * Checks if we're in SMUS Express mode
+     * @param domainId The DataZone domain ID to check
+     * @param region The AWS region where the domain is located
+     * @param credentialsProvider The credentials provider to use for API calls
+     * @returns Promise resolving to true if the domain is in Express mode
+     */
+    public static async isInSmusExpressMode(
+        domainId: string,
+        region: string,
+        credentialsProvider: CredentialsProvider
+    ): Promise<boolean> {
+        try {
+            this.logger.info(`SMUS: Checking if domain ${domainId} is Express mode`)
+
+            // Get DataZoneDomainPreferencesClient instance
+            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(credentialsProvider, region)
+
+            // Check if the specific domain is an Express domain
+            const isExpress = await domainPreferencesClient.isExpressDomain(domainId)
+
+            this.logger.debug(`SMUS: Domain ${domainId} is ${isExpress ? ' Express mode' : 'not Express mode'}`)
+            return isExpress
+        } catch (error) {
+            this.logger.error('SMUS: Failed to check Express mode: %s', error as Error)
+            return false
+        }
+    }
+
+    /**
+     * Converts an STS assumed-role ARN to its corresponding IAM role ARN, or returns IAM user ARN as-is.
+     * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
+     * Examples:
      *   Input:  arn:aws:sts::123456789012:assumed-role/MyRole/MySession
      *   Output: arn:aws:iam::123456789012:role/MyRole
+     *
+     *   Input:  arn:aws:iam::123456789012:user/MyUser
+     *   Output: arn:aws:iam::123456789012:user/MyUser
+     *
+     *   Input:  arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws-cn:iam::123456789012:role/MyRole
      */
     public static convertAssumedRoleArnToIamRoleArn(stsArn: string): string {
-        const arnRegex = /^arn:aws:sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
+        // Check if it's already an IAM user ARN - return as-is
+        // Supports all AWS partitions: aws, aws-cn, aws-us-gov, etc.
+        const iamUserRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):user\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamUserRegex.test(stsArn)) {
+            return stsArn
+        }
 
+        // Check if it's already an IAM role ARN - return as-is
+        const iamRoleRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):role\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamRoleRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Try to convert STS assumed-role ARN to IAM role ARN
+        const arnRegex = /^arn:(aws[a-z-]*):sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
         const match = stsArn.match(arnRegex)
         if (!match) {
             throw new Error(`Invalid STS ARN format: ${stsArn}`)
         }
 
-        const [, accountId, roleName] = match
+        const [, partition, accountId, roleName] = match
 
-        return `arn:aws:iam::${accountId}:role/${roleName}`
+        return `arn:${partition}:iam::${accountId}:role/${roleName}`
     }
 }
 
@@ -446,5 +511,31 @@ export async function extractAccountIdFromResourceMetadata(): Promise<string> {
     } catch (err) {
         logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
         throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
+    }
+}
+
+/**
+ * Creates a CredentialsProvider from an AWS credentials function
+ * @param credentialsFunction Function that returns AWS credentials
+ * @param credentialTypeId Identifier for the credential type
+ * @param hashCode Unique hash code for caching
+ * @param region Domain region
+ * @returns Complete CredentialsProvider object
+ */
+export function convertToToolkitCredentialProvider(
+    credentialsFunction: () => Promise<AwsCredentialIdentity>,
+    credentialTypeId: string,
+    hashCode: string,
+    region: string
+): CredentialsProvider {
+    return {
+        getCredentials: credentialsFunction,
+        getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId }),
+        getProviderType: () => 'temp' as CredentialsProviderType,
+        getTelemetryType: () => 'other' as CredentialType,
+        getDefaultRegion: () => region,
+        getHashCode: () => hashCode,
+        canAutoConnect: () => Promise.resolve(false),
+        isAvailable: () => Promise.resolve(true),
     }
 }

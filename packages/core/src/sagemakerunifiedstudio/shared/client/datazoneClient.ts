@@ -18,11 +18,10 @@ import {
     GetEnvironmentCommandOutput,
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
-import type { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { getContext } from '../../../shared/vscode/setContext'
+import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { SmusUtils } from '../smusUtils'
-import { SmusIamConnection } from '../../auth/model'
 
 /**
  * Represents a DataZone domain
@@ -98,6 +97,10 @@ export interface DataZoneConnection {
         awsAccountId?: string
         iamConnectionId?: string
     }
+    /**
+     * Glue connection name
+     */
+    glueConnectionName?: string
 }
 
 // Constants for DataZone environment configuration
@@ -105,14 +108,64 @@ const toolingBlueprintName = 'Tooling'
 const sageMakerProviderName = 'Amazon SageMaker'
 
 /**
- * Client for interacting with AWS DataZone API with DER credential support
+ * Client for interacting with AWS DataZone API
  *
- * This client integrates with SmusAuthenticationProvider to provide authenticated
- * DataZone operations using Domain Execution Role (DER) credentials.
- *
- * One instance per connection/domainId is maintained to avoid duplication.
+ * This client can be used with different credential providers
  */
 export class DataZoneClient {
+    private datazoneClient: DataZone | undefined
+    private static instances = new Map<string, DataZoneClient>()
+    private readonly logger = getLogger()
+
+    private constructor(
+        private readonly region: string,
+        private readonly domainId: string,
+        private readonly credentialsProvider?: CredentialsProvider
+    ) {}
+
+    /**
+     * Creates a new DataZoneClient instance with specific credentials
+     * @param region AWS region
+     * @param domainId DataZone domain ID
+     * @param credentialsProvider Credentials provider
+     * @returns DataZoneClient instance with credentials
+     */
+    public static createWithCredentials(
+        region: string,
+        domainId: string,
+        credentialsProvider: CredentialsProvider
+    ): DataZoneClient {
+        const instanceKey = credentialsProvider.getHashCode()
+
+        if (DataZoneClient.instances.has(instanceKey)) {
+            const existingInstance = DataZoneClient.instances.get(instanceKey)!
+            getLogger().debug(`DataZoneClient: Using existing instance, instance key is ${instanceKey}`)
+            return existingInstance
+        }
+
+        // Create new instance
+        getLogger().debug(`DataZoneClient: Creating new instance with instance key ${instanceKey}`)
+        const instance = new DataZoneClient(region, domainId, credentialsProvider)
+        DataZoneClient.instances.set(instanceKey, instance)
+
+        return instance
+    }
+
+    /**
+     * Disposes all cached DataZoneClient instances
+     */
+    public static dispose(): void {
+        const logger = getLogger()
+        getLogger().debug('DataZoneClient: Disposing all cached instances')
+
+        for (const [key, instance] of DataZoneClient.instances.entries()) {
+            instance.datazoneClient = undefined
+            logger.debug(`DataZoneClient: Disposed instance for: ${key}`)
+        }
+
+        DataZoneClient.instances.clear()
+    }
+
     /**
      * Parse a Redshift connection info object from JDBC URL
      * @param jdbcURL Example JDBC URL: jdbc:redshift://redshift-serverless-workgroup-3zzw0fjmccdixz.123456789012.us-east-1.redshift-serverless.amazonaws.com:5439/dev
@@ -154,73 +207,6 @@ export class DataZoneClient {
             port: Number(redshiftConnectionInfo?.port),
             dbname: redshiftConnectionInfo?.dbName,
         }
-    }
-
-    private datazoneClient: DataZone | undefined
-    private static instances = new Map<string, DataZoneClient>()
-    private readonly logger = getLogger()
-
-    private constructor(
-        private readonly authProvider: SmusAuthenticationProvider,
-        private readonly domainId: string,
-        private readonly region: string
-    ) {}
-
-    /**
-     * Gets an authenticated DataZoneClient instance using DER credentials
-     * One instance per connection/domainId is maintained
-     * @param authProvider The SMUS authentication provider
-     * @returns Promise resolving to authenticated DataZoneClient instance
-     */
-    public static async getInstance(authProvider: SmusAuthenticationProvider): Promise<DataZoneClient> {
-        const logger = getLogger()
-
-        if (!authProvider.isConnected()) {
-            throw new Error('SMUS authentication provider is not connected')
-        }
-
-        const region = authProvider.getDomainRegion()
-        const instanceKey = `${authProvider.getDomainId()}:${region}`
-
-        logger.debug(`DataZoneClient: Getting instance for domain: ${instanceKey}`)
-
-        // Check if we already have an instance for this domain/region
-        if (DataZoneClient.instances.has(instanceKey)) {
-            const existingInstance = DataZoneClient.instances.get(instanceKey)!
-            logger.debug('DataZoneClient: Using existing instance')
-            return existingInstance
-        }
-
-        // Create new instance
-        logger.debug('DataZoneClient: Creating new instance')
-        const instance = new DataZoneClient(authProvider, authProvider.getDomainId(), region)
-        DataZoneClient.instances.set(instanceKey, instance)
-
-        // Set up cleanup when connection changes
-        const disposable = authProvider.onDidChangeActiveConnection(() => {
-            logger.debug(`DataZoneClient: Connection changed, cleaning up instance for: ${instanceKey}`)
-            DataZoneClient.instances.delete(instanceKey)
-            instance.datazoneClient = undefined
-            disposable.dispose()
-        })
-
-        logger.info(`DataZoneClient: Created instance for domain ${authProvider.getDomainId()}`)
-        return instance
-    }
-
-    /**
-     * Disposes all instances and cleans up resources
-     */
-    public static dispose(): void {
-        const logger = getLogger()
-        logger.debug('DataZoneClient: Disposing all instances')
-
-        for (const [key, instance] of DataZoneClient.instances.entries()) {
-            instance.datazoneClient = undefined
-            logger.debug(`DataZoneClient: Disposed instance for: ${key}`)
-        }
-
-        DataZoneClient.instances.clear()
     }
 
     /**
@@ -298,35 +284,25 @@ export class DataZoneClient {
     private async getDataZoneClient(): Promise<DataZone> {
         if (!this.datazoneClient) {
             try {
-                const credentialsProvider = async () => {
-                    let credentials
-                    if (getContext('aws.smus.isExpressMode')) {
-                        this.logger.info(
-                            'DataZoneClient: Creating authenticated DataZone client with Iam profile credentials'
-                        )
-                        const activeConnection = this.authProvider.activeConnection!
-                        credentials = await (
-                            await this.authProvider.getCredentialsProviderForIamProfile(
-                                (activeConnection as SmusIamConnection).profileName
-                            )
-                        ).getCredentials()
-                    } else {
-                        this.logger.debug('DataZoneClient: Creating authenticated DataZone client with DER credentials')
-                        credentials = await (await this.authProvider.getDerCredentialsProvider()).getCredentials()
+                if (this.credentialsProvider) {
+                    const awsCredentialProvider = async () => {
+                        const credentials = await this.credentialsProvider!.getCredentials()
+                        return {
+                            accessKeyId: credentials.accessKeyId,
+                            secretAccessKey: credentials.secretAccessKey,
+                            sessionToken: credentials.sessionToken,
+                            expiration: credentials.expiration,
+                        }
                     }
-                    return {
-                        accessKeyId: credentials.accessKeyId,
-                        secretAccessKey: credentials.secretAccessKey,
-                        sessionToken: credentials.sessionToken,
-                        expiration: credentials.expiration,
-                    }
+                    this.datazoneClient = new DataZone({
+                        region: this.region,
+                        credentials: awsCredentialProvider,
+                    })
+                } else {
+                    throw new Error('No credentials provider provided')
                 }
 
-                this.datazoneClient = new DataZone({
-                    region: this.region,
-                    credentials: credentialsProvider,
-                })
-                this.logger.debug('DataZoneClient: Successfully created authenticated DataZone client')
+                this.logger.info('DataZoneClient: Successfully created authenticated DataZone client')
             } catch (err) {
                 this.logger.error('DataZoneClient: Failed to create DataZone client: %s', err as Error)
                 throw err
@@ -561,6 +537,22 @@ export class DataZoneClient {
     }
 
     /**
+     * Parses glueConnectionName from physical endpoints
+     * @param physicalEndpoints Array of physical endpoints
+     * @returns glueConnectionName or undefined
+     */
+    // eslint-disable-next-line id-length
+    private parseGlueConnectionNameFromPhysicalEndpoints(
+        physicalEndpoints?: PhysicalEndpoint[]
+    ): DataZoneConnection['glueConnectionName'] {
+        if (physicalEndpoints && physicalEndpoints.length > 0) {
+            const physicalEndpoint = physicalEndpoints[0]
+            return physicalEndpoint.glueConnectionName
+        }
+        return undefined
+    }
+
+    /**
      * Gets a specific connection by ID
      * @param params Parameters for getting a connection
      * @returns The connection details
@@ -590,6 +582,8 @@ export class DataZoneClient {
             // Parse location from physical endpoints
             const location = this.parseLocationFromPhysicalEndpoints(response.physicalEndpoints)
 
+            const glueConnectionName = this.parseGlueConnectionNameFromPhysicalEndpoints(response.physicalEndpoints)
+
             // Return as DataZoneConnection, currently only required fields are added
             // Can always include new fields in DataZoneConnection when needed
             const connection: DataZoneConnection = {
@@ -602,6 +596,7 @@ export class DataZoneClient {
                 props: response.props || {},
                 connectionCredentials: response.connectionCredentials,
                 location,
+                glueConnectionName,
             }
 
             return connection
@@ -663,6 +658,10 @@ export class DataZoneClient {
                         // Parse location from physical endpoints
                         const location = this.parseLocationFromPhysicalEndpoints(connection.physicalEndpoints)
 
+                        const glueConnectionName = this.parseGlueConnectionNameFromPhysicalEndpoints(
+                            connection.physicalEndpoints
+                        )
+
                         return {
                             connectionId: connection.connectionId || '',
                             name: connection.name || '',
@@ -673,6 +672,7 @@ export class DataZoneClient {
                             projectId,
                             props: connection.props || {},
                             location,
+                            glueConnectionName,
                         }
                     })
                     allConnections = [...allConnections, ...connections]
@@ -757,7 +757,6 @@ export class DataZoneClient {
 
     /**
      * Gets environment details
-     * @param domainId The DataZone domain identifier
      * @param environmentId The environment identifier
      * @returns Promise resolving to environment details
      */
@@ -789,48 +788,36 @@ export class DataZoneClient {
      * @returns The tooling environment details
      */
     public async getToolingEnvironment(projectId: string): Promise<GetEnvironmentCommandOutput> {
-        const logger = getLogger()
-
-        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
-        if (!datazoneClient) {
-            throw new Error('DataZone client is not initialized')
-        }
-
-        const toolingEnvId = await datazoneClient
-            .getToolingEnvironmentId(datazoneClient.getDomainId(), projectId)
-            .catch((err) => {
-                logger.error('Failed to get tooling environment ID for project %s', projectId)
-                throw new Error(`Failed to get tooling environment ID: ${err.message}`)
-            })
-
+        const toolingEnvId = await this.getToolingEnvironmentId(this.getDomainId(), projectId)
         if (!toolingEnvId) {
             throw new Error('No default environment found for project')
         }
-
-        return await datazoneClient.getEnvironmentDetails(toolingEnvId)
+        return await this.getEnvironmentDetails(toolingEnvId)
     }
 
     public async getUserId(): Promise<string | undefined> {
-        const derCredProvider = await this.authProvider.getDerCredentialsProvider()
-        this.logger.debug(`Calling STS GetCallerIdentity using DER credentials of ${this.getDomainId()}`)
-        const stsClient = new DefaultStsClient(this.getRegion(), await derCredProvider.getCredentials())
+        if (!this.credentialsProvider) {
+            throw new Error('Credentials provider is required for getUserId')
+        }
+        const callerCredentials = await this.credentialsProvider.getCredentials()
+        const stsClient = new DefaultStsClient(this.getRegion(), callerCredentials)
         const callerIdentity = await stsClient.getCallerIdentity()
         this.logger.debug(`Retrieved caller identity, UserId: ${callerIdentity.UserId}`)
         return callerIdentity.UserId
     }
 
     public async getUserProfileId(): Promise<string | undefined> {
-        const activeConnection = this.authProvider.activeConnection!
-        const smusConnections = (this.authProvider.secondaryAuth.state.get('smus.connections') as any) || {}
-        const profileName = smusConnections[activeConnection.id].profileName
-        const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(profileName)
+        if (!this.credentialsProvider) {
+            throw new Error('Credentials provider is required for getUserId')
+        }
+        const callerCredentials = await this.credentialsProvider.getCredentials()
 
-        const stsClient = new DefaultStsClient(this.getRegion(), await credentialsProvider.getCredentials())
+        const stsClient = new DefaultStsClient(this.getRegion(), callerCredentials)
         const callerIdentity = await stsClient.getCallerIdentity()
         this.logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
 
         const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-        this.logger.debug(`Retrieved user identity, Iam role Arn: ${callerIdentity.Arn}`)
+        this.logger.debug(`Retrieved user identity, IAM ARN: ${roleArn}`)
 
         const datazoneClient = await this.getDataZoneClient()
         const userProfile = await datazoneClient.getUserProfile({

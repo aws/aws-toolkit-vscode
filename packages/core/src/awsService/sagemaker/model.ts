@@ -71,7 +71,8 @@ export async function prepareDevEnvConnection(
     session?: string,
     wsUrl?: string,
     token?: string,
-    domain?: string
+    domain?: string,
+    appType?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
@@ -102,7 +103,7 @@ export async function prepareDevEnvConnection(
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token)
+        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType)
     }
 
     await startLocalServer(ctx)

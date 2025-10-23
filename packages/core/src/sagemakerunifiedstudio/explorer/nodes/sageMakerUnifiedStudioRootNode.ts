@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
-import { DataZoneClient, DataZoneProject } from '../../shared/client/datazoneClient'
+import { DataZoneProject } from '../../shared/client/datazoneClient'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
@@ -20,6 +20,7 @@ import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSele
 import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
 import { isSmusSsoConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
+import { createDZClientBaseOnDomainMode } from './utils'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -136,13 +137,13 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         }
 
         if (getContext('aws.smus.isExpressMode')) {
-            // In Express mode, immediately show data and compute nodes (project node's children)
+            // In Express mode, immediately show auth node, and project node's children (data and compute nodes)
             if (!this.projectNode.project) {
                 await selectSMUSProject(this.projectNode)
             }
 
             const projectChildren = await this.projectNode.getChildren()
-            return projectChildren
+            return [this.authInfoNode, ...projectChildren]
         }
 
         // When authenticated, show auth info and projects
@@ -459,7 +460,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 return
             }
 
-            const client = await DataZoneClient.getInstance(authProvider)
+            const client = await createDZClientBaseOnDomainMode(authProvider)
             logger.debug('DataZone client instance obtained successfully')
 
             const allProjects = await client.fetchAllProjects()

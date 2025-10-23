@@ -18,7 +18,8 @@ import { SmusAuthenticationProvider } from '../auth/providers/smusAuthentication
 import { getLogger } from '../../shared/logger/logger'
 import { getContext } from '../../shared/vscode/setContext'
 import { ConnectionCredentialsProvider } from '../auth/providers/connectionCredentialsProvider'
-import { DataZoneConnection, DataZoneClient } from './client/datazoneClient'
+import { DataZoneConnection } from './client/datazoneClient'
+import { createDZClientBaseOnDomainMode } from '../explorer/nodes/utils'
 
 /**
  * Records space telemetry
@@ -43,7 +44,7 @@ export async function recordSpaceTelemetry(
             projectAccountId = await authProvider.getProjectAccountId(projectId)
 
             // Get project region from tooling environment
-            const dzClient = await DataZoneClient.getInstance(authProvider)
+            const dzClient = await createDZClientBaseOnDomainMode(authProvider)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
             projectRegion = toolingEnv.awsAccountRegion
         }

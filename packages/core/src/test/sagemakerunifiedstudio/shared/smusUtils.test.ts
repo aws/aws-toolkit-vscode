@@ -463,6 +463,71 @@ describe('SmusUtils', () => {
         })
     })
 
+    describe('isInSmusExpressMode', () => {
+        let mockCredentialsProvider: any
+        let mockDomainPreferencesClient: any
+        let getInstanceStub: sinon.SinonStub
+
+        const testDomainId = 'dzd_test123'
+        const testRegion = 'us-east-1'
+
+        beforeEach(() => {
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+                getCredentialsId: sinon.stub().returns({ credentialSource: 'test', credentialTypeId: 'test' }),
+                getProviderType: sinon.stub().returns('test'),
+                getTelemetryType: sinon.stub().returns('other'),
+                getDefaultRegion: sinon.stub().returns(testRegion),
+                getHashCode: sinon.stub().returns('test-hash'),
+                canAutoConnect: sinon.stub().resolves(false),
+                isAvailable: sinon.stub().resolves(true),
+            }
+
+            // Mock DataZoneDomainPreferencesClient
+            mockDomainPreferencesClient = {
+                isExpressDomain: sinon.stub(),
+            }
+
+            // Stub the getInstance method
+            getInstanceStub = sinon
+                .stub(
+                    require('../../../sagemakerunifiedstudio/shared/client/datazoneDomainPreferencesClient')
+                        .DataZoneDomainPreferencesClient,
+                    'getInstance'
+                )
+                .returns(mockDomainPreferencesClient)
+        })
+
+        afterEach(() => {
+            sinon.restore()
+        })
+
+        it('should return true when domain is in Express mode', async () => {
+            mockDomainPreferencesClient.isExpressDomain.resolves(true)
+
+            const result = await SmusUtils.isInSmusExpressMode(testDomainId, testRegion, mockCredentialsProvider)
+
+            assert.strictEqual(result, true)
+            assert.ok(getInstanceStub.calledWith(mockCredentialsProvider, testRegion))
+            assert.ok(mockDomainPreferencesClient.isExpressDomain.calledWith(testDomainId))
+        })
+
+        it('should return false when domain is not in Express mode', async () => {
+            mockDomainPreferencesClient.isExpressDomain.resolves(false)
+
+            const result = await SmusUtils.isInSmusExpressMode(testDomainId, testRegion, mockCredentialsProvider)
+
+            assert.strictEqual(result, false)
+            assert.ok(getInstanceStub.calledWith(mockCredentialsProvider, testRegion))
+            assert.ok(mockDomainPreferencesClient.isExpressDomain.calledWith(testDomainId))
+        })
+    })
+
     describe('convertAssumedRoleArnToIamRoleArn', () => {
         it('should convert basic assumed role ARN to IAM role ARN', () => {
             const stsArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession'
@@ -470,6 +535,58 @@ describe('SmusUtils', () => {
 
             const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
             assert.strictEqual(result, expected)
+        })
+
+        it('should convert assumed role ARN with aws-cn partition', () => {
+            const stsArn = 'arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-cn:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should convert assumed role ARN with aws-us-gov partition', () => {
+            const stsArn = 'arn:aws-us-gov:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-us-gov:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should return IAM user ARN as-is', () => {
+            const iamUserArn = 'arn:aws:iam::619071339486:user/vabharga-test'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-cn partition as-is', () => {
+            const iamUserArn = 'arn:aws-cn:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-us-gov partition as-is', () => {
+            const iamUserArn = 'arn:aws-us-gov:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM role ARN as-is', () => {
+            const iamRoleArn = 'arn:aws:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should return IAM role ARN with aws-cn partition as-is', () => {
+            const iamRoleArn = 'arn:aws-cn:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should handle IAM user ARN with special characters', () => {
+            const iamUserArn = 'arn:aws:iam::123456789012:user/path/to/user-name_123'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
         })
 
         it('should throw error for invalid ARN format - missing components', () => {

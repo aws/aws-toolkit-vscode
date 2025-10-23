@@ -38,6 +38,14 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             getProjectCredentialProvider: sinon.stub(),
             getDomainRegion: sinon.stub().returns('us-west-2'),
             getDomainAccountId: sinon.stub().resolves('123456789012'),
+            getDomainId: sinon.stub().returns('test-domain'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any
 
         // Create mock extension context
@@ -63,7 +71,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         } as any
 
         // Stub DataZoneClient static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
 
         // Stub SagemakerClient constructor
         sinon.stub(SagemakerClient.prototype, 'dispose')

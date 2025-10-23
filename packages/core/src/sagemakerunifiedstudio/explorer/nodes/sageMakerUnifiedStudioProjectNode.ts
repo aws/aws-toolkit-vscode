@@ -19,6 +19,8 @@ import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { ToolkitError } from '../../../shared/errors'
 import { SmusErrorCodes } from '../../shared/smusUtils'
+import { SmusIamConnection } from '../../auth/model'
+import { createDZClientBaseOnDomainMode } from './utils'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -121,7 +123,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                     return [dataNode]
                 }
 
-                const dzClient = await DataZoneClient.getInstance(this.authProvider)
+                const dzClient = await createDZClientBaseOnDomainMode(this.authProvider)
                 if (!this.project?.id) {
                     throw new Error('Project ID is required')
                 }
@@ -214,7 +216,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         }
 
         try {
-            const dzClient = await DataZoneClient.getInstance(this.authProvider)
+            const dzClient = await createDZClientBaseOnDomainMode(this.authProvider)
             const projectDetails = await dzClient.getProject(this.project.id)
 
             if (projectDetails && projectDetails.name) {
@@ -235,7 +237,13 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         }
         let awsCredentialProvider
         if (getContext('aws.smus.isExpressMode')) {
-            const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+            const datazoneClient = DataZoneClient.createWithCredentials(
+                this.authProvider.getDomainRegion(),
+                this.authProvider.getDomainId(),
+                await this.authProvider.getCredentialsProviderForIamProfile(
+                    (this.authProvider.activeConnection as SmusIamConnection).profileName
+                )
+            )
             const projectId = this.project.id
             awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
                 const creds = await datazoneClient.getProjectDefaultEnvironmentCreds(projectId)

@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
 import { getLogger } from '../../../shared/logger/logger'
@@ -18,7 +17,9 @@ import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusUtils } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
+import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
+import { createDZClientBaseOnDomainMode } from './utils'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -30,7 +31,10 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
-    public readonly pollingSet: PollingSet<string> = new PollingSet(5, this.updatePendingNodes.bind(this))
+    public readonly pollingSet: PollingSet<string> = new PollingSet(
+        PENDING_NODE_POLLING_INTERVAL_MS,
+        this.updatePendingNodes.bind(this)
+    )
     private spaceAwsAccountRegion: string | undefined
 
     public constructor(
@@ -142,7 +146,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         }
 
         this.logger.debug('SMUS: Getting DataZone client instance')
-        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
         }
@@ -179,7 +183,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     }
 
     private async updateChildren(): Promise<void> {
-        const datazoneClient = await DataZoneClient.getInstance(this.authProvider)
+        const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
         if (getContext('aws.smus.isExpressMode')) {

@@ -257,4 +257,51 @@ export class DataZoneDomainPreferencesClient {
             throw new Error(`Failed to get domain info: ${(err as Error).message}`)
         }
     }
+
+    /**
+     * Gets a specific domain by its ID
+     * @param domainId The ID of the domain to retrieve
+     * @returns Promise resolving to the GetDomainOutput
+     */
+    public async getDomain(domainId: string): Promise<GetDomainOutput> {
+        try {
+            this.logger.debug(`DataZoneDomainPreferencesClient: Getting domain with ID: ${domainId}`)
+
+            const datazoneDomainPreferencesClient = await this.getDataZoneDomainPreferencesClient()
+
+            const response = await datazoneDomainPreferencesClient
+                .getDomain({
+                    identifier: domainId,
+                })
+                .promise()
+
+            this.logger.debug(`DataZoneDomainPreferencesClient: Successfully retrieved domain: ${domainId}`)
+            return response
+        } catch (err) {
+            this.logger.error('DataZoneDomainPreferencesClient: Failed to get domain: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Checks if a specific domain is an EXPRESS domain
+     * @param domainId The ID of the domain to check
+     * @returns Promise resolving to true if the domain is EXPRESS, false otherwise
+     */
+    public async isExpressDomain(domainId: string): Promise<boolean> {
+        try {
+            this.logger.debug(`DataZoneDomainPreferencesClient: Checking if domain ${domainId} is EXPRESS`)
+
+            const domain = await this.getDomain(domainId)
+            const isExpress = domain.preferences?.DOMAIN_MODE === 'EXPRESS' || false
+
+            this.logger.debug(
+                `DataZoneDomainPreferencesClient: Domain ${domainId} is ${isExpress ? 'EXPRESS' : 'not EXPRESS'}`
+            )
+            return isExpress
+        } catch (err) {
+            this.logger.error('DataZoneDomainPreferencesClient: Failed to check if domain is EXPRESS: %s', err as Error)
+            throw err
+        }
+    }
 }

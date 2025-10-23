@@ -30,6 +30,15 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         } as any
         mockAuthProvider = {
             activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2' },
+            getDomainId: sinon.stub().returns('test-domain'),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any
         mockSagemakerClient = sinon.createStubInstance(SagemakerClient)
         mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([new Map(), new Map()])
@@ -44,7 +53,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             getToolingEnvironment: sinon.stub(),
         } as any
 
-        sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').resolves(mockDataZoneClient as any)
         sinon.stub(getLogger(), 'debug')
         sinon.stub(getLogger(), 'error')
         sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('user-12345')
@@ -154,7 +163,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
 
         it('throws error when DataZone client not initialized', async function () {
-            ;(DataZoneClient.getInstance as sinon.SinonStub).resolves(undefined)
+            ;(DataZoneClient.createWithCredentials as sinon.SinonStub).resolves(undefined)
 
             await assert.rejects(
                 async () => await spacesNode.getSageMakerDomainId(),

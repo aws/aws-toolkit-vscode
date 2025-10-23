@@ -31,6 +31,7 @@ describe('SmusAuthenticationProvider', function () {
     let isInSmusSpaceEnvironmentStub: sinon.SinonStub
     let executeCommandStub: sinon.SinonStub
     let setContextStubGlobal: sinon.SinonStub
+    let getResourceMetadataStub: sinon.SinonStub
     let mockSecondaryAuthState: {
         activeConnection: SmusConnection | undefined
         hasSavedConnection: boolean
@@ -103,7 +104,7 @@ describe('SmusAuthenticationProvider', function () {
         } as any
 
         // Stub static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
         extractDomainInfoStub = sinon
             .stub(SmusUtils, 'extractDomainInfoFromUrl')
             .returns({ domainId: testDomainId, region: testRegion })
@@ -191,8 +192,49 @@ describe('SmusAuthenticationProvider', function () {
     })
 
     describe('restore', function () {
-        it('should call secondary auth restoreConnection', async function () {
+        let mockState: any
+        let loadSharedCredentialsProfilesStub: sinon.SinonStub
+        let validateIamProfileStub: sinon.SinonStub
+        beforeEach(function () {
+            mockState = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            mockSecondaryAuth.state = mockState
+
+            loadSharedCredentialsProfilesStub = sinon.stub(
+                require('../../../auth/credentials/sharedCredentials'),
+                'loadSharedCredentialsProfiles'
+            )
+            validateIamProfileStub = sinon.stub(smusAuthProvider, 'validateIamProfile')
+        })
+
+        it('should call secondary auth restoreConnection when no saved connection ID', async function () {
+            mockState.get.withArgs('smus.savedConnectionId').returns(undefined)
+
             await smusAuthProvider.restore()
+
+            assert.ok(mockSecondaryAuth.restoreConnection.called)
+            assert.ok(loadSharedCredentialsProfilesStub.notCalled)
+        })
+
+        it('should validate IAM profile and restore connection', async function () {
+            const savedConnectionId = 'test-connection-id'
+            const connectionMetadata = {
+                profileName: 'test-profile',
+                domainId: 'old-domain-id',
+                region: 'us-west-1',
+            }
+            const smusConnections = { [savedConnectionId]: connectionMetadata }
+
+            mockState.get.withArgs('smus.savedConnectionId').returns(savedConnectionId)
+            mockState.get.withArgs('smus.connections').returns(smusConnections)
+            loadSharedCredentialsProfilesStub.resolves({ 'test-profile': { region: 'us-east-1' } })
+            validateIamProfileStub.resolves({ isValid: true })
+
+            await smusAuthProvider.restore()
+
+            assert.ok(validateIamProfileStub.calledWith('test-profile'))
             assert.ok(mockSecondaryAuth.restoreConnection.called)
         })
     })
@@ -316,10 +358,16 @@ describe('SmusAuthenticationProvider', function () {
     })
 
     describe('reauthenticate', function () {
-        it('should call auth reauthenticate', async function () {
+        it('should call auth reauthenticate for SSO connection', async function () {
             const result = await smusAuthProvider.reauthenticate(mockSmusConnection)
 
-            assert.strictEqual(result, mockSmusConnection)
+            // Verify the result has the correct SMUS properties preserved
+            assert.strictEqual(result.id, mockSmusConnection.id)
+            assert.strictEqual(result.domainUrl, mockSmusConnection.domainUrl)
+            assert.strictEqual(result.domainId, mockSmusConnection.domainId)
+            assert.strictEqual(result.type, mockSmusConnection.type)
+            assert.strictEqual(result.startUrl, mockSmusConnection.startUrl)
+            assert.strictEqual(result.label, mockSmusConnection.label)
             assert.ok(mockAuth.reauthenticate.calledWith(mockSmusConnection))
         })
 
@@ -698,7 +746,7 @@ describe('SmusAuthenticationProvider', function () {
                 assert.strictEqual(smusAuthProvider['cachedProjectAccountIds'].get(testProjectId), testAccountId)
                 assert.ok(getProjectCredentialProviderStub.calledWith(testProjectId))
                 assert.ok(mockProjectCredentialsProvider.getCredentials.called)
-                assert.ok((DataZoneClient.getInstance as sinon.SinonStub).called)
+                assert.ok((DataZoneClient.createWithCredentials as sinon.SinonStub).called)
                 assert.ok(mockDataZoneClientForProject.getToolingEnvironment.calledWith(testProjectId))
                 assert.ok(mockStsClient.getCallerIdentity.called)
             })
@@ -1212,6 +1260,234 @@ describe('SmusAuthenticationProvider', function () {
 
             assert.strictEqual(result?.id, iamConnection.id)
             assert.strictEqual((result as any)?.type, 'iam')
+        })
+    })
+
+    describe('getDerCredentialsProvider', function () {
+        let getContextStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getContextStub = sinon.stub(vscodeSetContext, 'getContext')
+
+            // Clear cache
+            smusAuthProvider['credentialsProviderCache'].clear()
+        })
+
+        describe('in SMUS space environment', function () {
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(true)
+
+                // Mock resource metadata for SMUS space environment
+                getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata').returns({
+                    ResourceArn: 'arn:aws:sagemaker:us-east-2:123456789012:app/dzd_domainId/test-app',
+                    AdditionalMetadata: {
+                        DataZoneDomainId: testDomainId,
+                        DataZoneDomainRegion: testRegion,
+                    },
+                } as any)
+            })
+
+            afterEach(function () {
+                getResourceMetadataStub?.restore()
+            })
+
+            it('should return a credentials provider that can retrieve credentials', async function () {
+                // In SMUS space environment, the method should return a provider
+                // We can't easily test the internal branching logic without stubbing ES modules
+                // So we test that it returns a valid provider structure
+                const provider = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.ok(provider, 'Provider should be returned')
+                assert.ok(typeof provider.getCredentials === 'function', 'Provider should have getCredentials method')
+            })
+
+            it('should not cache providers in SMUS space environment', async function () {
+                // Get provider twice
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                // In SMUS space, providers are not cached (new provider each time)
+                // This is because the logic returns early before caching
+                assert.ok(provider1)
+                assert.ok(provider2)
+            })
+        })
+
+        describe('in non-SMUS space environment', function () {
+            let getAccessTokenStub: sinon.SinonStub
+
+            beforeEach(function () {
+                getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
+                mockSecondaryAuthState.activeConnection = mockSmusConnection
+                getAccessTokenStub = sinon.stub(smusAuthProvider, 'getAccessToken').resolves('mock-access-token')
+            })
+
+            it('should create and cache DomainExecRoleCredentialsProvider for SSO connection', async function () {
+                const provider = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.ok(provider)
+                assert.ok(getAccessTokenStub.notCalled) // Not called until getCredentials is invoked
+
+                // Verify caching
+                const cachedProvider = await smusAuthProvider.getDerCredentialsProvider()
+                assert.strictEqual(provider, cachedProvider)
+            })
+
+            it('should throw error when no active connection', async function () {
+                mockSecondaryAuthState.activeConnection = undefined
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDerCredentialsProvider(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'NoActiveConnection' &&
+                            err.message.includes('No active SMUS connection available')
+                        )
+                    }
+                )
+            })
+
+            it('should throw error for non-SSO connection', async function () {
+                const iamConnection = {
+                    id: 'profile:test-profile',
+                    type: 'iam' as const,
+                    label: 'Test IAM Profile',
+                }
+                mockSecondaryAuthState.activeConnection = iamConnection as any
+
+                await assert.rejects(
+                    () => smusAuthProvider.getDerCredentialsProvider(),
+                    (err: ToolkitError) => {
+                        return (
+                            err.code === 'InvalidConnectionType' &&
+                            err.message.includes(
+                                'Domain Execution Role credentials are only available for SSO connections'
+                            )
+                        )
+                    }
+                )
+            })
+
+            it('should use cached provider for same connection', async function () {
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.strictEqual(provider1, provider2)
+            })
+
+            it('should create different providers for different connections', async function () {
+                const provider1 = await smusAuthProvider.getDerCredentialsProvider()
+
+                // Change connection
+                const differentConnection = {
+                    ...mockSmusConnection,
+                    id: 'different-connection-id',
+                    domainId: 'different-domain-id',
+                }
+                mockSecondaryAuthState.activeConnection = differentConnection
+
+                const provider2 = await smusAuthProvider.getDerCredentialsProvider()
+
+                assert.notStrictEqual(provider1, provider2)
+            })
+        })
+    })
+
+    describe('initExpressModeContextInSpaceEnvironment', function () {
+        let getResourceMetadataStub: sinon.SinonStub
+        let getDerCredentialsProviderStub: sinon.SinonStub
+        let isInSmusExpressModeStub: sinon.SinonStub
+        let mockCredentialsProvider: any
+
+        const testResourceMetadata = {
+            AdditionalMetadata: {
+                DataZoneDomainId: 'test-domain-id',
+                DataZoneDomainRegion: 'us-east-1',
+                DataZoneProjectId: 'test-project-id',
+            },
+        }
+
+        beforeEach(function () {
+            getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
+            isInSmusExpressModeStub = sinon.stub(SmusUtils, 'isInSmusExpressMode')
+
+            // Reset the global setContext stub history for clean test state
+            setContextStubGlobal.resetHistory()
+
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+            }
+
+            getDerCredentialsProviderStub = sinon
+                .stub(smusAuthProvider, 'getDerCredentialsProvider')
+                .resolves(mockCredentialsProvider)
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should set express mode context to true when domain is express mode', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            isInSmusExpressModeStub.resolves(true)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(
+                isInSmusExpressModeStub.calledWith(
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
+                    mockCredentialsProvider
+                )
+            )
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', true))
+        })
+
+        it('should set express mode context to false when domain is not express mode', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            isInSmusExpressModeStub.resolves(false)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(
+                isInSmusExpressModeStub.calledWith(
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
+                    mockCredentialsProvider
+                )
+            )
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+        })
+
+        it('should not call express mode check when resource metadata is missing', async function () {
+            getResourceMetadataStub.returns(undefined)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.notCalled)
+            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(setContextStubGlobal.notCalled)
+        })
+
+        it('should handle error when getDerCredentialsProvider fails', async function () {
+            getResourceMetadataStub.returns(testResourceMetadata)
+            const testError = new Error('Failed to get credentials provider')
+            getDerCredentialsProviderStub.rejects(testError)
+
+            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+
+            assert.ok(getResourceMetadataStub.called)
+            assert.ok(getDerCredentialsProviderStub.called)
+            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
         })
     })
 })

@@ -17,6 +17,7 @@ import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 const autoRejectEditCursorDistance = 25
+const autoDiscardEditCursorDistance = 10
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -312,6 +313,21 @@ export async function displaySvgDecoration(
     item: InlineCompletionItemWithReferences,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
+    function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
+        getLogger('nextEditPrediction').debug(
+            `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
+        )
+    }
+    // Check if edit is too far from current cursor position
+    const currentCursorLine = editor.selection.active.line
+    if (Math.abs(startLine - currentCursorLine) >= autoDiscardEditCursorDistance) {
+        // Emit DISCARD telemetry for edit suggestion that can't be shown because the suggestion is too far away
+        const params = createDiscardTelemetryParams(session, item)
+        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'cursor is too far away', item.insertText as string)
+        return
+    }
+
     const originalCode = editor.document.getText()
 
     // Set edit state immediately to prevent race condition with completion requests
@@ -327,9 +343,7 @@ export async function displaySvgDecoration(
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-        getLogger('nextEditPrediction').debug(
-            `Auto discarded  edit suggestion for active completion suggestion: ${item.insertText as string}`
-        )
+        logSuggestionFailure('DISCARD', 'Conflicting active inline completion', item.insertText as string)
         return
     }
 
@@ -342,6 +356,7 @@ export async function displaySvgDecoration(
         const params = createDiscardTelemetryParams(session, item)
         // TODO: this session is closed on flare side hence discarded is not emitted in flare
         languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        logSuggestionFailure('DISCARD', 'Invalid patch', item.insertText as string)
         return
     }
     const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
@@ -360,9 +375,7 @@ export async function displaySvgDecoration(
 
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
-            getLogger('nextEditPrediction').debug(
-                `Auto rejected edit suggestion for invalid patch: ${item.insertText as string}}`
-            )
+            logSuggestionFailure('REJECT', 'Invalid patch due to document change', item.insertText as string)
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
@@ -376,6 +389,11 @@ export async function displaySvgDecoration(
         const currentPosition = e.selections[0].active
         const distance = Math.abs(currentPosition.line - startLine)
         if (distance > autoRejectEditCursorDistance) {
+            logSuggestionFailure(
+                'REJECT',
+                `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
+                item.insertText as string
+            )
             void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
         }
     })
@@ -399,9 +417,6 @@ export async function displaySvgDecoration(
             const endPosition = getEndOfEditPosition(originalCode, newCode)
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
-            // Move cursor to end of the actual changed content
-            editor.selection = new vscode.Selection(endPosition, endPosition)
-
             await decorationManager.clearDecorations(editor)
             documentChangeListener.dispose()
             cursorChangeListener.dispose()
@@ -420,19 +435,6 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
-            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
-            // if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-            //     await inlineCompletionProvider.provideInlineCompletionItems(
-            //         editor.document,
-            //         endPosition,
-            //         {
-            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-            //             selectedCompletionInfo: undefined,
-            //         },
-            //         new vscode.CancellationTokenSource().token,
-            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-            //     )
-            // }
         },
         async (isDiscard: boolean) => {
             // Handle reject

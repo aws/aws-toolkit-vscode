@@ -15,14 +15,21 @@ import * as localizedText from '../../../shared/localizedText'
 import { ToolkitPromptSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { getLogger } from '../../../shared/logger/logger'
-import { SmusUtils, SmusErrorCodes, extractAccountIdFromResourceMetadata } from '../../shared/smusUtils'
+import {
+    SmusUtils,
+    SmusErrorCodes,
+    extractAccountIdFromResourceMetadata,
+    convertToToolkitCredentialProvider,
+} from '../../shared/smusUtils'
 import {
     createSmusProfile,
     isValidSmusConnection,
     SmusConnection,
     SmusIamConnection,
     isSmusSsoConnection,
+    isSmusIamConnection,
 } from '../model'
+import { IamCredentialExpiryAction, showIamCredentialExpiryOptions } from '../credentialExpiryHandler'
 
 import { DomainExecRoleCredentialsProvider } from './domainExecRoleCredentialsProvider'
 import { ProjectRoleCredentialsProvider } from './projectRoleCredentialsProvider'
@@ -33,11 +40,14 @@ import { CredentialsProviderManager } from '../../../auth/providers/credentialsP
 import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
 import { CredentialsId, CredentialsProvider } from '../../../auth/providers/credentials'
 import globals from '../../../shared/extensionGlobals'
-import { fromIni } from '@aws-sdk/credential-providers'
+import { fromContainerMetadata, fromIni, fromNodeProviderChain } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDomainPreferencesClient'
+import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
+import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
+import { loadSharedCredentialsProfiles } from '../../../auth/credentials/sharedCredentials'
 
 /**
  * Sets the context variable for SageMaker Unified Studio connection state
@@ -152,6 +162,10 @@ export class SmusAuthenticationProvider {
                 // Clear Express mode context for non-IAM connections or no connection
                 await setSmusExpressModeContext(false)
             }
+            // Update Express mode context in SMUS space environment
+            if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+                void this.initExpressModeContextInSpaceEnvironment()
+            }
 
             this.onDidChangeEmitter.fire()
         })
@@ -173,6 +187,36 @@ export class SmusAuthenticationProvider {
                 await setSmusExpressModeContext(false)
             }
         })()
+
+        // Update Express mode context in SMUS space environment
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            void this.initExpressModeContextInSpaceEnvironment()
+        }
+    }
+
+    /**
+     * Initializes Express mode context in SMUS space environment
+     */
+    private async initExpressModeContextInSpaceEnvironment(): Promise<void> {
+        try {
+            const resourceMetadata = getResourceMetadata()
+            if (
+                resourceMetadata?.AdditionalMetadata?.DataZoneDomainId &&
+                resourceMetadata?.AdditionalMetadata?.DataZoneDomainRegion
+            ) {
+                const domainId = resourceMetadata.AdditionalMetadata.DataZoneDomainId
+                const region = resourceMetadata.AdditionalMetadata.DataZoneDomainRegion
+
+                const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
+
+                const isExpress = await SmusUtils.isInSmusExpressMode(domainId, region, credentialsProvider)
+                this.logger.debug(`SMUS Auth: is in express mode ${isExpress}`)
+                await setSmusExpressModeContext(isExpress)
+            }
+        } catch (error) {
+            this.logger.error('Failed to check Express mode in SMUS space environment:  %s', error)
+            await setSmusExpressModeContext(false)
+        }
     }
 
     /**
@@ -271,9 +315,117 @@ export class SmusAuthenticationProvider {
 
     /**
      * Restores the previous connection
-     * Uses a promise to prevent multiple simultaneous restore calls
+     * Validates domain metadata against profile and updates if needed before using saved connection
      */
     public async restore() {
+        const logger = getLogger()
+
+        // Get the saved connection ID before restoring
+        const savedConnectionId = this.secondaryAuth.state.get('smus.savedConnectionId') as string
+        if (!savedConnectionId) {
+            logger.debug('SMUS: No saved connection ID found, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        // Get the saved connection metadata
+        const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
+        const connectionMetadata = smusConnections[savedConnectionId]
+
+        // If no connection metadata exists, proceed with normal restore
+        if (!connectionMetadata) {
+            logger.debug('SMUS: No connection metadata found, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        const savedProfileName = connectionMetadata.profileName
+
+        // If no profile name in metadata, proceed with normal restore
+        if (!savedProfileName) {
+            logger.debug('SMUS: No profile name in metadata, proceeding with normal restore')
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        const profiles = await loadSharedCredentialsProfiles()
+        const profile = profiles[savedProfileName]
+        const region = profile.region || 'not-set'
+
+        const validation = await this.validateIamProfile(savedProfileName)
+        if (!validation.isValid) {
+            logger.debug(`SMUS Auth: Profile validation failed: ${validation.error}, proceeding with normal restore`)
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        let domainUrl
+        try {
+            logger.debug(`SMUS Auth: Finding Express domain in region using profile ${savedProfileName}`)
+
+            // Get DataZoneDomainPreferencesClient instance
+            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+                await this.getCredentialsProviderForIamProfile(savedProfileName),
+                region
+            )
+
+            // Find the Express domain using the client
+            const expressDomain = await domainPreferencesClient.getExpressDomain()
+
+            if (!expressDomain) {
+                logger.warn(`SMUS Auth: No Express domain found in region ${region}, proceeding with normal restore`)
+                await this.secondaryAuth.restoreConnection()
+                return
+            }
+
+            logger.debug(`SMUS Auth: Found Express domain: ${expressDomain.name} (${expressDomain.id})`)
+
+            // Construct domain URL from the Express domain
+            domainUrl = expressDomain.portalUrl || `https://${expressDomain.id}.sagemaker.${region}.on.aws/`
+            logger.debug(`SMUS Auth: Discovered Express domain URL: ${domainUrl}`)
+        } catch (error) {
+            logger.error(`SMUS Auth: Failed to find Express domain: ${error} , proceeding with normal restore`)
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
+
+        try {
+            logger.debug(`SMUS: Validating domain metadata for saved connection ${savedConnectionId}`)
+
+            if (!domainUrl) {
+                logger.info('SMUS: No domain URL constructed, proceeding with normal restore')
+                await this.secondaryAuth.restoreConnection()
+                return
+            }
+
+            const { domainId } = SmusUtils.extractDomainInfoFromUrl(domainUrl)
+
+            // Compare with saved metadata
+            const savedDomainId = connectionMetadata.domainId
+            const savedRegion = connectionMetadata.region
+
+            if (domainId === savedDomainId && region === savedRegion) {
+                logger.debug('SMUS: Domain metadata matches, proceeding with normal restore')
+            } else {
+                logger.debug(
+                    `SMUS: Domain metadata mismatch detected. Saved: ${savedDomainId}@${savedRegion}, Profile: ${domainId}@${region}. Updating metadata.`
+                )
+
+                // Update the metadata with API values
+                connectionMetadata.domainId = domainId
+                connectionMetadata.region = region
+
+                // Save updated metadata
+                smusConnections[savedConnectionId] = connectionMetadata
+                await this.secondaryAuth.state.update('smus.connections', smusConnections)
+
+                logger.debug('SMUS: Successfully updated domain metadata')
+            }
+        } catch (error) {
+            logger.warn(`SMUS: Failed to validate domain metadata: ${error}. Proceeding with normal restore.`)
+        }
+
+        // Proceed with normal restore
         await this.secondaryAuth.restoreConnection()
     }
 
@@ -326,7 +478,7 @@ export class SmusAuthenticationProvider {
         } catch (error) {
             logger.error(`SMUS: Failed to sign out from connection ${connectionId}:`, error)
             throw new ToolkitError('Failed to sign out from SageMaker Unified Studio', {
-                code: 'SignOutFailed',
+                code: SmusErrorCodes.SignOutFailed,
                 cause: error instanceof Error ? error : undefined,
             })
         }
@@ -347,7 +499,7 @@ export class SmusAuthenticationProvider {
 
             // Validate domain ID
             if (!domainId) {
-                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+                throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
             logger.info(`SMUS: Connecting to domain ${domainId} in region ${region}`)
@@ -434,7 +586,7 @@ export class SmusAuthenticationProvider {
             return result as SmusConnection
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio', {
-                code: 'FailedToConnect',
+                code: SmusErrorCodes.FailedToConnect,
             })
         }
     }
@@ -462,7 +614,7 @@ export class SmusAuthenticationProvider {
 
             // Validate domain ID
             if (!domainId) {
-                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+                throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
             logger.info(`SMUS: Connecting with IAM profile ${profileName} to domain ${domainId} in region ${region}`)
@@ -519,12 +671,12 @@ export class SmusAuthenticationProvider {
             throw new ToolkitError(
                 `IAM profile connection not found for '${profileName}'. Please check your AWS credentials configuration.`,
                 {
-                    code: 'ConnectionNotFound',
+                    code: SmusErrorCodes.ConnectionNotFound,
                 }
             )
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to SageMaker Unified Studio with IAM profile', {
-                code: 'FailedToConnect',
+                code: SmusErrorCodes.FailedToConnect,
             })
         }
     }
@@ -651,9 +803,35 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the reauthenticated connection
      */
     @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
-    public async reauthenticate(conn: SsoConnection) {
+    public async reauthenticate(conn: SmusConnection): Promise<SmusConnection> {
         try {
-            return await this.auth.reauthenticate(conn)
+            // Check if this is an IAM connection
+            if (isSmusIamConnection(conn)) {
+                // For IAM connections, show options menu
+                this.logger.debug('SMUS: Showing IAM credential expiry options for reauthentication')
+                const result = await showIamCredentialExpiryOptions(this, conn, globals.context)
+
+                // Handle the result - for most actions, return the original connection
+                // The actions have already been performed (sign out, edit credentials, etc.)
+                if (result.action === IamCredentialExpiryAction.SignOut) {
+                    throw new ToolkitError('User signed out from connection', { cancelled: true })
+                } else if (result.action === IamCredentialExpiryAction.Cancelled) {
+                    throw new ToolkitError('Reauthentication cancelled by user', { cancelled: true })
+                }
+
+                // For Reauthenticate, EditCredentials, and SwitchProfile, return the connection
+                return conn
+            } else {
+                // For SSO connections, use existing re-auth flow
+                const reauthenticatedConn = await this.auth.reauthenticate(conn)
+
+                // Re-add SMUS-specific properties that aren't preserved by the base auth system
+                return {
+                    ...reauthenticatedConn,
+                    domainUrl: conn.domainUrl,
+                    domainId: conn.domainId,
+                } as SmusConnection
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to reauthenticate SageMaker Unified Studio connection.')
         }
@@ -663,7 +841,7 @@ export class SmusAuthenticationProvider {
      * Shows a reauthentication prompt to the user
      * @param conn Connection to reauthenticate
      */
-    public async showReauthenticationPrompt(conn: SsoConnection): Promise<void> {
+    public async showReauthenticationPrompt(conn: SmusConnection): Promise<void> {
         await showReauthenticateMessage({
             message: localizedText.connectionExpired('SageMaker Unified Studio'),
             connect: localizedText.reauthenticate,
@@ -692,7 +870,7 @@ export class SmusAuthenticationProvider {
         // Only SSO connections have access tokens
         if (!isSmusSsoConnection(connection)) {
             throw new ToolkitError('Access tokens are only available for SSO connections', {
-                code: 'InvalidConnectionType',
+                code: SmusErrorCodes.InvalidConnectionType,
             })
         }
 
@@ -779,7 +957,7 @@ export class SmusAuthenticationProvider {
 
         logger.debug('SMUS: Creating new connection provider')
         // Create a new connection provider and cache it
-        const connectionProvider = new ConnectionCredentialsProvider(this, connectionId)
+        const connectionProvider = new ConnectionCredentialsProvider(this, connectionId, projectId)
         this.connectionCredentialProvidersCache.set(cacheKey, connectionProvider)
 
         logger.debug('SMUS: Cached new connection provider')
@@ -943,7 +1121,7 @@ export class SmusAuthenticationProvider {
             const projectCreds = await projectCredProvider.getCredentials()
 
             // Get project region from tooling environment
-            const dzClient = await DataZoneClient.getInstance(this)
+            const dzClient = await createDZClientBaseOnDomainMode(this)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
             const projectRegion = toolingEnv.awsAccountRegion
 
@@ -1018,9 +1196,58 @@ export class SmusAuthenticationProvider {
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             // When in SMUS space, DomainExecutionRoleCreds can be found in config file
             // Read the credentials from credential profile DomainExecutionRoleCreds
-            const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
-            return {
-                getCredentials: async () => await credentials(),
+            try {
+                // Load AWS config file to check profile configuration
+                const { configFile } = await loadSharedConfigFiles()
+                const profileConfig = configFile['DomainExecutionRoleCreds']
+
+                if (profileConfig?.credential_process) {
+                    // Normal SMUS domain: Use the profile with credential_process
+                    logger.debug('SMUS: Using DomainExecutionRoleCreds profile with credential_process')
+                    const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'DomainExecutionRoleCreds',
+                        `smus-der-profile:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                } else if (profileConfig?.credential_source === 'EcsContainer') {
+                    // Express domain with EcsContainer: Use ECS container credentials directly
+                    // The environment has AWS_CONTAINER_CREDENTIALS_RELATIVE_URI set, so use fromContainerMetadata
+                    // which properly handles the ECS credential endpoint
+                    logger.debug('SMUS: Express domain detected, using ECS container credentials')
+                    const credentials = fromContainerMetadata({
+                        timeout: 5000,
+                        maxRetries: 3,
+                    })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'EcsContainer',
+                        `smus-ecs-container:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                } else {
+                    // Fallback: try the profile anyway
+                    logger.debug(
+                        'SMUS: Unknown profile configuration, attempting to use DomainExecutionRoleCreds profile'
+                    )
+                    const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
+                    return convertToToolkitCredentialProvider(
+                        async () => await credentials(),
+                        'DomainExecutionRoleCreds-fallback',
+                        `smus-der-fallback:${this.getDomainId()}:${this.getDomainRegion()}`,
+                        this.getDomainRegion()
+                    )
+                }
+            } catch (error) {
+                logger.error('SMUS: Failed to load config file, falling back to default credential chain: %s', error)
+                const credentials = fromNodeProviderChain()
+                return convertToToolkitCredentialProvider(
+                    async () => await credentials(),
+                    'NodeProviderChain',
+                    `smus-node-provider-chain:${this.getDomainId()}:${this.getDomainRegion()}`,
+                    this.getDomainRegion()
+                )
             }
         }
 
@@ -1032,7 +1259,7 @@ export class SmusAuthenticationProvider {
         // Domain Execution Role credentials are only available for SSO connections
         if (!isSmusSsoConnection(connection)) {
             throw new ToolkitError('Domain Execution Role credentials are only available for SSO connections', {
-                code: 'InvalidConnectionType',
+                code: SmusErrorCodes.InvalidConnectionType,
             })
         }
 
@@ -1152,6 +1379,7 @@ export class SmusAuthenticationProvider {
         // Clear cached project account IDs
         this.cachedProjectAccountIds.clear()
 
+        DataZoneClient.dispose()
         DataZoneDomainPreferencesClient.dispose()
 
         this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
