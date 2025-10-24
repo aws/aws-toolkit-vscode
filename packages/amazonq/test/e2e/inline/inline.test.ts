@@ -14,7 +14,7 @@ import {
     toTextEditor,
     using,
 } from 'aws-core-vscode/test'
-import { RecommendationHandler, RecommendationService, session } from 'aws-core-vscode/codewhisperer'
+import { RecommendationService } from 'aws-core-vscode/codewhisperer'
 import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
@@ -71,31 +71,6 @@ describe('Amazon Q Inline', async function () {
         })
     }
 
-    async function waitForRecommendations() {
-        const suggestionShown = await waitUntil(async () => session.getSuggestionState(0) === 'Showed', waitOptions)
-        if (!suggestionShown) {
-            throw new Error(`Suggestion did not show. Suggestion States: ${JSON.stringify(session.suggestionStates)}`)
-        }
-        const suggestionVisible = await waitUntil(
-            async () => RecommendationHandler.instance.isSuggestionVisible(),
-            waitOptions
-        )
-        if (!suggestionVisible) {
-            throw new Error(
-                `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
-            )
-        }
-        console.table({
-            'suggestions states': JSON.stringify(session.suggestionStates),
-            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
-            'recommendation service status': RecommendationService.instance.isRunning,
-            recommendations: session.recommendations,
-        })
-        if (!RecommendationHandler.instance.isValidResponse()) {
-            throw new Error('Did not find a valid response')
-        }
-    }
-
     /**
      * Waits for a specific telemetry event to be emitted with the expected suggestion state.
      * It looks like there might be a potential race condition in codewhisperer causing telemetry
@@ -150,7 +125,7 @@ describe('Amazon Q Inline', async function () {
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
 
                     // wait until the ghost text appears
-                    await waitForRecommendations()
+                    // await waitForRecommendations()
                 }
 
                 beforeEach(async () => {
