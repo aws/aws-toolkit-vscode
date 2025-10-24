@@ -224,9 +224,10 @@ describe('AppBuilder Walkthrough', function () {
                 })
 
                 it('download serverlessland proj', async function () {
-                    this.timeout(60000)
                     // When
-                    await genWalkthroughProject('API', workspaceUri, 'python')
+                    const genPromise = genWalkthroughProject('API', workspaceUri, 'python')
+                    await getTestWindow().waitForMessage(/template.yaml already exist/)
+                    await genPromise
                     // Then template should be overwritten
                     assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
