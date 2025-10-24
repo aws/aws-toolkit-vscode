@@ -55,7 +55,7 @@ interface Cli {
     exec?: string
 }
 
-export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker'>
+export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
@@ -170,6 +170,21 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         manualInstallLink: 'https://docs.docker.com/desktop',
         exec: 'docker',
     },
+    // Currently Finch is available for MacOS and Linux; Windows support will be added if/when available
+    finch: {
+        command: {
+            unix: ['finch', path.join('/', 'usr', 'bin', 'finch'), path.join('/', 'usr', 'local', 'bin', 'finch')],
+        },
+        source: {
+            macos: {
+                x86: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-x86_64.pkg',
+                arm: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-aarch64.pkg',
+            },
+        },
+        name: 'Finch',
+        manualInstallLink: 'https://runfinch.com/docs/getting-started/installation/',
+        exec: 'finch',
+    },
 }
 
 /**
@@ -185,7 +200,7 @@ export async function installCli(
 ): Promise<string | never> {
     const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
-        throw new InstallerError(`Invalid not found for CLI: ${cli}`)
+        throw new InstallerError(`Installer not found for CLI: ${cli}`)
     }
     let result: Result = 'Succeeded'
     let reason: string = ''
@@ -247,10 +262,11 @@ export async function installCli(
                 case 'aws-cli':
                 case 'sam-cli':
                 case 'docker':
+                case 'finch':
                     cliPath = await installGui(cli, tempDir, progress, timeout)
                     break
                 default:
-                    throw new InstallerError(`Invalid not found for CLI: ${cli}`)
+                    throw new InstallerError(`Installer not found for CLI: ${cli}`)
             }
         } finally {
             timeout.dispose()
