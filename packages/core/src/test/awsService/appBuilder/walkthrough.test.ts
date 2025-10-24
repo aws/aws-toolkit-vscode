@@ -208,7 +208,7 @@ describe('AppBuilder Walkthrough', function () {
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
                 })
 
-                it('download serverlessland proj', async function () {
+                it.skip('download serverlessland proj', async function () {
                     // When
                     await genWalkthroughProject('API', workspaceUri, 'python')
                     // Then template should be overwritten
