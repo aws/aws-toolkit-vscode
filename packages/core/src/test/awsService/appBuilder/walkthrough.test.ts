@@ -52,6 +52,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'win32',
+        shouldSucceed: false,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'darwin',
         shouldSucceed: true,
@@ -67,6 +72,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'darwin',
+        shouldSucceed: true,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'linux',
         shouldSucceed: false,
@@ -78,6 +88,11 @@ const scenarios: TestScenario[] = [
     },
     {
         toolID: 'docker',
+        platform: 'linux',
+        shouldSucceed: false,
+    },
+    {
+        toolID: 'finch',
         platform: 'linux',
         shouldSucceed: false,
     },
