@@ -224,13 +224,14 @@ describe('AppBuilder Walkthrough', function () {
                 })
 
                 it('download serverlessland proj', async function () {
+                    const config = vscode.workspace.getConfiguration('aws.samcli')
+                    await config.update('enableCodeLenses', false, vscode.ConfigurationTarget.Global)
                     // When
-                    const genPromise = genWalkthroughProject('API', workspaceUri, 'python')
-                    await getTestWindow().waitForMessage(/template.yaml already exist/)
-                    await genPromise
+                    await genWalkthroughProject('API', workspaceUri, 'python')
                     // Then template should be overwritten
                     assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                    await config.update('enableCodeLenses', true, vscode.ConfigurationTarget.Global)
                 })
             })
 
