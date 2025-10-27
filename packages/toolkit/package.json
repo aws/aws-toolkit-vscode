@@ -4546,7 +4546,7 @@
                 "description": "%AWS.toolkit.lambda.walkthrough.description%",
                 "when": "workspacePlatform != webworker",
                 "steps": [
-                     {
+                    {
                         "id": "toolInstallWindows",
                         "title": "%AWS.toolkit.lambda.walkthrough.toolInstall.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.toolInstall.description.windows%",
@@ -4564,7 +4564,7 @@
                             "image": "./resources/walkthrough/appBuilder/install.png",
                             "altText": "Showing GUI installer"
                         },
-                         "when": "!isWindows"
+                        "when": "!isWindows"
                     },
                     {
                         "id": "chooseTemplate",
