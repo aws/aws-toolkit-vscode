@@ -6,16 +6,21 @@ import '../utils/setup'
 import { Key, WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
 import {
-    // clearChatInput,
     waitForChatResponse,
     writeToChat,
     findItemByText,
     findMynahCardsBody,
     pressShortcut,
     sleep,
+    clearChatInput,
 } from '../utils/generalUtils'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
-import { hoverButtonAndValidateTooltip } from '../helpers/shortcutHelper'
+import {
+    hoverButtonAndValidateTooltip,
+    // runShellCommand
+    stopShellCommand,
+    waitForLoadingComplete,
+} from '../helpers/shortcutHelper'
 
 describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
     // this timeout is the general timeout for the entire test suite
@@ -29,16 +34,19 @@ describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
     })
 
     afterEach(async function () {
+        await clearChatInput(webviewView)
         await closeAllTabs(webviewView)
     })
 
     it('Allows User to reject Using Keyboard shortcut', async () => {
+        await waitForLoadingComplete(webviewView)
+        await sleep(7000)
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 'r')
         await waitForChatResponse(webviewView)
-        await sleep(5000)
+        await sleep(2000)
         const list = await findMynahCardsBody(webviewView)
-        await sleep(1000)
+        await sleep(2000)
         await findItemByText(list, 'Command was rejected')
     })
 
@@ -87,5 +95,17 @@ describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
         } catch {
             // Skip test if button not available
         }
+    })
+
+    it('Allows User to stop Using Keybind', async () => {
+        await stopShellCommand(webviewView)
+        await waitForChatResponse(webviewView)
+        await sleep(2000)
+        const list = await findMynahCardsBody(webviewView)
+        await findItemByText(
+            list,
+            'You stopped your current work, please provide additional examples or ask another question'
+        )
+        await sleep(100)
     })
 })

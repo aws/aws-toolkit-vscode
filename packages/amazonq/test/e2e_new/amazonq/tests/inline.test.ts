@@ -29,6 +29,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await editorView.closeAllEditors()
         await webviewView.switchToFrame()
     })
+
     it('Inline Test Generate', async () => {
         const textBefore = await textEditor.getText()
         await workbench.executeCommand('Amazon Q: Inline Chat')
@@ -42,6 +43,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         assert(textAfter.length > textBefore.length, 'Amazon Q generated code')
         await textEditor.clearText()
     })
+
     it('Inline Keybind Shortcut', async () => {
         await writeToTextEditor(textEditor, 'def fibonacci(n):')
         await textEditor.selectText('def fibonacci(n):')

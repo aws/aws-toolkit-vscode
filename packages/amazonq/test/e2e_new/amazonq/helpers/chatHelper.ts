@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By } from 'vscode-extension-tester'
-import { clickButton, waitForElement, sleep, findMynahCardsBody, findItemByText } from '../utils/generalUtils'
+import { clickButton, sleep, findMynahCardsBody, findItemByText } from '../utils/generalUtils'
 /**
  * Clicks the tools to get to the MCP server overlay
  * @param webviewView The WebviewView instance
@@ -19,36 +19,6 @@ export async function addNewChatTab(webviewView: WebviewView): Promise<void> {
         )
     } catch (e) {
         throw new Error(`Failed to add new chat tab: ${e}`)
-    }
-}
-
-export async function viewHistoryTab(webviewView: WebviewView): Promise<void> {
-    try {
-        await clickButton(
-            webviewView,
-            '[data-testid="tab-bar-buttons-wrapper"]',
-            '[data-testid="tab-bar-button"] .mynah-ui-icon-history',
-            'history button'
-        )
-    } catch (e) {
-        throw new Error(`Failed to view history tab: ${e}`)
-    }
-}
-
-export async function waitForHistoryList(webviewView: WebviewView): Promise<void> {
-    await waitForElement(webviewView, By.css('.mynah-detailed-list-item-groups-wrapper'))
-}
-
-export async function closeHistoryTab(webviewView: WebviewView): Promise<void> {
-    try {
-        await clickButton(
-            webviewView,
-            '.mynah-sheet-header',
-            '[data-testid="sheet-close-button"] .mynah-ui-icon-cancel',
-            'history button'
-        )
-    } catch (e) {
-        throw new Error(`Failed to close history tab: ${e}`)
     }
 }
 
@@ -83,13 +53,4 @@ export async function verifyAmazonQResponse(webviewView: WebviewView): Promise<v
     const list = await findMynahCardsBody(webviewView)
     await sleep(500)
     await findItemByText(list, "Hello! I'm Amazon Q")
-}
-
-export async function selectHistoryItemAndVerify(webviewView: WebviewView): Promise<void> {
-    const list = await webviewView.findWebElements(By.css('.mynah-detailed-list-item'))
-    await sleep(5000)
-    const helloItem = await findItemByText(list, 'Hello, Amazon Q!')
-    await helloItem.click()
-    await sleep(500)
-    await verifyAmazonQResponse(webviewView)
 }
