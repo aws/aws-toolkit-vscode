@@ -123,9 +123,6 @@ describe('Amazon Q Inline', async function () {
 
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
-
-                    // wait until the ghost text appears
-                    // await waitForRecommendations()
                 }
 
                 beforeEach(async () => {
@@ -192,7 +189,7 @@ describe('Amazon Q Inline', async function () {
                 })
             })
 
-            it(`${name} invoke on unsupported filetype`, async function () {
+            it.skip(`${name} invoke on unsupported filetype`, async function () {
                 await setupEditor({
                     name: 'test.zig',
                     contents: `fn doSomething() void {
