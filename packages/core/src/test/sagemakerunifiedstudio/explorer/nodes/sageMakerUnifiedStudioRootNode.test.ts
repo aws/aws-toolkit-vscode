@@ -237,6 +237,8 @@ describe('SelectSMUSProject', function () {
     let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
     let createQuickPickStub: sinon.SinonStub
     let executeCommandStub: sinon.SinonStub
+    let getContextStub: sinon.SinonStub
+    let createDZClientStub: sinon.SinonStub
 
     const testDomainId = 'test-domain-123'
     const mockProject: DataZoneProject = {
@@ -270,8 +272,14 @@ describe('SelectSMUSProject', function () {
             project: undefined,
         } as any
 
-        // Stub DataZoneClient static methods
-        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
+        // Stub createDZClientBaseOnDomainMode to return our mock client
+        createDZClientStub = sinon.stub()
+        createDZClientStub.resolves(mockDataZoneClient)
+        sinon.replace(
+            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
+            'createDZClientBaseOnDomainMode',
+            createDZClientStub
+        )
 
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
@@ -289,6 +297,12 @@ describe('SelectSMUSProject', function () {
                 }),
             }),
         } as any)
+
+        // Stub getContext to return false for Express mode by default (non-Express mode)
+        getContextStub = sinon.stub()
+        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.callThrough()
+        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
 
         // Stub quickPick - return the project directly (not wrapped in an item)
         const mockQuickPick = {
@@ -445,6 +459,8 @@ describe('selectSMUSProject - Additional Tests', function () {
     let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
     let createQuickPickStub: sinon.SinonStub
     let executeCommandStub: sinon.SinonStub
+    let getContextStub: sinon.SinonStub
+    let createDZClientStub: sinon.SinonStub
 
     const testDomainId = 'test-domain-123'
     const mockProject: DataZoneProject = {
@@ -465,7 +481,14 @@ describe('selectSMUSProject - Additional Tests', function () {
             setProject: sinon.stub(),
         } as any
 
-        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
+        // Stub createDZClientBaseOnDomainMode to return our mock client
+        createDZClientStub = sinon.stub()
+        createDZClientStub.resolves(mockDataZoneClient)
+        sinon.replace(
+            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
+            'createDZClientBaseOnDomainMode',
+            createDZClientStub
+        )
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
             getDomainAccountId: sinon.stub().resolves('123456789012'),
@@ -479,6 +502,12 @@ describe('selectSMUSProject - Additional Tests', function () {
                 }),
             }),
         } as any)
+
+        // Stub getContext to return false for Express mode by default (non-Express mode)
+        getContextStub = sinon.stub()
+        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.callThrough()
+        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
 
         const mockQuickPick = {
             prompt: sinon.stub().resolves(mockProject),
@@ -543,5 +572,170 @@ describe('selectSMUSProject - Additional Tests', function () {
         assert.deepStrictEqual(result, { type: 'invalid', data: mockProject })
         assert.ok(!mockProjectNode.setProject.called)
         assert.ok(!executeCommandStub.called)
+    })
+})
+
+describe('selectSMUSProject - Express Mode', function () {
+    let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
+    let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
+    let createQuickPickStub: sinon.SinonStub
+    let executeCommandStub: sinon.SinonStub
+    let getContextStub: sinon.SinonStub
+    let createDZClientStub: sinon.SinonStub
+
+    const testDomainId = 'test-domain-123'
+    const testUserProfileId = 'user-profile-123'
+
+    const userProject: DataZoneProject = {
+        id: 'project-123',
+        name: 'User Project',
+        description: 'Project created by user',
+        domainId: testDomainId,
+        createdBy: testUserProfileId,
+        updatedAt: new Date(),
+    }
+
+    const otherUserProject: DataZoneProject = {
+        id: 'project-456',
+        name: 'Other User Project',
+        description: 'Project created by another user',
+        domainId: testDomainId,
+        createdBy: 'other-user-profile-456',
+        updatedAt: new Date(Date.now() - 86400000),
+    }
+
+    beforeEach(function () {
+        mockDataZoneClient = {
+            getDomainId: sinon.stub().returns(testDomainId),
+            fetchAllProjects: sinon.stub(),
+            getUserProfileId: sinon.stub().resolves(testUserProfileId),
+        } as any
+
+        mockProjectNode = {
+            setProject: sinon.stub(),
+        } as any
+
+        // Stub createDZClientBaseOnDomainMode to return our mock client
+        createDZClientStub = sinon.stub()
+        createDZClientStub.resolves(mockDataZoneClient)
+        sinon.replace(
+            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
+            'createDZClientBaseOnDomainMode',
+            createDZClientStub
+        )
+
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
+        } as any)
+
+        const mockQuickPick = {
+            prompt: sinon.stub().resolves(userProject),
+        }
+        createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
+        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand')
+
+        // Stub getContext to simulate Express mode
+        getContextStub = sinon.stub()
+        getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+        getContextStub.callThrough()
+        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('filters projects to show only user-created projects in Express mode', async function () {
+        mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject])
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        // Verify getUserProfileId was called
+        assert.ok(mockDataZoneClient.getUserProfileId.calledOnce)
+
+        // Verify only user-created projects are shown in quick pick
+        const quickPickCall = createQuickPickStub.getCall(0)
+        const items = quickPickCall.args[0]
+        assert.strictEqual(items.length, 1)
+        assert.strictEqual(items[0].data.id, userProject.id)
+        assert.strictEqual(items[0].data.createdBy, testUserProfileId)
+
+        // Verify the user project was selected and set
+        assert.strictEqual(result, userProject)
+        assert.ok(mockProjectNode.setProject.calledOnce)
+        assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
+    })
+
+    it('shows message when no user-created projects found in Express mode', async function () {
+        mockDataZoneClient.fetchAllProjects.resolves([otherUserProject])
+
+        const result = await selectSMUSProject(mockProjectNode as any)
+
+        // Verify getUserProfileId was called
+        assert.ok(mockDataZoneClient.getUserProfileId.calledOnce)
+
+        // Verify no projects were shown in quick pick
+        assert.ok(!createQuickPickStub.called)
+
+        // Verify appropriate message was shown
+        const testWindow = getTestWindow()
+        assert.ok(testWindow.shownMessages.some((msg) => msg.message === 'No accessible projects found'))
+
+        // Verify no project was set
+        assert.strictEqual(result, undefined)
+        assert.ok(!mockProjectNode.setProject.called)
+    })
+
+    it('shows all user-created projects when multiple exist in Express mode', async function () {
+        const userProject2: DataZoneProject = {
+            id: 'project-789',
+            name: 'Another User Project',
+            description: 'Another project created by user',
+            domainId: testDomainId,
+            createdBy: testUserProfileId,
+            updatedAt: new Date(Date.now() - 172800000), // 2 days ago
+        }
+
+        mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject, userProject2])
+
+        await selectSMUSProject(mockProjectNode as any)
+
+        // Verify only user-created projects are shown
+        const quickPickCall = createQuickPickStub.getCall(0)
+        const items = quickPickCall.args[0]
+        assert.strictEqual(items.length, 2)
+        assert.ok(items.every((item: any) => item.data.createdBy === testUserProfileId))
+        assert.ok(items.some((item: any) => item.data.id === userProject.id))
+        assert.ok(items.some((item: any) => item.data.id === userProject2.id))
+        assert.ok(!items.some((item: any) => item.data.id === otherUserProject.id))
+    })
+
+    it('does not filter projects in non-Express mode', async function () {
+        // Stub getContext to return false for Express mode
+        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+
+        mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject])
+
+        await selectSMUSProject(mockProjectNode as any)
+
+        // Verify getUserProfileId was NOT called
+        assert.ok(!mockDataZoneClient.getUserProfileId.called)
+
+        // Verify all projects are shown in quick pick
+        const quickPickCall = createQuickPickStub.getCall(0)
+        const items = quickPickCall.args[0]
+        assert.strictEqual(items.length, 2)
+        assert.ok(items.some((item: any) => item.data.id === userProject.id))
+        assert.ok(items.some((item: any) => item.data.id === otherUserProject.id))
     })
 })

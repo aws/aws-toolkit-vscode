@@ -127,8 +127,23 @@ export class SmusAuthenticationOrchestrator {
                 `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to Express domain`
             )
 
-            // Ask to remember authentication method preference
-            await this.askToRememberAuthMethod(context, 'iam')
+            // Refresh the tree view to show authenticated state
+            try {
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            } catch (refreshErr) {
+                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+            }
+
+            // After successful IAM authentication (Express mode), automatically open project picker
+            logger.debug('SMUS Auth: IAM authentication successful, opening project picker')
+            try {
+                await vscode.commands.executeCommand('aws.smus.switchProject')
+            } catch (pickerErr) {
+                logger.debug(`Failed to open project picker: ${(pickerErr as Error).message}`)
+            }
+
+            // Ask to remember authentication method preference (non-blocking)
+            void this.askToRememberAuthMethod(context, 'iam')
 
             // Return success to complete the authentication flow gracefully
             return { status: 'SUCCESS' }

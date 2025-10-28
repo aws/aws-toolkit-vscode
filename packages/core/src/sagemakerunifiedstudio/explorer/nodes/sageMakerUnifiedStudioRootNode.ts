@@ -136,17 +136,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             ]
         }
 
-        if (getContext('aws.smus.isExpressMode')) {
-            // In Express mode, immediately show auth node, and project node's children (data and compute nodes)
-            if (!this.projectNode.project) {
-                await selectSMUSProject(this.projectNode)
-            }
-
-            const projectChildren = await this.projectNode.getChildren()
-            return [this.authInfoNode, ...projectChildren]
-        }
-
-        // When authenticated, show auth info and projects
+        // When authenticated, show auth info and projects (same for both Express and non-Express mode)
         return [this.authInfoNode, this.projectNode]
     }
 
@@ -475,18 +465,19 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             let selectedProject
             if (getContext('aws.smus.isExpressMode')) {
-                // In express mode, automatically select the express project
-                logger.debug('Auto-selecting the express project')
+                // Filter items to only show projects created by the current user
+                logger.debug('Filtering projects to show only those created by the current user')
                 const userProfileId = await client.getUserProfileId()
-                selectedProject = items.find((item) => item.data.createdBy === userProfileId)?.data
-                if (!selectedProject) {
+                const userProjects = items.filter((item) => item.data.createdBy === userProfileId)
+
+                if (userProjects.length === 0) {
                     logger.info(`No project found created by the current user (${userProfileId})`)
                     void vscode.window.showInformationMessage('No accessible projects found')
                     return
                 }
-                logger.info(
-                    `Selected project ${(selectedProject as DataZoneProject).name} (${(selectedProject as DataZoneProject).id})`
-                )
+
+                // Show project picker with filtered projects
+                selectedProject = await showQuickPick(userProjects)
             } else {
                 // Show project picker
                 selectedProject = await showQuickPick(items)

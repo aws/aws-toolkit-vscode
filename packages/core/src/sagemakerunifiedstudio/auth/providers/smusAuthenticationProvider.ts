@@ -649,9 +649,10 @@ export class SmusAuthenticationProvider {
                     `SMUS: Using existing IAM connection as SMUS connection successfully, id=${existingConn.id}`
                 )
 
-                // Auto-invoke project selection after successful sign-in (but not in SMUS space environment)
-                if (!SmusUtils.isInSmusSpaceEnvironment()) {
-                    void vscode.commands.executeCommand('aws.smus.switchProject')
+                // Set Express mode context if this is an Express domain
+                if (isExpressDomain) {
+                    await setSmusExpressModeContext(true)
+                    logger.debug('SMUS: Set Express mode context to true')
                 }
 
                 // Return a SMUS IAM connection wrapper for the caller

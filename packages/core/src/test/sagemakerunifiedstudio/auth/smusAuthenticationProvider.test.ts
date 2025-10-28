@@ -1018,28 +1018,6 @@ describe('SmusAuthenticationProvider', function () {
             )
         })
 
-        it('should trigger project selection after successful connection', async function () {
-            isInSmusSpaceEnvironmentStub.returns(false)
-            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
-            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
-            mockState.get.withArgs('smus.connections').returns({})
-
-            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
-
-            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
-        })
-
-        it('should not trigger project selection in SMUS space environment', async function () {
-            isInSmusSpaceEnvironmentStub.returns(true)
-            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
-            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
-            mockState.get.withArgs('smus.connections').returns({})
-
-            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
-
-            assert.ok(executeCommandStub.notCalled)
-        })
-
         it('should merge with existing SMUS connections metadata', async function () {
             extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
             mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
