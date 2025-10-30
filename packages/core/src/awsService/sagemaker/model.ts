@@ -27,12 +27,14 @@ const logger = getLogger('sagemaker')
 
 export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
-    ctx: vscode.ExtensionContext
+    ctx: vscode.ExtensionContext,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
 ) {
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
     const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
     try {
+        progress.report({ message: 'Opening remote session' })
         await startVscodeRemote(
             remoteEnv.SessionProcess,
             remoteEnv.hostname,
