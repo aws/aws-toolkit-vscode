@@ -206,7 +206,7 @@ export async function stopJob(jobId: string) {
 
     try {
         await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-            transformationJobId: 'aeac96c3-861f-4d85-9b5f-081c9dc6b481',
+            transformationJobId: jobId,
         })
     } catch (e: any) {
         getLogger().error(`CodeTransformation: StopTransformation error = %O`, e)
