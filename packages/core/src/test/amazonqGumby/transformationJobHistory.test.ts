@@ -98,23 +98,51 @@ describe('Transformation History Handler', function () {
 
         it('Creates history file with headers when it does not exist', async function () {
             sinon.stub(fs, 'existsFile').resolves(false)
-            await writeToHistoryFile('01/01/25, 10:00 AM', 'test-project', 'COMPLETED', '5 min', 'job-123', '/job/path')
+            await writeToHistoryFile(
+                '01/01/25, 10:00 AM',
+                'test-project',
+                'COMPLETED',
+                '5 min',
+                'job-123',
+                '/job/path',
+                'LANGUAGE_UPGRADE',
+                'JDK8',
+                'JDK17',
+                '/path/here',
+                'clean test-compile'
+            )
 
             const expectedPath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
             const fileContent = writtenFiles.get(expectedPath)
 
             assert(fileContent)
-            assert(fileContent.includes('date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n'))
             assert(
                 fileContent.includes(
-                    `01/01/25, 10:00 AM\ttest-project\tCOMPLETED\t5 min\t${path.join('/job/path', 'diff.patch')}\t${path.join('/job/path', 'summary', 'summary.md')}\tjob-123\n`
+                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\ntransformation_type\tsource_jdk_version\ttarget_jdk_version\tcustom_dependency_version_file_path\tcustom_build_command\n'
+                )
+            )
+            assert(
+                fileContent.includes(
+                    `01/01/25, 10:00 AM\ttest-project\tCOMPLETED\t5 min\t${path.join('/job/path', 'diff.patch')}\t${path.join('/job/path', 'summary', 'summary.md')}\tjob-123\tLANGUAGE_UPGRADE\tJDK8\tJDK17\t/path/here\tclean test-compile\n`
                 )
             )
         })
 
         it('Excludes artifact paths for failed jobs', async function () {
             sinon.stub(fs, 'existsFile').resolves(false)
-            await writeToHistoryFile('01/01/25, 10:00 AM', 'test-project', 'FAILED', '5 min', 'job-123', '/job/path')
+            await writeToHistoryFile(
+                '01/01/25, 10:00 AM',
+                'test-project',
+                'FAILED',
+                '5 min',
+                'job-123',
+                '/job/path',
+                'LANGUAGE_UPGRADE',
+                'JDK8',
+                'JDK17',
+                '/path/here',
+                'clean test-compile'
+            )
 
             const expectedPath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
             const fileContent = writtenFiles.get(expectedPath)
@@ -130,7 +158,7 @@ describe('Transformation History Handler', function () {
         it('Appends new job to existing history file', async function () {
             const existingContent =
                 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n' +
-                '12/31/24, 09:00 AM\told-project\tCOMPLETED\t3 min\t/old/diff.patch\t/old/summary.md\told-job-456\n'
+                '12/31/24, 09:00 AM\told-project\tCOMPLETED\t3 min\t/old/diff.patch\t/old/summary.md\told-job-456\t/old/path\tLANGUAGE_UPGRADE\tJDK8\tJDK17\t/old/path2\tclean test-compile\n'
 
             writtenFiles.set(
                 path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv'),
@@ -139,14 +167,28 @@ describe('Transformation History Handler', function () {
 
             sinon.stub(fs, 'existsFile').resolves(true)
 
-            await writeToHistoryFile('01/01/25, 10:00 AM', 'new-project', 'FAILED', '2 min', 'new-job-789', '/new/path')
+            await writeToHistoryFile(
+                '01/01/25, 10:00 AM',
+                'new-project',
+                'FAILED',
+                '2 min',
+                'new-job-789',
+                '/new/path',
+                'LANGUAGE_UPGRADE',
+                'JDK8',
+                'JDK17',
+                '/path/here',
+                'clean test-compile'
+            )
 
             const expectedPath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
             const fileContent = writtenFiles.get(expectedPath)
 
             // Verify old data is preserved
             assert(
-                fileContent?.includes('old-project\tCOMPLETED\t3 min\t/old/diff.patch\t/old/summary.md\told-job-456')
+                fileContent?.includes(
+                    'old-project\tCOMPLETED\t3 min\t/old/diff.patch\t/old/summary.md\told-job-456\t/old/path\tLANGUAGE_UPGRADE\tJDK8\tJDK17\t/old/path2\tclean test-compile\n'
+                )
             )
 
             // Verify new data is added

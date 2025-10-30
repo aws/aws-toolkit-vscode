@@ -68,12 +68,29 @@ export function throwIfCancelled() {
 }
 
 export function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
+    if (transformByQState.getJobId() !== '' && transformByQState.getSourceJDKVersion() !== undefined) {
         sessionJobHistory[transformByQState.getJobId()] = {
             startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
             duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+            transformationType: transformByQState.getTransformationType() ?? 'N/A',
+            sourceJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getSourceJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            targetJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getTargetJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            customDependencyVersionsFilePath:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomDependencyVersionFilePath() || 'N/A'
+                    : 'N/A',
+            customBuildCommand:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomBuildCommand() || 'N/A'
+                    : 'N/A',
         }
     }
     return sessionJobHistory
@@ -189,7 +206,7 @@ export async function stopJob(jobId: string) {
 
     try {
         await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-            transformationJobId: jobId,
+            transformationJobId: 'aeac96c3-861f-4d85-9b5f-081c9dc6b481',
         })
     } catch (e: any) {
         getLogger().error(`CodeTransformation: StopTransformation error = %O`, e)
