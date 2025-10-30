@@ -118,7 +118,7 @@ describe('Transformation History Handler', function () {
             assert(fileContent)
             assert(
                 fileContent.includes(
-                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\ntransformation_type\tsource_jdk_version\ttarget_jdk_version\tcustom_dependency_version_file_path\tcustom_build_command\n'
+                    'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\ttransformation_type\tsource_jdk_version\ttarget_jdk_version\tcustom_dependency_version_file_path\tcustom_build_command\n'
                 )
             )
             assert(
