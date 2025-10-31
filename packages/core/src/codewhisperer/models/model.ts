@@ -688,7 +688,17 @@ export const jobPlanProgress: {
 }
 
 export let sessionJobHistory: {
-    [jobId: string]: { startTime: string; projectName: string; status: string; duration: string }
+    [jobId: string]: {
+        startTime: string
+        projectName: string
+        status: string
+        duration: string
+        transformationType: string
+        sourceJDKVersion: string
+        targetJDKVersion: string
+        customDependencyVersionsFilePath: string
+        customBuildCommand: string
+    }
 } = {}
 
 export class TransformByQState {
