@@ -127,6 +127,13 @@ export class SmusAuthenticationOrchestrator {
                 `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to Express domain`
             )
 
+            // Extract domain ID and region for telemetry logging
+            const domainId = connection.domainId
+            const region = authProvider.getDomainRegion()
+
+            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+            await this.recordAuthTelemetry(span, authProvider, domainId, region)
+
             // Refresh the tree view to show authenticated state
             try {
                 await vscode.commands.executeCommand('aws.smus.rootView.refresh')
