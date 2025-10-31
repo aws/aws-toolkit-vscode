@@ -111,8 +111,18 @@ function getKiroCliPaths(vscExe: string): string[] {
         path.resolve(`${vscode.env.appRoot}/kiro`),
         path.resolve(vscExe, '../bin/kiro'),
         path.resolve(vscExe, '../../bin/kiro'),
+
+        // When no `kiro` file is found in the application directories, search for a `code` file in the same locations.
+        // This is necessary for Mac because the executable is called `code`. Though `kiro` on the $PATH may resolve to
+        // /usr/local/bin/kiro, that is just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code.
+        path.resolve(`${vscode.env.appRoot}/bin/code`),
+        path.resolve(`${vscode.env.appRoot}/../../bin/code`),
+        path.resolve(`${vscode.env.appRoot}/code`),
+        path.resolve(vscExe, '../bin/code'),
+        path.resolve(vscExe, '../../bin/code'),
+
         '/usr/bin/kiro',
-        'kiro',
+        'kiro', // $PATH
     ]
 }
 
