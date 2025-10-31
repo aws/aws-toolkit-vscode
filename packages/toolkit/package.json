@@ -1338,12 +1338,12 @@
             "view/title": [
                 {
                     "command": "aws.smus.switchProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment && !aws.smus.isExpressMode",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.inSmusSpaceEnvironment",
                     "group": "smus@0"
                 },
                 {
                     "command": "aws.smus.refreshProject",
-                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected && !aws.smus.isExpressMode",
+                    "when": "view == aws.smus.rootView && !aws.isWebExtHost && aws.smus.connected",
                     "group": "smus@1"
                 },
                 {
@@ -1689,6 +1689,11 @@
                     "command": "aws.sagemaker.filterSpaceApps",
                     "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "view == aws.smus.rootView && viewItem == smusSelectedProject",
+                    "group": "0_project@1"
                 },
                 {
                     "command": "aws.smus.refreshProject",

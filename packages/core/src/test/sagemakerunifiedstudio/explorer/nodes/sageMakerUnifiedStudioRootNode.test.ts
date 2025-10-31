@@ -739,3 +739,190 @@ describe('selectSMUSProject - Express Mode', function () {
         assert.ok(items.some((item: any) => item.data.id === otherUserProject.id))
     })
 })
+
+describe('selectSMUSProject - Error Handling', function () {
+    let mockDataZoneClient: sinon.SinonStubbedInstance<DataZoneClient>
+    let mockProjectNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioProjectNode>
+    let createQuickPickStub: sinon.SinonStub
+    let getContextStub: sinon.SinonStub
+    let createDZClientStub: sinon.SinonStub
+
+    const testDomainId = 'test-domain-123'
+    const testUserProfileId = 'user-profile-123'
+
+    const mockProject: DataZoneProject = {
+        id: 'project-123',
+        name: 'Test Project',
+        description: 'Test Description',
+        domainId: testDomainId,
+        createdBy: testUserProfileId,
+        updatedAt: new Date(),
+    }
+
+    beforeEach(function () {
+        mockDataZoneClient = {
+            getDomainId: sinon.stub().returns(testDomainId),
+            fetchAllProjects: sinon.stub(),
+            getUserProfileId: sinon.stub().resolves(testUserProfileId),
+        } as any
+
+        mockProjectNode = {
+            setProject: sinon.stub(),
+        } as any
+
+        createDZClientStub = sinon.stub()
+        createDZClientStub.resolves(mockDataZoneClient)
+        sinon.replace(
+            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
+            'createDZClientBaseOnDomainMode',
+            createDZClientStub
+        )
+
+        sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
+        } as any)
+
+        getContextStub = sinon.stub()
+        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.callThrough()
+        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+
+        const mockQuickPick = {
+            prompt: sinon.stub().resolves(mockProject),
+        }
+        createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    describe('No projects scenario', function () {
+        it('displays "No projects found in the domain" message when user has no projects', async function () {
+            mockDataZoneClient.fetchAllProjects.resolves([])
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            const testWindow = getTestWindow()
+            assert.ok(testWindow.shownMessages.some((msg) => msg.message === 'No projects found in the domain'))
+            assert.ok(
+                createQuickPickStub.calledWith([
+                    {
+                        label: 'No projects found',
+                        detail: '',
+                        description: '',
+                        data: {},
+                    },
+                ])
+            )
+            assert.ok(!mockProjectNode.setProject.called)
+        })
+    })
+
+    describe('No accessible projects in Express mode', function () {
+        beforeEach(function () {
+            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+        })
+
+        it('displays "No accessible projects found" when user has no projects they created', async function () {
+            const otherUserProject: DataZoneProject = {
+                id: 'project-456',
+                name: 'Other User Project',
+                description: 'Project created by another user',
+                domainId: testDomainId,
+                createdBy: 'other-user-profile-456',
+                updatedAt: new Date(),
+            }
+
+            mockDataZoneClient.fetchAllProjects.resolves([otherUserProject])
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            assert.ok(mockDataZoneClient.getUserProfileId.calledOnce)
+            const testWindow = getTestWindow()
+            assert.ok(testWindow.shownMessages.some((msg) => msg.message === 'No accessible projects found'))
+            assert.ok(!mockProjectNode.setProject.called)
+        })
+
+        it('handles getUserProfileId failure with appropriate error message', async function () {
+            const profileError = new Error('User profile not found')
+            mockDataZoneClient.getUserProfileId.rejects(profileError)
+            mockDataZoneClient.fetchAllProjects.resolves([mockProject])
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            const testWindow = getTestWindow()
+            assert.ok(
+                testWindow.shownMessages.some(
+                    (msg) =>
+                        msg.message ===
+                        'No project found for IAM principal. Ensure you have created a project through console or portal for this IAM principal before attempting access from Toolkit extension.'
+                )
+            )
+            assert.ok(!mockProjectNode.setProject.called)
+        })
+    })
+
+    describe('Access denied scenarios', function () {
+        it('displays appropriate error message when user lacks permissions to view projects', async function () {
+            const accessDeniedError = new Error('Access denied to list projects')
+            accessDeniedError.name = 'AccessDeniedException'
+            mockDataZoneClient.fetchAllProjects.rejects(accessDeniedError)
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            assert.ok(
+                createQuickPickStub.calledWith([
+                    {
+                        label: '$(error)',
+                        description: "You don't have permissions to view projects. Please contact your administrator",
+                    },
+                ])
+            )
+            assert.ok(!mockProjectNode.setProject.called)
+        })
+
+        it('handles AccessDenied error name variations', async function () {
+            const accessDeniedError = new Error('Access denied')
+            accessDeniedError.name = 'AccessDeniedError'
+            mockDataZoneClient.fetchAllProjects.rejects(accessDeniedError)
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            assert.ok(
+                createQuickPickStub.calledWith([
+                    {
+                        label: '$(error)',
+                        description: "You don't have permissions to view projects. Please contact your administrator",
+                    },
+                ])
+            )
+        })
+
+        it('handles UnauthorizedOperation error as access denied', async function () {
+            const unauthorizedError = new Error('Unauthorized operation')
+            unauthorizedError.name = 'UnauthorizedOperationAccessDenied'
+            mockDataZoneClient.fetchAllProjects.rejects(unauthorizedError)
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.strictEqual(result, undefined)
+            assert.ok(
+                createQuickPickStub.calledWith([
+                    {
+                        label: '$(error)',
+                        description: "You don't have permissions to view projects. Please contact your administrator",
+                    },
+                ])
+            )
+        })
+    })
+})

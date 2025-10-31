@@ -456,6 +456,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             const allProjects = await client.fetchAllProjects()
             const items = createProjectQuickPickItems(allProjects)
 
+            // Handle no projects scenario
             if (items.length === 0) {
                 logger.info('No projects found in the domain')
                 void vscode.window.showInformationMessage('No projects found in the domain')
@@ -467,9 +468,24 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             if (getContext('aws.smus.isExpressMode')) {
                 // Filter items to only show projects created by the current user
                 logger.debug('Filtering projects to show only those created by the current user')
-                const userProfileId = await client.getUserProfileId()
+
+                let userProfileId: string | undefined
+                try {
+                    userProfileId = await client.getUserProfileId()
+                } catch (err) {
+                    // If user profile is not found, it means the IAM principal hasn't created any resources through console
+                    // Even though the error is for UserProfile, since it while we try to filter projects and that is the term exposed
+                    // to use, we word the error message using "project"
+                    logger.error('Failed to get user profile ID: %s', (err as Error).message)
+                    void vscode.window.showErrorMessage(
+                        'No project found for IAM principal. Ensure you have created a project through console or portal for this IAM principal before attempting access from Toolkit extension.'
+                    )
+                    return
+                }
+
                 const userProjects = items.filter((item) => item.data.createdBy === userProfileId)
 
+                // Task 6.2: Handle no accessible projects in Express mode
                 if (userProjects.length === 0) {
                     logger.info(`No project found created by the current user (${userProfileId})`)
                     void vscode.window.showInformationMessage('No accessible projects found')
@@ -505,7 +521,9 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
         } catch (err) {
             const error = err as Error
 
+            // Handle access denied scenarios
             if (isAccessDenied(error)) {
+                logger.error('Access denied when fetching projects: %s', error.message)
                 await showQuickPick([
                     {
                         label: '$(error)',
@@ -515,6 +533,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 return
             }
 
+            // Handle network/API failures
             logger.error('Failed to select project: %s', error.message)
             void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
         }
