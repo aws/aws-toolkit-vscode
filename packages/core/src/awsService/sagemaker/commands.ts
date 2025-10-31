@@ -13,7 +13,12 @@ import { getLogger } from '../../shared/logger/logger'
 import { SagemakerSpaceNode, tryRefreshNode } from './explorer/sagemakerSpaceNode'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import _ from 'lodash'
-import { prepareDevEnvConnection, tryRemoteConnection } from './model'
+import {
+    prepareDevEnvConnection,
+    startRemoteViaSageMakerSshKiro,
+    tryRemoteConnection,
+    useSageMakerSshKiroExtension,
+} from './model'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { ToolkitError } from '../../shared/errors'
@@ -112,13 +117,20 @@ export async function deeplinkConnect(
             appType
         )
 
-        await startVscodeRemote(
-            remoteEnv.SessionProcess,
-            remoteEnv.hostname,
-            '/home/sagemaker-user',
-            remoteEnv.vscPath,
-            'sagemaker-user'
-        )
+        const path = '/home/sagemaker-user'
+        const username = 'sagemaker-user'
+
+        if (useSageMakerSshKiroExtension()) {
+            await startRemoteViaSageMakerSshKiro(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                path,
+                remoteEnv.vscPath,
+                username
+            )
+        } else {
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, path, remoteEnv.vscPath, username)
+        }
     } catch (err: any) {
         getLogger().error(
             `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${connectionIdentifier} error: ${err}`
