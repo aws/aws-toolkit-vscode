@@ -22,10 +22,10 @@ jobs:
         # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                   fetch-depth: 20
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: '20'
             - name: Validate Branch name
@@ -48,9 +48,9 @@ jobs:
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
@@ -68,12 +68,12 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                   fetch-depth: 0
 
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
 
@@ -106,7 +106,7 @@ jobs:
             - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
             - if: always()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: unfiltered-jscpd-report
                   path: ./jscpd-report.json
@@ -133,9 +133,9 @@ jobs:
             AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
             AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
@@ -170,9 +170,9 @@ jobs:
             AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
             AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
@@ -195,9 +195,9 @@ jobs:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
