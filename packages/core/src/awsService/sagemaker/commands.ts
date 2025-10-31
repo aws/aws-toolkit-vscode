@@ -223,7 +223,7 @@ export async function openRemoteConnect(
                         title: `Connecting to ${spaceName}`,
                     },
                     async (progress) => {
-                        progress.report({ message: 'Starting the space. This can take around 2 minutes.' })
+                        progress.report({ message: 'Starting the space.' })
                         await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, appType)
                         await tryRemoteConnection(node, ctx, progress)
                     }
