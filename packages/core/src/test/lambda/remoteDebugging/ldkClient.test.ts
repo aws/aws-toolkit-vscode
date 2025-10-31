@@ -423,6 +423,92 @@ describe('LdkClient', () => {
             assert.strictEqual(result, true, 'Should return true when no proxy to stop')
         })
     })
+
+    describe('Client User-Agent', () => {
+        it('should create Lambda client with correct user-agent', async () => {
+            // Restore the existing stub and create a new one to track calls
+            const existingStub = (utils.getLambdaClientWithAgent as any).restore
+                ? (utils.getLambdaClientWithAgent as sinon.SinonStub)
+                : undefined
+            if (existingStub) {
+                existingStub.restore()
+            }
+
+            // Stub getUserAgent at the telemetryUtil level to return a known value
+            const getUserAgentStub = sandbox.stub(telemetryUtil, 'getUserAgent')
+            getUserAgentStub.returns('test-user-agent')
+
+            // Stub the sdkClientBuilderV3 to capture the client options
+            let capturedClientOptions: any
+            const createAwsServiceStub = sandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            createAwsServiceStub.callsFake((options: any) => {
+                capturedClientOptions = options
+                // Return a mock Lambda client that has the required methods
+                return {
+                    send: async () => ({
+                        Configuration: createMockFunctionConfig({
+                            FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+                        }),
+                    }),
+                    middlewareStack: {} as any,
+                    destroy: () => {},
+                } as any
+            })
+
+            const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
+                FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+            })
+
+            await ldkClient.getFunctionDetail(mockFunctionConfig.FunctionArn!)
+
+            assert(createAwsServiceStub.called, 'Should call createAwsService')
+            assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
+            assert.deepStrictEqual(
+                capturedClientOptions.clientOptions.userAgent,
+                [['LAMBDA-DEBUG/1.0.0 test-user-agent']],
+                'Should include correct user-agent with LAMBDA-DEBUG prefix in Lambda API calls'
+            )
+        })
+
+        it('should create IoT client with correct user-agent', async () => {
+            // Restore the existing stub and create a new one to track calls
+            const existingStub = (utils.getIoTSTClientWithAgent as any).restore
+                ? (utils.getIoTSTClientWithAgent as sinon.SinonStub)
+                : undefined
+            if (existingStub) {
+                existingStub.restore()
+            }
+
+            // Stub getUserAgent to return a known value
+            const getUserAgentStub = sandbox.stub(telemetryUtil, 'getUserAgent')
+            getUserAgentStub.returns('test-user-agent')
+
+            // Stub the sdkClientBuilderV3 to capture the client options
+            let capturedClientOptions: any
+            const createAwsServiceStub = sandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            createAwsServiceStub.callsFake((options: any) => {
+                capturedClientOptions = options
+                return mockIoTSTClient as any
+            })
+
+            mockIoTSTClient.on(ListTunnelsCommand).resolves({ tunnelSummaries: [] })
+            mockIoTSTClient.on(OpenTunnelCommand).resolves({
+                tunnelId: 'tunnel-123',
+                sourceAccessToken: 'source-token',
+                destinationAccessToken: 'dest-token',
+            })
+
+            await ldkClient.createOrReuseTunnel('us-east-1')
+
+            assert(createAwsServiceStub.calledOnce, 'Should call createAwsService once')
+            assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
+            assert.deepStrictEqual(
+                capturedClientOptions.clientOptions.userAgent,
+                [['LAMBDA-DEBUG/1.0.0 test-user-agent']],
+                'Should include correct user-agent with LAMBDA-DEBUG prefix'
+            )
+        })
+    })
 })
 
 describe('Helper Functions', () => {
