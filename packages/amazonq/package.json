@@ -1471,17 +1471,6 @@
                         "completionEvents": []
                     },
                     {
-                        "id": "aws.amazonq.walkthrough.securityScan",
-                        "title": "Check for security vulnerabilities",
-                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.\n\nStart a scan from the status bar menu.\n\n[Scan your current project](command:_aws.amazonq.walkthrough.securityScanExample)\n\nIdentifies vulnerabilities in Python, Typescript, Ruby, AWS CDK, and [more](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html#security-scans-language-support)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/amazonq/scans.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:_aws.amazonq.walkthrough.securityScanExample"
-                        ]
-                    },
-                    {
                         "id": "aws.amazonq.walkthrough.settings",
                         "title": "Access actions and options",
                         "description": "Pause inline suggestions, open the Code Reference Log, access Settings, and more from the Amazon Q menu.\n\n[Open the status bar menu](command:_aws.amazonq.walkthrough.listCommands)",

@@ -26,6 +26,11 @@ export interface HistoryObject {
     diffPath: string
     summaryPath: string
     jobId: string
+    transformationType: string
+    sourceJDKVersion: string
+    targetJDKVersion: string
+    customDependencyVersionFilePath: string
+    customBuildCommand: string
 }
 
 export interface JobMetadata {
@@ -71,6 +76,11 @@ export async function readHistoryFile(): Promise<HistoryObject[]> {
                 diffPath: jobInfo[4],
                 summaryPath: jobInfo[5],
                 jobId: jobInfo[6],
+                transformationType: jobInfo[7],
+                sourceJDKVersion: jobInfo[8],
+                targetJDKVersion: jobInfo[9],
+                customDependencyVersionFilePath: jobInfo[10],
+                customBuildCommand: jobInfo[11],
             })
         }
     }
@@ -125,14 +135,22 @@ export async function writeToHistoryFile(
     status: string,
     duration: string,
     jobId: string,
-    jobHistoryPath: string
+    jobHistoryPath: string,
+    transformationType: string,
+    sourceJDKVersion: string,
+    targetJDKVersion: string,
+    customDependencyVersionFilePath: string,
+    customBuildCommand: string
 ) {
     const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation_history.tsv')
     // create transform folder if necessary
     if (!(await fs.existsFile(historyLogFilePath))) {
         await fs.mkdir(path.dirname(historyLogFilePath))
         // create headers of new transformation history file
-        await fs.writeFile(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
+        await fs.writeFile(
+            historyLogFilePath,
+            'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\ttransformation_type\tsource_jdk_version\ttarget_jdk_version\tcustom_dependency_version_file_path\tcustom_build_command\n'
+        )
     }
     const artifactsExist = status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED'
     const fields = [
@@ -143,6 +161,11 @@ export async function writeToHistoryFile(
         artifactsExist ? path.join(jobHistoryPath, 'diff.patch') : '',
         artifactsExist ? path.join(jobHistoryPath, 'summary', 'summary.md') : '',
         jobId,
+        transformationType,
+        sourceJDKVersion,
+        targetJDKVersion,
+        customDependencyVersionFilePath,
+        customBuildCommand,
     ]
 
     const jobDetails = fields.join('\t') + '\n'
@@ -318,7 +341,8 @@ async function updateHistoryFile(status: string, duration: string, jobHistoryPat
             for (const job of jobs) {
                 if (job) {
                     const jobInfo = job.split('\t')
-                    // startTime: jobInfo[0], projectName: jobInfo[1], status: jobInfo[2], duration: jobInfo[3], diffPath: jobInfo[4], summaryPath: jobInfo[5], jobId: jobInfo[6]
+                    // 0: startTime, 1: projectName, 2: status, 3: duration, 4: diffPath, 5: summaryPath, 6: jobId
+                    // 7: transformationType, 8: sourceJDKVersion, 9: targetJDKVersion, 10: customDependencyVersionFilePath, 11: customBuildCommand
                     if (jobInfo[6] === jobId) {
                         // update any values if applicable
                         jobInfo[2] = status
@@ -341,7 +365,10 @@ async function updateHistoryFile(status: string, duration: string, jobHistoryPat
     }
 
     // rewrite file
-    await fs.writeFile(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
+    await fs.writeFile(
+        historyLogFilePath,
+        'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\ttransformation_type\tsource_jdk_version\ttarget_jdk_version\tcustom_dependency_version_file_path\tcustom_build_command\n'
+    )
     const tsvContent = history.map((row) => row.join('\t')).join('\n') + '\n'
     await fs.appendFile(historyLogFilePath, tsvContent)
 

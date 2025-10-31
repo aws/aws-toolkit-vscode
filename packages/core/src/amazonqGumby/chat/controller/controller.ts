@@ -403,9 +403,11 @@ export class GumbyController {
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
-                await stopTransformByQ(transformByQState.getJobId())
-                await postTransformationJob()
-                await cleanupTransformationJob()
+                if (transformByQState.isRunning() || transformByQState.isRefreshInProgress()) {
+                    await stopTransformByQ(transformByQState.getJobId())
+                    await postTransformationJob()
+                    await cleanupTransformationJob()
+                }
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.resetTransformationChatFlow()
