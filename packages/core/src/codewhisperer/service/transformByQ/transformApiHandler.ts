@@ -68,12 +68,29 @@ export function throwIfCancelled() {
 }
 
 export function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
+    if (transformByQState.getJobId() !== '' && transformByQState.getSourceJDKVersion() !== undefined) {
         sessionJobHistory[transformByQState.getJobId()] = {
             startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
             duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+            transformationType: transformByQState.getTransformationType() ?? 'N/A',
+            sourceJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getSourceJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            targetJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getTargetJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            customDependencyVersionsFilePath:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomDependencyVersionFilePath() || 'N/A'
+                    : 'N/A',
+            customBuildCommand:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomBuildCommand() || 'N/A'
+                    : 'N/A',
         }
     }
     return sessionJobHistory
