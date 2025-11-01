@@ -14,6 +14,7 @@ import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { getLogger } from '../../../../shared/logger/logger'
 import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import * as vscodeUtils from '../../../../shared/vscode/setContext'
 
 describe('SageMakerUnifiedStudioSpacesParentNode', function () {
     let spacesNode: SageMakerUnifiedStudioSpacesParentNode
@@ -29,10 +30,17 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             extensionUri: vscode.Uri.file('/test'),
         } as any
         mockAuthProvider = {
-            activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2' },
+            activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2', profileName: 'test-profile' },
             getDomainId: sinon.stub().returns('test-domain'),
             getDomainRegion: sinon.stub().returns('us-west-2'),
             getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
+            getCredentialsProviderForIamProfile: sinon.stub().resolves({
                 getCredentials: sinon.stub().resolves({
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
@@ -57,6 +65,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         sinon.stub(getLogger(), 'debug')
         sinon.stub(getLogger(), 'error')
         sinon.stub(SmusUtils, 'extractSSOIdFromUserId').returns('user-12345')
+        sinon.stub(vscodeUtils, 'getContext').returns(false)
 
         spacesNode = new SageMakerUnifiedStudioSpacesParentNode(
             mockParent,
@@ -425,6 +434,48 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             mockSagemakerClient.fetchSpaceAppsAndDomains.rejects(accessDeniedError)
 
             await assert.rejects(async () => await spacesNode['updateChildren'](), /Access denied to spaces/)
+        })
+    })
+
+    describe('Express mode error handling', function () {
+        it('should return no user profile error node when Express mode fails with no profile error', async function () {
+            const noProfileError = new Error('No user profile found for your session')
+            const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
+            updateChildrenStub.rejects(noProfileError)
+
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoUserProfile')
+
+            const treeItem = await children[0].getTreeItem()
+            assert.strictEqual(treeItem.label, 'No spaces found for your IAM principal')
+        })
+
+        it('should return access denied error node when Express mode returns AccessDeniedException', async function () {
+            const accessDeniedError = new Error("You don't have permissions to access this resource")
+            accessDeniedError.name = 'AccessDeniedException'
+            const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
+            updateChildrenStub.rejects(accessDeniedError)
+
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusAccessDenied')
+        })
+
+        it('should return user profile error node when Express mode returns generic error', async function () {
+            const genericError = new Error('Failed to retrieve user profile information')
+            const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
+            updateChildrenStub.rejects(genericError)
+
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusUserProfileError')
+
+            const treeItem = await children[0].getTreeItem()
+            assert.strictEqual(treeItem.label, 'Failed to retrieve spaces. Please try again.')
         })
     })
 })

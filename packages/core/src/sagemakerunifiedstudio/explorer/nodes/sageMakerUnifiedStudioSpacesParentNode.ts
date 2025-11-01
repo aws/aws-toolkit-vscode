@@ -20,6 +20,9 @@ import { getIcon } from '../../../shared/icons'
 import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
+import { SmusIamConnection } from '../../auth/model'
+import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -71,6 +74,12 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             if (error.name === 'AccessDeniedException') {
                 return this.getAccessDeniedChildren()
             }
+            if (error.message.includes('No user profile found')) {
+                return this.getNoUserProfileChildren()
+            }
+            if (error.message.includes('Failed to retrieve user profile information')) {
+                return this.getUserProfileErrorChildren(error.message)
+            }
             return this.getNoSpacesFoundChildren()
         }
         const nodes = [...this.sagemakerSpaceNodes.values()]
@@ -99,6 +108,42 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                 getTreeItem: () => {
                     const item = new vscode.TreeItem(
                         "You don't have permission to view spaces. Please contact your administrator.",
+                        vscode.TreeItemCollapsibleState.None
+                    )
+                    item.iconPath = getIcon('vscode-error')
+                    return item
+                },
+                getParent: () => this,
+            },
+        ]
+    }
+
+    private getNoUserProfileChildren(): TreeNode[] {
+        return [
+            {
+                id: 'smusNoUserProfile',
+                resource: {},
+                getTreeItem: () => {
+                    const item = new vscode.TreeItem(
+                        'No spaces found for your IAM principal',
+                        vscode.TreeItemCollapsibleState.None
+                    )
+                    item.iconPath = getIcon('vscode-error')
+                    return item
+                },
+                getParent: () => this,
+            },
+        ]
+    }
+
+    private getUserProfileErrorChildren(message: string): TreeNode[] {
+        return [
+            {
+                id: 'smusUserProfileError',
+                resource: {},
+                getTreeItem: () => {
+                    const item = new vscode.TreeItem(
+                        'Failed to retrieve spaces. Please try again.',
                         vscode.TreeItemCollapsibleState.None
                     )
                     item.iconPath = getIcon('vscode-error')
@@ -182,12 +227,60 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         }
     }
 
+    /**
+     * Retrieves the user profile ID for Express mode (IAM authentication)
+     * @returns Promise resolving to the user profile ID
+     * @throws Error if user profile retrieval fails
+     */
+    private async getUserProfileIdForExpressMode(): Promise<string> {
+        try {
+            // Get DataZoneCustomClientHelper instance
+            const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(
+                (this.authProvider.activeConnection as SmusIamConnection).profileName
+            )
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                credentialsProvider,
+                this.authProvider.getDomainRegion()
+            )
+
+            // Get caller identity to extract role ARN with session
+            const credentials = await credentialsProvider.getCredentials()
+            const stsClient = new DefaultStsClient(this.authProvider.getDomainRegion(), credentials)
+            const callerIdentity = await stsClient.getCallerIdentity()
+            const roleArnWithSession = callerIdentity.Arn
+
+            if (!roleArnWithSession) {
+                throw new Error('Unable to retrieve caller identity ARN')
+            }
+
+            this.logger.debug(`SMUS: Retrieved role ARN with session: ${roleArnWithSession}`)
+
+            // Call getUserProfileIdForSession with domain identifier and role ARN
+            const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
+                this.authProvider.getDomainId(),
+                roleArnWithSession
+            )
+
+            this.logger.debug(`SMUS: Retrieved user profile ID for session: ${userProfileId}`)
+            return userProfileId
+        } catch (err) {
+            const error = err as Error
+            this.logger.error(`SMUS: Failed to retrieve user profile information: ${error.message}`)
+
+            // Display appropriate error message based on error type
+            if (error.name === 'AccessDeniedException') {
+                throw new Error("You don't have permissions to access this resource. Please contact your administrator")
+            }
+            throw err
+        }
+    }
+
     private async updateChildren(): Promise<void> {
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
         if (getContext('aws.smus.isExpressMode')) {
-            userProfileId = await datazoneClient?.getUserProfileId()
+            userProfileId = await this.getUserProfileIdForExpressMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
@@ -199,6 +292,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             sagemakerDomainId,
             false /* filterSmusDomains */
         )
+
         // Filter spaceApps to only show spaces owned by current user
         this.logger.debug(`SMUS: Filtering spaces for user profile ID: ${userProfileId}`)
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()

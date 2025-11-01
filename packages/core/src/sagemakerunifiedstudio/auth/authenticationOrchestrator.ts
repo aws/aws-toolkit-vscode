@@ -17,7 +17,7 @@ import {
     IamProfileBackNavigation,
 } from './ui/iamProfileSelection'
 import { SmusAuthenticationPreferencesManager } from './preferences/authenticationPreferences'
-import { DataZoneDomainPreferencesClient } from '../shared/client/datazoneDomainPreferencesClient'
+import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClientHelper'
 import { recordAuthTelemetry } from '../shared/telemetry'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
@@ -288,14 +288,14 @@ export class SmusAuthenticationOrchestrator {
         try {
             logger.debug(`SMUS Auth: Finding Express domain in region ${region} using profile ${profileName}`)
 
-            // Get DataZoneDomainPreferencesClient instance
-            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+            // Get DataZoneCustomClientHelper instance
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
                 await authProvider.getCredentialsProviderForIamProfile(profileName),
                 region
             )
 
             // Find the Express domain using the client
-            const expressDomain = await domainPreferencesClient.getExpressDomain()
+            const expressDomain = await datazoneCustomClientHelper.getExpressDomain()
 
             if (!expressDomain) {
                 logger.warn(`SMUS Auth: No Express domain found in region ${region}`)
