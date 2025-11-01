@@ -226,7 +226,13 @@ export async function removeKnownHost(hostname: string): Promise<void> {
         throw ToolkitError.chain(err, 'Failed to read known_hosts file')
     }
 
-    const updatedLines = lines.filter((line) => !line.split(' ')[0].split(',').includes(hostname))
+    const updatedLines = lines.filter((line) => {
+        const entryHostname = line.split(' ')[0].split(',')
+        // Hostnames in the known_hosts file seem to be always lowercase, but keeping the case-sensitive check just in
+        // case. Originally we were only doing the case-sensitive check which caused users to get a host
+        // identification error when reconnecting to a Space after it was restarted.
+        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
+    })
 
     if (updatedLines.length !== lines.length) {
         try {
