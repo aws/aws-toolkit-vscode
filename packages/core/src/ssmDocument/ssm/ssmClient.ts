@@ -102,7 +102,7 @@ export async function activate(extensionContext: ExtensionContext) {
     )
     client.registerProposedFeatures()
 
-    client.start()
+    void client.start()
     toDispose.push(client)
 
     languages.setLanguageConfiguration('ssm-json', jsonLanguageConfiguration)

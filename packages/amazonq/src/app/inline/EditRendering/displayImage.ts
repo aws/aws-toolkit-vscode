@@ -323,7 +323,7 @@ export async function displaySvgDecoration(
     if (Math.abs(startLine - currentCursorLine) >= autoDiscardEditCursorDistance) {
         // Emit DISCARD telemetry for edit suggestion that can't be shown because the suggestion is too far away
         const params = createDiscardTelemetryParams(session, item)
-        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         logSuggestionFailure('DISCARD', 'cursor is too far away', item.insertText as string)
         return
     }
@@ -342,7 +342,7 @@ export async function displaySvgDecoration(
 
         // Emit DISCARD telemetry for edit suggestion that can't be shown due to active completion
         const params = createDiscardTelemetryParams(session, item)
-        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         logSuggestionFailure('DISCARD', 'Conflicting active inline completion', item.insertText as string)
         return
     }
@@ -355,7 +355,7 @@ export async function displaySvgDecoration(
 
         const params = createDiscardTelemetryParams(session, item)
         // TODO: this session is closed on flare side hence discarded is not emitted in flare
-        languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+        void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         logSuggestionFailure('DISCARD', 'Invalid patch', item.insertText as string)
         return
     }
@@ -433,7 +433,7 @@ export async function displaySvgDecoration(
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 isInlineEdit: true,
             }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
         },
         async (isDiscard: boolean) => {
@@ -466,7 +466,7 @@ export async function displaySvgDecoration(
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 isInlineEdit: true,
             }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         originalCode,
         newCode,

@@ -33,6 +33,7 @@ import {
     ServerCapabilities,
     TextDocuments,
     TextDocumentSyncKind,
+    DidChangeWatchedFilesParams,
 } from 'vscode-languageserver'
 
 import { posix } from 'path'
@@ -314,7 +315,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
         )
 }
 
-connection.onDidChangeWatchedFiles((change: any) => {
+connection.onDidChangeWatchedFiles((change: DidChangeWatchedFilesParams) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
     for (const c of change.changes) {
@@ -342,7 +343,7 @@ function getJSONDocument(document: TextDocument): JSONDocument {
     return jsonDocuments.get(document)
 }
 
-connection.onCompletion((textDocumentPosition: any, token: any) => {
+connection.onCompletion((textDocumentPosition, token) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(textDocumentPosition.textDocument.uri)
@@ -364,7 +365,7 @@ connection.onCompletion((textDocumentPosition: any, token: any) => {
     )
 })
 
-connection.onCompletionResolve((completionItem: any, token: any) => {
+connection.onCompletionResolve((completionItem, token) => {
     return runSafeAsync(
         () => {
             // the asl-yaml-languageservice uses doResolve from the asl service
@@ -376,7 +377,7 @@ connection.onCompletionResolve((completionItem: any, token: any) => {
     )
 })
 
-connection.onHover((textDocumentPositionParams: any, token: any) => {
+connection.onHover((textDocumentPositionParams, token) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(textDocumentPositionParams.textDocument.uri)
@@ -397,7 +398,7 @@ connection.onHover((textDocumentPositionParams: any, token: any) => {
     )
 })
 
-connection.onDocumentSymbol((documentSymbolParams: any, token: any) => {
+connection.onDocumentSymbol((documentSymbolParams, token) => {
     return runSafe(
         () => {
             const document = documents.get(documentSymbolParams.textDocument.uri)
@@ -429,7 +430,7 @@ connection.onDocumentSymbol((documentSymbolParams: any, token: any) => {
     )
 })
 
-connection.onDocumentRangeFormatting((formatParams: any, token: any) => {
+connection.onDocumentRangeFormatting((formatParams, token) => {
     return runSafe(
         () => {
             const document = documents.get(formatParams.textDocument.uri)
@@ -449,7 +450,7 @@ connection.onDocumentRangeFormatting((formatParams: any, token: any) => {
     )
 })
 
-connection.onDocumentColor((params: any, token: any) => {
+connection.onDocumentColor((params, token) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(params.textDocument.uri)
@@ -475,7 +476,7 @@ connection.onDocumentColor((params: any, token: any) => {
     )
 })
 
-connection.onColorPresentation((params: any, token: any) => {
+connection.onColorPresentation((params, token) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)
@@ -498,7 +499,7 @@ connection.onColorPresentation((params: any, token: any) => {
     )
 })
 
-connection.onFoldingRanges((params: any, token: any) => {
+connection.onFoldingRanges((params, token) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)
@@ -522,7 +523,7 @@ connection.onFoldingRanges((params: any, token: any) => {
     )
 })
 
-connection.onSelectionRanges((params: any, token: any) => {
+connection.onSelectionRanges((params, token) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)

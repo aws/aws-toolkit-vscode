@@ -81,7 +81,7 @@ export async function pushConfigUpdate(client: BaseLanguageClient, config: QConf
             break
         case 'customization':
             logger.debug(`Pushing customization configuration: ${config.customization || 'undefined'}`)
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            void client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.q',
                 settings: { customization: config.customization },
             })
@@ -89,7 +89,7 @@ export async function pushConfigUpdate(client: BaseLanguageClient, config: QConf
             break
         case 'logLevel':
             logger.debug(`Pushing log level configuration`)
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            void client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.logLevel',
             })
             logger.debug(`Log level configuration pushed successfully`)

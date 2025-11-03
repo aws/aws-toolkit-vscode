@@ -107,7 +107,7 @@ export function registerActiveEditorChangeListener(languageClient: BaseLanguageC
                 }
                 cursorState = getCursorState(editor.selections)
             }
-            languageClient.sendNotification(activeEditorChangedNotificationType.method, {
+            void languageClient.sendNotification(activeEditorChangedNotificationType.method, {
                 textDocument,
                 cursorState,
             })
@@ -187,7 +187,7 @@ export function registerMessageListeners(
                         languageClient.info(
                             `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
                         )
-                        languageClient.sendNotification(message.command, message.params)
+                        void languageClient.sendNotification(message.command, message.params)
                     } catch (err) {
                         languageClient.error(
                             `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
@@ -212,7 +212,7 @@ export function registerMessageListeners(
                     textDocument = { uri: editor.document.uri.toString() }
                 }
 
-                languageClient.sendNotification(insertToCursorPositionNotificationType.method, {
+                void languageClient.sendNotification(insertToCursorPositionNotificationType.method, {
                     ...message.params,
                     cursorPosition,
                     textDocument,
@@ -472,7 +472,7 @@ export function registerMessageListeners(
                 break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
-                    languageClient.sendNotification(followUpClickNotificationType.method, message.params)
+                    void languageClient.sendNotification(followUpClickNotificationType.method, message.params)
                 }
                 break
             case buttonClickRequestType.method: {
@@ -494,7 +494,7 @@ export function registerMessageListeners(
                     } else if (exitFocus(message.params)) {
                         await setContext('aws.amazonq.amazonqChatLSP.isFocus', false)
                     }
-                    languageClient.sendNotification(message.command, message.params)
+                    void languageClient.sendNotification(message.command, message.params)
                 }
                 break
         }
@@ -737,7 +737,7 @@ function exitFocus(params: any) {
  * Decodes partial chat responses from the language server before sending them to mynah UI
  */
 async function handlePartialResult<T extends ChatResult>(
-    partialResult: any,
+    partialResult: string | T,
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string

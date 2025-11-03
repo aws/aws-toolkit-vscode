@@ -215,7 +215,7 @@ export class RecommendationService {
                             ])
                         ),
                     }
-                    languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+                    void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
                     this.sessionManager.clear()
                     this.logger.info(
                         'Suggetions were discarded; reason: active edit suggestion displayed longer than 1 second'
