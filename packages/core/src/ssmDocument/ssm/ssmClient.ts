@@ -13,16 +13,10 @@ const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, LanguageConfiguration, languages, window, workspace } from 'vscode'
 
-import {
-    DidChangeConfigurationNotification,
-    LanguageClient,
-    LanguageClientOptions,
-    NotificationType,
-    ServerOptions,
-    TransportKind,
-} from 'vscode-languageclient'
+import { DidChangeConfigurationNotification, LanguageClientOptions, NotificationType } from 'vscode-languageclient'
+import { ServerOptions, TransportKind, LanguageClient } from 'vscode-languageclient/node'
 
-export const ResultLimitReached: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
+export const ResultLimitReached: NotificationType<string> = new NotificationType('ssm/resultLimitReached')
 
 const jsonLanguageConfiguration: LanguageConfiguration = {
     wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
@@ -108,14 +102,14 @@ export async function activate(extensionContext: ExtensionContext) {
     )
     client.registerProposedFeatures()
 
-    const disposable = client.start()
-    toDispose.push(disposable)
+    client.start()
+    toDispose.push(client)
 
     languages.setLanguageConfiguration('ssm-json', jsonLanguageConfiguration)
     languages.setLanguageConfiguration('ssm-yaml', yamlLanguageConfiguration)
 
-    return client.onReady().then(() => {
-        client.onNotification(ResultLimitReached, (message) => {
+    return client.start().then(() => {
+        client.onNotification(ResultLimitReached, (message: any) => {
             void window.showInformationMessage(
                 `${message}\nUse setting 'aws.ssmDocument.ssm.maxItemsComputed' to configure the limit.`
             )

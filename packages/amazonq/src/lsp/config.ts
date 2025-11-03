@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { DevSettings, getServiceEnvVarConfig, BaseLspInstaller, getLogger } from 'aws-core-vscode/shared'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     DidChangeConfigurationNotification,
     updateConfigurationRequestType,
@@ -67,7 +67,7 @@ export function toAmazonQLSPLogLevel(logLevel: vscode.LogLevel): LspLogLevel {
  * different handlers for specific configs. So this determines the correct place to
  * push the given config.
  */
-export async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
+export async function pushConfigUpdate(client: BaseLanguageClient, config: QConfigs) {
     const logger = getLogger('amazonqLsp')
 
     switch (config.type) {

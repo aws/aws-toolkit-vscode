@@ -70,7 +70,7 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
+import { Disposable, BaseLanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import {
     AggregatedCodeScanIssue,
@@ -92,7 +92,7 @@ import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 import { CommentUtils } from 'aws-core-vscode/utils'
 
-export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
+export function registerActiveEditorChangeListener(languageClient: BaseLanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
     vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (debounceTimer) {
@@ -115,7 +115,10 @@ export function registerActiveEditorChangeListener(languageClient: LanguageClien
     })
 }
 
-export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
+export function registerLanguageServerEventListener(
+    languageClient: BaseLanguageClient,
+    provider: AmazonQChatViewProvider
+) {
     languageClient.info(
         'Language client received initializeResult from server:',
         JSON.stringify(languageClient.initializeResult)
@@ -129,7 +132,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     }
 
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
-    languageClient.onTelemetry((e) => {
+    languageClient.onTelemetry((e: any) => {
         const telemetryName: string = e.name
         languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
         try {
@@ -143,7 +146,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
 }
 
 export function registerMessageListeners(
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
@@ -196,7 +199,7 @@ export function registerMessageListeners(
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
                 try {
                     await messages.copyToClipboard(message.params.code)
-                } catch (e) {
+                } catch (e: unknown) {
                     languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
                 }
                 break
@@ -277,12 +280,15 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
-                        (result) => {
-                            lastPartialResult = result
-                        }
-                    )
+                const chatDisposable = languageClient.onProgress(
+                    chatRequestType,
+                    partialResultToken,
+                    (partialResult: any) =>
+                        handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                            (result) => {
+                                lastPartialResult = result
+                            }
+                        )
                 )
 
                 const editor =
@@ -396,7 +402,7 @@ export function registerMessageListeners(
                 const quickActionDisposable = languageClient.onProgress(
                     quickActionRequestType,
                     quickActionPartialResultToken,
-                    (partialResult) =>
+                    (partialResult: any) =>
                         handlePartialResult<QuickActionResult>(
                             partialResult,
                             encryptionKey,
@@ -598,7 +604,7 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+            focusAmazonQPanel().catch((e: Error) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
 
             try {
                 const uri = vscode.Uri.parse(params.uri)
@@ -731,7 +737,7 @@ function exitFocus(params: any) {
  * Decodes partial chat responses from the language server before sending them to mynah UI
  */
 async function handlePartialResult<T extends ChatResult>(
-    partialResult: string | T,
+    partialResult: any,
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string
@@ -769,7 +775,7 @@ async function handleCompleteResult<T extends ChatResult>(
     provider: AmazonQChatViewProvider,
     tabId: string,
     disposable: Disposable,
-    languageClient: LanguageClient
+    languageClient: BaseLanguageClient
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
 
@@ -790,7 +796,7 @@ async function handleCompleteResult<T extends ChatResult>(
 
 async function handleSecurityFindings(
     decryptedMessage: { additionalMessages?: ChatMessage[] },
-    languageClient: LanguageClient
+    languageClient: BaseLanguageClient
 ): Promise<void> {
     if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
         return
@@ -839,7 +845,7 @@ async function handleSecurityFindings(
 async function resolveChatResponse(
     requestMethod: string,
     params: any,
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     webview: vscode.Webview | undefined
 ) {
     const result = await languageClient.sendRequest(requestMethod, params)

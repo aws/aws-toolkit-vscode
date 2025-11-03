@@ -11,7 +11,7 @@ import {
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import {
     AuthUtil,
@@ -49,7 +49,7 @@ export class RecommendationService {
     }
 
     async getRecommendationsWithTimeout(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         request: InlineCompletionWithReferencesParams,
         token: CancellationToken
     ) {
@@ -66,7 +66,7 @@ export class RecommendationService {
     }
 
     async getAllRecommendations(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
@@ -289,7 +289,7 @@ export class RecommendationService {
     }
 
     private async processRemainingRequests(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,
         token: CancellationToken

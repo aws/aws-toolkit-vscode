@@ -18,7 +18,7 @@ import {
     InlineCompletionTriggerKind,
     Range,
 } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     InlineCompletionItemWithReferences,
     LogInlineCompletionSessionResultsParams,
@@ -50,7 +50,7 @@ import { DocumentEventListener } from './documentEventListener'
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
-    private languageClient: LanguageClient
+    private languageClient: BaseLanguageClient
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
@@ -60,7 +60,7 @@ export class InlineCompletionManager implements Disposable {
     private documentEventListener: DocumentEventListener
 
     constructor(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
         inlineTutorialAnnotation: InlineTutorialAnnotation,
@@ -216,7 +216,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     private pendingRequest: Promise<InlineCompletionItem[]> | undefined
 
     constructor(
-        private readonly languageClient: LanguageClient,
+        private readonly languageClient: BaseLanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,

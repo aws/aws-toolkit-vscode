@@ -25,7 +25,7 @@ import {
     Diagnostic,
     Disposable,
     DocumentRangeFormattingRequest,
-    IConnection,
+    Connection,
     InitializeParams,
     InitializeResult,
     NotificationType,
@@ -41,12 +41,12 @@ import { getLanguageModelCache } from '../../shared/lsp/languageModelCache'
 import { formatError, runSafe, runSafeAsync } from '../../shared/lsp/utils/runner'
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 
-export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
+export const ResultLimitReached: NotificationType<string> = new NotificationType('asl/resultLimitReached')
 
-export const ForceValidateRequest: RequestType<string, Diagnostic[], any, any> = new RequestType('asl/validate')
+export const ForceValidateRequest: RequestType<string, Diagnostic[], any> = new RequestType('asl/validate')
 
 // Create a connection for the server
-const connection: IConnection = createConnection()
+const connection: Connection = (createConnection as any)()
 
 process.on('unhandledRejection', (e: any) => {
     console.error(formatError('Unhandled exception', e))
@@ -179,7 +179,7 @@ class LimitExceededWarnings {
             } else {
                 warning = { features: { [name]: name } }
                 warning.timeout = setTimeout(() => {
-                    connection.sendNotification(
+                    void connection.sendNotification(
                         ResultLimitReached,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
                             ' and '
@@ -195,7 +195,7 @@ class LimitExceededWarnings {
 
 let formatterRegistration: Thenable<Disposable> | undefined
 
-connection.onDidChangeConfiguration((change) => {
+connection.onDidChangeConfiguration((change: any) => {
     const settings = <Settings>change.settings
 
     foldingRangeLimit = Math.trunc(
@@ -225,7 +225,7 @@ connection.onDidChangeConfiguration((change) => {
 })
 
 // Retry schema validation on all open documents
-connection.onRequest(ForceValidateRequest, async (uri) => {
+connection.onRequest(ForceValidateRequest, async (uri: any) => {
     return new Promise<Diagnostic[]>((resolve) => {
         const document = documents.get(uri)
         if (document) {
@@ -241,7 +241,7 @@ connection.onRequest(ForceValidateRequest, async (uri) => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent((change) => {
+documents.onDidChangeContent((change: any) => {
     LimitExceededWarnings.cancel(change.document.uri)
     triggerValidation(change.document)
 })
@@ -250,7 +250,7 @@ documents.onDidChangeContent((change) => {
 documents.onDidClose((event) => {
     LimitExceededWarnings.cancel(event.document.uri)
     cleanPendingValidation(event.document)
-    connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
+    void connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
 })
 
 const pendingValidationRequests: { [uri: string]: NodeJS.Timer } = {}
@@ -283,7 +283,7 @@ function getLanguageService(langId: string): LanguageService {
 
 function validateTextDocument(textDocument: TextDocument, callback?: (diagnostics: Diagnostic[]) => void): void {
     const respond = (diagnostics: Diagnostic[]) => {
-        connection.sendDiagnostics({ uri: textDocument.uri, diagnostics })
+        void connection.sendDiagnostics({ uri: textDocument.uri, diagnostics })
         if (callback) {
             callback(diagnostics)
         }
@@ -314,7 +314,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
         )
 }
 
-connection.onDidChangeWatchedFiles((change) => {
+connection.onDidChangeWatchedFiles((change: any) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
     for (const c of change.changes) {
@@ -342,7 +342,7 @@ function getJSONDocument(document: TextDocument): JSONDocument {
     return jsonDocuments.get(document)
 }
 
-connection.onCompletion((textDocumentPosition, token) => {
+connection.onCompletion((textDocumentPosition: any, token: any) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(textDocumentPosition.textDocument.uri)
@@ -364,7 +364,7 @@ connection.onCompletion((textDocumentPosition, token) => {
     )
 })
 
-connection.onCompletionResolve((completionItem, token) => {
+connection.onCompletionResolve((completionItem: any, token: any) => {
     return runSafeAsync(
         () => {
             // the asl-yaml-languageservice uses doResolve from the asl service
@@ -376,7 +376,7 @@ connection.onCompletionResolve((completionItem, token) => {
     )
 })
 
-connection.onHover((textDocumentPositionParams, token) => {
+connection.onHover((textDocumentPositionParams: any, token: any) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(textDocumentPositionParams.textDocument.uri)
@@ -397,7 +397,7 @@ connection.onHover((textDocumentPositionParams, token) => {
     )
 })
 
-connection.onDocumentSymbol((documentSymbolParams, token) => {
+connection.onDocumentSymbol((documentSymbolParams: any, token: any) => {
     return runSafe(
         () => {
             const document = documents.get(documentSymbolParams.textDocument.uri)
@@ -429,7 +429,7 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
     )
 })
 
-connection.onDocumentRangeFormatting((formatParams, token) => {
+connection.onDocumentRangeFormatting((formatParams: any, token: any) => {
     return runSafe(
         () => {
             const document = documents.get(formatParams.textDocument.uri)
@@ -449,7 +449,7 @@ connection.onDocumentRangeFormatting((formatParams, token) => {
     )
 })
 
-connection.onDocumentColor((params, token) => {
+connection.onDocumentColor((params: any, token: any) => {
     return runSafeAsync(
         async () => {
             const document = documents.get(params.textDocument.uri)
@@ -475,7 +475,7 @@ connection.onDocumentColor((params, token) => {
     )
 })
 
-connection.onColorPresentation((params, token) => {
+connection.onColorPresentation((params: any, token: any) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)
@@ -498,7 +498,7 @@ connection.onColorPresentation((params, token) => {
     )
 })
 
-connection.onFoldingRanges((params, token) => {
+connection.onFoldingRanges((params: any, token: any) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)
@@ -522,7 +522,7 @@ connection.onFoldingRanges((params, token) => {
     )
 })
 
-connection.onSelectionRanges((params, token) => {
+connection.onSelectionRanges((params: any, token: any) => {
     return runSafe(
         () => {
             const document = documents.get(params.textDocument.uri)

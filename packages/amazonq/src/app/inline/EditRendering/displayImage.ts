@@ -6,7 +6,7 @@
 import { getContext, getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { applyPatch, diffLines } from 'diff'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
@@ -309,7 +309,7 @@ export async function displaySvgDecoration(
     newCode: string,
     originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     item: InlineCompletionItemWithReferences,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
