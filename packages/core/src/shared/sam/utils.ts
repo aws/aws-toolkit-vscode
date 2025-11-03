@@ -18,6 +18,7 @@ import { telemetry } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ChildProcessResult } from '../utilities/processUtils'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -66,7 +67,7 @@ export async function isDotnetRuntime(templateUri: vscode.Uri, contents?: string
             }
         }
     }
-    const globalRuntime = samTemplate.template.Globals?.Function?.Runtime as string
+    const globalRuntime = samTemplate.template.Globals?.Function?.Runtime as Runtime
     return globalRuntime ? getFamily(globalRuntime) === RuntimeFamily.DotNet : false
 }
 

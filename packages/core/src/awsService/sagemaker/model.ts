@@ -27,12 +27,14 @@ const logger = getLogger('sagemaker')
 
 export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
-    ctx: vscode.ExtensionContext
+    ctx: vscode.ExtensionContext,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
 ) {
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
     const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
     try {
+        progress.report({ message: 'Opening remote session' })
         await startVscodeRemote(
             remoteEnv.SessionProcess,
             remoteEnv.hostname,
@@ -226,7 +228,13 @@ export async function removeKnownHost(hostname: string): Promise<void> {
         throw ToolkitError.chain(err, 'Failed to read known_hosts file')
     }
 
-    const updatedLines = lines.filter((line) => !line.split(' ')[0].split(',').includes(hostname))
+    const updatedLines = lines.filter((line) => {
+        const entryHostname = line.split(' ')[0].split(',')
+        // Hostnames in the known_hosts file seem to be always lowercase, but keeping the case-sensitive check just in
+        // case. Originally we were only doing the case-sensitive check which caused users to get a host
+        // identification error when reconnecting to a Space after it was restarted.
+        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
+    })
 
     if (updatedLines.length !== lines.length) {
         try {

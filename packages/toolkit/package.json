@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.81.0-SNAPSHOT",
+    "version": "3.83.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -4571,13 +4571,24 @@
                 "when": "workspacePlatform != webworker",
                 "steps": [
                     {
+                        "id": "toolInstallWindows",
+                        "title": "%AWS.toolkit.lambda.walkthrough.toolInstall.title%",
+                        "description": "%AWS.toolkit.lambda.walkthrough.toolInstall.description.windows%",
+                        "media": {
+                            "image": "./resources/walkthrough/appBuilder/install.png",
+                            "altText": "Showing GUI installer"
+                        },
+                        "when": "isWindows"
+                    },
+                    {
                         "id": "toolInstall",
                         "title": "%AWS.toolkit.lambda.walkthrough.toolInstall.title%",
                         "description": "%AWS.toolkit.lambda.walkthrough.toolInstall.description%",
                         "media": {
                             "image": "./resources/walkthrough/appBuilder/install.png",
                             "altText": "Showing GUI installer"
-                        }
+                        },
+                        "when": "!isWindows"
                     },
                     {
                         "id": "chooseTemplate",

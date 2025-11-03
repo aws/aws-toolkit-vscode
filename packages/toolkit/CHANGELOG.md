@@ -1,3 +1,11 @@
+## 3.82.0 20ß25-10-30
+
+- **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
+
+## 3.81.0 2025-10-22
+
+- Miscellaneous non-user-facing changes
+
 ## 3.80.0 2025-10-16
 
 - **Bug Fix** The space is updated upon creation of a new app with the requested settings

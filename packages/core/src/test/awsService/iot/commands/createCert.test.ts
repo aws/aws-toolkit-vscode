@@ -9,7 +9,7 @@ import { createCertificateCommand } from '../../../../awsService/iot/commands/cr
 import { IotNode } from '../../../../awsService/iot/explorer/iotNodes'
 import { IotClient } from '../../../../shared/clients/iotClient'
 import { IotCertsFolderNode } from '../../../../awsService/iot/explorer/iotCertFolderNode'
-import { Iot } from 'aws-sdk'
+import { CreateKeysAndCertificateResponse } from '@aws-sdk/client-iot'
 import { getTestWindow } from '../../../shared/vscode/window'
 import assert from 'assert'
 
@@ -21,7 +21,7 @@ describe('createCertificateCommand', function () {
     const certificateArn = 'arn'
     const certificatePem = 'certPem'
     const keyPair = { PrivateKey: 'private', PublicKey: 'public' }
-    const certificate: Iot.CreateKeysAndCertificateResponse = { certificateId, certificateArn, certificatePem, keyPair }
+    const certificate: CreateKeysAndCertificateResponse = { certificateId, certificateArn, certificatePem, keyPair }
     let iot: IotClient
     let node: IotCertsFolderNode
     let saveLocation: vscode.Uri | undefined = vscode.Uri.file('/certificate.txt')
