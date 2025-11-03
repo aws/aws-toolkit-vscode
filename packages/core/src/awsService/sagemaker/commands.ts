@@ -193,54 +193,27 @@ export async function openRemoteConnect(
     }
 
     const spaceName = node.spaceApp.SpaceName!
+    await tryRefreshNode(node)
 
-    try {
-        await tryRefreshNode(node)
+    // for Stopped SM spaces - check instance type before showing progress
+    if (node.getStatus() === 'Stopped') {
+        //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
+        const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
 
-        // for Stopped SM spaces - check instance type before showing progress
-        if (node.getStatus() === 'Stopped') {
-            //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
-            const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
-
-            try {
-                await client.startSpace(spaceName, node.spaceApp.DomainId!)
-                await tryRefreshNode(node)
-                const appType = node.spaceApp.SpaceSettingsSummary?.AppType
-                if (!appType) {
-                    throw new ToolkitError(
-                        'AppType is undefined for the selected space. Cannot start remote connection.',
-                        {
-                            code: 'undefinedAppType',
-                        }
-                    )
-                }
-
-                // Only start showing progress after instance type validation
-                return await vscode.window.withProgress(
+        try {
+            await client.startSpace(spaceName, node.spaceApp.DomainId!)
+            await tryRefreshNode(node)
+            const appType = node.spaceApp.SpaceSettingsSummary?.AppType
+            if (!appType) {
+                throw new ToolkitError(
+                    'AppType is undefined for the selected space. Cannot start remote connection.',
                     {
-                        location: vscode.ProgressLocation.Notification,
-                        cancellable: false,
-                        title: `Connecting to ${spaceName}`,
-                    },
-                    async (progress) => {
-                        progress.report({ message: 'Starting the space.' })
-                        await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, appType)
-                        await tryRemoteConnection(node, ctx, progress)
+                        code: 'undefinedAppType',
                     }
                 )
-            } catch (err: any) {
-                // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
-                // just return without showing progress
-                if (err.code === InstanceTypeError) {
-                    return
-                }
-                throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
-                    cause: err as Error,
-                    code: err.code,
-                })
             }
-        } else if (node.getStatus() === 'Running') {
-            // For running spaces, show progress
+
+            // Only start showing progress after instance type validation
             return await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -248,12 +221,33 @@ export async function openRemoteConnect(
                     title: `Connecting to ${spaceName}`,
                 },
                 async (progress) => {
+                    progress.report({ message: 'Starting the space.' })
+                    await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, appType)
                     await tryRemoteConnection(node, ctx, progress)
                 }
             )
+        } catch (err: any) {
+            // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
+            // just return without showing progress
+            if (err.code === InstanceTypeError) {
+                return
+            }
+            throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
+                cause: err as Error,
+                code: err.code,
+            })
         }
-    } catch (err: any) {
-        getLogger().error(`sm:openRemoteConnect: ${err}`)
-        throw err
+    } else if (node.getStatus() === 'Running') {
+        // For running spaces, show progress
+        return await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+                title: `Connecting to ${spaceName}`,
+            },
+            async (progress) => {
+                await tryRemoteConnection(node, ctx, progress)
+            }
+        )
     }
 }
