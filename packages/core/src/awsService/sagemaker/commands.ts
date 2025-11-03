@@ -205,12 +205,10 @@ export async function openRemoteConnect(
             await tryRefreshNode(node)
             const appType = node.spaceApp.SpaceSettingsSummary?.AppType
             if (!appType) {
-                throw new ToolkitError(
-                    'AppType is undefined for the selected space. Cannot start remote connection.',
+                throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.',
                     {
                         code: 'undefinedAppType',
-                    }
-                )
+                    })
             }
 
             // Only start showing progress after instance type validation
