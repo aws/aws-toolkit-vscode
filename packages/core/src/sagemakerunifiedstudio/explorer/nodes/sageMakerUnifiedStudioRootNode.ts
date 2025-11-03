@@ -7,20 +7,22 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'
-import { DataZoneProject } from '../../shared/client/datazoneClient'
+import { DataZoneProject, DataZoneClient } from '../../shared/client/datazoneClient'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusErrorCodes } from '../../shared/smusUtils'
+import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
 import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
-import { isSmusSsoConnection } from '../../auth/model'
+import { isSmusSsoConnection, isSmusIamConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
+import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -136,17 +138,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             ]
         }
 
-        if (getContext('aws.smus.isExpressMode')) {
-            // In Express mode, immediately show auth node, and project node's children (data and compute nodes)
-            if (!this.projectNode.project) {
-                await selectSMUSProject(this.projectNode)
-            }
-
-            const projectChildren = await this.projectNode.getChildren()
-            return [this.authInfoNode, ...projectChildren]
-        }
-
-        // When authenticated, show auth info and projects
+        // When authenticated, show auth info and projects (same for both Express and non-Express mode)
         return [this.authInfoNode, this.projectNode]
     }
 
@@ -449,6 +441,52 @@ async function showQuickPick(items: any[]) {
     return await quickPick.prompt()
 }
 
+/**
+ * Fetches projects filtered by group profile for Express mode IAM authentication
+ * @param authProvider The SMUS authentication provider
+ * @param client The DataZone client instance
+ * @returns Promise resolving to filtered projects array
+ * @throws Error if group profile retrieval fails
+ */
+async function fetchProjectsByGroupProfile(
+    authProvider: SmusAuthenticationProvider,
+    client: DataZoneClient
+): Promise<DataZoneProject[]> {
+    const logger = getLogger()
+
+    // Get credentials provider for IAM profile
+    const activeConnection = authProvider.activeConnection
+    if (!isSmusIamConnection(activeConnection)) {
+        throw new Error('Active connection is not a valid IAM connection')
+    }
+    const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
+
+    const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+        credentialsProvider,
+        authProvider.getDomainRegion()
+    )
+
+    // Get caller identity to extract role ARN
+    const callerCredentials = await credentialsProvider.getCredentials()
+    const stsClient = new DefaultStsClient(authProvider.getDomainRegion(), callerCredentials)
+    const callerIdentity = await stsClient.getCallerIdentity()
+    logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
+
+    // Convert assumed role ARN to IAM role ARN for group profile matching
+    const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
+    logger.debug(`Converted to IAM role ARN: ${roleArn}`)
+
+    // Get group profile ID for the current role
+    const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
+    logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+
+    // Fetch projects filtered by group profile
+    const projects = await client.fetchAllProjects({ groupIdentifier: groupProfileId })
+    logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+
+    return projects
+}
+
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
     const logger = getLogger()
 
@@ -460,37 +498,62 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 return
             }
 
-            const client = await createDZClientBaseOnDomainMode(authProvider)
+            const datazoneClient = await createDZClientBaseOnDomainMode(authProvider)
             logger.debug('DataZone client instance obtained successfully')
 
-            const allProjects = await client.fetchAllProjects()
+            let allProjects: DataZoneProject[]
+
+            if (getContext('aws.smus.isExpressMode')) {
+                // In Express mode, filter projects by group profile
+                try {
+                    allProjects = await fetchProjectsByGroupProfile(authProvider, datazoneClient)
+                } catch (err) {
+                    const error = err as Error
+
+                    // Handle no group profile found
+                    if (error instanceof ToolkitError && error.message.includes('No group profile found')) {
+                        logger.error('No group profile found for IAM role: %s', error.message)
+                        void vscode.window.showErrorMessage(
+                            'No resources found for your IAM principal. Ensure SageMaker Unified Studio resources exist for this IAM principal.'
+                        )
+                        return error
+                    }
+
+                    // Handle access denied
+                    if (isAccessDenied(error)) {
+                        logger.error('Access denied when retrieving group profile: %s', error.message)
+                        void vscode.window.showErrorMessage(
+                            "You don't have permissions to access this resource. Please contact your administrator"
+                        )
+                        return error
+                    }
+
+                    // Handle other errors
+                    logger.error('Failed to retrieve group profile information: %s', error.message)
+                    void vscode.window.showErrorMessage('Failed to fetch IAM prinicpal information. Try again.')
+                    return error
+                }
+            } else {
+                // In non-Express mode, fetch all projects without filtering
+                allProjects = await datazoneClient.fetchAllProjects()
+            }
+
             const items = createProjectQuickPickItems(allProjects)
 
+            // Handle no projects scenario
             if (items.length === 0) {
-                logger.info('No projects found in the domain')
-                void vscode.window.showInformationMessage('No projects found in the domain')
-                await showQuickPick([{ label: 'No projects found', detail: '', description: '', data: {} }])
+                if (getContext('aws.smus.isExpressMode')) {
+                    logger.debug('No accessible projects found for IAM principal')
+                    void vscode.window.showInformationMessage('No accessible projects found for your IAM principal')
+                } else {
+                    logger.debug('No projects found in the domain')
+                    void vscode.window.showInformationMessage('No projects found in the domain')
+                }
                 return
             }
 
-            let selectedProject
-            if (getContext('aws.smus.isExpressMode')) {
-                // In express mode, automatically select the express project
-                logger.debug('Auto-selecting the express project')
-                const userProfileId = await client.getUserProfileId()
-                selectedProject = items.find((item) => item.data.createdBy === userProfileId)?.data
-                if (!selectedProject) {
-                    logger.info(`No project found created by the current user (${userProfileId})`)
-                    void vscode.window.showInformationMessage('No accessible projects found')
-                    return
-                }
-                logger.info(
-                    `Selected project ${(selectedProject as DataZoneProject).name} (${(selectedProject as DataZoneProject).id})`
-                )
-            } else {
-                // Show project picker
-                selectedProject = await showQuickPick(items)
-            }
+            // Show project picker
+            const selectedProject = await showQuickPick(items)
 
             const accountId = await authProvider.getDomainAccountId()
             span.record({
@@ -514,7 +577,9 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
         } catch (err) {
             const error = err as Error
 
+            // Handle access denied scenarios
             if (isAccessDenied(error)) {
+                logger.error('Access denied when fetching projects: %s', error.message)
                 await showQuickPick([
                     {
                         label: '$(error)',
@@ -524,6 +589,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 return
             }
 
+            // Handle network/API failures
             logger.error('Failed to select project: %s', error.message)
             void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
         }

@@ -216,6 +216,28 @@ describe('SageMaker Model', () => {
             assertLogsContain(`Removed '${hostname}' from known_hosts`, false, 'debug')
         })
 
+        it('removes case-sensitive hostname when entry in known_hosts is lowercase', async function () {
+            const mixedCaseHostname = 'Test.Host.Com'
+
+            sandbox.stub(fs, 'existsFile').resolves(true)
+
+            const inputContent = `test.host.com ssh-rsa AAAA\nsome.other.com ssh-rsa BBBB`
+            const expectedOutput = `some.other.com ssh-rsa BBBB`
+
+            sandbox.stub(fs, 'readFileText').resolves(inputContent)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await removeKnownHost(mixedCaseHostname)
+
+            sinon.assert.calledWith(
+                writeStub,
+                path.join(os.homedir(), '.ssh', 'known_hosts'),
+                sinon.match((value: string) => value.trim() === expectedOutput),
+                { atomic: true }
+            )
+            assertLogsContain(`Removed '${mixedCaseHostname}' from known_hosts`, false, 'debug')
+        })
+
         it('handles hostname in comma-separated list', async function () {
             sandbox.stub(fs, 'existsFile').resolves(true)
 

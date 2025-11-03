@@ -1,0 +1,519 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { getLogger } from '../../../shared/logger/logger'
+import apiConfig = require('./datazonecustomclient.json')
+import globals from '../../../shared/extensionGlobals'
+import { Service } from 'aws-sdk'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as DataZoneCustomClient from './datazonecustomclient'
+import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
+import { CredentialsProvider } from '../../../auth/providers/credentials'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusUtils } from '../smusUtils'
+
+/**
+ * Error codes for DataZone operations
+ */
+export const DataZoneErrorCode = {
+    NoGroupProfileFound: 'NoGroupProfileFound',
+    NoUserProfileFound: 'NoUserProfileFound',
+} as const
+
+/**
+ * Helper client for interacting with AWS DataZone Custom API
+ */
+export class DataZoneCustomClientHelper {
+    private datazoneCustomClient: DataZoneCustomClient | undefined
+    private static instances = new Map<string, DataZoneCustomClientHelper>()
+    private readonly logger = getLogger()
+
+    private constructor(
+        private readonly credentialProvider: CredentialsProvider,
+        private readonly region: string
+    ) {}
+
+    /**
+     * Gets a singleton instance of the DataZoneCustomClientHelper
+     * @returns DataZoneCustomClientHelper instance
+     */
+    public static getInstance(credentialProvider: CredentialsProvider, region: string): DataZoneCustomClientHelper {
+        const logger = getLogger()
+
+        const instanceKey = `${region}`
+
+        // Check if we already have an instance for this instanceKey
+        if (DataZoneCustomClientHelper.instances.has(instanceKey)) {
+            const existingInstance = DataZoneCustomClientHelper.instances.get(instanceKey)!
+            logger.debug(`DataZoneCustomClientHelper: Using existing instance for instanceKey ${instanceKey}`)
+            return existingInstance
+        }
+
+        // Create new instance
+        logger.debug('DataZoneCustomClientHelper: Creating new instance')
+        const instance = new DataZoneCustomClientHelper(credentialProvider, region)
+        DataZoneCustomClientHelper.instances.set(instanceKey, instance)
+
+        logger.debug(`DataZoneCustomClientHelper: Created instance with instanceKey ${instanceKey}`)
+
+        return instance
+    }
+
+    /**
+     * Disposes all instances and cleans up resources
+     */
+    public static dispose(): void {
+        const logger = getLogger()
+        logger.debug('DataZoneCustomClientHelper: Disposing all instances')
+
+        for (const [key, instance] of DataZoneCustomClientHelper.instances.entries()) {
+            instance.datazoneCustomClient = undefined
+            logger.debug(`DataZoneCustomClientHelper: Disposed instance for: ${key}`)
+        }
+
+        DataZoneCustomClientHelper.instances.clear()
+    }
+
+    /**
+     * Gets the AWS region
+     * @returns AWS region
+     */
+    public getRegion(): string {
+        return this.region
+    }
+
+    /**
+     * Gets the DataZone client, initializing it if necessary
+     */
+    private async getDataZoneCustomClient(): Promise<DataZoneCustomClient> {
+        if (!this.datazoneCustomClient) {
+            try {
+                this.logger.info('DataZoneCustomClientHelper: Creating authenticated DataZone client')
+
+                // Use environment variable for endpoint if provided, otherwise use default
+                const endpoint = process.env.DATAZONE_ENDPOINT || `https://datazone.${this.region}.api.aws`
+
+                if (process.env.DATAZONE_ENDPOINT) {
+                    this.logger.debug(
+                        `DataZoneCustomClientHelper: Using environment variable DataZone endpoint: ${endpoint}`
+                    )
+                }
+
+                this.datazoneCustomClient = (await globals.sdkClientBuilder.createAwsService(
+                    Service,
+                    {
+                        apiConfig: apiConfig,
+                        endpoint: endpoint,
+                        region: this.region,
+                        credentialProvider: adaptConnectionCredentialsProvider(this.credentialProvider),
+                    } as ServiceConfigurationOptions,
+                    undefined,
+                    false
+                )) as DataZoneCustomClient
+
+                this.logger.info('DataZoneCustomClientHelper: Successfully created authenticated DataZone client')
+            } catch (err) {
+                this.logger.error('DataZoneCustomClientHelper: Failed to create DataZone client: %s', err as Error)
+                throw err
+            }
+        }
+        return this.datazoneCustomClient
+    }
+
+    /**
+     * Lists domains in DataZone with pagination support
+     * @param options Options for listing domains
+     * @returns Paginated list of DataZone domains with nextToken
+     */
+    public async listDomains(options?: {
+        maxResults?: number
+        status?: string
+        nextToken?: string
+    }): Promise<{ domains: DataZoneCustomClient.Types.DomainSummary[]; nextToken?: string }> {
+        try {
+            this.logger.info(`DataZoneCustomClientHelper: Listing domains in region ${this.region}`)
+
+            const datazoneCustomClient = await this.getDataZoneCustomClient()
+
+            // Call DataZone API to list domains with pagination
+            const response = await datazoneCustomClient
+                .listDomains({
+                    maxResults: options?.maxResults,
+                    status: options?.status,
+                    nextToken: options?.nextToken,
+                })
+                .promise()
+
+            const domains = response.items || []
+
+            if (domains.length === 0) {
+                this.logger.info(`DataZoneCustomClientHelper: No domains found`)
+            } else {
+                this.logger.debug(`DataZoneCustomClientHelper: Found ${domains.length} domains`)
+            }
+
+            return { domains, nextToken: response.nextToken }
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to list domains: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Fetches all domains by handling pagination automatically
+     * @param options Options for listing domains (excluding nextToken which is handled internally)
+     * @returns Promise resolving to an array of all DataZone domains
+     */
+    public async fetchAllDomains(options?: { status?: string }): Promise<DataZoneCustomClient.Types.DomainSummary[]> {
+        try {
+            let allDomains: DataZoneCustomClient.Types.DomainSummary[] = []
+            let nextToken: string | undefined
+            do {
+                const maxResultsPerPage = 25
+                const response = await this.listDomains({
+                    ...options,
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+                allDomains = [...allDomains, ...response.domains]
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            this.logger.debug(`DataZoneCustomClientHelper: Fetched a total of ${allDomains.length} domains`)
+            return allDomains
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to fetch all domains: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Gets the domain with EXPRESS mode in preferences using pagination with early termination
+     * @returns Promise resolving to the DataZone domain or undefined if not found
+     */
+    public async getExpressDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
+        const logger = getLogger()
+
+        try {
+            logger.info('DataZoneCustomClientHelper: Getting the domain info')
+
+            let nextToken: string | undefined
+            let totalDomainsChecked = 0
+            const maxResultsPerPage = 25
+
+            // Paginate through domains and check each page for EXPRESS domain
+            do {
+                const response = await this.listDomains({
+                    status: 'AVAILABLE',
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+
+                const { domains } = response
+                totalDomainsChecked += domains.length
+
+                logger.debug(
+                    `DataZoneCustomClientHelper: Checking ${domains.length} domains in current page (total checked: ${totalDomainsChecked})`
+                )
+
+                // Check each domain in the current page for EXPRESS mode
+                for (const domain of domains) {
+                    if (domain.preferences && domain.preferences.DOMAIN_MODE === 'EXPRESS') {
+                        logger.info(
+                            `DataZoneCustomClientHelper: Found EXPRESS domain, id: ${domain.id} (${domain.name})`
+                        )
+                        return domain
+                    }
+                }
+
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            logger.info(
+                `DataZoneCustomClientHelper: No domain with (DOMAIN_MODE: EXPRESS) found after checking all ${totalDomainsChecked} domains`
+            )
+            return undefined
+        } catch (err) {
+            logger.error('DataZoneCustomClientHelper: Failed to get domain info: %s', err as Error)
+            throw new Error(`Failed to get domain info: ${(err as Error).message}`)
+        }
+    }
+
+    /**
+     * Gets a specific domain by its ID
+     * @param domainId The ID of the domain to retrieve
+     * @returns Promise resolving to the GetDomainOutput
+     */
+    public async getDomain(domainId: string): Promise<DataZoneCustomClient.Types.GetDomainOutput> {
+        try {
+            this.logger.debug(`DataZoneCustomClientHelper: Getting domain with ID: ${domainId}`)
+
+            const datazoneCustomClient = await this.getDataZoneCustomClient()
+
+            const response = await datazoneCustomClient
+                .getDomain({
+                    identifier: domainId,
+                })
+                .promise()
+
+            this.logger.debug(`DataZoneCustomClientHelper: Successfully retrieved domain: ${domainId}`)
+            return response
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to get domain: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Checks if a specific domain is an EXPRESS domain
+     * @param domainId The ID of the domain to check
+     * @returns Promise resolving to true if the domain is EXPRESS, false otherwise
+     */
+    public async isExpressDomain(domainId: string): Promise<boolean> {
+        try {
+            this.logger.debug(`DataZoneCustomClientHelper: Checking if domain ${domainId} is EXPRESS`)
+
+            const domain = await this.getDomain(domainId)
+            const isExpress = domain.preferences?.DOMAIN_MODE === 'EXPRESS' || false
+
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Domain ${domainId} is ${isExpress ? 'EXPRESS' : 'not EXPRESS'}`
+            )
+            return isExpress
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to check if domain is EXPRESS: %s', err as Error)
+            throw err
+        }
+    }
+
+    /**
+     * Searches for group profiles in the DataZone domain
+     * @param domainIdentifier The domain identifier to search in
+     * @param options Options for searching group profiles
+     * @returns Promise resolving to group profile search results with pagination
+     */
+    public async searchGroupProfiles(
+        domainIdentifier: string,
+        options?: {
+            groupType?: string
+            searchText?: string
+            maxResults?: number
+            nextToken?: string
+        }
+    ): Promise<{ items: DataZoneCustomClient.Types.GroupProfileSummary[]; nextToken?: string }> {
+        try {
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Searching group profiles in domain ${domainIdentifier} with groupType: ${options?.groupType}, searchText: ${options?.searchText}`
+            )
+
+            const datazoneCustomClient = await this.getDataZoneCustomClient()
+
+            // Build the request parameters
+            const params: DataZoneCustomClient.Types.SearchGroupProfilesInput = {
+                domainIdentifier,
+                groupType: options?.groupType as DataZoneCustomClient.Types.GroupSearchType,
+                searchText: options?.searchText,
+                maxResults: options?.maxResults,
+                nextToken: options?.nextToken,
+            }
+
+            // Call DataZone API to search group profiles
+            const response = await datazoneCustomClient.searchGroupProfiles(params).promise()
+
+            const items = response.items || []
+
+            if (items.length === 0) {
+                this.logger.debug(`DataZoneCustomClientHelper: No group profiles found`)
+            } else {
+                this.logger.debug(`DataZoneCustomClientHelper: Found ${items.length} group profiles`)
+            }
+
+            return { items, nextToken: response.nextToken }
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to search group profiles: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Searches for user profiles in the DataZone domain
+     * @param domainIdentifier The domain identifier to search in
+     * @param options Options for searching user profiles
+     * @returns Promise resolving to user profile search results with pagination
+     */
+    public async searchUserProfiles(
+        domainIdentifier: string,
+        options: {
+            userType: string
+            searchText?: string
+            maxResults?: number
+            nextToken?: string
+        }
+    ): Promise<{ items: DataZoneCustomClient.Types.UserProfileSummary[]; nextToken?: string }> {
+        try {
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Searching user profiles in domain ${domainIdentifier} with userType: ${options.userType}, searchText: ${options.searchText}`
+            )
+
+            const datazoneCustomClient = await this.getDataZoneCustomClient()
+
+            // Build the request parameters
+            const params: DataZoneCustomClient.Types.SearchUserProfilesInput = {
+                domainIdentifier,
+                userType: options.userType as DataZoneCustomClient.Types.UserSearchType,
+                searchText: options.searchText,
+                maxResults: options.maxResults,
+                nextToken: options.nextToken,
+            }
+
+            // Call DataZone API to search user profiles
+            const response = await datazoneCustomClient.searchUserProfiles(params).promise()
+
+            const items = response.items || []
+
+            if (items.length === 0) {
+                this.logger.debug(`DataZoneCustomClientHelper: No user profiles found`)
+            } else {
+                this.logger.debug(`DataZoneCustomClientHelper: Found ${items.length} user profiles`)
+            }
+
+            return { items, nextToken: response.nextToken }
+        } catch (err) {
+            this.logger.error('DataZoneCustomClientHelper: Failed to search user profiles: %s', (err as Error).message)
+            throw err
+        }
+    }
+
+    /**
+     * Gets the group profile ID for a given IAM role ARN
+     * @param domainIdentifier The domain identifier to search in
+     * @param roleArn The base IAM role ARN (format: arn:aws:iam::ACCOUNT:role/ROLE_NAME)
+     * @returns Promise resolving to the group profile ID
+     * @throws ToolkitError with appropriate error code
+     */
+    public async getGroupProfileId(domainIdentifier: string, roleArn: string): Promise<string> {
+        try {
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Getting group profile ID for role ARN: ${roleArn} in domain ${domainIdentifier}`
+            )
+
+            // Use searchText to filter server-side for better performance
+            const response = await this.searchGroupProfiles(domainIdentifier, {
+                groupType: 'IAM_ROLE_SESSION_GROUP',
+                searchText: roleArn,
+                maxResults: 50,
+            })
+
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Received ${response.items.length} group profiles from search`
+            )
+
+            // Find exact match in filtered results
+            for (const profile of response.items) {
+                this.logger.debug(
+                    `DataZoneCustomClientHelper: Checking group profile - ID: ${profile.id}, rolePrincipalArn: ${profile.rolePrincipalArn}, status: ${profile.status}`
+                )
+
+                if (profile.rolePrincipalArn === roleArn) {
+                    this.logger.info(`DataZoneCustomClientHelper: Found matching group profile with ID: ${profile.id}`)
+                    return profile.id!
+                }
+            }
+
+            // No matching profile found
+            this.logger.error(`DataZoneCustomClientHelper: No group profile found for IAM role: ${roleArn}`)
+            throw new ToolkitError(`No group profile found for IAM role: ${roleArn}`, {
+                code: DataZoneErrorCode.NoGroupProfileFound,
+            })
+        } catch (err) {
+            // Re-throw if it's already a ToolkitError
+            if (err instanceof ToolkitError) {
+                throw err
+            }
+
+            // Log and wrap other errors
+            this.logger.error('DataZoneCustomClientHelper: Failed to get group profile ID: %s', (err as Error).message)
+            throw ToolkitError.chain(err, 'Failed to get group profile ID')
+        }
+    }
+
+    /**
+     * Gets the user profile ID for a given IAM role session
+     * @param domainIdentifier The domain identifier to search in
+     * @param roleArnWithSession The assumed role ARN with session name (format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME)
+     * @returns Promise resolving to the user profile ID
+     * @throws ToolkitError with appropriate error code
+     */
+    public async getUserProfileIdForSession(domainIdentifier: string, roleArnWithSession: string): Promise<string> {
+        try {
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Getting user profile ID for role ARN with session: ${roleArnWithSession} in domain ${domainIdentifier}`
+            )
+
+            // Extract session name from the assumed role ARN
+            // Format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+            const sessionName = SmusUtils.extractSessionNameFromArn(roleArnWithSession)
+            if (!sessionName) {
+                throw new ToolkitError(`Unable to extract session name from ARN: ${roleArnWithSession}`, {
+                    code: DataZoneErrorCode.NoUserProfileFound,
+                })
+            }
+
+            this.logger.debug(`DataZoneCustomClientHelper: Extracted session name: ${sessionName}`)
+
+            // Paginate through all user profiles and do client-side filtering
+            let nextToken: string | undefined
+            let totalProfilesChecked = 0
+
+            do {
+                const response = await this.searchUserProfiles(domainIdentifier, {
+                    userType: 'DATAZONE_IAM_USER',
+                    maxResults: 50,
+                    nextToken,
+                })
+
+                totalProfilesChecked += response.items.length
+                this.logger.debug(
+                    `DataZoneCustomClientHelper: Received ${response.items.length} user profiles in current page (total checked: ${totalProfilesChecked})`
+                )
+
+                // Find exact match in current page using client-side filtering
+                for (const profile of response.items) {
+                    this.logger.debug(
+                        `DataZoneCustomClientHelper: Checking profile - ID: ${profile.id}, principalId: ${profile.details?.iam?.principalId}, status: ${profile.status}`
+                    )
+
+                    // Match based on principalId which contains the session name
+                    // principalId format: PRINCIPAL_ID:SESSION_NAME
+                    if (profile.details?.iam?.principalId?.includes(sessionName)) {
+                        this.logger.info(
+                            `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} after checking ${totalProfilesChecked} profiles`
+                        )
+                        return profile.id!
+                    }
+                }
+
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            // No matching profile found after checking all pages
+            this.logger.error(
+                `DataZoneCustomClientHelper: No user profile found for session: ${sessionName} after checking ${totalProfilesChecked} profiles`
+            )
+            throw new ToolkitError(`No user profile found for session: ${sessionName}`, {
+                code: DataZoneErrorCode.NoUserProfileFound,
+            })
+        } catch (err) {
+            // Re-throw if it's already a ToolkitError
+            if (err instanceof ToolkitError) {
+                throw err
+            }
+
+            // Log and wrap other errors
+            this.logger.error('DataZoneCustomClientHelper: Failed to get user profile ID: %s', (err as Error).message)
+            throw ToolkitError.chain(err, 'Failed to get user profile ID')
+        }
+    }
+}

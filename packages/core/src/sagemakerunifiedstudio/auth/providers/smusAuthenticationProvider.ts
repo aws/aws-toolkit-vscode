@@ -43,7 +43,7 @@ import globals from '../../../shared/extensionGlobals'
 import { fromContainerMetadata, fromIni, fromNodeProviderChain } from '@aws-sdk/credential-providers'
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
-import { DataZoneDomainPreferencesClient } from '../../shared/client/datazoneDomainPreferencesClient'
+import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
 import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
@@ -209,7 +209,9 @@ export class SmusAuthenticationProvider {
 
                 const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
 
-                const isExpress = await SmusUtils.isInSmusExpressMode(domainId, region, credentialsProvider)
+                // Get DataZoneCustomClientHelper instance and check if domain is Express mode
+                const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(credentialsProvider, region)
+                const isExpress = await datazoneCustomClientHelper.isExpressDomain(domainId)
                 this.logger.debug(`SMUS Auth: is in express mode ${isExpress}`)
                 await setSmusExpressModeContext(isExpress)
             }
@@ -363,14 +365,14 @@ export class SmusAuthenticationProvider {
         try {
             logger.debug(`SMUS Auth: Finding Express domain in region using profile ${savedProfileName}`)
 
-            // Get DataZoneDomainPreferencesClient instance
-            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+            // Get DataZoneCustomClientHelper instance
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
                 await this.getCredentialsProviderForIamProfile(savedProfileName),
                 region
             )
 
             // Find the Express domain using the client
-            const expressDomain = await domainPreferencesClient.getExpressDomain()
+            const expressDomain = await datazoneCustomClientHelper.getExpressDomain()
 
             if (!expressDomain) {
                 logger.warn(`SMUS Auth: No Express domain found in region ${region}, proceeding with normal restore`)
@@ -649,9 +651,10 @@ export class SmusAuthenticationProvider {
                     `SMUS: Using existing IAM connection as SMUS connection successfully, id=${existingConn.id}`
                 )
 
-                // Auto-invoke project selection after successful sign-in (but not in SMUS space environment)
-                if (!SmusUtils.isInSmusSpaceEnvironment()) {
-                    void vscode.commands.executeCommand('aws.smus.switchProject')
+                // Set Express mode context if this is an Express domain
+                if (isExpressDomain) {
+                    await setSmusExpressModeContext(true)
+                    logger.debug('SMUS: Set Express mode context to true')
                 }
 
                 // Return a SMUS IAM connection wrapper for the caller
@@ -1380,7 +1383,7 @@ export class SmusAuthenticationProvider {
         this.cachedProjectAccountIds.clear()
 
         DataZoneClient.dispose()
-        DataZoneDomainPreferencesClient.dispose()
+        DataZoneCustomClientHelper.dispose()
 
         this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
     }

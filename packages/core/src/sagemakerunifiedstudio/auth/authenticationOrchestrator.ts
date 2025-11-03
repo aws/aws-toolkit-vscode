@@ -17,7 +17,7 @@ import {
     IamProfileBackNavigation,
 } from './ui/iamProfileSelection'
 import { SmusAuthenticationPreferencesManager } from './preferences/authenticationPreferences'
-import { DataZoneDomainPreferencesClient } from '../shared/client/datazoneDomainPreferencesClient'
+import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClientHelper'
 import { recordAuthTelemetry } from '../shared/telemetry'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
@@ -127,8 +127,30 @@ export class SmusAuthenticationOrchestrator {
                 `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to Express domain`
             )
 
-            // Ask to remember authentication method preference
-            await this.askToRememberAuthMethod(context, 'iam')
+            // Extract domain ID and region for telemetry logging
+            const domainId = connection.domainId
+            const region = authProvider.getDomainRegion()
+
+            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+            await this.recordAuthTelemetry(span, authProvider, domainId, region)
+
+            // Refresh the tree view to show authenticated state
+            try {
+                await vscode.commands.executeCommand('aws.smus.rootView.refresh')
+            } catch (refreshErr) {
+                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+            }
+
+            // After successful IAM authentication (Express mode), automatically open project picker
+            logger.debug('SMUS Auth: IAM authentication successful, opening project picker')
+            try {
+                await vscode.commands.executeCommand('aws.smus.switchProject')
+            } catch (pickerErr) {
+                logger.debug(`Failed to open project picker: ${(pickerErr as Error).message}`)
+            }
+
+            // Ask to remember authentication method preference (non-blocking)
+            void this.askToRememberAuthMethod(context, 'iam')
 
             // Return success to complete the authentication flow gracefully
             return { status: 'SUCCESS' }
@@ -266,14 +288,14 @@ export class SmusAuthenticationOrchestrator {
         try {
             logger.debug(`SMUS Auth: Finding Express domain in region ${region} using profile ${profileName}`)
 
-            // Get DataZoneDomainPreferencesClient instance
-            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(
+            // Get DataZoneCustomClientHelper instance
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
                 await authProvider.getCredentialsProviderForIamProfile(profileName),
                 region
             )
 
             // Find the Express domain using the client
-            const expressDomain = await domainPreferencesClient.getExpressDomain()
+            const expressDomain = await datazoneCustomClientHelper.getExpressDomain()
 
             if (!expressDomain) {
                 logger.warn(`SMUS Auth: No Express domain found in region ${region}`)
