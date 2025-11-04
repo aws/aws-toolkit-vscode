@@ -4,7 +4,7 @@
  */
 
 import * as sinon from 'sinon'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
 import { AmazonQChatViewProvider } from '../../../../../src/lsp/chat/webviewProvider'
@@ -12,7 +12,7 @@ import { secondaryAuth, authConnection, AuthFollowUpType } from 'aws-core-vscode
 import { messages } from 'aws-core-vscode/shared'
 
 describe('registerMessageListeners', () => {
-    let languageClient: LanguageClient
+    let languageClient: BaseLanguageClient
     let provider: AmazonQChatViewProvider
     let sandbox: sinon.SinonSandbox
     let messageHandler: (message: any) => void | Promise<void>
@@ -28,7 +28,7 @@ describe('registerMessageListeners', () => {
             sendNotification: sandbox.stub(),
             onRequest: sandbox.stub(),
             onNotification: sandbox.stub(),
-        } as unknown as LanguageClient
+        } as unknown as BaseLanguageClient
 
         provider = {
             webview: {

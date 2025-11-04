@@ -23,9 +23,9 @@ import {
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { Commands, getLogger, globals, sleep } from 'aws-core-vscode/shared'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
-export async function activate(languageClient: LanguageClient) {
+export async function activate(languageClient: BaseLanguageClient) {
     const codewhispererSettings = CodeWhispererSettings.instance
     const client = new DefaultCodeWhispererClient()
 

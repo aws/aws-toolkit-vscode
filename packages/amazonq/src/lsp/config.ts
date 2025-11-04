@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { DevSettings, getServiceEnvVarConfig, BaseLspInstaller, getLogger } from 'aws-core-vscode/shared'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     DidChangeConfigurationNotification,
     updateConfigurationRequestType,
@@ -68,7 +68,7 @@ export function toAmazonQLSPLogLevel(logLevel: vscode.LogLevel): LspLogLevel {
  * different handlers for specific configs. So this determines the correct place to
  * push the given config.
  */
-export async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
+export async function pushConfigUpdate(client: BaseLanguageClient, config: QConfigs) {
     const logger = getLogger('amazonqLsp')
 
     switch (config.type) {
@@ -82,7 +82,7 @@ export async function pushConfigUpdate(client: LanguageClient, config: QConfigs)
             break
         case 'customization':
             logger.debug(`Pushing customization configuration: ${config.customization || 'undefined'}`)
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            void client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.q',
                 settings: { customization: config.customization },
             })
@@ -90,7 +90,7 @@ export async function pushConfigUpdate(client: LanguageClient, config: QConfigs)
             break
         case 'logLevel':
             logger.debug(`Pushing log level configuration`)
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            void client.sendNotification(DidChangeConfigurationNotification.type.method, {
                 section: 'aws.logLevel',
             })
             logger.debug(`Log level configuration pushed successfully`)
