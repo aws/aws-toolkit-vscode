@@ -14,7 +14,7 @@ import {
     InlineCompletionTriggerKind,
 } from 'vscode'
 import assert from 'assert'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { StringValue } from 'vscode-languageserver-types'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
@@ -32,7 +32,7 @@ import { DocumentEventListener } from '../../../../../src/app/inline/documentEve
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
-    let languageClient: LanguageClient
+    let languageClient: BaseLanguageClient
     let sendNotificationStub: sinon.SinonStub
     let registerProviderStub: sinon.SinonStub
     let registerCommandStub: sinon.SinonStub
@@ -89,7 +89,7 @@ describe('InlineCompletionManager', () => {
 
         languageClient = {
             sendNotification: sendNotificationStub,
-        } as unknown as LanguageClient
+        } as unknown as BaseLanguageClient
 
         const sessionManager = new SessionManager()
         const lineTracker = new LineTracker()

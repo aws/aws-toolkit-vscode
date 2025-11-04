@@ -4,7 +4,7 @@
  */
 
 import { window } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { focusAmazonQPanel, registerCommands } from './commands'
 import {
@@ -19,7 +19,7 @@ import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhispere
 import { pushConfigUpdate } from '../config'
 import { AutoDebugLspClient } from './autoDebug/lsp/autoDebugLspClient'
 
-export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
+export async function activate(languageClient: BaseLanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
     const provider = new AmazonQChatViewProvider(mynahUIPath, languageClient)
@@ -83,14 +83,14 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
             })
         }),
         Commands.register('aws.amazonq.manageSubscription', () => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+            focusAmazonQPanel().catch((e: Error) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
 
             languageClient
                 .sendRequest('workspace/executeCommand', {
                     command: 'aws/chat/manageSubscription',
                     // arguments: [],
                 })
-                .catch((e) => {
+                .catch((e: Error) => {
                     getLogger('amazonqLsp').error('failed request: aws/chat/manageSubscription: %O', e)
                 })
         }),

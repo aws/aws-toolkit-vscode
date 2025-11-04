@@ -25,7 +25,7 @@ import {
 import { AuthUtil, RegionProfile } from 'aws-core-vscode/codewhisperer'
 import { featureConfig } from 'aws-core-vscode/amazonq'
 import { getAmazonQLspConfig } from '../config'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -40,7 +40,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
     constructor(
         private readonly mynahUIPath: string,
-        private readonly languageClient: LanguageClient
+        private readonly languageClient: BaseLanguageClient
     ) {}
 
     public async resolveWebviewView(
