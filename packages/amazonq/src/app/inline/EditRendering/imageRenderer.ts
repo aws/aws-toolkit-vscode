@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { displaySvgDecoration } from './displayImage'
 import { SvgGenerationService } from './svgGenerator'
 import { getLogger } from 'aws-core-vscode/shared'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
 import type { AmazonQInlineCompletionItemProvider } from '../completion'
@@ -16,7 +16,7 @@ export async function showEdits(
     item: InlineCompletionItemWithReferences,
     editor: vscode.TextEditor | undefined,
     session: CodeWhispererSession,
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
     if (!editor) {
