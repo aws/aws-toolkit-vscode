@@ -4,7 +4,7 @@
  */
 import assert from 'assert'
 import { AmazonQLspAuth } from '../../../../src/lsp/auth'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 describe('AmazonQLspAuth', function () {
     describe('updateBearerToken', function () {
@@ -16,7 +16,7 @@ describe('AmazonQLspAuth', function () {
                     lastSentToken = param
                 },
                 info: (_message: string, _data: any) => {},
-            } as LanguageClient)
+            } as BaseLanguageClient)
 
             await auth.updateBearerToken('firstToken')
             assert.notDeepStrictEqual(lastSentToken, {})
