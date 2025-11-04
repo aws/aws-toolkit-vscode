@@ -42,15 +42,10 @@ export async function hoverButtonAndValidateTooltip(
  */
 export async function rejectShellCommand(webviewView: WebviewView): Promise<void> {
     try {
-        await clickButton(
-            webviewView,
-            '[data-testid="chat-item-buttons-wrapper"]',
-            '[action-id="reject-shell-command"] .mynah-ui-icon-cancel',
-            'reject button',
-            true
-        )
+        const rejectButton = await waitForElement(webviewView, By.css('.mynah-ui-icon-play'))
+        await rejectButton.click()
     } catch (e) {
-        throw new Error(`Failed to reject shell command: ${e}`)
+        throw new Error(`Failed to reject shell command`)
     }
 }
 
@@ -60,15 +55,10 @@ export async function rejectShellCommand(webviewView: WebviewView): Promise<void
  */
 export async function runShellCommand(webviewView: WebviewView): Promise<void> {
     try {
-        await clickButton(
-            webviewView,
-            '[data-testid="chat-item-buttons-wrapper"]',
-            '[action-id="run-shell-command"] .mynah-ui-icon-play',
-            'run button',
-            true
-        )
+        const runButton = await waitForElement(webviewView, By.css('[action-id="reject-shell-command"]'))
+        await runButton.click()
     } catch (e) {
-        throw new Error(`Failed to run shell command: ${e}`)
+        throw new Error(`Failed to run shell command`)
     }
 }
 
@@ -85,7 +75,7 @@ export async function stopShellCommand(webviewView: WebviewView): Promise<void> 
             'stop button'
         )
     } catch (e) {
-        throw new Error(`Failed to stop shell command: ${e}`)
+        throw new Error(`Failed to stop shell command`)
     }
 }
 

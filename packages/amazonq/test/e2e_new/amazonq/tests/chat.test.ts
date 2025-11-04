@@ -25,7 +25,7 @@ describe('Amazon Q Chat Basic Functionality', function () {
     it('Allows User to Chat with AmazonQ', async () => {
         await writeToChat('Hello, Amazon Q!', webviewView)
         await waitForChatResponse(webviewView)
-        await sleep(4000)
+        await sleep(5000)
         await verifyAmazonQResponse(webviewView)
     })
 

@@ -18,7 +18,7 @@ export async function clickRulesButton(webview: WebviewView): Promise<void> {
             'Rules button'
         )
     } catch (e) {
-        throw new Error(`Failed to click rules button: ${e}`)
+        throw new Error(`Failed to click rules button`)
     }
 }
 
@@ -46,7 +46,7 @@ export async function clickCreateNewRuleOption(webview: WebviewView): Promise<vo
         }
         await lastItem.click()
     } catch (e) {
-        throw new Error(`Failed to click create new rule option: ${e}`)
+        throw new Error(`Failed to click create new rule option`)
     }
 }
 
@@ -64,7 +64,7 @@ export async function enterRuleName(webview: WebviewView, ruleName: string): Pro
         await ruleNameInput.clear()
         await ruleNameInput.sendKeys(ruleName)
     } catch (e) {
-        throw new Error(`Failed to enter rule name: ${e}`)
+        throw new Error(`Failed to enter rule name`)
     }
 }
 
@@ -88,7 +88,7 @@ export async function clickCreateButton(webview: WebviewView): Promise<void> {
 
         await createButton.click()
     } catch (e) {
-        throw new Error(`Failed to click create button: ${e}`)
+        throw new Error(`Failed to click create button`)
     }
 }
 
@@ -102,7 +102,7 @@ export async function clickCancelButton(webview: WebviewView): Promise<void> {
         const cancelButton = await sheetWrapper.findElement(By.xpath('.//button[@action-id="cancel-create-rule"]'))
         await cancelButton.click()
     } catch (e) {
-        throw new Error(`Failed to click cancel button: ${e}`)
+        throw new Error(`Failed to click cancel button`)
     }
 }
 

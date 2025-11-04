@@ -28,7 +28,7 @@ export async function clickPinContextButton(webview: WebviewView): Promise<void>
         }
         throw new Error('Pin Context button not found')
     } catch (e) {
-        throw new Error(`Failed to click pin context button: ${e}`)
+        throw new Error(`Failed to click pin context button`)
     }
 }
 
@@ -59,7 +59,7 @@ export async function getPinContextMenuItems(webview: WebviewView): Promise<{ it
 
         return { items, labels }
     } catch (e) {
-        throw new Error(`Failed to get pin context menu items: ${e}`)
+        throw new Error(`Failed to get pin context menu items`)
     }
 }
 
@@ -81,7 +81,7 @@ export async function clickPinContextMenuItem(webview: WebviewView, itemName: st
         )
         await item.click()
     } catch (e) {
-        throw new Error(`Failed to click pin context menu item '${itemName}': ${e}`)
+        throw new Error(`Failed to click pin context menu item '${itemName}'`)
     }
 }
 
@@ -112,7 +112,7 @@ export async function getSubMenuItems(webview: WebviewView): Promise<{ items: We
 
         return { items, labels }
     } catch (e) {
-        throw new Error(`Failed to get sub-menu items: ${e}`)
+        throw new Error(`Failed to get sub-menu items`)
     }
 }
 
@@ -135,7 +135,7 @@ export async function clickSubMenuItem(webview: WebviewView, itemName: string): 
         )
         await item.click()
     } catch (e) {
-        throw new Error(`Failed to click sub-menu item '${itemName}': ${e}`)
+        throw new Error(`Failed to click sub-menu item '${itemName}'`)
     }
 }
 
@@ -144,7 +144,7 @@ export async function clickAddPromptButton(webviewView: WebviewView): Promise<vo
         const addPrompt = await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-list-add'))
         await addPrompt.click()
     } catch (e) {
-        throw new Error(`Failed to click add prompt button: ${e}`)
+        throw new Error(`Failed to click add prompt button`)
     }
 }
 
@@ -153,7 +153,7 @@ export async function enterChatInput(webviewView: WebviewView): Promise<void> {
         const chatInput = await waitForElement(webviewView, By.css('[data-testid="chat-item-form-item-text-input"]'))
         await chatInput.sendKeys('test')
     } catch (e) {
-        throw new Error(`Failed to enter chat input: ${e}`)
+        throw new Error(`Failed to enter chat input`)
     }
 }
 
@@ -165,6 +165,6 @@ export async function clickCreatePromptButton(webviewView: WebviewView): Promise
         )
         await createPrompt.click()
     } catch (e) {
-        throw new Error(`Failed to click create prompt button: ${e}`)
+        throw new Error(`Failed to click create prompt button`)
     }
 }

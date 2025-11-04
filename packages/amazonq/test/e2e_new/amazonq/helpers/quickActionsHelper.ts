@@ -45,7 +45,7 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
 
         return { items: quickActionItems, texts: quickActionTexts }
     } catch (e) {
-        throw new Error(`Failed to get quick actions commands: ${e}`)
+        throw new Error(`Failed to get quick actions commands`)
     }
 }
 
@@ -79,7 +79,7 @@ export async function clickQuickActionsCommand(webview: WebviewView, commandName
 
         throw new Error(`Command "${commandName}" not found`)
     } catch (e) {
-        throw new Error(`Failed to click quick actions command '${commandName}': ${e}`)
+        throw new Error(`Failed to click quick actions command '${commandName}'`)
     }
 }
 /**
@@ -93,7 +93,7 @@ export async function clickAWSResponsibleAIPolicy(webview: WebviewView): Promise
         )
         await policyLink.click()
     } catch (error) {
-        throw new Error(`Failed to click AWS Responsible AI Policy: ${error}`)
+        throw new Error(`Failed to click AWS Responsible AI Policy`)
     }
 }
 

@@ -27,6 +27,7 @@ describe('Amazon Q Pin Context Functionality', function () {
     afterEach(async () => {
         await closeAllTabs(webviewView)
     })
+
     it('Allows User to Add File Context', async () => {
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Files')

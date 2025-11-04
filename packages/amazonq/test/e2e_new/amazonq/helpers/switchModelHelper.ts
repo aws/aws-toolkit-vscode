@@ -16,7 +16,7 @@ export async function listModels(webviewView: WebviewView): Promise<void> {
         const optionTexts = await Promise.all(options.map(async (option) => await option.getText()))
         console.log('Available model options:', optionTexts)
     } catch (e) {
-        throw new Error(`Failed to list models: ${e}`)
+        throw new Error(`Failed to list models`)
     }
 }
 
@@ -44,6 +44,6 @@ export async function selectModel(webviewView: WebviewView, modelName: string): 
         await targetOption.click()
         await sleep(50)
     } catch (e) {
-        throw new Error(`Failed to select model '${modelName}': ${e}`)
+        throw new Error(`Failed to select model '${modelName}'`)
     }
 }

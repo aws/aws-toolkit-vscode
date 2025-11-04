@@ -17,3 +17,12 @@ export async function toggleAgenticChat(webviewView: WebviewView): Promise<void>
         throw new Error('Agentic chat toggle not found')
     }
 }
+
+/**
+ * Clicks the acknowledge button
+ * @param webviewView The WebviewView instance
+ */
+export async function clickAcknowledgeButton(webviewView: WebviewView): Promise<void> {
+    const acknowledgeButton = await webviewView.findWebElement(By.css('.mynah-ui-icon-ok'))
+    await acknowledgeButton.click()
+}

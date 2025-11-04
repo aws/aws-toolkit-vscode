@@ -14,7 +14,7 @@ export async function viewHistoryTab(webviewView: WebviewView): Promise<void> {
             'history button'
         )
     } catch (e) {
-        throw new Error(`Failed to view history tab: ${e}`)
+        throw new Error(`Failed to view history tab`)
     }
 }
 
@@ -31,7 +31,7 @@ export async function closeHistoryTab(webviewView: WebviewView): Promise<void> {
             'history button'
         )
     } catch (e) {
-        throw new Error(`Failed to close history tab: ${e}`)
+        throw new Error(`Failed to close history tab`)
     }
 }
 
@@ -55,7 +55,7 @@ export async function exportChat(webviewView: WebviewView): Promise<void> {
         const exportChat = await webviewView.findWebElement(By.css('.mynah-ui-icon-external'))
         await exportChat.click()
     } catch (e) {
-        throw new Error(`Failed to export chat: ${e}`)
+        throw new Error(`Failed to export chat`)
     }
 }
 
@@ -64,6 +64,6 @@ export async function viewAmazonLog(webviewView: WebviewView): Promise<void> {
         const exportChat = await webviewView.findWebElement(By.css('.mynah-ui-icon-file'))
         await exportChat.click()
     } catch (e) {
-        throw new Error(`Failed to click on Amazon log icon: ${e}`)
+        throw new Error(`Failed to click on Amazon log icon`)
     }
 }

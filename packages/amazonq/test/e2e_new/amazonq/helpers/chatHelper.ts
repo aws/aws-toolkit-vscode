@@ -18,7 +18,7 @@ export async function addNewChatTab(webviewView: WebviewView): Promise<void> {
             'add chat button'
         )
     } catch (e) {
-        throw new Error(`Failed to add new chat tab: ${e}`)
+        throw new Error(`Failed to add new chat tab`)
     }
 }
 

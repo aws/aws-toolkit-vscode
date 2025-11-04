@@ -2,7 +2,18 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor, Key } from 'vscode-extension-tester'
+import {
+    By,
+    WebviewView,
+    WebElement,
+    EditorView,
+    InputBox,
+    Workbench,
+    TextEditor,
+    Key,
+    ActivityBar,
+    SideBarView,
+} from 'vscode-extension-tester'
 import { until, WebDriver } from 'selenium-webdriver'
 
 /**
@@ -58,7 +69,6 @@ export async function clickButton(
     buttonWrapperSelector: string,
     buttonContentSelector: string,
     buttonName: string = 'button',
-    scrollIntoView: boolean = false,
     timeout: number = 5000
 ): Promise<void> {
     try {
@@ -76,11 +86,6 @@ export async function clickButton(
 
         const button = await buttonContent.findElement(By.xpath('./..'))
         await webviewView.getDriver().wait(until.elementIsEnabled(button), timeout, `${buttonName} not clickable`)
-
-        if (scrollIntoView) {
-            await webviewView.getDriver().executeScript('arguments[0].scrollIntoView(true);', button)
-            await sleep(1000)
-        }
 
         await button.click()
         await webviewView.getDriver().sleep(300)
@@ -171,7 +176,7 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 15000)
                 return
             }
         }
-        await sleep(500)
+        await sleep(1000)
     }
 
     throw new Error('Timeout waiting for chat response')
@@ -221,6 +226,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
     const currentLines = await textEditor.getNumberOfLines()
     await textEditor.typeTextAt(currentLines, 1, text)
 }
+
 /**
  * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
  * The function checks for a "stable state" by monitoring the number of lines in the editor.
@@ -309,4 +315,58 @@ export async function printElementHTML(element: WebElement): Promise<void> {
     console.log(`=== HTML CONTENT ===`)
     console.log(formattedHTML)
     console.log('=== END HTML ===')
+}
+
+/**
+ * Checks for more content indicator and clicks it if present
+ * @param webviewView The WebviewView instance
+ */
+export async function clickMoreContentIndicator(webviewView: WebviewView): Promise<void> {
+    try {
+        const moreContentIndicator = await webviewView.findWebElement({ css: '.mynah-ui-icon-scroll-down' })
+        if (moreContentIndicator) {
+            await moreContentIndicator.click()
+            await sleep(200)
+        }
+    } catch (error) {
+        // No more content indicator found
+    }
+}
+
+/**
+ * Validates Amazon Q streaming response
+ * @param webviewView The WebviewView instance
+ * @throws Error if insufficient response is received
+ */
+export async function validateAmazonQResponse(webviewView: WebviewView): Promise<void> {
+    const streamingResponses = await webviewView.findWebElements({
+        css: '[data-testid="chat-item-answer-stream"]',
+    })
+    if (streamingResponses.length >= 2) {
+        // console.log('Amazon Q responded successfully with meaningful content')
+        // Print streaming responses
+        // for (let i = 0; i < streamingResponses.length; i++) {
+        //     const responseText = await streamingResponses[i].getText()
+        //     console.log(`Streaming Response ${i + 1}:`, responseText)
+        // }
+    } else {
+        throw new Error('Amazon Q did not provide sufficient response')
+    }
+}
+
+/**
+ * Opens testFile through Explorer
+ * @param editorView The EditorView instance
+ * @returns Promise<TextEditor> The text editor for the opened file
+ */
+export async function openTestFile(editorView: EditorView): Promise<TextEditor> {
+    // Open testFile through Explorer
+    const explorerView = await new ActivityBar().getViewControl('Explorer')
+    const sideBar = (await explorerView?.openView()) as SideBarView
+    const item = await (await sideBar.getContent().getSections())[0].findItem('testFile')
+    await item?.click()
+    await sleep(1000)
+
+    const textEditor = (await editorView.openEditor('testFile')) as TextEditor
+    return textEditor
 }

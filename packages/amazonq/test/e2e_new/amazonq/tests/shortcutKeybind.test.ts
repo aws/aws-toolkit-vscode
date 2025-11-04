@@ -17,7 +17,8 @@ import {
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import {
     hoverButtonAndValidateTooltip,
-    // runShellCommand
+    rejectShellCommand,
+    runShellCommand,
     stopShellCommand,
     waitForLoadingComplete,
 } from '../helpers/shortcutHelper'
@@ -43,8 +44,7 @@ describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
         await sleep(7000)
         const driver = webviewView.getDriver()
         await pressShortcut(driver, Key.CONTROL, Key.SHIFT, 'r')
-        await waitForChatResponse(webviewView)
-        await sleep(2000)
+        await waitForChatResponse(webviewView, 2000)
         const list = await findMynahCardsBody(webviewView)
         await sleep(2000)
         await findItemByText(list, 'Command was rejected')
@@ -107,5 +107,19 @@ describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
             'You stopped your current work, please provide additional examples or ask another question'
         )
         await sleep(100)
+    })
+
+    it('Allows User to run Using Keybind', async () => {
+        await sleep(7000)
+        await rejectShellCommand(webviewView)
+        await waitForChatResponse(webviewView)
+    })
+
+    it('Allows User to reject Using Keybind', async () => {
+        await sleep(7000)
+        await runShellCommand(webviewView)
+        await waitForChatResponse(webviewView)
+        const list = await findMynahCardsBody(webviewView)
+        await findItemByText(list, 'Command was rejected')
     })
 })

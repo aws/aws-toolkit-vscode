@@ -103,8 +103,7 @@ async function selectScope(container: WebElement, scope: string) {
             await workspaceOption.click()
         }
     } catch (e) {
-        console.error('Error selecting the scope:', e)
-        throw e
+        throw new Error(`Error selecting the scope`)
     }
 }
 
@@ -113,8 +112,7 @@ async function inputName(container: WebElement, name: string) {
         const input = await container.findElement(By.css('.mynah-form-input'))
         await input.sendKeys(name)
     } catch (e) {
-        console.error('Error inputing the name:', e)
-        throw e
+        throw new Error(`Error inputing the name`)
     }
 }
 
@@ -125,8 +123,7 @@ async function selectTransport(container: WebElement, transport: number) {
         const optionIndex = transport
         await options[optionIndex].click()
     } catch (e) {
-        console.error('Error selecting the transport:', e)
-        throw e
+        throw new Error(`Error inputing the transport`)
     }
 }
 
@@ -135,8 +132,7 @@ async function inputCommand(container: WebElement, command: string) {
         const input = await container.findElement(By.css('.mynah-form-input'))
         await input.sendKeys(command)
     } catch (e) {
-        console.error('Error inputing the command:', e)
-        throw e
+        throw new Error(`Error inputing the command`)
     }
 }
 
@@ -149,8 +145,7 @@ async function inputArgs(container: WebElement, args: string[]) {
             await addButton.click()
         }
     } catch (e) {
-        console.error('Error inputing the arguments:', e)
-        throw e
+        throw new Error(`Error inputing the arguments`)
     }
 }
 
@@ -166,8 +161,7 @@ async function inputEnvironmentVariables(container: WebElement, environmentVaria
             console.log('No environmental variables for this configuration')
         }
     } catch (e) {
-        console.error('Error inputing the environment variables:', e)
-        throw e
+        throw new Error(`Error inputing the environment variables`)
     }
 }
 
@@ -177,8 +171,7 @@ async function inputTimeout(container: WebElement, timeout: number) {
         await input.clear()
         await input.sendKeys(timeout.toString())
     } catch (e) {
-        console.error('Error inputing the timeout:', e)
-        throw e
+        throw new Error(`Error inputing the timeout`)
     }
 }
 
@@ -190,8 +183,7 @@ async function inputUrl(container: WebElement, url: string) {
         await sleep(200)
         await input.sendKeys(url)
     } catch (e) {
-        console.error('Error inputing the URL:', e)
-        throw e
+        throw new Error(`Error inputing the url`)
     }
 }
 
@@ -264,7 +256,7 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
 
         await processFormItem('TIMEOUT', items[items.length - 1], mergedConfig)
     } catch (e) {
-        console.log('Error configuring the MCP Server', e)
+        throw new Error(`Error configuring the MCP Server`)
     }
 }
 
@@ -278,7 +270,7 @@ export async function saveMCPServerConfiguration(webviewView: WebviewView): Prom
         )
         await sleep(50000)
     } catch (e) {
-        throw new Error(`Failed to save MCP server configuration: ${e}`)
+        throw new Error(`Failed to save MCP server configuration`)
     }
 }
 
@@ -292,7 +284,7 @@ export async function cancelMCPServerConfiguration(webviewView: WebviewView): Pr
         )
         await saveButton.click()
     } catch (e) {
-        console.error('Error saving the MCP server configuration:', e)
+        throw new Error(`Failed to cancel MCP server configuration`)
     }
 }
 
@@ -311,8 +303,7 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
         )
         await sleep(5000)
     } catch (e) {
-        console.error('Error clicking the MCP refresh button:', e)
-        throw e
+        throw new Error(`Error clicking the MCP refresh button`)
     }
 }
 
@@ -324,7 +315,7 @@ export async function clickMCPEditButton(webviewView: WebviewView): Promise<void
     try {
         await clickButton(webviewView, '.mynah-sheet-header-actions-container', '.mynah-ui-icon-pencil', 'Edit button')
     } catch (e) {
-        throw new Error(`Failed to click MCP edit button: ${e}`)
+        throw new Error(`Failed to click MCP edit button`)
     }
 }
 
@@ -337,8 +328,7 @@ export async function clickMCPCloseButton(webviewView: WebviewView): Promise<voi
     try {
         await clickButton(webviewView, '.mynah-sheet-header', 'i.mynah-ui-icon-cancel', 'MCP close button')
     } catch (e) {
-        console.error('Error closing the MCP overlay:', e)
-        throw e
+        throw new Error(`Failed to click MCP close button`)
     }
 }
 
@@ -357,7 +347,7 @@ export async function findMCPListItems(webviewView: WebviewView): Promise<WebEle
         }
         return list
     } catch (e) {
-        throw new Error(`Failed to find MCP list items: ${e}`)
+        throw new Error(`Failed to find MCP list items`)
     }
 }
 
@@ -392,7 +382,7 @@ export async function checkMCPServerErrorStatus(webviewView: WebviewView, server
         }
         throw new Error(`Server '${serverName}' not found in MCP list`)
     } catch (e) {
-        throw new Error(`Failed to check MCP server error status: ${e}`)
+        throw new Error(`Failed to check MCP server error status`)
     }
 }
 
@@ -410,7 +400,7 @@ export async function clickMCPFixConfigurationButton(webviewView: WebviewView): 
             'Fix Configuration button'
         )
     } catch (e) {
-        throw new Error(`Failed to click fix configuration button: ${e}`)
+        throw new Error(`Failed to click fix configuration button`)
     }
 }
 
@@ -430,7 +420,7 @@ export async function validateToolPermissions(webviewView: WebviewView): Promise
             }
         }
     } catch (e) {
-        throw new Error(`Failed to validate tool permissions: ${e}`)
+        throw new Error(`Failed to validate tool permissions`)
     }
 }
 
@@ -453,7 +443,7 @@ export async function validateMCPDropdownOptions(webviewView: WebviewView, expec
             }
         }
     } catch (e) {
-        throw new Error(`Failed to validate MCP dropdown options: ${e}`)
+        throw new Error(`Failed to validate MCP dropdown options`)
     }
 }
 
@@ -468,7 +458,7 @@ export async function updateMCPTimeout(webviewView: WebviewView, timeout: number
         const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
         await inputTimeout(items[items.length - 1], timeout)
     } catch (e) {
-        throw new Error(`Failed to update MCP timeout: ${e}`)
+        throw new Error(`Failed to update MCP timeout`)
     }
 }
 
@@ -482,6 +472,6 @@ export async function updateMCPCommand(webviewView: WebviewView, command: string
         await input.clear()
         await input.sendKeys(command)
     } catch (e) {
-        throw new Error(`Failed to update MCP command: ${e}`)
+        throw new Error(`Failed to update MCP command`)
     }
 }
