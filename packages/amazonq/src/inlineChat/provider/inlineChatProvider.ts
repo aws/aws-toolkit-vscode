@@ -8,7 +8,7 @@ import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
 } from '@amzn/codewhisperer-streaming'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { inlineChatRequestType } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -40,7 +40,7 @@ export class InlineChatProvider {
     public onErrorOccured = this.errorEmitter.event
 
     public constructor(
-        private readonly client: LanguageClient,
+        private readonly client: BaseLanguageClient,
         private readonly encryptionKey: Buffer
     ) {
         this.editorContextExtractor = new EditorContextExtractor()
