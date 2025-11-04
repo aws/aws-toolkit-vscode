@@ -52,6 +52,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'win32',
+        shouldSucceed: false,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'darwin',
         shouldSucceed: true,
@@ -67,6 +72,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'darwin',
+        shouldSucceed: true,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'linux',
         shouldSucceed: false,
@@ -78,6 +88,11 @@ const scenarios: TestScenario[] = [
     },
     {
         toolID: 'docker',
+        platform: 'linux',
+        shouldSucceed: false,
+    },
+    {
+        toolID: 'finch',
         platform: 'linux',
         shouldSucceed: false,
     },
@@ -209,11 +224,14 @@ describe('AppBuilder Walkthrough', function () {
                 })
 
                 it('download serverlessland proj', async function () {
+                    const config = vscode.workspace.getConfiguration('aws.samcli')
+                    await config.update('enableCodeLenses', false, vscode.ConfigurationTarget.Global)
                     // When
                     await genWalkthroughProject('API', workspaceUri, 'python')
                     // Then template should be overwritten
                     assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                    await config.update('enableCodeLenses', true, vscode.ConfigurationTarget.Global)
                 })
             })
 

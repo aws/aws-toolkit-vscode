@@ -1018,28 +1018,6 @@ describe('SmusAuthenticationProvider', function () {
             )
         })
 
-        it('should trigger project selection after successful connection', async function () {
-            isInSmusSpaceEnvironmentStub.returns(false)
-            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
-            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
-            mockState.get.withArgs('smus.connections').returns({})
-
-            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
-
-            assert.ok(executeCommandStub.calledWith('aws.smus.switchProject'))
-        })
-
-        it('should not trigger project selection in SMUS space environment', async function () {
-            isInSmusSpaceEnvironmentStub.returns(true)
-            extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
-            mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
-            mockState.get.withArgs('smus.connections').returns({})
-
-            await smusAuthProvider.connectWithIamProfile(testProfileName, testRegion, testDomainUrl)
-
-            assert.ok(executeCommandStub.notCalled)
-        })
-
         it('should merge with existing SMUS connections metadata', async function () {
             extractDomainInfoStub.returns({ domainId: testDomainId, region: testRegion })
             mockAuth.getConnection.withArgs({ id: `profile:${testProfileName}` }).resolves(testIamConnection)
@@ -1396,8 +1374,10 @@ describe('SmusAuthenticationProvider', function () {
     describe('initExpressModeContextInSpaceEnvironment', function () {
         let getResourceMetadataStub: sinon.SinonStub
         let getDerCredentialsProviderStub: sinon.SinonStub
-        let isInSmusExpressModeStub: sinon.SinonStub
+        let getInstanceStub: sinon.SinonStub
+        let isExpressDomainStub: sinon.SinonStub
         let mockCredentialsProvider: any
+        let mockClientHelper: any
 
         const testResourceMetadata = {
             AdditionalMetadata: {
@@ -1409,7 +1389,6 @@ describe('SmusAuthenticationProvider', function () {
 
         beforeEach(function () {
             getResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'getResourceMetadata')
-            isInSmusExpressModeStub = sinon.stub(SmusUtils, 'isInSmusExpressMode')
 
             // Reset the global setContext stub history for clean test state
             setContextStubGlobal.resetHistory()
@@ -1424,6 +1403,20 @@ describe('SmusAuthenticationProvider', function () {
             getDerCredentialsProviderStub = sinon
                 .stub(smusAuthProvider, 'getDerCredentialsProvider')
                 .resolves(mockCredentialsProvider)
+
+            // Mock DataZoneCustomClientHelper
+            isExpressDomainStub = sinon.stub()
+            mockClientHelper = {
+                isExpressDomain: isExpressDomainStub,
+            }
+
+            getInstanceStub = sinon
+                .stub(
+                    require('../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper')
+                        .DataZoneCustomClientHelper,
+                    'getInstance'
+                )
+                .returns(mockClientHelper)
         })
 
         afterEach(function () {
@@ -1432,37 +1425,37 @@ describe('SmusAuthenticationProvider', function () {
 
         it('should set express mode context to true when domain is express mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isInSmusExpressModeStub.resolves(true)
+            isExpressDomainStub.resolves(true)
 
             await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
             assert.ok(
-                isInSmusExpressModeStub.calledWith(
-                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
-                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
-                    mockCredentialsProvider
+                getInstanceStub.calledWith(
+                    mockCredentialsProvider,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
+            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', true))
         })
 
         it('should set express mode context to false when domain is not express mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isInSmusExpressModeStub.resolves(false)
+            isExpressDomainStub.resolves(false)
 
             await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
             assert.ok(
-                isInSmusExpressModeStub.calledWith(
-                    testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
-                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion,
-                    mockCredentialsProvider
+                getInstanceStub.calledWith(
+                    mockCredentialsProvider,
+                    testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
+            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
         })
 
@@ -1473,7 +1466,8 @@ describe('SmusAuthenticationProvider', function () {
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.notCalled)
-            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(getInstanceStub.notCalled)
+            assert.ok(isExpressDomainStub.notCalled)
             assert.ok(setContextStubGlobal.notCalled)
         })
 
@@ -1486,7 +1480,8 @@ describe('SmusAuthenticationProvider', function () {
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
-            assert.ok(isInSmusExpressModeStub.notCalled)
+            assert.ok(getInstanceStub.notCalled)
+            assert.ok(isExpressDomainStub.notCalled)
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
         })
     })

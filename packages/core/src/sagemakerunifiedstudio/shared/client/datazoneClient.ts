@@ -244,7 +244,6 @@ export class DataZoneClient {
                 managed: true,
                 name: this.getToolingBlueprintName(),
             })
-
             const toolingBlueprint = domainBlueprints.items?.[0]
             if (!toolingBlueprint) {
                 this.logger.error('Failed to get tooling blueprint')
@@ -259,7 +258,7 @@ export class DataZoneClient {
                 provider: sageMakerProviderName,
             })
 
-            const defaultEnv = listEnvs.items?.find((env) => env.name === this.getToolingBlueprintName())
+            const defaultEnv = listEnvs.items?.[0]
             if (!defaultEnv) {
                 this.logger.error('Failed to find default Tooling environment')
                 throw new Error('Failed to find default Tooling environment')
@@ -294,10 +293,20 @@ export class DataZoneClient {
                             expiration: credentials.expiration,
                         }
                     }
-                    this.datazoneClient = new DataZone({
+
+                    const clientConfig: any = {
                         region: this.region,
                         credentials: awsCredentialProvider,
-                    })
+                    }
+
+                    // Use environment variable for endpoint if provided
+                    const endpoint = process.env.DATAZONE_ENDPOINT
+                    if (endpoint) {
+                        clientConfig.endpoint = endpoint
+                        this.logger.debug(`DataZoneClient: Using environment variable DataZone endpoint: ${endpoint}`)
+                    }
+
+                    this.datazoneClient = new DataZone(clientConfig)
                 } else {
                     throw new Error('No credentials provider provided')
                 }
@@ -742,7 +751,7 @@ export class DataZoneClient {
             throw err
         }
 
-        const defaultEnv = listEnvs.items?.find((env) => env.name === this.getToolingBlueprintName())
+        const defaultEnv = listEnvs.items?.[0]
         if (!defaultEnv || !defaultEnv.id) {
             this.logger.error(
                 'No default Tooling environment found for domainId: %s, projectId: %s',

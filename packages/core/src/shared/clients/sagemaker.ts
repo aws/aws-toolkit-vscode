@@ -72,11 +72,12 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
     protected override getClient(ignoreCache: boolean = false) {
         if (!this.client || ignoreCache) {
+            const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${this.regionCode}.amazonaws.com`
             const args = {
                 serviceClient: SageMakerClient,
                 region: this.regionCode,
                 clientOptions: {
-                    endpoint: `https://sagemaker.${this.regionCode}.amazonaws.com`,
+                    endpoint: endpoint,
                     region: this.regionCode,
                     ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
                 },

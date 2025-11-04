@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import { ApiGatewayClient } from '../../../shared/clients/apiGateway'
-import { RestApi } from 'aws-sdk/clients/apigateway'
+import { RestApi } from '@aws-sdk/client-api-gateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
 

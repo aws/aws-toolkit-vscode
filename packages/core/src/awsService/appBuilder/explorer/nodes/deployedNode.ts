@@ -13,7 +13,8 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import globals from '../../../../shared/extensionGlobals'
 import { defaultPartition } from '../../../../shared/regions/regionProvider'
-import { Lambda, APIGateway } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import { RestApi } from '@aws-sdk/client-api-gateway'
 import { LambdaNode } from '../../../../lambda/explorer/lambdaNodes'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import { S3Client, toBucket } from '../../../../shared/clients/s3'
@@ -88,10 +89,10 @@ export async function generateDeployedNode(
             case SERVERLESS_FUNCTION_TYPE: {
                 const defaultClient = new DefaultLambdaClient(regionCode)
                 const lambdaNode = new LambdaNode(regionCode, defaultClient)
-                let configuration: Lambda.FunctionConfiguration
+                let configuration: FunctionConfiguration
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
-                        .Configuration as Lambda.FunctionConfiguration
+                        .Configuration as FunctionConfiguration
                     newDeployedResource = new LambdaFunctionNode(
                         lambdaNode,
                         regionCode,
@@ -120,12 +121,7 @@ export async function generateDeployedNode(
                 const apiParentNode = new ApiGatewayNode(partitionId, regionCode)
                 const apiNodes = await apiParentNode.getChildren()
                 const apiNode = apiNodes.find((node) => node.id === deployedResource.PhysicalResourceId)
-                newDeployedResource = new RestApiNode(
-                    apiParentNode,
-                    partitionId,
-                    regionCode,
-                    apiNode as APIGateway.RestApi
-                )
+                newDeployedResource = new RestApiNode(apiParentNode, partitionId, regionCode, apiNode as RestApi)
                 break
             }
             default:

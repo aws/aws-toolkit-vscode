@@ -11,7 +11,6 @@ import fetch from 'node-fetch'
 import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
-import { DataZoneDomainPreferencesClient } from './client/datazoneDomainPreferencesClient'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -397,31 +396,37 @@ export class SmusUtils {
     }
 
     /**
-     * Checks if we're in SMUS Express mode
-     * @param domainId The DataZone domain ID to check
-     * @param region The AWS region where the domain is located
-     * @param credentialsProvider The credentials provider to use for API calls
-     * @returns Promise resolving to true if the domain is in Express mode
+     * Extracts the session name from an assumed role ARN.
+     *
+     * Note: This function ONLY works for assumed role ARNs (arn:aws:sts::*:assumed-role/*).
+     * It will return undefined for other IAM principal types such as:
+     * - IAM users (arn:aws:iam::*:user/*)
+     * - IAM roles (arn:aws:iam::*:role/*)
+     *
+     * @param arn The assumed role ARN (format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME)
+     * @returns The session name if the ARN is a valid assumed role ARN, undefined otherwise
      */
-    public static async isInSmusExpressMode(
-        domainId: string,
-        region: string,
-        credentialsProvider: CredentialsProvider
-    ): Promise<boolean> {
+    public static extractSessionNameFromArn(arn: string): string | undefined {
         try {
-            this.logger.info(`SMUS: Checking if domain ${domainId} is Express mode`)
+            // Expected format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+            const parts = arn.split(':')
+            if (parts.length < 6) {
+                return undefined
+            }
 
-            // Get DataZoneDomainPreferencesClient instance
-            const domainPreferencesClient = DataZoneDomainPreferencesClient.getInstance(credentialsProvider, region)
+            // The resource part is after the 5th colon
+            const resourcePart = parts.slice(5).join(':')
 
-            // Check if the specific domain is an Express domain
-            const isExpress = await domainPreferencesClient.isExpressDomain(domainId)
+            // Split by '/' to get assumed-role, ROLE_NAME, and SESSION_NAME
+            const resourceParts = resourcePart.split('/')
+            if (resourceParts.length < 3 || resourceParts[0] !== 'assumed-role') {
+                return undefined
+            }
 
-            this.logger.debug(`SMUS: Domain ${domainId} is ${isExpress ? ' Express mode' : 'not Express mode'}`)
-            return isExpress
-        } catch (error) {
-            this.logger.error('SMUS: Failed to check Express mode: %s', error as Error)
-            return false
+            // Session name is the last part
+            return resourceParts[2]
+        } catch (err) {
+            return undefined
         }
     }
 
