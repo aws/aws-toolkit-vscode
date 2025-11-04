@@ -14,7 +14,7 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
 import { onceChanged, onceChangedWithComparator } from 'aws-core-vscode/utils'
@@ -70,7 +70,7 @@ export const notificationTypes = {
 export class AmazonQLspAuth {
     #logErrorIfChanged = onceChanged((s) => getLogger('amazonqLsp').error(s))
     constructor(
-        private readonly client: LanguageClient,
+        private readonly client: BaseLanguageClient,
         private readonly authUtil: AuthUtil = AuthUtil.instance
     ) {}
 
