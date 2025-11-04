@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { Commands } from '../../shared/vscode/commands2'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
-import { SagemakerParentNode } from './explorer/sagemakerParentNode'
+import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
 import * as uriHandlers from './uriHandlers'
 import { openRemoteConnect, filterSpaceAppsByDomainUserProfiles, stopSpace } from './commands'
 import { updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
@@ -29,7 +29,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }),
 
-        Commands.register('aws.sagemaker.filterSpaceApps', async (node: SagemakerParentNode) => {
+        Commands.register('aws.sagemaker.filterSpaceApps', async (node: SagemakerStudioNode) => {
             await telemetry.sagemaker_filterSpaces.run(async () => {
                 await filterSpaceAppsByDomainUserProfiles(node)
             })

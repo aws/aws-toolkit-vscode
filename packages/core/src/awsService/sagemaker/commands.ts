@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { SagemakerConstants } from './explorer/constants'
-import { SagemakerParentNode } from './explorer/sagemakerParentNode'
+import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
 import { DomainKeyDelimiter } from './utils'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
 import { getLogger } from '../../shared/logger/logger'
@@ -33,12 +33,12 @@ import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/ex
 
 const localize = nls.loadMessageBundle()
 
-export async function filterSpaceAppsByDomainUserProfiles(parentNode: SagemakerParentNode): Promise<void> {
-    if (parentNode.domainUserProfiles.size === 0) {
-        // if parentNode has not been expanded, domainUserProfiles will be empty
+export async function filterSpaceAppsByDomainUserProfiles(studioNode: SagemakerStudioNode): Promise<void> {
+    if (studioNode.domainUserProfiles.size === 0) {
+        // if studioNode has not been expanded, domainUserProfiles will be empty
         // if so, this will attempt to populate domainUserProfiles
-        await parentNode.updateChildren()
-        if (parentNode.domainUserProfiles.size === 0) {
+        await studioNode.updateChildren()
+        if (studioNode.domainUserProfiles.size === 0) {
             getLogger().info(SagemakerConstants.NoSpaceToFilter)
             void vscode.window.showInformationMessage(SagemakerConstants.NoSpaceToFilter)
             return
@@ -47,7 +47,7 @@ export async function filterSpaceAppsByDomainUserProfiles(parentNode: SagemakerP
 
     // Sort by domain name and user profile
     const sortedDomainUserProfiles = new Map(
-        [...parentNode.domainUserProfiles].sort((a, b) => {
+        [...studioNode.domainUserProfiles].sort((a, b) => {
             const domainNameA = a[1].domain.DomainName || ''
             const domainNameB = b[1].domain.DomainName || ''
 
@@ -58,7 +58,7 @@ export async function filterSpaceAppsByDomainUserProfiles(parentNode: SagemakerP
         })
     )
 
-    const previousSelection = await parentNode.getSelectedDomainUsers()
+    const previousSelection = await studioNode.getSelectedDomainUsers()
     const items: (vscode.QuickPickItem & { key: string })[] = []
 
     for (const [key, userMetadata] of sortedDomainUserProfiles) {
@@ -84,8 +84,8 @@ export async function filterSpaceAppsByDomainUserProfiles(parentNode: SagemakerP
 
     const newSelection = result.map((r) => r.key)
     if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
-        parentNode.saveSelectedDomainUsers(newSelection)
-        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', parentNode)
+        studioNode.saveSelectedDomainUsers(newSelection)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', studioNode)
     }
 }
 
