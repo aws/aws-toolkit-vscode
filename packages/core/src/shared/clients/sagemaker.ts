@@ -51,6 +51,7 @@ import { ToolkitError } from '../errors'
 import { yes, no, continueText, cancel } from '../localizedText'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
+import { DevSettings } from '../settings'
 
 const appTypeSettingsMap: Record<string, string> = {
     [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
@@ -72,7 +73,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
     protected override getClient(ignoreCache: boolean = false) {
         if (!this.client || ignoreCache) {
-            const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${this.regionCode}.amazonaws.com`
+            const devSettings = DevSettings.instance
+            const customEndpoint = devSettings.get('endpoints', {})['sagemaker']
+            const endpoint = customEndpoint || `https://sagemaker.${this.regionCode}.amazonaws.com`
             const args = {
                 serviceClient: SageMakerClient,
                 region: this.regionCode,

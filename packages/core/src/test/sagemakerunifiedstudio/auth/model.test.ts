@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as assert from 'assert'
 import { Credentials } from '@aws-sdk/types'
+import * as sinon from 'sinon'
 import {
     SmusSsoConnection,
     SmusIamConnection,
@@ -13,9 +14,21 @@ import {
     isValidSmusConnection,
     createSmusProfile,
     scopeSmus,
+    getDataZoneSsoScope,
 } from '../../../sagemakerunifiedstudio/auth/model'
+import { DevSettings } from '../../../shared/settings'
 
 describe('SMUS Connection Model', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     const mockCredentials: Credentials = {
         accessKeyId: 'test-access-key',
         secretAccessKey: 'test-secret-key',
@@ -218,8 +231,33 @@ describe('SMUS Connection Model', function () {
         })
     })
 
+    describe('getDataZoneSsoScope', function () {
+        it('should return default scope when no custom setting is provided', function () {
+            // When get() is called with default value, it returns the default (scopeSmus)
+            // This simulates the behavior when aws.dev.datazoneScope is not set
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(scopeSmus)
+
+            const scope = getDataZoneSsoScope()
+
+            assert.strictEqual(scope, scopeSmus)
+        })
+
+        it('should return custom scope when setting is configured', function () {
+            const customScope = 'custom:datazone:scope'
+            // When get() is called, it returns the custom value from settings
+            // This simulates the behavior when aws.dev.datazoneScope is set to customScope
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(customScope)
+
+            const scope = getDataZoneSsoScope()
+
+            assert.strictEqual(scope, customScope)
+        })
+    })
+
     describe('createSmusProfile', function () {
         it('should create a valid SMUS profile with default scope', function () {
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(scopeSmus)
+
             const domainUrl = 'https://test.sagemaker.us-east-1.on.aws/'
             const domainId = 'test-domain-id'
             const startUrl = 'https://test.awsapps.com/start'
@@ -235,7 +273,21 @@ describe('SMUS Connection Model', function () {
             assert.deepStrictEqual(profile.scopes, [scopeSmus])
         })
 
-        it('should create a valid SMUS profile with custom scopes', function () {
+        it('should create a valid SMUS profile with custom scope from settings', function () {
+            const customScope = 'custom:datazone:scope'
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(customScope)
+
+            const domainUrl = 'https://test.sagemaker.us-east-1.on.aws/'
+            const domainId = 'test-domain-id'
+            const startUrl = 'https://test.awsapps.com/start'
+            const region = 'us-east-1'
+
+            const profile = createSmusProfile(domainUrl, domainId, startUrl, region)
+
+            assert.deepStrictEqual(profile.scopes, [customScope])
+        })
+
+        it('should create a valid SMUS profile with custom scopes parameter', function () {
             const domainUrl = 'https://test.sagemaker.us-east-1.on.aws/'
             const domainId = 'test-domain-id'
             const startUrl = 'https://test.awsapps.com/start'
@@ -245,6 +297,49 @@ describe('SMUS Connection Model', function () {
             const profile = createSmusProfile(domainUrl, domainId, startUrl, region, customScopes)
 
             assert.deepStrictEqual(profile.scopes, customScopes)
+        })
+    })
+
+    describe('isSmusSsoConnection with custom scope', function () {
+        it('should return true for connection with custom scope from settings', function () {
+            const customScope = 'custom:datazone:scope'
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(customScope)
+
+            const connection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: [customScope],
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+                getToken: mockGetToken,
+                getRegistration: mockGetRegistration,
+            } as SmusSsoConnection
+
+            assert.strictEqual(isSmusSsoConnection(connection), true)
+        })
+
+        it('should return true for connection with default scope even when custom scope is configured', function () {
+            const customScope = 'custom:datazone:scope'
+            sandbox.stub(DevSettings.instance, 'get').withArgs('datazoneScope', scopeSmus).returns(customScope)
+
+            const connection = {
+                type: 'sso',
+                startUrl: 'https://test.awsapps.com/start',
+                ssoRegion: 'us-east-1',
+                scopes: [scopeSmus], // Using default scope
+                domainUrl: 'https://test.sagemaker.us-east-1.on.aws/',
+                domainId: 'test-domain-id',
+                id: 'test-id',
+                label: 'Test SSO Connection',
+                getToken: mockGetToken,
+                getRegistration: mockGetRegistration,
+            } as SmusSsoConnection
+
+            // Should still work for backward compatibility
+            assert.strictEqual(isSmusSsoConnection(connection), true)
         })
     })
 })

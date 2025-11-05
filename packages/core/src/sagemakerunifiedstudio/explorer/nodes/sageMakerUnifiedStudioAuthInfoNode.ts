@@ -62,9 +62,23 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         }
 
         if (isConnected && isValid) {
-            label = isExpressMode ? `Connected with profile: ${profileName}` : `Domain: ${domainId}`
+            // Get session name and role ARN dynamically for IAM connections in express mode
+            let sessionName: string | undefined
+            let roleArn: string | undefined
+            if (isExpressMode) {
+                sessionName = await this.authProvider.getSessionName()
+                roleArn = await this.authProvider.getRoleArn()
+            }
+
+            // Format label with session name if available
+            const sessionSuffix = sessionName ? ` (session: ${sessionName})` : ''
+            label = isExpressMode ? `Connected with profile: ${profileName}${sessionSuffix}` : `Domain: ${domainId}`
             iconPath = new vscode.ThemeIcon('key', new vscode.ThemeColor('charts.green'))
-            tooltip = `Connected to SageMaker Unified Studio\n${isExpressMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}\nStatus: Connected`
+
+            // Add role ARN and session name to tooltip if available (role ARN before session)
+            const roleArnTooltip = roleArn ? `\nRole ARN: ${roleArn}` : ''
+            const sessionTooltip = sessionName ? `\nSession: ${sessionName}` : ''
+            tooltip = `Connected to SageMaker Unified Studio\n${isExpressMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}${roleArnTooltip}${sessionTooltip}\nStatus: Connected`
             description = region
         } else if (isConnected && !isValid) {
             label = isExpressMode

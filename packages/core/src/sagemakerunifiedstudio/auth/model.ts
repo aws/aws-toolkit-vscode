@@ -4,11 +4,20 @@
  */
 
 import { SsoProfile, SsoConnection, Connection, IamConnection } from '../../auth/connection'
+import { DevSettings } from '../../shared/settings'
 
 /**
- * Scope for SageMaker Unified Studio authentication
+ * Default scope for SageMaker Unified Studio authentication
  */
 export const scopeSmus = 'datazone:domain:access'
+
+/**
+ * Gets the DataZone SSO scope from user settings or returns the default
+ */
+export function getDataZoneSsoScope(): string {
+    const devSettings = DevSettings.instance
+    return devSettings.get('datazoneScope', scopeSmus)
+}
 
 /**
  * SageMaker Unified Studio profile extending the base SSO profile
@@ -54,7 +63,7 @@ export function createSmusProfile(
     domainId: string,
     startUrl: string,
     region: string,
-    scopes = [scopeSmus]
+    scopes = [getDataZoneSsoScope()]
 ): SmusSsoProfile & { readonly scopes: string[] } {
     return {
         scopes,
@@ -93,8 +102,11 @@ export function isSmusSsoConnection(conn?: Connection): conn is SmusSsoConnectio
     if (!conn || conn.type !== 'sso') {
         return false
     }
-    // Check if the connection has the required SMUS scope
-    const hasScope = Array.isArray((conn as any).scopes) && (conn as any).scopes.includes(scopeSmus)
+    // Check if the connection has the required SMUS scope (check both default and custom scope)
+    const configuredScope = getDataZoneSsoScope()
+    const hasScope =
+        Array.isArray((conn as any).scopes) &&
+        ((conn as any).scopes.includes(scopeSmus) || (conn as any).scopes.includes(configuredScope))
     // Check if the connection has the required SMUS properties
     const hasSmusProps = 'domainUrl' in conn && 'domainId' in conn
     return !!hasScope && !!hasSmusProps

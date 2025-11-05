@@ -1485,4 +1485,363 @@ describe('SmusAuthenticationProvider', function () {
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
         })
     })
+
+    describe('getSessionName', function () {
+        let mockStsClient: any
+        let mockCredentialsProvider: any
+
+        beforeEach(function () {
+            // Mock STS client
+            mockStsClient = {
+                getCallerIdentity: sinon.stub(),
+            }
+            sinon
+                .stub(DefaultStsClient.prototype, 'getCallerIdentity')
+                .callsFake(() => mockStsClient.getCallerIdentity())
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-access-key',
+                    secretAccessKey: 'test-secret-key',
+                    sessionToken: 'test-session-token',
+                }),
+            }
+
+            sinon
+                .stub(smusAuthProvider as any, 'getCredentialsForIamProfile')
+                .resolves(mockCredentialsProvider.getCredentials())
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should return session name for IAM connection with assumed role', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            // Mock STS response with assumed role ARN
+            const assumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'
+            mockStsClient.getCallerIdentity.resolves({
+                Arn: assumedRoleArn,
+                Account: '123456789012',
+                UserId: 'AIDAI1234567890EXAMPLE:my-session-name',
+            })
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, 'my-session-name')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce)
+        })
+
+        it('should return undefined for IAM connection without assumed role (IAM user)', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            // Mock STS response with IAM user ARN (no session name)
+            const iamUserArn = 'arn:aws:iam::123456789012:user/my-user'
+            mockStsClient.getCallerIdentity.resolves({
+                Arn: iamUserArn,
+                Account: '123456789012',
+                UserId: 'AIDAI1234567890EXAMPLE',
+            })
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce)
+        })
+
+        it('should return undefined for SSO connection', async function () {
+            mockSecondaryAuthState.activeConnection = mockSmusConnection
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.notCalled)
+        })
+
+        it('should return undefined when not connected', async function () {
+            mockSecondaryAuthState.activeConnection = undefined
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.notCalled)
+        })
+
+        it('should cache and reuse caller identity ARN', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            const assumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'
+            mockStsClient.getCallerIdentity.resolves({
+                Arn: assumedRoleArn,
+                Account: '123456789012',
+                UserId: 'AIDAI1234567890EXAMPLE:my-session-name',
+            })
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            // First call - should fetch from STS
+            const sessionName1 = await smusAuthProvider.getSessionName()
+            assert.strictEqual(sessionName1, 'my-session-name')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce)
+
+            // Second call - should use cached value
+            const sessionName2 = await smusAuthProvider.getSessionName()
+            assert.strictEqual(sessionName2, 'my-session-name')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce) // Still only called once
+        })
+
+        it('should handle STS errors gracefully', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            mockStsClient.getCallerIdentity.rejects(new Error('STS call failed'))
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, undefined)
+        })
+
+        it('should return undefined when connection metadata is missing', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            // No connection metadata
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns({})
+
+            const sessionName = await smusAuthProvider.getSessionName()
+
+            assert.strictEqual(sessionName, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.notCalled)
+        })
+    })
+
+    describe('getRoleArn', function () {
+        let mockStsClient: any
+        let mockCredentialsProvider: any
+
+        beforeEach(function () {
+            // Mock STS client
+            mockStsClient = {
+                getCallerIdentity: sinon.stub(),
+            }
+            sinon
+                .stub(DefaultStsClient.prototype, 'getCallerIdentity')
+                .callsFake(() => mockStsClient.getCallerIdentity())
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-access-key',
+                    secretAccessKey: 'test-secret-key',
+                    sessionToken: 'test-session-token',
+                }),
+            }
+
+            sinon
+                .stub(smusAuthProvider as any, 'getCredentialsForIamProfile')
+                .resolves(mockCredentialsProvider.getCredentials())
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should return IAM role ARN for IAM connection with assumed role', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            // Mock STS response with assumed role ARN
+            const assumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'
+            mockStsClient.getCallerIdentity.resolves({
+                Arn: assumedRoleArn,
+                Account: '123456789012',
+                UserId: 'AIDAI1234567890EXAMPLE:my-session-name',
+            })
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            const roleArn = await smusAuthProvider.getRoleArn()
+
+            // Should convert assumed role ARN to IAM role ARN
+            assert.strictEqual(roleArn, 'arn:aws:iam::123456789012:role/MyRole')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce)
+        })
+
+        it('should return undefined for SSO connection', async function () {
+            mockSecondaryAuthState.activeConnection = mockSmusConnection
+
+            const roleArn = await smusAuthProvider.getRoleArn()
+
+            assert.strictEqual(roleArn, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.notCalled)
+        })
+
+        it('should return undefined when not connected', async function () {
+            mockSecondaryAuthState.activeConnection = undefined
+
+            const roleArn = await smusAuthProvider.getRoleArn()
+
+            assert.strictEqual(roleArn, undefined)
+            assert.ok(mockStsClient.getCallerIdentity.notCalled)
+        })
+
+        it('should use cached caller identity ARN', async function () {
+            const iamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam' as const,
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: testRegion,
+                domainUrl: testDomainUrl,
+                domainId: testDomainId,
+                endpointUrl: undefined,
+                getCredentials: sinon.stub().resolves(),
+            }
+            mockSecondaryAuthState.activeConnection = iamConnection as any
+
+            const assumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'
+            mockStsClient.getCallerIdentity.resolves({
+                Arn: assumedRoleArn,
+                Account: '123456789012',
+                UserId: 'AIDAI1234567890EXAMPLE:my-session-name',
+            })
+
+            // Mock connection metadata
+            const smusConnections = {
+                [iamConnection.id]: {
+                    profileName: 'test-profile',
+                    region: testRegion,
+                    domainUrl: testDomainUrl,
+                    domainId: testDomainId,
+                },
+            }
+            mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
+
+            // First call - should fetch from STS
+            const roleArn1 = await smusAuthProvider.getRoleArn()
+            assert.strictEqual(roleArn1, 'arn:aws:iam::123456789012:role/MyRole')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce)
+
+            // Second call - should use cached value
+            const roleArn2 = await smusAuthProvider.getRoleArn()
+            assert.strictEqual(roleArn2, 'arn:aws:iam::123456789012:role/MyRole')
+            assert.ok(mockStsClient.getCallerIdentity.calledOnce) // Still only called once
+        })
+    })
 })

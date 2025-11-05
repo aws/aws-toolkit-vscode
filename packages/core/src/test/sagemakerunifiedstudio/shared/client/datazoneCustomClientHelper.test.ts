@@ -799,7 +799,7 @@ describe('DataZoneCustomClientHelper', () => {
         const mockDomainId = 'dzd_test123'
         const mockAssumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/AdminRole/my-session'
 
-        it('should find matching user profile by session name', async () => {
+        it('should find matching user profile by role ARN and session name', async () => {
             const searchStub = sinon.stub(client, 'searchUserProfiles')
             searchStub.onFirstCall().resolves({
                 items: [
@@ -808,6 +808,7 @@ describe('DataZoneCustomClientHelper', () => {
                         status: 'ACTIVATED',
                         details: {
                             iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
                                 principalId: 'AIDAI123456789EXAMPLE:my-session',
                             },
                         },
@@ -822,12 +823,13 @@ describe('DataZoneCustomClientHelper', () => {
             assert.ok(searchStub.calledOnce)
             assert.strictEqual(searchStub.firstCall.args[0], mockDomainId)
             assert.strictEqual(searchStub.firstCall.args[1].userType, 'DATAZONE_IAM_USER')
+            assert.strictEqual(searchStub.firstCall.args[1].searchText, 'arn:aws:iam::123456789012:role/AdminRole')
         })
 
         it('should find matching user profile across multiple pages', async () => {
             const searchStub = sinon.stub(client, 'searchUserProfiles')
 
-            // First page - no match
+            // First page - no match (different session name)
             searchStub.onFirstCall().resolves({
                 items: [
                     {
@@ -835,6 +837,7 @@ describe('DataZoneCustomClientHelper', () => {
                         status: 'ACTIVATED',
                         details: {
                             iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
                                 principalId: 'AIDAI123456789EXAMPLE:other-session',
                             },
                         },
@@ -851,6 +854,7 @@ describe('DataZoneCustomClientHelper', () => {
                         status: 'ACTIVATED',
                         details: {
                             iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
                                 principalId: 'AIDAI987654321EXAMPLE:my-session',
                             },
                         },
@@ -887,6 +891,7 @@ describe('DataZoneCustomClientHelper', () => {
                         status: 'ACTIVATED',
                         details: {
                             iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
                                 principalId: 'AIDAI123456789EXAMPLE:other-session',
                             },
                         },
@@ -1074,6 +1079,7 @@ describe('DataZoneCustomClientHelper', () => {
                             status: 'ACTIVATED',
                             details: {
                                 iam: {
+                                    arn: 'arn:aws:iam::123456789012:role/AdminRole',
                                     principalId: 'AIDAI123456789EXAMPLE:my-session',
                                 },
                             },
