@@ -22,6 +22,7 @@ import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { getContext } from '../../../shared/vscode/setContext'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { SmusUtils } from '../smusUtils'
+import { DevSettings } from '../../../shared/settings'
 
 /**
  * Represents a DataZone domain
@@ -299,11 +300,14 @@ export class DataZoneClient {
                         credentials: awsCredentialProvider,
                     }
 
-                    // Use environment variable for endpoint if provided
-                    const endpoint = process.env.DATAZONE_ENDPOINT
-                    if (endpoint) {
-                        clientConfig.endpoint = endpoint
-                        this.logger.debug(`DataZoneClient: Using environment variable DataZone endpoint: ${endpoint}`)
+                    // Use user setting for endpoint if provided
+                    const devSettings = DevSettings.instance
+                    const customEndpoint = devSettings.get('endpoints', {})['datazone']
+                    if (customEndpoint) {
+                        clientConfig.endpoint = customEndpoint
+                        this.logger.debug(
+                            `DataZoneClient: Using custom DataZone endpoint from settings: ${customEndpoint}`
+                        )
                     }
 
                     this.datazoneClient = new DataZone(clientConfig)

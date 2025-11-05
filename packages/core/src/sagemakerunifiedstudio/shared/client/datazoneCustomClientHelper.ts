@@ -13,6 +13,7 @@ import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { ToolkitError } from '../../../shared/errors'
 import { SmusUtils } from '../smusUtils'
+import { DevSettings } from '../../../shared/settings'
 
 /**
  * Error codes for DataZone operations
@@ -92,12 +93,14 @@ export class DataZoneCustomClientHelper {
             try {
                 this.logger.info('DataZoneCustomClientHelper: Creating authenticated DataZone client')
 
-                // Use environment variable for endpoint if provided, otherwise use default
-                const endpoint = process.env.DATAZONE_ENDPOINT || `https://datazone.${this.region}.api.aws`
+                // Use user setting for endpoint if provided, otherwise use default
+                const devSettings = DevSettings.instance
+                const customEndpoint = devSettings.get('endpoints', {})['datazone']
+                const endpoint = customEndpoint || `https://datazone.${this.region}.api.aws`
 
-                if (process.env.DATAZONE_ENDPOINT) {
+                if (customEndpoint) {
                     this.logger.debug(
-                        `DataZoneCustomClientHelper: Using environment variable DataZone endpoint: ${endpoint}`
+                        `DataZoneCustomClientHelper: Using custom DataZone endpoint from settings: ${endpoint}`
                     )
                 }
 
@@ -461,35 +464,50 @@ export class DataZoneCustomClientHelper {
                 })
             }
 
-            this.logger.debug(`DataZoneCustomClientHelper: Extracted session name: ${sessionName}`)
+            // Convert assumed role ARN to IAM role ARN for matching
+            // Format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME -> arn:aws:iam::ACCOUNT:role/ROLE_NAME
+            const iamRoleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(roleArnWithSession)
+            if (!iamRoleArn) {
+                throw new ToolkitError(`Unable to convert assumed role ARN to IAM role ARN: ${roleArnWithSession}`, {
+                    code: DataZoneErrorCode.NoUserProfileFound,
+                })
+            }
 
-            // Paginate through all user profiles and do client-side filtering
+            this.logger.debug(
+                `DataZoneCustomClientHelper: Extracted session name: ${sessionName}, IAM role ARN: ${iamRoleArn}`
+            )
+
+            // Use searchText to filter by role ARN on server side, then filter by session name on client side
             let nextToken: string | undefined
             let totalProfilesChecked = 0
 
             do {
+                this.logger.debug(
+                    `DataZoneCustomClientHelper: Calling searchUserProfiles with searchText: ${iamRoleArn}`
+                )
+
                 const response = await this.searchUserProfiles(domainIdentifier, {
                     userType: 'DATAZONE_IAM_USER',
+                    searchText: iamRoleArn, // Server-side filter by role ARN
                     maxResults: 50,
                     nextToken,
                 })
 
                 totalProfilesChecked += response.items.length
                 this.logger.debug(
-                    `DataZoneCustomClientHelper: Received ${response.items.length} user profiles in current page (total checked: ${totalProfilesChecked})`
+                    `DataZoneCustomClientHelper: Received ${response.items.length} user profiles matching role ARN in current page (total checked: ${totalProfilesChecked})`
                 )
 
-                // Find exact match in current page using client-side filtering
+                // Find exact match in current page using client-side filtering for session name
+                // Server-side filtering by role ARN should have already reduced the result set significantly
                 for (const profile of response.items) {
-                    this.logger.debug(
-                        `DataZoneCustomClientHelper: Checking profile - ID: ${profile.id}, principalId: ${profile.details?.iam?.principalId}, status: ${profile.status}`
-                    )
-
-                    // Match based on principalId which contains the session name
+                    // Match based on session name (role ARN already filtered by searchText)
                     // principalId format: PRINCIPAL_ID:SESSION_NAME
-                    if (profile.details?.iam?.principalId?.includes(sessionName)) {
+                    const matchesSession = profile.details?.iam?.principalId?.includes(sessionName)
+
+                    if (matchesSession) {
                         this.logger.info(
-                            `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} after checking ${totalProfilesChecked} profiles`
+                            `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} (role: ${iamRoleArn}, session: ${sessionName}) after checking ${totalProfilesChecked} profiles`
                         )
                         return profile.id!
                     }
@@ -500,9 +518,9 @@ export class DataZoneCustomClientHelper {
 
             // No matching profile found after checking all pages
             this.logger.error(
-                `DataZoneCustomClientHelper: No user profile found for session: ${sessionName} after checking ${totalProfilesChecked} profiles`
+                `DataZoneCustomClientHelper: No user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
             )
-            throw new ToolkitError(`No user profile found for session: ${sessionName}`, {
+            throw new ToolkitError(`No user profile found for role: ${iamRoleArn} with session: ${sessionName}`, {
                 code: DataZoneErrorCode.NoUserProfileFound,
             })
         } catch (err) {

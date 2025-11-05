@@ -88,6 +88,7 @@ export class SmusAuthenticationProvider {
     private connectionCredentialProvidersCache = new Map<string, ConnectionCredentialsProvider>()
     private cachedDomainAccountId: string | undefined
     private cachedProjectAccountIds = new Map<string, string>()
+    private iamCallerIdentityCache: { arn: string; connectionId: string } | undefined
 
     public readonly secondaryAuth: ReturnType<typeof getSecondaryAuth>
 
@@ -146,6 +147,8 @@ export class SmusAuthenticationProvider {
             this.cachedDomainAccountId = undefined
             // Clear cached project account IDs when connection changes
             this.cachedProjectAccountIds.clear()
+            // Clear cached IAM caller identity when connection changes
+            this.clearIamCallerIdentityCache()
             // Clear all clients in client store when connection changes
             ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
@@ -801,6 +804,103 @@ export class SmusAuthenticationProvider {
     }
 
     /**
+     * Gets the cached caller identity ARN for the active IAM connection
+     * Fetches from STS if not cached or if connection has changed
+     * Only works for IAM connections - returns undefined for SSO connections
+     * @returns Promise resolving to the ARN, or undefined if not available or not an IAM connection
+     */
+    private async getCachedIamCallerIdentityArn(): Promise<string | undefined> {
+        const logger = getLogger()
+        try {
+            const activeConn = this.activeConnection
+            // Only cache for IAM connections
+            if (!activeConn || activeConn.type !== 'iam') {
+                return undefined
+            }
+
+            // Check if we have a cached ARN for this connection
+            if (this.iamCallerIdentityCache && this.iamCallerIdentityCache.connectionId === activeConn.id) {
+                logger.debug('SMUS: Using cached IAM caller identity ARN')
+                return this.iamCallerIdentityCache.arn
+            }
+
+            // Fetch fresh caller identity
+            logger.debug('SMUS: Fetching IAM caller identity from STS')
+            const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
+            const connectionMetadata = smusConnections[activeConn.id]
+
+            if (!connectionMetadata?.profileName || !connectionMetadata?.region) {
+                logger.debug('SMUS: Missing profile name or region in connection metadata')
+                return undefined
+            }
+
+            const credentials = await this.getCredentialsForIamProfile(connectionMetadata.profileName)
+            const stsClient = new DefaultStsClient(connectionMetadata.region, credentials)
+            const callerIdentity = await stsClient.getCallerIdentity()
+
+            if (!callerIdentity.Arn) {
+                logger.debug('SMUS: No ARN found in caller identity')
+                return undefined
+            }
+
+            // Cache the result
+            this.iamCallerIdentityCache = {
+                arn: callerIdentity.Arn,
+                connectionId: activeConn.id,
+            }
+            logger.debug(`SMUS: Cached IAM caller identity ARN for connection ${activeConn.id}`)
+
+            return callerIdentity.Arn
+        } catch (error) {
+            logger.warn(`SMUS: Failed to get IAM caller identity: %s`, error)
+            return undefined
+        }
+    }
+
+    /**
+     * Gets the session name from the cached IAM caller identity
+     * Only works for IAM connections - returns undefined for SSO connections
+     * @returns Promise resolving to the session name, or undefined if not available or not an IAM connection
+     */
+    public async getSessionName(): Promise<string | undefined> {
+        const arn = await this.getCachedIamCallerIdentityArn()
+        if (!arn) {
+            return undefined
+        }
+
+        const sessionName = SmusUtils.extractSessionNameFromArn(arn)
+        this.logger.debug(`SMUS: Extracted session name: ${sessionName || 'none'}`)
+        return sessionName
+    }
+
+    /**
+     * Gets the role ARN from the cached IAM caller identity
+     * Converts assumed role ARN to IAM role ARN format
+     * Only works for IAM connections - returns undefined for SSO connections
+     * @returns Promise resolving to the IAM role ARN, or undefined if not available or not an IAM connection
+     */
+    public async getRoleArn(): Promise<string | undefined> {
+        const arn = await this.getCachedIamCallerIdentityArn()
+        if (!arn) {
+            return undefined
+        }
+
+        // Convert assumed role ARN to IAM role ARN
+        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(arn)
+        this.logger.debug(`SMUS: Extracted role ARN: ${roleArn || 'none'}`)
+        return roleArn
+    }
+
+    /**
+     * Clears the cached IAM caller identity
+     * Should be called when connection changes or credentials are refreshed
+     */
+    private clearIamCallerIdentityCache(): void {
+        this.iamCallerIdentityCache = undefined
+        this.logger.debug('SMUS: Cleared IAM caller identity cache')
+    }
+
+    /**
      * Reauthenticates an existing connection
      * @param conn Connection to reauthenticate
      * @returns Promise resolving to the reauthenticated connection
@@ -1381,6 +1481,9 @@ export class SmusAuthenticationProvider {
 
         // Clear cached project account IDs
         this.cachedProjectAccountIds.clear()
+
+        // Clear cached IAM caller identity
+        this.clearIamCallerIdentityCache()
 
         DataZoneClient.dispose()
         DataZoneCustomClientHelper.dispose()
