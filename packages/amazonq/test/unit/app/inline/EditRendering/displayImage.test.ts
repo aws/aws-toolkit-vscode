@@ -234,7 +234,8 @@ describe('displaySvgDecoration cursor distance auto-discard', function () {
             [],
             sessionStub,
             languageClientStub,
-            itemStub
+            itemStub,
+            []
         )
 
         // Verify discard telemetry was sent
@@ -263,7 +264,8 @@ describe('displaySvgDecoration cursor distance auto-discard', function () {
             [],
             sessionStub,
             languageClientStub,
-            itemStub
+            itemStub,
+            []
         )
 
         // Verify no discard telemetry was sent (function should proceed normally)
@@ -290,7 +292,8 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
             [],
             {} as any,
             {} as any,
-            { itemId: 'test', insertText: 'patch' } as any
+            { itemId: 'test', insertText: 'patch' } as any,
+            []
         )
     }
 

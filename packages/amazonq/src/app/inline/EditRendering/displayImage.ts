@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getContext, getLogger, setContext } from 'aws-core-vscode/shared'
+import { getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { applyPatch, diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
@@ -16,7 +16,6 @@ import { EditSuggestionState } from '../editSuggestionState'
 import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
-const autoRejectEditCursorDistance = 25
 const autoDiscardEditCursorDistance = 10
 
 export class EditDecorationManager {
@@ -311,6 +310,7 @@ export async function displaySvgDecoration(
     session: CodeWhispererSession,
     languageClient: LanguageClient,
     item: InlineCompletionItemWithReferences,
+    listeners: vscode.Disposable[],
     inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
     function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
@@ -359,44 +359,7 @@ export async function displaySvgDecoration(
         logSuggestionFailure('DISCARD', 'Invalid patch', item.insertText as string)
         return
     }
-    const documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
-        if (e.contentChanges.length <= 0) {
-            return
-        }
-        if (e.document !== editor.document) {
-            return
-        }
-        if (vsCodeState.isCodeWhispererEditing) {
-            return
-        }
-        if (getContext('aws.amazonq.editSuggestionActive') === false) {
-            return
-        }
 
-        const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
-        if (!isPatchValid) {
-            logSuggestionFailure('REJECT', 'Invalid patch due to document change', item.insertText as string)
-            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
-        }
-    })
-    const cursorChangeListener = vscode.window.onDidChangeTextEditorSelection((e) => {
-        if (!EditSuggestionState.isEditSuggestionActive()) {
-            return
-        }
-        if (e.textEditor !== editor) {
-            return
-        }
-        const currentPosition = e.selections[0].active
-        const distance = Math.abs(currentPosition.line - startLine)
-        if (distance > autoRejectEditCursorDistance) {
-            logSuggestionFailure(
-                'REJECT',
-                `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
-                item.insertText as string
-            )
-            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
-        }
-    })
     await decorationManager.displayEditSuggestion(
         editor,
         svgImage,
@@ -418,8 +381,12 @@ export async function displaySvgDecoration(
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
             await decorationManager.clearDecorations(editor)
-            documentChangeListener.dispose()
-            cursorChangeListener.dispose()
+
+            // Dispose registered listeners on popup close
+            for (const listener of listeners) {
+                listener.dispose()
+            }
+
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
@@ -444,8 +411,12 @@ export async function displaySvgDecoration(
                 getLogger().info('Edit suggestion rejected')
             }
             await decorationManager.clearDecorations(editor)
-            documentChangeListener.dispose()
-            cursorChangeListener.dispose()
+
+            // Dispose registered listeners on popup close
+            for (const listener of listeners) {
+                listener.dispose()
+            }
+
             const suggestionState = isDiscard
                 ? {
                       seen: false,
