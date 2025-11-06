@@ -348,6 +348,24 @@ describe('LdkClient', () => {
             assert(mockLambdaClient.deleteFunction.calledOnce, 'Should call deleteFunction')
         })
 
+        it('should skip deletion when qualifier is empty or latest', async () => {
+            const result = await ldkClient.deleteDebugVersion(
+                'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+                ''
+            )
+
+            const result2 = await ldkClient.deleteDebugVersion(
+                'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+                '$LATEST'
+            )
+            assert.strictEqual(result, true, 'Should return true without attempting deletion when empty')
+            assert.strictEqual(result2, true, 'Should return true without attempting deletion when latest')
+            assert(
+                mockLambdaClient.deleteFunction.notCalled,
+                'Should not call deleteFunction when qualifier is empty or latest'
+            )
+        })
+
         it('should handle version deletion errors', async () => {
             mockLambdaClient.deleteFunction.rejects(new Error('Delete failed'))
 

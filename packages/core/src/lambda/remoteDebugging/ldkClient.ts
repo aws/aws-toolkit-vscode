@@ -401,7 +401,7 @@ export class LdkClient {
     }
 
     async deleteDebugVersion(functionArn: string, qualifier: string) {
-        if (!qualifier || qualifier === '$LATEST'){
+        if (!qualifier || qualifier === '$LATEST') {
             // avoid deleting function directly
             return true
         }
