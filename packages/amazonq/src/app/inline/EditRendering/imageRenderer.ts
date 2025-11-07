@@ -159,7 +159,7 @@ export class EditsSuggestionSvg {
                     await this.rerender()
                 }
             } else {
-                // this.autoReject(RejectReason.NotApplicableToOriginal)
+                this.autoReject(RejectReason.NotApplicableToOriginal)
             }
         } catch (e) {
             // TODO: format
