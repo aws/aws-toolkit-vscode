@@ -163,7 +163,10 @@ export class EditDecorationManager {
     /**
      * Clears all edit suggestion decorations
      */
-    public async clearDecorations(editor: vscode.TextEditor): Promise<void> {
+    public async clearDecorations(editor: vscode.TextEditor, disposables: vscode.Disposable[]): Promise<void> {
+        for (const d of disposables) {
+            d.dispose()
+        }
         editor.setDecorations(this.imageDecorationType, [])
         editor.setDecorations(this.removedCodeDecorationType, [])
         this.currentImageDecoration = undefined
@@ -380,12 +383,7 @@ export async function displaySvgDecoration(
             const endPosition = getEndOfEditPosition(originalCode, newCode)
             editor.selection = new vscode.Selection(endPosition, endPosition)
 
-            await decorationManager.clearDecorations(editor)
-
-            // Dispose registered listeners on popup close
-            for (const listener of listeners) {
-                listener.dispose()
-            }
+            await decorationManager.clearDecorations(editor, listeners)
 
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
@@ -410,12 +408,7 @@ export async function displaySvgDecoration(
             } else {
                 getLogger().info('Edit suggestion rejected')
             }
-            await decorationManager.clearDecorations(editor)
-
-            // Dispose registered listeners on popup close
-            for (const listener of listeners) {
-                listener.dispose()
-            }
+            await decorationManager.clearDecorations(editor, listeners)
 
             const suggestionState = isDiscard
                 ? {

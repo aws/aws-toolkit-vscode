@@ -214,6 +214,7 @@ export class InlineCompletionManager implements Disposable {
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     private logger = getLogger()
     private pendingRequest: Promise<InlineCompletionItem[]> | undefined
+    private lastEdit: EditsSuggestionSvg | undefined
 
     constructor(
         private readonly languageClient: LanguageClient,
@@ -529,7 +530,12 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
-                        await new EditsSuggestionSvg(item, editor, this.languageClient, session, this).show()
+                        if (this.lastEdit) {
+                            await this.lastEdit.dispose()
+                        }
+                        const e = new EditsSuggestionSvg(item, editor, this.languageClient, session, this)
+                        await e.show()
+                        this.lastEdit = e
                         logstr += `- duration between trigger to edits suggestion is displayed: ${Date.now() - t0}ms`
                     }
                     return []

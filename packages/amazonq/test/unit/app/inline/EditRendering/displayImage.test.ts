@@ -177,7 +177,7 @@ describe('EditDecorationManager', function () {
         editorStub.setDecorations.reset()
 
         // Call clearDecorations
-        await manager.clearDecorations(editorStub as unknown as vscode.TextEditor)
+        await manager.clearDecorations(editorStub as unknown as vscode.TextEditor, [])
 
         // Verify decorations were cleared
         assert.strictEqual(editorStub.setDecorations.callCount, 2)

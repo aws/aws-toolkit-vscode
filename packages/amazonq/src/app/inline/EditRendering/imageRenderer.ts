@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { displaySvgDecoration } from './displayImage'
+import { displaySvgDecoration, decorationManager } from './displayImage'
 import { SvgGenerationService } from './svgGenerator'
 import { getContext, getLogger } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
@@ -32,8 +32,8 @@ enum RejectReason {
 
 export class EditsSuggestionSvg {
     private readonly logger = getLogger('nextEditPrediction')
-    private readonly documentChangedListener: vscode.Disposable
-    private readonly cursorChangedListener: vscode.Disposable
+    private documentChangedListener: vscode.Disposable | undefined
+    private cursorChangedListener: vscode.Disposable | undefined
     private readonly updatedSuggestions: InlineCompletionItemWithReferences[] = []
     private startLine = 0
 
@@ -42,16 +42,8 @@ export class EditsSuggestionSvg {
         private readonly editor: vscode.TextEditor,
         private readonly languageClient: LanguageClient,
         private readonly session: CodeWhispererSession,
-        private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider // why nullable?
-    ) {
-        this.documentChangedListener = vscode.workspace.onDidChangeTextDocument(async (e) => {
-            await this.onDocChange(e)
-        })
-
-        this.cursorChangedListener = vscode.window.onDidChangeTextEditorSelection((e) => {
-            this.onCursorChange(e)
-        })
-    }
+        private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
+    ) {}
 
     async show() {
         if (!this.editor) {
@@ -80,6 +72,16 @@ export class EditsSuggestionSvg {
             }
 
             if (svgImage) {
+                const documentChangedListener = (this.documentChangedListener ??=
+                    vscode.workspace.onDidChangeTextDocument(async (e) => {
+                        await this.onDocChange(e)
+                    }))
+
+                const cursorChangedListener = (this.cursorChangedListener ??=
+                    vscode.window.onDidChangeTextEditorSelection((e) => {
+                        this.onCursorChange(e)
+                    }))
+
                 // display the SVG image
                 await displaySvgDecoration(
                     this.editor,
@@ -90,7 +92,7 @@ export class EditsSuggestionSvg {
                     this.session,
                     this.languageClient,
                     item,
-                    [this.documentChangedListener, this.cursorChangedListener],
+                    [documentChangedListener, cursorChangedListener],
                     this.inlineCompletionProvider
                 )
             } else {
@@ -134,6 +136,8 @@ export class EditsSuggestionSvg {
             return
         }
 
+        this.logger.info(`docChange ${this.session.sessionId}, contentChange=${e.contentChanges[0].text}`)
+
         /**
          * 1. Take the diff returned by the model and apply it to the code we originally sent to the model
          * 2. Do a diff between the above code and what's currently in the editor
@@ -150,16 +154,28 @@ export class EditsSuggestionSvg {
                     this.autoReject(RejectReason.MaxRetry)
                 } else if (applyPatch(this.editor.document.getText(), updatedPatch) === false) {
                     this.autoReject(RejectReason.DocumentChange)
+                } else {
+                    // Close the previoius popup and rerender it
+                    await this.rerender()
                 }
-
-                await this.show()
             } else {
-                this.autoReject(RejectReason.NotApplicableToOriginal)
+                // this.autoReject(RejectReason.NotApplicableToOriginal)
             }
         } catch (e) {
             // TODO: format
             this.logger.error(`${e}`)
         }
+    }
+
+    async dispose() {
+        this.documentChangedListener?.dispose()
+        this.cursorChangedListener?.dispose()
+        await decorationManager.clearDecorations(this.editor, [])
+    }
+
+    private async rerender() {
+        await decorationManager.clearDecorations(this.editor, [])
+        await this.show()
     }
 
     private autoReject(reason: string) {
