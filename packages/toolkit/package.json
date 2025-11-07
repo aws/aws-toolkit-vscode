@@ -1504,22 +1504,22 @@
                 {
                     "command": "aws.sagemaker.stopSpace",
                     "group": "inline@0",
-                    "when": "view != aws.smus.rootView  && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView && viewItem == awsSagemakerSpaceRunningNode"
                 },
                 {
                     "command": "aws.smus.stopSpace",
                     "group": "inline@0",
-                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode|awsSagemakerSpaceRunningNode)$/"
+                    "when": "view == aws.smus.rootView && viewItem == awsSagemakerSpaceRunningNode"
                 },
                 {
                     "command": "aws.sagemaker.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceNode)$/"
                 },
                 {
                     "command": "aws.smus.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|smusSpaceNode)$/"
                 },
                 {
                     "command": "_aws.toolkit.notifications.dismiss",
