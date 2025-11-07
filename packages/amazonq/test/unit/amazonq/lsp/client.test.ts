@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AmazonQLspAuth } from '../../../../src/lsp/auth'
 
@@ -108,7 +108,7 @@ describe('Language Server Client Authentication', function () {
     describe('initializeLanguageServerConfiguration behavior', function () {
         it('should initialize configuration when connection is valid', async function () {
             // Test the expected behavior of the function
-            const mockInitializeFunction = async (client: LanguageClient, context: string) => {
+            const mockInitializeFunction = async (client: BaseLanguageClient, context: string) => {
                 const { getLogger } = require('aws-core-vscode/shared')
                 const { pushConfigUpdate } = require('../../../../src/lsp/config')
                 const logger = getLogger('amazonqLsp')
@@ -178,7 +178,7 @@ describe('Language Server Client Authentication', function () {
                 },
             }))
 
-            const mockInitializeFunction = async (client: LanguageClient, context: string) => {
+            const mockInitializeFunction = async (client: BaseLanguageClient, context: string) => {
                 const { getLogger } = require('aws-core-vscode/shared')
                 const logger = getLogger('amazonqLsp')
 
@@ -215,7 +215,7 @@ describe('Language Server Client Authentication', function () {
 
     describe('crash recovery handler behavior', function () {
         it('should reinitialize authentication after crash', async function () {
-            const mockCrashHandler = async (client: LanguageClient, auth: AmazonQLspAuth) => {
+            const mockCrashHandler = async (client: BaseLanguageClient, auth: AmazonQLspAuth) => {
                 const { getLogger } = require('aws-core-vscode/shared')
                 const { pushConfigUpdate } = require('../../../../src/lsp/config')
                 const logger = getLogger('amazonqLsp')

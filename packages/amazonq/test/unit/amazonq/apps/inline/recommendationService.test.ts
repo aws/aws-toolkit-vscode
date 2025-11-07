@@ -4,7 +4,7 @@
  */
 
 import sinon from 'sinon'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { Position, CancellationToken, InlineCompletionItem, InlineCompletionTriggerKind } from 'vscode'
 import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
@@ -21,7 +21,7 @@ const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
 const editApi = 'aws/textDocument/editCompletion'
 
 describe('RecommendationService', () => {
-    let languageClient: LanguageClient
+    let languageClient: BaseLanguageClient
     let sendRequestStub: sinon.SinonStub
     let sandbox: sinon.SinonSandbox
     let sessionManager: SessionManager
@@ -71,7 +71,7 @@ describe('RecommendationService', () => {
         languageClient = {
             sendRequest: sendRequestStub,
             warn: sandbox.stub(),
-        } as unknown as LanguageClient
+        } as unknown as BaseLanguageClient
 
         sessionManager = new SessionManager()
 

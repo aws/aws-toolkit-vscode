@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { getLogger } from 'aws-core-vscode/shared'
 import { globals } from 'aws-core-vscode/shared'
 import { AmazonQInlineCompletionItemProvider } from './completion'
@@ -36,7 +36,7 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
     private autotriggerStateDisposable?: vscode.Disposable
 
     constructor(
-        private readonly languageClient: LanguageClient,
+        private readonly languageClient: BaseLanguageClient,
         private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
     ) {
         // Listen for autotrigger state changes to enable/disable the timer

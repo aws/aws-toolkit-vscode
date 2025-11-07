@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { displaySvgDecoration, decorationManager } from './displayImage'
 import { SvgGenerationService } from './svgGenerator'
 import { getContext, getLogger } from 'aws-core-vscode/shared'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
 import type { AmazonQInlineCompletionItemProvider } from '../completion'
@@ -40,7 +40,7 @@ export class EditsSuggestionSvg {
     constructor(
         private suggestion: InlineCompletionItemWithReferences,
         private readonly editor: vscode.TextEditor,
-        private readonly languageClient: LanguageClient,
+        private readonly languageClient: BaseLanguageClient,
         private readonly session: CodeWhispererSession,
         private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
     ) {}
