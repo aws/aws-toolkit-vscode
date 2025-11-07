@@ -11,6 +11,7 @@ import { getIcon, IconPath } from '../../shared/icons'
 import { generateSpaceStatus, updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
 import { UserActivity } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger/logger'
+import { SpaceStatus, RemoteAccess } from './constants'
 
 export class SagemakerSpace {
     public label: string = ''
@@ -53,7 +54,7 @@ export class SagemakerSpace {
     }
 
     public isPending(): boolean {
-        return this.getStatus() !== 'Running' && this.getStatus() !== 'Stopped'
+        return this.getStatus() !== SpaceStatus.RUNNING && this.getStatus() !== SpaceStatus.STOPPED
     }
 
     public getStatus(): string {
@@ -148,8 +149,18 @@ export class SagemakerSpace {
         const domainId = this.spaceApp?.DomainId ?? '-'
         const owner = this.spaceApp?.OwnershipSettingsSummary?.OwnerUserProfileName || '-'
         const instanceType = this.spaceApp?.App?.ResourceSpec?.InstanceType ?? '-'
+        const remoteAccess = this.spaceApp?.SpaceSettingsSummary?.RemoteAccess
+
+        let baseTooltip = ''
         if (this.isSMUSSpace) {
-            return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Instance Type:** ${instanceType}`
+            baseTooltip = `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Instance Type:** ${instanceType}`
+            if (remoteAccess === RemoteAccess.ENABLED) {
+                baseTooltip += `\n\n**Remote Access:** Enabled`
+            } else if (remoteAccess === RemoteAccess.DISABLED) {
+                baseTooltip += `\n\n**Remote Access:** Disabled`
+            }
+
+            return baseTooltip
         }
         return `**Space:** ${spaceName} \n\n**Application:** ${appType} \n\n**Domain ID:** ${domainId} \n\n**User Profile:** ${owner}`
     }
@@ -166,20 +177,12 @@ export class SagemakerSpace {
 
     public getContext(): string {
         const status = this.getStatus()
-        if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
-            return 'awsSagemakerSpaceRunningRemoteEnabledNode'
-        } else if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'DISABLED') {
-            return 'awsSagemakerSpaceRunningRemoteDisabledNode'
-        } else if (status === 'Running' && this.isSMUSSpace) {
+
+        // only distinguish between running and non-running states
+        if (status === SpaceStatus.RUNNING) {
             return 'awsSagemakerSpaceRunningNode'
-        } else if (status === 'Stopped' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
-            return 'awsSagemakerSpaceStoppedRemoteEnabledNode'
-        } else if (
-            (status === 'Stopped' && !this.spaceApp.SpaceSettingsSummary?.RemoteAccess) ||
-            this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'DISABLED'
-        ) {
-            return 'awsSagemakerSpaceStoppedRemoteDisabledNode'
         }
+
         return this.isSMUSSpace ? 'smusSpaceNode' : 'awsSagemakerSpaceNode'
     }
 
