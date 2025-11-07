@@ -355,9 +355,9 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "Yes"
+        // Wait for the error message to appear and select "Restart and Connect"
         await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('Yes')
+        getTestWindow().getFirstMessage().selectItem('Restart and Connect')
 
         await promise
         sinon.assert.calledOnce(updateSpaceStub)
@@ -380,9 +380,9 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "No"
+        // Wait for the error message to appear and select "Cancel"
         await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('No')
+        getTestWindow().getFirstMessage().selectItem('Cancel')
 
         await assert.rejects(promise, (err: ToolkitError) => err.message === 'InstanceType has insufficient memory.')
     })
