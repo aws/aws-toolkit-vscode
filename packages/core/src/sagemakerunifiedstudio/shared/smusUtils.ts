@@ -89,6 +89,10 @@ export const SmusErrorCodes = {
     ConnectionNotFound: 'ConnectionNotFound',
     /** Error code for when connection type is invalid for the operation */
     InvalidConnectionType: 'InvalidConnectionType',
+    /** Error code for when no group profile is found for IAM role */
+    NoGroupProfileFound: 'NoGroupProfileFound',
+    /** Error code for when no user profile is found for IAM principal */
+    NoUserProfileFound: 'NoUserProfileFound',
 } as const
 
 /**
@@ -428,6 +432,22 @@ export class SmusUtils {
         } catch (err) {
             return undefined
         }
+    }
+
+    /**
+     * Determines if an ARN represents an IAM user (vs IAM role session)
+     * @param arn The ARN to check (format: arn:aws:iam::ACCOUNT:user/USER_NAME for IAM users,
+     *                                      arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME for role sessions)
+     * @returns True if the ARN is an IAM user, false otherwise
+     */
+    public static isIamUserArn(arn: string | undefined): boolean {
+        if (!arn) {
+            return false
+        }
+
+        // IAM user ARN format: arn:aws:iam::ACCOUNT:user/USER_NAME
+        // IAM role session ARN format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+        return arn.includes(':iam::') && arn.includes(':user/')
     }
 
     /**

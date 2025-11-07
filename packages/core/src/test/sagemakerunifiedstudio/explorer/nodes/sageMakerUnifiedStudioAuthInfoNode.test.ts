@@ -332,6 +332,9 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
 
             const treeItem = await authInfoNode.getTreeItem()
 
@@ -343,6 +346,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             const treeItem = await authInfoNode.getTreeItem()
 
@@ -354,7 +358,9 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
-            mockAuthProvider.getRoleArn = sinon.stub().resolves('arn:aws:iam::123456789012:role/MyRole')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
 
             const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
@@ -363,7 +369,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             assert.ok(tooltip.includes('Profile: test-profile'))
             assert.ok(tooltip.includes('Region: us-west-2'))
             assert.ok(tooltip.includes('Session: my-session-name'))
-            assert.ok(tooltip.includes('Role ARN: arn:aws:iam::123456789012:role/MyRole'))
+            assert.ok(tooltip.includes('Role ARN: arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'))
             assert.ok(tooltip.includes('Status: Connected'))
         })
 
@@ -371,7 +377,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
-            mockAuthProvider.getRoleArn = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
@@ -388,6 +394,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined) // Return undefined instead of rejecting
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             // Should not throw, just display without session name
             const treeItem = await authInfoNode.getTreeItem()

@@ -67,7 +67,7 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
             let roleArn: string | undefined
             if (isExpressMode) {
                 sessionName = await this.authProvider.getSessionName()
-                roleArn = await this.authProvider.getRoleArn()
+                roleArn = await this.authProvider.getIamPrincipalArn()
             }
 
             // Format label with session name if available

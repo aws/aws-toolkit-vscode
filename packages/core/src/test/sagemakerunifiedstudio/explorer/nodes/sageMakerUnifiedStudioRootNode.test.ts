@@ -20,8 +20,10 @@ import { assertTelemetry } from '../../../../../src/test/testUtil'
 import { createMockExtensionContext, createMockUnauthenticatedAuthProvider } from '../../testUtils'
 import { DataZoneCustomClientHelper } from '../../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper'
 import { DefaultStsClient } from '../../../../shared/clients/stsClient'
-import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../../shared/errors'
+import * as utils from '../../../../sagemakerunifiedstudio/explorer/nodes/utils'
+import * as setContextModule from '../../../../shared/vscode/setContext'
 
 describe('SmusRootNode', function () {
     let rootNode: SageMakerUnifiedStudioRootNode
@@ -279,11 +281,7 @@ describe('SelectSMUSProject', function () {
         // Stub createDZClientBaseOnDomainMode to return our mock client
         createDZClientStub = sinon.stub()
         createDZClientStub.resolves(mockDataZoneClient)
-        sinon.replace(
-            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-            'createDZClientBaseOnDomainMode',
-            createDZClientStub
-        )
+        sinon.replace(utils, 'createDZClientBaseOnDomainMode', createDZClientStub)
 
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
@@ -306,7 +304,7 @@ describe('SelectSMUSProject', function () {
         getContextStub = sinon.stub()
         getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
         getContextStub.callThrough()
-        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+        sinon.replace(setContextModule, 'getContext', getContextStub)
 
         // Stub quickPick - return the project directly (not wrapped in an item)
         const mockQuickPick = {
@@ -488,11 +486,7 @@ describe('selectSMUSProject - Additional Tests', function () {
         // Stub createDZClientBaseOnDomainMode to return our mock client
         createDZClientStub = sinon.stub()
         createDZClientStub.resolves(mockDataZoneClient)
-        sinon.replace(
-            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-            'createDZClientBaseOnDomainMode',
-            createDZClientStub
-        )
+        sinon.replace(utils, 'createDZClientBaseOnDomainMode', createDZClientStub)
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
             getDomainAccountId: sinon.stub().resolves('123456789012'),
@@ -511,7 +505,7 @@ describe('selectSMUSProject - Additional Tests', function () {
         getContextStub = sinon.stub()
         getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
         getContextStub.callThrough()
-        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+        sinon.replace(setContextModule, 'getContext', getContextStub)
 
         const mockQuickPick = {
             prompt: sinon.stub().resolves(mockProject),
@@ -616,11 +610,7 @@ describe('selectSMUSProject - Express Mode', function () {
         // Stub createDZClientBaseOnDomainMode to return our mock client
         createDZClientStub = sinon.stub()
         createDZClientStub.resolves(mockDataZoneClient)
-        sinon.replace(
-            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-            'createDZClientBaseOnDomainMode',
-            createDZClientStub
-        )
+        sinon.replace(utils, 'createDZClientBaseOnDomainMode', createDZClientStub)
 
         // Mock credentials provider
         const mockCredentialsProvider = {
@@ -643,6 +633,7 @@ describe('selectSMUSProject - Express Mode', function () {
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns('us-west-2'),
             getCredentialsProviderForIamProfile: sinon.stub().resolves(mockCredentialsProvider),
+            getIamPrincipalArn: sinon.stub().resolves('arn:aws:sts::123456789012:assumed-role/TestRole/test-session'),
         }
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
 
@@ -661,7 +652,8 @@ describe('selectSMUSProject - Express Mode', function () {
             Account: '123456789012',
         })
 
-        // Mock SmusUtils
+        // Mock SmusUtils - simulate IAM role session (not IAM user)
+        sinon.stub(SmusUtils, 'isIamUserArn').returns(false)
         sinon.stub(SmusUtils, 'convertAssumedRoleArnToIamRoleArn').returns('arn:aws:iam::123456789012:role/TestRole')
 
         const mockQuickPick = {
@@ -674,7 +666,7 @@ describe('selectSMUSProject - Express Mode', function () {
         getContextStub = sinon.stub()
         getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
         getContextStub.callThrough()
-        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+        sinon.replace(setContextModule, 'getContext', getContextStub)
     })
 
     afterEach(function () {
@@ -805,11 +797,7 @@ describe('selectSMUSProject - Error Handling', function () {
 
         createDZClientStub = sinon.stub()
         createDZClientStub.resolves(mockDataZoneClient)
-        sinon.replace(
-            require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-            'createDZClientBaseOnDomainMode',
-            createDZClientStub
-        )
+        sinon.replace(utils, 'createDZClientBaseOnDomainMode', createDZClientStub)
 
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
             activeConnection: { domainId: testDomainId, ssoRegion: 'us-west-2' },
@@ -821,7 +809,7 @@ describe('selectSMUSProject - Error Handling', function () {
         getContextStub = sinon.stub()
         getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
         getContextStub.callThrough()
-        sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+        sinon.replace(setContextModule, 'getContext', getContextStub)
 
         const mockQuickPick = {
             prompt: sinon.stub().resolves(mockProject),
@@ -868,11 +856,7 @@ describe('selectSMUSProject - Error Handling', function () {
 
             createDZClientStub = sinon.stub()
             createDZClientStub.resolves(mockDataZoneClient)
-            sinon.replace(
-                require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-                'createDZClientBaseOnDomainMode',
-                createDZClientStub
-            )
+            sinon.replace(utils, 'createDZClientBaseOnDomainMode', createDZClientStub)
 
             // Mock credentials provider
             const mockCredentialsProvider = {
@@ -895,6 +879,9 @@ describe('selectSMUSProject - Error Handling', function () {
                 getDomainId: sinon.stub().returns(testDomainId),
                 getDomainRegion: sinon.stub().returns('us-west-2'),
                 getCredentialsProviderForIamProfile: sinon.stub().resolves(mockCredentialsProvider),
+                getIamPrincipalArn: sinon
+                    .stub()
+                    .resolves('arn:aws:sts::123456789012:assumed-role/TestRole/test-session'),
             }
             sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
 
@@ -911,6 +898,12 @@ describe('selectSMUSProject - Error Handling', function () {
                 Account: '123456789012',
             })
 
+            // Mock SmusUtils - simulate IAM role session (not IAM user)
+            sinon.stub(SmusUtils, 'isIamUserArn').returns(false)
+            sinon
+                .stub(SmusUtils, 'convertAssumedRoleArnToIamRoleArn')
+                .returns('arn:aws:iam::123456789012:role/TestRole')
+
             const mockQuickPick = {
                 prompt: sinon.stub().resolves(mockProject),
             }
@@ -919,7 +912,7 @@ describe('selectSMUSProject - Error Handling', function () {
             getContextStub = sinon.stub()
             getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
             getContextStub.callThrough()
-            sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+            sinon.replace(setContextModule, 'getContext', getContextStub)
         })
 
         it('displays "No accessible projects found" when user has no projects they created', async function () {
@@ -940,14 +933,13 @@ describe('selectSMUSProject - Error Handling', function () {
         })
 
         it('handles getGroupProfileId failure with appropriate error message', async function () {
-            // Mock getGroupProfileId to throw a ToolkitError with "No group profile found"
-            const groupProfileError = new ToolkitError(
-                'No group profile found for IAM role: arn:aws:iam::123456789012:role/TestRole',
-                {
-                    code: 'NoGroupProfileFound',
-                    name: 'ToolkitError',
-                }
-            )
+            const testRoleArn = 'arn:aws:iam::123456789012:role/TestRole'
+
+            // Mock getGroupProfileId to throw a ToolkitError with NoGroupProfileFound code
+            const groupProfileError = new ToolkitError(`No group profile found for IAM role: ${testRoleArn}`, {
+                code: SmusErrorCodes.NoGroupProfileFound,
+                name: 'ToolkitError',
+            })
             const mockDataZoneCustomClientHelper = {
                 getGroupProfileId: sinon.stub().rejects(groupProfileError),
             }
@@ -955,7 +947,7 @@ describe('selectSMUSProject - Error Handling', function () {
             sinon.stub(DataZoneCustomClientHelper, 'getInstance').returns(mockDataZoneCustomClientHelper as any)
 
             // Re-stub other dependencies
-            sinon.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            const mockAuthProvider = {
                 activeConnection: {
                     type: 'iam' as const,
                     profileName: 'test-profile',
@@ -973,7 +965,9 @@ describe('selectSMUSProject - Error Handling', function () {
                         sessionToken: 'test-token',
                     }),
                 }),
-            } as any)
+                getIamPrincipalArn: sinon.stub().resolves(testRoleArn),
+            }
+            sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
 
             sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity').resolves({
                 Arn: 'arn:aws:sts::123456789012:assumed-role/TestRole/test-session',
@@ -984,23 +978,79 @@ describe('selectSMUSProject - Error Handling', function () {
             const getContextStub = sinon.stub()
             getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
             getContextStub.callThrough()
-            sinon.replace(require('../../../../shared/vscode/setContext'), 'getContext', getContextStub)
+            sinon.replace(setContextModule, 'getContext', getContextStub)
 
-            sinon.replace(
-                require('../../../../sagemakerunifiedstudio/explorer/nodes/utils'),
-                'createDZClientBaseOnDomainMode',
-                sinon.stub().resolves(mockDataZoneClient)
-            )
+            sinon.replace(utils, 'createDZClientBaseOnDomainMode', sinon.stub().resolves(mockDataZoneClient))
 
             const result = await selectSMUSProject(mockProjectNode as any)
 
             assert.ok(result instanceof Error)
             const testWindow = getTestWindow()
             assert.ok(
-                testWindow.shownMessages.some(
-                    (msg) =>
-                        msg.message ===
-                        'No resources found for your IAM principal. Ensure SageMaker Unified Studio resources exist for this IAM principal.'
+                testWindow.shownMessages.some((msg) =>
+                    msg.message.includes(`No resources found for IAM principal: ${testRoleArn}`)
+                )
+            )
+        })
+
+        it('handles getUserProfileIdForIamPrincipal failure with appropriate error message', async function () {
+            const testUserArn = 'arn:aws:iam::123456789012:user/test-user'
+
+            // Mock getUserProfileIdForIamPrincipal to throw a ToolkitError with NoUserProfileFound code
+            const userProfileError = new ToolkitError(`No user profile found for IAM principal: ${testUserArn}`, {
+                code: SmusErrorCodes.NoUserProfileFound,
+                name: 'ToolkitError',
+            })
+
+            sinon.restore()
+
+            // Re-stub dependencies for IAM user flow
+            const mockAuthProvider = {
+                activeConnection: {
+                    type: 'iam' as const,
+                    profileName: 'test-profile',
+                    region: 'us-west-2',
+                    domainId: testDomainId,
+                    domainUrl: `https://${testDomainId}.sagemaker.us-west-2.on.aws/`,
+                },
+                getDomainAccountId: sinon.stub().resolves('123456789012'),
+                getDomainId: sinon.stub().returns(testDomainId),
+                getDomainRegion: sinon.stub().returns('us-west-2'),
+                getCredentialsProviderForIamProfile: sinon.stub().resolves({
+                    getCredentials: sinon.stub().resolves({
+                        accessKeyId: 'test-key',
+                        secretAccessKey: 'test-secret',
+                        sessionToken: 'test-token',
+                    }),
+                }),
+                getIamPrincipalArn: sinon.stub().resolves(testUserArn),
+            }
+            sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
+
+            // Mock SmusUtils to indicate this is an IAM user
+            sinon.stub(SmusUtils, 'isIamUserArn').returns(true)
+
+            const getContextStub = sinon.stub()
+            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.callThrough()
+            sinon.replace(setContextModule, 'getContext', getContextStub)
+
+            // Create a new mock client with the failing method
+            const failingMockDataZoneClient = {
+                getDomainId: sinon.stub().returns(testDomainId),
+                fetchAllProjects: sinon.stub(),
+                getUserProfileIdForIamPrincipal: sinon.stub().rejects(userProfileError),
+            } as any
+
+            sinon.replace(utils, 'createDZClientBaseOnDomainMode', sinon.stub().resolves(failingMockDataZoneClient))
+
+            const result = await selectSMUSProject(mockProjectNode as any)
+
+            assert.ok(result instanceof Error)
+            const testWindow = getTestWindow()
+            assert.ok(
+                testWindow.shownMessages.some((msg) =>
+                    msg.message.includes(`No resources found for IAM principal: ${testUserArn}`)
                 )
             )
         })

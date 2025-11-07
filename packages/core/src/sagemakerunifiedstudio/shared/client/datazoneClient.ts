@@ -21,8 +21,9 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { getContext } from '../../../shared/vscode/setContext'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
-import { SmusUtils } from '../smusUtils'
 import { DevSettings } from '../../../shared/settings'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusErrorCodes } from '../smusUtils'
 
 /**
  * Represents a DataZone domain
@@ -819,25 +820,48 @@ export class DataZoneClient {
         return callerIdentity.UserId
     }
 
-    public async getUserProfileId(): Promise<string | undefined> {
-        if (!this.credentialsProvider) {
-            throw new Error('Credentials provider is required for getUserId')
+    /**
+     * Gets the user profile ID for a given IAM principal
+     * @param userIdentifier IAM user or role ARN
+     * @param domainIdentifier Optional domain identifier. If not provided, uses the client's domain ID
+     * @returns Promise resolving to the user profile ID
+     * @throws ToolkitError with appropriate error code
+     */
+    public async getUserProfileIdForIamPrincipal(
+        userIdentifier: string,
+        domainIdentifier?: string
+    ): Promise<string | undefined> {
+        try {
+            this.logger.debug(`DataZoneClient: Getting user profile for IAM ARN: ${userIdentifier}`)
+
+            const datazoneClient = await this.getDataZoneClient()
+
+            const params = {
+                domainIdentifier: domainIdentifier || this.getDomainId(),
+                userIdentifier: userIdentifier,
+            }
+
+            const userProfile = await datazoneClient.getUserProfile(params)
+
+            if (!userProfile.id) {
+                this.logger.error(`DataZoneClient: No user profile ID returned for ARN: ${userIdentifier}`)
+                throw new ToolkitError(`No user profile found for IAM principal: ${userIdentifier}`, {
+                    code: SmusErrorCodes.NoUserProfileFound,
+                })
+            }
+
+            this.logger.debug(`DataZoneClient: Retrieved user profile ID: ${userProfile.id}`)
+            return userProfile.id
+        } catch (err) {
+            // Re-throw if it's already a ToolkitError
+            if (err instanceof ToolkitError) {
+                throw err
+            }
+
+            // Log and wrap other errors
+            this.logger.error('DataZoneClient: Failed to get user profile ID: %s', (err as Error).message)
+            throw ToolkitError.chain(err, 'Failed to get user profile ID')
         }
-        const callerCredentials = await this.credentialsProvider.getCredentials()
-
-        const stsClient = new DefaultStsClient(this.getRegion(), callerCredentials)
-        const callerIdentity = await stsClient.getCallerIdentity()
-        this.logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
-
-        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-        this.logger.debug(`Retrieved user identity, IAM ARN: ${roleArn}`)
-
-        const datazoneClient = await this.getDataZoneClient()
-        const userProfile = await datazoneClient.getUserProfile({
-            domainIdentifier: this.getDomainId(),
-            userIdentifier: roleArn,
-        })
-        return userProfile.id
     }
 
     /**

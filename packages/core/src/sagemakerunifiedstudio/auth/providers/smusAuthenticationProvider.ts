@@ -809,7 +809,7 @@ export class SmusAuthenticationProvider {
      * Only works for IAM connections - returns undefined for SSO connections
      * @returns Promise resolving to the ARN, or undefined if not available or not an IAM connection
      */
-    private async getCachedIamCallerIdentityArn(): Promise<string | undefined> {
+    public async getCachedIamCallerIdentityArn(): Promise<string | undefined> {
         const logger = getLogger()
         try {
             const activeConn = this.activeConnection
@@ -879,7 +879,7 @@ export class SmusAuthenticationProvider {
      * Only works for IAM connections - returns undefined for SSO connections
      * @returns Promise resolving to the IAM role ARN, or undefined if not available or not an IAM connection
      */
-    public async getRoleArn(): Promise<string | undefined> {
+    public async getIamPrincipalArn(): Promise<string | undefined> {
         const arn = await this.getCachedIamCallerIdentityArn()
         if (!arn) {
             return undefined

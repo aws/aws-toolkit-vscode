@@ -6,9 +6,11 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-
-// Mock the setContext function BEFORE importing modules that use it
-const setContextModule = require('../../../shared/vscode/setContext')
+import * as setContextModule from '../../../shared/vscode/setContext'
+import * as secondaryAuthModule from '../../../auth/secondaryAuth'
+import * as sharedCredentialsModule from '../../../auth/credentials/sharedCredentials'
+import * as stsClientModule from '../../../shared/clients/stsClient'
+import { DataZoneCustomClientHelper } from '../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper'
 
 import { SmusAuthenticationProvider } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { SmusConnection } from '../../../sagemakerunifiedstudio/auth/model'
@@ -111,7 +113,7 @@ describe('SmusAuthenticationProvider', function () {
         getSsoInstanceInfoStub = sinon.stub(SmusUtils, 'getSsoInstanceInfo').resolves(testSsoInstanceInfo)
         isInSmusSpaceEnvironmentStub = sinon.stub(SmusUtils, 'isInSmusSpaceEnvironment').returns(false)
         executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
-        sinon.stub(require('../../../auth/secondaryAuth'), 'getSecondaryAuth').returns(mockSecondaryAuth)
+        sinon.stub(secondaryAuthModule, 'getSecondaryAuth').returns(mockSecondaryAuth)
 
         smusAuthProvider = new SmusAuthenticationProvider(mockAuth)
 
@@ -202,10 +204,7 @@ describe('SmusAuthenticationProvider', function () {
             }
             mockSecondaryAuth.state = mockState
 
-            loadSharedCredentialsProfilesStub = sinon.stub(
-                require('../../../auth/credentials/sharedCredentials'),
-                'loadSharedCredentialsProfiles'
-            )
+            loadSharedCredentialsProfilesStub = sinon.stub(sharedCredentialsModule, 'loadSharedCredentialsProfiles')
             validateIamProfileStub = sinon.stub(smusAuthProvider, 'validateIamProfile')
         })
 
@@ -729,7 +728,7 @@ describe('SmusAuthenticationProvider', function () {
             beforeEach(function () {
                 getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
                 // Stub the DefaultStsClient constructor to return our mock instance
-                const stsClientModule = require('../../../shared/clients/stsClient')
+                // stsClientModule imported at top
                 stsConstructorStub = sinon.stub(stsClientModule, 'DefaultStsClient').callsFake(() => mockStsClient)
             })
 
@@ -1410,13 +1409,7 @@ describe('SmusAuthenticationProvider', function () {
                 isExpressDomain: isExpressDomainStub,
             }
 
-            getInstanceStub = sinon
-                .stub(
-                    require('../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper')
-                        .DataZoneCustomClientHelper,
-                    'getInstance'
-                )
-                .returns(mockClientHelper)
+            getInstanceStub = sinon.stub(DataZoneCustomClientHelper, 'getInstance').returns(mockClientHelper)
         })
 
         afterEach(function () {
@@ -1776,7 +1769,7 @@ describe('SmusAuthenticationProvider', function () {
             }
             mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             // Should convert assumed role ARN to IAM role ARN
             assert.strictEqual(roleArn, 'arn:aws:iam::123456789012:role/MyRole')
@@ -1786,7 +1779,7 @@ describe('SmusAuthenticationProvider', function () {
         it('should return undefined for SSO connection', async function () {
             mockSecondaryAuthState.activeConnection = mockSmusConnection
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             assert.strictEqual(roleArn, undefined)
             assert.ok(mockStsClient.getCallerIdentity.notCalled)
@@ -1795,7 +1788,7 @@ describe('SmusAuthenticationProvider', function () {
         it('should return undefined when not connected', async function () {
             mockSecondaryAuthState.activeConnection = undefined
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             assert.strictEqual(roleArn, undefined)
             assert.ok(mockStsClient.getCallerIdentity.notCalled)
@@ -1834,12 +1827,12 @@ describe('SmusAuthenticationProvider', function () {
             mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
 
             // First call - should fetch from STS
-            const roleArn1 = await smusAuthProvider.getRoleArn()
+            const roleArn1 = await smusAuthProvider.getIamPrincipalArn()
             assert.strictEqual(roleArn1, 'arn:aws:iam::123456789012:role/MyRole')
             assert.ok(mockStsClient.getCallerIdentity.calledOnce)
 
             // Second call - should use cached value
-            const roleArn2 = await smusAuthProvider.getRoleArn()
+            const roleArn2 = await smusAuthProvider.getIamPrincipalArn()
             assert.strictEqual(roleArn2, 'arn:aws:iam::123456789012:role/MyRole')
             assert.ok(mockStsClient.getCallerIdentity.calledOnce) // Still only called once
         })

@@ -15,14 +15,14 @@ import { UserProfileMetadata } from '../../../awsService/sagemaker/explorer/sage
 import { SagemakerUnifiedStudioSpaceNode } from './sageMakerUnifiedStudioSpaceNode'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
-import { SmusUtils } from '../../shared/smusUtils'
+import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
 import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { SmusIamConnection } from '../../auth/model'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { ToolkitError } from '../../../shared/errors'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -74,8 +74,12 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             if (error.name === 'AccessDeniedException') {
                 return this.getAccessDeniedChildren()
             }
-            if (error.message.includes('No user profile found')) {
-                return this.getNoUserProfileChildren()
+            // Handle no profile found (user or group) using error codes
+            if (
+                error instanceof ToolkitError &&
+                (error.code === SmusErrorCodes.NoGroupProfileFound || error.code === SmusErrorCodes.NoUserProfileFound)
+            ) {
+                return await this.getNoUserProfileChildren()
             }
             if (error.message.includes('Failed to retrieve user profile information')) {
                 return this.getUserProfileErrorChildren(error.message)
@@ -118,14 +122,20 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         ]
     }
 
-    private getNoUserProfileChildren(): TreeNode[] {
+    private async getNoUserProfileChildren(): Promise<TreeNode[]> {
+        // Log the IAM principal ARN for debugging
+        const principalArn = await this.authProvider.getIamPrincipalArn()
+        if (principalArn) {
+            this.logger.error(`No spaces found for IAM principal: ${principalArn}`)
+        }
+
         return [
             {
                 id: 'smusNoUserProfile',
                 resource: {},
                 getTreeItem: () => {
                     const item = new vscode.TreeItem(
-                        'No spaces found for your IAM principal',
+                        'No spaces found for IAM principal',
                         vscode.TreeItemCollapsibleState.None
                     )
                     item.iconPath = getIcon('vscode-error')
@@ -232,42 +242,66 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
      * @returns Promise resolving to the user profile ID
      * @throws Error if user profile retrieval fails
      */
-    private async getUserProfileIdForExpressMode(): Promise<string> {
+    private async getUserProfileIdForIamAuthMode(): Promise<string> {
         try {
-            // Get DataZoneCustomClientHelper instance
-            const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(
-                (this.authProvider.activeConnection as SmusIamConnection).profileName
-            )
-            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-                credentialsProvider,
-                this.authProvider.getDomainRegion()
-            )
+            // Get cached caller IAM identity ARN from auth provider
+            const callerArn = await this.authProvider.getIamPrincipalArn()
 
-            // Get caller identity to extract role ARN with session
-            const credentials = await credentialsProvider.getCredentials()
-            const stsClient = new DefaultStsClient(this.authProvider.getDomainRegion(), credentials)
-            const callerIdentity = await stsClient.getCallerIdentity()
-            const roleArnWithSession = callerIdentity.Arn
-
-            if (!roleArnWithSession) {
+            if (!callerArn) {
                 throw new Error('Unable to retrieve caller identity ARN')
             }
+            // Determine if this is an IAM user or role session based on ARN format
+            if (SmusUtils.isIamUserArn(callerArn)) {
+                // For IAM users, use GetUserProfile API directly via DataZoneClient
+                this.logger.debug(`SMUS: Detected IAM user, using GetUserProfile API with ARN: ${callerArn}`)
 
-            this.logger.debug(`SMUS: Retrieved role ARN with session: ${roleArnWithSession}`)
+                const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
+                const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                    callerArn,
+                    this.authProvider.getDomainId()
+                )
 
-            // Call getUserProfileIdForSession with domain identifier and role ARN
-            const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
-                this.authProvider.getDomainId(),
-                roleArnWithSession
-            )
+                if (!userProfileId) {
+                    throw new ToolkitError('No user profile found for IAM user')
+                }
 
-            this.logger.debug(`SMUS: Retrieved user profile ID for session: ${userProfileId}`)
-            return userProfileId
+                this.logger.debug(`SMUS: Retrieved user profile ID for IAM user: ${userProfileId}`)
+                return userProfileId
+            } else {
+                // For IAM role sessions, use SearchUserProfile API via DataZoneCustomClientHelper
+                // Need to get the full assumed role ARN (with session) for filtering
+                const assumedRoleArn = await this.authProvider.getCachedIamCallerIdentityArn()
+
+                if (!assumedRoleArn) {
+                    throw new Error('Unable to retrieve assumed role ARN with session')
+                }
+
+                this.logger.debug(
+                    `SMUS: Detected IAM role session, using SearchUserProfile API with ARN: ${assumedRoleArn}`
+                )
+
+                // Get credentials provider for the IAM profile
+                const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(
+                    (this.authProvider.activeConnection as SmusIamConnection).profileName
+                )
+
+                const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                    credentialsProvider,
+                    this.authProvider.getDomainRegion()
+                )
+
+                const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
+                    this.authProvider.getDomainId(),
+                    assumedRoleArn
+                )
+
+                this.logger.debug(`SMUS: Retrieved user profile ID for role session: ${userProfileId}`)
+                return userProfileId
+            }
         } catch (err) {
             const error = err as Error
             this.logger.error(`SMUS: Failed to retrieve user profile information: ${error.message}`)
 
-            // Display appropriate error message based on error type
             if (error.name === 'AccessDeniedException') {
                 throw new Error("You don't have permissions to access this resource. Please contact your administrator")
             }
@@ -280,7 +314,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
 
         let userProfileId
         if (getContext('aws.smus.isExpressMode')) {
-            userProfileId = await this.getUserProfileIdForExpressMode()
+            userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()

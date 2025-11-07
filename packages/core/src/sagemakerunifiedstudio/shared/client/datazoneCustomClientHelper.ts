@@ -15,12 +15,15 @@ import { ToolkitError } from '../../../shared/errors'
 import { SmusUtils } from '../smusUtils'
 import { DevSettings } from '../../../shared/settings'
 
+import { SmusErrorCodes } from '../smusUtils'
+
 /**
  * Error codes for DataZone operations
+ * @deprecated Use SmusErrorCodes instead
  */
 export const DataZoneErrorCode = {
-    NoGroupProfileFound: 'NoGroupProfileFound',
-    NoUserProfileFound: 'NoUserProfileFound',
+    NoGroupProfileFound: SmusErrorCodes.NoGroupProfileFound,
+    NoUserProfileFound: SmusErrorCodes.NoUserProfileFound,
 } as const
 
 /**
@@ -428,7 +431,7 @@ export class DataZoneCustomClientHelper {
             // No matching profile found
             this.logger.error(`DataZoneCustomClientHelper: No group profile found for IAM role: ${roleArn}`)
             throw new ToolkitError(`No group profile found for IAM role: ${roleArn}`, {
-                code: DataZoneErrorCode.NoGroupProfileFound,
+                code: SmusErrorCodes.NoGroupProfileFound,
             })
         } catch (err) {
             // Re-throw if it's already a ToolkitError
@@ -460,7 +463,7 @@ export class DataZoneCustomClientHelper {
             const sessionName = SmusUtils.extractSessionNameFromArn(roleArnWithSession)
             if (!sessionName) {
                 throw new ToolkitError(`Unable to extract session name from ARN: ${roleArnWithSession}`, {
-                    code: DataZoneErrorCode.NoUserProfileFound,
+                    code: SmusErrorCodes.NoUserProfileFound,
                 })
             }
 
@@ -469,7 +472,7 @@ export class DataZoneCustomClientHelper {
             const iamRoleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(roleArnWithSession)
             if (!iamRoleArn) {
                 throw new ToolkitError(`Unable to convert assumed role ARN to IAM role ARN: ${roleArnWithSession}`, {
-                    code: DataZoneErrorCode.NoUserProfileFound,
+                    code: SmusErrorCodes.NoUserProfileFound,
                 })
             }
 
@@ -521,7 +524,7 @@ export class DataZoneCustomClientHelper {
                 `DataZoneCustomClientHelper: No user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
             )
             throw new ToolkitError(`No user profile found for role: ${iamRoleArn} with session: ${sessionName}`, {
-                code: DataZoneErrorCode.NoUserProfileFound,
+                code: SmusErrorCodes.NoUserProfileFound,
             })
         } catch (err) {
             // Re-throw if it's already a ToolkitError

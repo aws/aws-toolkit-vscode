@@ -22,7 +22,6 @@ import { isSmusSsoConnection, isSmusIamConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -442,15 +441,17 @@ async function showQuickPick(items: any[]) {
 }
 
 /**
- * Fetches projects filtered by group profile for Express mode IAM authentication
+ * Fetches projects filtered by IAM principal
+ * For IAM users: filters by user profile using userIdentifier
+ * For IAM role sessions: filters by group profile using groupIdentifier
  * @param authProvider The SMUS authentication provider
- * @param client The DataZone client instance
+ * @param datazoneClient The DataZone client instance
  * @returns Promise resolving to filtered projects array
- * @throws Error if group profile retrieval fails
+ * @throws Error if profile retrieval fails
  */
-async function fetchProjectsByGroupProfile(
+async function fetchProjectsByIamProfile(
     authProvider: SmusAuthenticationProvider,
-    client: DataZoneClient
+    datazoneClient: DataZoneClient
 ): Promise<DataZoneProject[]> {
     const logger = getLogger()
 
@@ -459,30 +460,55 @@ async function fetchProjectsByGroupProfile(
     if (!isSmusIamConnection(activeConnection)) {
         throw new Error('Active connection is not a valid IAM connection')
     }
-    const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
 
-    const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-        credentialsProvider,
-        authProvider.getDomainRegion()
+    // Use cached caller identity ARN from auth provider
+    const callerIdentityArn = await authProvider.getIamPrincipalArn()
+    if (!callerIdentityArn) {
+        throw new Error('Unable to retrieve caller identity ARN from cache')
+    }
+
+    // Determine if this is an IAM user or IAM role session using utility method
+    const isIamUser = SmusUtils.isIamUserArn(callerIdentityArn)
+    logger.debug(
+        `Using cached caller identity ARN: ${callerIdentityArn}. Identity type: ${isIamUser ? 'IAM User' : 'IAM Role Session'}`
     )
 
-    // Get caller identity to extract role ARN
-    const callerCredentials = await credentialsProvider.getCredentials()
-    const stsClient = new DefaultStsClient(authProvider.getDomainRegion(), callerCredentials)
-    const callerIdentity = await stsClient.getCallerIdentity()
-    logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
+    let projects: DataZoneProject[]
 
-    // Convert assumed role ARN to IAM role ARN for group profile matching
-    const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-    logger.debug(`Converted to IAM role ARN: ${roleArn}`)
+    if (isIamUser) {
+        // IAM User flow - use GetUserProfile and filter by userIdentifier
+        logger.debug('Using IAM user flow with GetUserProfile API')
 
-    // Get group profile ID for the current role
-    const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
-    logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+        // Get user profile ID for the IAM user using DataZone client
+        const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+            callerIdentityArn,
+            authProvider.getDomainId()
+        )
+        logger.info(`Retrieved user profile ID: ${userProfileId} for IAM principal ${callerIdentityArn}`)
 
-    // Fetch projects filtered by group profile
-    const projects = await client.fetchAllProjects({ groupIdentifier: groupProfileId })
-    logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+        // Fetch projects filtered by user profile
+        projects = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
+        logger.debug(`Fetched ${projects.length} projects for user profile ${userProfileId}`)
+    } else {
+        const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
+        const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+            credentialsProvider,
+            authProvider.getDomainRegion()
+        )
+
+        // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
+        // The cached ARN needs conversion for role sessions
+        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
+        logger.debug(`Using IAM role ARN: ${roleArn}`)
+
+        // Get group profile ID for the current role
+        const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
+        logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+
+        // Fetch projects filtered by group profile
+        projects = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
+        logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+    }
 
     return projects
 }
@@ -504,24 +530,31 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             let allProjects: DataZoneProject[]
 
             if (getContext('aws.smus.isExpressMode')) {
-                // In Express mode, filter projects by group profile
+                // Filter projects by IAM profile (user or role session)
                 try {
-                    allProjects = await fetchProjectsByGroupProfile(authProvider, datazoneClient)
+                    allProjects = await fetchProjectsByIamProfile(authProvider, datazoneClient)
                 } catch (err) {
                     const error = err as Error
 
-                    // Handle no group profile found
-                    if (error instanceof ToolkitError && error.message.includes('No group profile found')) {
-                        logger.error('No group profile found for IAM role: %s', error.message)
+                    // Handle no profile found (user or group)
+                    if (
+                        error instanceof ToolkitError &&
+                        (error.code === SmusErrorCodes.NoGroupProfileFound ||
+                            error.code === SmusErrorCodes.NoUserProfileFound)
+                    ) {
+                        logger.error('No profile found for IAM principal: %s', error.message)
+
+                        const principalArn = await authProvider.getIamPrincipalArn()
+                        const arnSuffix = principalArn ? `: ${principalArn}` : ''
                         void vscode.window.showErrorMessage(
-                            'No resources found for your IAM principal. Ensure SageMaker Unified Studio resources exist for this IAM principal.'
+                            `No resources found for IAM principal${arnSuffix}. Ensure SageMaker Unified Studio resources exist for this IAM principal.`
                         )
                         return error
                     }
 
                     // Handle access denied
                     if (isAccessDenied(error)) {
-                        logger.error('Access denied when retrieving group profile: %s', error.message)
+                        logger.error('Access denied when retrieving profile: %s', error.message)
                         void vscode.window.showErrorMessage(
                             "You don't have permissions to access this resource. Please contact your administrator"
                         )
@@ -529,8 +562,8 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                     }
 
                     // Handle other errors
-                    logger.error('Failed to retrieve group profile information: %s', error.message)
-                    void vscode.window.showErrorMessage('Failed to fetch IAM prinicpal information. Try again.')
+                    logger.error('Failed to retrieve profile information: %s', error.message)
+                    void vscode.window.showErrorMessage('Failed to fetch IAM principal information. Try again.')
                     return error
                 }
             } else {
