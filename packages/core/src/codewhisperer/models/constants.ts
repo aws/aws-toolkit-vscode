@@ -942,6 +942,10 @@ export const predictionTrackerDefaultConfig = {
     maxSupplementalContext: 15,
 }
 
+export enum InlineCompletionLoggingReason {
+    IMPLICIT_REJECT = 'IMPLICIT_REJECT',
+}
+
 export const codeReviewFindingsSuffix = '_codeReviewFindings'
 export const displayFindingsSuffix = '_displayFindings'
 
