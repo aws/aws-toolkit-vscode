@@ -8,11 +8,13 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
+import { activate as activateCloudFormation } from './awsService/cloudformation/extension'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
@@ -151,6 +153,8 @@ export async function activate(context: vscode.ExtensionContext) {
         )
 
         await activateCloudFormationTemplateRegistry(context)
+
+        await activateCloudFormation(context)
 
         await activateAwsExplorer({
             context: extContext,
