@@ -1,0 +1,10 @@
+{
+	"date": "2025-11-06",
+	"version": "1.103.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Q CodeTransformation: add more job metadata to history table"
+		}
+	]
+}
