@@ -83,7 +83,7 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
-import { activateEditTracking } from './nextEditPrediction/activation'
+// import { activateEditTracking } from './nextEditPrediction/activation'
 import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
@@ -468,7 +468,7 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     }
 
-    activateEditTracking(context)
+    // activateEditTracking(context)
 }
 
 export async function shutdown() {

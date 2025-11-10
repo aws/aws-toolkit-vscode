@@ -14,6 +14,7 @@ import type { AmazonQInlineCompletionItemProvider } from '../completion'
 import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 import { applyPatch, createPatch } from 'diff'
 import { EditSuggestionState } from '../editSuggestionState'
+import { debounce } from 'aws-core-vscode/utils'
 
 function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
     getLogger('nextEditPrediction').debug(
@@ -22,7 +23,8 @@ function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, sugges
 }
 
 const autoRejectEditCursorDistance = 25
-const maxPrefixRetryCount = 5
+const maxPrefixRetryCharDiff = 7
+const docChangedHandlerDeboucneInMs = 750
 
 enum RejectReason {
     DocumentChange = 'Invalid patch due to document change',
@@ -34,8 +36,10 @@ export class EditsSuggestionSvg {
     private readonly logger = getLogger('nextEditPrediction')
     private documentChangedListener: vscode.Disposable | undefined
     private cursorChangedListener: vscode.Disposable | undefined
-    private readonly updatedSuggestions: InlineCompletionItemWithReferences[] = []
+
     private startLine = 0
+
+    private docChanged: string = ''
 
     constructor(
         private suggestion: InlineCompletionItemWithReferences,
@@ -45,15 +49,12 @@ export class EditsSuggestionSvg {
         private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
     ) {}
 
-    async show() {
+    async show(patchedSuggestion?: InlineCompletionItemWithReferences) {
         if (!this.editor) {
             return
         }
 
-        const item =
-            this.updatedSuggestions.length > 0
-                ? this.updatedSuggestions[this.updatedSuggestions.length - 1]
-                : this.suggestion
+        const item = patchedSuggestion ? patchedSuggestion : this.suggestion
 
         try {
             const svgGenerationService = new SvgGenerationService()
@@ -74,7 +75,24 @@ export class EditsSuggestionSvg {
             if (svgImage) {
                 const documentChangedListener = (this.documentChangedListener ??=
                     vscode.workspace.onDidChangeTextDocument(async (e) => {
-                        await this.onDocChange(e)
+                        if (e.contentChanges.length <= 0) {
+                            return
+                        }
+                        if (e.document !== this.editor.document) {
+                            return
+                        }
+                        if (vsCodeState.isCodeWhispererEditing) {
+                            return
+                        }
+                        if (getContext('aws.amazonq.editSuggestionActive') === false) {
+                            return
+                        }
+
+                        // TODO: handle multi-contentChanges scenario
+                        const diff = e.contentChanges[0] ? e.contentChanges[0].text : ''
+                        this.logger.info(`docChange sessionId=${this.session.sessionId}, contentChange=${diff}`)
+                        this.docChanged += e.contentChanges[0].text
+                        await this.debouncedOnDocChanged(e)
                     }))
 
                 const cursorChangedListener = (this.cursorChangedListener ??=
@@ -122,22 +140,12 @@ export class EditsSuggestionSvg {
         }
     }
 
+    debouncedOnDocChanged = debounce(
+        async (e: vscode.TextDocumentChangeEvent) => await this.onDocChange(e),
+        docChangedHandlerDeboucneInMs
+    )
+
     private async onDocChange(e: vscode.TextDocumentChangeEvent) {
-        if (e.contentChanges.length <= 0) {
-            return
-        }
-        if (e.document !== this.editor.document) {
-            return
-        }
-        if (vsCodeState.isCodeWhispererEditing) {
-            return
-        }
-        if (getContext('aws.amazonq.editSuggestionActive') === false) {
-            return
-        }
-
-        this.logger.info(`docChange ${this.session.sessionId}, contentChange=${e.contentChanges[0].text}`)
-
         /**
          * 1. Take the diff returned by the model and apply it to the code we originally sent to the model
          * 2. Do a diff between the above code and what's currently in the editor
@@ -150,13 +158,15 @@ export class EditsSuggestionSvg {
             if (appliedToOriginal) {
                 const updatedPatch = this.patchSuggestion(appliedToOriginal)
 
-                if (this.updatedSuggestions.length > maxPrefixRetryCount) {
+                if (this.docChanged.length > maxPrefixRetryCharDiff) {
+                    this.logger.info(`docChange: ${this.docChanged}`)
                     this.autoReject(RejectReason.MaxRetry)
-                } else if (applyPatch(this.editor.document.getText(), updatedPatch) === false) {
+                } else if (applyPatch(this.editor.document.getText(), updatedPatch.insertText as string) === false) {
                     this.autoReject(RejectReason.DocumentChange)
                 } else {
                     // Close the previoius popup and rerender it
-                    await this.rerender()
+                    this.logger.info(`calling rerender with suggestion\n ${updatedPatch.insertText as string}`)
+                    await this.rerender(updatedPatch)
                 }
             } else {
                 this.autoReject(RejectReason.NotApplicableToOriginal)
@@ -173,9 +183,9 @@ export class EditsSuggestionSvg {
         await decorationManager.clearDecorations(this.editor, [])
     }
 
-    private async rerender() {
+    private async rerender(suggestion: InlineCompletionItemWithReferences) {
         await decorationManager.clearDecorations(this.editor, [])
-        await this.show()
+        await this.show(suggestion)
     }
 
     private autoReject(reason: string) {
@@ -183,16 +193,13 @@ export class EditsSuggestionSvg {
         void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
     }
 
-    private patchSuggestion(appliedToOriginal: string): string {
+    private patchSuggestion(appliedToOriginal: string): InlineCompletionItemWithReferences {
         const updatedPatch = createPatch(
             this.editor.document.fileName,
             this.editor.document.getText(),
             appliedToOriginal
         )
-
         this.logger.info(`Update edit suggestion\n ${updatedPatch}`)
-        const updated: InlineCompletionItemWithReferences = { ...this.suggestion, insertText: updatedPatch }
-        this.updatedSuggestions.push(updated)
-        return updatedPatch
+        return { ...this.suggestion, insertText: updatedPatch }
     }
 }
