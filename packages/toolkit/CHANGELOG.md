@@ -1,3 +1,7 @@
+## 3.83.0 2025-11-06
+
+- Miscellaneous non-user-facing changes
+
 ## 3.82.0 2025-10-30
 
 - **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
