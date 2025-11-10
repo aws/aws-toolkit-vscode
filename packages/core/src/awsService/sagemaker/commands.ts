@@ -171,7 +171,7 @@ export async function stopSpace(
         await client.deleteApp({
             DomainId: node.spaceApp.DomainId!,
             SpaceName: spaceName,
-            AppType: node.spaceApp.App!.AppType!,
+            AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
             AppName: node.spaceApp.App?.AppName,
         })
     } catch (err) {
@@ -319,7 +319,7 @@ async function handleRunningSpaceWithDisabledAccess(
                 await client.deleteApp({
                     DomainId: node.spaceApp.DomainId!,
                     SpaceName: spaceName,
-                    AppType: node.spaceApp.App!.AppType!,
+                    AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
                     AppName: node.spaceApp.App?.AppName,
                 })
 
@@ -329,7 +329,11 @@ async function handleRunningSpaceWithDisabledAccess(
                 // Start the space with remote access enabled (skip prompts since user already consented)
                 await client.startSpace(spaceName, node.spaceApp.DomainId!, true)
                 await tryRefreshNode(node)
-                await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, node.spaceApp.App!.AppType!)
+                await client.waitForAppInService(
+                    node.spaceApp.DomainId!,
+                    spaceName,
+                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
                 // Handle user declining instance type upgrade
@@ -369,7 +373,11 @@ async function handleStoppedSpace(
             },
             async (progress) => {
                 progress.report({ message: 'Starting the space' })
-                await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, node.spaceApp.App!.AppType!)
+                await client.waitForAppInService(
+                    node.spaceApp.DomainId!,
+                    spaceName,
+                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                )
                 await tryRemoteConnection(node, ctx, progress)
             }
         )
