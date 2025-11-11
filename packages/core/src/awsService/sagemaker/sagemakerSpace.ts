@@ -191,11 +191,15 @@ export class SagemakerSpace {
     public getContext(): string {
         const status = this.getStatus()
 
-        // only distinguish between running and non-running states
         if (status === SpaceStatus.RUNNING) {
             return 'awsSagemakerSpaceRunningNode'
         }
 
+        if (status === SpaceStatus.STOPPED) {
+            return 'awsSagemakerSpaceStoppedNode'
+        }
+
+        // For all other states (STARTING, STOPPING, etc.), return base context
         return this.isSMUSSpace ? 'smusSpaceNode' : 'awsSagemakerSpaceNode'
     }
 
