@@ -6,8 +6,9 @@
 import { WebviewView, WebviewViewProvider, Disposable } from 'vscode'
 import { StackEvent } from '@aws-sdk/client-cloudformation'
 import { LanguageClient } from 'vscode-languageclient/node'
-import { extractErrorMessage } from '../utils'
+import { extractErrorMessage, getStackStatusClass, isStackInTransientState } from '../utils'
 import { GetStackEventsRequest, ClearStackEventsRequest } from '../stacks/actions/stackActionProtocol'
+import { StackViewCoordinator } from './stackViewCoordinator'
 
 const EventsPerPage = 50
 const RefreshIntervalMs = 5000
@@ -19,8 +20,33 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     private currentPage = 0
     private nextToken?: string
     private refreshTimer?: NodeJS.Timeout
+    private readonly disposables: Disposable[] = []
+    private readonly coordinatorSubscription: Disposable
 
-    constructor(private readonly client: LanguageClient) {}
+    constructor(
+        private readonly client: LanguageClient,
+        coordinator: StackViewCoordinator
+    ) {
+        this.coordinatorSubscription = coordinator.onDidChangeStack(async (state) => {
+            try {
+                if (state.stackName && !state.isChangeSetMode) {
+                    this.stopAutoRefresh()
+                    await this.showStackEvents(state.stackName)
+                } else if (!state.stackName || state.isChangeSetMode) {
+                    this.stopAutoRefresh()
+                    this.stackName = undefined
+                    this.allEvents = []
+                    this.render()
+                }
+
+                if (state.stackStatus && !isStackInTransientState(state.stackStatus)) {
+                    this.stopAutoRefresh()
+                }
+            } catch (error) {
+                // Silently handle errors to prevent breaking the coordinator
+            }
+        })
+    }
 
     async showStackEvents(stackName: string): Promise<void> {
         this.stackName = stackName
@@ -35,9 +61,11 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     resolveWebviewView(webviewView: WebviewView): void {
         this.view = webviewView
         webviewView.webview.options = { enableScripts: true }
-        webviewView.onDidDispose(() => this.dispose())
+        webviewView.onDidDispose(() => {
+            this.stopAutoRefresh()
+        })
         webviewView.onDidChangeVisibility(() => {
-            if (webviewView.visible && this.stackName) {
+            if (webviewView.visible) {
                 this.startAutoRefresh()
             } else {
                 this.stopAutoRefresh()
@@ -60,6 +88,10 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         if (this.stackName) {
             void this.client.sendRequest(ClearStackEventsRequest, { stackName: this.stackName })
         }
+        for (const d of this.disposables) {
+            d.dispose()
+        }
+        this.coordinatorSubscription.dispose()
     }
 
     private async loadEvents(): Promise<void> {
@@ -143,7 +175,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     }
 
     private renderError(message: string): void {
-        if (!this.view) {
+        if (!this.view || this.view.visible === false) {
             return
         }
         this.view.webview.html = `<!DOCTYPE html>
@@ -166,7 +198,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     }
 
     private render(notification?: string): void {
-        if (!this.view) {
+        if (!this.view || this.view.visible === false) {
             return
         }
 
@@ -297,7 +329,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             <div class="pagination">
                 <span>Page ${currentPage} of ${totalPages || 1}</span>
                 <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-                <button onclick="nextPage()" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>Next</button>
+                <button onclick="nextPage()" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>${currentPage >= totalPages && hasMore ? 'Load More' : 'Next'}</button>
             </div>
         </div>
     </div>
@@ -321,7 +353,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
                 <td>${e.Timestamp ? new Date(e.Timestamp).toLocaleString() : '-'}</td>
                 <td>${e.LogicalResourceId ?? '-'}</td>
                 <td>${e.ResourceType ?? '-'}</td>
-                <td class="${this.getStatusClass(e.ResourceStatus)}">${e.ResourceStatus ?? '-'}</td>
+                <td class="${getStackStatusClass(e.ResourceStatus)}">${e.ResourceStatus ?? '-'}</td>
                 <td>${e.ResourceStatusReason ?? '-'}</td>
             </tr>
         `
@@ -337,21 +369,5 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     </script>
 </body>
 </html>`
-    }
-
-    private getStatusClass(status?: string): string {
-        if (!status) {
-            return ''
-        }
-        if (status.includes('COMPLETE') && !status.includes('ROLLBACK')) {
-            return 'status-complete'
-        }
-        if (status.includes('FAILED') || status.includes('ROLLBACK')) {
-            return 'status-failed'
-        }
-        if (status.includes('PROGRESS')) {
-            return 'status-progress'
-        }
-        return ''
     }
 }

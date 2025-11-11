@@ -23,11 +23,16 @@ export type ResourceToImport = {
     ResourceIdentifier: Record<string, string>
 }
 
+export enum DeploymentMode {
+    REVERT_DRIFT = 'REVERT_DRIFT',
+}
+
 export type ChangeSetOptionalFlags = {
     onStackFailure?: OnStackFailure
     includeNestedStacks?: boolean
     tags?: Tag[]
     importExistingResources?: boolean
+    deploymentMode?: DeploymentMode
 }
 
 export type CreateValidationParams = Identifiable & {
@@ -41,6 +46,7 @@ export type CreateValidationParams = Identifiable & {
     includeNestedStacks?: boolean
     tags?: Tag[]
     importExistingResources?: boolean
+    deploymentMode?: DeploymentMode
     s3Bucket?: string
     s3Key?: string
 }

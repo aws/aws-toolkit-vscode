@@ -14,7 +14,6 @@ import {
 } from './stackActionRequestType'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { showErrorMessage, showValidationStarted, showValidationSuccess, showValidationFailure } from '../../ui/message'
-import { setContext } from '../../../../shared/vscode/setContext'
 import { describeValidationStatus, getValidationStatus, validate } from './stackActionApi'
 import { createDeploymentStatusBar, updateWorkflowStatus } from '../../ui/statusBar'
 import { StatusBarItem, commands } from 'vscode'
@@ -170,9 +169,7 @@ export class Validation {
     }
 
     private showDiffView() {
-        void setContext('aws.cloudformation.stacks.diffVisible', true)
-
-        this.diffProvider.updateData(this.stackName, this.changes, this.changeSetName, this.shouldEnableDeployment)
+        void this.diffProvider.updateData(this.stackName, this.changes, this.changeSetName, this.shouldEnableDeployment)
         void commands.executeCommand('aws.cloudformation.diff.focus')
     }
 

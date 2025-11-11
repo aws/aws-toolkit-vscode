@@ -8,30 +8,34 @@ import { StackActionPhase, StackActionState } from './stackActionRequestType'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { showDeploymentStarted, showDeploymentSuccess, showDeploymentFailure, showErrorMessage } from '../../ui/message'
 import { createDeploymentStatusBar, updateWorkflowStatus } from '../../ui/statusBar'
-import { StatusBarItem } from 'vscode'
+import { StatusBarItem, commands } from 'vscode'
 import { deploy, describeDeploymentStatus, getDeploymentStatus } from './stackActionApi'
 import { createDeploymentParams } from './stackActionUtil'
 import { getLogger } from '../../../../shared/logger/logger'
-import { extractErrorMessage } from '../../utils'
+import { extractErrorMessage, commandKey } from '../../utils'
+import { StackViewCoordinator } from '../../ui/stackViewCoordinator'
 
 export class Deployment {
     private readonly id: string
-    private readonly stackName: string
-    private readonly changeSetName: string
-    private readonly client: LanguageClient
     private status: StackActionPhase | undefined
     private statusBarItem?: StatusBarItem
 
-    constructor(stackName: string, changeSetName: string, client: LanguageClient) {
+    constructor(
+        private readonly stackName: string,
+        private readonly changeSetName: string,
+        private readonly client: LanguageClient,
+        private readonly coordinator: StackViewCoordinator
+    ) {
         this.id = uuidv4()
-        this.stackName = stackName
-        this.changeSetName = changeSetName
-        this.client = client
     }
 
     async deploy() {
         await deploy(this.client, createDeploymentParams(this.id, this.stackName, this.changeSetName))
         showDeploymentStarted(this.stackName)
+
+        await this.coordinator.setStack(this.stackName)
+        await commands.executeCommand(commandKey('stack.events.focus'))
+
         this.statusBarItem = createDeploymentStatusBar()
         this.pollForProgress()
     }

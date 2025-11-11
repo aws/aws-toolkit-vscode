@@ -50,6 +50,14 @@ export class StacksManager implements Disposable {
         void this.loadStacks()
     }
 
+    updateStackStatus(stackName: string, stackStatus: string) {
+        const stack = this.stacks.find((s) => s.StackName === stackName)
+        if (stack) {
+            stack.StackStatus = stackStatus as any
+            this.notifyListeners()
+        }
+    }
+
     async loadMoreStacks() {
         if (!this.nextToken) {
             return

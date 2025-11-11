@@ -36,6 +36,7 @@ export function createValidationParams(
         includeNestedStacks: optionalFlags?.includeNestedStacks,
         tags: optionalFlags?.tags,
         importExistingResources: optionalFlags?.importExistingResources,
+        deploymentMode: optionalFlags?.deploymentMode,
         s3Bucket,
         s3Key,
     }

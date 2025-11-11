@@ -895,30 +895,39 @@
         "views": {
             "cfn-diff": [
                 {
-                    "id": "aws.cloudformation.diff",
-                    "name": "Stack Changes",
+                    "id": "aws.cloudformation.stack.overview",
+                    "name": "Overview",
                     "type": "webview",
-                    "when": "aws.cloudformation.stacks.diffVisible",
-                    "icon": "$(diff)"
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(info)"
                 },
                 {
-                    "id": "aws.cloudformation.stack.events",
-                    "name": "Stack Events",
+                    "id": "aws.cloudformation.stack.resources",
+                    "name": "Resources",
                     "type": "webview",
-                    "icon": "$(history)"
-                },
-                {
-                    "id": "aws.cloudformation.detail",
-                    "name": "Stack Resources",
-                    "type": "webview",
-                    "when": "aws.cloudformation.stacks.detailVisible",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
                     "icon": "$(symbol-class)"
                 },
                 {
-                    "id": "aws.cloudformation.stack.outputs",
-                    "name": "Stack Outputs",
+                    "id": "aws.cloudformation.stack.events",
+                    "name": "Events",
                     "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(history)"
+                },
+                {
+                    "id": "aws.cloudformation.stack.outputs",
+                    "name": "Outputs",
+                    "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
                     "icon": "$(output)"
+                },
+                {
+                    "id": "aws.cloudformation.diff",
+                    "name": "Stack Changes",
+                    "type": "webview",
+                    "when": "aws.cloudformation.changeSetMode",
+                    "icon": "$(diff)"
                 }
             ],
             "explorer": [
@@ -2625,9 +2634,9 @@
                     "group": "inline@3"
                 },
                 {
-                    "command": "aws.cloudformation.stacks.viewDiff",
-                    "when": "view == aws.cloudformation && viewItem == stack && !listMultiSelection",
-                    "group": "navigation"
+                    "command": "aws.cloudformation.stack.view",
+                    "when": "view == aws.cloudformation && viewItem == stack",
+                    "group": "inline@3"
                 },
                 {
                     "command": "aws.cloudformation.api.loadMoreStacks",
@@ -2688,6 +2697,11 @@
                     "command": "aws.cloudformation.api.deployTemplate",
                     "when": "view == aws.cloudformation && (viewItem == stack)",
                     "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.stack.view",
+                    "when": "view == aws.cloudformation && viewItem == stack",
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.cloudformation.selectRegion",
@@ -2770,6 +2784,10 @@
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.cloudformation.removeResourceType",
+                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore)"
+                },
+                {
                     "command": "aws.cloudformation.api.addResourceTypes",
                     "when": "view == aws.cloudformation && viewItem == resourceSection && !aws.cloudformation.refreshingAllResources",
                     "group": "1@1"
@@ -2785,9 +2803,14 @@
                     "group": "inline@1"
                 },
                 {
+                    "command": "aws.cloudformation.stacks.viewChangeSet",
+                    "when": "view == aws.cloudformation && viewItem == changeSet",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.cloudformation.stacks.deleteChangeSet",
                     "when": "view == aws.cloudformation && viewItem == changeSet",
-                    "group": "1_cloudformation@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.cloudformation.stacks.refreshChangeSets",
@@ -4852,6 +4875,11 @@
                 "category": "AWS CloudFormation"
             },
             {
+                "command": "aws.cloudformation.removeResourceType",
+                "title": "Remove Resource Type",
+                "category": "AWS CloudFormation"
+            },
+            {
                 "command": "aws.cloudformation.api.refreshAllResources",
                 "title": "Refresh All Resources",
                 "icon": "$(refresh)",
@@ -4891,22 +4919,6 @@
                 "command": "aws.cloudformation.api.getStackManagementInfo",
                 "title": "Get Stack Management Info",
                 "icon": "$(info)",
-                "category": "AWS CloudFormation"
-            },
-            {
-                "command": "aws.cloudformation.stacks.viewDiff",
-                "title": "View Stack Diff",
-                "icon": "$(diff)",
-                "category": "AWS CloudFormation"
-            },
-            {
-                "command": "aws.cloudformation.diff.focus",
-                "title": "Focus CloudFormation Diff View",
-                "category": "AWS CloudFormation"
-            },
-            {
-                "command": "aws.cloudformation.detail.focus",
-                "title": "Focus CloudFormation Detail View",
                 "category": "AWS CloudFormation"
             },
             {
@@ -4959,6 +4971,12 @@
                 "command": "aws.cloudformation.stacks.refreshChangeSets",
                 "title": "Refresh Change Sets",
                 "icon": "$(refresh)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stack.view",
+                "title": "View Stack Detail",
+                "icon": "$(eye)",
                 "category": "AWS CloudFormation"
             },
             {

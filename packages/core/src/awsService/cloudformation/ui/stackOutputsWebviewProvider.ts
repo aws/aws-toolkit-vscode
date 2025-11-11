@@ -8,13 +8,33 @@ import { Output } from '@aws-sdk/client-cloudformation'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { extractErrorMessage } from '../utils'
 import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
+import { StackViewCoordinator } from './stackViewCoordinator'
 
 export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposable {
     private view?: WebviewView
     private stackName?: string
     private outputs: Output[] = []
+    private readonly disposables: Disposable[] = []
 
-    constructor(private readonly client: LanguageClient) {}
+    constructor(
+        private readonly client: LanguageClient,
+        private readonly coordinator: StackViewCoordinator
+    ) {
+        this.disposables.push(
+            coordinator.onDidChangeStack(async (state) => {
+                if (state.stackName && !state.isChangeSetMode) {
+                    this.stackName = state.stackName
+                    this.outputs = []
+                    this.render()
+                    await this.showOutputs(state.stackName)
+                } else if (!state.stackName || state.isChangeSetMode) {
+                    this.stackName = undefined
+                    this.outputs = []
+                    this.render()
+                }
+            })
+        )
+    }
 
     async resolveWebviewView(webviewView: WebviewView): Promise<void> {
         this.view = webviewView
@@ -22,6 +42,8 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 
         if (this.stackName) {
             await this.loadOutputs()
+        } else {
+            this.render()
         }
     }
 
@@ -45,6 +67,10 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
             })
 
             this.outputs = result.stack?.Outputs ?? []
+            // Only update coordinator if status changed
+            if (result.stack?.StackStatus && this.coordinator.currentStackStatus !== result.stack.StackStatus) {
+                await this.coordinator.setStack(this.stackName, result.stack.StackStatus)
+            }
             this.render()
         } catch (error) {
             this.renderError(`Failed to load outputs: ${extractErrorMessage(error)}`)
@@ -52,7 +78,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
     }
 
     private renderError(message: string): void {
-        if (!this.view) {
+        if (!this.view || !this.view.visible) {
             return
         }
         this.view.webview.html = `<!DOCTYPE html>
@@ -75,7 +101,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
     }
 
     private render(): void {
-        if (!this.view) {
+        if (!this.view || this.view.visible === false) {
             return
         }
 
@@ -184,5 +210,8 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 
     dispose(): void {
         this.view = undefined
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }

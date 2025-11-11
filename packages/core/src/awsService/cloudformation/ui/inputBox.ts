@@ -15,6 +15,7 @@ import {
     ResourceToImport,
     TemplateResource,
     OptionalFlagMode,
+    DeploymentMode,
 } from '../stacks/actions/stackActionRequestType'
 import { DocumentManager } from '../documents/documentManager'
 import path from 'path'
@@ -238,15 +239,33 @@ export async function getImportExistingResources(): Promise<boolean | undefined>
     )?.value
 }
 
-export async function getOnStackFailure(): Promise<OnStackFailure | undefined> {
+export async function getOnStackFailure(stackExists?: boolean): Promise<OnStackFailure | undefined> {
+    const options: Array<{ label: string; description: string; value: OnStackFailure }> = [
+        { label: 'Do Nothing', description: 'Leave stack in failed state', value: OnStackFailure.DO_NOTHING },
+        { label: 'Rollback', description: 'Rollback to previous state', value: OnStackFailure.ROLLBACK },
+    ]
+
+    if (!stackExists) {
+        // only a valid option for CREATE
+        options.unshift({ label: 'Delete', description: 'Delete the stack on failure', value: OnStackFailure.DELETE })
+    }
+
+    return (await window.showQuickPick(options, { placeHolder: 'What to do on stack failure?', ignoreFocusOut: true }))
+        ?.value
+}
+
+export async function getDeploymentMode(): Promise<DeploymentMode | undefined> {
     return (
         await window.showQuickPick(
             [
-                { label: 'Delete', description: 'Delete the stack on failure', value: OnStackFailure.DELETE },
-                { label: 'Do Nothing', description: 'Leave stack in failed state', value: OnStackFailure.DO_NOTHING },
-                { label: 'Rollback', description: 'Rollback to previous state', value: OnStackFailure.ROLLBACK },
+                {
+                    label: 'Revert Drift',
+                    description: 'Revert drift during deployment',
+                    value: DeploymentMode.REVERT_DRIFT,
+                },
+                { label: 'Standard', description: 'No special handling during deployment', value: undefined },
             ],
-            { placeHolder: 'What to do on stack failure?', ignoreFocusOut: true }
+            { placeHolder: 'Select deployment mode', ignoreFocusOut: true }
         )
     )?.value
 }

@@ -3,247 +3,269 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WebviewPanel, window, ViewColumn } from 'vscode'
-import { StackInfo } from '../stacks/actions/stackActionRequestType'
+import { WebviewView, WebviewViewProvider, Disposable } from 'vscode'
+import { LanguageClient } from 'vscode-languageclient/node'
+import { Stack } from '@aws-sdk/client-cloudformation'
+import { StackViewCoordinator } from './stackViewCoordinator'
+import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
+import { extractErrorMessage, getStackStatusClass, isStackInTransientState } from '../utils'
 
-export class StackOverviewWebviewProvider {
-    private panels = new Map<string, WebviewPanel>()
+export class StackOverviewWebviewProvider implements WebviewViewProvider, Disposable {
+    private view?: WebviewView
+    private stack?: Stack
+    private readonly disposables: Disposable[] = []
+    private refreshTimer?: NodeJS.Timeout
+    private currentStackName?: string
 
-    async showStackOverview(stack: StackInfo): Promise<void> {
-        const stackName = stack.StackName ?? 'Unknown Stack'
+    constructor(
+        private readonly client: LanguageClient,
+        private readonly coordinator: StackViewCoordinator
+    ) {
+        this.disposables.push(
+            coordinator.onDidChangeStack(async (state) => {
+                if (state.stackName && !state.isChangeSetMode) {
+                    this.stopAutoRefresh()
+                    this.currentStackName = state.stackName
+                    this.stack = undefined
+                    this.render()
+                    await this.loadStack(state.stackName)
+                    this.startAutoRefresh()
+                } else {
+                    this.stopAutoRefresh()
+                    this.currentStackName = undefined
+                    this.stack = undefined
+                    this.render()
+                }
 
-        // Reuse existing panel if available
-        let panel = this.panels.get(stackName)
+                // Stop auto-refresh if stack is in terminal state
+                if (state.stackStatus && !isStackInTransientState(state.stackStatus)) {
+                    this.stopAutoRefresh()
+                }
+            })
+        )
+    }
 
-        if (panel) {
-            panel.reveal(ViewColumn.One)
+    private startAutoRefresh(): void {
+        this.stopAutoRefresh()
+        if (this.currentStackName) {
+            this.refreshTimer = setInterval(() => {
+                if (this.currentStackName) {
+                    void this.loadStack(this.currentStackName)
+                }
+            }, 5000)
+        }
+    }
+
+    private stopAutoRefresh(): void {
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer)
+            this.refreshTimer = undefined
+        }
+    }
+
+    private async loadStack(stackName: string): Promise<void> {
+        try {
+            const result = await this.client.sendRequest(DescribeStackRequest, { stackName })
+            if (result.stack) {
+                this.stack = result.stack
+                // Only update coordinator if status changed
+                if (this.coordinator.currentStackStatus !== result.stack.StackStatus) {
+                    await this.coordinator.setStack(stackName, result.stack.StackStatus)
+                }
+                this.render()
+            }
+        } catch (error) {
+            this.stack = undefined
+            this.renderError(`Failed to load stack: ${extractErrorMessage(error)}`)
+        }
+    }
+
+    resolveWebviewView(webviewView: WebviewView): void {
+        this.view = webviewView
+        webviewView.webview.options = { enableScripts: true }
+
+        webviewView.onDidChangeVisibility(() => {
+            if (webviewView.visible && this.currentStackName) {
+                this.startAutoRefresh()
+            } else {
+                this.stopAutoRefresh()
+            }
+        })
+
+        webviewView.onDidDispose(() => {
+            this.stopAutoRefresh()
+        })
+
+        this.render()
+    }
+
+    async showStackOverview(stackName: string): Promise<void> {
+        if (this.view) {
+            await this.loadStack(stackName)
+        }
+    }
+
+    private render(): void {
+        if (!this.view || !this.view.visible) {
             return
         }
 
-        // Create new panel
-        panel = window.createWebviewPanel('stackOverview', `Stack Overview: ${stackName}`, ViewColumn.One, {
-            enableScripts: true,
-            retainContextWhenHidden: true,
-        })
+        if (!this.stack) {
+            this.view.webview.html = this.getEmptyContent()
+            return
+        }
 
-        this.panels.set(stackName, panel)
-
-        // Clean up when panel is disposed
-        panel.onDidDispose(() => {
-            this.panels.delete(stackName)
-        })
-
-        // Render content
-        panel.webview.html = this.getWebviewContent(stack)
+        this.view.webview.html = this.getWebviewContent(this.stack)
     }
 
-    private getWebviewContent(stack: StackInfo): string {
-        return `<!DOCTYPE html>
+    private renderError(message: string): void {
+        if (!this.view || !this.view.visible) {
+            return
+        }
+        this.view.webview.html = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stack Overview</title>
     <style>
         body { 
             font-family: var(--vscode-font-family); 
-            padding: 20px; 
-            color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
-        }
-        .header { 
-            margin-bottom: 40px; 
-        }
-        .status-line {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 16px;
-        }
-        .status-icon {
-            width: 18px;
-            height: 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .status-icon.complete { color: #28a745; }
-        .status-icon.complete::before { content: "✓"; }
-        .status-icon.failed { color: #dc3545; }
-        .status-icon.failed::before { content: "✗"; }
-        .status-icon.progress { color: #ffc107; }
-        .status-icon.progress::before { content: "⟳"; }
-        .section-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 25px 0 20px 0;
-            color: var(--vscode-foreground);
-            border-bottom: 1px solid var(--vscode-panel-border);
-            padding-bottom: 8px;
-        }
-        .field-row {
-            display: grid;
-            grid-template-columns: 200px 1fr;
-            gap: 15px;
-            margin-bottom: 8px;
-            align-items: start;
-            padding: 8px 12px;
-            border-radius: 3px;
-        }
-        .field-row:nth-child(even) {
-            background-color: var(--vscode-list-hoverBackground);
-        }
-        .field-label {
-            font-weight: bold;
-            color: var(--vscode-foreground);
-        }
-        .field-value {
-            color: var(--vscode-descriptionForeground);
-            word-break: break-word;
-        }
-        .section {
-            margin-bottom: 25px;
+            padding: 20px;
+            color: var(--vscode-errorForeground);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>${stack.StackName}</h1>
-        <div class="status-line">
-            <div class="status-icon ${this.getStatusClass(stack.StackStatus)}"></div>
-            <span>${this.getStatusText(stack.StackStatus)}</span>
-        </div>
-    </div>
-    
-    <div class="section-title">Overview</div>
-    
-    <div class="section">
-        <div class="field-row">
-            <div class="field-label">Stack ID</div>
-            <div class="field-value">${stack.StackId || '-'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Description</div>
-            <div class="field-value">${stack.TemplateDescription || '-'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Created time</div>
-            <div class="field-value">${stack.CreationTime || '-'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Updated time</div>
-            <div class="field-value">${stack.LastUpdatedTime || '-'}</div>
-        </div>
-    </div>
+    <h3>Error</h3>
+    <p>${message}</p>
+</body>
+</html>`
+    }
 
-    <div class="section-title">Status</div>
+    private getEmptyContent(): string {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: var(--vscode-font-family);
+            padding: 20px;
+            text-align: center;
+            color: var(--vscode-descriptionForeground);
+        }
+    </style>
+</head>
+<body>
+    <p>Select a stack to view details</p>
+</body>
+</html>`
+    }
+
+    private getWebviewContent(stack: Stack): string {
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: var(--vscode-font-family); 
+            padding: 20px;
+            color: var(--vscode-foreground);
+        }
+        .section { margin-bottom: 20px; }
+        .label { 
+            font-weight: 600;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 4px;
+        }
+        .value { 
+            margin-bottom: 12px;
+            word-break: break-word;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .status-complete { 
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+        .status-failed { 
+            background: var(--vscode-testing-iconFailed);
+            color: var(--vscode-editor-background);
+        }
+        .status-progress { 
+            background: var(--vscode-testing-iconQueued);
+            color: var(--vscode-editor-background);
+        }
+    </style>
+</head>
+<body>
     <div class="section">
-        <div class="field-row">
-            <div class="field-label">Status</div>
-            <div class="field-value">${stack.StackStatus || '-'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Detailed status</div>
-            <div class="field-value">-</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Status reason</div>
-            <div class="field-value">${stack.StackStatusReason || '-'}</div>
+        <div class="label">Stack Name</div>
+        <div class="value">${stack.StackName ?? 'N/A'}</div>
+    </div>
+    <div class="section">
+        <div class="label">Status</div>
+        <div class="value">
+            <span class="status ${getStackStatusClass(stack.StackStatus)}">${stack.StackStatus ?? 'UNKNOWN'}</span>
         </div>
     </div>
-
-    <div class="section-title">Configuration</div>
-    <div class="section">
-        <div class="field-row">
-            <div class="field-label">Rollback disabled</div>
-            <div class="field-value">${stack.DisableRollback ? 'Yes' : 'No'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Termination protection</div>
-            <div class="field-value">${stack.EnableTerminationProtection ? 'Enabled' : 'Disabled'}</div>
-        </div>
-        <div class="field-row">
-            <div class="field-label">Timeout (minutes)</div>
-            <div class="field-value">${stack.TimeoutInMinutes || '-'}</div>
-        </div>
-    </div>
-
     ${
-        stack.RootId || stack.ParentId
+        stack.StackId
             ? `
-    <div class="section-title">Nested Stack</div>
     <div class="section">
-        ${
-            stack.RootId
-                ? `
-        <div class="field-row">
-            <div class="field-label">Root stack</div>
-            <div class="field-value">${stack.RootId}</div>
-        </div>
-        `
-                : ''
-        }
-        ${
-            stack.ParentId
-                ? `
-        <div class="field-row">
-            <div class="field-label">Parent stack</div>
-            <div class="field-value">${stack.ParentId}</div>
-        </div>
-        `
-                : ''
-        }
-    </div>
-    `
+        <div class="label">Stack ID</div>
+        <div class="value">${stack.StackId}</div>
+    </div>`
+            : ''
+    }
+    ${
+        stack.Description
+            ? `
+    <div class="section">
+        <div class="label">Description</div>
+        <div class="value">${stack.Description}</div>
+    </div>`
+            : ''
+    }
+    ${
+        stack.CreationTime
+            ? `
+    <div class="section">
+        <div class="label">Created</div>
+        <div class="value">${new Date(stack.CreationTime).toLocaleString()}</div>
+    </div>`
+            : ''
+    }
+    ${
+        stack.LastUpdatedTime
+            ? `
+    <div class="section">
+        <div class="label">Last Updated</div>
+        <div class="value">${new Date(stack.LastUpdatedTime).toLocaleString()}</div>
+    </div>`
+            : ''
+    }
+    ${
+        stack.StackStatusReason
+            ? `
+    <div class="section">
+        <div class="label">Status Reason</div>
+        <div class="value">${stack.StackStatusReason}</div>
+    </div>`
             : ''
     }
 </body>
 </html>`
     }
 
-    private getStatusClass(status?: string): string {
-        if (!status) {
-            return ''
+    dispose(): void {
+        this.stopAutoRefresh()
+        for (const d of this.disposables) {
+            d.dispose()
         }
-        if (status.includes('COMPLETE') && !status.includes('ROLLBACK')) {
-            return 'complete'
-        }
-        if (status.includes('FAILED') || status.includes('ROLLBACK')) {
-            return 'failed'
-        }
-        if (status.includes('PROGRESS')) {
-            return 'progress'
-        }
-        return ''
-    }
-
-    private getStatusText(status?: string): string {
-        if (!status) {
-            return 'Unknown'
-        }
-
-        // Handle specific cases with proper capitalization
-        const statusMap: { [key: string]: string } = {
-            CREATE_COMPLETE: 'Create complete',
-            UPDATE_COMPLETE: 'Update complete',
-            DELETE_COMPLETE: 'Delete complete',
-            CREATE_FAILED: 'Create failed',
-            UPDATE_FAILED: 'Update failed',
-            DELETE_FAILED: 'Delete failed',
-            CREATE_IN_PROGRESS: 'Create in progress',
-            UPDATE_IN_PROGRESS: 'Update in progress',
-            DELETE_IN_PROGRESS: 'Delete in progress',
-            ROLLBACK_COMPLETE: 'Rollback complete',
-            ROLLBACK_FAILED: 'Rollback failed',
-            ROLLBACK_IN_PROGRESS: 'Rollback in progress',
-            UPDATE_ROLLBACK_COMPLETE: 'Update rollback complete',
-            UPDATE_ROLLBACK_FAILED: 'Update rollback failed',
-            UPDATE_ROLLBACK_IN_PROGRESS: 'Update rollback in progress',
-        }
-
-        return statusMap[status] || status.toLowerCase().replace(/_/g, ' ')
     }
 }

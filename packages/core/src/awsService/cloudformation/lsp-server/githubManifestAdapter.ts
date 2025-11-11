@@ -86,7 +86,22 @@ export class GitHubManifestAdapter {
         const lower = filename.toLowerCase().replaceAll('.zip', '')
         const splits = lower.split('-')
 
-        return { arch: splits[splits.length - 1], platform: splits[splits.length - 2] }
+        const last = splits[splits.length - 1]
+
+        // Check if filename includes node version (e.g., node22)
+        if (last.startsWith('node')) {
+            const nodeVersion = process.version.match(/^v(\d+)/)?.[1]
+            const filenameNodeVersion = last.replace('node', '')
+
+            // Only match if node versions align
+            if (nodeVersion !== filenameNodeVersion) {
+                return { arch: '', platform: '' } // Skip this asset
+            }
+
+            return { arch: splits[splits.length - 2], platform: splits[splits.length - 3] }
+        }
+
+        return { arch: last, platform: splits[splits.length - 2] }
     }
 }
 
