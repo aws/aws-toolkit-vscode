@@ -128,6 +128,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         return this.makeRequest(DeleteAppCommand, request)
     }
 
+    public async listAppForSpace(domainId: string, spaceName: string): Promise<AppDetails | undefined> {
+        const appsList = await this.listApps({ DomainIdEquals: domainId, SpaceNameEquals: spaceName })
+            .flatten()
+            .promise()
+        return appsList[0] // At most one App for one SagemakerSpace
+    }
+
     public async startSpace(spaceName: string, domainId: string, skipInstanceTypePrompts: boolean = false) {
         let spaceDetails: DescribeSpaceCommandOutput
 
