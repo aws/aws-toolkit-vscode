@@ -51,15 +51,27 @@ export class CfnLspInstaller extends BaseLspInstaller {
     }
 
     protected async postInstall(assetDirectory: string): Promise<void> {
-        await this.deleteZip(assetDirectory)
-
         const resourcePaths = this.resourcePaths(assetDirectory)
-        const binaryName = process.platform === 'win32' ? 'cfn-init.exe' : 'cfn-init'
-        const binPath = join(dirname(resourcePaths.lsp), 'bin', binaryName)
-        try {
-            await fs.chmod(binPath, 0o755)
-        } catch (error) {
-            this.log.error(`Failed to add permissions on ${binaryName} binary`, error)
+        const rootDir = dirname(resourcePaths.lsp)
+        await this.makeLspExecutable(rootDir)
+        await fs.chmod(join(rootDir, 'bin', process.platform === 'win32' ? 'cfn-init.exe' : 'cfn-init'), 0o755)
+    }
+
+    private async makeLspExecutable(directory: string): Promise<void> {
+        const extensions = ['.cjs', '.gyp', '.js', '.mjs', '.node', '.wasm', '.json', '.zip', '.map']
+        const entries = await fs.readdir(directory)
+
+        for (const [name, type] of entries) {
+            const fullPath = join(directory, name)
+            if (type === FileType.Directory) {
+                await this.makeLspExecutable(fullPath)
+            } else if (extensions.some((ext) => name.endsWith(ext))) {
+                try {
+                    await fs.chmod(fullPath, 0o755)
+                } catch (error) {
+                    this.log.error(`Failed to make ${name} executable`, error)
+                }
+            }
         }
     }
 
@@ -82,15 +94,6 @@ export class CfnLspInstaller extends BaseLspInstaller {
         return {
             lsp: join(assetDirectory, folders[0].name, CfnLspServerFile),
             node: process.execPath,
-        }
-    }
-
-    private async deleteZip(assetDirectory: string): Promise<void> {
-        const files = await fs.readdir(assetDirectory)
-        const zips = files.filter(([name, type]) => type === FileType.File && name.endsWith('.zip'))
-
-        for (const zip of zips) {
-            await fs.delete(join(assetDirectory, zip[0]))
         }
     }
 }

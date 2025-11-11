@@ -55,6 +55,14 @@ export class ResourcesManager {
         return this.selectedResourceTypes
     }
 
+    async removeResourceType(typeToRemove: string): Promise<void> {
+        await globals.globalState.update(
+            ResourcesManager.resourceTypesKey,
+            this.selectedResourceTypes.filter((type) => type !== typeToRemove)
+        )
+        this.notifyAllListeners()
+    }
+
     get(): ResourceList[] {
         return Array.from(this.resources.values())
     }

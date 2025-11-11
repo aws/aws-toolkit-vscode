@@ -14,7 +14,11 @@ describe('DiffWebviewProvider', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        provider = new DiffWebviewProvider()
+        const mockCoordinator = {
+            onDidChangeStack: sandbox.stub().returns({ dispose: () => {} }),
+            setChangeSetMode: sandbox.stub().resolves(),
+        } as any
+        provider = new DiffWebviewProvider(mockCoordinator)
     })
 
     afterEach(function () {
@@ -32,7 +36,7 @@ describe('DiffWebviewProvider', function () {
     }
 
     function setupProviderWithChanges(stackName: string, changes: StackChange[]) {
-        provider.updateData(stackName, changes)
+        void provider.updateData(stackName, changes)
         const mockWebview = createMockWebview()
         provider.resolveWebviewView(mockWebview as any)
         return mockWebview.webview.html
@@ -71,7 +75,7 @@ describe('DiffWebviewProvider', function () {
         it('should configure webview options and set HTML content', function () {
             const mockWebview = createMockWebview()
 
-            provider.updateData('test-stack', [])
+            void provider.updateData('test-stack', [])
             provider.resolveWebviewView(mockWebview as any)
 
             assert.deepStrictEqual(mockWebview.webview.options, { enableScripts: true })
@@ -155,7 +159,7 @@ describe('DiffWebviewProvider', function () {
                 },
             ]
 
-            provider.updateData('test-stack', changes)
+            void provider.updateData('test-stack', changes)
 
             const mockWebview = {
                 webview: {

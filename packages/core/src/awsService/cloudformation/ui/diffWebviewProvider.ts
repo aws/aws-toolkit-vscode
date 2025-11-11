@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WebviewView, WebviewViewProvider, commands } from 'vscode'
+import { WebviewView, WebviewViewProvider, commands, Disposable } from 'vscode'
 import { StackChange } from '../stacks/actions/stackActionRequestType'
 import { DiffViewHelper } from './diffViewHelper'
 import { commandKey } from '../utils'
+import { StackViewCoordinator } from './stackViewCoordinator'
 
 const webviewCommandOpenDiff = 'openDiff'
 
-export class DiffWebviewProvider implements WebviewViewProvider {
+export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
     private _view?: WebviewView
     private stackName = ''
     private changes: StackChange[] = []
@@ -19,14 +20,36 @@ export class DiffWebviewProvider implements WebviewViewProvider {
     private currentPage: number = 0
     private pageSize: number = 50
     private totalPages: number = 0
+    private readonly disposables: Disposable[] = []
 
-    updateData(stackName: string, changes: StackChange[] = [], changeSetName?: string, enableDeployments = false) {
+    constructor(private readonly coordinator: StackViewCoordinator) {
+        this.disposables.push(
+            coordinator.onDidChangeStack((state) => {
+                if (!state.isChangeSetMode) {
+                    this.stackName = ''
+                    this.changes = []
+                    this.changeSetName = undefined
+                    if (this._view) {
+                        this._view.webview.html = this.getHtmlContent()
+                    }
+                }
+            })
+        )
+    }
+
+    async updateData(
+        stackName: string,
+        changes: StackChange[] = [],
+        changeSetName?: string,
+        enableDeployments = false
+    ) {
         this.stackName = stackName
         this.changes = changes
         this.changeSetName = changeSetName
         this.enableDeployments = enableDeployments
         this.currentPage = 0
         this.totalPages = Math.ceil(changes.length / this.pageSize)
+        await this.coordinator.setChangeSetMode(stackName, true)
         if (this._view) {
             this._view.webview.html = this.getHtmlContent()
         }
@@ -373,5 +396,11 @@ export class DiffWebviewProvider implements WebviewViewProvider {
             </body>
             </html>
         `
+    }
+
+    dispose(): void {
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }

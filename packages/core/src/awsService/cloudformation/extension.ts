@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, window, languages } from 'vscode'
+import { ExtensionContext, window, languages, commands } from 'vscode'
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -14,7 +14,6 @@ import {
 } from 'vscode-languageclient/node'
 import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
 import { formatMessage, toString } from './utils'
-import { restartCommand } from './commands/lspCommands'
 import globals from '../../shared/extensionGlobals'
 import { getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -24,13 +23,11 @@ import {
     rerunLastValidationCommand,
     importResourceStateCommand,
     cloneResourceStateCommand,
-    selectResourceTypesCommand,
     addResourceTypesCommand,
+    removeResourceTypeCommand,
     refreshAllResourcesCommand,
     refreshResourceListCommand,
     copyResourceIdentifierCommand,
-    viewStackDiffCommand,
-    viewStackDetailCommand,
     focusDiffCommand,
     getStackManagementInfoCommand,
     extractToParameterPositionCursorCommand,
@@ -41,13 +38,11 @@ import {
     addRelatedResourcesCommand,
     refreshChangeSetsCommand,
     loadMoreChangeSetsCommand,
-    showStackOverviewCommand,
+    viewStackCommand,
     createProjectCommand,
     addEnvironmentCommand,
     removeEnvironmentCommand,
     deleteChangeSetCommand,
-    showStackEventsCommand,
-    showStackOutputsCommand,
     viewChangeSetCommand,
     deployTemplateFromStacksMenuCommand,
 } from './commands/cfnCommands'
@@ -65,6 +60,7 @@ import { StackEventsWebviewProvider } from './ui/stackEventsWebviewProvider'
 import { StackOutputsWebviewProvider } from './ui/stackOutputsWebviewProvider'
 import { DiffWebviewProvider } from './ui/diffWebviewProvider'
 import { StackResourcesWebviewProvider } from './ui/stackResourcesWebviewProvider'
+import { StackViewCoordinator } from './ui/stackViewCoordinator'
 import { DocumentManager } from './documents/documentManager'
 
 import { ResourcesManager } from './resources/resourcesManager'
@@ -90,6 +86,19 @@ import { CfnEnvironmentFileSelector } from './ui/cfnEnvironmentFileSelector'
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
+    context.subscriptions.push(
+        commands.registerCommand(commandKey('server.restartServer'), async () => {
+            try {
+                await deactivate()
+                await activate(context)
+            } catch (error) {
+                void window.showErrorMessage(
+                    formatMessage(`Failed to restart CloudFormation extension: ${toString(error)}`)
+                )
+            }
+        })
+    )
+
     const cfnTelemetrySettings = new CloudFormationTelemetrySettings()
     const telemetryEnabled = await promptTelemetryOptIn(context, cfnTelemetrySettings)
 
@@ -235,19 +244,19 @@ export async function activate(context: ExtensionContext) {
             )
             cfnExplorer.setCredentialsService(credentialsService)
 
-            // Create diff webview provider
-            const diffProvider = new DiffWebviewProvider()
+            const stackViewCoordinator = new StackViewCoordinator()
 
-            const resourcesProvider = new StackResourcesWebviewProvider(client)
+            // Register callback to update stack status in cache and refresh explorer
+            stackViewCoordinator.setStackStatusUpdateCallback((stackName, stackStatus) => {
+                stacksManager.updateStackStatus(stackName, stackStatus)
+                cfnExplorer.refresh()
+            })
 
-            // Create stack overview webview provider
-            const overviewProvider = new StackOverviewWebviewProvider()
-
-            // Create stack events webview provider
-            const eventsProvider = new StackEventsWebviewProvider(client)
-
-            // Create stack outputs webview provider
-            const outputsProvider = new StackOutputsWebviewProvider(client)
+            const diffProvider = new DiffWebviewProvider(stackViewCoordinator)
+            const resourcesProvider = new StackResourcesWebviewProvider(client, stackViewCoordinator)
+            const overviewProvider = new StackOverviewWebviewProvider(client, stackViewCoordinator)
+            const eventsProvider = new StackEventsWebviewProvider(client, stackViewCoordinator)
+            const outputsProvider = new StackOutputsWebviewProvider(client, stackViewCoordinator)
 
             const documentSelector = [
                 { scheme: 'file', language: 'cloudformation' },
@@ -274,29 +283,25 @@ export async function activate(context: ExtensionContext) {
                 searchResourceCommand(cfnExplorer, resourcesManager),
                 refreshChangeSetsCommand(cfnExplorer),
                 loadMoreChangeSetsCommand(cfnExplorer),
-                showStackOverviewCommand(overviewProvider),
-                showStackEventsCommand(eventsProvider),
-                showStackOutputsCommand(outputsProvider),
+                viewStackCommand(stackViewCoordinator, overviewProvider, outputsProvider, resourcesProvider),
                 addResourceTypesCommand(resourcesManager),
+                removeResourceTypeCommand(resourcesManager),
                 refreshAllResourcesCommand(resourcesManager),
                 refreshResourceListCommand(resourcesManager, cfnExplorer),
                 copyResourceIdentifierCommand(),
-                selectResourceTypesCommand(resourcesManager),
                 importResourceStateCommand(resourcesManager),
                 cloneResourceStateCommand(resourcesManager),
                 getStackManagementInfoCommand(resourcesManager),
+                window.registerWebviewViewProvider(commandKey('stack.overview'), overviewProvider),
                 window.registerWebviewViewProvider(commandKey('diff'), diffProvider),
                 window.registerWebviewViewProvider(commandKey('stack.events'), eventsProvider),
-                window.registerWebviewViewProvider(commandKey('detail'), resourcesProvider),
+                window.registerWebviewViewProvider(commandKey('stack.resources'), resourcesProvider),
                 window.registerWebviewViewProvider(commandKey('stack.outputs'), outputsProvider),
-                viewStackDiffCommand(),
-                viewStackDetailCommand(resourcesProvider),
                 focusDiffCommand(),
-                restartCommand(client),
                 validateDeploymentCommand(client, diffProvider, documentManager, environmentManager),
                 deployTemplateCommand(client, diffProvider, documentManager, environmentManager),
                 deployTemplateFromStacksMenuCommand(),
-                executeChangeSetCommand(client),
+                executeChangeSetCommand(client, stackViewCoordinator),
                 deleteChangeSetCommand(client),
                 viewChangeSetCommand(client, diffProvider),
                 refreshCommand(stacksManager),
@@ -304,7 +309,7 @@ export async function activate(context: ExtensionContext) {
                 selectRegionCommand(cfnExplorer),
                 selectEnvironmentCommand(cfnExplorer),
                 rerunLastValidationCommand(),
-                extractToParameterPositionCursorCommand(),
+                extractToParameterPositionCursorCommand(client),
                 createProjectCommand(cfnInitUiInterface),
                 addEnvironmentCommand(cfnInitUiInterface, cfnInitCliCaller, environmentManager),
                 removeEnvironmentCommand(cfnInitCliCaller, environmentManager),
@@ -316,9 +321,8 @@ export async function activate(context: ExtensionContext) {
             return credentialsService.initialize(client)
         })
         .catch((err: any) => {
-            void window.showErrorMessage(
-                formatMessage(`Failed to start ${err instanceof Error ? err.message : toString(err)}`)
-            )
+            // Language client already shows error popup for startup failures
+            getLogger().error(`CloudFormation language server failed to start: ${toString(err)}`)
         })
 }
 

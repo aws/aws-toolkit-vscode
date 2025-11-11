@@ -3,23 +3,60 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WebviewView, WebviewViewProvider } from 'vscode'
+import { WebviewView, WebviewViewProvider, Disposable } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { showErrorMessage } from './message'
 import { GetStackResourcesRequest } from '../stacks/actions/stackActionProtocol'
 import { StackResourceSummary, GetStackResourcesParams } from '../stacks/actions/stackActionRequestType'
+import { StackViewCoordinator } from './stackViewCoordinator'
 
 const ResourcesPerPage = 50
 
-export class StackResourcesWebviewProvider implements WebviewViewProvider {
+export class StackResourcesWebviewProvider implements WebviewViewProvider, Disposable {
     private _view?: WebviewView
     private stackName = ''
     private allResources: StackResourceSummary[] = []
     private currentPage = 0
     private nextToken?: string
     private updateInterval?: NodeJS.Timeout
+    private readonly disposables: Disposable[] = []
 
-    constructor(private client: LanguageClient) {}
+    constructor(
+        private client: LanguageClient,
+        private readonly coordinator: StackViewCoordinator
+    ) {
+        this.disposables.push(
+            coordinator.onDidChangeStack(async (state) => {
+                if (state.stackName && !state.isChangeSetMode) {
+                    this.stopAutoRefresh()
+                    this.stackName = state.stackName
+                    this.allResources = []
+                    this.currentPage = 0
+                    this.nextToken = undefined
+                    if (this._view && this._view.visible) {
+                        this._view.webview.html = this.getHtmlContent()
+                    }
+                    await this.updateData(state.stackName)
+                } else if (!state.stackName || state.isChangeSetMode) {
+                    this.stopAutoRefresh()
+                    this.stackName = ''
+                    this.allResources = []
+                    if (this._view && this._view.visible) {
+                        this._view.webview.html = this.getHtmlContent()
+                    }
+                }
+
+                // Stop auto-refresh if stack is in terminal state
+                if (state.stackStatus && !this.isStackInTransientState(state.stackStatus)) {
+                    this.stopAutoUpdate()
+                }
+            })
+        )
+    }
+
+    private isStackInTransientState(status: string): boolean {
+        return status.includes('_IN_PROGRESS') || status.includes('_CLEANUP_IN_PROGRESS')
+    }
 
     async updateData(stackName: string) {
         this.stackName = stackName
@@ -28,7 +65,7 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider {
         this.nextToken = undefined
         await this.loadResources()
 
-        if (this._view) {
+        if (this._view && this._view.visible) {
             this._view.webview.html = this.getHtmlContent()
         }
     }
@@ -123,7 +160,7 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider {
     }
 
     private render(): void {
-        if (this._view) {
+        if (this._view && this._view.visible !== false) {
             this._view.webview.html = this.getHtmlContent()
         }
     }
@@ -131,30 +168,21 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider {
     private startAutoUpdate() {
         if (!this.updateInterval && this.stackName) {
             this.updateInterval = setInterval(async () => {
+                if (this._view && !this.coordinator.currentStackStatus?.includes('_IN_PROGRESS')) {
+                    this.stopAutoUpdate()
+                    return
+                }
+
                 if (this._view) {
-                    // For auto-refresh, reload from the beginning to get fresh data
-                    const currentPage = this.currentPage
+                    // Reset to page 1 with fresh data
                     this.allResources = []
                     this.currentPage = 0
                     this.nextToken = undefined
+                    await this.loadResources()
 
-                    // Load enough pages to get back to where we were
-                    for (let i = 0; i <= currentPage; i++) {
-                        await this.loadResources()
-                        if (!this.nextToken) {
-                            break
-                        }
+                    if (this._view && this._view.visible !== false) {
+                        this._view.webview.html = this.getHtmlContent()
                     }
-
-                    // Restore the current page if we have enough data
-                    if (this.allResources.length > currentPage * ResourcesPerPage) {
-                        this.currentPage = currentPage
-                    } else {
-                        // If we don't have enough data, go to the last available page
-                        this.currentPage = Math.max(0, Math.ceil(this.allResources.length / ResourcesPerPage) - 1)
-                    }
-
-                    this._view.webview.html = this.getHtmlContent()
                 }
             }, 5000)
         }
@@ -167,6 +195,10 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider {
         }
     }
 
+    private stopAutoRefresh() {
+        this.stopAutoUpdate()
+    }
+
     private getHtmlContent(): string {
         const start = this.currentPage * ResourcesPerPage
         const end = start + ResourcesPerPage
@@ -175,96 +207,201 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider {
         const hasMore = this.nextToken !== undefined
 
         if (!pageResources || pageResources.length === 0) {
-            return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body {
-                            font-family: var(--vscode-font-family);
-                            margin: 8px;
-                            background-color: var(--vscode-panel-background);
-                            color: var(--vscode-panel-foreground);
-                        }
-                    </style>
-                </head>
-                <body>
-                    <p>No resources found for stack: ${this.stackName}</p>
-                </body>
-                </html>
-            `
+            return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: var(--vscode-font-family); 
+            padding: 0;
+            margin: 0;
+            color: var(--vscode-foreground);
+        }
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--vscode-editor-background);
+            z-index: 10;
+            padding: 8px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .stack-info {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+        }
+        .pagination {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .resource-count {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+        }
+        .table-container {
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="stack-info">
+            <span>${this.stackName}</span>
+            <span class="resource-count">(0 resources)</span>
+        </div>
+    </div>
+    <div class="table-container">
+        <p style="text-align: center; padding: 20px;">No resources found</p>
+    </div>
+</body>
+</html>`
         }
 
-        const paginationControls = `
-            <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
-                ${
-                    totalPages > 1 || hasMore
-                        ? `
-                    <button onclick="prevPage()" ${this.currentPage === 0 ? 'disabled' : ''}>Previous</button>
-                    <button onclick="nextPage()" ${this.currentPage >= totalPages - 1 && !hasMore ? 'disabled' : ''}>Next</button>
-                `
-                        : ''
-                }
+        const resourceRows = pageResources
+            .map(
+                (resource) => `
+            <tr>
+                <td>${resource.LogicalResourceId}</td>
+                <td>${resource.PhysicalResourceId || ''}</td>
+                <td>${resource.ResourceType}</td>
+                <td>${resource.ResourceStatus}</td>
+            </tr>
+        `
+            )
+            .join('')
+
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: var(--vscode-font-family); 
+            padding: 0;
+            margin: 0;
+            color: var(--vscode-foreground);
+        }
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--vscode-editor-background);
+            z-index: 10;
+            padding: 8px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .stack-info {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+        }
+        .pagination {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .resource-count {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+        }
+        .table-container {
+            padding: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        thead {
+            position: sticky;
+            top: 40px;
+            background: var(--vscode-editor-background);
+            z-index: 5;
+        }
+        th {
+            text-align: left;
+            padding: 6px;
+            background: var(--vscode-editor-background);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            font-weight: 600;
+        }
+        td {
+            padding: 6px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            word-break: break-word;
+        }
+        tr:hover { background: var(--vscode-list-hoverBackground); }
+        button {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        button:hover { background: var(--vscode-button-hoverBackground); }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="stack-info">
+                <span>${this.stackName}</span>
+                <span class="resource-count">(${this.allResources.length}${hasMore ? '+' : ''} resources)</span>
             </div>
-        `
-
-        let tableHtml = `
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid var(--vscode-panel-border);">
+            <div class="pagination">
+                <span>Page ${this.currentPage + 1} of ${totalPages || 1}</span>
+                <button onclick="prevPage()" ${this.currentPage === 0 ? 'disabled' : ''}>Previous</button>
+                <button onclick="nextPage()" ${this.currentPage >= totalPages - 1 && !hasMore ? 'disabled' : ''}>${this.currentPage >= totalPages - 1 && hasMore ? 'Load More' : 'Next'}</button>
+            </div>
+        </div>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
                 <tr>
-                    <th style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background);">Logical ID</th>
-                    <th style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background);">Physical ID</th>
-                    <th style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background);">Type</th>
-                    <th style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background);">Status</th>
+                    <th>Logical ID</th>
+                    <th>Physical ID</th>
+                    <th>Type</th>
+                    <th>Status</th>
                 </tr>
-        `
+            </thead>
+            <tbody>
+                ${resourceRows}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        const vscode = acquireVsCodeApi();
+        function nextPage() { vscode.postMessage({ command: 'nextPage' }); }
+        function prevPage() { vscode.postMessage({ command: 'prevPage' }); }
+    </script>
+</body>
+</html>`
+    }
 
-        for (const resource of pageResources) {
-            tableHtml += `<tr style="color: var(--vscode-foreground);">
-                <td style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px;">${resource.LogicalResourceId}</td>
-                <td style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px;">${resource.PhysicalResourceId || ' '}</td>
-                <td style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px;">${resource.ResourceType}</td>
-                <td style="width: 25%; word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px;">${resource.ResourceStatus}</td>
-            </tr>`
+    dispose(): void {
+        this.stopAutoRefresh()
+        for (const d of this.disposables) {
+            d.dispose()
         }
-
-        tableHtml += '</table>'
-
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body {
-                        font-family: var(--vscode-font-family);
-                        margin: 8px;
-                        background-color: var(--vscode-panel-background);
-                        color: var(--vscode-panel-foreground);
-                    }
-                    button {
-                        background: var(--vscode-button-background);
-                        color: var(--vscode-button-foreground);
-                        border: none;
-                        padding: 4px 8px;
-                        cursor: pointer;
-                        border-radius: 2px;
-                    }
-                    button:hover { background: var(--vscode-button-hoverBackground); }
-                    button:disabled {
-                        opacity: 0.5;
-                        cursor: not-allowed;
-                    }
-                </style>
-            </head>
-            <body>
-                ${paginationControls}
-                ${tableHtml}
-                <script>
-                    const vscode = acquireVsCodeApi();
-                    function nextPage() { vscode.postMessage({ command: 'nextPage' }); }
-                    function prevPage() { vscode.postMessage({ command: 'prevPage' }); }
-                </script>
-            </body>
-            </html>
-        `
     }
 }

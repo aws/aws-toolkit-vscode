@@ -24,6 +24,29 @@ export function commandKey(key: string): string {
 
 export const cloudFormationUiClickMetric = 'cloudformation_nodeExpansion'
 
+export function getStackStatusClass(status?: string): string {
+    if (!status) {
+        return ''
+    }
+    // Terminal success states
+    if (status.includes('COMPLETE') && !status.includes('ROLLBACK')) {
+        return 'status-complete'
+    }
+    // Terminal failed states
+    if (status.includes('FAILED') || status.includes('ROLLBACK')) {
+        return 'status-failed'
+    }
+    // Transient states (in progress)
+    if (status.includes('PROGRESS')) {
+        return 'status-progress'
+    }
+    return ''
+}
+
+export function isStackInTransientState(status: string): boolean {
+    return status.includes('_IN_PROGRESS') || status.includes('_CLEANUP_IN_PROGRESS')
+}
+
 export function extractErrorMessage(error: unknown) {
     if (error instanceof Error) {
         const prefix = error.name === 'Error' ? '' : `${error.name}: `

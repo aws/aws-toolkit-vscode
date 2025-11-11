@@ -6,11 +6,6 @@
 import { TreeItemCollapsibleState, ThemeIcon, ThemeColor } from 'vscode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { StackSummary } from '@aws-sdk/client-cloudformation'
-import { StackStatusNode } from './stackStatusNode'
-import { StackOverviewNode } from './stackOverviewNode'
-import { StackEventsNode } from './stackEventsNode'
-import { StackOutputsNode } from './stackOutputsNode'
-import { StackResourcesNode } from './stackResourcesNode'
 import { StackChangeSetsNode } from './stackChangeSetsNode'
 import { ChangeSetsManager } from '../../stacks/changeSetsManager'
 
@@ -43,18 +38,9 @@ export class StackNode extends AWSTreeNodeBase {
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         const stackName = this.stack.StackName ?? ''
-        const stackStatus = this.stack.StackStatus ?? 'UNKNOWN'
 
-        // Pre-load change sets to get accurate count
         await this.changeSetsManager.getChangeSets(stackName)
 
-        return [
-            new StackStatusNode(stackStatus),
-            new StackOverviewNode(this.stack),
-            new StackEventsNode(stackName),
-            new StackOutputsNode(stackName),
-            new StackResourcesNode(stackName),
-            new StackChangeSetsNode(stackName, this.changeSetsManager),
-        ]
+        return [new StackChangeSetsNode(stackName, this.changeSetsManager)]
     }
 }

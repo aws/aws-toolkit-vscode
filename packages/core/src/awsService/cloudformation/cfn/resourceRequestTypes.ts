@@ -42,6 +42,8 @@ export const ResourceTypesRequest = new RequestType<ResourceTypesParams, Resourc
     'aws/cfn/resources/types'
 )
 
+export const RemoveResourceTypeRequest = new RequestType<string, void, void>('aws/cfn/resources/list/remove')
+
 export type ResourceSelection = {
     resourceType: string
     resourceIdentifiers: string[]

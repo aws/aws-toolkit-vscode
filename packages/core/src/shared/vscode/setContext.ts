@@ -29,6 +29,8 @@ export type contextKey =
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.stepFunctions.isWorkflowStudioFocused'
     | 'aws.cloudformation.stacks.diffVisible'
+    | 'aws.cloudformation.stackSelected'
+    | 'aws.cloudformation.changeSetMode'
     | 'aws.cloudformation.loadingStacks'
     | 'aws.cloudformation.loadingResources'
     | 'aws.cloudformation.importingResource'

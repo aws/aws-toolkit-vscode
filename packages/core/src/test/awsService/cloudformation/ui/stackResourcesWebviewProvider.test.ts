@@ -11,13 +11,19 @@ describe('StackResourcesWebviewProvider', function () {
     let sandbox: sinon.SinonSandbox
     let provider: StackResourcesWebviewProvider
     let mockClient: any
+    let mockCoordinator: any
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         mockClient = {
             sendRequest: sandbox.stub(),
         }
-        provider = new StackResourcesWebviewProvider(mockClient)
+        mockCoordinator = {
+            onDidChangeStack: sandbox.stub().returns({ dispose: () => {} }),
+            setStack: sandbox.stub().resolves(),
+            currentStackStatus: undefined,
+        } as any
+        provider = new StackResourcesWebviewProvider(mockClient, mockCoordinator)
     })
 
     afterEach(function () {
@@ -106,7 +112,7 @@ describe('StackResourcesWebviewProvider', function () {
     describe('HTML generation', function () {
         it('should show no resources message when empty', async function () {
             const mockWebview = await setupProviderWithResources('test-stack', [])
-            assert.ok(mockWebview.webview.html.includes('No resources found for stack: test-stack'))
+            assert.ok(mockWebview.webview.html.includes('No resources found'))
         })
 
         it('should generate table with resources', async function () {
@@ -150,13 +156,14 @@ describe('StackResourcesWebviewProvider', function () {
             assert.ok(html.includes('CREATE_COMPLETE'))
         })
 
-        it('should not show pagination controls when there is only one page', async function () {
+        it('should show pagination controls with buttons disabled when there is only one page', async function () {
             const mockWebview = await setupProviderWithResources('test-stack', createMockResources(10))
             const html = mockWebview.webview.html
 
-            // Should not show pagination buttons for single page
-            assert.ok(!html.includes('Previous'))
-            assert.ok(!html.includes('Next'))
+            // Pagination is always shown, but buttons should be disabled for single page
+            assert.ok(html.includes('Previous'))
+            assert.ok(html.includes('Next'))
+            assert.ok(html.includes('disabled'))
         })
 
         it('should show pagination controls when there are multiple pages', async function () {
@@ -205,6 +212,7 @@ describe('StackResourcesWebviewProvider', function () {
         })
 
         it('should start auto-update when webview becomes visible', async function () {
+            mockCoordinator.currentStackStatus = 'UPDATE_IN_PROGRESS'
             const mockWebview = await setupProviderWithResources('test-stack', [])
             const visibilityHandler = mockWebview.onDidChangeVisibility.firstCall.args[0]
             mockWebview.visible = true
@@ -255,7 +263,10 @@ describe('StackResourcesWebviewProvider', function () {
         })
 
         it('should return early if no client or stack name', async function () {
-            const providerWithoutClient = new StackResourcesWebviewProvider(undefined as any)
+            const mockCoordinator = {
+                onDidChangeStack: sandbox.stub().returns({ dispose: () => {} }),
+            } as any
+            const providerWithoutClient = new StackResourcesWebviewProvider(undefined as any, mockCoordinator)
             const mockWebview = createMockWebview()
             providerWithoutClient.resolveWebviewView(mockWebview as any)
 

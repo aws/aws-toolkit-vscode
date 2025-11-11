@@ -10,6 +10,7 @@ import { ResourceSelector } from '../../../../awsService/cloudformation/ui/resou
 import { ResourceStateResult } from '../../../../awsService/cloudformation/cfn/resourceRequestTypes'
 import { Range, SnippetString, TextEditor, window } from 'vscode'
 import { getLogger } from '../../../../shared/logger'
+import globals from '../../../../shared/extensionGlobals'
 
 describe('ResourcesManager - applyCompletionSnippet', () => {
     let sandbox: sinon.SinonSandbox
@@ -227,5 +228,52 @@ describe('ResourcesManager - applyCompletionSnippet', () => {
 
         // Should still call insertSnippet
         assert.ok((mockEditor.insertSnippet as sinon.SinonStub).calledOnce)
+    })
+})
+
+describe('ResourcesManager - removeResourceType', () => {
+    let sandbox: sinon.SinonSandbox
+    let mockClient: any
+    let mockResourceSelector: ResourceSelector
+    let resourcesManager: ResourcesManager
+    let globalStateStub: sinon.SinonStub
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        mockClient = { sendRequest: sandbox.stub() }
+        mockResourceSelector = {} as ResourceSelector
+        globalStateStub = sandbox.stub(globals.globalState, 'update').resolves()
+        sandbox.stub(globals.globalState, 'tryGet').returns(['AWS::S3::Bucket', 'AWS::Lambda::Function'])
+        resourcesManager = new ResourcesManager(mockClient, mockResourceSelector)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should remove resource type from selected types', async () => {
+        await resourcesManager.removeResourceType('AWS::S3::Bucket')
+
+        assert.ok(globalStateStub.calledOnce)
+        const [key, updatedTypes] = globalStateStub.firstCall.args
+        assert.strictEqual(key, 'aws.cloudformation.selectedResourceTypes')
+        assert.deepStrictEqual(updatedTypes, ['AWS::Lambda::Function'])
+    })
+
+    it('should notify listeners after removing resource type', async () => {
+        const listener = sandbox.stub()
+        resourcesManager.addListener(listener)
+
+        await resourcesManager.removeResourceType('AWS::Lambda::Function')
+
+        assert.ok(listener.calledOnce)
+    })
+
+    it('should handle removing non-existent resource type', async () => {
+        await resourcesManager.removeResourceType('AWS::DynamoDB::Table')
+
+        assert.ok(globalStateStub.calledOnce)
+        const [, updatedTypes] = globalStateStub.firstCall.args
+        assert.deepStrictEqual(updatedTypes, ['AWS::S3::Bucket', 'AWS::Lambda::Function'])
     })
 })
