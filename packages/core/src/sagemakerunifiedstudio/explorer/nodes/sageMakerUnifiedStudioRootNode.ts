@@ -14,6 +14,7 @@ import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
 import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
@@ -625,6 +626,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             // Handle network/API failures
             logger.error('Failed to select project: %s', error.message)
             void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
+            await handleCredExpiredError(err)
         }
     })
 }

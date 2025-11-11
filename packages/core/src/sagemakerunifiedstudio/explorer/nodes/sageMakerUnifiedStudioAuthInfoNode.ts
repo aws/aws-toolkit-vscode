@@ -29,6 +29,9 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         this.authProvider.onDidChange(() => {
             this.onDidChangeEmitter.fire()
         })
+        this.authProvider.onDidChangeActiveConnection(() => {
+            this.onDidChangeEmitter.fire()
+        })
     }
 
     public async getTreeItem(): Promise<vscode.TreeItem> {

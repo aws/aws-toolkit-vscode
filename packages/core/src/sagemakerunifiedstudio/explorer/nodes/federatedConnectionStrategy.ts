@@ -13,6 +13,7 @@ import { getIcon } from '../../../shared/icons'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { createErrorItem, createColumnTreeItem } from './utils'
 import { NO_DATA_FOUND_MESSAGE, NodeType } from './types'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 
 /**
  * Creates a federated connection node
@@ -48,6 +49,7 @@ export async function createFederatedConnectionNode(
                 logger.error(`Failed to get federated entities: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [
                     createErrorItem(`Failed to load entities - ${errorMessage}`, 'entities', connection.connectionId),
                 ]
@@ -170,6 +172,7 @@ function createGlueEntityNode(
                 logger.error(`Failed to get children for entity ${entity.EntityName}: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [
                     createErrorItem(
                         `Failed to load children - ${errorMessage}`,

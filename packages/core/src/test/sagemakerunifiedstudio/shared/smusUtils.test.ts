@@ -13,6 +13,7 @@ import {
     validateCredentialFields,
     extractAccountIdFromSageMakerArn,
     extractAccountIdFromResourceMetadata,
+    isCredentialExpirationError,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
@@ -701,5 +702,41 @@ describe('extractAccountIdFromResourceMetadata', () => {
                 )
             }
         )
+    })
+})
+
+describe('isCredentialExpirationError', () => {
+    describe('should return true for credential expiration errors', () => {
+        it('should detect ExpiredTokenException by error name (exact match)', () => {
+            const error = {
+                name: 'ExpiredTokenException',
+                message: 'Token has expired',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, true)
+        })
+
+        it('should detect ExpiredTokenException in error message', () => {
+            const error = {
+                name: 'SomeOtherError',
+                message: 'Request failed with ExpiredTokenException: Token has expired',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, true)
+        })
+    })
+
+    describe('should return false for non-expiration errors', () => {
+        it('should return false for different error names', () => {
+            const error = {
+                name: 'AccessDeniedException',
+                message: 'Access denied',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, false)
+        })
     })
 })

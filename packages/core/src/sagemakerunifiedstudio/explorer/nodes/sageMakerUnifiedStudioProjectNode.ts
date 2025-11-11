@@ -19,6 +19,7 @@ import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { ToolkitError } from '../../../shared/errors'
 import { SmusErrorCodes } from '../../shared/smusUtils'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { SmusIamConnection } from '../../auth/model'
 import { createDZClientBaseOnDomainMode } from './utils'
 
@@ -149,6 +150,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 return [dataNode, computeNode]
             } catch (err) {
                 this.logger.error('Failed to select project: %s', (err as Error).message)
+                await handleCredExpiredError(err)
                 throw err
             }
         })

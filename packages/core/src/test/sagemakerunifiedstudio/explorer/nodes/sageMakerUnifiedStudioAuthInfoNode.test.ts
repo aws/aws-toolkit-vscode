@@ -39,6 +39,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             onDidChange: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
+            onDidChangeActiveConnection: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
             getDomainId: sinon.stub().callsFake(() => {
                 return currentActiveConnection?.domainId
             }),

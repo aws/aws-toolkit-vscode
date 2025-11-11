@@ -23,6 +23,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { recordSpaceTelemetry } from '../shared/telemetry'
 import { DataZoneClient } from '../shared/client/datazoneClient'
+import { handleCredExpiredError } from '../shared/credentialExpiryHandler'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -80,8 +81,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 return
             }
             await telemetry.smus_stopSpace.run(async (span) => {
-                await recordSpaceTelemetry(span, node)
-                await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+                try {
+                    await recordSpaceTelemetry(span, node)
+                    await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+                } catch (err) {
+                    await handleCredExpiredError(err)
+                    throw err
+                }
             })
         }),
 
@@ -92,8 +98,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                     return
                 }
                 await telemetry.smus_openRemoteConnection.run(async (span) => {
-                    await recordSpaceTelemetry(span, node)
-                    await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                    try {
+                        await recordSpaceTelemetry(span, node)
+                        await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                    } catch (err) {
+                        await handleCredExpiredError(err)
+                        throw err
+                    }
                 })
             }
         ),

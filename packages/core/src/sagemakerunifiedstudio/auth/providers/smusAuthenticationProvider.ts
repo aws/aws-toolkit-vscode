@@ -1500,4 +1500,29 @@ export class SmusAuthenticationProvider {
     public static fromContext() {
         return (this.#instance ??= new this())
     }
+
+    public async invalidateConnection(): Promise<void> {
+        // When in SMUS space, the extension is already running in projet context and sign in is not needed
+        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+            return
+        }
+
+        if (!this.activeConnection) {
+            return
+        }
+
+        // For IAM connections, actively validate credentials
+        // No action needed for SSO as the connection is automatically updated
+        if (isSmusIamConnection(this.activeConnection)) {
+            try {
+                const validation = await this.validateIamProfile(this.activeConnection.profileName)
+                await this.auth.updateConnectionState(
+                    this.activeConnection.id,
+                    validation.isValid ? 'valid' : 'invalid'
+                )
+            } catch {
+                await this.auth.updateConnectionState(this.activeConnection.id, 'invalid')
+            }
+        }
+    }
 }

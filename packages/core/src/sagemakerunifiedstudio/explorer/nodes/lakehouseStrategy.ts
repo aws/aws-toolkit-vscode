@@ -21,6 +21,7 @@ import {
     DatabaseObjects,
     NO_DATA_FOUND_MESSAGE,
 } from './types'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import {
     getLabel,
     isLeafNode,
@@ -82,6 +83,7 @@ export class LakehouseNode implements TreeNode {
 
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as LakehouseNode]
             }
         }
@@ -177,15 +179,19 @@ export function createLakehouseConnectionNode(
                     const errors: LakehouseNode[] = []
 
                     if (awsDataCatalogResult.status === 'rejected') {
-                        const errorMessage = (awsDataCatalogResult.reason as Error).message
+                        const error = awsDataCatalogResult.reason as Error
+                        const errorMessage = error.message
                         void vscode.window.showErrorMessage(errorMessage)
                         errors.push(createErrorItem(errorMessage, 'aws-data-catalog', node.id) as LakehouseNode)
+                        await handleCredExpiredError(error)
                     }
 
                     if (catalogsResult.status === 'rejected') {
-                        const errorMessage = (catalogsResult.reason as Error).message
+                        const error = catalogsResult.reason as Error
+                        const errorMessage = error.message
                         void vscode.window.showErrorMessage(errorMessage)
                         errors.push(createErrorItem(errorMessage, 'catalogs', node.id) as LakehouseNode)
+                        await handleCredExpiredError(error)
                     }
 
                     const allNodes = [...awsDataCatalog, ...apiCatalogs, ...errors]
@@ -196,6 +202,7 @@ export function createLakehouseConnectionNode(
                     logger.error(`Failed to get Lakehouse catalogs: ${(err as Error).message}`)
                     const errorMessage = (err as Error).message
                     void vscode.window.showErrorMessage(errorMessage)
+                    await handleCredExpiredError(err)
                     return [createErrorItem(errorMessage, 'lakehouse-catalogs', node.id) as LakehouseNode]
                 }
             })
@@ -410,6 +417,7 @@ function createCatalogNode(
                       logger.error(`Failed to get databases for catalog ${catalogId}: ${(err as Error).message}`)
                       const errorMessage = (err as Error).message
                       void vscode.window.showErrorMessage(errorMessage)
+                      await handleCredExpiredError(err)
                       return [createErrorItem(errorMessage, 'catalog-databases', node.id) as LakehouseNode]
                   }
               }
@@ -483,6 +491,7 @@ function createDatabaseNode(
                 logger.error(`Failed to get tables for database ${databaseName}: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'database-tables', node.id) as LakehouseNode]
             }
         }
@@ -530,6 +539,7 @@ function createTableNode(
                     : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             } catch (err) {
                 logger.error(`Failed to get columns for table ${tableName}: ${(err as Error).message}`)
+                await handleCredExpiredError(err)
                 return []
             }
         }

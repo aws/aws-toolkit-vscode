@@ -23,6 +23,7 @@ import {
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 
@@ -72,6 +73,7 @@ export class RedshiftNode implements TreeNode {
 
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as RedshiftNode]
             }
         }
@@ -209,9 +211,11 @@ export function createRedshiftConnectionNode(
                 // Add database nodes
                 if (filteredDatabases.length === 0) {
                     if (databasesResult.status === 'rejected') {
+                        const error = databasesResult.reason as Error
                         const errorMessage = `Failed to fetch databases - ${databasesResult.reason?.message || databasesResult.reason}.`
                         void vscode.window.showErrorMessage(errorMessage)
                         allNodes.push(createErrorItem(errorMessage, 'databases', node.id) as RedshiftNode)
+                        await handleCredExpiredError(error)
                     } else {
                         allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
                     }
@@ -226,9 +230,11 @@ export function createRedshiftConnectionNode(
                 // Add catalog nodes
                 if (filteredCatalogs.length === 0) {
                     if (catalogsResult.status === 'rejected') {
+                        const error = catalogsResult.reason as Error
                         const errorMessage = `Failed to fetch catalogs - ${catalogsResult.reason?.message || catalogsResult.reason}`
                         void vscode.window.showErrorMessage(errorMessage)
                         allNodes.push(createErrorItem(errorMessage, 'catalogs', node.id) as RedshiftNode)
+                        await handleCredExpiredError(error)
                     } else {
                         allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
                     }
@@ -385,6 +391,7 @@ function createDatabaseNode(
                 logger.error(`Failed to get schemas: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'schemas', node.id) as RedshiftNode]
             }
         }
@@ -522,6 +529,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                 logger.error(`Failed to get schema contents: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'schema-contents', node.id) as RedshiftNode]
             }
         }
@@ -690,6 +698,7 @@ function createObjectNode(
                 logger.error(`Failed to get columns: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'columns', node.id) as RedshiftNode]
             }
         }
@@ -871,6 +880,7 @@ function createCatalogDatabaseNode(
             } catch (err) {
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'catalog-tables', node.id) as RedshiftNode]
             }
         }
@@ -968,6 +978,7 @@ function createCatalogTableNode(
             } catch (err) {
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'catalog-columns', node.id) as RedshiftNode]
             }
         }
@@ -1031,6 +1042,7 @@ function createCatalogNode(
             } catch (err) {
                 const errorMessage = (err as Error).message
                 void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err)
                 return [createErrorItem(errorMessage, 'catalog-databases', node.id) as RedshiftNode]
             }
         }

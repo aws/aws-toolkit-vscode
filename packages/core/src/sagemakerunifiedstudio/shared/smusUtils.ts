@@ -564,3 +564,42 @@ export function convertToToolkitCredentialProvider(
         isAvailable: () => Promise.resolve(true),
     }
 }
+
+/**
+ * Checks if an error indicates credential/token expiration
+ *
+ * @param error The error to check (can be any type)
+ * @returns true if the error indicates expired credentials, false otherwise
+ *
+ */
+export function isCredentialExpirationError(error: any): boolean {
+    if (!error) {
+        return false
+    }
+
+    const errorName = (error.name || '') as string
+    const errorMessage = (error.message || '') as string
+    const errorNameLower = errorName.toLowerCase()
+    const errorMessageLower = errorMessage.toLowerCase()
+
+    const expirationErrorNames = ['ExpiredTokenException']
+
+    const expirationErrorMessages = ['The security token included in the request is expired']
+
+    // Return true if error name matches any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((name) => name.toLowerCase() === errorNameLower)) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((errorName) => errorMessageLower.includes(errorName.toLowerCase()))) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error messages
+    if (expirationErrorMessages.some((keyword) => errorMessageLower.includes(keyword.toLowerCase()))) {
+        return true
+    }
+
+    return false
+}
