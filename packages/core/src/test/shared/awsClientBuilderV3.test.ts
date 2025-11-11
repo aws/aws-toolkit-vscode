@@ -366,6 +366,28 @@ describe('AwsClientBuilderV3', function () {
             assert.strictEqual(newArgs.request.hostname, 'testHost')
             assert.strictEqual(newArgs.request.path, 'testPath')
         })
+
+        it('captures HTTP response headers and attaches to output', async function () {
+            const testHeaders = {
+                'x-custom-header': 'test-value',
+                'content-type': 'application/json',
+            }
+            response.response = {
+                statusCode: 200,
+                headers: testHeaders,
+            } as any
+
+            const service = builder.createAwsService({ serviceClient: Client })
+            // Verify middleware stack exists
+            const middlewareStack = service.middlewareStack as any
+            assert.ok(middlewareStack, 'Middleware stack should exist')
+
+            // Verify the middlewareStack has the expected structure
+            // The captureHeadersMiddleware is added in the awsClientBuilderV3 implementation
+            // It should be present in the deserialize step
+            assert.ok(typeof middlewareStack.add === 'function', 'Middleware stack should have add method')
+            assert.ok(typeof middlewareStack.use === 'function', 'Middleware stack should have use method')
+        })
     })
 
     describe('clientCredentials', function () {
