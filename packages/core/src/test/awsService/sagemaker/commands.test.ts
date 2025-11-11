@@ -59,6 +59,7 @@ describe('SageMaker Commands', () => {
                         AppName: 'default',
                     },
                     SpaceSettingsSummary: {
+                        AppType: 'JupyterLab',
                         RemoteAccess: 'DISABLED',
                     },
                 },
