@@ -355,6 +355,11 @@ export class SmusAuthenticationProvider {
 
         const profiles = await loadSharedCredentialsProfiles()
         const profile = profiles[savedProfileName]
+        if (!profile) {
+            logger.debug(`SMUS: No profile found with name: ${savedProfileName}`)
+            await this.secondaryAuth.restoreConnection()
+            return
+        }
         const region = profile.region || 'not-set'
 
         const validation = await this.validateIamProfile(savedProfileName)

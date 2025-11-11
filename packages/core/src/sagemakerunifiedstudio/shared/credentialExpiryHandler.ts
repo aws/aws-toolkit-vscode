@@ -16,7 +16,8 @@ import { SmusAuthenticationProvider } from '../auth/providers/smusAuthentication
  */
 export async function handleCredExpiredError(err: any): Promise<void> {
     if (isCredentialExpirationError(err)) {
-        const authProvider = SmusAuthenticationProvider.fromContext()
-        await authProvider.invalidateConnection()
+        const smusAuthProvider = SmusAuthenticationProvider.fromContext()
+        await smusAuthProvider.invalidateConnection()
+        smusAuthProvider.dispose()
     }
 }
