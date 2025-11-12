@@ -12,7 +12,7 @@ import {
     TokenIdentity,
     TokenIdentityProvider,
 } from '@smithy/types'
-import { getUserAgent } from './telemetry/util'
+import { getUserAgentPairs } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
     BuildHandler,
@@ -37,7 +37,6 @@ import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry/telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
-import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
@@ -73,6 +72,7 @@ export interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
     userAgent: UserAgent
+    customUserAgent: string | UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
         handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
@@ -155,8 +155,8 @@ export class AWSClientBuilderV3 {
             opt.region = serviceOptions.region
         }
 
-        if (!opt.userAgent && userAgent) {
-            opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        if (!opt.customUserAgent && userAgent) {
+            opt.customUserAgent = getUserAgentPairs({ includePlatform: true, includeClientId: true })
         }
 
         if (!opt.retryStrategy) {
