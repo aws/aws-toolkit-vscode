@@ -16,10 +16,19 @@ import _ from 'lodash'
 import { prepareDevEnvConnection, tryRemoteConnection } from './model'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
+import { AccessDeniedException } from '@amzn/sagemaker-client'
 import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { RemoteSessionError } from '../../shared/remoteSession'
-import { ConnectFromRemoteWorkspaceMessage, InstanceTypeError } from './constants'
+import {
+    ConnectFromRemoteWorkspaceMessage,
+    InstanceTypeError,
+    InstanceTypeInsufficientMemory,
+    InstanceTypeInsufficientMemoryMessage,
+    RemoteAccess,
+    RemoteAccessRequiredMessage,
+    SpaceStatus,
+} from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 
 const localize = nls.loadMessageBundle()
@@ -136,10 +145,10 @@ export async function stopSpace(
     sageMakerClient?: SagemakerClient
 ) {
     await tryRefreshNode(node)
-    if (node.getStatus() === 'Stopped' || node.getStatus() === 'Stopping') {
+    if (node.getStatus() === SpaceStatus.STOPPED || node.getStatus() === SpaceStatus.STOPPING) {
         void vscode.window.showWarningMessage(`Space ${node.spaceApp.SpaceName} is already in Stopped/Stopping state.`)
         return
-    } else if (node.getStatus() === 'Starting') {
+    } else if (node.getStatus() === SpaceStatus.STARTING) {
         void vscode.window.showWarningMessage(
             `Space ${node.spaceApp.SpaceName} is in Starting state. Wait until it is Running to attempt stop again.`
         )
@@ -162,12 +171,12 @@ export async function stopSpace(
         await client.deleteApp({
             DomainId: node.spaceApp.DomainId!,
             SpaceName: spaceName,
-            AppType: node.spaceApp.App!.AppType!,
+            AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
             AppName: node.spaceApp.App?.AppName,
         })
     } catch (err) {
         const error = err as Error
-        if (error.name === 'AccessDeniedException') {
+        if (error instanceof AccessDeniedException) {
             throw new ToolkitError('You do not have permission to stop spaces. Please contact your administrator', {
                 cause: error,
                 code: error.name,
@@ -195,47 +204,167 @@ export async function openRemoteConnect(
     const spaceName = node.spaceApp.SpaceName!
     await tryRefreshNode(node)
 
-    // for Stopped SM spaces - check instance type before showing progress
-    if (node.getStatus() === 'Stopped') {
-        //  In case of SMUS, we pass in a SM Client and for SM AI, it creates a new SM Client.
-        const client = sageMakerClient ? sageMakerClient : new SagemakerClient(node.regionCode)
+    const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
+    const nodeStatus = node.getStatus()
 
-        try {
-            await client.startSpace(spaceName, node.spaceApp.DomainId!)
-            await tryRefreshNode(node)
-            const appType = node.spaceApp.SpaceSettingsSummary?.AppType
-            if (!appType) {
-                throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.', {
-                    code: 'undefinedAppType',
-                })
-            }
+    // Route to appropriate handler based on space state
+    if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
+        return handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
+    } else if (nodeStatus === SpaceStatus.STOPPED) {
+        return handleStoppedSpace(node, ctx, spaceName, sageMakerClient)
+    } else if (nodeStatus === SpaceStatus.RUNNING) {
+        return handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
+    }
+}
 
-            // Only start showing progress after instance type validation
-            return await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    cancellable: false,
-                    title: `Connecting to ${spaceName}`,
-                },
-                async (progress) => {
-                    progress.report({ message: 'Starting the space.' })
-                    await client.waitForAppInService(node.spaceApp.DomainId!, spaceName, appType)
-                    await tryRemoteConnection(node, ctx, progress)
-                }
-            )
-        } catch (err: any) {
-            // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
-            // just return without showing progress
-            if (err.code === InstanceTypeError) {
-                return
+/**
+ * Checks if an instance type upgrade will be needed for remote access
+ */
+export async function checkInstanceTypeUpgradeNeeded(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    sageMakerClient?: SagemakerClient
+): Promise<{ upgradeNeeded: boolean; currentType?: string; recommendedType?: string }> {
+    const client = sageMakerClient || new SagemakerClient(node.regionCode)
+
+    try {
+        const spaceDetails = await client.describeSpace({
+            DomainId: node.spaceApp.DomainId!,
+            SpaceName: node.spaceApp.SpaceName!,
+        })
+
+        const appType = spaceDetails.SpaceSettings!.AppType!
+
+        // Get current instance type
+        const currentResourceSpec =
+            appType === 'JupyterLab'
+                ? spaceDetails.SpaceSettings!.JupyterLabAppSettings?.DefaultResourceSpec
+                : spaceDetails.SpaceSettings!.CodeEditorAppSettings?.DefaultResourceSpec
+
+        const currentInstanceType = currentResourceSpec?.InstanceType
+
+        // Check if upgrade is needed
+        if (currentInstanceType && currentInstanceType in InstanceTypeInsufficientMemory) {
+            // Current type has insufficient memory
+            return {
+                upgradeNeeded: true,
+                currentType: currentInstanceType,
+                recommendedType: InstanceTypeInsufficientMemory[currentInstanceType],
             }
-            throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
-                cause: err as Error,
-                code: err.code,
+        }
+
+        return { upgradeNeeded: false, currentType: currentInstanceType }
+    } catch (err) {
+        const error = err as Error
+        if (error instanceof AccessDeniedException) {
+            throw new ToolkitError('You do not have permission to describe spaces. Please contact your administrator', {
+                cause: error,
+                code: error.name,
             })
         }
-    } else if (node.getStatus() === 'Running') {
-        // For running spaces, show progress
+        throw err
+    }
+}
+
+/**
+ * Handles connecting to a running space with disabled remote access
+ * Requires stopping the space, enabling remote access, and restarting
+ */
+async function handleRunningSpaceWithDisabledAccess(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext,
+    spaceName: string,
+    sageMakerClient?: SagemakerClient
+) {
+    // Check if instance type upgrade will be needed
+    const instanceTypeInfo = await checkInstanceTypeUpgradeNeeded(node, sageMakerClient)
+
+    let prompt: string
+    if (instanceTypeInfo.upgradeNeeded) {
+        prompt = InstanceTypeInsufficientMemoryMessage(
+            spaceName,
+            instanceTypeInfo.currentType!,
+            instanceTypeInfo.recommendedType!
+        )
+    } else {
+        // Only remote access needs to be enabled
+        prompt = RemoteAccessRequiredMessage
+    }
+
+    const confirmed = await showConfirmationMessage({
+        prompt,
+        confirm: 'Restart and Connect',
+        cancel: 'Cancel',
+        type: 'warning',
+    })
+
+    if (!confirmed) {
+        return
+    }
+
+    // Enable remote access and connect
+    const client = sageMakerClient || new SagemakerClient(node.regionCode)
+
+    return await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+            title: `Connecting to ${spaceName}`,
+        },
+        async (progress) => {
+            try {
+                // Show initial progress message
+                progress.report({ message: 'Stopping the space' })
+
+                // Stop the running space
+                await client.deleteApp({
+                    DomainId: node.spaceApp.DomainId!,
+                    SpaceName: spaceName,
+                    AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
+                    AppName: node.spaceApp.App?.AppName,
+                })
+
+                // Update progress message
+                progress.report({ message: 'Starting the space' })
+
+                // Start the space with remote access enabled (skip prompts since user already consented)
+                await client.startSpace(spaceName, node.spaceApp.DomainId!, true)
+                await tryRefreshNode(node)
+                await client.waitForAppInService(
+                    node.spaceApp.DomainId!,
+                    spaceName,
+                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                )
+                await tryRemoteConnection(node, ctx, progress)
+            } catch (err: any) {
+                // Handle user declining instance type upgrade
+                if (err.code === InstanceTypeError) {
+                    return
+                }
+                throw new ToolkitError(`Remote connection failed: ${err.message}`, {
+                    cause: err,
+                    code: err.code,
+                })
+            }
+        }
+    )
+}
+
+/**
+ * Handles connecting to a stopped space
+ * Starts the space and connects (remote access enabled automatically if needed)
+ */
+async function handleStoppedSpace(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext,
+    spaceName: string,
+    sageMakerClient?: SagemakerClient
+) {
+    const client = sageMakerClient || new SagemakerClient(node.regionCode)
+
+    try {
+        await client.startSpace(spaceName, node.spaceApp.DomainId!)
+        await tryRefreshNode(node)
+
         return await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -243,8 +372,45 @@ export async function openRemoteConnect(
                 title: `Connecting to ${spaceName}`,
             },
             async (progress) => {
+                progress.report({ message: 'Starting the space' })
+                await client.waitForAppInService(
+                    node.spaceApp.DomainId!,
+                    spaceName,
+                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                )
                 await tryRemoteConnection(node, ctx, progress)
             }
         )
+    } catch (err: any) {
+        // Handle user declining instance type upgrade
+        if (err.code === InstanceTypeError) {
+            return
+        }
+        throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
+            cause: err as Error,
+            code: err.code,
+        })
     }
+}
+
+/**
+ * Handles connecting to a running space with enabled remote access
+ * Direct connection without any space modifications
+ */
+async function handleRunningSpaceWithEnabledAccess(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    ctx: vscode.ExtensionContext,
+    spaceName: string,
+    sageMakerClient?: SagemakerClient
+) {
+    return await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+            title: `Connecting to ${spaceName}`,
+        },
+        async (progress) => {
+            await tryRemoteConnection(node, ctx, progress)
+        }
+    )
 }

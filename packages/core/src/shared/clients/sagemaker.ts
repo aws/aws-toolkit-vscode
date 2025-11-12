@@ -44,11 +44,13 @@ import {
     InstanceTypeInsufficientMemory,
     InstanceTypeInsufficientMemoryMessage,
     InstanceTypeNotSelectedMessage,
+    RemoteAccess,
 } from '../../awsService/sagemaker/constants'
 import { getDomainSpaceKey } from '../../awsService/sagemaker/utils'
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
-import { yes, no, continueText, cancel } from '../localizedText'
+import { continueText, cancel } from '../localizedText'
+import { showConfirmationMessage } from '../utilities/messages'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 
@@ -126,7 +128,14 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         return this.makeRequest(DeleteAppCommand, request)
     }
 
-    public async startSpace(spaceName: string, domainId: string) {
+    public async listAppForSpace(domainId: string, spaceName: string): Promise<AppDetails | undefined> {
+        const appsList = await this.listApps({ DomainIdEquals: domainId, SpaceNameEquals: spaceName })
+            .flatten()
+            .promise()
+        return appsList[0] // At most one App for one SagemakerSpace
+    }
+
+    public async startSpace(spaceName: string, domainId: string, skipInstanceTypePrompts: boolean = false) {
         let spaceDetails: DescribeSpaceCommandOutput
 
         // Get existing space details
@@ -155,40 +164,53 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
         // Is InstanceType defined and has enough memory?
         if (instanceType && instanceType in InstanceTypeInsufficientMemory) {
-            // Prompt user to select one with sufficient memory (1 level up from their chosen one)
-            const response = await vscode.window.showErrorMessage(
-                InstanceTypeInsufficientMemoryMessage(
-                    spaceDetails.SpaceName || '',
-                    instanceType,
-                    InstanceTypeInsufficientMemory[instanceType]
-                ),
-                yes,
-                no
-            )
+            if (skipInstanceTypePrompts) {
+                // User already consented, upgrade automatically
+                instanceType = InstanceTypeInsufficientMemory[instanceType]
+            } else {
+                // Prompt user to select one with sufficient memory (1 level up from their chosen one)
+                const confirmed = await showConfirmationMessage({
+                    prompt: InstanceTypeInsufficientMemoryMessage(
+                        spaceDetails.SpaceName || '',
+                        instanceType,
+                        InstanceTypeInsufficientMemory[instanceType]
+                    ),
+                    confirm: 'Restart and Connect',
+                    cancel: 'Cancel',
+                    type: 'warning',
+                })
 
-            if (response === no) {
-                throw new ToolkitError('InstanceType has insufficient memory.', { code: InstanceTypeError })
+                if (!confirmed) {
+                    throw new ToolkitError('InstanceType has insufficient memory.', { code: InstanceTypeError })
+                }
+
+                instanceType = InstanceTypeInsufficientMemory[instanceType]
             }
-
-            instanceType = InstanceTypeInsufficientMemory[instanceType]
         } else if (!instanceType) {
-            // Prompt user to select the minimum supported instance type
-            const response = await vscode.window.showErrorMessage(
-                InstanceTypeNotSelectedMessage(spaceDetails.SpaceName || ''),
-                continueText,
-                cancel
-            )
+            if (skipInstanceTypePrompts) {
+                // User already consented, use minimum
+                instanceType = InstanceTypeMinimum
+            } else {
+                // Prompt user to select the minimum supported instance type
+                const confirmed = await showConfirmationMessage({
+                    prompt: InstanceTypeNotSelectedMessage(spaceDetails.SpaceName || ''),
+                    confirm: continueText,
+                    cancel: cancel,
+                    type: 'warning',
+                })
 
-            if (response === cancel) {
-                throw new ToolkitError('InstanceType not defined.', { code: InstanceTypeError })
+                if (!confirmed) {
+                    throw new ToolkitError('InstanceType not defined.', { code: InstanceTypeError })
+                }
+
+                instanceType = InstanceTypeMinimum
             }
-
-            instanceType = InstanceTypeMinimum
         }
 
         // First, update the space if needed
         const needsRemoteAccess =
-            !spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED'
+            !spaceDetails.SpaceSettings?.RemoteAccess ||
+            spaceDetails.SpaceSettings?.RemoteAccess === RemoteAccess.DISABLED
         const instanceTypeChanged = requestedResourceSpec?.InstanceType !== instanceType
 
         if (needsRemoteAccess || instanceTypeChanged) {
@@ -196,7 +218,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 DomainId: domainId,
                 SpaceName: spaceName,
                 SpaceSettings: {
-                    ...(needsRemoteAccess && { RemoteAccess: 'ENABLED' }),
+                    ...(needsRemoteAccess && { RemoteAccess: RemoteAccess.ENABLED }),
                     ...(instanceTypeChanged && {
                         [appTypeSettingsMap[appType]]: {
                             DefaultResourceSpec: {

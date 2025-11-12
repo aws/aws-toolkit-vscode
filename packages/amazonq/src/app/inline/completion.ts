@@ -37,6 +37,7 @@ import {
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
     handleExtraBrackets,
+    InlineCompletionLoggingReason,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
@@ -429,6 +430,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    reason: InlineCompletionLoggingReason.IMPLICIT_REJECT,
                     firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: Date.now() - prevSession.requestStartTime,
                 }
