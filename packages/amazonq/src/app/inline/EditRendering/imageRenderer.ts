@@ -23,7 +23,7 @@ function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, sugges
 }
 
 const autoRejectEditCursorDistance = 25
-const maxPrefixRetryCharDiff = 7
+const maxPrefixRetryCharDiff = 5
 const docChangedHandlerDeboucneInMs = 750
 
 enum RejectReason {
