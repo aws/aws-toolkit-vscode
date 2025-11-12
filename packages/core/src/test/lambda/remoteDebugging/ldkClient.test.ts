@@ -434,9 +434,13 @@ describe('LdkClient', () => {
                 existingStub.restore()
             }
 
-            // Stub getUserAgent at the telemetryUtil level to return a known value
-            const getUserAgentStub = sandbox.stub(telemetryUtil, 'getUserAgent')
-            getUserAgentStub.returns('test-user-agent')
+            // Stub getUserAgentPairs at the telemetryUtil level to return known pairs
+            const getUserAgentPairsStub = sandbox.stub(telemetryUtil, 'getUserAgentPairs')
+            getUserAgentPairsStub.returns([
+                ['AWS-Toolkit-For-VSCode', 'testVersion'],
+                ['Visual-Studio-Code', '1.0.0'],
+                ['ClientId', 'test-client-id'],
+            ])
 
             // Stub the sdkClientBuilderV3 to capture the client options
             let capturedClientOptions: any
@@ -464,9 +468,14 @@ describe('LdkClient', () => {
             assert(createAwsServiceStub.called, 'Should call createAwsService')
             assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
             assert.deepStrictEqual(
-                capturedClientOptions.clientOptions.userAgent,
-                [['LAMBDA-DEBUG/1.0.0 test-user-agent']],
-                'Should include correct user-agent with LAMBDA-DEBUG prefix in Lambda API calls'
+                capturedClientOptions.clientOptions.customUserAgent,
+                [
+                    ['LAMBDA-DEBUG', '1.0.0'],
+                    ['AWS-Toolkit-For-VSCode', 'testVersion'],
+                    ['Visual-Studio-Code', '1.0.0'],
+                    ['ClientId', 'test-client-id'],
+                ],
+                'Should include correct customUserAgent pairs with LAMBDA-DEBUG prefix in Lambda API calls'
             )
         })
 
@@ -479,9 +488,13 @@ describe('LdkClient', () => {
                 existingStub.restore()
             }
 
-            // Stub getUserAgent to return a known value
-            const getUserAgentStub = sandbox.stub(telemetryUtil, 'getUserAgent')
-            getUserAgentStub.returns('test-user-agent')
+            // Stub getUserAgentPairs to return known pairs
+            const getUserAgentPairsStub = sandbox.stub(telemetryUtil, 'getUserAgentPairs')
+            getUserAgentPairsStub.returns([
+                ['AWS-Toolkit-For-VSCode', 'testVersion'],
+                ['Visual-Studio-Code', '1.0.0'],
+                ['ClientId', 'test-client-id'],
+            ])
 
             // Stub the sdkClientBuilderV3 to capture the client options
             let capturedClientOptions: any
@@ -503,9 +516,14 @@ describe('LdkClient', () => {
             assert(createAwsServiceStub.calledOnce, 'Should call createAwsService once')
             assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
             assert.deepStrictEqual(
-                capturedClientOptions.clientOptions.userAgent,
-                [['LAMBDA-DEBUG/1.0.0 test-user-agent']],
-                'Should include correct user-agent with LAMBDA-DEBUG prefix'
+                capturedClientOptions.clientOptions.customUserAgent,
+                [
+                    ['LAMBDA-DEBUG', '1.0.0'],
+                    ['AWS-Toolkit-For-VSCode', 'testVersion'],
+                    ['Visual-Studio-Code', '1.0.0'],
+                    ['ClientId', 'test-client-id'],
+                ],
+                'Should include correct customUserAgent pairs with LAMBDA-DEBUG prefix'
             )
         })
     })
