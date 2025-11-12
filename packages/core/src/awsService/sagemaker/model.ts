@@ -90,9 +90,6 @@ export async function prepareDevEnvConnection(
     await startLocalServer(ctx)
     await removeKnownHost(hostname)
 
-    // Note: SSH config validation is done in commands.ts before calling this function
-    // to ensure users can fix config issues before the progress dialog appears
-
     // set envirionment variables
     const vars = getSmSsmEnv(ssm, path.join(ctx.globalStorageUri.fsPath, 'sagemaker-local-server-info.json'))
     logger.info(`connect script logs at ${vars.LOG_FILE_LOCATION}`)

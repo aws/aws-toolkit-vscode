@@ -85,10 +85,15 @@ export class SshConfig {
     protected async matchSshSection() {
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
-            // Include stderr in error message
-            const errorMessage =
-                result.stderr || result.error?.message || `ssh check against host failed: ${result.exitCode}`
-            return Result.err(new Error(errorMessage))
+            const errorMessage = result.stderr || `ssh check against host failed: ${result.exitCode}`
+
+            if (result.error) {
+                // System level error
+                return Result.err(ToolkitError.chain(result.error, errorMessage))
+            }
+
+            // SSH ran but returned error exit code (config error, validation failed)
+            return Result.err(new ToolkitError(errorMessage))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
         return Result.ok(matches?.[0])
@@ -198,21 +203,8 @@ Host ${this.configHostName}
     `
     }
 
-    private getSageMakerSSHConfig(proxyCommand: string): string {
-        return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host ${this.configHostName}
-    ForwardAgent yes
-    AddKeysToAgent yes
-    StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCommand}
-    `
-    }
-
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.scriptPrefix === 'sagemaker_connect') {
-            return `${this.getSageMakerSSHConfig(proxyCommand)}`
-        } else if (this.keyPath) {
+        if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)

@@ -223,6 +223,9 @@ export async function openRemoteConnect(
         return
     }
 
+    // Validate SSH config before attempting connection
+    await validateSshConfig()
+
     const spaceName = node.spaceApp.SpaceName!
     await tryRefreshNode(node)
 
@@ -323,9 +326,6 @@ async function handleRunningSpaceWithDisabledAccess(
         return
     }
 
-    // Validate SSH config before showing progress
-    await validateSshConfig()
-
     // Enable remote access and connect
     const client = sageMakerClient || new SagemakerClient(node.regionCode)
 
@@ -384,9 +384,6 @@ async function handleStoppedSpace(
     spaceName: string,
     sageMakerClient?: SagemakerClient
 ) {
-    // Validate SSH config before showing progress
-    await validateSshConfig()
-
     const client = sageMakerClient || new SagemakerClient(node.regionCode)
 
     try {
@@ -431,9 +428,6 @@ async function handleRunningSpaceWithEnabledAccess(
     spaceName: string,
     sageMakerClient?: SagemakerClient
 ) {
-    // Validate SSH config before showing progress
-    await validateSshConfig()
-
     return await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,

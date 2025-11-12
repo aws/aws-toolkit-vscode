@@ -15,6 +15,13 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getSshConfigPath } from '../../shared/extensions/ssh'
 import { fileExists, readFileAsString } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
+import {
+    SshConfigUpdateDeclinedMessage,
+    SshConfigOpenedForEditMessage,
+    SshConfigSyntaxErrorMessage,
+    SshConfigRemovalFailedMessage,
+    SshConfigUpdateFailedMessage,
+} from './constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -24,13 +31,15 @@ const localize = nls.loadMessageBundle()
  */
 export class SageMakerSshConfig extends SshConfig {
     public override async verifySSHHost(proxyCommand: string) {
+        // Read the current state of SSH config
         const configStateResult = await this.readSshConfigState(proxyCommand)
 
-        // If reading config state failed, return the error
+        // If reading config state failed, return the error result
         if (configStateResult.isErr()) {
             return configStateResult
         }
 
+        // Extract the state if section exists and if it's outdated
         const configState = configStateResult.ok()
 
         // Check if section exists and is outdated
@@ -45,56 +54,22 @@ export class SageMakerSshConfig extends SshConfig {
                     // Write the new section
                     await this.writeSectionToConfig(proxyCommand)
                     getLogger().info('SSH config: Successfully updated sm_* section')
-                    // Update state to reflect that section now exists and is up to date
+
+                    // Update state snapshot to reflect the changes
                     configState.hasSshSection = true
                     configState.isOutdated = false
                 } catch (e) {
-                    // Failed to update, prompt user to fix manually
-                    try {
-                        await this.promptToFixUpdateFailure(e instanceof Error ? e : undefined)
-                        const configOpenedError = new ToolkitError(
-                            `SSH configuration file opened for editing. Fix the issue and try connecting again.`,
-                            {
-                                code: 'SshConfigOpenedForEdit',
-                                details: { configPath: getSshConfigPath() },
-                            }
-                        )
-                        return Result.err(configOpenedError)
-                    } catch (promptError) {
-                        // User cancelled opening the file
-                        if (promptError instanceof CancellationError) {
-                            return Result.err(
-                                ToolkitError.chain(
-                                    e,
-                                    `Failed to update SSH config section. Fix your ~/.ssh/config file manually or remove the outdated ${this.configHostName} section.`,
-                                    {
-                                        code: 'SshConfigUpdateFailed',
-                                        details: {
-                                            configHostName: this.configHostName,
-                                            configPath: getSshConfigPath(),
-                                        },
-                                    }
-                                )
-                            )
-                        }
-                        return Result.err(
-                            ToolkitError.chain(
-                                promptError,
-                                'Unexpected error while handling SSH config update failure',
-                                {
-                                    code: 'SshConfigErrorHandlingFailed',
-                                }
-                            )
-                        )
-                    }
+                    // Failed to update, handle the failure
+                    return await this.handleSshConfigUpdateFailure(e)
                 }
             } else {
-                // User declined
+                // User declined the auto-update
+                const configPath = getSshConfigPath()
                 const userCancelledError = new ToolkitError(
-                    `SSH configuration has an outdated ${this.configHostName} section. Allow the toolkit to update it or fix your ~/.ssh/config file manually.`,
+                    SshConfigUpdateDeclinedMessage(this.configHostName, configPath),
                     {
                         code: 'SshConfigUpdateDeclined',
-                        details: { configHostName: this.configHostName },
+                        details: { configHostName: this.configHostName, configPath },
                     }
                 )
                 return Result.err(userCancelledError)
@@ -110,24 +85,19 @@ export class SageMakerSshConfig extends SshConfig {
                 // SM exists and is up-to-date but validation still failed means the error is elsewhere in the SSH config
                 try {
                     await this.promptOtherSshConfigError(sshError)
-                    const configOpenedError = new ToolkitError(
-                        `SSH configuration file opened for editing. Fix the syntax errors and try connecting again.`,
-                        {
-                            code: 'SshConfigOpenedForEdit',
-                            details: { configPath: getSshConfigPath() },
-                        }
-                    )
+                    const configOpenedError = new ToolkitError(SshConfigOpenedForEditMessage(), {
+                        code: 'SshConfigOpenedForEdit',
+                        details: { configPath: getSshConfigPath() },
+                    })
                     return Result.err(configOpenedError)
                 } catch (e) {
-                    // User cancelled
+                    // User cancelled the "Open SSH Config" prompt (from promptOtherSshConfigError)
                     if (e instanceof CancellationError) {
-                        const externalConfigError = new ToolkitError(
-                            `SSH configuration has syntax errors in your ~/.ssh/config file. Fix the configuration manually to enable remote connection.`,
-                            {
-                                code: 'SshConfigExternalError',
-                                details: { configPath: getSshConfigPath() },
-                            }
-                        )
+                        const configPath = getSshConfigPath()
+                        const externalConfigError = new ToolkitError(SshConfigSyntaxErrorMessage(configPath), {
+                            code: 'SshConfigExternalError',
+                            details: { configPath },
+                        })
                         return Result.err(externalConfigError)
                     }
                     return Result.err(
@@ -159,14 +129,21 @@ export class SageMakerSshConfig extends SshConfig {
     }
 
     /**
-     * Reads SSH config file and determines its state.
+     * Reads SSH config file once and determines its current state.
+     *
+     * State represents the current condition of the SSH config:
+     * - hasSshSection: Does the sm_* section exist in the file?
+     * - isOutdated: Is the section in an old/incorrect format?
+     * - existingSection: The actual content of the section (if it exists)
+     *
+     * @returns Result containing the state object or an error if file read fails
      */
     public async readSshConfigState(proxyCommand: string): Promise<
         Result<
             {
-                hasSshSection: boolean
-                isOutdated: boolean
-                existingSection?: string
+                hasSshSection: boolean // True if sm_* section exists
+                isOutdated: boolean // True if section needs updating
+                existingSection?: string // Current section content (optional)
             },
             ToolkitError
         >
@@ -234,11 +211,13 @@ export class SageMakerSshConfig extends SshConfig {
     public async promptToUpdateSshConfig(): Promise<boolean> {
         getLogger().warn(`SSH config section is outdated for ${this.configHostName}`)
 
+        const configPath = getSshConfigPath()
         const confirmTitle = localize(
             'AWS.sshConfig.confirm.updateSshConfig.title',
-            '{0} Toolkit will update the {1} section in ~/.ssh/config',
+            '{0} Toolkit will update the {1} section in {2}',
             getIdeProperties().company,
-            this.configHostName
+            this.configHostName,
+            configPath
         )
         const confirmText = localize('AWS.sshConfig.confirm.updateSshConfig.button', 'Update SSH config')
 
@@ -262,7 +241,8 @@ export class SageMakerSshConfig extends SshConfig {
 
         const message = localize(
             'AWS.sshConfig.error.updateFailed',
-            'Failed to update your ~/.ssh/config file automatically.{0}\n\nOpen the file to fix the issue manually.',
+            'Failed to update your {0} file automatically.{1}\n\nOpen the file to fix the issue manually.',
+            sshConfigPath,
             errorDetails
         )
 
@@ -297,7 +277,8 @@ export class SageMakerSshConfig extends SshConfig {
 
         const message = localize(
             'AWS.sshConfig.error.otherError',
-            'There is an error in your ~/.ssh/config file.{0}\n\nFix the error and try again.',
+            'There is an error in your {0} file.{1}\n\nFix the error and try again.',
+            sshConfigPath,
             errorDetails
         )
 
@@ -358,9 +339,61 @@ export class SageMakerSshConfig extends SshConfig {
 
             getLogger().info(`SSH config: Removed ${this.configHostName} section`)
         } catch (e) {
-            throw ToolkitError.chain(e, `Failed to remove SSH config section for ${this.configHostName}`, {
+            throw ToolkitError.chain(e, SshConfigRemovalFailedMessage(this.configHostName), {
                 code: 'SshConfigRemovalFailed',
             })
         }
+    }
+
+    /**
+     * Handles SSH config update failure by prompting user to fix manually.
+     */
+    private async handleSshConfigUpdateFailure(updateError: unknown): Promise<Result<void, ToolkitError>> {
+        try {
+            // Prompt user to open SSH config file to fix manually
+            await this.promptToFixUpdateFailure(updateError instanceof Error ? updateError : undefined)
+
+            // User opened the file
+            const configOpenedError = new ToolkitError(SshConfigOpenedForEditMessage(), {
+                code: 'SshConfigOpenedForEdit',
+                details: { configPath: getSshConfigPath() },
+            })
+            return Result.err(configOpenedError)
+        } catch (promptError) {
+            // User cancelled the "Open SSH Config" prompt (from promptToFixUpdateFailure)
+            if (promptError instanceof CancellationError) {
+                const configPath = getSshConfigPath()
+                return Result.err(
+                    ToolkitError.chain(updateError, SshConfigUpdateFailedMessage(configPath, this.configHostName), {
+                        code: 'SshConfigUpdateFailed',
+                        details: {
+                            configHostName: this.configHostName,
+                            configPath,
+                        },
+                    })
+                )
+            }
+
+            // Unexpected error during prompt
+            return Result.err(
+                ToolkitError.chain(promptError, 'Unexpected error while handling SSH config update failure', {
+                    code: 'SshConfigErrorHandlingFailed',
+                })
+            )
+        }
+    }
+
+    /**
+     * Creates SageMaker-specific SSH config section.
+     */
+    protected override createSSHConfigSection(proxyCommand: string): string {
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
+    `
     }
 }

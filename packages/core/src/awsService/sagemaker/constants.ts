@@ -45,3 +45,19 @@ export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
 
 export const RemoteAccessRequiredMessage =
     'This space requires remote access to be enabled.\nWould you like to restart the space and connect?\nAny unsaved work will be lost.'
+
+// SSH Configuration Error Messages
+export const SshConfigUpdateDeclinedMessage = (configHostName: string, configPath: string) =>
+    `SSH configuration has an outdated ${configHostName} section. Fix your ${configPath} file manually to enable remote connections.`
+
+export const SshConfigOpenedForEditMessage = () =>
+    `SSH configuration file opened for editing. Fix the issue and try connecting again.`
+
+export const SshConfigSyntaxErrorMessage = (configPath: string) =>
+    `SSH configuration has syntax errors in your ${configPath} file. Fix the configuration manually to enable remote connection.`
+
+export const SshConfigRemovalFailedMessage = (configHostName: string) =>
+    `Failed to remove SSH config section for ${configHostName}`
+
+export const SshConfigUpdateFailedMessage = (configPath: string, configHostName: string) =>
+    `Failed to update SSH config section. Fix your ${configPath} file manually or remove the outdated ${configHostName} section.`

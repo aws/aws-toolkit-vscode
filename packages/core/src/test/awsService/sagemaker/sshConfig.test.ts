@@ -12,6 +12,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import fs from '../../../shared/fs/fs'
 import { getTestWindow } from '../../shared/vscode/window'
+import { SshConfigOpenedForEditMessage } from '../../../awsService/sagemaker/constants'
 
 describe('SageMakerSshConfig', function () {
     let sandbox: sinon.SinonSandbox
@@ -472,7 +473,43 @@ Host sm_*
             const error = result.err()
             assert.ok(error instanceof ToolkitError)
             assert.strictEqual(error.code, 'SshConfigOpenedForEdit')
-            assert.ok(error.message.includes('Fix the issue and try connecting again'))
+            assert.strictEqual(error.message, SshConfigOpenedForEditMessage())
+        })
+    })
+
+    describe('createSSHConfigSection', function () {
+        /**
+         * Test: SageMaker SSH config format
+         * Expected: Contains SageMaker-specific directives (ForwardAgent, AddKeysToAgent, StrictHostKeyChecking)
+         *           Does NOT contain User '%r' (unlike CodeCatalyst)
+         */
+        it('creates SageMaker-specific SSH config section', function () {
+            // Access the protected method through type casting
+            const section = (config as any).createSSHConfigSection(testProxyCommand)
+
+            // Verify SageMaker-specific directives
+            assert.ok(section.includes('Host sm_'), 'Should include Host sm_*')
+            assert.ok(section.includes('ForwardAgent yes'), 'Should include ForwardAgent yes')
+            assert.ok(section.includes('AddKeysToAgent yes'), 'Should include AddKeysToAgent yes')
+            assert.ok(section.includes('StrictHostKeyChecking accept-new'), 'Should include StrictHostKeyChecking')
+            assert.ok(section.includes(`ProxyCommand ${testProxyCommand}`), 'Should include ProxyCommand')
+
+            // Verify it does NOT include CodeCatalyst-specific directives
+            assert.ok(!section.includes("User '%r'"), 'Should NOT include User directive (SageMaker-specific)')
+            assert.ok(!section.includes('IdentityFile'), 'Should NOT include IdentityFile (SageMaker-specific)')
+        })
+
+        /**
+         * Test: SSH config includes AWS Toolkit comment
+         * Expected: Section starts with AWS Toolkit comment for identification
+         */
+        it('includes AWS Toolkit comment in config section', function () {
+            const section = (config as any).createSSHConfigSection(testProxyCommand)
+
+            assert.ok(
+                section.includes('# Created by AWS Toolkit'),
+                'Should include AWS Toolkit comment for identification'
+            )
         })
     })
 })
