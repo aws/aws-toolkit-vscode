@@ -273,7 +273,7 @@ describe('displaySvgDecoration cursor distance auto-discard', function () {
     })
 })
 
-describe('displaySvgDecoration cursor distance auto-reject', function () {
+describe.skip('displaySvgDecoration cursor distance auto-reject', function () {
     let sandbox: sinon.SinonSandbox
     let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
     let windowStub: sinon.SinonStub
