@@ -41,7 +41,7 @@ import {
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
+import { Experiments, getContext, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
 import { EditsSuggestionSvg } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
@@ -347,6 +347,10 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     ): Promise<InlineCompletionItem[]> {
         if (vsCodeState.isCodeWhispererEditing) {
             getLogger().info('Q is editing, returning empty')
+            return []
+        }
+
+        if (getContext('aws.amazonq.editSuggestionActive') === true) {
             return []
         }
 
