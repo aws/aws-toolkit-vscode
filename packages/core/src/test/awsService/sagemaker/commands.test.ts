@@ -46,6 +46,7 @@ describe('SageMaker Commands', () => {
         let mockTryRefreshNode: sinon.SinonStub
         let mockTryRemoteConnection: sinon.SinonStub
         let mockIsRemoteWorkspace: sinon.SinonStub
+        let mockValidateSshConfig: sinon.SinonStub
         let openRemoteConnect: typeof openRemoteConnectStatic
 
         beforeEach(() => {
@@ -83,8 +84,68 @@ describe('SageMaker Commands', () => {
             )
             sandbox.replace(require('../../../shared/vscode/env'), 'isRemoteWorkspace', mockIsRemoteWorkspace)
 
+            // Mock SSH validation components BEFORE loading commands module
+            const mockFindSshPath = sandbox.stub().resolves('/usr/bin/ssh')
+            sandbox.replace(require('../../../shared/utilities/pathFind'), 'findSshPath', mockFindSshPath)
+
+            // Mock file system operations to prevent actual SSH config reading
+            const mockFileExists = sandbox.stub().resolves(false) // No SSH config file exists
+            sandbox.replace(require('../../../shared/filesystemUtilities'), 'fileExists', mockFileExists)
+
+            // Mock SageMakerSshConfig.ensureValid BEFORE loading commands module
+            const sshConfigModule = require('../../../awsService/sagemaker/sshConfig')
+            mockValidateSshConfig = sandbox.stub(sshConfigModule.SageMakerSshConfig.prototype, 'ensureValid')
+            mockValidateSshConfig.resolves({
+                isOk: () => true,
+                isErr: () => false,
+                ok: () => undefined,
+                unwrap: () => undefined,
+            })
+
+            // load the commands module
             const freshModule = require('../../../awsService/sagemaker/commands')
             openRemoteConnect = freshModule.openRemoteConnect
+        })
+
+        describe('SSH validation', () => {
+            it('calls ensureValid before attempting connection', async () => {
+                mockNode.getStatus.returns('Running')
+                mockNode.spaceApp.SpaceSettingsSummary.RemoteAccess = 'ENABLED'
+
+                await openRemoteConnect(mockNode, {} as any, mockClient)
+
+                // Verify ensureValid was called
+                assert(mockValidateSshConfig.called, 'ensureValid should be called')
+
+                // Verify it was called before tryRemoteConnection
+                assert(
+                    mockValidateSshConfig.calledBefore(mockTryRemoteConnection),
+                    'ensureValid should be called before connection attempt'
+                )
+            })
+
+            it('does not attempt connection if ensureValid fails', async () => {
+                mockNode.getStatus.returns('Running')
+                mockNode.spaceApp.SpaceSettingsSummary.RemoteAccess = 'ENABLED'
+
+                // Make ensureValid fail
+                mockValidateSshConfig.resetBehavior()
+                mockValidateSshConfig.resolves({
+                    isOk: () => false,
+                    isErr: () => true,
+                    err: () => new Error('SSH validation failed'),
+                })
+
+                try {
+                    await openRemoteConnect(mockNode, {} as any, mockClient)
+                    assert.fail('Should have thrown error')
+                } catch (error) {
+                    // Expected to throw
+                }
+
+                // Verify connection was NOT attempted
+                assert(mockTryRemoteConnection.notCalled, 'Connection should not be attempted when ensureValid fails')
+            })
         })
 
         describe('handleRunningSpaceWithDisabledAccess', () => {

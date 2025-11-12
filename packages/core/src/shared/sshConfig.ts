@@ -85,7 +85,10 @@ export class SshConfig {
     protected async matchSshSection() {
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
-            return Result.err(result.error ?? new Error(`ssh check against host failed: ${result.exitCode}`))
+            // Include stderr in error message
+            const errorMessage =
+                result.stderr || result.error?.message || `ssh check against host failed: ${result.exitCode}`
+            return Result.err(new Error(errorMessage))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
         return Result.ok(matches?.[0])
