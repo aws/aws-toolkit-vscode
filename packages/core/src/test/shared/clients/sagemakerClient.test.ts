@@ -173,6 +173,41 @@ describe('SagemakerClient.listSpaceApps', function () {
     })
 })
 
+describe('SagemakerClient.listAppForSpace', function () {
+    const region = 'test-region'
+    let client: SagemakerClient
+    let listAppsStub: sinon.SinonStub
+
+    beforeEach(function () {
+        client = new SagemakerClient(region)
+        listAppsStub = sinon.stub(client, 'listApps')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('returns first app for given domain and space', async function () {
+        const appDetails: AppDetails[] = [
+            { AppName: 'app1', DomainId: 'domain1', SpaceName: 'space1', AppType: AppType.CodeEditor },
+        ]
+        listAppsStub.returns(intoCollection([appDetails]))
+
+        const result = await client.listAppForSpace('domain1', 'space1')
+
+        assert.strictEqual(result?.AppName, 'app1')
+        sinon.assert.calledWith(listAppsStub, { DomainIdEquals: 'domain1', SpaceNameEquals: 'space1' })
+    })
+
+    it('returns undefined when no apps found', async function () {
+        listAppsStub.returns(intoCollection([[]]))
+
+        const result = await client.listAppForSpace('domain1', 'space1')
+
+        assert.strictEqual(result, undefined)
+    })
+})
+
 describe('SagemakerClient.waitForAppInService', function () {
     const region = 'test-region'
     let client: SagemakerClient
@@ -216,10 +251,18 @@ describe('SagemakerClient.waitForAppInService', function () {
     it('times out after max retries', async function () {
         describeAppStub.resolves({ Status: 'Pending' })
 
-        await assert.rejects(
-            client.waitForAppInService('domain1', 'space1', 'CodeEditor', 2, 10),
-            /Timed out waiting for app/
-        )
+        const sagemakerModule = await import('../../../shared/clients/sagemaker.js')
+        const originalValue = sagemakerModule.waitForAppConfig.hardTimeoutRetries
+        sagemakerModule.waitForAppConfig.hardTimeoutRetries = 3
+
+        try {
+            await assert.rejects(
+                client.waitForAppInService('domain1', 'space1', 'CodeEditor'),
+                /Timed out waiting for app/
+            )
+        } finally {
+            sagemakerModule.waitForAppConfig.hardTimeoutRetries = originalValue
+        }
     })
 })
 
@@ -355,9 +398,9 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "Yes"
+        // Wait for the error message to appear and select "Restart and Connect"
         await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('Yes')
+        getTestWindow().getFirstMessage().selectItem('Restart and Connect')
 
         await promise
         sinon.assert.calledOnce(updateSpaceStub)
@@ -380,9 +423,9 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "No"
+        // Wait for the error message to appear and select "Cancel"
         await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('No')
+        getTestWindow().getFirstMessage().selectItem('Cancel')
 
         await assert.rejects(promise, (err: ToolkitError) => err.message === 'InstanceType has insufficient memory.')
     })

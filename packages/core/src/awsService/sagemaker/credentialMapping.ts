@@ -92,6 +92,8 @@ export async function persistSmusProjectCreds(spaceArn: string, node: SagemakerU
  * @param session - SSM session ID.
  * @param wsUrl - SSM WebSocket URL.
  * @param token - Bearer token for the session.
+ * @param appType - Application type (e.g., 'jupyterlab', 'codeeditor').
+ * @param isSMUS - If true, skip refreshUrl construction (SMUS connections cannot refresh).
  */
 export async function persistSSMConnection(
     spaceArn: string,
@@ -99,34 +101,42 @@ export async function persistSSMConnection(
     session?: string,
     wsUrl?: string,
     token?: string,
-    appType?: string
+    appType?: string,
+    isSMUS?: boolean
 ): Promise<void> {
-    const { region } = parseArn(spaceArn)
-    const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
+    let refreshUrl: string | undefined
 
-    let appSubDomain = 'jupyterlab'
-    if (appType && appType.toLowerCase() === 'codeeditor') {
-        appSubDomain = 'code-editor'
+    if (!isSMUS) {
+        // Construct refreshUrl for SageMaker AI connections
+        const { region } = parseArn(spaceArn)
+        const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
+
+        let appSubDomain = 'jupyterlab'
+        if (appType && appType.toLowerCase() === 'codeeditor') {
+            appSubDomain = 'code-editor'
+        }
+
+        let envSubdomain: string
+
+        if (endpoint.includes('beta')) {
+            envSubdomain = 'devo'
+        } else if (endpoint.includes('gamma')) {
+            envSubdomain = 'loadtest'
+        } else {
+            envSubdomain = 'studio'
+        }
+
+        // Use the standard AWS domain for 'studio' (prod).
+        // For non-prod environments, use the obfuscated domain 'asfiovnxocqpcry.com'.
+        const baseDomain =
+            envSubdomain === 'studio'
+                ? `studio.${region}.sagemaker.aws`
+                : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
+
+        refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
     }
+    // For SMUS connections, refreshUrl remains undefined
 
-    let envSubdomain: string
-
-    if (endpoint.includes('beta')) {
-        envSubdomain = 'devo'
-    } else if (endpoint.includes('gamma')) {
-        envSubdomain = 'loadtest'
-    } else {
-        envSubdomain = 'studio'
-    }
-
-    // Use the standard AWS domain for 'studio' (prod).
-    // For non-prod environments, use the obfuscated domain 'asfiovnxocqpcry.com'.
-    const baseDomain =
-        envSubdomain === 'studio'
-            ? `studio.${region}.sagemaker.aws`
-            : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
-
-    const refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
     await setSpaceCredentials(spaceArn, refreshUrl, {
         sessionId: session ?? '-',
         url: wsUrl ?? '-',
@@ -186,12 +196,12 @@ export async function setSmusSpaceProfile(
  * Stores SSM connection information for a given space, typically from a deep link session.
  * This initializes the request as 'fresh' and includes a refresh URL if provided.
  * @param spaceArn - The arn of the SageMaker space.
- * @param refreshUrl - URL to use for refreshing session tokens.
+ * @param refreshUrl - URL to use for refreshing session tokens (undefined for SMUS connections).
  * @param credentials - The session information used to initiate the connection.
  */
 export async function setSpaceCredentials(
     spaceArn: string,
-    refreshUrl: string,
+    refreshUrl: string | undefined,
     credentials: SsmConnectionInfo
 ): Promise<void> {
     const data = await loadMappings()

@@ -18,7 +18,7 @@ import {
     InlineCompletionTriggerKind,
     Range,
 } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     InlineCompletionItemWithReferences,
     LogInlineCompletionSessionResultsParams,
@@ -37,6 +37,7 @@ import {
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
     handleExtraBrackets,
+    InlineCompletionLoggingReason,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
@@ -50,7 +51,7 @@ import { DocumentEventListener } from './documentEventListener'
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
-    private languageClient: LanguageClient
+    private languageClient: BaseLanguageClient
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
@@ -60,7 +61,7 @@ export class InlineCompletionManager implements Disposable {
     private documentEventListener: DocumentEventListener
 
     constructor(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
         inlineTutorialAnnotation: InlineTutorialAnnotation,
@@ -140,7 +141,7 @@ export class InlineCompletionManager implements Disposable {
                     addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
                     removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.disposable.dispose()
                 this.disposable = languages.registerInlineCompletionItemProvider(
                     CodeWhispererConstants.platformLanguageIds,
@@ -200,7 +201,7 @@ export class InlineCompletionManager implements Disposable {
                     firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 // clear session manager states once rejected
                 this.sessionManager.clear()
             } finally {
@@ -216,7 +217,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     private pendingRequest: Promise<InlineCompletionItem[]> | undefined
 
     constructor(
-        private readonly languageClient: LanguageClient,
+        private readonly languageClient: BaseLanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
@@ -282,7 +283,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
             }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+            void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
         }
     }
 
@@ -424,10 +425,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    reason: InlineCompletionLoggingReason.IMPLICIT_REJECT,
                     firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: Date.now() - prevSession.requestStartTime,
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
                 // Do not make auto trigger if user rejects a suggestion
                 // by typing characters that does not match
@@ -499,7 +501,7 @@ ${itemLog}
                             },
                         },
                     }
-                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                     this.sessionManager.clear()
                     logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
                     return []
@@ -566,7 +568,7 @@ ${itemLog}
                         },
                     },
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
                 logstr += `- suggestion does not match user typeahead from insertion position. Discarding suggestion...`
                 return []
