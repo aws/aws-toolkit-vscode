@@ -341,7 +341,8 @@ async function handleRunningSpaceWithDisabledAccess(
                 await client.waitForAppInService(
                     node.spaceApp.DomainId!,
                     spaceName,
-                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                    node.spaceApp.SpaceSettingsSummary!.AppType!,
+                    progress
                 )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
@@ -385,7 +386,8 @@ async function handleStoppedSpace(
                 await client.waitForAppInService(
                     node.spaceApp.DomainId!,
                     spaceName,
-                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                    node.spaceApp.SpaceSettingsSummary!.AppType!,
+                    progress
                 )
                 await tryRemoteConnection(node, ctx, progress)
             }
