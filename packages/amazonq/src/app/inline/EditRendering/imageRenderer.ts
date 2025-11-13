@@ -16,7 +16,7 @@ import { applyPatch, createPatch } from 'diff'
 import { EditSuggestionState } from '../editSuggestionState'
 import { debounce } from 'aws-core-vscode/utils'
 
-function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
+function logSuggestionFailure(type: 'REJECT', reason: string, suggestionContent: string) {
     getLogger('nextEditPrediction').debug(
         `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
     )
@@ -24,7 +24,7 @@ function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, sugges
 
 const autoRejectEditCursorDistance = 25
 const maxPrefixRetryCharDiff = 5
-const rerenderDeboucneInMs = 750
+const rerenderDeboucneInMs = 500
 
 enum RejectReason {
     DocumentChange = 'Invalid patch due to document change',
@@ -180,7 +180,8 @@ export class EditsSuggestionSvg {
 
     debouncedRerender = debounce(
         async (suggestion: InlineCompletionItemWithReferences) => await this.rerender(suggestion),
-        rerenderDeboucneInMs
+        rerenderDeboucneInMs,
+        true
     )
 
     private async rerender(suggestion: InlineCompletionItemWithReferences) {
