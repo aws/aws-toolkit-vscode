@@ -43,11 +43,7 @@ export class SmusAuthenticationMethodSelector {
 
         const ssoOption: vscode.QuickPickItem = {
             label: '$(organization) IAM Identity Center',
-<<<<<<< HEAD
             detail: 'Use Identity Center to access resources in SageMaker Unified Studio IdC-based domains.',
-=======
-            detail: 'Use your IAM Identity Center user to access resources in SageMaker Unified Studio IdC-based domains.',
->>>>>>> d0119bc00 (fix(smsus): minor text updates)
         }
 
         const options = [iamOption, ssoOption]
