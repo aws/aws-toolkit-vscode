@@ -240,7 +240,6 @@ describe('showEdits', function () {
         assert.strictEqual(errorCall.args[0], `Error generating SVG image: ${testError}`)
     })
 
-    // TODO: not sure why it's called by constructor and still fail
     it('should use correct logger name', async function () {
         const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
         await sut.show()
