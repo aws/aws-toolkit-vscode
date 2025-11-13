@@ -136,7 +136,6 @@ describe('showEdits', function () {
     })
 
     it('should return early when editor is undefined', async function () {
-        // await showEdits(itemStub, undefined, sessionStub, languageClientStub)
         const sut = new EditsSuggestionSvgClass(itemStub, undefined as any, languageClientStub, sessionStub)
         await sut.show()
         // Verify that no SVG generation or display methods were called
