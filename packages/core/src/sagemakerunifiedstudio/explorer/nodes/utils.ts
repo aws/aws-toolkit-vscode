@@ -32,12 +32,6 @@ import { ConnectionStatus } from '@aws-sdk/client-datazone'
 export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
 
 /**
- * Polling interval in milliseconds for checking space status updates
- */
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
-
-/**
  * Gets the label for a node based on its data
  */
 export function getLabel(data: {
