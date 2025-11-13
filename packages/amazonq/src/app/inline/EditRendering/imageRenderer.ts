@@ -67,7 +67,6 @@ export class EditsSuggestionSvg {
             // For cursorChangeListener to access
             this.startLine = startLine
 
-            // TODO: To investigate why it fails and patch [generateDiffSvg]
             if (newCode.length === 0) {
                 this.logger.warn('not able to apply provided edit suggestion, skip rendering')
                 return
