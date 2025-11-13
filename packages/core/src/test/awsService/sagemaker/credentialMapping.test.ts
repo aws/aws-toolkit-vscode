@@ -218,6 +218,75 @@ describe('credentialMapping', () => {
                     'Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: UnsupportedApp',
             })
         })
+
+        it('stores undefined refreshUrl when isSMUS=true', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(appArn, domain, 'sess-123', 'wss://smus-ws', 'token-xyz', 'jupyterlab', true)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is undefined for SMUS connections
+            assert.strictEqual(data.deepLink?.[appArn]?.refreshUrl, undefined)
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-123',
+                url: 'wss://smus-ws',
+                token: 'token-xyz',
+                status: 'fresh',
+            })
+        })
+
+        it('stores valid refreshUrl when isSMUS=false (SageMaker AI behavior)', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(appArn, domain, 'sess-456', 'wss://sm-ws', 'token-abc', 'jupyterlab', false)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is present for SageMaker AI connections
+            assert.ok(data.deepLink?.[appArn]?.refreshUrl)
+            assertRefreshUrlMatches(data.deepLink?.[appArn]?.refreshUrl, 'studio.us-west-2.sagemaker.aws')
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-456',
+                url: 'wss://sm-ws',
+                token: 'token-abc',
+                status: 'fresh',
+            })
+        })
+
+        it('stores valid refreshUrl when isSMUS is undefined (default SageMaker AI behavior)', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            // Call without isSMUS parameter (should default to SageMaker AI behavior)
+            await persistSSMConnection(appArn, domain, 'sess-789', 'wss://default-ws', 'token-def', 'jupyterlab')
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is present when isSMUS is not specified
+            assert.ok(data.deepLink?.[appArn]?.refreshUrl)
+            assertRefreshUrlMatches(data.deepLink?.[appArn]?.refreshUrl, 'studio.us-west-2.sagemaker.aws')
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-789',
+                url: 'wss://default-ws',
+                token: 'token-def',
+                status: 'fresh',
+            })
+        })
     })
 
     describe('persistSmusProjectCreds', () => {

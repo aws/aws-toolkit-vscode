@@ -251,10 +251,18 @@ describe('SagemakerClient.waitForAppInService', function () {
     it('times out after max retries', async function () {
         describeAppStub.resolves({ Status: 'Pending' })
 
-        await assert.rejects(
-            client.waitForAppInService('domain1', 'space1', 'CodeEditor', 2, 10),
-            /Timed out waiting for app/
-        )
+        const sagemakerModule = await import('../../../shared/clients/sagemaker.js')
+        const originalValue = sagemakerModule.waitForAppConfig.hardTimeoutRetries
+        sagemakerModule.waitForAppConfig.hardTimeoutRetries = 3
+
+        try {
+            await assert.rejects(
+                client.waitForAppInService('domain1', 'space1', 'CodeEditor'),
+                /Timed out waiting for app/
+            )
+        } finally {
+            sagemakerModule.waitForAppConfig.hardTimeoutRetries = originalValue
+        }
     })
 })
 

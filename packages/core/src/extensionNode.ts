@@ -199,7 +199,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await handleAmazonQInstall()
         }
 
-        await activateSageMakerUnifiedStudio(context)
+        await activateSageMakerUnifiedStudio(extContext)
 
         await activateApplicationComposer(context)
         await activateThreatComposerEditor(context)

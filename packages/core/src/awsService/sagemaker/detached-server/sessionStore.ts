@@ -9,7 +9,7 @@ import { readMapping, writeMapping } from './utils'
 export type SessionStatus = 'pending' | 'fresh' | 'consumed' | 'not-started'
 
 export class SessionStore {
-    async getRefreshUrl(connectionId: string) {
+    async getRefreshUrl(connectionId: string): Promise<string | undefined> {
         const mapping = await readMapping()
 
         if (!mapping.deepLink) {
@@ -19,10 +19,6 @@ export class SessionStore {
         const entry = mapping.deepLink[connectionId]
         if (!entry) {
             throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
-
-        if (!entry.refreshUrl) {
-            throw new Error(`No refreshUrl found for connectionId: "${connectionId}"`)
         }
 
         return entry.refreshUrl
@@ -111,6 +107,20 @@ export class SessionStore {
         }
 
         await writeMapping(mapping)
+    }
+
+    async cleanupExpiredConnection(connectionId: string) {
+        const mapping = await readMapping()
+
+        if (!mapping.deepLink) {
+            throw new Error('No deepLink mapping found')
+        }
+
+        // Remove the entire connection entry for the expired space
+        if (mapping.deepLink[connectionId]) {
+            delete mapping.deepLink[connectionId]
+            await writeMapping(mapping)
+        }
     }
 
     async setSession(connectionId: string, requestId: string, ssmConnectionInfo: SsmConnectionInfo) {

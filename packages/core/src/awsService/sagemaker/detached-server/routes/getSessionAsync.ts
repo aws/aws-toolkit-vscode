@@ -9,6 +9,8 @@ import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
 import { open, parseArn, readServerInfo } from '../utils'
+import { openErrorPage } from '../errorPage'
+import { SmusDeeplinkSessionExpiredError } from '../../constants'
 
 export async function handleGetSessionAsync(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -46,8 +48,34 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
             res.end()
             return
         } else if (status === 'not-started') {
-            const serverInfo = await readServerInfo()
             const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
+
+            // Check if this is a SMUS connection (no refreshUrl available)
+            if (refreshUrl === undefined) {
+                console.log(`SMUS session expired for connection: ${connectionIdentifier}`)
+
+                // Clean up the expired connection entry
+                try {
+                    await store.cleanupExpiredConnection(connectionIdentifier)
+                    console.log(`Cleaned up expired connection: ${connectionIdentifier}`)
+                } catch (cleanupErr) {
+                    console.error(`Failed to cleanup expired connection: ${cleanupErr}`)
+                    // Continue with error response even if cleanup fails
+                }
+
+                await openErrorPage(SmusDeeplinkSessionExpiredError.title, SmusDeeplinkSessionExpiredError.message)
+                res.writeHead(400, { 'Content-Type': 'application/json' })
+                res.end(
+                    JSON.stringify({
+                        error: SmusDeeplinkSessionExpiredError.code,
+                        message: SmusDeeplinkSessionExpiredError.shortMessage,
+                    })
+                )
+                return
+            }
+
+            // Continue with existing SageMaker AI refresh flow
+            const serverInfo = await readServerInfo()
             const { spaceName } = parseArn(connectionIdentifier)
 
             const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(

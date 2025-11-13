@@ -82,13 +82,13 @@ Host sm_*
          * Expected: Returns Ok with hasSshSection=true, isOutdated=false
          */
         it('returns Ok with outdated=false when section is current', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand 'sagemaker_connect' '%n'
-`)
+    `)
 
             const result = await config.readSshConfigState(testProxyCommand)
 
@@ -103,14 +103,21 @@ Host sm_*
          * Expected: Correctly detects section even without trailing newline
          */
         it('handles files without trailing newline (EOF issue)', async function () {
-            await fs.writeFile(sshConfigPath, '# Created by AWS Toolkit\nHost sm_*\n    ProxyCommand test', {
-                flag: 'w',
-            })
+            const configContent = `# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
+    `
+            await fs.writeFile(sshConfigPath, configContent.trimEnd(), { flag: 'w' })
 
             const result = await config.readSshConfigState(testProxyCommand)
 
             assert.ok(result.isOk())
-            assert.strictEqual(result.ok().hasSshSection, true)
+            const state = result.ok()
+            assert.strictEqual(state.hasSshSection, true)
+            assert.strictEqual(state.isOutdated, false)
         })
 
         /**
@@ -134,13 +141,11 @@ Host sm_*
     })
 
     describe('verifySSHHost', function () {
-        let promptStub: sinon.SinonStub
         let removeStub: sinon.SinonStub
         let writeStub: sinon.SinonStub
         let matchStub: sinon.SinonStub
 
         beforeEach(function () {
-            promptStub = sandbox.stub(config, 'promptToUpdateSshConfig')
             removeStub = sandbox.stub(config, 'removeSshConfigSection')
             writeStub = sandbox.stub(config as any, 'writeSectionToConfig')
             matchStub = sandbox.stub(config as any, 'matchSshSection')
@@ -148,16 +153,17 @@ Host sm_*
 
         /**
          * Test: checks for outdated config BEFORE SSH validation
-         * Expected: promptToUpdateSshConfig is called before matchSshSection
+         * Expected: Section is updated before validation runs
          */
         it('checks for outdated config BEFORE running SSH validation', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
     ProxyCommand 'sagemaker_connect' '%n'
     User '%r'
-`)
-
-            promptStub.resolves(true)
+    `)
 
             getTestWindow().onDidShowMessage((message) => {
                 if (message.items.some((item) => item.title === 'Update SSH config')) {
@@ -170,10 +176,7 @@ Host sm_*
 
             await config.verifySSHHost(testProxyCommand)
 
-            assert(
-                promptStub.calledBefore(matchStub),
-                'promptToUpdateSshConfig should be called before matchSshSection'
-            )
+            assert(removeStub.calledBefore(matchStub), 'Section should be updated before validation runs')
         })
 
         /**
@@ -181,13 +184,14 @@ Host sm_*
          * Expected: Removes old section, writes new section, returns Ok
          */
         it('prompts user to update when config is outdated', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
     User '%r'
-`)
-
-            // Restore the stub so the actual method runs and shows UI
-            promptStub.restore()
+    `)
 
             getTestWindow().onDidShowMessage((message) => {
                 if (message.items.some((item) => item.title === 'Update SSH config')) {
@@ -212,10 +216,14 @@ Host sm_*
          * Expected: Returns error with code 'SshConfigUpdateDeclined'
          */
         it('returns error when user declines update', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
+    ForwardAgent yes
+    AddKeysToAdmin yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
     User '%r'
-`)
+    `)
 
             // User clicks Cancel
             getTestWindow().onDidShowMessage((message) => {
@@ -229,7 +237,6 @@ Host sm_*
             assert.ok(error instanceof ToolkitError)
 
             assert.strictEqual(error.code, 'SshConfigUpdateDeclined')
-            assert(promptStub.calledOnce)
             assert(removeStub.notCalled, 'Should not remove section when user declines')
             assert(writeStub.notCalled, 'Should not write section when user declines')
         })
@@ -239,13 +246,13 @@ Host sm_*
          * Expected: Extracts line number from error, prompts user to fix external error
          */
         it('shows helpful error with line number when external error exists', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand 'sagemaker_connect' '%n'
-
+    
 Host github.com
     InvalidDirective bad-value
 `)
@@ -273,20 +280,20 @@ Host github.com
          * Expected: No prompts shown, validation runs successfully, returns Ok
          */
         it('handles successful validation when config is up-to-date', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
     ProxyCommand 'sagemaker_connect' '%n'
-`)
+    `)
 
             matchStub.resolves(Result.ok("Host sm_*\n    ProxyCommand 'sagemaker_connect' '%n'"))
 
             const result = await config.verifySSHHost(testProxyCommand)
 
             assert.ok(result.isOk())
-            assert(promptStub.notCalled, 'Should not prompt when config is up-to-date')
+            assert(removeStub.notCalled, 'Should not update when config is up-to-date')
             assert(matchStub.calledOnce, 'Should run SSH validation')
         })
     })
@@ -301,11 +308,14 @@ Host sm_*
 Host github.com
     User git
 
-# Created by AWS Toolkit
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
     ProxyCommand 'sagemaker_connect' '%n'
     User '%r'
-
+    
 Host another.com
     User test
 `)
@@ -339,24 +349,89 @@ Host another.com
          * Expected: Section removed correctly even without trailing newline
          */
         it('handles files without trailing newline', async function () {
-            await fs.writeFile(sshConfigPath, '# Created by AWS Toolkit\nHost sm_*\n    ProxyCommand test', {
-                flag: 'w',
-            })
+            const configContent = `# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
+    User '%r'
+    `
+            await fs.writeFile(sshConfigPath, configContent.trimEnd(), { flag: 'w' })
 
             await config.removeSshConfigSection()
 
             const content = await fs.readFileText(sshConfigPath)
             assert.strictEqual(content.trim(), '', 'Should remove section even without trailing newline')
         })
+
+        /**
+         * Test: Versioned matching - removes old v1 format (with User '%r')
+         * Expected: Old format section is recognized and removed
+         */
+        it('removes old v1 format with User directive', async function () {
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
+    User '%r'
+    
+Host github.com
+    User git
+`)
+
+            await config.removeSshConfigSection()
+
+            const content = await fs.readFileText(sshConfigPath)
+            assert.ok(!content.includes('Host sm_*'), 'Should remove old v1 section')
+            assert.ok(!content.includes("User '%r'"), 'Should remove User directive')
+            assert.ok(content.includes('Host github.com'), 'Should keep other sections')
+        })
+
+        /**
+         * Test: Versioned matching - does NOT remove user-modified section
+         * Expected: Throws error, section is not removed
+         */
+        it('throws error for user-modified section', async function () {
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host sm_*
+    ForwardAgent yes
+    ServerAliveInterval 60
+    ProxyCommand 'sagemaker_connect' '%n'
+    
+Host github.com
+    User git
+`)
+
+            await assert.rejects(
+                async () => await config.removeSshConfigSection(),
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    // Error is wrapped in SshConfigRemovalFailed, check the cause
+                    const toolkitError = error as ToolkitError
+                    assert.strictEqual(toolkitError.code, 'SshConfigRemovalFailed')
+                    assert.ok(toolkitError.cause instanceof ToolkitError)
+                    assert.strictEqual((toolkitError.cause as ToolkitError).code, 'SshConfigModified')
+                    return true
+                },
+                'Should throw SshConfigRemovalFailed with SshConfigModified cause'
+            )
+
+            // Verify section was NOT removed
+            const content = await fs.readFileText(sshConfigPath)
+            assert.ok(content.includes('Host sm_*'), 'Should NOT remove modified section')
+            assert.ok(content.includes('ServerAliveInterval 60'), 'User customization should remain')
+        })
     })
 
     describe('promptOtherSshConfigError', function () {
         /**
          * Test: SSH error message contains line number (e.g., "line 42")
-         * Expected: Extracts line number and includes it in error message to user
+         * Expected: Extracts line number and includes it in error message (but doesn't navigate cursor)
          */
         it('extracts and displays line number from SSH error', async function () {
-            // Create the SSH config file so it can be opened
             await writeTestSshConfig(`# Some SSH config
 Host github.com
     User git
@@ -429,11 +504,15 @@ Host sm_*
     User '%r'
 `)
 
-            sandbox.stub(config, 'promptToUpdateSshConfig').resolves(true)
+            // removal failure during update
             sandbox.stub(config, 'removeSshConfigSection').rejects(new Error('Write failed'))
 
-            // User cancels the prompt to open the file
+            // User accepts update prompt (handled by updateOutdatedSection internally)
             getTestWindow().onDidShowMessage((message) => {
+                if (message.items.some((item) => item.title === 'Update SSH config')) {
+                    message.selectItem('Update SSH config')
+                }
+                // User cancels the "Open SSH Config" prompt after failure
                 if (message.items.some((item) => item.title === 'Open SSH Config')) {
                     message.selectItem('Cancel')
                 }
@@ -452,16 +531,23 @@ Host sm_*
          * Expected: Returns ToolkitError with code 'SshConfigOpenedForEdit'
          */
         it('opens config file when update fails and user accepts', async function () {
-            await writeTestSshConfig(`# Created by AWS Toolkit
+            await writeTestSshConfig(`# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host sm_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand 'sagemaker_connect' '%n'
     User '%r'
-`)
+    `)
 
-            sandbox.stub(config, 'promptToUpdateSshConfig').resolves(true)
+            // Simulate removal failure during update
             sandbox.stub(config, 'removeSshConfigSection').rejects(new Error('Write failed'))
 
-            // User clicks "Open SSH Config"
+            // User accepts update prompt, then clicks "Open SSH Config" after failure
             getTestWindow().onDidShowMessage((message) => {
+                if (message.items.some((item) => item.title === 'Update SSH config')) {
+                    message.selectItem('Update SSH config')
+                }
                 if (message.items.some((item) => item.title === 'Open SSH Config')) {
                     message.selectItem('Open SSH Config')
                 }
@@ -481,7 +567,7 @@ Host sm_*
         /**
          * Test: SageMaker SSH config format
          * Expected: Contains SageMaker-specific directives (ForwardAgent, AddKeysToAgent, StrictHostKeyChecking)
-         *           Does NOT contain User '%r' (unlike CodeCatalyst)
+         *           Does NOT contain User '%r'
          */
         it('creates SageMaker-specific SSH config section', function () {
             // Access the protected method through type casting

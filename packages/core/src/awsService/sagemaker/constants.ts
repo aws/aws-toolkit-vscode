@@ -48,7 +48,7 @@ export const RemoteAccessRequiredMessage =
 
 // SSH Configuration Error Messages
 export const SshConfigUpdateDeclinedMessage = (configHostName: string, configPath: string) =>
-    `SSH configuration has an outdated ${configHostName} section. Fix your ${configPath} file manually to enable remote connections.`
+    `SSH configuration has an outdated ${configHostName} section. Fix your ${configPath} file manually to enable remote connection.`
 
 export const SshConfigOpenedForEditMessage = () =>
     `SSH configuration file opened for editing. Fix the issue and try connecting again.`
@@ -61,3 +61,14 @@ export const SshConfigRemovalFailedMessage = (configHostName: string) =>
 
 export const SshConfigUpdateFailedMessage = (configPath: string, configHostName: string) =>
     `Failed to update SSH config section. Fix your ${configPath} file manually or remove the outdated ${configHostName} section.`
+
+export const SshConfigModifiedMessage = (configHostName: string) =>
+    `SSH config section for ${configHostName} has been modified. Manually remove the section and try again.`
+
+export const SmusDeeplinkSessionExpiredError = {
+    title: 'Session Disconnected',
+    message:
+        'Your SageMaker Unified Studio session has been disconnected. Select a local (non-remote) VS Code window and use the SageMaker Unified Studio portal to connect again.',
+    code: 'SMUS_SESSION_DISCONNECTED',
+    shortMessage: 'Session disconnected, re-connect from SageMaker Unified Studio portal.',
+} as const

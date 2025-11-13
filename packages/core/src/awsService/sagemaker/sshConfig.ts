@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import { SshConfig } from '../../shared/sshConfig'
 import { Result } from '../../shared/utilities/result'
 import { ToolkitError } from '../../shared/errors'
@@ -21,9 +20,10 @@ import {
     SshConfigSyntaxErrorMessage,
     SshConfigRemovalFailedMessage,
     SshConfigUpdateFailedMessage,
+    SshConfigModifiedMessage,
 } from './constants'
 
-const localize = nls.loadMessageBundle()
+const logger = getLogger('sagemaker')
 
 /**
  * SageMaker-specific SSH configuration that handles outdated config detection and updates.
@@ -44,35 +44,9 @@ export class SageMakerSshConfig extends SshConfig {
 
         // Check if section exists and is outdated
         if (configState.hasSshSection && configState.isOutdated) {
-            // Section is outdated ask user to update it before validation
-            const shouldUpdate = await this.promptToUpdateSshConfig()
-
-            if (shouldUpdate) {
-                try {
-                    // Remove the outdated section
-                    await this.removeSshConfigSection()
-                    // Write the new section
-                    await this.writeSectionToConfig(proxyCommand)
-                    getLogger().info('SSH config: Successfully updated sm_* section')
-
-                    // Update state snapshot to reflect the changes
-                    configState.hasSshSection = true
-                    configState.isOutdated = false
-                } catch (e) {
-                    // Failed to update, handle the failure
-                    return await this.handleSshConfigUpdateFailure(e)
-                }
-            } else {
-                // User declined the auto-update
-                const configPath = getSshConfigPath()
-                const userCancelledError = new ToolkitError(
-                    SshConfigUpdateDeclinedMessage(this.configHostName, configPath),
-                    {
-                        code: 'SshConfigUpdateDeclined',
-                        details: { configHostName: this.configHostName, configPath },
-                    }
-                )
-                return Result.err(userCancelledError)
+            const updateResult = await this.updateOutdatedSection(proxyCommand)
+            if (updateResult.isErr()) {
+                return updateResult
             }
         }
 
@@ -81,8 +55,12 @@ export class SageMakerSshConfig extends SshConfig {
         if (matchResult.isErr()) {
             const sshError = matchResult.err()
 
-            if (configState.hasSshSection) {
-                // SM exists and is up-to-date but validation still failed means the error is elsewhere in the SSH config
+            // Check if SM section either existed before or just created)
+            const hasSshSection = configState.hasSshSection || !configState.isOutdated
+
+            if (hasSshSection) {
+                // Section exists and should be up-to-date, but validation still failed
+                // This means the error is elsewhere in the SSH config
                 try {
                     await this.promptOtherSshConfigError(sshError)
                     const configOpenedError = new ToolkitError(SshConfigOpenedForEditMessage(), {
@@ -157,41 +135,20 @@ export class SageMakerSshConfig extends SshConfig {
 
         try {
             const configContent = await readFileAsString(sshConfigPath)
-            const escapedPrefix = this.hostNamePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-            // Check if section exists
-            const sectionPattern = new RegExp(`# Created by AWS Toolkit[^\\n]*\\n` + `Host\\s+${escapedPrefix}`, 'm')
+            // Extract the toolkit section
+            const existingSection = this.extractToolkitSection(configContent)
 
-            const hasSshSection = sectionPattern.test(configContent)
-
-            if (!hasSshSection) {
+            if (!existingSection) {
                 return Result.ok({ hasSshSection: false, isOutdated: false })
             }
 
-            // Extract existing section
-            const extractPattern = new RegExp(
-                `# Created by AWS Toolkit[^\\n]*\\n` +
-                    `(Host\\s+${escapedPrefix}[^\\n]*(?:\\n|$)` +
-                    `(?:(?!Host\\s)[^\\n]*(?:\\n|$))*)`,
-                'gm'
-            )
-
-            const match = extractPattern.exec(configContent)
-            const existingSection = match?.[1]?.trim()
-            if (!existingSection) {
-                return Result.ok({ hasSshSection: true, isOutdated: false })
-            }
-
-            // Check if outdated
+            // Generate the expected current version
             const expectedSection = this.createSSHConfigSection(proxyCommand).trim()
-            const expectedWithoutComment = expectedSection
-                .split('\n')
-                .filter((line) => !line.includes('# Created by AWS Toolkit'))
-                .join('\n')
-                .trim()
 
+            // Compare existing vs expected to check if outdated
             const normalizeWhitespace = (str: string) => str.replace(/\s+/g, ' ').trim()
-            const isOutdated = normalizeWhitespace(existingSection) !== normalizeWhitespace(expectedWithoutComment)
+            const isOutdated = normalizeWhitespace(existingSection) !== normalizeWhitespace(expectedSection)
 
             return Result.ok({ hasSshSection: true, isOutdated, existingSection })
         } catch (e) {
@@ -205,21 +162,48 @@ export class SageMakerSshConfig extends SshConfig {
     }
 
     /**
+     * Handles updating an outdated SSH config section.
+     * Prompts user, removes old section, writes new section.
+     *
+     * @returns Result.ok() if updated successfully, Result.err() if user declined or update failed
+     */
+    private async updateOutdatedSection(proxyCommand: string): Promise<Result<void, ToolkitError>> {
+        const shouldUpdate = await this.promptToUpdateSshConfig()
+
+        if (!shouldUpdate) {
+            // User declined the auto-update
+            const configPath = getSshConfigPath()
+            return Result.err(
+                new ToolkitError(SshConfigUpdateDeclinedMessage(this.configHostName, configPath), {
+                    code: 'SshConfigUpdateDeclined',
+                    details: { configHostName: this.configHostName, configPath },
+                })
+            )
+        }
+
+        try {
+            // Remove the outdated section
+            await this.removeSshConfigSection()
+            // Write the new section
+            await this.writeSectionToConfig(proxyCommand)
+            logger.info('Successfully updated sm_* section')
+            return Result.ok()
+        } catch (e) {
+            // Failed to update, handle the failure
+            return await this.handleSshConfigUpdateFailure(e)
+        }
+    }
+
+    /**
      * Prompts user to update the outdated SSH config section.
      * This is shown when the host section exists but is outdated.
      */
-    public async promptToUpdateSshConfig(): Promise<boolean> {
-        getLogger().warn(`SSH config section is outdated for ${this.configHostName}`)
+    private async promptToUpdateSshConfig(): Promise<boolean> {
+        logger.warn(`Section is outdated for ${this.configHostName}`)
 
         const configPath = getSshConfigPath()
-        const confirmTitle = localize(
-            'AWS.sshConfig.confirm.updateSshConfig.title',
-            '{0} Toolkit will update the {1} section in {2}',
-            getIdeProperties().company,
-            this.configHostName,
-            configPath
-        )
-        const confirmText = localize('AWS.sshConfig.confirm.updateSshConfig.button', 'Update SSH config')
+        const confirmTitle = `${getIdeProperties().company} Toolkit will update the ${this.configHostName} section in ${configPath}`
+        const confirmText = 'Update SSH config'
 
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
 
@@ -239,24 +223,19 @@ export class SageMakerSshConfig extends SshConfig {
             errorDetails = `\n\nError: ${updateError.message}`
         }
 
-        const message = localize(
-            'AWS.sshConfig.error.updateFailed',
-            'Failed to update your {0} file automatically.{1}\n\nOpen the file to fix the issue manually.',
-            sshConfigPath,
-            errorDetails
-        )
+        const message = `Failed to update your ${sshConfigPath} file automatically.${errorDetails}\n\nOpen the file to fix the issue manually.`
 
-        const openButton = localize('AWS.ssh.openConfig', 'Open SSH Config')
-        const cancelButton = localize('AWS.generic.cancel', 'Cancel')
+        const openButton = 'Open SSH Config'
+        const cancelButton = 'Cancel'
 
         const response = await vscode.window.showErrorMessage(message, openButton, cancelButton)
 
-        if (response === openButton) {
-            await vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
-            return
+        // User clicked Cancel or closed the dialog
+        if (response !== openButton) {
+            throw new CancellationError('user')
         }
-        // User cancelled or closed dialog, throw cancellation error
-        throw new CancellationError('user')
+
+        await vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
     }
 
     /**
@@ -266,7 +245,8 @@ export class SageMakerSshConfig extends SshConfig {
     public async promptOtherSshConfigError(sshError?: Error): Promise<void> {
         const sshConfigPath = getSshConfigPath()
 
-        // extract line number from SSH error message
+        // Extract line number from SSH error message (best-effort).
+        // Note: SSH error formats are not standardized and may vary across implementations.
         let errorDetails = ''
         if (sshError?.message) {
             const lineMatch = sshError.message.match(/line (\d+)/i)
@@ -275,69 +255,146 @@ export class SageMakerSshConfig extends SshConfig {
             }
         }
 
-        const message = localize(
-            'AWS.sshConfig.error.otherError',
-            'There is an error in your {0} file.{1}\n\nFix the error and try again.',
-            sshConfigPath,
-            errorDetails
-        )
+        const message = `There is an error in your ${sshConfigPath} file.${errorDetails}\n\nFix the error and try again.`
 
-        const openButton = localize('AWS.ssh.openConfig', 'Open SSH Config')
-        const cancelButton = localize('AWS.generic.cancel', 'Cancel')
+        const openButton = 'Open SSH Config'
+        const cancelButton = 'Cancel'
 
         const response = await vscode.window.showErrorMessage(message, openButton, cancelButton)
 
-        if (response === openButton) {
-            const doc = await vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
-
-            if (sshError?.message) {
-                const lineMatch = sshError.message.match(/line (\d+)/i)
-                if (lineMatch) {
-                    const lineNumber = parseInt(lineMatch[1], 10) - 1
-                    const position = new vscode.Position(lineNumber, 0)
-                    doc.selection = new vscode.Selection(position, position)
-                    doc.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter)
-                }
-            }
-
-            // user chose to open config to fix it
-            return
+        // User clicked Cancel or closed the dialog
+        if (response !== openButton) {
+            throw new CancellationError('user')
         }
-        // User cancelled or closed dialog, throw cancellation error
-        throw new CancellationError('user')
+
+        await vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
     }
 
     /**
-     * Removes the toolkit-managed SSH config section.
+     * Extracts the toolkit-managed SSH config section from the config content.
+     * returns Object with fullSection((comment + Host + directives)) and hostSection(Host + directives), or null if not found
+     */
+    private extractToolkitSection(configContent: string): string | undefined {
+        const lines = configContent.split('\n')
+        let startIndex = -1
+        let endIndex = -1
+
+        // Find the toolkit comment marker
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('# Created by AWS Toolkit')) {
+                startIndex = i
+                break
+            }
+        }
+
+        if (startIndex === -1) {
+            return undefined
+        }
+
+        // Check if next line is our Host directive
+        if (startIndex + 1 >= lines.length) {
+            return undefined
+        }
+
+        const hostLine = lines[startIndex + 1]
+        if (!hostLine.trim().startsWith(`Host ${this.configHostName}`)) {
+            return undefined
+        }
+
+        // Extract all indented lines (directives) after the Host line
+        // Stop at: blank line, non-indented line, or another Host directive
+        endIndex = startIndex + 2 // Start after Host line
+
+        for (let i = startIndex + 2; i < lines.length; i++) {
+            const line = lines[i]
+            const trimmed = line.trim()
+
+            // Stop at blank line
+            if (trimmed === '') {
+                endIndex = i
+                break
+            }
+
+            // Stop at another Host directive
+            if (trimmed.startsWith('Host ')) {
+                endIndex = i
+                break
+            }
+
+            // Stop at non-indented line (comment or another section)
+            if (line.length > 0 && line[0] !== ' ' && line[0] !== '\t') {
+                endIndex = i
+                break
+            }
+
+            endIndex = i + 1
+        }
+
+        // Extract the full section (comment + Host + directives)
+        return lines.slice(startIndex, endIndex).join('\n')
+    }
+
+    /**
+     * Removes the toolkit-managed SSH config section using version matching.
+     *
+     * This method checks for exact matches against known toolkit-generated configs
+     * to ensure we only remove content we created, not user-defined content.
      */
     public async removeSshConfigSection(): Promise<void> {
         const sshConfigPath = getSshConfigPath()
 
         if (!(await fileExists(sshConfigPath))) {
-            getLogger().info('SSH config file does not exist, nothing to remove')
+            logger.info('Config file does not exist, nothing to remove')
             return
         }
 
         try {
             const configContent = await readFileAsString(sshConfigPath)
-            const escapedPrefix = this.hostNamePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const sectionPattern = new RegExp(
-                `# Created by AWS Toolkit[^\\n]*\\n` +
-                    `Host\\s+${escapedPrefix}[^\\n]*(?:\\n|$)` +
-                    `(?:(?!Host\\s)[^\\n]*(?:\\n|$))*`,
-                'gm'
-            )
+            const extractedSection = this.extractToolkitSection(configContent)
 
-            const updatedContent = configContent.replace(sectionPattern, '')
-
-            if (updatedContent === configContent) {
-                getLogger().warn(`SSH config: No ${this.configHostName} section found to remove`)
+            if (!extractedSection) {
+                logger.warn(`No ${this.configHostName} section found to remove`)
                 return
             }
 
+            // Get the proxy command from the extracted section
+            const proxyCommandMatch = extractedSection.match(/ProxyCommand\s+(.+)/)
+            if (!proxyCommandMatch) {
+                logger.warn('Could not extract ProxyCommand from section, skipping removal')
+                return
+            }
+            const proxyCommand = proxyCommandMatch[1].trim()
+
+            // Check against known versions
+            const knownVersions = [
+                this.createSSHConfigSection(proxyCommand).trim(), // Current version
+                this.createSSHConfigV1(proxyCommand).trim(), // Old version with User '%r'
+            ]
+
+            const normalizeWhitespace = (str: string) => str.replace(/\s+/g, ' ').trim()
+            const extractedNormalized = normalizeWhitespace(extractedSection)
+
+            let matchedVersion: string | undefined
+            for (const knownVersion of knownVersions) {
+                if (normalizeWhitespace(knownVersion) === extractedNormalized) {
+                    matchedVersion = extractedSection
+                    break
+                }
+            }
+
+            if (!matchedVersion) {
+                // Section doesn't match any known version - likely user-modified
+                // Throw error so handleSshConfigUpdateFailure() prompts user to fix manually
+                throw new ToolkitError(SshConfigModifiedMessage(this.configHostName), {
+                    code: 'SshConfigModified',
+                })
+            }
+
+            const updatedContent = configContent.replace(matchedVersion, '')
+
             await fs.writeFile(sshConfigPath, updatedContent, { atomic: true })
 
-            getLogger().info(`SSH config: Removed ${this.configHostName} section`)
+            logger.info(`Removed ${this.configHostName} section`)
         } catch (e) {
             throw ToolkitError.chain(e, SshConfigRemovalFailedMessage(this.configHostName), {
                 code: 'SshConfigRemovalFailed',
@@ -384,7 +441,23 @@ export class SageMakerSshConfig extends SshConfig {
     }
 
     /**
-     * Creates SageMaker-specific SSH config section.
+     * Generates old version 1 SSH config (with User '%r' directive).
+     * This was the format used in earlier versions of the toolkit.
+     */
+    private createSSHConfigV1(proxyCommand: string): string {
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
+    User '%r'
+    `
+    }
+
+    /**
+     * Creates SageMaker-specific SSH config section (current version).
      */
     protected override createSSHConfigSection(proxyCommand: string): string {
         return `

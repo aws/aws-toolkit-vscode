@@ -84,7 +84,7 @@ export async function prepareDevEnvConnection(
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType)
+        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
     }
 
     await startLocalServer(ctx)
