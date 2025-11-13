@@ -16,7 +16,7 @@ import { applyPatch, createPatch } from 'diff'
 import { EditSuggestionState } from '../editSuggestionState'
 import { debounce } from 'aws-core-vscode/utils'
 
-function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, suggestionContent: string) {
+function logSuggestionFailure(type: 'REJECT', reason: string, suggestionContent: string) {
     getLogger('nextEditPrediction').debug(
         `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
     )
@@ -24,7 +24,7 @@ function logSuggestionFailure(type: 'DISCARD' | 'REJECT', reason: string, sugges
 
 const autoRejectEditCursorDistance = 25
 const maxPrefixRetryCharDiff = 5
-const docChangedHandlerDeboucneInMs = 750
+const rerenderDeboucneInMs = 500
 
 enum RejectReason {
     DocumentChange = 'Invalid patch due to document change',
@@ -67,7 +67,6 @@ export class EditsSuggestionSvg {
             // For cursorChangeListener to access
             this.startLine = startLine
 
-            // TODO: To investigate why it fails and patch [generateDiffSvg]
             if (newCode.length === 0) {
                 this.logger.warn('not able to apply provided edit suggestion, skip rendering')
                 return
@@ -76,24 +75,7 @@ export class EditsSuggestionSvg {
             if (svgImage) {
                 const documentChangedListener = (this.documentChangedListener ??=
                     vscode.workspace.onDidChangeTextDocument(async (e) => {
-                        if (e.contentChanges.length <= 0) {
-                            return
-                        }
-                        if (e.document !== this.editor.document) {
-                            return
-                        }
-                        if (vsCodeState.isCodeWhispererEditing) {
-                            return
-                        }
-                        if (getContext('aws.amazonq.editSuggestionActive') === false) {
-                            return
-                        }
-
-                        // TODO: handle multi-contentChanges scenario
-                        const diff = e.contentChanges[0] ? e.contentChanges[0].text : ''
-                        this.logger.info(`docChange sessionId=${this.session.sessionId}, contentChange=${diff}`)
-                        this.docChanged += e.contentChanges[0].text
-                        await this.debouncedOnDocChanged(e)
+                        await this.onDocChange(e)
                     }))
 
                 const cursorChangedListener = (this.cursorChangedListener ??=
@@ -141,12 +123,24 @@ export class EditsSuggestionSvg {
         }
     }
 
-    debouncedOnDocChanged = debounce(
-        async (e: vscode.TextDocumentChangeEvent) => await this.onDocChange(e),
-        docChangedHandlerDeboucneInMs
-    )
-
     private async onDocChange(e: vscode.TextDocumentChangeEvent) {
+        if (e.contentChanges.length <= 0) {
+            return
+        }
+        if (e.document !== this.editor.document) {
+            return
+        }
+        if (vsCodeState.isCodeWhispererEditing) {
+            return
+        }
+        if (getContext('aws.amazonq.editSuggestionActive') === false) {
+            return
+        }
+
+        // TODO: handle multi-contentChanges scenario
+        const diff = e.contentChanges[0] ? e.contentChanges[0].text : ''
+        this.logger.info(`docChange sessionId=${this.session.sessionId}, contentChange=${diff}`)
+        this.docChanged += e.contentChanges[0].text
         /**
          * 1. Take the diff returned by the model and apply it to the code we originally sent to the model
          * 2. Do a diff between the above code and what's currently in the editor
@@ -167,7 +161,7 @@ export class EditsSuggestionSvg {
                 } else {
                     // Close the previoius popup and rerender it
                     this.logger.info(`calling rerender with suggestion\n ${updatedPatch.insertText as string}`)
-                    await this.rerender(updatedPatch)
+                    await this.debouncedRerender(updatedPatch)
                 }
             } else {
                 this.autoReject(RejectReason.NotApplicableToOriginal)
@@ -183,6 +177,12 @@ export class EditsSuggestionSvg {
         this.cursorChangedListener?.dispose()
         await decorationManager.clearDecorations(this.editor, [])
     }
+
+    debouncedRerender = debounce(
+        async (suggestion: InlineCompletionItemWithReferences) => await this.rerender(suggestion),
+        rerenderDeboucneInMs,
+        true
+    )
 
     private async rerender(suggestion: InlineCompletionItemWithReferences) {
         await decorationManager.clearDecorations(this.editor, [])
