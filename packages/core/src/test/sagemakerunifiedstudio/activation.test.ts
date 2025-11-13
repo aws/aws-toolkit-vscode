@@ -13,8 +13,11 @@ import * as explorerActivation from '../../sagemakerunifiedstudio/explorer/activ
 import * as resourceMetadataUtils from '../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
 import * as setContext from '../../shared/vscode/setContext'
 import { SmusUtils } from '../../sagemakerunifiedstudio/shared/smusUtils'
+import * as smusUriHandlers from '../../sagemakerunifiedstudio/uriHandlers'
+import { ExtContext } from '../../shared/extensions'
 
 describe('SageMaker Unified Studio Main Activation', function () {
+    let mockToolkitExtContext: ExtContext
     let mockExtensionContext: vscode.ExtensionContext
     let isSageMakerStub: sinon.SinonStub
     let initializeResourceMetadataStub: sinon.SinonStub
@@ -22,6 +25,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
     let isInSmusSpaceEnvironmentStub: sinon.SinonStub
     let activateConnectionMagicsSelectorStub: sinon.SinonStub
     let activateExplorerStub: sinon.SinonStub
+    let registerUriHandlerStub: sinon.SinonStub
 
     beforeEach(function () {
         mockExtensionContext = {
@@ -37,6 +41,17 @@ describe('SageMaker Unified Studio Main Activation', function () {
             },
         } as any
 
+        mockToolkitExtContext = {
+            extensionContext: mockExtensionContext,
+            awsContext: {} as any,
+            samCliContext: sinon.stub() as any,
+            regionProvider: {} as any,
+            outputChannel: {} as any,
+            telemetryService: {} as any,
+            uriHandler: {} as any,
+            credentialsStore: {} as any,
+        }
+
         // Stub all dependencies
         isSageMakerStub = sinon.stub(extensionUtilities, 'isSageMaker')
         initializeResourceMetadataStub = sinon.stub(resourceMetadataUtils, 'initializeResourceMetadata')
@@ -44,6 +59,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
         isInSmusSpaceEnvironmentStub = sinon.stub(SmusUtils, 'isInSmusSpaceEnvironment')
         activateConnectionMagicsSelectorStub = sinon.stub(connectionMagicsSelectorActivation, 'activate')
         activateExplorerStub = sinon.stub(explorerActivation, 'activate')
+        registerUriHandlerStub = sinon.stub(smusUriHandlers, 'register')
 
         // Set default return values
         isSageMakerStub.returns(false)
@@ -52,6 +68,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
         isInSmusSpaceEnvironmentStub.returns(false)
         activateConnectionMagicsSelectorStub.resolves()
         activateExplorerStub.resolves()
+        registerUriHandlerStub.returns({ dispose: sinon.stub() } as any)
     })
 
     afterEach(function () {
@@ -62,7 +79,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
         it('should always activate explorer regardless of environment', async function () {
             isSageMakerStub.returns(false)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(activateExplorerStub.calledOnceWith(mockExtensionContext))
         })
@@ -70,7 +87,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
         it('should not initialize SMUS components when not in SageMaker environment', async function () {
             isSageMakerStub.returns(false)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(initializeResourceMetadataStub.notCalled)
             assert.ok(setContextStub.notCalled)
@@ -83,7 +100,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(false)
             isInSmusSpaceEnvironmentStub.returns(true)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.calledOnceWith('aws.smus.inSmusSpaceEnvironment', true))
@@ -96,7 +113,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(true)
             isInSmusSpaceEnvironmentStub.returns(false)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.calledOnceWith('aws.smus.inSmusSpaceEnvironment', false))
@@ -109,7 +126,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(false)
             isInSmusSpaceEnvironmentStub.returns(true)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             // Verify the order of calls
             assert.ok(initializeResourceMetadataStub.calledBefore(setContextStub))
@@ -122,7 +139,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             const error = new Error('Resource metadata initialization failed')
             initializeResourceMetadataStub.rejects(error)
 
-            await assert.rejects(() => activate(mockExtensionContext), /Resource metadata initialization failed/)
+            await assert.rejects(() => activate(mockToolkitExtContext), /Resource metadata initialization failed/)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.notCalled)
@@ -135,7 +152,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             const error = new Error('Set context failed')
             setContextStub.rejects(error)
 
-            await assert.rejects(() => activate(mockExtensionContext), /Set context failed/)
+            await assert.rejects(() => activate(mockToolkitExtContext), /Set context failed/)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.calledOnce)
@@ -148,7 +165,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             const error = new Error('Connection magics selector activation failed')
             activateConnectionMagicsSelectorStub.rejects(error)
 
-            await assert.rejects(() => activate(mockExtensionContext), /Connection magics selector activation failed/)
+            await assert.rejects(() => activate(mockToolkitExtContext), /Connection magics selector activation failed/)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.calledOnce)
@@ -159,7 +176,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             const error = new Error('Explorer activation failed')
             activateExplorerStub.rejects(error)
 
-            await assert.rejects(() => activate(mockExtensionContext), /Explorer activation failed/)
+            await assert.rejects(() => activate(mockToolkitExtContext), /Explorer activation failed/)
 
             assert.ok(activateExplorerStub.calledOnce)
         })
@@ -168,10 +185,17 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS').returns(true)
             isInSmusSpaceEnvironmentStub.returns(true)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(activateConnectionMagicsSelectorStub.calledWith(mockExtensionContext))
             assert.ok(activateExplorerStub.calledWith(mockExtensionContext))
+        })
+
+        it('should register URI handler', async function () {
+            await activate(mockToolkitExtContext)
+
+            assert.ok(registerUriHandlerStub.calledOnceWith(mockToolkitExtContext))
+            assert.ok(mockExtensionContext.subscriptions.length > 0)
         })
     })
 
@@ -180,7 +204,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS').returns(false)
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(false)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(isSageMakerStub.calledWith('SMUS'))
             assert.ok(isSageMakerStub.calledWith('SMUS-SPACE-REMOTE-ACCESS'))
@@ -192,7 +216,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(false)
             isInSmusSpaceEnvironmentStub.returns(true)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(activateConnectionMagicsSelectorStub.calledOnce)
@@ -206,7 +230,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isSageMakerStub.withArgs('SMUS-SPACE-REMOTE-ACCESS').returns(true)
             isInSmusSpaceEnvironmentStub.returns(false)
 
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(activateConnectionMagicsSelectorStub.calledOnce)
@@ -217,13 +241,13 @@ describe('SageMaker Unified Studio Main Activation', function () {
 
             // Test with true
             isInSmusSpaceEnvironmentStub.returns(true)
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
             assert.ok(setContextStub.calledWith('aws.smus.inSmusSpaceEnvironment', true))
 
             // Reset and test with false
             setContextStub.resetHistory()
             isInSmusSpaceEnvironmentStub.returns(false)
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
             assert.ok(setContextStub.calledWith('aws.smus.inSmusSpaceEnvironment', false))
         })
     })
@@ -237,7 +261,7 @@ describe('SageMaker Unified Studio Main Activation', function () {
             const setContextError = new Error('Context setting failed')
             setContextStub.rejects(setContextError)
 
-            await assert.rejects(() => activate(mockExtensionContext), /Context setting failed/)
+            await assert.rejects(() => activate(mockToolkitExtContext), /Context setting failed/)
 
             // Verify that initializeResourceMetadata was called but subsequent functions were not
             assert.ok(initializeResourceMetadataStub.calledOnce)
@@ -252,22 +276,25 @@ describe('SageMaker Unified Studio Main Activation', function () {
             isInSmusSpaceEnvironmentStub.returns(true)
 
             // All functions should succeed
-            await activate(mockExtensionContext)
+            await activate(mockToolkitExtContext)
 
             // Verify all expected functions were called
             assert.ok(initializeResourceMetadataStub.calledOnce)
             assert.ok(setContextStub.calledOnce)
             assert.ok(activateConnectionMagicsSelectorStub.calledOnce)
             assert.ok(activateExplorerStub.calledOnce)
+            assert.ok(registerUriHandlerStub.calledOnce)
         })
 
-        it('should handle undefined extension context gracefully', async function () {
-            const undefinedContext = undefined as any
+        it('should handle minimal extension context gracefully', async function () {
+            const minimalContext = {
+                extensionContext: mockExtensionContext,
+            } as any
 
-            // Should not throw for undefined context, but let the individual activation functions handle it
-            await activate(undefinedContext)
+            // Should not throw with minimal context
+            await activate(minimalContext)
 
-            assert.ok(activateExplorerStub.calledWith(undefinedContext))
+            assert.ok(activateExplorerStub.called)
         })
     })
 })

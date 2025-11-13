@@ -115,10 +115,16 @@ export async function deeplinkConnect(
     wsUrl: string,
     token: string,
     domain: string,
-    appType?: string
+    appType?: string,
+    isSMUS: boolean = false
 ) {
     getLogger().debug(
-        `sm:deeplinkConnect: connectionIdentifier: ${connectionIdentifier} session: ${session} wsUrl: ${wsUrl} token: ${token}`
+        'sm:deeplinkConnect: connectionIdentifier: %s session: %s wsUrl: %s token: %s isSMUS: %s',
+        connectionIdentifier,
+        session,
+        wsUrl,
+        token,
+        isSMUS
     )
 
     if (isRemoteWorkspace()) {
@@ -134,7 +140,7 @@ export async function deeplinkConnect(
             connectionIdentifier,
             ctx.extensionContext,
             'sm_dl',
-            false /* isSMUS */,
+            isSMUS,
             undefined /* node */,
             session,
             wsUrl,
@@ -152,7 +158,10 @@ export async function deeplinkConnect(
         )
     } catch (err: any) {
         getLogger().error(
-            `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${connectionIdentifier} error: ${err}`
+            'sm:OpenRemoteConnect: Unable to connect to target space with arn: %s error: %s isSMUS: %s',
+            connectionIdentifier,
+            err,
+            isSMUS
         )
 
         if (![RemoteSessionError.MissingExtension, RemoteSessionError.ExtensionVersionTooLow].includes(err.code)) {
@@ -357,7 +366,8 @@ async function handleRunningSpaceWithDisabledAccess(
                 await client.waitForAppInService(
                     node.spaceApp.DomainId!,
                     spaceName,
-                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                    node.spaceApp.SpaceSettingsSummary!.AppType!,
+                    progress
                 )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
@@ -401,7 +411,8 @@ async function handleStoppedSpace(
                 await client.waitForAppInService(
                     node.spaceApp.DomainId!,
                     spaceName,
-                    node.spaceApp.SpaceSettingsSummary!.AppType!
+                    node.spaceApp.SpaceSettingsSummary!.AppType!,
+                    progress
                 )
                 await tryRemoteConnection(node, ctx, progress)
             }
