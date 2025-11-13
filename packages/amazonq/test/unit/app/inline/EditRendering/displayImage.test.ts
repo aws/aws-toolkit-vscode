@@ -273,6 +273,7 @@ describe('displaySvgDecoration cursor distance auto-discard', function () {
     })
 })
 
+// TODO: reenable this test, need some updates after refactor
 describe.skip('displaySvgDecoration cursor distance auto-reject', function () {
     let sandbox: sinon.SinonSandbox
     let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
