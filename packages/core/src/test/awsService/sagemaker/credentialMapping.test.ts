@@ -13,7 +13,7 @@ import {
     saveMappings,
     setSpaceIamProfile,
     setSpaceSsoProfile,
-    setSmusSpaceSsoProfile,
+    setSmusSpaceProfile,
     setSpaceCredentials,
 } from '../../../awsService/sagemaker/credentialMapping'
 import { Auth } from '../../../auth'
@@ -250,6 +250,7 @@ describe('credentialMapping', () => {
             mockNode.getParent.returns(mockParent as any)
             mockParent.getAuthProvider.returns(mockAuthProvider as any)
             mockParent.getProjectId.returns(projectId)
+            sandbox.stub(require('../../../sagemakerunifiedstudio/auth/model'), 'isSmusSsoConnection').returns(true)
 
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
@@ -388,7 +389,7 @@ describe('credentialMapping', () => {
         })
     })
 
-    describe('setSmusSpaceSsoProfile', () => {
+    describe('setSmusSpaceProfile', () => {
         let sandbox: sinon.SinonSandbox
 
         beforeEach(() => {
@@ -403,7 +404,7 @@ describe('credentialMapping', () => {
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
 
-            await setSmusSpaceSsoProfile('test-space', 'project-id')
+            await setSmusSpaceProfile('test-space', 'project-id', 'sso')
 
             const raw = writeStub.firstCall.args[1]
             const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
