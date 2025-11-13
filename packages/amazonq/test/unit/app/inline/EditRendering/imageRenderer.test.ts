@@ -7,12 +7,11 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
 // Remove static import - we'll use dynamic import instead
-// import { showEdits } from '../../../../../src/app/inline/EditRendering/imageRenderer'
+// import { EditsSuggestionSvg } from '../../../../../src/app/inline/EditRendering/imageRenderer'
 import { SvgGenerationService } from '../../../../../src/app/inline/EditRendering/svgGenerator'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 
-// TODO: fix L51
-describe.skip('showEdits', function () {
+describe('showEdits', function () {
     let sandbox: sinon.SinonSandbox
     let editorStub: sinon.SinonStubbedInstance<vscode.TextEditor>
     let documentStub: sinon.SinonStubbedInstance<vscode.TextDocument>
@@ -20,7 +19,7 @@ describe.skip('showEdits', function () {
     let displaySvgDecorationStub: sinon.SinonStub
     let loggerStub: sinon.SinonStubbedInstance<any>
     let getLoggerStub: sinon.SinonStub
-    let showEdits: any // Will be dynamically imported
+    let EditsSuggestionSvgClass: any // Will be dynamically imported
     let languageClientStub: any
     let sessionStub: any
     let itemStub: InlineCompletionItemWithReferences
@@ -76,7 +75,7 @@ describe.skip('showEdits', function () {
         // Now require the module - it should use our mocked getLogger
         // jscpd:ignore-end
         const imageRendererModule = require('../../../../../src/app/inline/EditRendering/imageRenderer')
-        showEdits = imageRendererModule.showEdits
+        EditsSuggestionSvgClass = imageRendererModule.EditsSuggestionSvg
 
         // Create document stub
         documentStub = {
@@ -137,12 +136,13 @@ describe.skip('showEdits', function () {
     })
 
     it('should return early when editor is undefined', async function () {
-        await showEdits(itemStub, undefined, sessionStub, languageClientStub)
-
+        // await showEdits(itemStub, undefined, sessionStub, languageClientStub)
+        const sut = new EditsSuggestionSvgClass(itemStub, undefined as any, languageClientStub, sessionStub)
+        await sut.show()
         // Verify that no SVG generation or display methods were called
         sinon.assert.notCalled(svgGenerationServiceStub.generateDiffSvg)
         sinon.assert.notCalled(displaySvgDecorationStub)
-        sinon.assert.notCalled(loggerStub.error)
+        sinon.assert.calledOnce(loggerStub.error)
     })
 
     it('should successfully generate and display SVG when all parameters are valid', async function () {
@@ -150,8 +150,8 @@ describe.skip('showEdits', function () {
         const mockSvgResult = createMockSvgResult()
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
-        await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
-
+        const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
+        await sut.show()
         // Verify SVG generation was called with correct parameters
         sinon.assert.calledOnce(svgGenerationServiceStub.generateDiffSvg)
         sinon.assert.calledWith(
@@ -162,17 +162,17 @@ describe.skip('showEdits', function () {
 
         // Verify display decoration was called with correct parameters
         sinon.assert.calledOnce(displaySvgDecorationStub)
-        sinon.assert.calledWith(
-            displaySvgDecorationStub,
-            editorStub,
-            mockSvgResult.svgImage,
-            mockSvgResult.startLine,
-            mockSvgResult.newCode,
-            mockSvgResult.originalCodeHighlightRange,
-            sessionStub,
-            languageClientStub,
-            itemStub
-        )
+        const ca = displaySvgDecorationStub.getCall(0)
+        assert.strictEqual(ca.args[0], editorStub)
+        assert.strictEqual(ca.args[1], mockSvgResult.svgImage)
+        assert.strictEqual(ca.args[2], mockSvgResult.startLine)
+        assert.strictEqual(ca.args[3], mockSvgResult.newCode)
+        assert.strictEqual(ca.args[4], mockSvgResult.originalCodeHighlightRange)
+        assert.strictEqual(ca.args[5], sessionStub)
+        assert.strictEqual(ca.args[6], languageClientStub)
+        assert.strictEqual(ca.args[7], itemStub)
+        assert.ok(Array.isArray(ca.args[8]))
+        assert.strictEqual(ca.args[8].length, 2)
 
         // Verify no errors were logged
         sinon.assert.notCalled(loggerStub.error)
@@ -183,7 +183,8 @@ describe.skip('showEdits', function () {
         const mockSvgResult = createMockSvgResult({ svgImage: undefined as any })
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
-        await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
+        const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
+        await sut.show()
 
         // Verify SVG generation was called
         sinon.assert.calledOnce(svgGenerationServiceStub.generateDiffSvg)
@@ -201,7 +202,8 @@ describe.skip('showEdits', function () {
         const testError = new Error('SVG generation failed')
         svgGenerationServiceStub.generateDiffSvg.rejects(testError)
 
-        await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
+        const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
+        await sut.show()
 
         // Verify SVG generation was called
         sinon.assert.calledOnce(svgGenerationServiceStub.generateDiffSvg)
@@ -224,7 +226,8 @@ describe.skip('showEdits', function () {
         const testError = new Error('Display decoration failed')
         displaySvgDecorationStub.rejects(testError)
 
-        await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
+        const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
+        await sut.show()
 
         // Verify SVG generation was called
         sinon.assert.calledOnce(svgGenerationServiceStub.generateDiffSvg)
@@ -238,10 +241,13 @@ describe.skip('showEdits', function () {
         assert.strictEqual(errorCall.args[0], `Error generating SVG image: ${testError}`)
     })
 
+    // TODO: not sure why it's called by constructor and still fail
     it('should use correct logger name', async function () {
-        await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
+        const sut = new EditsSuggestionSvgClass(itemStub, editorStub, languageClientStub, sessionStub)
+        await sut.show()
 
         // Verify getLogger was called with correct name
+        sinon.assert.calledOnce(getLoggerStub)
         sinon.assert.calledWith(getLoggerStub, 'nextEditPrediction')
     })
 
@@ -256,12 +262,8 @@ describe.skip('showEdits', function () {
         const mockSvgResult = createMockSvgResult()
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
-        await showEdits(
-            itemWithUndefinedText,
-            editorStub as unknown as vscode.TextEditor,
-            sessionStub,
-            languageClientStub
-        )
+        const sut = new EditsSuggestionSvgClass(itemWithUndefinedText, editorStub, languageClientStub, sessionStub)
+        await sut.show()
 
         // Verify SVG generation was called with undefined as string
         sinon.assert.calledOnce(svgGenerationServiceStub.generateDiffSvg)

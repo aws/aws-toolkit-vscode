@@ -51,6 +51,7 @@ export class EditsSuggestionSvg {
 
     async show(patchedSuggestion?: InlineCompletionItemWithReferences) {
         if (!this.editor) {
+            this.logger.error(`attempting to render an edit suggestion while editor is undefined`)
             return
         }
 
