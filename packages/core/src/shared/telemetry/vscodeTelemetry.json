@@ -1634,6 +1634,47 @@
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "smus_deeplinkConnect",
+            "description": "Emitted when a user connects to a SMUS space via deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                }
+            ]
         }
     ]
 }
