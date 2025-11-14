@@ -29,11 +29,11 @@ jobs:
             toolkit_changes: ${{ steps.build.outputs.toolkit_changes }}
             amazonq_changes: ${{ steps.build.outputs.amazonq_changes }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                   fetch-depth: 0
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
             # - if: github.event_name == 'schedule'
@@ -60,7 +60,7 @@ jobs:
                   npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
                   npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v5
               with:
                   name: artifacts
                   path: '*.vsix'
@@ -106,8 +106,8 @@ jobs:
         steps:
             # Must perform checkout first, it deletes the target directory
             # before running, thus would delete the downloaded artifacts.
-            - uses: actions/checkout@v4
-            - uses: actions/download-artifact@v4
+            - uses: actions/checkout@v5
+            - uses: actions/download-artifact@v6
             - name: Delete existing prerelease
               # "prerelease" (main branch), "pre-<feature>", or "rc-<date>"
               if: env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-') || startsWith(env.TAG_NAME, 'rc-')
