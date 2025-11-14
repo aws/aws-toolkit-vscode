@@ -319,7 +319,7 @@ export class DefaultLambdaClient {
     }
 
     private async createSdkClient(): Promise<LambdaSdkClient> {
-        const client = globals.sdkClientBuilderV3.createAwsService({
+        return globals.sdkClientBuilderV3.createAwsService({
             serviceClient: LambdaSdkClient,
             userAgent: !this.userAgent,
             clientOptions: {
@@ -330,7 +330,6 @@ export class DefaultLambdaClient {
                 }),
             },
         })
-        return client
     }
 }
 
