@@ -8,6 +8,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { EditDecorationManager, displaySvgDecoration } from '../../../../../src/app/inline/EditRendering/displayImage'
 import { EditSuggestionState } from '../../../../../src/app/inline/editSuggestionState'
+import { InlineCompletionLoggingReason } from 'aws-core-vscode/codewhisperer'
 
 // Shared helper function to create common stubs
 function createCommonStubs(sandbox: sinon.SinonSandbox) {
@@ -371,7 +372,12 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
 
         selectionChangeListener(createSelectionChangeEvent(startLine + 26))
 
-        sinon.assert.calledOnceWithExactly(commandsStub, 'aws.amazonq.inline.rejectEdit')
+        sinon.assert.calledOnceWithExactly(
+            commandsStub,
+            'aws.amazonq.inline.rejectEdit',
+            false,
+            InlineCompletionLoggingReason.IMPLICIT_REJECT
+        )
     })
 
     it('should reject when cursor moves more than 25 lines before the edit', async function () {
@@ -384,7 +390,12 @@ describe('displaySvgDecoration cursor distance auto-reject', function () {
 
         selectionChangeListener(createSelectionChangeEvent(startLine - 26))
 
-        sinon.assert.calledOnceWithExactly(commandsStub, 'aws.amazonq.inline.rejectEdit')
+        sinon.assert.calledOnceWithExactly(
+            commandsStub,
+            'aws.amazonq.inline.rejectEdit',
+            false,
+            InlineCompletionLoggingReason.IMPLICIT_REJECT
+        )
     })
 
     it('should not reject when edit is near beginning of file and cursor cannot move far enough', async function () {
