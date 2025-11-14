@@ -9,7 +9,8 @@ import { getUserAgentPairs, userAgentPairsToString } from '../../shared/telemetr
 import globals from '../../shared/extensionGlobals'
 import type { UserAgent } from '@aws-sdk/types'
 
-const customUserAgentBase: [string, string] = ['LAMBDA-DEBUG', '1.0.0']
+const customUserAgentName = 'LAMBDA-DEBUG'
+const customUserAgentVersion = '1.0.0'
 
 export function getLambdaClientWithAgent(region: string, customUserAgent?: UserAgent): DefaultLambdaClient {
     if (!customUserAgent) {
@@ -22,7 +23,10 @@ export function getLambdaClientWithAgent(region: string, customUserAgent?: UserA
  * Returns properly formatted UserAgent pairs for AWS SDK v3
  */
 export function getLambdaDebugUserAgentPairs(): UserAgent {
-    return [customUserAgentBase, ...getUserAgentPairs({ includePlatform: true, includeClientId: true })]
+    return [
+        [customUserAgentName, customUserAgentVersion],
+        ...getUserAgentPairs({ includePlatform: true, includeClientId: true }),
+    ]
 }
 
 /**
@@ -44,7 +48,7 @@ export function getIoTSTClientWithAgent(region: string): IoTSecureTunnelingClien
     return globals.sdkClientBuilderV3.createAwsService({
         serviceClient: IoTSecureTunnelingClient,
         clientOptions: {
-            customUserAgent: [customUserAgentBase],
+            customUserAgent: [[customUserAgentName, customUserAgentVersion]],
             region,
         },
         userAgent: false,
