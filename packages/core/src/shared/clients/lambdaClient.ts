@@ -50,7 +50,7 @@ export class DefaultLambdaClient {
 
     public constructor(
         public readonly regionCode: string,
-        public readonly userAgent: string | UserAgent | undefined = undefined
+        public readonly userAgent: UserAgent | undefined = undefined
     ) {
         this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes (SDK default is 2 minutes)
     }

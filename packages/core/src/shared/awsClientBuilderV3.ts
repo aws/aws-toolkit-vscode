@@ -71,7 +71,7 @@ export interface AwsCommand<InputType extends object, OutputType extends object>
 export interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
-    customUserAgent: string | UserAgent
+    customUserAgent: UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
         handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>

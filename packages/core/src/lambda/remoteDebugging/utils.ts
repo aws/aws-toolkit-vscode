@@ -11,7 +11,7 @@ import type { UserAgent } from '@aws-sdk/types'
 
 const customUserAgentBase: [string, string] = ['LAMBDA-DEBUG', '1.0.0']
 
-export function getLambdaClientWithAgent(region: string, customUserAgent?: string | UserAgent): DefaultLambdaClient {
+export function getLambdaClientWithAgent(region: string, customUserAgent?: UserAgent): DefaultLambdaClient {
     if (!customUserAgent) {
         customUserAgent = getLambdaUserAgentPairs()
     }
