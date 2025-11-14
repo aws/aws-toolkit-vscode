@@ -11,7 +11,10 @@ import { getIcon, IconPath } from '../../shared/icons'
 import { generateSpaceStatus, updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
 import { UserActivity } from '../../shared/extensionUtilities'
 import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared/errors'
 import { SpaceStatus, RemoteAccess } from './constants'
+
+const logger = getLogger('sagemaker')
 
 export class SagemakerSpace {
     public label: string = ''
@@ -34,6 +37,10 @@ export class SagemakerSpace {
     }
 
     public updateSpace(spaceApp: SagemakerSpaceApp) {
+        // Edge case when this.spaceApp.App is null, returned by ListApp API for a Space that is not connected to for over 24 hours
+        if (!this.spaceApp.App) {
+            this.spaceApp.App = spaceApp.App
+        }
         this.setSpaceStatus(spaceApp.Status ?? '', spaceApp.App?.Status ?? '')
         // Only update RemoteAccess property to minimize impact due to minor structural differences between variables
         if (this.spaceApp.SpaceSettingsSummary && spaceApp.SpaceSettingsSummary?.RemoteAccess) {
@@ -107,13 +114,19 @@ export class SagemakerSpace {
             DomainId: this.spaceApp.DomainId,
             SpaceName: this.spaceApp.SpaceName,
         })
-
-        const app = await this.client.describeApp({
-            DomainId: this.spaceApp.DomainId,
-            AppName: this.spaceApp.App?.AppName,
-            AppType: this.spaceApp?.SpaceSettingsSummary?.AppType,
-            SpaceName: this.spaceApp.SpaceName,
-        })
+        // get app using ListApps API, with given DomainId and SpaceName
+        const app =
+            this.spaceApp.DomainId && this.spaceApp.SpaceName
+                ? await this.client.listAppForSpace(this.spaceApp.DomainId, this.spaceApp.SpaceName)
+                : undefined
+        if (!app) {
+            logger.error(
+                `updateSpaceAppStatus: unable to get app, [DomainId: ${this.spaceApp.DomainId}], [SpaceName: ${this.spaceApp.SpaceName}]`
+            )
+            throw new ToolkitError(
+                `Cannot update app status without [DomainId: ${this.spaceApp.DomainId} and SpaceName: ${this.spaceApp.SpaceName}]`
+            )
+        }
 
         // AWS DescribeSpace API returns full details with property names like 'SpaceSettings'
         // but our internal SagemakerSpaceApp type expects 'SpaceSettingsSummary' (from ListSpaces API)
@@ -178,11 +191,15 @@ export class SagemakerSpace {
     public getContext(): string {
         const status = this.getStatus()
 
-        // only distinguish between running and non-running states
         if (status === SpaceStatus.RUNNING) {
             return 'awsSagemakerSpaceRunningNode'
         }
 
+        if (status === SpaceStatus.STOPPED) {
+            return 'awsSagemakerSpaceStoppedNode'
+        }
+
+        // For all other states (STARTING, STOPPING, etc.), return base context
         return this.isSMUSSpace ? 'smusSpaceNode' : 'awsSagemakerSpaceNode'
     }
 
@@ -195,7 +212,6 @@ export class SagemakerSpace {
  * Sets up user activity monitoring for SageMaker spaces
  */
 export async function setupUserActivityMonitoring(extensionContext: vscode.ExtensionContext): Promise<void> {
-    const logger = getLogger()
     logger.info('setupUserActivityMonitoring: Starting user activity monitoring setup')
 
     const tmpDirectory = '/tmp/'

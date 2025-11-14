@@ -1,5 +1,4 @@
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+/*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -58,6 +57,12 @@ const appTypeSettingsMap: Record<string, string> = {
     [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
     [AppType.CodeEditor as string]: 'CodeEditorAppSettings',
 } as const
+
+export const waitForAppConfig = {
+    softTimeoutRetries: 12,
+    hardTimeoutRetries: 120,
+    intervalMs: 5000,
+}
 
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
@@ -126,6 +131,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
     public deleteApp(request: DeleteAppCommandInput): Promise<DeleteAppCommandOutput> {
         return this.makeRequest(DeleteAppCommand, request)
+    }
+
+    public async listAppForSpace(domainId: string, spaceName: string): Promise<AppDetails | undefined> {
+        const appsList = await this.listApps({ DomainIdEquals: domainId, SpaceNameEquals: spaceName })
+            .flatten()
+            .promise()
+        return appsList[0] // At most one App for one SagemakerSpace
     }
 
     public async startSpace(spaceName: string, domainId: string, skipInstanceTypePrompts: boolean = false) {
@@ -357,10 +369,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         domainId: string,
         spaceName: string,
         appType: string,
-        maxRetries = 30,
-        intervalMs = 5000
+        progress?: vscode.Progress<{ message?: string; increment?: number }>
     ): Promise<void> {
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
+        for (let attempt = 0; attempt < waitForAppConfig.hardTimeoutRetries; attempt++) {
             const { Status } = await this.describeApp({
                 DomainId: domainId,
                 SpaceName: spaceName,
@@ -376,7 +387,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 throw new ToolkitError(`App failed to start. Status: ${Status}`)
             }
 
-            await sleep(intervalMs)
+            if (attempt === waitForAppConfig.softTimeoutRetries) {
+                progress?.report({
+                    message: `Starting the space is taking longer than usual. The space will connect when ready`,
+                })
+            }
+
+            await sleep(waitForAppConfig.intervalMs)
         }
 
         throw new ToolkitError(`Timed out waiting for app "${spaceName}" to reach "InService" status.`)
