@@ -48,8 +48,7 @@ export async function createFederatedConnectionNode(
             } catch (err) {
                 logger.error(`Failed to get federated entities: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
-                await handleCredExpiredError(err)
+                await handleCredExpiredError(err, true)
                 return [
                     createErrorItem(`Failed to load entities - ${errorMessage}`, 'entities', connection.connectionId),
                 ]
@@ -171,8 +170,7 @@ function createGlueEntityNode(
             } catch (err) {
                 logger.error(`Failed to get children for entity ${entity.EntityName}: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
-                await handleCredExpiredError(err)
+                await handleCredExpiredError(err, true)
                 return [
                     createErrorItem(
                         `Failed to load children - ${errorMessage}`,

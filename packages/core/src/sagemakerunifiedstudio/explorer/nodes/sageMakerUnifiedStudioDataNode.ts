@@ -84,8 +84,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             const projectInfo = project ? `project: ${project.id}, domain: ${project.domainId}` : 'unknown project'
             const errorMessage = 'Failed to get connections'
             this.logger.error(`Failed to get connections for ${projectInfo}: ${(err as Error).message}`)
-            await handleCredExpiredError(err)
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(err, true)
             return [createErrorItem(errorMessage, 'connections', this.id)]
         }
     }
@@ -174,8 +173,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get S3 connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get S3 connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
-            await handleCredExpiredError(connErr)
+            await handleCredExpiredError(connErr, true)
             return [createErrorItem(errorMessage, `s3-${connection.connectionId}`, this.id)]
         }
     }
@@ -203,8 +201,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get Redshift connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Redshift connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
-            await handleCredExpiredError(connErr)
+            await handleCredExpiredError(connErr, true)
             return createErrorItem(errorMessage, `redshift-${connection.connectionId}`, this.id)
         }
     }
@@ -225,8 +222,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get Lakehouse connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Lakehouse connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
-            await handleCredExpiredError(connErr)
+            await handleCredExpiredError(connErr, true)
             return createErrorItem(errorMessage, `lakehouse-${connection.connectionId}`, this.id)
         }
     }

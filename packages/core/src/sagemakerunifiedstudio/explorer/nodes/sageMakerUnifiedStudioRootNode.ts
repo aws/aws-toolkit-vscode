@@ -625,8 +625,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             // Handle network/API failures
             logger.error('Failed to select project: %s', error.message)
-            void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
-            await handleCredExpiredError(err)
+            await handleCredExpiredError(err, true)
         }
     })
 }

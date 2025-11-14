@@ -21,7 +21,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { SmusErrorCodes } from '../../shared/smusUtils'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { SmusIamConnection } from '../../auth/model'
-import { createDZClientBaseOnDomainMode } from './utils'
+import { createDZClientBaseOnDomainMode, createErrorItem } from './utils'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -98,22 +98,29 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
 
                 // Skip access check if we're in SMUS space environment (already in project space)
                 if (!getContext('aws.smus.inSmusSpaceEnvironment')) {
-                    const hasAccess = await this.checkProjectCredsAccess(this.project!.id)
-                    if (!hasAccess) {
-                        return [
-                            {
-                                id: 'smusProjectAccessDenied',
-                                resource: {},
-                                getTreeItem: () => {
-                                    const item = new vscode.TreeItem(
-                                        'You do not have access to this project. Contact your administrator.',
-                                        vscode.TreeItemCollapsibleState.None
-                                    )
-                                    return item
+                    try {
+                        const hasAccess = await this.checkProjectCredsAccess(this.project!.id)
+                        if (!hasAccess) {
+                            return [
+                                {
+                                    id: 'smusProjectAccessDenied',
+                                    resource: {},
+                                    getTreeItem: () => {
+                                        const item = new vscode.TreeItem(
+                                            'You do not have access to this project. Contact your administrator.',
+                                            vscode.TreeItemCollapsibleState.None
+                                        )
+                                        return item
+                                    },
+                                    getParent: () => this,
                                 },
-                                getParent: () => this,
-                            },
-                        ]
+                            ]
+                        }
+                    } catch (err) {
+                        const errorMessage = (err as Error).message
+                        this.logger.error('Failed to check project credentials: %s', errorMessage)
+                        await handleCredExpiredError(err, true)
+                        return [createErrorItem(`Failed to load the project`, this.project?.id || '', this.id)]
                     }
                 }
 
@@ -207,8 +214,9 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 this.logger.debug(
                     'Access denied when obtaining project credentials, user likely lacks project access or role permissions'
                 )
+                return false
             }
-            return false
+            throw err
         }
     }
 
