@@ -30,8 +30,27 @@ import {
     SpaceStatus,
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { SageMakerSshConfig } from './sshConfig'
+import { findSshPath } from '../../shared/utilities/pathFind'
 
 const localize = nls.loadMessageBundle()
+
+/**
+ * Validates SSH configuration before starting connection.
+ */
+async function validateSshConfig(): Promise<void> {
+    const sshPath = await findSshPath()
+    if (!sshPath) {
+        throw new ToolkitError(
+            'SSH is required to connect to SageMaker spaces, but was not found.Install SSH to connect to spaces.'
+        )
+    }
+    const sshConfig = new SageMakerSshConfig(sshPath, 'sm_', 'sagemaker_connect')
+    const result = await sshConfig.ensureValid()
+    if (result.isErr()) {
+        throw result.err()
+    }
+}
 
 export async function filterSpaceAppsByDomainUserProfiles(parentNode: SagemakerParentNode): Promise<void> {
     if (parentNode.domainUserProfiles.size === 0) {
@@ -112,6 +131,9 @@ export async function deeplinkConnect(
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
+
+    // Validate SSH config before attempting connection
+    await validateSshConfig()
 
     try {
         const remoteEnv = await prepareDevEnvConnection(
@@ -209,6 +231,9 @@ export async function openRemoteConnect(
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
+
+    // Validate SSH config before attempting connection
+    await validateSshConfig()
 
     const spaceName = node.spaceApp.SpaceName!
     await tryRefreshNode(node)

@@ -8,7 +8,6 @@
 import * as vscode from 'vscode'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
-import { SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
 import * as os from 'os'
@@ -90,14 +89,6 @@ export async function prepareDevEnvConnection(
 
     await startLocalServer(ctx)
     await removeKnownHost(hostname)
-
-    const sshConfig = new SshConfig(ssh, 'sm_', 'sagemaker_connect')
-    const config = await sshConfig.ensureValid()
-    if (config.isErr()) {
-        const err = config.err()
-        logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
-        throw err
-    }
 
     // set envirionment variables
     const vars = getSmSsmEnv(ssm, path.join(ctx.globalStorageUri.fsPath, 'sagemaker-local-server-info.json'))
