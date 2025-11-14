@@ -61,7 +61,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             },
         }
 
-        // Stub getContext to return false for express mode by default (SSO connections)
+        // Stub getContext to return false for IAM mode by default (SSO connections)
         sinon.stub(require('../../../../shared/vscode/setContext'), 'getContext').returns(false)
 
         // Stub SmusAuthenticationProvider.fromContext
@@ -306,7 +306,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
         })
     })
 
-    describe('IAM connections in express mode', function () {
+    describe('IAM connections in IAM mode', function () {
         let mockIamConnection: any
 
         beforeEach(function () {
@@ -323,10 +323,10 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
 
             currentActiveConnection = mockIamConnection
 
-            // Override getContext stub to return true for express mode
+            // Override getContext stub to return true for IAM mode
             const getContextModule = require('../../../../shared/vscode/setContext')
             const existingStub = getContextModule.getContext as sinon.SinonStub
-            existingStub.withArgs('aws.smus.isExpressMode').returns(true)
+            existingStub.withArgs('aws.smus.isIamMode').returns(true)
         })
 
         it('should display profile name with session name for IAM connection', async function () {

@@ -441,7 +441,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
     })
 
-    describe('Express mode error handling', function () {
+    describe('IAM mode error handling', function () {
         beforeEach(function () {
             // Add getIamPrincipalArn stub to mockAuthProvider
             mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves('arn:aws:iam::123456789012:user/test-user')
@@ -479,7 +479,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(treeItem.label, 'No spaces found for IAM principal')
         })
 
-        it('should return access denied error node when Express mode returns AccessDeniedException', async function () {
+        it('should return access denied error node when IAM mode returns AccessDeniedException', async function () {
             const accessDeniedError = new Error("You don't have permissions to access this resource")
             accessDeniedError.name = 'AccessDeniedException'
             const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
@@ -491,7 +491,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children[0].id, 'smusAccessDenied')
         })
 
-        it('should return user profile error node when Express mode returns generic error', async function () {
+        it('should return user profile error node when IAM mode returns generic error', async function () {
             const genericError = new Error('Failed to retrieve user profile information')
             const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
             updateChildrenStub.rejects(genericError)
@@ -506,13 +506,13 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
     })
 
-    describe('getUserProfileIdForExpressMode - IAM user flow', function () {
+    describe('getUserProfileIdForIamAuthMode - IAM user flow', function () {
         let createDZClientStub: sinon.SinonStub
         let getContextStub: sinon.SinonStub
 
         beforeEach(function () {
             getContextStub = vscodeUtils.getContext as sinon.SinonStub
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
             createDZClientStub = sinon.stub(utils, 'createDZClientBaseOnDomainMode')
         })
 
@@ -562,14 +562,14 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
     })
 
-    describe('getUserProfileIdForExpressMode - IAM role session flow', function () {
+    describe('getUserProfileIdForIamAuthMode - IAM role session flow', function () {
         let mockDataZoneCustomClientHelper: any
         let getInstanceStub: sinon.SinonStub
         let getContextStub: sinon.SinonStub
 
         beforeEach(function () {
             getContextStub = vscodeUtils.getContext as sinon.SinonStub
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
 
             mockDataZoneCustomClientHelper = {
                 getUserProfileIdForSession: sinon.stub(),

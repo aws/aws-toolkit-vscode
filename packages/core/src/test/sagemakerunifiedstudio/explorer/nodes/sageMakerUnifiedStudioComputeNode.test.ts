@@ -72,11 +72,11 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             assert.deepStrictEqual(children, [])
         })
 
-        it('returns connection nodes and spaces node when project is selected (non-express mode)', async function () {
+        it('returns connection nodes and spaces node when project is selected (non-IAM mode)', async function () {
             const mockProject = { id: 'project-123', name: 'Test Project' }
             ;(mockParent.getProject as sinon.SinonStub).returns(mockProject)
 
-            // Mock express mode to be false
+            // Mock IAM mode to be false
             sinon.stub(setContext, 'getContext').returns(false)
 
             const children = await computeNode.getChildren()
@@ -87,11 +87,11 @@ describe('SageMakerUnifiedStudioComputeNode', function () {
             assert.ok(children[2] instanceof SageMakerUnifiedStudioSpacesParentNode)
         })
 
-        it('returns only spaces node when project is selected (express mode)', async function () {
+        it('returns only spaces node when project is selected (IAM mode)', async function () {
             const mockProject = { id: 'project-123', name: 'Test Project' }
             ;(mockParent.getProject as sinon.SinonStub).returns(mockProject)
 
-            // Mock express mode to be true
+            // Mock IAM mode to be true
             sinon.stub(setContext, 'getContext').returns(true)
 
             const children = await computeNode.getChildren()

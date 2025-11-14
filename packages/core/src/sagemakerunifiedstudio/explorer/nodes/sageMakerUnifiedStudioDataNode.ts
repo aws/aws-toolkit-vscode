@@ -116,7 +116,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         }
 
         // Add Redshift nodes second
-        if (!getContext('aws.smus.isExpressMode')) {
+        if (!getContext('aws.smus.isIamMode')) {
             for (const connection of redshiftConnections) {
                 if (connection.name.startsWith('project.lakehouse')) {
                     continue

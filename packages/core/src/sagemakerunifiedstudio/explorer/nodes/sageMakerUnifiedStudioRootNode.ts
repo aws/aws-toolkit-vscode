@@ -138,7 +138,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             ]
         }
 
-        // When authenticated, show auth info and projects (same for both Express and non-Express mode)
+        // When authenticated, show auth info and projects (same for both IAM and non-IAM mode)
         return [this.authInfoNode, this.projectNode]
     }
 
@@ -530,7 +530,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             let allProjects: DataZoneProject[]
 
-            if (getContext('aws.smus.isExpressMode')) {
+            if (getContext('aws.smus.isIamMode')) {
                 // Filter projects by IAM profile (user or role session)
                 try {
                     allProjects = await fetchProjectsByIamProfile(authProvider, datazoneClient)
@@ -568,7 +568,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                     return error
                 }
             } else {
-                // In non-Express mode, fetch all projects without filtering
+                // In non-IAM mode, fetch all projects without filtering
                 allProjects = await datazoneClient.fetchAllProjects()
             }
 
@@ -576,7 +576,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             // Handle no projects scenario
             if (items.length === 0) {
-                if (getContext('aws.smus.isExpressMode')) {
+                if (getContext('aws.smus.isIamMode')) {
                     logger.debug('No accessible projects found for IAM principal')
                     void vscode.window.showInformationMessage('No accessible projects found for your IAM principal')
                 } else {

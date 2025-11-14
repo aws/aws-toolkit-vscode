@@ -300,9 +300,9 @@ describe('SelectSMUSProject', function () {
             }),
         } as any)
 
-        // Stub getContext to return false for Express mode by default (non-Express mode)
+        // Stub getContext to return false for IAM mode by default (non-IAM mode)
         getContextStub = sinon.stub()
-        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(false)
         getContextStub.callThrough()
         sinon.replace(setContextModule, 'getContext', getContextStub)
 
@@ -501,9 +501,9 @@ describe('selectSMUSProject - Additional Tests', function () {
             }),
         } as any)
 
-        // Stub getContext to return false for Express mode by default (non-Express mode)
+        // Stub getContext to return false for IAM mode by default (non-IAM mode)
         getContextStub = sinon.stub()
-        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(false)
         getContextStub.callThrough()
         sinon.replace(setContextModule, 'getContext', getContextStub)
 
@@ -662,9 +662,9 @@ describe('selectSMUSProject - Express Mode', function () {
         createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
         executeCommandStub = sinon.stub(vscode.commands, 'executeCommand')
 
-        // Stub getContext to simulate Express mode
+        // Stub getContext to simulate IAM mode
         getContextStub = sinon.stub()
-        getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(true)
         getContextStub.callThrough()
         sinon.replace(setContextModule, 'getContext', getContextStub)
     })
@@ -673,7 +673,7 @@ describe('selectSMUSProject - Express Mode', function () {
         sinon.restore()
     })
 
-    it('filters projects to show only user-created projects in Express mode', async function () {
+    it('filters projects to show only user-created projects in IAM mode', async function () {
         mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject])
 
         const result = await selectSMUSProject(mockProjectNode as any)
@@ -692,7 +692,7 @@ describe('selectSMUSProject - Express Mode', function () {
         assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'))
     })
 
-    it('shows message when no user-created projects found in Express mode', async function () {
+    it('shows message when no user-created projects found in IAM mode', async function () {
         mockDataZoneClient.fetchAllProjects.resolves([])
 
         const result = await selectSMUSProject(mockProjectNode as any)
@@ -716,7 +716,7 @@ describe('selectSMUSProject - Express Mode', function () {
         assert.ok(!mockProjectNode.setProject.called)
     })
 
-    it('shows all user-created projects when multiple exist in Express mode', async function () {
+    it('shows all user-created projects when multiple exist in IAM mode', async function () {
         const userProject2: DataZoneProject = {
             id: 'project-789',
             name: 'Another User Project',
@@ -726,7 +726,7 @@ describe('selectSMUSProject - Express Mode', function () {
             updatedAt: new Date(Date.now() - 172800000), // 2 days ago
         }
 
-        // In Express mode, fetchAllProjects is called with groupIdentifier filter
+        // In IAM mode, fetchAllProjects is called with groupIdentifier filter
         // So the API returns only projects for that group (already filtered)
         mockDataZoneClient.fetchAllProjects.resolves([userProject, userProject2])
 
@@ -745,15 +745,15 @@ describe('selectSMUSProject - Express Mode', function () {
         assert.ok(items.some((item: any) => item.data.id === userProject2.id))
     })
 
-    it('does not filter projects in non-Express mode', async function () {
-        // Stub getContext to return false for Express mode
-        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+    it('does not filter projects in non-IAM mode', async function () {
+        // Stub getContext to return false for IAM mode
+        getContextStub.withArgs('aws.smus.isIamMode').returns(false)
 
         mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject])
 
         await selectSMUSProject(mockProjectNode as any)
 
-        // Verify DataZoneCustomClientHelper.getInstance was NOT called in non-Express mode
+        // Verify DataZoneCustomClientHelper.getInstance was NOT called in non-IAM mode
         assert.ok(!getInstanceStub.called)
 
         // Verify all projects are shown in quick pick
@@ -807,7 +807,7 @@ describe('selectSMUSProject - Error Handling', function () {
         } as any)
 
         getContextStub = sinon.stub()
-        getContextStub.withArgs('aws.smus.isExpressMode').returns(false)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(false)
         getContextStub.callThrough()
         sinon.replace(setContextModule, 'getContext', getContextStub)
 
@@ -836,11 +836,11 @@ describe('selectSMUSProject - Error Handling', function () {
         })
     })
 
-    describe('No accessible projects in Express mode', function () {
+    describe('No accessible projects in IAM mode', function () {
         beforeEach(function () {
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
 
-            // Override the SSO connection with IAM connection for Express mode tests
+            // Override the SSO connection with IAM connection for IAM mode tests
             sinon.restore()
 
             // Re-setup mocks with IAM connection
@@ -910,13 +910,13 @@ describe('selectSMUSProject - Error Handling', function () {
             createQuickPickStub = sinon.stub(pickerPrompter, 'createQuickPick').returns(mockQuickPick as any)
 
             getContextStub = sinon.stub()
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
             getContextStub.callThrough()
             sinon.replace(setContextModule, 'getContext', getContextStub)
         })
 
         it('displays "No accessible projects found" when user has no projects they created', async function () {
-            // In Express mode, fetchAllProjects is called with groupIdentifier filter
+            // In IAM mode, fetchAllProjects is called with groupIdentifier filter
             // which should return empty array when no projects match
             mockDataZoneClient.fetchAllProjects.resolves([])
 
@@ -976,7 +976,7 @@ describe('selectSMUSProject - Error Handling', function () {
             })
 
             const getContextStub = sinon.stub()
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
             getContextStub.callThrough()
             sinon.replace(setContextModule, 'getContext', getContextStub)
 
@@ -1031,7 +1031,7 @@ describe('selectSMUSProject - Error Handling', function () {
             sinon.stub(SmusUtils, 'isIamUserArn').returns(true)
 
             const getContextStub = sinon.stub()
-            getContextStub.withArgs('aws.smus.isExpressMode').returns(true)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
             getContextStub.callThrough()
             sinon.replace(setContextModule, 'getContext', getContextStub)
 

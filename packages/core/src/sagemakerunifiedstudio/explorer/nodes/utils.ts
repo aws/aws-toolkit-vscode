@@ -52,7 +52,7 @@ export function getLabel(data: {
             data.value?.connection?.type === ConnectionType.LAKEHOUSE &&
             DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(data.value?.connection?.name)
         ) {
-            if (getContext('aws.smus.isExpressMode')) {
+            if (getContext('aws.smus.isIamMode')) {
                 return 'Catalogs'
             }
             return 'Lakehouse'
@@ -473,8 +473,8 @@ export function isFederatedConnection(connection?: DataZoneConnection): boolean 
 
 /**
  * Creates a DataZoneClient with appropriate credentials provider based on domain mode
- * If domain mode is express mode, use the credential profile credential provider
- * If domain mode is not express mode, use the DER credential provider
+ * If domain mode is IAM mode, use the credential profile credential provider
+ * If domain mode is not IAM mode, use the DER credential provider
  * @param smusAuthProvider The SMUS authentication provider
  * @returns Promise resolving to DataZoneClient instance
  */
@@ -482,7 +482,7 @@ export async function createDZClientBaseOnDomainMode(
     smusAuthProvider: SmusAuthenticationProvider
 ): Promise<DataZoneClient> {
     let credentialsProvider
-    if (getContext('aws.smus.isExpressMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
+    if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
         credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
             (smusAuthProvider.activeConnection as SmusIamConnection).profileName
         )
@@ -498,8 +498,8 @@ export async function createDZClientBaseOnDomainMode(
 
 /**
  * Creates a DataZoneClient with appropriate credentials provider for a specific project
- * If domain mode is express mode, use the project credential provider
- * If domain mode is not express mode, use the DER credential provider
+ * If domain mode is IAM mode, use the project credential provider
+ * If domain mode is not IAM mode, use the DER credential provider
  * @param smusAuthProvider The SMUS authentication provider
  * @param projectId The project ID for project-specific credentials
  * @returns Promise resolving to DataZoneClient instance
@@ -508,7 +508,7 @@ export async function createDZClientForProject(
     smusAuthProvider: SmusAuthenticationProvider,
     projectId: string
 ): Promise<DataZoneClient> {
-    const credentialsProvider = getContext('aws.smus.isExpressMode')
+    const credentialsProvider = getContext('aws.smus.isIamMode')
         ? await smusAuthProvider.getProjectCredentialProvider(projectId)
         : await smusAuthProvider.getDerCredentialsProvider()
 

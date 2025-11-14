@@ -66,11 +66,11 @@ export function setSmusSpaceEnvironmentContext(inSmusSpace: boolean): Promise<vo
 }
 
 /**
- * Sets the context variable for SMUS Express mode state
- * @param isExpressMode Whether the current domain is in Express mode
+ * Sets the context variable for SMUS IAM mode state
+ * @param isIamMode Whether the current domain is in IAM mode
  */
-export function setSmusExpressModeContext(isExpressMode: boolean): Promise<void> {
-    return setContext('aws.smus.isExpressMode', isExpressMode)
+export function setSmusIamModeContext(isIamMode: boolean): Promise<void> {
+    return setContext('aws.smus.isIamMode', isIamMode)
 }
 const authClassName = 'SmusAuthenticationProvider'
 
@@ -154,20 +154,20 @@ export class SmusAuthenticationProvider {
             await setSmusConnectedContext(this.isConnected())
             await setSmusSpaceEnvironmentContext(SmusUtils.isInSmusSpaceEnvironment())
 
-            // Set Express mode context based on connection metadata
+            // Set IAM mode context based on connection metadata
             const activeConn = this.activeConnection
             if (activeConn && 'type' in activeConn && activeConn.type === 'iam') {
                 const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
                 const connectionMetadata = smusConnections[activeConn.id]
-                const isExpressDomain = connectionMetadata?.isExpressDomain || false
-                await setSmusExpressModeContext(isExpressDomain)
+                const isIamDomain = connectionMetadata?.isIamDomain || false
+                await setSmusIamModeContext(isIamDomain)
             } else {
-                // Clear Express mode context for non-IAM connections or no connection
-                await setSmusExpressModeContext(false)
+                // Clear IAM mode context for non-IAM connections or no connection
+                await setSmusIamModeContext(false)
             }
-            // Update Express mode context in SMUS space environment
+            // Update IAM mode context in SMUS space environment
             if (getContext('aws.smus.inSmusSpaceEnvironment')) {
-                void this.initExpressModeContextInSpaceEnvironment()
+                void this.initIamModeContextInSpaceEnvironment()
             }
 
             this.onDidChangeEmitter.fire()
@@ -177,30 +177,30 @@ export class SmusAuthenticationProvider {
         void setSmusConnectedContext(this.isConnectionValid())
         void setSmusSpaceEnvironmentContext(SmusUtils.isInSmusSpaceEnvironment())
 
-        // Set initial Express mode context
+        // Set initial IAM mode context
         void (async () => {
             const activeConn = this.activeConnection
             if (activeConn && 'type' in activeConn && activeConn.type === 'iam') {
                 const state = this.auth.getStateMemento()
                 const smusConnections = (state.get('smus.connections') as any) || {}
                 const connectionMetadata = smusConnections[activeConn.id]
-                const isExpressDomain = connectionMetadata?.isExpressDomain || false
-                await setSmusExpressModeContext(isExpressDomain)
+                const isIamDomain = connectionMetadata?.isIamDomain || false
+                await setSmusIamModeContext(isIamDomain)
             } else {
-                await setSmusExpressModeContext(false)
+                await setSmusIamModeContext(false)
             }
         })()
 
-        // Update Express mode context in SMUS space environment
+        // Update IAM mode context in SMUS space environment
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
-            void this.initExpressModeContextInSpaceEnvironment()
+            void this.initIamModeContextInSpaceEnvironment()
         }
     }
 
     /**
-     * Initializes Express mode context in SMUS space environment
+     * Initializes IAM mode context in SMUS space environment
      */
-    private async initExpressModeContextInSpaceEnvironment(): Promise<void> {
+    private async initIamModeContextInSpaceEnvironment(): Promise<void> {
         try {
             const resourceMetadata = getResourceMetadata()
             if (
@@ -212,15 +212,15 @@ export class SmusAuthenticationProvider {
 
                 const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
 
-                // Get DataZoneCustomClientHelper instance and check if domain is Express mode
+                // Get DataZoneCustomClientHelper instance and check if domain is IAM mode
                 const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(credentialsProvider, region)
-                const isExpress = await datazoneCustomClientHelper.isExpressDomain(domainId)
-                this.logger.debug(`SMUS Auth: is in express mode ${isExpress}`)
-                await setSmusExpressModeContext(isExpress)
+                const isIamMode = await datazoneCustomClientHelper.isIamDomain(domainId)
+                this.logger.debug(`SMUS Auth: is in IAM mode ${isIamMode}`)
+                await setSmusIamModeContext(isIamMode)
             }
         } catch (error) {
-            this.logger.error('Failed to check Express mode in SMUS space environment:  %s', error)
-            await setSmusExpressModeContext(false)
+            this.logger.error('Failed to check IAM mode in SMUS space environment:  %s', error)
+            await setSmusIamModeContext(false)
         }
     }
 
@@ -371,7 +371,7 @@ export class SmusAuthenticationProvider {
 
         let domainUrl
         try {
-            logger.debug(`SMUS Auth: Finding Express domain in region using profile ${savedProfileName}`)
+            logger.debug(`SMUS Auth: Finding IAM-based domain in region using profile ${savedProfileName}`)
 
             // Get DataZoneCustomClientHelper instance
             const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
@@ -379,22 +379,22 @@ export class SmusAuthenticationProvider {
                 region
             )
 
-            // Find the Express domain using the client
-            const expressDomain = await datazoneCustomClientHelper.getExpressDomain()
+            // Find the IAM-based domain using the client
+            const iamDomain = await datazoneCustomClientHelper.getIamDomain()
 
-            if (!expressDomain) {
-                logger.warn(`SMUS Auth: No Express domain found in region ${region}, proceeding with normal restore`)
+            if (!iamDomain) {
+                logger.warn(`SMUS Auth: No IAM-based domain found in region ${region}, proceeding with normal restore`)
                 await this.secondaryAuth.restoreConnection()
                 return
             }
 
-            logger.debug(`SMUS Auth: Found Express domain: ${expressDomain.name} (${expressDomain.id})`)
+            logger.debug(`SMUS Auth: Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
 
-            // Construct domain URL from the Express domain
-            domainUrl = expressDomain.portalUrl || `https://${expressDomain.id}.sagemaker.${region}.on.aws/`
-            logger.debug(`SMUS Auth: Discovered Express domain URL: ${domainUrl}`)
+            // Construct domain URL from the IAM-based domain
+            domainUrl = iamDomain.portalUrl || `https://${iamDomain.id}.sagemaker.${region}.on.aws/`
+            logger.debug(`SMUS Auth: Discovered IAM-based domain URL: ${domainUrl}`)
         } catch (error) {
-            logger.error(`SMUS Auth: Failed to find Express domain: ${error} , proceeding with normal restore`)
+            logger.error(`SMUS Auth: Failed to find IAM-based domain: ${error} , proceeding with normal restore`)
             await this.secondaryAuth.restoreConnection()
             return
         }
@@ -476,9 +476,9 @@ export class SmusAuthenticationProvider {
                 await this.secondaryAuth.forgetConnection()
                 logger.info(`SMUS: Forgot IAM connection ${connectionId} (preserved for other services)`)
 
-                // Clear Express mode context for IAM connections
-                await setSmusExpressModeContext(false)
-                logger.debug('SMUS: Cleared Express mode context')
+                // Clear IAM mode context for IAM connections
+                await setSmusIamModeContext(false)
+                logger.debug('SMUS: Cleared IAM mode context')
             } else {
                 // Mock connection in SMUS space environment - no action needed
                 logger.info(`SMUS: Sign out completed for mock connection ${connectionId}`)
@@ -606,7 +606,7 @@ export class SmusAuthenticationProvider {
      * @param profileName The AWS credential profile name
      * @param region The AWS region
      * @param domainUrl The SageMaker Unified Studio domain URL
-     * @param isExpressDomain Whether the domain is an Express domain
+     * @param isIamDomain Whether the domain is an IAM-based domain
      * @returns Promise resolving to the IAM connection
      */
     @withTelemetryContext({ name: 'connectWithIamProfile', class: authClassName })
@@ -614,7 +614,7 @@ export class SmusAuthenticationProvider {
         profileName: string,
         region: string,
         domainUrl: string,
-        isExpressDomain: boolean = false
+        isIamDomain: boolean = false
     ): Promise<SmusIamConnection> {
         const logger = getLogger()
 
@@ -646,7 +646,7 @@ export class SmusAuthenticationProvider {
                     region,
                     domainUrl,
                     domainId,
-                    isExpressDomain,
+                    isIamDomain,
                 }
                 await this.secondaryAuth.state.update('smus.connections', smusConnections)
 
@@ -659,10 +659,10 @@ export class SmusAuthenticationProvider {
                     `SMUS: Using existing IAM connection as SMUS connection successfully, id=${existingConn.id}`
                 )
 
-                // Set Express mode context if this is an Express domain
-                if (isExpressDomain) {
-                    await setSmusExpressModeContext(true)
-                    logger.debug('SMUS: Set Express mode context to true')
+                // Set IAM mode context if this is an IAM-based domain
+                if (isIamDomain) {
+                    await setSmusIamModeContext(true)
+                    logger.debug('SMUS: Set IAM mode context to true')
                 }
 
                 // Return a SMUS IAM connection wrapper for the caller
@@ -1151,7 +1151,7 @@ export class SmusAuthenticationProvider {
             logger.debug('Fetching domain account ID via STS GetCallerIdentity')
 
             let credentialsProvider
-            if (getContext('aws.smus.isExpressMode')) {
+            if (getContext('aws.smus.isIamMode')) {
                 credentialsProvider = await this.getCredentialsProviderForIamProfile(
                     (this.activeConnection as SmusIamConnection).profileName
                 )
@@ -1320,10 +1320,10 @@ export class SmusAuthenticationProvider {
                         this.getDomainRegion()
                     )
                 } else if (profileConfig?.credential_source === 'EcsContainer') {
-                    // Express domain with EcsContainer: Use ECS container credentials directly
+                    // IAM-based domain with EcsContainer: Use ECS container credentials directly
                     // The environment has AWS_CONTAINER_CREDENTIALS_RELATIVE_URI set, so use fromContainerMetadata
                     // which properly handles the ECS credential endpoint
-                    logger.debug('SMUS: Express domain detected, using ECS container credentials')
+                    logger.debug('SMUS: IAM-based domain detected, using ECS container credentials')
                     const credentials = fromContainerMetadata({
                         timeout: 5000,
                         maxRetries: 3,

@@ -32,7 +32,7 @@ export type contextKey =
     | 'aws.amazonq.editSuggestionActive'
     | 'aws.smus.connected'
     | 'aws.smus.inSmusSpaceEnvironment'
-    | 'aws.smus.isExpressMode'
+    | 'aws.smus.isIamMode'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'

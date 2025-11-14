@@ -133,7 +133,7 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
         )
 
         try {
-            if (getContext('aws.smus.isExpressMode') && this.projectId) {
+            if (getContext('aws.smus.isIamMode') && this.projectId) {
                 return (await this.smusAuthProvider.getProjectCredentialProvider(this.projectId)).getCredentials()
             }
             const datazoneClient = DataZoneClient.createWithCredentials(

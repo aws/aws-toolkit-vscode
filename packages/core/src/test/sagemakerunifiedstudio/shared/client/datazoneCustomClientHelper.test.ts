@@ -264,7 +264,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             client.listDomains = listDomainsStub
 
-            const result = await client.getExpressDomain()
+            const result = await client.getIamDomain()
 
             assert.ok(result)
             assert.strictEqual(result.id, 'dzd_express')
@@ -295,7 +295,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             client.listDomains = listDomainsStub
 
-            const result = await client.getExpressDomain()
+            const result = await client.getIamDomain()
 
             assert.strictEqual(result, undefined)
             assert.strictEqual(listDomainsStub.callCount, 1)
@@ -309,7 +309,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             client.listDomains = listDomainsStub
 
-            const result = await client.getExpressDomain()
+            const result = await client.getIamDomain()
 
             assert.strictEqual(result, undefined)
             assert.strictEqual(listDomainsStub.callCount, 1)
@@ -335,7 +335,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             client.listDomains = listDomainsStub
 
-            const result = await client.getExpressDomain()
+            const result = await client.getIamDomain()
 
             assert.strictEqual(result, undefined)
         })
@@ -345,7 +345,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             client.listDomains = listDomainsStub
 
-            await assert.rejects(() => client.getExpressDomain(), /Failed to get domain info: API error/)
+            await assert.rejects(() => client.getIamDomain(), /Failed to get domain info: API error/)
         })
     })
 
@@ -412,7 +412,7 @@ describe('DataZoneCustomClientHelper', () => {
         })
     })
 
-    describe('isExpressDomain', () => {
+    describe('isIamDomain', () => {
         it('should return true for EXPRESS domain', async () => {
             const mockDomainId = 'dzd_express123'
             const mockResponse = {
@@ -425,7 +425,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
 
-            const result = await client.isExpressDomain(mockDomainId)
+            const result = await client.isIamDomain(mockDomainId)
 
             assert.strictEqual(result, true)
             assert.ok(getDomainStub.calledOnce)
@@ -444,7 +444,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
 
-            const result = await client.isExpressDomain(mockDomainId)
+            const result = await client.isIamDomain(mockDomainId)
 
             assert.strictEqual(result, false)
             assert.ok(getDomainStub.calledOnce)
@@ -463,7 +463,7 @@ describe('DataZoneCustomClientHelper', () => {
 
             const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
 
-            const result = await client.isExpressDomain(mockDomainId)
+            const result = await client.isIamDomain(mockDomainId)
 
             assert.strictEqual(result, false)
             assert.ok(getDomainStub.calledOnce)

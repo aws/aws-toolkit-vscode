@@ -1011,7 +1011,7 @@ describe('SmusAuthenticationProvider', function () {
                         region: testRegion,
                         domainUrl: testDomainUrl,
                         domainId: testDomainId,
-                        isExpressDomain: false,
+                        isIamDomain: false,
                     },
                 })
             )
@@ -1039,7 +1039,7 @@ describe('SmusAuthenticationProvider', function () {
                         region: testRegion,
                         domainUrl: testDomainUrl,
                         domainId: testDomainId,
-                        isExpressDomain: false,
+                        isIamDomain: false,
                     },
                 })
             )
@@ -1370,11 +1370,11 @@ describe('SmusAuthenticationProvider', function () {
         })
     })
 
-    describe('initExpressModeContextInSpaceEnvironment', function () {
+    describe('initIamModeContextInSpaceEnvironment', function () {
         let getResourceMetadataStub: sinon.SinonStub
         let getDerCredentialsProviderStub: sinon.SinonStub
         let getInstanceStub: sinon.SinonStub
-        let isExpressDomainStub: sinon.SinonStub
+        let isIamDomainStub: sinon.SinonStub
         let mockCredentialsProvider: any
         let mockClientHelper: any
 
@@ -1404,9 +1404,9 @@ describe('SmusAuthenticationProvider', function () {
                 .resolves(mockCredentialsProvider)
 
             // Mock DataZoneCustomClientHelper
-            isExpressDomainStub = sinon.stub()
+            isIamDomainStub = sinon.stub()
             mockClientHelper = {
-                isExpressDomain: isExpressDomainStub,
+                isIamDomain: isIamDomainStub,
             }
 
             getInstanceStub = sinon.stub(DataZoneCustomClientHelper, 'getInstance').returns(mockClientHelper)
@@ -1416,11 +1416,11 @@ describe('SmusAuthenticationProvider', function () {
             sinon.restore()
         })
 
-        it('should set express mode context to true when domain is express mode', async function () {
+        it('should set IAM mode context to true when domain is IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isExpressDomainStub.resolves(true)
+            isIamDomainStub.resolves(true)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
@@ -1430,15 +1430,15 @@ describe('SmusAuthenticationProvider', function () {
                     testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
-            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', true))
+            assert.ok(isIamDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', true))
         })
 
-        it('should set express mode context to false when domain is not express mode', async function () {
+        it('should set IAM mode context to false when domain is not IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isExpressDomainStub.resolves(false)
+            isIamDomainStub.resolves(false)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
@@ -1448,19 +1448,19 @@ describe('SmusAuthenticationProvider', function () {
                     testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
-            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+            assert.ok(isIamDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', false))
         })
 
-        it('should not call express mode check when resource metadata is missing', async function () {
+        it('should not call IAM mode check when resource metadata is missing', async function () {
             getResourceMetadataStub.returns(undefined)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.notCalled)
             assert.ok(getInstanceStub.notCalled)
-            assert.ok(isExpressDomainStub.notCalled)
+            assert.ok(isIamDomainStub.notCalled)
             assert.ok(setContextStubGlobal.notCalled)
         })
 
@@ -1469,13 +1469,13 @@ describe('SmusAuthenticationProvider', function () {
             const testError = new Error('Failed to get credentials provider')
             getDerCredentialsProviderStub.rejects(testError)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
             assert.ok(getInstanceStub.notCalled)
-            assert.ok(isExpressDomainStub.notCalled)
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+            assert.ok(isIamDomainStub.notCalled)
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', false))
         })
     })
 

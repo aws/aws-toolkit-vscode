@@ -238,7 +238,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     }
 
     /**
-     * Retrieves the user profile ID for Express mode (IAM authentication)
+     * Retrieves the user profile ID for IAM mode (IAM authentication)
      * @returns Promise resolving to the user profile ID
      * @throws Error if user profile retrieval fails
      */
@@ -313,7 +313,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
-        if (getContext('aws.smus.isExpressMode')) {
+        if (getContext('aws.smus.isIamMode')) {
             userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'

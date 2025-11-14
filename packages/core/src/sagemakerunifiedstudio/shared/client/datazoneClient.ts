@@ -868,6 +868,6 @@ export class DataZoneClient {
      * Gets the correct tooling blueprint name
      */
     private getToolingBlueprintName(): string {
-        return getContext('aws.smus.isExpressMode') ? 'ToolingLite' : toolingBlueprintName
+        return getContext('aws.smus.isIamMode') ? 'ToolingLite' : toolingBlueprintName
     }
 }

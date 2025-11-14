@@ -238,7 +238,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
             throw new Error('No project selected for initializing SageMaker client')
         }
         let awsCredentialProvider
-        if (getContext('aws.smus.isExpressMode')) {
+        if (getContext('aws.smus.isIamMode')) {
             const datazoneClient = DataZoneClient.createWithCredentials(
                 this.authProvider.getDomainRegion(),
                 this.authProvider.getDomainId(),

@@ -93,28 +93,28 @@ export class SmusAuthenticationOrchestrator {
                 return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
             }
 
-            // Discover Express domain using IAM credential. If Express Domain is not present, we should throw an appropriate error
+            // Discover IAM-based domain using IAM credential. If IAM-based domain is not present, we should throw an appropriate error
             // and exit
-            logger.debug('SMUS Auth: Discovering Express domain using IAM credentials')
+            logger.debug('SMUS Auth: Discovering IAM-based domain using IAM credentials')
 
-            const domainUrl = await this.findSmusExpressDomain(
+            const domainUrl = await this.findSmusIamDomain(
                 authProvider,
                 profileSelection.profileName,
                 profileSelection.region
             )
             if (!domainUrl) {
-                throw new ToolkitError('No SMUS Express domains found in the specified region', {
-                    code: SmusErrorCodes.ExpressDomainNotFound,
+                throw new ToolkitError('No IAM-based domains found in the specified region', {
+                    code: SmusErrorCodes.IamDomainNotFound,
                     cancelled: true,
                 })
             }
 
-            // Connect using IAM profile with Express domain flag
+            // Connect using IAM profile with IAM-based domain flag
             const connection = await authProvider.connectWithIamProfile(
                 profileSelection.profileName,
                 profileSelection.region,
                 domainUrl,
-                true // isExpressDomain - we found an Express domain
+                true // isIamDomain - we found an IAM-based domain
             )
 
             if (!connection) {
@@ -124,7 +124,7 @@ export class SmusAuthenticationOrchestrator {
             }
 
             logger.info(
-                `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to Express domain`
+                `SMUS Auth: Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to IAM-based domain`
             )
 
             // Extract domain ID and region for telemetry logging
@@ -141,7 +141,7 @@ export class SmusAuthenticationOrchestrator {
                 logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
             }
 
-            // After successful IAM authentication (Express mode), automatically open project picker
+            // After successful IAM authentication (IAM mode), automatically open project picker
             logger.debug('SMUS Auth: IAM authentication successful, opening project picker')
             try {
                 await vscode.commands.executeCommand('aws.smus.switchProject')
@@ -158,7 +158,7 @@ export class SmusAuthenticationOrchestrator {
             // Handle user cancellation (including editing mode)
             if (
                 error instanceof ToolkitError &&
-                (error.code === SmusErrorCodes.UserCancelled || error.code === SmusErrorCodes.ExpressDomainNotFound)
+                (error.code === SmusErrorCodes.UserCancelled || error.code === SmusErrorCodes.IamDomainNotFound)
             ) {
                 logger.debug('IAM authentication cancelled by user or failed due to customer error')
                 throw error // Re-throw to be handled by the main loop
@@ -272,13 +272,13 @@ export class SmusAuthenticationOrchestrator {
     }
 
     /**
-     * Finds SMUS Express domain using IAM credentials
+     * Finds SMUS IAM-based domain using IAM credentials
      * @param authProvider The SMUS authentication provider
      * @param profileName The AWS credential profile name
      * @param region The AWS region
-     * @returns Promise resolving to domain URL or undefined if no Express domain found
+     * @returns Promise resolving to domain URL or undefined if no IAM-based domain found
      */
-    private static async findSmusExpressDomain(
+    private static async findSmusIamDomain(
         authProvider: SmusAuthenticationProvider,
         profileName: string,
         region: string
@@ -286,7 +286,7 @@ export class SmusAuthenticationOrchestrator {
         const logger = this.logger
 
         try {
-            logger.debug(`SMUS Auth: Finding Express domain in region ${region} using profile ${profileName}`)
+            logger.debug(`SMUS Auth: Finding IAM-based domain in region ${region} using profile ${profileName}`)
 
             // Get DataZoneCustomClientHelper instance
             const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
@@ -294,24 +294,24 @@ export class SmusAuthenticationOrchestrator {
                 region
             )
 
-            // Find the Express domain using the client
-            const expressDomain = await datazoneCustomClientHelper.getExpressDomain()
+            // Find the IAM-based domain using the client
+            const iamDomain = await datazoneCustomClientHelper.getIamDomain()
 
-            if (!expressDomain) {
-                logger.warn(`SMUS Auth: No Express domain found in region ${region}`)
+            if (!iamDomain) {
+                logger.warn(`SMUS Auth: No IAM-based domain found in region ${region}`)
                 return undefined
             }
 
-            logger.debug(`SMUS Auth: Found Express domain: ${expressDomain.name} (${expressDomain.id})`)
+            logger.debug(`SMUS Auth: Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
 
-            // Construct domain URL from the Express domain
-            const domainUrl = expressDomain.portalUrl || `https://${expressDomain.id}.sagemaker.${region}.on.aws/`
-            logger.info(`SMUS Auth: Discovered Express domain URL: ${domainUrl}`)
+            // Construct domain URL from the IAM-based domain
+            const domainUrl = iamDomain.portalUrl || `https://${iamDomain.id}.sagemaker.${region}.on.aws/`
+            logger.info(`SMUS Auth: Discovered IAM-based domain URL: ${domainUrl}`)
 
             return domainUrl
         } catch (error) {
-            logger.error(`SMUS Auth: Failed to find Express domain: %s`, error)
-            throw new ToolkitError(`Failed to find SMUS Express domain: ${(error as Error).message}`, {
+            logger.error(`SMUS Auth: Failed to find IAM-based domain: %s`, error)
+            throw new ToolkitError(`Failed to find IAM-based domain: ${(error as Error).message}`, {
                 code: SmusErrorCodes.ApiTimeout,
                 cause: error instanceof Error ? error : undefined,
             })
