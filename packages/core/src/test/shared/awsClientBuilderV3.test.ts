@@ -4,7 +4,6 @@
  */
 import sinon from 'sinon'
 import assert from 'assert'
-import { version } from 'vscode'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
