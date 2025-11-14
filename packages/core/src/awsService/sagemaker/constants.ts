@@ -45,3 +45,11 @@ export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
 
 export const RemoteAccessRequiredMessage =
     'This space requires remote access to be enabled.\nWould you like to restart the space and connect?\nAny unsaved work will be lost.'
+
+export const SmusDeeplinkSessionExpiredError = {
+    title: 'Session Disconnected',
+    message:
+        'Your SageMaker Unified Studio session has been disconnected. Select a local (non-remote) VS Code window and use the SageMaker Unified Studio portal to connect again.',
+    code: 'SMUS_SESSION_DISCONNECTED',
+    shortMessage: 'Session disconnected, re-connect from SageMaker Unified Studio portal.',
+} as const
