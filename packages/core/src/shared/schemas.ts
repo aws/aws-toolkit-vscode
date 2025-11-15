@@ -149,36 +149,7 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
     const devfileSchemaUri = GlobalStorage.devfileSchemaUri()
     const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
-    // Sam schema is a superset of Cfn schema, so we can use it for both
-    const samAndCfnSchemaDestinationUri = GlobalStorage.samAndCfnSchemaDestinationUri()
-
     const schemas: Schemas = {}
-
-    try {
-        await updateSchemaFromRemoteETag({
-            destination: samAndCfnSchemaDestinationUri,
-            eTag: undefined,
-            url: samAndCfnSchemaUrl,
-            cacheKey: 'samAndCfnSchemaVersion',
-            title: schemaPrefix + 'cloudformation.schema.json',
-        })
-        schemas['cfn'] = samAndCfnSchemaDestinationUri
-    } catch (e) {
-        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
-    }
-
-    try {
-        await updateSchemaFromRemoteETag({
-            destination: samAndCfnSchemaDestinationUri,
-            eTag: undefined,
-            url: samAndCfnSchemaUrl,
-            cacheKey: 'samAndCfnSchemaVersion',
-            title: schemaPrefix + 'sam.schema.json',
-        })
-        schemas['sam'] = samAndCfnSchemaDestinationUri
-    } catch (e) {
-        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
-    }
 
     try {
         await updateSchemaFromRemote({

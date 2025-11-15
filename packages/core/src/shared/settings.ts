@@ -778,6 +778,7 @@ const devSettings = {
     codewhispererService: Record(String, String),
     amazonqLsp: Record(String, String),
     amazonqWorkspaceLsp: Record(String, String),
+    cloudformationLsp: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
@@ -792,6 +793,7 @@ interface ServiceTypeMap {
     amazonqLsp: object // type is provided inside of amazon q
     amazonqWorkspaceLsp: object // type is provided inside of amazon q
     codewhispererService: CodeWhispererConfig
+    cloudformationLsp: object // type is provided inside of cloudformation lsp
 }
 
 /**

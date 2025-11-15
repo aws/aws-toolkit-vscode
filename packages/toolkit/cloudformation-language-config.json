@@ -1,0 +1,53 @@
+{
+    "comments": {
+        "lineComment": "#",
+        "blockComment": ["/*", "*/"]
+    },
+    "brackets": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"]
+    ],
+    "autoClosingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"],
+        ["`", "`"]
+    ],
+    "surroundingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"],
+        ["`", "`"]
+    ],
+    "folding": {
+        "offSide": true,
+        "markers": {
+            "start": "^\\s*#\\s*region\\b",
+            "end": "^\\s*#\\s*endregion\\b"
+        }
+    },
+    "indentationRules": {
+        "increaseIndentPattern": "^\\s*.*(:|-) ?(&amp;\\w+)?(\\{[^}\"']*|\\([^)\"']*)?$",
+        "decreaseIndentPattern": "^\\s+\\}$"
+    },
+    "onEnterRules": [
+        {
+            "beforeText": "^\\s*\\w+:\\s*$",
+            "action": {
+                "indent": "indent"
+            }
+        },
+        {
+            "beforeText": "^\\s*- \\w+:$",
+            "action": {
+                "indent": "indent"
+            }
+        }
+    ],
+    "wordPattern": "(^.?[^\\s]+)+|([^\\s\n={[][\\w\\-\\./$%&*:\"']+)"
+}

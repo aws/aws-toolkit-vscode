@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template with embedded JSON'
+
+Resources:
+    MyRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument: |
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "lambda.amazonaws.com"
+                      },
+                      "Action": "sts:AssumeRole"
+                    }
+                  ]
+                }
+            Policies:
+                - PolicyName: MyPolicy
+                  PolicyDocument: >
+                      {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                          {
+                            "Effect": "Allow",
+                            "Action": [
+                              "logs:CreateLogGroup",
+                              "logs:CreateLogStream",
+                              "logs:PutLogEvents"
+                            ],
+                            "Resource": "*"
+                          }
+                        ]
+                      }
+
+    MyBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            NotificationConfiguration:
+                CloudWatchConfigurations:
+                    - Event: s3:ObjectCreated:*
+                      CloudWatchConfiguration:
+                          LogGroupName: !Ref MyLogGroup
+                          FilterPattern: |
+                              {
+                                "eventSource": ["aws:s3"],
+                                "eventName": {
+                                  "prefix": "ObjectCreated"
+                                }
+                              }
+
+    MyFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                ZipFile: |
+                    import json
+                    def lambda_handler(event, context):
+                        response = {
+                            "statusCode": 200,
+                            "body": json.dumps({
+                                "message": "Hello from Lambda!",
+                                "event": event
+                            })
+                        }
+                        return response
+            Environment:
+                Variables:
+                    CONFIG: '{"debug": true, "timeout": 30}'
+
+    MyLogGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: /aws/lambda/my-function

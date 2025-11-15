@@ -46,6 +46,7 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
+        "onLanguage:cloudformation",
         "onFileSystem:s3",
         "onFileSystem:s3-readonly"
     ],
@@ -240,12 +241,18 @@
                     "type": "object",
                     "markdownDescription": "%AWS.configuration.description.experiments%",
                     "default": {
-                        "jsonResourceModification": false
+                        "jsonResourceModification": false,
+                        "cloudFormationService": false
                     },
                     "properties": {
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "cloudFormationService": {
+                            "type": "boolean",
+                            "default": false,
+                            "markdownDescription": "Enable the new CloudFormation language server and service features"
                         },
                         "amazonqLSP": {
                             "type": "boolean",
@@ -304,6 +311,148 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Enable automatic filtration of spaces based on your AWS identity."
+                },
+                "aws.cloudformation.telemetry.enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Configure anonymous telemetry collection for AWS CloudFormation Language Server"
+                },
+                "aws.cloudformation.hover.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable hover information for CloudFormation resources"
+                },
+                "aws.cloudformation.completion.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable auto-completion for CloudFormation templates"
+                },
+                "aws.cloudformation.diagnostics.cfnLint.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable or disable CloudFormation linting"
+                },
+                "aws.cloudformation.diagnostics.cfnLint.lintOnChange": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run cfn-lint when document content changes"
+                },
+                "aws.cloudformation.diagnostics.cfnLint.delayMs": {
+                    "type": "number",
+                    "default": 3000,
+                    "minimum": 0,
+                    "description": "Delay in milliseconds before running cfn-lint after changes"
+                },
+                "aws.cloudformation.diagnostics.cfnLint.path": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to locally installed cfn-lint executable. If empty, uses bundled version."
+                },
+                "aws.cloudformation.diagnostics.cfnGuard.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable or disable CloudFormation Guard validation"
+                },
+                "aws.cloudformation.diagnostics.cfnGuard.validateOnChange": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Run cfn-guard when document content changes"
+                },
+                "aws.cloudformation.diagnostics.cfnGuard.enabledRulePacks": {
+                    "type": "array",
+                    "default": [
+                        "wa-Security-Pillar"
+                    ],
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "ABS-CCIGv2-Material",
+                            "ABS-CCIGv2-Standard",
+                            "acsc-essential-8",
+                            "acsc-ism",
+                            "apra-cpg-234",
+                            "bnm-rmit",
+                            "cis-aws-benchmark-level-1",
+                            "cis-aws-benchmark-level-2",
+                            "cis-critical-security-controls-v8-ig1",
+                            "cis-critical-security-controls-v8-ig2",
+                            "cis-critical-security-controls-v8-ig3",
+                            "cis-top-20",
+                            "cisa-ce",
+                            "cmmc-level-1",
+                            "cmmc-level-2",
+                            "cmmc-level-3",
+                            "cmmc-level-4",
+                            "cmmc-level-5",
+                            "enisa-cybersecurity-guide-for-smes",
+                            "ens-high",
+                            "ens-low",
+                            "ens-medium",
+                            "FDA-21CFR-Part-11",
+                            "FedRAMP-Low",
+                            "FedRAMP-Moderate",
+                            "ffiec",
+                            "hipaa-security",
+                            "K-ISMS",
+                            "mas-notice-655",
+                            "mas-trmg",
+                            "nbc-trmg",
+                            "ncsc-cafv3",
+                            "ncsc",
+                            "nerc",
+                            "nist-1800-25",
+                            "nist-800-171",
+                            "nist-800-172",
+                            "nist-800-181",
+                            "nist-csf",
+                            "nist-privacy-framework",
+                            "NIST800-53Rev4",
+                            "NIST800-53Rev5",
+                            "nzism",
+                            "PCI-DSS-3-2-1",
+                            "rbi-bcsf-ucb",
+                            "rbi-md-itf",
+                            "us-nydfs",
+                            "wa-Reliability-Pillar",
+                            "wa-Security-Pillar"
+                        ]
+                    },
+                    "description": "Cfn-guard enabled rule packs"
+                },
+                "aws.cloudformation.diagnostics.cfnGuard.rulesFile": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to custom cfn-guard rules file. If empty, uses default rule packs."
+                },
+                "aws.cloudformation.s3": {
+                    "type": "string",
+                    "enum": [
+                        "alwaysAsk",
+                        "alwaysUpload",
+                        "neverUpload"
+                    ],
+                    "enumDescriptions": [
+                        "Always ask during validation and deploy workflow",
+                        "Always upload to S3 for both validation and deployment",
+                        "Never upload to S3 (only works for template smaller than 51200 bytes)"
+                    ],
+                    "default": "alwaysAsk",
+                    "description": "Configure S3 upload behavior for CloudFormation templates"
+                },
+                "aws.cloudformation.environment.saveOptions": {
+                    "type": "string",
+                    "enum": [
+                        "alwaysAsk",
+                        "alwaysSave",
+                        "neverSave"
+                    ],
+                    "enumDescriptions": [
+                        "Always ask during validation and deploy workflow",
+                        "Always save to file for both validation and deployment",
+                        "Never save to file"
+                    ],
+                    "default": "alwaysAsk",
+                    "description": "Configure optional changeset flags for CloudFormation templates"
                 }
             }
         },
@@ -722,6 +871,13 @@
                         }
                     }
                 }
+            ],
+            "panel": [
+                {
+                    "id": "cfn-diff",
+                    "title": "CloudFormation",
+                    "icon": "$(diff)"
+                }
             ]
         },
         "viewsWelcome": [
@@ -737,6 +893,43 @@
             }
         ],
         "views": {
+            "cfn-diff": [
+                {
+                    "id": "aws.cloudformation.stack.overview",
+                    "name": "Overview",
+                    "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(info)"
+                },
+                {
+                    "id": "aws.cloudformation.stack.resources",
+                    "name": "Resources",
+                    "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(symbol-class)"
+                },
+                {
+                    "id": "aws.cloudformation.stack.events",
+                    "name": "Events",
+                    "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(history)"
+                },
+                {
+                    "id": "aws.cloudformation.stack.outputs",
+                    "name": "Outputs",
+                    "type": "webview",
+                    "when": "aws.cloudformation.stackSelected && !aws.cloudformation.changeSetMode",
+                    "icon": "$(output)"
+                },
+                {
+                    "id": "aws.cloudformation.diff",
+                    "name": "Stack Changes",
+                    "type": "webview",
+                    "when": "aws.cloudformation.changeSetMode",
+                    "icon": "$(diff)"
+                }
+            ],
             "explorer": [
                 {
                     "id": "aws.appBuilderForFileExplorer",
@@ -767,6 +960,11 @@
                 {
                     "id": "aws.cdk",
                     "name": "%AWS.cdk.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
+                },
+                {
+                    "id": "aws.cloudformation",
+                    "name": "CloudFormation",
                     "when": "!aws.explorer.showAuthView"
                 },
                 {
@@ -1270,6 +1468,34 @@
                 {
                     "command": "aws.smus.refreshProject",
                     "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.api.copyResourceIdentifier",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.api.searchResource",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreChangeSets",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.refreshChangeSets",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.viewChangeSet",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.deleteChangeSet",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1329,6 +1555,13 @@
                     "command": "aws.copyLogResource",
                     "when": "resourceScheme == aws-cwl",
                     "group": "1_cutcopypaste@1"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "aws.cloudformation.api.rerunLastValidation",
+                    "when": "resourceExtname == .yaml || resourceExtname == .json || resourceExtname == .yml || resourceExtname == .txt || resourceExtname == .cfn || resourceExtname == .template",
+                    "group": "1_cloudformation@1"
                 }
             ],
             "view/title": [
@@ -2399,6 +2632,195 @@
                     "command": "aws.appBuilder.tailLogs",
                     "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsRegionFunctionNodeDownloadableOnly|awsCloudFormationFunctionNode)$/",
                     "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.stack.view",
+                    "when": "view == aws.cloudformation && viewItem == stack",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreStacks",
+                    "when": "view == aws.cloudformation && viewItem == stackSectionWithMore && !aws.cloudformation.loadingStacks",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.refresh",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.validateDeployment",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.validateDeployment",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreStacks",
+                    "when": "view == aws.cloudformation && viewItem == stackSectionWithMore && !aws.cloudformation.loadingStacks",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.refresh",
+                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.validateDeployment",
+                    "when": "view == aws.cloudformation && (viewItem == stack)",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.deployTemplate",
+                    "when": "view == aws.cloudformation && (viewItem == stack)",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.validateDeployment",
+                    "when": "view == aws.cloudformation && (viewItem == stack)",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.deployTemplate",
+                    "when": "view == aws.cloudformation && (viewItem == stack)",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.stack.view",
+                    "when": "view == aws.cloudformation && viewItem == stack",
+                    "group": "1@3"
+                },
+                {
+                    "command": "aws.cloudformation.selectRegion",
+                    "when": "view == aws.cloudformation && viewItem == regionSelector",
+                    "group": "inline"
+                },
+                {
+                    "command": "aws.cloudformation.api.addResourceTypes",
+                    "when": "view == aws.cloudformation && viewItem == resourceSection && !aws.cloudformation.refreshingAllResources",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.refreshAllResources",
+                    "when": "view == aws.cloudformation && viewItem == resourceSection && !aws.cloudformation.refreshingAllResources",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreResources",
+                    "when": "view == aws.cloudformation && viewItem == resourceTypeWithMore && !aws.cloudformation.loadingResources",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.searchResource",
+                    "when": "view == aws.cloudformation && viewItem == resourceTypeWithMore",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.importResourceState",
+                    "when": "view == aws.cloudformation && viewItem == resource && !aws.cloudformation.importingResource",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.cloneResourceState",
+                    "when": "view == aws.cloudformation && viewItem == resource && !aws.cloudformation.cloningResource",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.getStackManagementInfo",
+                    "when": "view == aws.cloudformation && viewItem == resource && !aws.cloudformation.gettingStackMgmtInfo",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.refreshResourceList",
+                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore) && !aws.cloudformation.refreshingResourceList",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.importResourceState",
+                    "when": "view == aws.cloudformation && viewItem == resource && !aws.cloudformation.importingResource",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.cloneResourceState",
+                    "when": "view == aws.cloudformation && viewItem == resource && !aws.cloudformation.cloningResource",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.getStackManagementInfo",
+                    "when": "view == aws.cloudformation && viewItem == resource && !listMultiSelection",
+                    "group": "1@3"
+                },
+                {
+                    "command": "aws.cloudformation.api.copyResourceIdentifier",
+                    "when": "view == aws.cloudformation && viewItem == resource && !listMultiSelection",
+                    "group": "1@4"
+                },
+                {
+                    "command": "aws.cloudformation.api.searchResource",
+                    "when": "view == aws.cloudformation && viewItem == resourceTypeWithMore",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreResources",
+                    "when": "view == aws.cloudformation && viewItem == resourceTypeWithMore && !aws.cloudformation.loadingResources",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.api.refreshResourceList",
+                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore) && !aws.cloudformation.refreshingResourceList",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.removeResourceType",
+                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore)"
+                },
+                {
+                    "command": "aws.cloudformation.api.addResourceTypes",
+                    "when": "view == aws.cloudformation && viewItem == resourceSection && !aws.cloudformation.refreshingAllResources",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.refreshAllResources",
+                    "when": "view == aws.cloudformation && viewItem == resourceSection && !aws.cloudformation.refreshingAllResources",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.viewChangeSet",
+                    "when": "view == aws.cloudformation && viewItem == changeSet",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.viewChangeSet",
+                    "when": "view == aws.cloudformation && viewItem == changeSet",
+                    "group": "1@1"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.deleteChangeSet",
+                    "when": "view == aws.cloudformation && viewItem == changeSet",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.cloudformation.stacks.refreshChangeSets",
+                    "when": "view == aws.cloudformation && (viewItem == stackChangeSets || viewItem == stackChangeSetsWithMore)",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cloudformation.api.loadMoreChangeSets",
+                    "when": "view == aws.cloudformation && viewItem == stackChangeSetsWithMore",
+                    "group": "inline@2"
                 }
             ],
             "aws.toolkit.auth": [
@@ -4428,6 +4850,160 @@
                 "command": "aws.smus.notebookscheduling.viewjobs",
                 "title": "View Notebook Jobs",
                 "category": "Job"
+            },
+            {
+                "command": "aws.cloudformation.api.importResourceState",
+                "title": "Import Resource State",
+                "icon": "$(diff-added)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.copyResourceIdentifier",
+                "title": "Copy Resource Identifier",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.refreshResourceList",
+                "title": "Refresh Resource List",
+                "icon": "$(refresh)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.addResourceTypes",
+                "title": "Add Resource Types",
+                "icon": "$(add)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.removeResourceType",
+                "title": "Remove Resource Type",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.refreshAllResources",
+                "title": "Refresh All Resources",
+                "icon": "$(refresh)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stacks.refresh",
+                "title": "Refresh Stacks",
+                "icon": "$(refresh)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.loadMoreStacks",
+                "title": "Load More Stacks",
+                "icon": "$(surround-with)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.loadMoreResources",
+                "title": "Load More Resources",
+                "icon": "$(surround-with)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.searchResource",
+                "title": "Find Resource by Identifier",
+                "icon": "$(search)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.cloneResourceState",
+                "title": "Clone Resource State",
+                "icon": "$(copy)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.getStackManagementInfo",
+                "title": "Get Stack Management Info",
+                "icon": "$(info)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.server.restartServer",
+                "title": "Restart Server",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.validateDeployment",
+                "title": "Validate Deployment",
+                "category": "AWS CloudFormation",
+                "icon": "$(go-to-file)"
+            },
+            {
+                "command": "aws.cloudformation.api.deployTemplate",
+                "title": "Deploy Template",
+                "category": "AWS CloudFormation",
+                "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
+                "title": "Deploy Template",
+                "category": "AWS CloudFormation",
+                "icon": "$(plus)"
+            },
+            {
+                "command": "aws.cloudformation.api.rerunLastValidation",
+                "title": "Rerun Last Validation",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.selectRegion",
+                "title": "Select Region",
+                "icon": "$(gear)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stacks.viewChangeSet",
+                "title": "View Change Set",
+                "icon": "$(eye)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stacks.deleteChangeSet",
+                "title": "Delete Change Set",
+                "icon": "$(close)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stacks.refreshChangeSets",
+                "title": "Refresh Change Sets",
+                "icon": "$(refresh)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.stack.view",
+                "title": "View Stack Detail",
+                "icon": "$(eye)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.loadMoreChangeSets",
+                "title": "Load More Change Sets",
+                "icon": "$(surround-with)",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.init.initializeProject",
+                "title": "CFN Init: Initialize Project",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.init.addEnvironment",
+                "title": "CFN Init: Add Environment",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.init.removeEnvironment",
+                "title": "CFN Init: Remove Environment",
+                "category": "AWS CloudFormation"
+            },
+            {
+                "command": "aws.cloudformation.api.addRelatedResources",
+                "title": "Add Related Resources by Type",
+                "category": "AWS CloudFormation"
             }
         ],
         "jsonValidation": [
@@ -4441,6 +5017,17 @@
             }
         ],
         "languages": [
+            {
+                "id": "cloudformation",
+                "extensions": [
+                    ".template",
+                    ".cfn"
+                ],
+                "aliases": [
+                    "CloudFormation"
+                ],
+                "configuration": "./cloudformation-language-config.json"
+            },
             {
                 "id": "asl",
                 "extensions": [
@@ -4502,6 +5089,11 @@
             }
         ],
         "grammars": [
+            {
+                "language": "cloudformation",
+                "scopeName": "source.cloudformation",
+                "path": "./syntaxes/cloudformation.tmLanguage.json"
+            },
             {
                 "language": "asl",
                 "scopeName": "source.asl",

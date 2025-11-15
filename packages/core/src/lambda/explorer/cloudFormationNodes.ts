@@ -15,6 +15,7 @@ import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
@@ -40,11 +41,38 @@ export class CloudFormationNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 await this.updateChildren()
 
-                return [...this.stackNodes.values()]
+                const panelNode = new AWSCommandTreeNode(
+                    this,
+                    '✨ Try the new CloudFormation panel',
+                    'aws.cloudformation.focus',
+                    undefined,
+                    'Open the enhanced CloudFormation panel with improved features'
+                )
+                panelNode.iconPath = getIcon('vscode-star-full')
+
+                return [panelNode, ...this.stackNodes.values()]
             },
-            getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
-            sort: (nodeA, nodeB) => nodeA.stackName.localeCompare(nodeB.stackName),
+            getNoChildrenPlaceholderNode: async () => {
+                const panelNode = new AWSCommandTreeNode(
+                    this,
+                    '✨ Try the new CloudFormation panel',
+                    'aws.cloudformation.focus',
+                    undefined,
+                    'Open the enhanced CloudFormation panel with improved features'
+                )
+                panelNode.iconPath = getIcon('vscode-star-full')
+                return panelNode
+            },
+            sort: (nodeA, nodeB) => {
+                // Keep the panel node at the top
+                if (nodeA instanceof AWSCommandTreeNode) {
+                    return -1
+                }
+                if (nodeB instanceof AWSCommandTreeNode) {
+                    return 1
+                }
+                return nodeA.stackName.localeCompare(nodeB.stackName)
+            },
         })
     }
 

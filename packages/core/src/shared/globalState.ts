@@ -85,6 +85,8 @@ export type globalKey =
     | 'aws.sagemaker.selectedDomainUsers'
     // Name of the connection if it's not to the AWS cloud. Current supported value only 'localstack'
     | 'aws.toolkit.externalConnection'
+    | 'aws.cloudformation.region'
+    | 'aws.cloudformation.selectedResourceTypes'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
