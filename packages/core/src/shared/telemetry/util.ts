@@ -31,6 +31,7 @@ import { telemetry } from './telemetry'
 import { v5 as uuidV5 } from 'uuid'
 import { ToolkitError } from '../errors'
 import { GlobalState } from '../globalState'
+import type { UserAgent } from '@aws-sdk/types'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
@@ -240,20 +241,46 @@ export function getUserAgent(
     opt?: { includePlatform?: boolean; includeClientId?: boolean },
     globalState = globals.globalState
 ): string {
-    const pairs = isAmazonQ()
-        ? [`AmazonQ-For-VSCode/${extensionVersion}`]
-        : [`AWS-Toolkit-For-VSCode/${extensionVersion}`]
+    return userAgentPairsToString(getUserAgentPairs(opt, globalState))
+}
+
+/**
+ * Returns a UserAgent array (AWS SDK v3 format) with proper [name, version] pairs.
+ *
+ * Omits the platform and `ClientId` pairs by default.
+ *
+ * @returns Array of [name, version] tuples for AWS SDK v3's customUserAgent option
+ */
+export function getUserAgentPairs(
+    opt?: { includePlatform?: boolean; includeClientId?: boolean },
+    globalState = globals.globalState
+): UserAgent {
+    const pairs: UserAgent = isAmazonQ()
+        ? [['AmazonQ-For-VSCode', extensionVersion]]
+        : [['AWS-Toolkit-For-VSCode', extensionVersion]]
 
     if (opt?.includePlatform) {
-        pairs.push(platformPair())
+        const platform = platformPair()
+        const [name, version] = platform.split('/')
+        if (name && version) {
+            pairs.push([name, version])
+        }
     }
 
     if (opt?.includeClientId) {
         const clientId = getClientId(globalState)
-        pairs.push(`ClientId/${clientId}`)
+        pairs.push(['ClientId', clientId])
     }
 
-    return pairs.join(' ')
+    return pairs
+}
+
+/**
+ * Converts UserAgent array format to traditional user agent string format.
+ * Example: [['LAMBDA-DEBUG', '1.0.0'], ['AWS-Toolkit', '2.0']] => "LAMBDA-DEBUG/1.0.0 AWS-Toolkit/2.0"
+ */
+export function userAgentPairsToString(pairs: UserAgent): string {
+    return pairs.map(([name, version]) => `${name}/${version}`).join(' ')
 }
 
 /**

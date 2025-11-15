@@ -36,7 +36,7 @@ import { getLambdaHandlerFile } from '../../../awsService/appBuilder/utils'
 import { runUploadDirectory } from '../../commands/uploadLambda'
 import fs from '../../../shared/fs/fs'
 import { showConfirmationMessage, showMessage } from '../../../shared/utilities/messages'
-import { getLambdaClientWithAgent, getLambdaDebugUserAgent } from '../../remoteDebugging/utils'
+import { getLambdaClientWithAgent, getLambdaDebugUserAgentPairs } from '../../remoteDebugging/utils'
 import { isLocalStackConnection } from '../../../auth/utils'
 import { getRemoteDebugLayer } from '../../remoteDebugging/remoteLambdaDebugger'
 
@@ -906,7 +906,7 @@ export async function invokeRemoteLambda(
     const resource: LambdaFunctionNode = params.functionNode
     const source: string = params.source || 'AwsExplorerRemoteInvoke'
     const client = getLambdaClientWithAgent(resource.regionCode)
-    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgent())
+    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgentPairs())
 
     const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 
