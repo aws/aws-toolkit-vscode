@@ -59,6 +59,15 @@ export abstract class SsoAccessTokenProvider {
     private static logIfChanged = onceChanged((s: string) => getLogger().info(s))
     private readonly className = 'SsoAccessTokenProvider'
 
+    /**
+     * Prevents concurrent token refresh operations.
+     * Maps tokenCacheKey to an in-flight refresh promise.
+     */
+    private static refreshPromises = new Map<
+        string,
+        Promise<{ token: SsoToken; registration: ClientRegistration; region: string; startUrl: string }>
+    >()
+
     public static set authSource(val: string) {
         SsoAccessTokenProvider._authSource = val
     }
@@ -98,6 +107,8 @@ export abstract class SsoAccessTokenProvider {
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
+        getLogger().warn(`getToken: CALLED for ${this.tokenCacheKey}`)
+
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
@@ -108,15 +119,43 @@ export abstract class SsoAccessTokenProvider {
                 true
             )
         )
+
         if (!data || !isExpired(data.token)) {
+            getLogger().debug(`getToken: token is valid, returning cached token (key=${this.tokenCacheKey})`)
             return data?.token
         }
 
-        if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
-            const refreshed = await this.refreshToken(data.token, data.registration)
+        getLogger().info(
+            `getToken: bearer token expired (expires at ${data.token.expiresAt}), attempting refresh (key=${this.tokenCacheKey})`
+        )
 
-            return refreshed.token
+        if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
+            getLogger().info(`getToken: refresh token available, calling refreshToken() (key=${this.tokenCacheKey})`)
+            // Check if a refresh is already in progress for this token
+            const existingRefresh = SsoAccessTokenProvider.refreshPromises.get(this.tokenCacheKey)
+            if (existingRefresh) {
+                getLogger().debug(
+                    'SsoAccessTokenProvider: Token refresh already in progress, waiting for existing refresh'
+                )
+                const refreshed = await existingRefresh
+                return refreshed.token
+            }
+
+            // Start a new refresh and store the promise
+            const refreshPromise = this.refreshToken(data.token, data.registration)
+            SsoAccessTokenProvider.refreshPromises.set(this.tokenCacheKey, refreshPromise)
+
+            try {
+                const refreshed = await refreshPromise
+                return refreshed.token
+            } finally {
+                // Clean up the promise from the map once complete (success or failure)
+                SsoAccessTokenProvider.refreshPromises.delete(this.tokenCacheKey)
+            }
         } else {
+            getLogger().warn(
+                `getToken: cannot refresh - registration expired or no refresh token available (key=${this.tokenCacheKey})`
+            )
             await this.invalidate('allCacheExpired')
         }
     }
@@ -171,11 +210,29 @@ export abstract class SsoAccessTokenProvider {
         }
 
         try {
+            // TEST: Log when refresh starts WITH STACK TRACE
+            const stack = new Error().stack
+                ?.split('\n')
+                .slice(2, 12) // Skip first 2 lines (Error + refreshToken itself), take next 10
+                .map((line) => line.trim())
+                .join('\n    ')
+            getLogger().warn(
+                `refreshToken: Starting OIDC API call for ${this.tokenCacheKey}\n  CALL STACK:\n    ${stack}`
+            )
+
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
+            getLogger().debug(`refreshToken: calling OIDC createToken API (key=${this.tokenCacheKey})`)
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
+
+            getLogger().warn(`refreshToken: got response, now saving to cache...`)
+
             const refreshed = this.formatToken(response, registration)
+            getLogger().debug(`refreshToken: saving refreshed token to cache (key=${this.tokenCacheKey})`)
             await this.cache.token.save(this.tokenCacheKey, refreshed)
 
+            getLogger().info(
+                `refreshToken: token refresh successful (key=${this.tokenCacheKey}, new expiry=${response.expiresAt})`
+            )
             telemetry.aws_refreshCredentials.emit({
                 result: 'Succeeded',
                 requestId: response.requestId,
@@ -184,6 +241,10 @@ export abstract class SsoAccessTokenProvider {
 
             return refreshed
         } catch (err) {
+            getLogger().error(
+                `refreshToken: token refresh failed (key=${this.tokenCacheKey}): ${getErrorMsg(err as unknown as Error)}`
+            )
+
             if (err instanceof DiskCacheError) {
                 /**
                  * Background:
@@ -197,6 +258,9 @@ export abstract class SsoAccessTokenProvider {
                  *   to the logs where the error was logged. Hopefully they can use this information to fix the issue,
                  *   or at least hint for them to provide the logs in a bug report.
                  */
+                getLogger().warn(
+                    `refreshToken: DiskCacheError during refresh, not invalidating session (key=${this.tokenCacheKey})`
+                )
                 void DiskCacheErrorMessage.instance.showMessageThrottled(err)
             } else if (!isNetworkError(err)) {
                 const reason = getTelemetryReason(err)
