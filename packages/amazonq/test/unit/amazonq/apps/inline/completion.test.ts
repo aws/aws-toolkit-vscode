@@ -29,6 +29,7 @@ import {
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
+import { setContext } from 'aws-core-vscode/shared'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -246,7 +247,7 @@ describe('InlineCompletionManager', () => {
             let inlineTutorialAnnotation: InlineTutorialAnnotation
             let documentEventListener: DocumentEventListener
 
-            beforeEach(() => {
+            beforeEach(async () => {
                 const lineTracker = new LineTracker()
                 inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
                 recommendationService = new RecommendationService(mockSessionManager)
@@ -269,6 +270,9 @@ describe('InlineCompletionManager', () => {
                 getAllRecommendationsStub = sandbox.stub(recommendationService, 'getAllRecommendations')
                 getAllRecommendationsStub.resolves()
                 sandbox.stub(window, 'activeTextEditor').value(createMockTextEditor())
+
+                // TODO: can we use stub?
+                await setContext('aws.amazonq.editSuggestionActive', false)
             }),
                 it('should call recommendation service to get new suggestions(matching typeahead) for new sessions', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
