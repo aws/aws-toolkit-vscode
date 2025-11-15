@@ -30,7 +30,11 @@ import { isAutomation } from '../../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../../shared/errors'
 import * as localizedText from '../../shared/localizedText'
-import { DefaultStsClient, type GetCallerIdentityResponse } from '../../shared/clients/stsClient'
+import {
+    DefaultStsClient,
+    type GetCallerIdentityResponse,
+    type GetCallerIdentityResponseWithHeaders,
+} from '../../shared/clients/stsClient'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
@@ -135,9 +139,11 @@ export class LoginManager {
         return accountId
     }
 
-    private async detectExternalConnection(callerIdentity: GetCallerIdentityResponse): Promise<void> {
-        // @ts-ignore
-        const headers = callerIdentity.$response?.httpResponse?.headers
+    private async detectExternalConnection(
+        callerIdentity: GetCallerIdentityResponse | GetCallerIdentityResponseWithHeaders
+    ): Promise<void> {
+        // SDK v3: Headers are captured via middleware and attached as $httpHeaders
+        const headers = (callerIdentity as GetCallerIdentityResponseWithHeaders).$httpHeaders
         if (headers !== undefined && localStackConnectionHeader in headers) {
             await globals.globalState.update('aws.toolkit.externalConnection', localStackConnectionString)
             telemetry.auth_localstackEndpoint.emit({ source: 'validateCredentials', result: 'Succeeded' })

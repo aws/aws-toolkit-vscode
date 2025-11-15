@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Attaching a debugger to your lambdas using LocalStack is not working"
+}
