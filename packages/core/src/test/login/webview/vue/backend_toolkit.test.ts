@@ -68,7 +68,7 @@ describe('Toolkit Login', function () {
     })
 
     it('signs into account IdC and emits telemetry', async function () {
-        await backend.startEnterpriseSetup(startUrl, region)
+        await backend.startEnterpriseSetup(startUrl, region, 'TOOLKIT')
 
         assert.ok(isIdcSsoConnection(auth.activeConnection))
         assert.deepStrictEqual(auth.activeConnection.scopes, scopesSsoAccountAccess)
@@ -90,7 +90,7 @@ describe('Toolkit Login', function () {
         sandbox.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
         backend.setLoginService('codecatalyst')
 
-        await backend.startEnterpriseSetup(startUrl, region)
+        await backend.startEnterpriseSetup(startUrl, region, 'TOOLKIT')
 
         assert.ok(isIdcSsoConnection(auth.activeConnection))
         assert.deepStrictEqual(auth.activeConnection.scopes, defaultScopes)

@@ -295,9 +295,15 @@ export abstract class SsoAccessTokenProvider {
              * Device code flow is neccessary when:
              * 1. We are in a workspace connected through ssh (codecatalyst, etc)
              * 2. We are connected to a remote backend through the web browser (code server, openshift dev spaces)
+             * 3. User has explicitly requested device code flow via the login page toggle
              *
-             * Since we are unable to serve the final authorization page
+             * Since we are unable to serve the final authorization page in cases 1 and 2,
+             * or the user may not have federation access in case 3
              */
+            // Check for user preference first, then fall back to the current logic
+            if (globals.globalState.get<boolean>('aws.forceDeviceCodeFlow')) {
+                return true
+            }
             return getExtRuntimeContext().extensionHost === 'remote'
         }
     ) {
@@ -458,7 +464,8 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
         })
-
+        // Reset forceDeviceCodeFlow if toggled
+        await globals.globalState.update('aws.forceDeviceCodeFlow', undefined)
         const openBrowserAndWaitUntilComplete = async () => {
             if (!(await openSsoPortalLink(this.profile.startUrl, authorization))) {
                 throw new CancellationError('user')

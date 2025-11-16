@@ -165,7 +165,12 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract startBuilderIdSetup(app: string): Promise<AuthError | undefined>
 
-    abstract startEnterpriseSetup(startUrl: string, region: string, app: string): Promise<AuthError | undefined>
+    abstract startEnterpriseSetup(
+        startUrl: string,
+        region: string,
+        app: string,
+        useDeviceCodeFlow?: boolean
+    ): Promise<AuthError | undefined>
 
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         return Auth.instance.authenticateData(data)
