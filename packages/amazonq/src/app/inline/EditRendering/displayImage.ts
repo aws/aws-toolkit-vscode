@@ -14,7 +14,7 @@ import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
 import { EditSuggestionState } from '../editSuggestionState'
 import type { AmazonQInlineCompletionItemProvider } from '../completion'
-import { vsCodeState } from 'aws-core-vscode/codewhisperer'
+import { vsCodeState, InlineCompletionLoggingReason } from 'aws-core-vscode/codewhisperer'
 
 const autoRejectEditCursorDistance = 25
 const autoDiscardEditCursorDistance = 10
@@ -25,7 +25,7 @@ export class EditDecorationManager {
     private currentImageDecoration: vscode.DecorationOptions | undefined
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
-    private rejectHandler: ((isDiscard: boolean) => void) | undefined
+    private rejectHandler: ((isDiscard: boolean, reason?: InlineCompletionLoggingReason) => void) | undefined
 
     constructor() {
         this.registerCommandHandlers()
@@ -132,7 +132,7 @@ export class EditDecorationManager {
         svgImage: vscode.Uri,
         startLine: number,
         onAccept: () => Promise<void>,
-        onReject: (isDiscard: boolean) => Promise<void>,
+        onReject: (isDiscard: boolean, reason?: InlineCompletionLoggingReason) => Promise<void>,
         originalCode: string,
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
@@ -187,11 +187,14 @@ export class EditDecorationManager {
         })
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', (isDiscard: boolean = false) => {
-            if (this.rejectHandler) {
-                this.rejectHandler(isDiscard)
+        vscode.commands.registerCommand(
+            'aws.amazonq.inline.rejectEdit',
+            (isDiscard: boolean = false, reason?: InlineCompletionLoggingReason) => {
+                if (this.rejectHandler) {
+                    this.rejectHandler(isDiscard, reason)
+                }
             }
-        })
+        )
     }
 
     /**
@@ -376,7 +379,11 @@ export async function displaySvgDecoration(
         const isPatchValid = applyPatch(e.document.getText(), item.insertText as string)
         if (!isPatchValid) {
             logSuggestionFailure('REJECT', 'Invalid patch due to document change', item.insertText as string)
-            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+            void vscode.commands.executeCommand(
+                'aws.amazonq.inline.rejectEdit',
+                false,
+                InlineCompletionLoggingReason.IMPLICIT_REJECT
+            )
         }
     })
     const cursorChangeListener = vscode.window.onDidChangeTextEditorSelection((e) => {
@@ -394,7 +401,11 @@ export async function displaySvgDecoration(
                 `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
                 item.insertText as string
             )
-            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+            void vscode.commands.executeCommand(
+                'aws.amazonq.inline.rejectEdit',
+                false,
+                InlineCompletionLoggingReason.IMPLICIT_REJECT
+            )
         }
     })
     await decorationManager.displayEditSuggestion(
@@ -436,7 +447,7 @@ export async function displaySvgDecoration(
             void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             session.triggerOnAcceptance = true
         },
-        async (isDiscard: boolean) => {
+        async (isDiscard: boolean, reason?: InlineCompletionLoggingReason) => {
             // Handle reject
             if (isDiscard) {
                 getLogger().info('Edit suggestion discarded')
@@ -465,6 +476,7 @@ export async function displaySvgDecoration(
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 isInlineEdit: true,
+                ...(reason && !isDiscard ? { reason } : {}),
             }
             void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
