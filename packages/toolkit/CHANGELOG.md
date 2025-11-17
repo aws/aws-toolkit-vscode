@@ -1,3 +1,8 @@
+## 3.84.0 2025-11-15
+
+- **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
+- **Feature** Deeplink support for SageMaker Unified Studio
+
 ## 3.83.0 2025-11-06
 
 - Miscellaneous non-user-facing changes

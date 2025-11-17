@@ -36,7 +36,7 @@ export const InstanceTypeInsufficientMemoryMessage = (
     chosenInstanceType: string,
     recommendedInstanceType: string
 ) => {
-    return `Unable to create app for [${spaceName}] because instanceType [${chosenInstanceType}] is not supported for remote access enabled spaces. Use instanceType with at least 8 GiB memory. Would you like to start your space with instanceType [${recommendedInstanceType}]?`
+    return `[${chosenInstanceType}] does not support remote access. Use an instanceType with at least 8 GiB memory. Would you like to start your space with instanceType [${recommendedInstanceType}]?`
 }
 
 export const InstanceTypeNotSelectedMessage = (spaceName: string) => {

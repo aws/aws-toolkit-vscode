@@ -185,7 +185,7 @@ describe('SageMaker Commands', () => {
                 // Setup test window to handle confirmation dialog
                 getTestWindow().onDidShowMessage((message) => {
                     if (message.message.includes(RemoteAccessRequiredMessage)) {
-                        message.selectItem('Restart and Connect')
+                        message.selectItem('Restart Space and Connect')
                     }
                 })
 
@@ -243,7 +243,7 @@ describe('SageMaker Commands', () => {
                             InstanceTypeInsufficientMemoryMessage('test-space', 'ml.t3.medium', 'ml.t3.large')
                         )
                     ) {
-                        message.selectItem('Restart and Connect')
+                        message.selectItem('Restart Space and Connect')
                     }
                 })
 
@@ -297,8 +297,8 @@ describe('SageMaker Commands', () => {
 
                 // Setup test window to confirm
                 getTestWindow().onDidShowMessage((message) => {
-                    if (message.items.some((item) => item.title === 'Restart and Connect')) {
-                        message.selectItem('Restart and Connect')
+                    if (message.items.some((item) => item.title === 'Restart Space and Connect')) {
+                        message.selectItem('Restart Space and Connect')
                     }
                 })
 
@@ -398,7 +398,7 @@ describe('SageMaker Commands', () => {
 
                 // Verify no confirmation dialog shown for stopped space
                 const confirmMessages = getTestWindow().shownMessages.filter((m) =>
-                    m.message.includes('Restart and Connect')
+                    m.message.includes('Restart Space and Connect')
                 )
                 assert.strictEqual(confirmMessages.length, 0, 'Should not show confirmation for stopped space')
 
@@ -449,7 +449,7 @@ describe('SageMaker Commands', () => {
                 assert(mockTryRefreshNode.calledOnce)
                 // Verify no confirmation needed
                 const confirmMessages = getTestWindow().shownMessages.filter((m) =>
-                    m.message.includes('Restart and Connect')
+                    m.message.includes('Restart Space and Connect')
                 )
                 assert.strictEqual(confirmMessages.length, 0)
                 // Verify no space operations performed
