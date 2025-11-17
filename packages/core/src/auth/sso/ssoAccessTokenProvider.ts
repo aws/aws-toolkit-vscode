@@ -119,16 +119,16 @@ export abstract class SsoAccessTokenProvider {
         )
 
         if (!data || !isExpired(data.token)) {
-            getLogger().debug(`getToken: token is valid, returning cached token (key=${this.tokenCacheKey})`)
+            getLogger().debug('Auth: token is valid, returning cached token (key=%s)', this.tokenCacheKey)
             return data?.token
         }
 
         getLogger().info(
-            `getToken: bearer token expired (expires at ${data.token.expiresAt}), attempting refresh (key=${this.tokenCacheKey})`
+            `Auth: bearer token expired (expires at ${data.token.expiresAt}), attempting refresh (key=${this.tokenCacheKey})`
         )
 
         if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
-            getLogger().debug(`getToken: refresh token available, calling refreshToken() (key=${this.tokenCacheKey})`)
+            getLogger().debug(`Auth: refresh token available, calling refreshToken() (key=${this.tokenCacheKey})`)
             // Check if a refresh is already in progress for this token
             const existingRefresh = SsoAccessTokenProvider.refreshPromises.get(this.tokenCacheKey)
             if (existingRefresh) {
@@ -209,17 +209,17 @@ export abstract class SsoAccessTokenProvider {
 
         try {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
-            getLogger().debug(`refreshToken: calling OIDC createToken API (key=${this.tokenCacheKey})`)
+            getLogger().debug(`Auth refreshToken: calling OIDC createToken API (key=${this.tokenCacheKey})`)
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
 
-            getLogger().debug(`refreshToken: got response, now saving to cache...`)
+            getLogger().debug(`Auth refreshToken: got response, now saving to cache...`)
 
             const refreshed = this.formatToken(response, registration)
             getLogger().debug(`refreshToken: saving refreshed token to cache (key=${this.tokenCacheKey})`)
             await this.cache.token.save(this.tokenCacheKey, refreshed)
 
             getLogger().info(
-                `refreshToken: token refresh successful (key=${this.tokenCacheKey}, new expiry=${response.expiresAt})`
+                `Auth refreshToken: token refresh successful (key=${this.tokenCacheKey}, new expiry=${response.expiresAt})`
             )
             telemetry.aws_refreshCredentials.emit({
                 result: 'Succeeded',
@@ -230,7 +230,7 @@ export abstract class SsoAccessTokenProvider {
             return refreshed
         } catch (err) {
             getLogger().error(
-                `refreshToken: token refresh failed (key=${this.tokenCacheKey}): ${getErrorMsg(err as unknown as Error)}`
+                `Auth refreshToken: token refresh failed (key=${this.tokenCacheKey}): ${getErrorMsg(err as unknown as Error)}`
             )
 
             if (err instanceof DiskCacheError) {
@@ -247,7 +247,7 @@ export abstract class SsoAccessTokenProvider {
                  *   or at least hint for them to provide the logs in a bug report.
                  */
                 getLogger().warn(
-                    `refreshToken: DiskCacheError during refresh, not invalidating session (key=${this.tokenCacheKey})`
+                    `Auth refreshToken: DiskCacheError during refresh, not invalidating session (key=${this.tokenCacheKey})`
                 )
                 void DiskCacheErrorMessage.instance.showMessageThrottled(err)
             } else if (!isNetworkError(err)) {
