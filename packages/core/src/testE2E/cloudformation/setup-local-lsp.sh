@@ -40,6 +40,8 @@ DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-
 
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "Error: Could not find LSP server release for ${PLATFORM}-${ARCH}-node${NODE_VERSION}"
+    echo "Available releases:"
+    curl -s "$RELEASE_URL" | grep "browser_download_url" | cut -d'"' -f4
     exit 1
 fi
 
