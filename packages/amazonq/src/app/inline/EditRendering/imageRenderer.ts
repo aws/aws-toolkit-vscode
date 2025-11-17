@@ -16,12 +16,6 @@ import { applyPatch, createPatch } from 'diff'
 import { EditSuggestionState } from '../editSuggestionState'
 import { debounce } from 'aws-core-vscode/utils'
 
-function logSuggestionFailure(type: 'REJECT', reason: string, suggestionContent: string) {
-    getLogger('nextEditPrediction').debug(
-        `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
-    )
-}
-
 const autoRejectEditCursorDistance = 25
 const maxPrefixRetryCharDiff = 5
 const rerenderDeboucneInMs = 500
@@ -39,7 +33,10 @@ export class EditsSuggestionSvg {
 
     private startLine = 0
 
-    private docChanged: string = ''
+    private documentChangeTrace = {
+        contentChanged: '',
+        count: 0,
+    }
 
     constructor(
         private suggestion: InlineCompletionItemWithReferences,
@@ -114,12 +111,7 @@ export class EditsSuggestionSvg {
         const currentPosition = e.selections[0].active
         const distance = Math.abs(currentPosition.line - this.startLine)
         if (distance > autoRejectEditCursorDistance) {
-            logSuggestionFailure(
-                'REJECT',
-                `cursor position move too far away off ${autoRejectEditCursorDistance} lines`,
-                this.suggestion.insertText as string
-            )
-            void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
+            this.autoReject(`cursor position move too far away off ${autoRejectEditCursorDistance} lines`)
         }
     }
 
@@ -140,7 +132,10 @@ export class EditsSuggestionSvg {
         // TODO: handle multi-contentChanges scenario
         const diff = e.contentChanges[0] ? e.contentChanges[0].text : ''
         this.logger.info(`docChange sessionId=${this.session.sessionId}, contentChange=${diff}`)
-        this.docChanged += e.contentChanges[0].text
+
+        // Track document changes because we might need to hide/reject suggestions while users are typing for better UX
+        this.documentChangeTrace.contentChanged += e.contentChanges[0].text
+        this.documentChangeTrace.count++
         /**
          * 1. Take the diff returned by the model and apply it to the code we originally sent to the model
          * 2. Do a diff between the above code and what's currently in the editor
@@ -153,14 +148,17 @@ export class EditsSuggestionSvg {
             if (appliedToOriginal) {
                 const updatedPatch = this.patchSuggestion(appliedToOriginal)
 
-                if (this.docChanged.length > maxPrefixRetryCharDiff) {
-                    this.logger.info(`docChange: ${this.docChanged}`)
+                if (
+                    this.documentChangeTrace.contentChanged.length > maxPrefixRetryCharDiff ||
+                    this.documentChangeTrace.count > maxPrefixRetryCharDiff
+                ) {
+                    // Reject the suggestion if users've typed over 5 characters while the suggestion is shown
                     this.autoReject(RejectReason.MaxRetry)
                 } else if (applyPatch(this.editor.document.getText(), updatedPatch.insertText as string) === false) {
                     this.autoReject(RejectReason.DocumentChange)
                 } else {
                     // Close the previoius popup and rerender it
-                    this.logger.info(`calling rerender with suggestion\n ${updatedPatch.insertText as string}`)
+                    this.logger.debug(`calling rerender with suggestion\n ${updatedPatch.insertText as string}`)
                     await this.debouncedRerender(updatedPatch)
                 }
             } else {
@@ -190,6 +188,12 @@ export class EditsSuggestionSvg {
     }
 
     private autoReject(reason: string) {
+        function logSuggestionFailure(type: 'REJECT', reason: string, suggestionContent: string) {
+            getLogger('nextEditPrediction').debug(
+                `Auto ${type} edit suggestion with reason=${reason}, suggetion: ${suggestionContent}`
+            )
+        }
+
         logSuggestionFailure('REJECT', reason, this.suggestion.insertText as string)
         void vscode.commands.executeCommand('aws.amazonq.inline.rejectEdit')
     }
