@@ -117,7 +117,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 return req.response.finally(() => cancelListener?.dispose())
             },
             {
-                timeout: 10000,
+                timeout: 15000,
                 interval: 100,
                 backoff: 2,
                 retryOnFail: (error: Error) => {
