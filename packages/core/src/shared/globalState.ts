@@ -48,6 +48,7 @@ export type globalKey =
     | 'aws.toolkit.lsp.versions'
     | 'aws.toolkit.lsp.manifest'
     | 'aws.amazonq.customization.overrideV2'
+    | 'aws.smus.authenticationPreferences'
     | 'aws.amazonq.regionProfiles'
     | 'aws.amazonq.regionProfiles.cache'
     // Deprecated/legacy names. New keys should start with "aws.".

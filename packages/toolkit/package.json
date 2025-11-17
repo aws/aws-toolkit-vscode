@@ -1270,6 +1270,10 @@
                 {
                     "command": "aws.smus.refreshProject",
                     "when": "false"
+                },
+                {
+                    "command": "aws.smus.refresh",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1680,6 +1684,11 @@
                     "command": "aws.sagemaker.filterSpaceApps",
                     "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.smus.switchProject",
+                    "when": "view == aws.smus.rootView && viewItem == smusSelectedProject",
+                    "group": "0_project@1"
                 },
                 {
                     "command": "aws.smus.refreshProject",
@@ -2775,6 +2784,16 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
+                }
+            },
+            {
+                "command": "aws.smus.refresh",
+                "title": "%AWS.command.smus.refresh%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": {
+                    "dark": "resources/icons/vscode/dark/refresh.svg",
+                    "light": "resources/icons/vscode/light/refresh.svg"
                 }
             },
             {

@@ -8,6 +8,9 @@ import { ToolkitError } from '../../shared/errors'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { getResourceMetadata } from './utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
+import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
+import { CredentialType } from '../../shared/telemetry/telemetry'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -64,6 +67,32 @@ export const SmusErrorCodes = {
     GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
     /** Error code for when region is missing */
     RegionNotFound: 'RegionNotFound',
+    /** Error code for when IAM-based domain is not found in the specified region */
+    IamDomainNotFound: 'IamDomainNotFound',
+    /** Error code for when IAM profile is not found */
+    ProfileNotFound: 'ProfileNotFound',
+    /** Error code for when IAM credential retrieval fails */
+    CredentialRetrievalFailed: 'CredentialRetrievalFailed',
+    /** Error code for when IAM credential provider initialization fails */
+    CredentialProviderInitFailed: 'CredentialProviderInitFailed',
+    /** Error code for when IAM profile type is invalid */
+    InvalidProfileType: 'InvalidProfileType',
+    /** Error code for when IAM credential validation fails */
+    IamValidationFailed: 'IamValidationFailed',
+    /** Error code for when sign out operation fails */
+    SignOutFailed: 'SignOutFailed',
+    /** Error code for when domain URL format is invalid */
+    InvalidDomainUrl: 'InvalidDomainUrl',
+    /** Error code for when connection to SMUS fails */
+    FailedToConnect: 'FailedToConnect',
+    /** Error code for when connection is not found */
+    ConnectionNotFound: 'ConnectionNotFound',
+    /** Error code for when connection type is invalid for the operation */
+    InvalidConnectionType: 'InvalidConnectionType',
+    /** Error code for when no group profile is found for IAM role */
+    NoGroupProfileFound: 'NoGroupProfileFound',
+    /** Error code for when no user profile is found for IAM principal */
+    NoUserProfileFound: 'NoUserProfileFound',
 } as const
 
 /**
@@ -73,6 +102,11 @@ export const SmusTimeouts = {
     /** Default timeout for API calls: 10 seconds */
     apiCallTimeoutMs: 10 * 1000,
 } as const
+
+/**
+ * DataZone service ID used for filtering regions
+ */
+export const DataZoneServiceId = 'datazone'
 
 /**
  * Interface for AWS credential objects that need validation
@@ -364,6 +398,96 @@ export class SmusUtils {
         const resourceMetadata = getResourceMetadata()
         return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
     }
+
+    /**
+     * Extracts the session name from an assumed role ARN.
+     *
+     * Note: This function ONLY works for assumed role ARNs (arn:aws:sts::*:assumed-role/*).
+     * It will return undefined for other IAM principal types such as:
+     * - IAM users (arn:aws:iam::*:user/*)
+     * - IAM roles (arn:aws:iam::*:role/*)
+     *
+     * @param arn The assumed role ARN (format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME)
+     * @returns The session name if the ARN is a valid assumed role ARN, undefined otherwise
+     */
+    public static extractSessionNameFromArn(arn: string): string | undefined {
+        try {
+            // Expected format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+            const parts = arn.split(':')
+            if (parts.length < 6) {
+                return undefined
+            }
+
+            // The resource part is after the 5th colon
+            const resourcePart = parts.slice(5).join(':')
+
+            // Split by '/' to get assumed-role, ROLE_NAME, and SESSION_NAME
+            const resourceParts = resourcePart.split('/')
+            if (resourceParts.length < 3 || resourceParts[0] !== 'assumed-role') {
+                return undefined
+            }
+
+            // Session name is the last part
+            return resourceParts[2]
+        } catch (err) {
+            return undefined
+        }
+    }
+
+    /**
+     * Determines if an ARN represents an IAM user (vs IAM role session)
+     * @param arn The ARN to check (format: arn:aws:iam::ACCOUNT:user/USER_NAME for IAM users,
+     *                                      arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME for role sessions)
+     * @returns True if the ARN is an IAM user, false otherwise
+     */
+    public static isIamUserArn(arn: string | undefined): boolean {
+        if (!arn) {
+            return false
+        }
+
+        // IAM user ARN format: arn:aws:iam::ACCOUNT:user/USER_NAME
+        // IAM role session ARN format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+        return arn.includes(':iam::') && arn.includes(':user/')
+    }
+
+    /**
+     * Converts an STS assumed-role ARN to its corresponding IAM role ARN, or returns IAM user ARN as-is.
+     * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
+     * Examples:
+     *   Input:  arn:aws:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws:iam::123456789012:role/MyRole
+     *
+     *   Input:  arn:aws:iam::123456789012:user/MyUser
+     *   Output: arn:aws:iam::123456789012:user/MyUser
+     *
+     *   Input:  arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws-cn:iam::123456789012:role/MyRole
+     */
+    public static convertAssumedRoleArnToIamRoleArn(stsArn: string): string {
+        // Check if it's already an IAM user ARN - return as-is
+        // Supports all AWS partitions: aws, aws-cn, aws-us-gov, etc.
+        const iamUserRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):user\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamUserRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Check if it's already an IAM role ARN - return as-is
+        const iamRoleRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):role\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamRoleRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Try to convert STS assumed-role ARN to IAM role ARN
+        const arnRegex = /^arn:(aws[a-z-]*):sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
+        const match = stsArn.match(arnRegex)
+        if (!match) {
+            throw new Error(`Invalid STS ARN format: ${stsArn}`)
+        }
+
+        const [, partition, accountId, roleName] = match
+
+        return `arn:${partition}:iam::${accountId}:role/${roleName}`
+    }
 }
 
 /**
@@ -413,4 +537,69 @@ export async function extractAccountIdFromResourceMetadata(): Promise<string> {
         logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
         throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
     }
+}
+
+/**
+ * Creates a CredentialsProvider from an AWS credentials function
+ * @param credentialsFunction Function that returns AWS credentials
+ * @param credentialTypeId Identifier for the credential type
+ * @param hashCode Unique hash code for caching
+ * @param region Domain region
+ * @returns Complete CredentialsProvider object
+ */
+export function convertToToolkitCredentialProvider(
+    credentialsFunction: () => Promise<AwsCredentialIdentity>,
+    credentialTypeId: string,
+    hashCode: string,
+    region: string
+): CredentialsProvider {
+    return {
+        getCredentials: credentialsFunction,
+        getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId }),
+        getProviderType: () => 'temp' as CredentialsProviderType,
+        getTelemetryType: () => 'other' as CredentialType,
+        getDefaultRegion: () => region,
+        getHashCode: () => hashCode,
+        canAutoConnect: () => Promise.resolve(false),
+        isAvailable: () => Promise.resolve(true),
+    }
+}
+
+/**
+ * Checks if an error indicates credential/token expiration
+ *
+ * @param error The error to check (can be any type)
+ * @returns true if the error indicates expired credentials, false otherwise
+ *
+ */
+export function isCredentialExpirationError(error: any): boolean {
+    if (!error) {
+        return false
+    }
+
+    const errorName = (error.name || '') as string
+    const errorMessage = (error.message || '') as string
+    const errorNameLower = errorName.toLowerCase()
+    const errorMessageLower = errorMessage.toLowerCase()
+
+    const expirationErrorNames = ['ExpiredTokenException']
+
+    const expirationErrorMessages = ['The security token included in the request is expired']
+
+    // Return true if error name matches any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((name) => name.toLowerCase() === errorNameLower)) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((errorName) => errorMessageLower.includes(errorName.toLowerCase()))) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error messages
+    if (expirationErrorMessages.some((keyword) => errorMessageLower.includes(keyword.toLowerCase()))) {
+        return true
+    }
+
+    return false
 }

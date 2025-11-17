@@ -6,12 +6,13 @@
 import * as AWS from 'aws-sdk'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { getLogger } from '../../../shared/logger/logger'
+import { CredentialsProvider } from '../../../auth/providers/credentials'
 
 /**
  * Adapts a ConnectionCredentialsProvider (SDK v3) to work with SDK v2's CredentialProviderChain
  */
 export function adaptConnectionCredentialsProvider(
-    connectionCredentialsProvider: ConnectionCredentialsProvider
+    connectionCredentialsProvider: ConnectionCredentialsProvider | CredentialsProvider
 ): AWS.CredentialProviderChain {
     const provider = () => {
         // Create SDK v2 Credentials that will resolve the provider when needed

@@ -18,6 +18,7 @@ import {
     ListCallerAccessGrantsEntry,
 } from '@aws-sdk/client-s3-control'
 import { S3, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
@@ -71,7 +72,7 @@ export class S3Node implements TreeNode {
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as S3Node]
             }
         }
@@ -123,6 +124,9 @@ export function createS3ConnectionNode(
         return createErrorItem(errorMessage, 'connection', connection.connectionId) as S3Node
     }
 
+    // Handle case where s3Uri is "s3://" (all buckets access)
+    const isAllBucketsAccess = !s3Info.bucket
+
     // Get S3 client from store
     const clientStore = ConnectionClientStore.getInstance()
     const s3Client = clientStore.getS3Client(connection.connectionId, region, connectionCredentialsProvider)
@@ -146,7 +150,90 @@ export function createS3ConnectionNode(
             return telemetry.smus_renderS3Node.run(async (span) => {
                 await recordDataConnectionTelemetry(span, connection, connectionCredentialsProvider)
                 try {
-                    if (isDefaultConnection && s3Info.prefix) {
+                    if (isAllBucketsAccess) {
+                        // For all buckets access (s3://), list all accessible buckets
+                        try {
+                            const buckets = await s3Client.listBuckets()
+                            if (buckets.length === 0) {
+                                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
+                            }
+
+                            return buckets.map((bucket) => {
+                                return new S3Node(
+                                    {
+                                        id: bucket.Name || 'unknown-bucket',
+                                        nodeType: NodeType.S3_BUCKET,
+                                        connectionType: ConnectionType.S3,
+                                        value: { bucket: bucket.Name },
+                                        path: {
+                                            connection: connection.name,
+                                            bucket: bucket.Name,
+                                        },
+                                        parent: node,
+                                    },
+                                    async (bucketNode) => {
+                                        try {
+                                            const allPaths = []
+                                            let nextToken: string | undefined
+
+                                            do {
+                                                const result = await s3Client.listPaths(
+                                                    bucket.Name || '',
+                                                    undefined,
+                                                    nextToken
+                                                )
+                                                allPaths.push(...result.paths)
+                                                nextToken = result.nextToken
+                                            } while (nextToken)
+
+                                            if (allPaths.length === 0) {
+                                                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
+                                            }
+
+                                            return allPaths.map((path) => {
+                                                const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+
+                                                return new S3Node(
+                                                    {
+                                                        id: nodeId,
+                                                        nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                                                        connectionType: ConnectionType.S3,
+                                                        value: path,
+                                                        path: {
+                                                            connection: connection.name,
+                                                            bucket: path.bucket,
+                                                            key: path.prefix,
+                                                            label: path.displayName,
+                                                        },
+                                                        parent: bucketNode,
+                                                    },
+                                                    path.isFolder
+                                                        ? createFolderChildrenProvider(s3Client, path)
+                                                        : undefined
+                                                )
+                                            })
+                                        } catch (err) {
+                                            logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
+                                            const errorMessage = (err as Error).message
+                                            await handleCredExpiredError(err, true)
+                                            return [
+                                                createErrorItem(
+                                                    errorMessage,
+                                                    'bucket-contents-all-access',
+                                                    bucketNode.id
+                                                ) as S3Node,
+                                            ]
+                                        }
+                                    }
+                                )
+                            })
+                        } catch (err) {
+                            logger.error(`Failed to list buckets: ${(err as Error).message}`)
+                            const errorMessage = (err as Error).message
+                            await handleCredExpiredError(err, true)
+                            return [createErrorItem(errorMessage, 'list-buckets', node.id) as S3Node]
+                        }
+                    } else if (isDefaultConnection && s3Info.prefix) {
                         // For default connections, show the full path as the first node
                         const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
                         return [
@@ -208,7 +295,7 @@ export function createS3ConnectionNode(
                                     } catch (err) {
                                         logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
                                         const errorMessage = (err as Error).message
-                                        void vscode.window.showErrorMessage(errorMessage)
+                                        await handleCredExpiredError(err, true)
                                         return [
                                             createErrorItem(
                                                 errorMessage,
@@ -279,7 +366,7 @@ export function createS3ConnectionNode(
                                     } catch (err) {
                                         logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
                                         const errorMessage = (err as Error).message
-                                        void vscode.window.showErrorMessage(errorMessage)
+                                        await handleCredExpiredError(err, true)
                                         return [
                                             createErrorItem(
                                                 errorMessage,
@@ -295,7 +382,7 @@ export function createS3ConnectionNode(
                 } catch (err) {
                     logger.error(`Failed to create bucket node: ${(err as Error).message}`)
                     const errorMessage = (err as Error).message
-                    void vscode.window.showErrorMessage(errorMessage)
+                    await handleCredExpiredError(err, true)
                     return [createErrorItem(errorMessage, 'bucket-node', node.id) as S3Node]
                 }
             })
@@ -365,7 +452,7 @@ function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (nod
         } catch (err) {
             logger.error(`Failed to list folder contents: ${(err as Error).message}`)
             const errorMessage = (err as Error).message
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(err, true)
             return [createErrorItem(errorMessage, 'folder-contents', node.id) as S3Node]
         }
     }
@@ -382,11 +469,22 @@ function parseS3Uri(connection: DataZoneConnection): { bucket: string; prefix?: 
         return undefined
     }
 
+    // Handle case where s3Uri is just "s3://" (all buckets access)
+    if (s3Uri === 's3://') {
+        return { bucket: '', prefix: undefined }
+    }
+
     // Parse S3 URI: s3://bucket-name/prefix/path/
     const uriWithoutPrefix = s3Uri.replace('s3://', '')
+
+    // Handle empty URI after removing prefix
+    if (!uriWithoutPrefix) {
+        return { bucket: '', prefix: undefined }
+    }
+
     // Since the URI ends with a slash, the last item will be an empty string, so ignore it in the parts.
     const parts = uriWithoutPrefix.split('/').slice(0, -1)
-    const bucket = parts[0]
+    const bucket = parts[0] || ''
 
     // If parts only contains 1 item, then only a bucket was provided, and the key is empty.
     const prefix = parts.length > 1 ? parts.slice(1).join('/') + '/' : undefined
@@ -428,6 +526,7 @@ async function listCallerAccessGrants(
         return accessGrantNodes
     } catch (error) {
         logger.error(`Failed to list caller access grants: ${(error as Error).message}`)
+        await handleCredExpiredError(error)
         return []
     }
 }
@@ -593,7 +692,7 @@ async function fetchAccessGrantChildren(
     } catch (error) {
         logger.error(`Failed to fetch access grant children: ${(error as Error).message}`)
         const errorMessage = (error as Error).message
-        void vscode.window.showErrorMessage(errorMessage)
+        await handleCredExpiredError(error, true)
         return [createErrorItem(errorMessage, 'access-grant-children', node.id) as S3Node]
     }
 }

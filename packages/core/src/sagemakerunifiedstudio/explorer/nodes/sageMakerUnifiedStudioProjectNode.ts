@@ -17,6 +17,11 @@ import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioCompu
 import { getIcon } from '../../../shared/icons'
 import { getResourceMetadata } from '../../shared/utils/resourceMetadataUtils'
 import { getContext } from '../../../shared/vscode/setContext'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusErrorCodes } from '../../shared/smusUtils'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
+import { SmusIamConnection } from '../../auth/model'
+import { createDZClientBaseOnDomainMode, createErrorItem } from './utils'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -93,22 +98,29 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
 
                 // Skip access check if we're in SMUS space environment (already in project space)
                 if (!getContext('aws.smus.inSmusSpaceEnvironment')) {
-                    const hasAccess = await this.checkProjectCredsAccess(this.project!.id)
-                    if (!hasAccess) {
-                        return [
-                            {
-                                id: 'smusProjectAccessDenied',
-                                resource: {},
-                                getTreeItem: () => {
-                                    const item = new vscode.TreeItem(
-                                        'You do not have access to this project. Contact your administrator.',
-                                        vscode.TreeItemCollapsibleState.None
-                                    )
-                                    return item
+                    try {
+                        const hasAccess = await this.checkProjectCredsAccess(this.project!.id)
+                        if (!hasAccess) {
+                            return [
+                                {
+                                    id: 'smusProjectAccessDenied',
+                                    resource: {},
+                                    getTreeItem: () => {
+                                        const item = new vscode.TreeItem(
+                                            'You do not have access to this project. Contact your administrator.',
+                                            vscode.TreeItemCollapsibleState.None
+                                        )
+                                        return item
+                                    },
+                                    getParent: () => this,
                                 },
-                                getParent: () => this,
-                            },
-                        ]
+                            ]
+                        }
+                    } catch (err) {
+                        const errorMessage = (err as Error).message
+                        this.logger.error('Failed to check project credentials: %s', errorMessage)
+                        await handleCredExpiredError(err, true)
+                        return [createErrorItem(`Failed to load the project`, this.project?.id || '', this.id)]
                     }
                 }
 
@@ -119,7 +131,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                     return [dataNode]
                 }
 
-                const dzClient = await DataZoneClient.getInstance(this.authProvider)
+                const dzClient = await createDZClientBaseOnDomainMode(this.authProvider)
                 if (!this.project?.id) {
                     throw new Error('Project ID is required')
                 }
@@ -145,6 +157,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 return [dataNode, computeNode]
             } catch (err) {
                 this.logger.error('Failed to select project: %s', (err as Error).message)
+                await handleCredExpiredError(err)
                 throw err
             }
         })
@@ -201,8 +214,9 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 this.logger.debug(
                     'Access denied when obtaining project credentials, user likely lacks project access or role permissions'
                 )
+                return false
             }
-            return false
+            throw err
         }
     }
 
@@ -212,7 +226,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         }
 
         try {
-            const dzClient = await DataZoneClient.getInstance(this.authProvider)
+            const dzClient = await createDZClientBaseOnDomainMode(this.authProvider)
             const projectDetails = await dzClient.getProject(this.project.id)
 
             if (projectDetails && projectDetails.name) {
@@ -231,10 +245,35 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         if (!this.project) {
             throw new Error('No project selected for initializing SageMaker client')
         }
-        const projectProvider = await this.authProvider.getProjectCredentialProvider(this.project.id)
-        this.logger.info(`Successfully obtained project credentials provider for project ${this.project.id}`)
-        const awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
-            return await projectProvider.getCredentials()
+        let awsCredentialProvider
+        if (getContext('aws.smus.isIamMode')) {
+            const datazoneClient = DataZoneClient.createWithCredentials(
+                this.authProvider.getDomainRegion(),
+                this.authProvider.getDomainId(),
+                await this.authProvider.getCredentialsProviderForIamProfile(
+                    (this.authProvider.activeConnection as SmusIamConnection).profileName
+                )
+            )
+            const projectId = this.project.id
+            awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
+                const creds = await datazoneClient.getProjectDefaultEnvironmentCreds(projectId)
+                if (!creds.accessKeyId || !creds.secretAccessKey) {
+                    throw new ToolkitError('Missing default environment credentials', {
+                        code: SmusErrorCodes.CredentialRetrievalFailed,
+                    })
+                }
+                return {
+                    accessKeyId: creds.accessKeyId!,
+                    secretAccessKey: creds.secretAccessKey!,
+                    sessionToken: creds.sessionToken,
+                }
+            }
+        } else {
+            const projectProvider = await this.authProvider.getProjectCredentialProvider(this.project.id)
+            this.logger.info(`Successfully obtained project credentials provider for project ${this.project.id}`)
+            awsCredentialProvider = async (): Promise<AwsCredentialIdentity> => {
+                return await projectProvider.getCredentials()
+            }
         }
         const sagemakerClient = new SagemakerClient(regionCode, awsCredentialProvider)
         return sagemakerClient
