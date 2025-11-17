@@ -23,7 +23,7 @@ const rerenderDeboucneInMs = 500
 enum RejectReason {
     DocumentChange = 'Invalid patch due to document change',
     NotApplicableToOriginal = 'ApplyPatch fail for original code',
-    MaxRetry = 'Already retry 10 times',
+    MaxRetry = `Already retry ${maxPrefixRetryCharDiff} times`,
 }
 
 export class EditsSuggestionSvg {
@@ -165,8 +165,8 @@ export class EditsSuggestionSvg {
                 this.autoReject(RejectReason.NotApplicableToOriginal)
             }
         } catch (e) {
-            // TODO: format
-            this.logger.error(`${e}`)
+            this.logger.error(`encountered error while processing edit suggestion when users type ${e}`)
+            // TODO: Maybe we should auto reject/hide suggestions in this scenario
         }
     }
 

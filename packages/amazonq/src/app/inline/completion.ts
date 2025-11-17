@@ -351,6 +351,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        // Make edit suggestion blocking
         if (getContext('aws.amazonq.editSuggestionActive') === true) {
             return []
         }
