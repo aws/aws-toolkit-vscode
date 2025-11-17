@@ -26,8 +26,8 @@ export class CfnEnvironmentFileSelector {
 
         const items = [
             {
-                label: '$(close) Enter parameters manually',
-                detail: 'Skip parameter file selection',
+                label: 'Enter options manually',
+                detail: 'Skip environment file selection',
                 parameters: undefined,
             },
             ...sortedFiles.map((file) => {

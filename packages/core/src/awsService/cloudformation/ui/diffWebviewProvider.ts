@@ -4,10 +4,11 @@
  */
 
 import { WebviewView, WebviewViewProvider, commands, Disposable } from 'vscode'
-import { StackChange } from '../stacks/actions/stackActionRequestType'
+import { DeploymentMode, StackChange, ValidationDetail } from '../stacks/actions/stackActionRequestType'
 import { DiffViewHelper } from './diffViewHelper'
 import { commandKey } from '../utils'
 import { StackViewCoordinator } from './stackViewCoordinator'
+import { showWarningConfirmation } from './message'
 
 const webviewCommandOpenDiff = 'openDiff'
 
@@ -21,6 +22,8 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
     private pageSize: number = 50
     private totalPages: number = 0
     private readonly disposables: Disposable[] = []
+    private validationDetail: ValidationDetail[] = []
+    private deploymentMode?: DeploymentMode
 
     constructor(private readonly coordinator: StackViewCoordinator) {
         this.disposables.push(
@@ -41,7 +44,9 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         stackName: string,
         changes: StackChange[] = [],
         changeSetName?: string,
-        enableDeployments = false
+        enableDeployments = false,
+        validationDetail?: ValidationDetail[],
+        deploymentMode?: DeploymentMode
     ) {
         this.stackName = stackName
         this.changes = changes
@@ -49,6 +54,11 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         this.enableDeployments = enableDeployments
         this.currentPage = 0
         this.totalPages = Math.ceil(changes.length / this.pageSize)
+        if (validationDetail) {
+            this.validationDetail = validationDetail
+        }
+        this.deploymentMode = deploymentMode
+
         await this.coordinator.setChangeSetMode(stackName, true)
         if (this._view) {
             this._view.webview.html = this.getHtmlContent()
@@ -60,11 +70,21 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         webviewView.webview.options = { enableScripts: true }
         webviewView.webview.html = this.getHtmlContent()
 
-        webviewView.webview.onDidReceiveMessage((message: { command: string; resourceId?: string }) => {
+        webviewView.webview.onDidReceiveMessage(async (message: { command: string; resourceId?: string }) => {
             if (message.command === webviewCommandOpenDiff) {
                 void DiffViewHelper.openDiff(this.stackName, this.changes, message.resourceId)
             } else if (message.command === 'confirmDeploy') {
                 if (this.changeSetName) {
+                    const errorCount = this.getErrorCount()
+                    const warningCount = this.getWarningCount()
+
+                    if (errorCount === 0 && warningCount > 0) {
+                        const proceed = await showWarningConfirmation(warningCount)
+                        if (!proceed) {
+                            return
+                        }
+                    }
+
                     void commands.executeCommand(commandKey('api.executeChangeSet'), this.stackName, this.changeSetName)
                     this.changeSetName = undefined
                     this.enableDeployments = false
@@ -122,15 +142,18 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
             `
         }
 
-        // Check if any resource has drift
+        // Check if REVERT_DRIFT change set or any resource has drift
         // TODO: adapt if we do real backend pagination
-        const hasDrift = changes.some(
-            (change) =>
-                change.resourceChange?.resourceDriftStatus ||
-                change.resourceChange?.details?.some(
-                    (detail) => detail.Target?.Drift || detail.Target?.LiveResourceDrift
-                )
-        )
+        // TODO: remove resource fallback once server is passing deploymentMode
+        const hasDrift =
+            this.deploymentMode === DeploymentMode.REVERT_DRIFT ||
+            changes.some(
+                (change) =>
+                    change.resourceChange?.resourceDriftStatus ||
+                    change.resourceChange?.details?.some(
+                        (detail) => detail.Target?.Drift || detail.Target?.LiveResourceDrift
+                    )
+            )
 
         let tableHtml = `
             <table style="width: 100%; border-collapse: collapse; border: 1px solid var(--vscode-panel-border);">
@@ -164,7 +187,9 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                         : 'transparent'
 
             const hasDetails = rc.details && rc.details.length > 0
-            const expandIcon = hasDetails ? '▶' : ''
+            const expandIcon = hasDetails
+                ? '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><path d="M5 2L11 8L5 14" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+                : ''
 
             const driftStatus = rc.resourceDriftStatus
             const hasDriftDetails = rc.details?.some(
@@ -255,7 +280,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 ? `
             <div class="pagination-controls" style="
                 position: fixed;
-                top: 0;
+                top: ${this.getWarningCount() > 0 ? '40px' : '0'};
                 right: 0;
                 z-index: 10;
                 background: var(--vscode-editor-background);
@@ -286,6 +311,27 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     border-radius: 2px;
                     opacity: ${hasNext ? '1' : '0.5'};
                 ">Next</button>
+            </div>
+        `
+                : ''
+
+        const warningBanner =
+            this.getWarningCount() > 0
+                ? `
+            <div class="warning-banner" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 11;
+                background: var(--vscode-editorWarning-background);
+                color: var(--vscode-editorWarning-foreground);
+                padding: 8px 16px;
+                border-bottom: 1px solid var(--vscode-panel-border);
+                text-align: center;
+                font-weight: bold;
+            ">
+                ⚠️ ${this.getWarningCount()} warning(s) found
             </div>
         `
                 : ''
@@ -344,6 +390,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     }
                     .content {
                         padding: 8px;
+                        margin-top: ${this.getWarningCount() > 0 ? '40px' : '0'};
                     }
                     a {
                         color: var(--vscode-textLink-foreground);
@@ -356,6 +403,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 </style>
             </head>
             <body>
+                ${warningBanner}
                 ${paginationControls}
                 <div class="content">
                     ${viewDiffButton}${deploymentButtons}
@@ -378,12 +426,13 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     function toggleDetails(index) {
                         const detailsRow = document.getElementById('details-' + index);
                         const icon = document.getElementById('expand-icon-' + index);
+                        // https://cloudscape.design/foundation/visual-foundation/iconography/ angle-right angle-down
                         if (detailsRow.style.display === 'none') {
                             detailsRow.style.display = 'table-row';
-                            icon.textContent = '▼';
+                            icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><path d="M2 5L8 11L14 5" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linejoin="round"/></svg>';
                         } else {
                             detailsRow.style.display = 'none';
-                            icon.textContent = '▶';
+                            icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><path d="M5 2L11 8L5 14" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linejoin="round"/></svg>';
                         }
                     }
                     function nextPage() {
@@ -396,6 +445,14 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
             </body>
             </html>
         `
+    }
+
+    private getWarningCount(): number {
+        return this.validationDetail.filter((detail) => detail.Severity === 'INFO').length
+    }
+
+    private getErrorCount(): number {
+        return this.validationDetail.filter((detail) => detail.Severity === 'ERROR').length
     }
 
     dispose(): void {

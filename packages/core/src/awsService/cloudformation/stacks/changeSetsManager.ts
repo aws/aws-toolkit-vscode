@@ -18,21 +18,16 @@ export class ChangeSetsManager {
     constructor(private readonly client: LanguageClient) {}
 
     async getChangeSets(stackName: string): Promise<ChangeSetInfo[]> {
-        try {
-            const response = await this.client.sendRequest(ListChangeSetsRequest, {
-                stackName,
-            })
+        const response = await this.client.sendRequest(ListChangeSetsRequest, {
+            stackName,
+        })
 
-            this.stackChangeSets.set(stackName, {
-                changeSets: response.changeSets,
-                nextToken: response.nextToken,
-            })
+        this.stackChangeSets.set(stackName, {
+            changeSets: response.changeSets,
+            nextToken: response.nextToken,
+        })
 
-            return response.changeSets
-        } catch (error) {
-            this.stackChangeSets.set(stackName, { changeSets: [] })
-            return []
-        }
+        return response.changeSets
     }
 
     async loadMoreChangeSets(stackName: string): Promise<void> {
@@ -41,19 +36,15 @@ export class ChangeSetsManager {
             return
         }
 
-        try {
-            const response = await this.client.sendRequest(ListChangeSetsRequest, {
-                stackName,
-                nextToken: current.nextToken,
-            })
+        const response = await this.client.sendRequest(ListChangeSetsRequest, {
+            stackName,
+            nextToken: current.nextToken,
+        })
 
-            this.stackChangeSets.set(stackName, {
-                changeSets: [...current.changeSets, ...response.changeSets],
-                nextToken: response.nextToken,
-            })
-        } catch (error) {
-            // Keep existing data on error
-        }
+        this.stackChangeSets.set(stackName, {
+            changeSets: [...current.changeSets, ...response.changeSets],
+            nextToken: response.nextToken,
+        })
     }
 
     get(stackName: string): ChangeSetInfo[] {

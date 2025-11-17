@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, window, languages, commands } from 'vscode'
+import { ExtensionContext, window, languages, commands, Disposable } from 'vscode'
 import {
     LanguageClient,
     LanguageClientOptions,
@@ -19,8 +19,7 @@ import { getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
 import {
     deployTemplateCommand,
-    validateDeploymentCommand,
-    rerunLastValidationCommand,
+    rerunValidateAndDeployCommand,
     importResourceStateCommand,
     cloneResourceStateCommand,
     addResourceTypesCommand,
@@ -45,6 +44,7 @@ import {
     deleteChangeSetCommand,
     viewChangeSetCommand,
     deployTemplateFromStacksMenuCommand,
+    selectEnvironmentCommand,
 } from './commands/cfnCommands'
 import { openStackTemplateCommand } from './commands/openStackTemplate'
 import { selectRegionCommand } from './commands/regionCommands'
@@ -52,7 +52,7 @@ import { AwsCredentialsService, encryptionKey } from './auth/credentials'
 import { ExtensionId, ExtensionName, Version, CloudFormationTelemetrySettings } from './extensionConfig'
 import { commandKey } from './utils'
 import { CloudFormationExplorer } from './explorer/explorer'
-import { promptTelemetryOptIn } from './telemetryOptIn'
+import { promptTelemetryOptInWithTimeout } from './telemetryOptIn'
 
 import { refreshCommand, StacksManager } from './stacks/stacksManager'
 import { StackOverviewWebviewProvider } from './ui/stackOverviewWebviewProvider'
@@ -69,6 +69,7 @@ import { RelatedResourcesManager } from './relatedResources/relatedResourcesMana
 import { RelatedResourceSelector } from './ui/relatedResourceSelector'
 
 import { StackActionCodeLensProvider } from './codelens/stackActionCodeLensProvider'
+import { registerStatusBarCommand } from './ui/statusBar'
 import { getClientId } from '../../shared/telemetry/util'
 import { SettingsLspServerProvider } from './lsp-server/settingsLspServerProvider'
 import { DevLspServerProvider } from './lsp-server/devLspServerProvider'
@@ -78,29 +79,17 @@ import { getLogger } from '../../shared/logger/logger'
 import { ChangeSetsManager } from './stacks/changeSetsManager'
 import { CfnEnvironmentManager } from './cfn-init/cfnEnvironmentManager'
 import { CfnEnvironmentSelector } from './ui/cfnEnvironmentSelector'
-import { selectEnvironmentCommand } from './commands/environmentCommands'
 import { CfnInitUiInterface } from './cfn-init/cfnInitUiInterface'
 import { CfnInitCliCaller } from './cfn-init/cfnInitCliCaller'
 import { CfnEnvironmentFileSelector } from './ui/cfnEnvironmentFileSelector'
+import { fs } from '../../shared/fs/fs'
 
 let client: LanguageClient
+let clientDisposables: Disposable[] = []
 
-export async function activate(context: ExtensionContext) {
-    context.subscriptions.push(
-        commands.registerCommand(commandKey('server.restartServer'), async () => {
-            try {
-                await deactivate()
-                await activate(context)
-            } catch (error) {
-                void window.showErrorMessage(
-                    formatMessage(`Failed to restart CloudFormation extension: ${toString(error)}`)
-                )
-            }
-        })
-    )
-
+async function startClient(context: ExtensionContext) {
     const cfnTelemetrySettings = new CloudFormationTelemetrySettings()
-    const telemetryEnabled = await promptTelemetryOptIn(context, cfnTelemetrySettings)
+    const telemetryEnabled = await promptTelemetryOptInWithTimeout(context, cfnTelemetrySettings)
 
     const cfnLspConfig = {
         ...DevSettings.instance.getServiceConfig('cloudformationLsp', {}),
@@ -113,6 +102,9 @@ export async function activate(context: ExtensionContext) {
         new RemoteLspServerProvider(),
     ])
     const serverFile = await serverProvider.serverExecutable()
+    if (!(await fs.existsFile(serverFile))) {
+        throw new Error(`CloudFormation LSP ${serverFile} not found`)
+    }
     getLogger().info(`Found CloudFormation LSP executable: ${serverFile}`)
     const serverRootDir = await serverProvider.serverRootDir()
 
@@ -189,141 +181,159 @@ export async function activate(context: ExtensionContext) {
 
     const stacksManager = new StacksManager(client)
 
-    client
-        .start()
-        .then(() => {
-            const documentManager = new DocumentManager(client)
+    await client.start()
 
-            const resourceSelector = new ResourceSelector(client)
-            const resourcesManager = new ResourcesManager(client, resourceSelector)
-            const relatedResourceSelector = new RelatedResourceSelector(client)
-            const relatedResourcesManager = new RelatedResourcesManager(
-                client,
-                relatedResourceSelector,
-                resourceSelector,
-                resourcesManager.importResourceStates.bind(resourcesManager)
-            )
-            const changeSetManager = new ChangeSetsManager(client)
-            const environmentSelector = new CfnEnvironmentSelector()
-            const environmentFileSelector = new CfnEnvironmentFileSelector()
-            const environmentManager = new CfnEnvironmentManager(client, environmentSelector, environmentFileSelector)
+    const documentManager = new DocumentManager(client)
+    const resourceSelector = new ResourceSelector(client)
+    const resourcesManager = new ResourcesManager(client, resourceSelector)
+    const relatedResourceSelector = new RelatedResourceSelector(client)
+    const relatedResourcesManager = new RelatedResourcesManager(
+        client,
+        relatedResourceSelector,
+        resourceSelector,
+        resourcesManager
+    )
+    const changeSetManager = new ChangeSetsManager(client)
+    const environmentSelector = new CfnEnvironmentSelector()
+    const environmentFileSelector = new CfnEnvironmentFileSelector()
+    const environmentManager = new CfnEnvironmentManager(client, environmentSelector, environmentFileSelector)
 
-            const cfnInitCliCaller = new CfnInitCliCaller(serverRootDir)
-            const cfnInitUiInterface = new CfnInitUiInterface(cfnInitCliCaller)
+    const cfnInitCliCaller = new CfnInitCliCaller(serverRootDir)
+    const cfnInitUiInterface = new CfnInitUiInterface(cfnInitCliCaller)
 
-            const cfnExplorer = new CloudFormationExplorer(
-                stacksManager,
-                resourcesManager,
-                changeSetManager,
-                documentManager,
-                globals.regionProvider,
-                environmentManager
-            )
+    const cfnExplorer = new CloudFormationExplorer(
+        stacksManager,
+        resourcesManager,
+        changeSetManager,
+        documentManager,
+        globals.regionProvider,
+        environmentManager
+    )
 
-            // Add listener to refresh explorer when resources change
-            resourcesManager.addListener(() => {
-                cfnExplorer.refresh()
-            })
+    resourceSelector.setRefreshCallback(() => cfnExplorer.refresh())
 
-            stacksManager.addListener(() => {
-                cfnExplorer.refresh()
-            })
+    resourcesManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    stacksManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    documentManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    environmentManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
 
-            documentManager.addListener(() => {
-                cfnExplorer.refresh()
-            })
+    const credentialsService = new AwsCredentialsService(stacksManager, resourcesManager, cfnExplorer.regionManager)
+    cfnExplorer.setCredentialsService(credentialsService)
 
-            environmentManager.addListener(() => {
-                cfnExplorer.refresh()
-            })
+    const stackViewCoordinator = new StackViewCoordinator()
+    stackViewCoordinator.setStackStatusUpdateCallback((stackName, stackStatus) => {
+        stacksManager.updateStackStatus(stackName, stackStatus)
+        cfnExplorer.refresh()
+    })
 
-            const credentialsService = new AwsCredentialsService(
-                stacksManager,
-                resourcesManager,
-                cfnExplorer.regionManager
-            )
-            cfnExplorer.setCredentialsService(credentialsService)
+    const diffProvider = new DiffWebviewProvider(stackViewCoordinator)
+    const resourcesProvider = new StackResourcesWebviewProvider(client, stackViewCoordinator)
+    const overviewProvider = new StackOverviewWebviewProvider(client, stackViewCoordinator)
+    const eventsProvider = new StackEventsWebviewProvider(client, stackViewCoordinator)
+    const outputsProvider = new StackOutputsWebviewProvider(client, stackViewCoordinator)
 
-            const stackViewCoordinator = new StackViewCoordinator()
+    const documentSelector = [
+        { scheme: 'file', language: 'cloudformation' },
+        { scheme: 'file', language: 'yaml' },
+        { scheme: 'file', language: 'json' },
+    ]
 
-            // Register callback to update stack status in cache and refresh explorer
-            stackViewCoordinator.setStackStatusUpdateCallback((stackName, stackStatus) => {
-                stacksManager.updateStackStatus(stackName, stackStatus)
-                cfnExplorer.refresh()
-            })
+    const codeLensProvider = languages.registerCodeLensProvider(
+        documentSelector,
+        new StackActionCodeLensProvider(client)
+    )
 
-            const diffProvider = new DiffWebviewProvider(stackViewCoordinator)
-            const resourcesProvider = new StackResourcesWebviewProvider(client, stackViewCoordinator)
-            const overviewProvider = new StackOverviewWebviewProvider(client, stackViewCoordinator)
-            const eventsProvider = new StackEventsWebviewProvider(client, stackViewCoordinator)
-            const outputsProvider = new StackOutputsWebviewProvider(client, stackViewCoordinator)
+    clientDisposables = [
+        codeLensProvider,
+        stacksManager,
+        window.createTreeView('aws.cloudformation', {
+            treeDataProvider: cfnExplorer,
+            showCollapseAll: true,
+            canSelectMany: true,
+        }),
+        loadMoreResourcesCommand(cfnExplorer),
+        loadMoreStacksCommand(cfnExplorer),
+        searchResourceCommand(cfnExplorer, resourcesManager),
+        refreshChangeSetsCommand(cfnExplorer),
+        loadMoreChangeSetsCommand(cfnExplorer),
+        viewStackCommand(stackViewCoordinator, overviewProvider, outputsProvider, resourcesProvider),
+        addResourceTypesCommand(resourcesManager),
+        removeResourceTypeCommand(resourcesManager),
+        refreshAllResourcesCommand(resourcesManager),
+        refreshResourceListCommand(resourcesManager, cfnExplorer),
+        copyResourceIdentifierCommand(),
+        importResourceStateCommand(resourcesManager),
+        cloneResourceStateCommand(resourcesManager),
+        getStackManagementInfoCommand(resourcesManager),
+        window.registerWebviewViewProvider(commandKey('stack.overview'), overviewProvider),
+        window.registerWebviewViewProvider(commandKey('diff'), diffProvider),
+        window.registerWebviewViewProvider(commandKey('stack.events'), eventsProvider),
+        window.registerWebviewViewProvider(commandKey('stack.resources'), resourcesProvider),
+        window.registerWebviewViewProvider(commandKey('stack.outputs'), outputsProvider),
+        focusDiffCommand(),
+        deployTemplateCommand(client, diffProvider, documentManager, environmentManager),
+        deployTemplateFromStacksMenuCommand(),
+        executeChangeSetCommand(client, stackViewCoordinator),
+        deleteChangeSetCommand(client),
+        viewChangeSetCommand(client, diffProvider),
+        refreshCommand(stacksManager),
+        openStackTemplateCommand(client),
+        selectRegionCommand(cfnExplorer),
+        selectEnvironmentCommand(cfnExplorer),
+        rerunValidateAndDeployCommand(),
+        extractToParameterPositionCursorCommand(client),
+        createProjectCommand(cfnInitUiInterface),
+        addEnvironmentCommand(cfnInitUiInterface, cfnInitCliCaller, environmentManager),
+        removeEnvironmentCommand(cfnInitCliCaller, environmentManager),
+        addRelatedResourcesCommand(relatedResourcesManager),
+        credentialsService,
+        serverProvider,
+        { dispose: () => client?.stop() },
+    ]
 
-            const documentSelector = [
-                { scheme: 'file', language: 'cloudformation' },
-                { scheme: 'file', language: 'yaml' },
-                { scheme: 'file', language: 'json' },
-            ]
+    registerStatusBarCommand()
 
-            const codeLensProvider = languages.registerCodeLensProvider(
-                documentSelector,
-                new StackActionCodeLensProvider(client)
-            )
+    context.subscriptions.push(...clientDisposables)
+    await credentialsService.initialize(client)
+}
 
-            context.subscriptions.push(
-                { dispose: () => client?.stop() },
-                codeLensProvider,
-                stacksManager,
-                window.createTreeView('aws.cloudformation', {
-                    treeDataProvider: cfnExplorer,
-                    showCollapseAll: true,
-                    canSelectMany: true,
-                }),
-                loadMoreResourcesCommand(cfnExplorer),
-                loadMoreStacksCommand(cfnExplorer),
-                searchResourceCommand(cfnExplorer, resourcesManager),
-                refreshChangeSetsCommand(cfnExplorer),
-                loadMoreChangeSetsCommand(cfnExplorer),
-                viewStackCommand(stackViewCoordinator, overviewProvider, outputsProvider, resourcesProvider),
-                addResourceTypesCommand(resourcesManager),
-                removeResourceTypeCommand(resourcesManager),
-                refreshAllResourcesCommand(resourcesManager),
-                refreshResourceListCommand(resourcesManager, cfnExplorer),
-                copyResourceIdentifierCommand(),
-                importResourceStateCommand(resourcesManager),
-                cloneResourceStateCommand(resourcesManager),
-                getStackManagementInfoCommand(resourcesManager),
-                window.registerWebviewViewProvider(commandKey('stack.overview'), overviewProvider),
-                window.registerWebviewViewProvider(commandKey('diff'), diffProvider),
-                window.registerWebviewViewProvider(commandKey('stack.events'), eventsProvider),
-                window.registerWebviewViewProvider(commandKey('stack.resources'), resourcesProvider),
-                window.registerWebviewViewProvider(commandKey('stack.outputs'), outputsProvider),
-                focusDiffCommand(),
-                validateDeploymentCommand(client, diffProvider, documentManager, environmentManager),
-                deployTemplateCommand(client, diffProvider, documentManager, environmentManager),
-                deployTemplateFromStacksMenuCommand(),
-                executeChangeSetCommand(client, stackViewCoordinator),
-                deleteChangeSetCommand(client),
-                viewChangeSetCommand(client, diffProvider),
-                refreshCommand(stacksManager),
-                openStackTemplateCommand(client),
-                selectRegionCommand(cfnExplorer),
-                selectEnvironmentCommand(cfnExplorer),
-                rerunLastValidationCommand(),
-                extractToParameterPositionCursorCommand(client),
-                createProjectCommand(cfnInitUiInterface),
-                addEnvironmentCommand(cfnInitUiInterface, cfnInitCliCaller, environmentManager),
-                removeEnvironmentCommand(cfnInitCliCaller, environmentManager),
-                addRelatedResourcesCommand(relatedResourcesManager),
-                credentialsService,
-                serverProvider
-            )
+async function restartClient(context: ExtensionContext) {
+    // Dispose all client-related resources
+    for (const disposable of clientDisposables) {
+        disposable.dispose()
+    }
+    clientDisposables = []
 
-            return credentialsService.initialize(client)
+    // Start new client
+    await startClient(context)
+}
+
+export async function activate(context: ExtensionContext) {
+    context.subscriptions.push(
+        commands.registerCommand(commandKey('server.restartServer'), async () => {
+            try {
+                await restartClient(context)
+            } catch (error) {
+                void window.showErrorMessage(
+                    formatMessage(`Failed to restart CloudFormation language server: ${toString(error)}`)
+                )
+            }
         })
-        .catch((err: any) => {
-            // Language client already shows error popup for startup failures
-            getLogger().error(`CloudFormation language server failed to start: ${toString(err)}`)
-        })
+    )
+
+    try {
+        await startClient(context)
+    } catch (err: any) {
+        getLogger().error(`CloudFormation language server failed to start: ${toString(err)}`)
+    }
 }
 
 export function deactivate(): Thenable<void> | undefined {

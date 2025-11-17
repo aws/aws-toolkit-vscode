@@ -6,28 +6,27 @@
 import { Manifest, LspVersion, Target } from '../../../shared/lsp/types'
 import { CfnLspName, CfnLspServerEnvType } from './lspServerConfig'
 import { addWindows, dedupeAndGetLatestVersions } from './utils'
+import { getLogger } from '../../../shared/logger/logger'
 
 export class GitHubManifestAdapter {
     constructor(
         private readonly repoOwner: string,
         private readonly repoName: string,
-        private readonly environment: CfnLspServerEnvType
+        readonly environment: CfnLspServerEnvType
     ) {}
 
     async getManifest(): Promise<Manifest> {
         const releases = await this.fetchGitHubReleases()
-        const filteredReleases = this.filterByEnvironment(releases)
-
-        filteredReleases.sort((a, b) => {
+        const envReleases = this.filterByEnvironment(releases)
+        const sortedReleases = envReleases.sort((a, b) => {
             return b.tag_name.localeCompare(a.tag_name)
         })
-
         return {
             manifestSchemaVersion: '1.0',
             artifactId: CfnLspName,
             artifactDescription: 'GitHub CloudFormation Language Server',
             isManifestDeprecated: false,
-            versions: dedupeAndGetLatestVersions(filteredReleases.map((release) => this.convertRelease(release))),
+            versions: dedupeAndGetLatestVersions(sortedReleases.map((release) => this.convertRelease(release))),
         }
     }
 
@@ -61,8 +60,8 @@ export class GitHubManifestAdapter {
     }
 
     private extractTargets(assets: GitHubAsset[]): Target[] {
-        return assets.map((asset) => {
-            const { arch, platform } = this.extractPlatformArch(asset.name)
+        return this.filterByNodeVersion(assets).map((asset) => {
+            const { arch, platform } = this.extractPlatformAndArch(asset.name)
 
             return {
                 platform,
@@ -79,29 +78,53 @@ export class GitHubManifestAdapter {
         })
     }
 
-    private extractPlatformArch(filename: string): {
+    private filterByNodeVersion(assets: GitHubAsset[]): GitHubAsset[] {
+        const hasNodeVersion = assets.map((asset) => asset.name).some((name) => name.includes('-node'))
+        const nodeVersion = process.version.replaceAll('v', '').split('.')[0]
+
+        if (hasNodeVersion) {
+            const matchedVersion = assets.filter((asset) => {
+                return asset.name.includes(`-node${nodeVersion}`)
+            })
+
+            if (matchedVersion.length > 0) {
+                return matchedVersion
+            }
+
+            const latestVersion = this.getLatestNodeVersion(assets)
+            getLogger().warn(`Could not find bundle for Node.js version ${nodeVersion}, using latest ${latestVersion}`)
+            return assets.filter((asset) => asset.name.includes(`-node${latestVersion}`))
+        }
+
+        return assets
+    }
+
+    private extractPlatformAndArch(filename: string): {
         arch: string
         platform: string
     } {
-        const lower = filename.toLowerCase().replaceAll('.zip', '')
-        const splits = lower.split('-')
+        const lower = filename.toLowerCase().replaceAll(/-node.*$/g, '')
+        const parts = lower.split('-')
 
-        const last = splits[splits.length - 1]
+        const arch = parts.pop()
+        const platform = parts.pop()
 
-        // Check if filename includes node version (e.g., node22)
-        if (last.startsWith('node')) {
-            const nodeVersion = process.version.match(/^v(\d+)/)?.[1]
-            const filenameNodeVersion = last.replace('node', '')
-
-            // Only match if node versions align
-            if (nodeVersion !== filenameNodeVersion) {
-                return { arch: '', platform: '' } // Skip this asset
-            }
-
-            return { arch: splits[splits.length - 2], platform: splits[splits.length - 3] }
+        if (!platform || !arch) {
+            throw new Error(`Unknown arch and platform ${arch} ${platform}`)
         }
 
-        return { arch: last, platform: splits[splits.length - 2] }
+        return { arch, platform }
+    }
+
+    private getLatestNodeVersion(assets: GitHubAsset[]): number {
+        const versions = assets
+            .map((asset) => {
+                const match = asset.name.match(/-node(\d+)/)
+                return match ? parseInt(match[1]) : undefined
+            })
+            .filter((v): v is number => v !== undefined)
+
+        return Math.max(...versions)
     }
 }
 

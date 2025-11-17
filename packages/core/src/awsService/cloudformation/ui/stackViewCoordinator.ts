@@ -8,6 +8,7 @@ import { setContext } from '../../../shared/vscode/setContext'
 
 export interface StackViewState {
     stackName?: string
+    stackArn?: string
     isChangeSetMode: boolean
     stackStatus?: string
 }
@@ -17,12 +18,17 @@ export class StackViewCoordinator {
     readonly onDidChangeStack = this._onDidChangeStack.event
 
     private _currentStackName?: string
+    private _currentStackArn?: string
     private _isChangeSetMode = false
     private _currentStackStatus?: string
     private _stackStatusUpdateCallback?: (stackName: string, stackStatus: string) => void
 
     get currentStackName(): string | undefined {
         return this._currentStackName
+    }
+
+    get currentStackArn(): string | undefined {
+        return this._currentStackArn
     }
 
     get isChangeSetMode(): boolean {
@@ -37,10 +43,11 @@ export class StackViewCoordinator {
         this._stackStatusUpdateCallback = callback
     }
 
-    async setStack(stackName: string, stackStatus?: string): Promise<void> {
+    async setStack(stackName: string, stackStatus?: string, stackArn?: string): Promise<void> {
         const statusChanged = stackStatus && this._currentStackStatus !== stackStatus
 
         this._currentStackName = stackName
+        this._currentStackArn = stackArn
         this._currentStackStatus = stackStatus
         this._isChangeSetMode = false
         await this.updateContexts()
@@ -60,6 +67,7 @@ export class StackViewCoordinator {
 
     async clearStack(): Promise<void> {
         this._currentStackName = undefined
+        this._currentStackArn = undefined
         this._currentStackStatus = undefined
         this._isChangeSetMode = false
         await this.updateContexts()
@@ -74,6 +82,7 @@ export class StackViewCoordinator {
     private getState(): StackViewState {
         return {
             stackName: this._currentStackName,
+            stackArn: this._currentStackArn,
             isChangeSetMode: this._isChangeSetMode,
             stackStatus: this._currentStackStatus,
         }

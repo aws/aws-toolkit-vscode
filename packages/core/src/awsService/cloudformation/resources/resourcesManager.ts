@@ -20,8 +20,10 @@ import {
     StackMgmtInfoRequest,
     SearchResourceRequest,
     SearchResourceResult,
-} from '../cfn/resourceRequestTypes'
+    RemoveResourceTypeRequest,
+} from './resourceRequestTypes'
 
+import { handleLspError } from '../utils/onlineErrorHandler'
 import { showErrorMessage } from '../ui/message'
 import { ProgressLocation, SnippetString, window, env, Position, Range } from 'vscode'
 import { getLogger } from '../../../shared/logger/logger'
@@ -60,6 +62,7 @@ export class ResourcesManager {
             ResourcesManager.resourceTypesKey,
             this.selectedResourceTypes.filter((type) => type !== typeToRemove)
         )
+        await this.client.sendRequest(RemoveResourceTypeRequest, typeToRemove)
         this.notifyAllListeners()
     }
 
@@ -88,7 +91,7 @@ export class ResourcesManager {
                 this.resources.set(resource.typeName, resource)
             }
         } catch (error) {
-            getLogger().error(`Failed to load resources: ${error}`)
+            await handleLspError(error, 'Error loading resources')
             this.resources.clear()
         } finally {
             this.notifyAllListeners()
@@ -96,17 +99,13 @@ export class ResourcesManager {
     }
 
     async loadResourceType(resourceType: string): Promise<void> {
-        try {
-            const response = await this.client.sendRequest(ListResourcesRequest, {
-                resources: [{ resourceType }],
-            })
+        const response = await this.client.sendRequest(ListResourcesRequest, {
+            resources: [{ resourceType }],
+        })
 
-            if (response.resources.length > 0) {
-                this.resources.set(resourceType, response.resources[0])
-                this.notifyAllListeners()
-            }
-        } catch (error) {
-            getLogger().error(`Failed to load resource type ${resourceType}: ${error}`)
+        if (response.resources.length > 0) {
+            this.resources.set(resourceType, response.resources[0])
+            this.notifyAllListeners()
         }
     }
 
@@ -123,17 +122,14 @@ export class ResourcesManager {
 
             this.notifyAllListeners()
         } catch (error) {
-            getLogger().error(`Failed to load more resources: ${error}`)
-            void window.showErrorMessage(
-                `Failed to load more resources: ${error instanceof Error ? error.message : String(error)}`
-            )
+            await handleLspError(error, 'Error loading more resources')
         } finally {
             await setContext('aws.cloudformation.loadingResources', false)
         }
     }
 
-    refreshAllResources(): void {
-        void window.withProgress(
+    async refreshAllResources(): Promise<void> {
+        await window.withProgress(
             {
                 location: ProgressLocation.Notification,
                 title: 'Refreshing All Resources List',
@@ -152,8 +148,6 @@ export class ResourcesManager {
                     for (const resource of response.resources) {
                         this.resources.set(resource.typeName, resource)
                     }
-                } catch (error) {
-                    getLogger().error(`Failed to refresh all resources: ${error}`)
                 } finally {
                     await setContext('aws.cloudformation.refreshingAllResources', false)
                     this.notifyAllListeners()
@@ -162,8 +156,8 @@ export class ResourcesManager {
         )
     }
 
-    refreshResourceList(resourceType: string): void {
-        void window.withProgress(
+    async refreshResourceList(resourceType: string): Promise<void> {
+        await window.withProgress(
             {
                 location: ProgressLocation.Notification,
                 title: `Refreshing ${resourceType} Resources List`,
@@ -181,8 +175,6 @@ export class ResourcesManager {
                     if (updatedResource) {
                         this.resources.set(resourceType, updatedResource)
                     }
-                } catch (error) {
-                    getLogger().error(`Failed to refresh resource: ${error}`)
                 } finally {
                     await setContext('aws.cloudformation.refreshingResourceList', false)
                     this.notifyAllListeners()
@@ -234,7 +226,7 @@ export class ResourcesManager {
     ): Promise<void> {
         const editor = window.activeTextEditor
         if (!editor) {
-            showErrorMessage('No active editor')
+            showErrorMessage('Open a CloudFormation template to author resource state')
             return
         }
 
@@ -386,7 +378,11 @@ export class ResourcesManager {
                 resourceIdentifier: node.resourceIdentifier,
             }))
         } else {
-            selections = await this.resourceSelector.selectResources()
+            selections = await this.resourceSelector.selectResources(true, undefined, {
+                getCached: (type) => this.resources.get(type),
+                loadMore: (type, token) => this.loadMoreResources(type, token),
+                search: (type, id) => this.searchResource(type, id),
+            })
         }
 
         if (selections.length === 0) {
@@ -433,7 +429,11 @@ export class ResourcesManager {
         if (resourceNode?.resourceIdentifier) {
             resourceIdentifier = resourceNode.resourceIdentifier
         } else {
-            const selection = await this.resourceSelector.selectSingleResource()
+            const selection = await this.resourceSelector.selectSingleResource({
+                getCached: (type) => this.resources.get(type),
+                loadMore: (type, token) => this.loadMoreResources(type, token),
+                search: (type, id) => this.searchResource(type, id),
+            })
             if (!selection) {
                 return
             }

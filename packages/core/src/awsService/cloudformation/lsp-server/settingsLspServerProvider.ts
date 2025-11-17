@@ -14,6 +14,10 @@ export class SettingsLspServerProvider implements LspServerProviderI {
         this.path = config?.path
     }
 
+    name(): string {
+        return 'SettingsLspServerProvider'
+    }
+
     canProvide(): boolean {
         return this.path !== undefined
     }

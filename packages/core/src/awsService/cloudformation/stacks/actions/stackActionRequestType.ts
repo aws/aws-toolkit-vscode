@@ -155,6 +155,7 @@ export type Failable = {
 export type DescribeValidationStatusResult = GetStackActionStatusResult &
     Failable & {
         ValidationDetails?: ValidationDetail[]
+        deploymentMode?: DeploymentMode
     }
 
 export type DescribeDeploymentStatusResult = GetStackActionStatusResult &
@@ -193,9 +194,9 @@ export type GetTemplateArtifactsResult = {
 }
 
 export enum OptionalFlagMode {
-    Skip = 'Skip Optional Flags',
-    Input = 'Input Optional Flags',
-    DevFriendly = 'Use Developer Friendly Flag Selections',
+    Skip = 'Skip for now',
+    Input = 'Input optional flags',
+    DevFriendly = 'Use default developer friendly flags',
 }
 
 export type TemplateParameter = {
@@ -235,6 +236,7 @@ export type DescribeChangeSetParams = ChangeSetReference
 export type DescribeChangeSetResult = ChangeSetInfo & {
     stackName: string
     changes?: StackChange[]
+    deploymentMode?: DeploymentMode
 }
 
 export type StackInfo = {

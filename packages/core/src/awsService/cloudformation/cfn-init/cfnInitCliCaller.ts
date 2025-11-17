@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
+import { extractErrorMessage } from '../utils'
 
 export interface EnvironmentOption {
     name: string
@@ -63,10 +64,16 @@ export class CfnInitCliCaller {
                 },
             })
 
-            return result.exitCode === 0
-                ? { success: true, output: result.stdout || undefined }
-                : { success: false, error: result.stderr || `Process exited with code ${result.exitCode}` }
+            if (result.exitCode === 0) {
+                return { success: true, output: result.stdout || undefined }
+            } else {
+                void vscode.window.showWarningMessage(
+                    `cfn init command returned exit code ${result.exitCode}: ${result.stderr} - ${result.stdout} - ${extractErrorMessage(result.error)}`
+                )
+                return { success: false, error: result.stderr || `Process exited with code ${result.exitCode}` }
+            }
         } catch (error) {
+            void vscode.window.showErrorMessage(`Error executing cfn init command: ${extractErrorMessage(error)}`)
             return { success: false, error: error instanceof Error ? error.message : String(error) }
         }
     }

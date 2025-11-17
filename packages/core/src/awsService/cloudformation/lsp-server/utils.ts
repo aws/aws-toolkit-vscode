@@ -5,26 +5,23 @@
 
 import { LspVersion, Target } from '../../../shared/lsp/types'
 
-export function addWindows(targets: Target[]) {
-    const win32Target = targets.find((target) => {
+export function addWindows(targets: Target[]): Target[] {
+    const win32Targets = targets.filter((target) => {
         return target.platform === 'win32'
     })
 
-    const hasDirectWindows = targets.find((target) => {
-        return target.platform === 'windows'
-    })
-
-    if (hasDirectWindows || !win32Target) {
+    if (win32Targets.length < 1) {
         return targets
     }
 
-    return [
-        ...targets,
-        {
-            ...win32Target,
+    const windowsTargets: Target[] = win32Targets.map((target) => {
+        return {
+            ...target,
             platform: 'windows',
-        },
-    ]
+        }
+    })
+
+    return [...targets, ...windowsTargets]
 }
 
 export function dedupeAndGetLatestVersions(versions: LspVersion[]): LspVersion[] {

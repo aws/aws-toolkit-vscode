@@ -4,7 +4,7 @@
  */
 
 import { commands, window } from 'vscode'
-import { CfnEnvironmentConfig, CfnEnvironmentLookup } from '../cfn-init/cfnProjectTypes'
+import { CfnEnvironmentConfig, CfnEnvironmentLookup, unselectedValue } from '../cfn-init/cfnProjectTypes'
 import { commandKey } from '../utils'
 
 export class CfnEnvironmentSelector {
@@ -20,7 +20,7 @@ export class CfnEnvironmentSelector {
         }
 
         const items = [
-            { label: 'None', description: 'No environment selected' },
+            { label: unselectedValue, description: 'Unselect environment' },
             ...Object.values(environmentLookup).map((env: CfnEnvironmentConfig) => ({
                 label: env.name,
                 description: `AWS Profile: ${env.profile}`,
@@ -31,6 +31,6 @@ export class CfnEnvironmentSelector {
             placeHolder: 'Select an environment',
         })
 
-        return selected?.label === 'None' ? undefined : selected?.label
+        return selected?.label
     }
 }

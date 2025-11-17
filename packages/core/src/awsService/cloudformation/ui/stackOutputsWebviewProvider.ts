@@ -9,10 +9,12 @@ import { LanguageClient } from 'vscode-languageclient/node'
 import { extractErrorMessage } from '../utils'
 import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
 import { StackViewCoordinator } from './stackViewCoordinator'
+import { arnToConsoleTabUrl, externalLinkSvg, consoleLinkStyles } from '../consoleLinksUtils'
 
 export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposable {
     private view?: WebviewView
     private stackName?: string
+    private stackArn?: string
     private outputs: Output[] = []
     private readonly disposables: Disposable[] = []
 
@@ -24,11 +26,13 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
             coordinator.onDidChangeStack(async (state) => {
                 if (state.stackName && !state.isChangeSetMode) {
                     this.stackName = state.stackName
+                    this.stackArn = state.stackArn
                     this.outputs = []
                     this.render()
                     await this.showOutputs(state.stackName)
                 } else if (!state.stackName || state.isChangeSetMode) {
                     this.stackName = undefined
+                    this.stackArn = undefined
                     this.outputs = []
                     this.render()
                 }
@@ -69,7 +73,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
             this.outputs = result.stack?.Outputs ?? []
             // Only update coordinator if status changed
             if (result.stack?.StackStatus && this.coordinator.currentStackStatus !== result.stack.StackStatus) {
-                await this.coordinator.setStack(this.stackName, result.stack.StackStatus)
+                await this.coordinator.setStack(this.stackName, result.stack.StackStatus, result.stack.StackId)
             }
             this.render()
         } catch (error) {
@@ -145,10 +149,11 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
             border-bottom: 1px solid var(--vscode-panel-border);
         }
         .stack-info {
-            display: flex;
-            gap: 12px;
-            align-items: baseline;
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
         }
+        ${consoleLinkStyles}
         .output-count {
             font-size: 11px;
             color: var(--vscode-descriptionForeground);
@@ -185,7 +190,8 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 <body>
     <div class="header">
         <div class="stack-info">
-            <span>${this.stackName ?? ''}</span>
+            ${this.stackName ?? ''}
+            ${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'outputs')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
             <span class="output-count">(${outputs.length} outputs)</span>
         </div>
     </div>

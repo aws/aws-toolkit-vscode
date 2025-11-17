@@ -8,7 +8,7 @@ import { StackActionPhase, StackActionState } from './stackActionRequestType'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { showDeploymentStarted, showDeploymentSuccess, showDeploymentFailure, showErrorMessage } from '../../ui/message'
 import { createDeploymentStatusBar, updateWorkflowStatus } from '../../ui/statusBar'
-import { StatusBarItem, commands } from 'vscode'
+import { commands } from 'vscode'
 import { deploy, describeDeploymentStatus, getDeploymentStatus } from './stackActionApi'
 import { createDeploymentParams } from './stackActionUtil'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -18,7 +18,7 @@ import { StackViewCoordinator } from '../../ui/stackViewCoordinator'
 export class Deployment {
     private readonly id: string
     private status: StackActionPhase | undefined
-    private statusBarItem?: StatusBarItem
+    private statusBarHandle?: { update(phase: StackActionPhase): void; release(): void }
 
     constructor(
         private readonly stackName: string,
@@ -36,7 +36,7 @@ export class Deployment {
         await this.coordinator.setStack(this.stackName)
         await commands.executeCommand(commandKey('stack.events.focus'))
 
-        this.statusBarItem = createDeploymentStatusBar()
+        this.statusBarHandle = createDeploymentStatusBar(this.stackName, 'Deployment', this.changeSetName)
         this.pollForProgress()
     }
 
@@ -49,8 +49,8 @@ export class Deployment {
                     }
 
                     this.status = deploymentResult.phase
-                    if (this.statusBarItem) {
-                        updateWorkflowStatus(this.statusBarItem, deploymentResult.phase)
+                    if (this.statusBarHandle) {
+                        updateWorkflowStatus(this.statusBarHandle, deploymentResult.phase)
                     }
 
                     switch (deploymentResult.phase) {
@@ -60,14 +60,16 @@ export class Deployment {
                             if (deploymentResult.state === StackActionState.SUCCESSFUL) {
                                 showDeploymentSuccess(this.stackName)
                             } else {
-                                const describeDeplomentStatusResult = await describeDeploymentStatus(this.client, {
+                                const describeDeploymentStatusResult = await describeDeploymentStatus(this.client, {
                                     id: this.id,
                                 })
                                 showDeploymentFailure(
                                     this.stackName,
-                                    describeDeplomentStatusResult.FailureReason ?? 'UNKNOWN'
+                                    describeDeploymentStatusResult.FailureReason ?? 'UNKNOWN'
                                 )
                             }
+                            void commands.executeCommand(commandKey('stacks.refresh'))
+                            this.statusBarHandle?.release()
                             clearInterval(interval)
                             break
                         case StackActionPhase.DEPLOYMENT_FAILED:
@@ -79,6 +81,8 @@ export class Deployment {
                                 this.stackName,
                                 describeDeplomentStatusResult.FailureReason ?? 'UNKNOWN'
                             )
+                            void commands.executeCommand(commandKey('stacks.refresh'))
+                            this.statusBarHandle?.release()
                             clearInterval(interval)
                             break
                         }
@@ -87,6 +91,8 @@ export class Deployment {
                 .catch(async (error) => {
                     getLogger().error(`Error polling for deployment status: ${error}`)
                     showErrorMessage(`Error polling for deployment status: ${extractErrorMessage(error)}`)
+                    void commands.executeCommand(commandKey('stacks.refresh'))
+                    this.statusBarHandle?.release()
                     clearInterval(interval)
                 })
         }, 1000)

@@ -6,7 +6,10 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { DiffWebviewProvider } from '../../../../awsService/cloudformation/ui/diffWebviewProvider'
-import { StackChange } from '../../../../awsService/cloudformation/stacks/actions/stackActionRequestType'
+import {
+    DeploymentMode,
+    StackChange,
+} from '../../../../awsService/cloudformation/stacks/actions/stackActionRequestType'
 
 describe('DiffWebviewProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -136,7 +139,7 @@ describe('DiffWebviewProvider', function () {
             // Verify expandable structure
             assert.ok(html.includes('toggleDetails'))
             assert.ok(html.includes('display: none'))
-            assert.ok(html.includes('▶'))
+            assert.ok(html.includes('<svg'))
         })
 
         it('should handle multiple detail rows with proper expandable structure', function () {
@@ -287,6 +290,24 @@ describe('DiffWebviewProvider', function () {
             assert.ok(html.includes('template-value'))
             assert.ok(html.includes('live-value'))
             assert.ok(html.includes('⚠️ Modified'))
+        })
+
+        it('should show drift status column when deploymentMode is REVERT_DRIFT', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Modify',
+                        logicalResourceId: 'Resource',
+                    },
+                },
+            ]
+
+            void provider.updateData('test-stack', changes, undefined, false, undefined, DeploymentMode.REVERT_DRIFT)
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+            const html = mockWebview.webview.html
+
+            assert.ok(html.includes('Drift Status'))
         })
     })
 })

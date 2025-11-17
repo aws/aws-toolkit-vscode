@@ -183,6 +183,51 @@ describe('StackResourcesWebviewProvider', function () {
             assert.ok(html.includes('disabled'))
             assert.ok(html.includes('Previous'))
         })
+
+        it('should include console link with ARN when stackArn is set', async function () {
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            const coordinatorCallback = mockCoordinator.onDidChangeStack.firstCall.args[0]
+            await coordinatorCallback({
+                stackName: 'test-stack',
+                stackArn: 'arn:aws:cloudformation:us-east-1:123456789012:stack/test-stack/abc-123',
+                isChangeSetMode: false,
+            })
+
+            const html = mockWebview.webview.html
+            assert.ok(html.includes('href="https://us-east-1.console.aws.amazon.com'))
+            assert.ok(html.includes('/stacks/resources?stackId='))
+            assert.ok(html.includes('View in AWS Console'))
+        })
+
+        it('should not include console link when stackArn is missing', async function () {
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            const coordinatorCallback = mockCoordinator.onDidChangeStack.firstCall.args[0]
+            await coordinatorCallback({
+                stackName: 'test-stack',
+                stackArn: undefined,
+                isChangeSetMode: false,
+            })
+
+            const html = mockWebview.webview.html
+            assert.ok(!html.includes('href="https://'))
+        })
+
+        it('should show "X resources loaded" in header when nextToken is available', async function () {
+            const mockWebview = await setupProviderWithResources('test-stack', createMockResources(50), 'token123')
+            const html = mockWebview.webview.html
+            assert.ok(html.includes('(50 resources loaded)'))
+        })
+
+        it('should show "X resources" in header when nextToken is not available', async function () {
+            const mockWebview = await setupProviderWithResources('test-stack', createMockResources(60))
+            const html = mockWebview.webview.html
+            assert.ok(html.includes('(60 resources)'))
+            assert.ok(!html.includes('(60 resources loaded)'))
+        })
     })
 
     describe('pagination functionality', function () {
@@ -241,7 +286,7 @@ describe('StackResourcesWebviewProvider', function () {
     })
 
     describe('loadResources', function () {
-        it('should handle nextToken for pagination', async function () {
+        async function setupPaginatedTest() {
             const firstBatch = createMockResources(50)
             const secondBatch = createMockResources(10, 50)
 
@@ -255,7 +300,11 @@ describe('StackResourcesWebviewProvider', function () {
             provider.resolveWebviewView(mockWebview as any)
             await provider.updateData('test-stack')
 
-            // Simulate nextPage to load more resources
+            return mockWebview
+        }
+
+        it('should handle nextToken for pagination', async function () {
+            const mockWebview = await setupPaginatedTest()
             const messageHandler = mockWebview.webview.onDidReceiveMessage.firstCall.args[0]
             await messageHandler({ command: 'nextPage' })
 
@@ -270,8 +319,36 @@ describe('StackResourcesWebviewProvider', function () {
             const mockWebview = createMockWebview()
             providerWithoutClient.resolveWebviewView(mockWebview as any)
 
-            // Should not throw
             await providerWithoutClient.updateData('')
+        })
+
+        it('should not duplicate resources when updateData is called multiple times', async function () {
+            const mockResources = createMockResources(5)
+            mockClient.sendRequest.resolves({ resources: mockResources })
+
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+            await provider.updateData('test-stack')
+            await provider.updateData('test-stack')
+
+            const html = mockWebview.webview.html
+            const resource0Count = (html.match(/Resource0/g) || []).length
+            assert.strictEqual(resource0Count, 1)
+        })
+
+        it('should overwrite resources on initial load and append on subsequent paginated loads', async function () {
+            const mockWebview = await setupPaginatedTest()
+
+            let html = mockWebview.webview.html
+            assert.ok(html.includes('Resource0'))
+            assert.ok(html.includes('Resource49'))
+
+            const messageHandler = mockWebview.webview.onDidReceiveMessage.firstCall.args[0]
+            await messageHandler({ command: 'nextPage' })
+
+            html = mockWebview.webview.html
+            assert.ok(html.includes('Resource50'))
+            assert.ok(html.includes('Resource59'))
         })
     })
 })

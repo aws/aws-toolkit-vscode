@@ -11,8 +11,8 @@ import { isAutomation, isBeta, isDebugInstance } from '../../../shared/vscode/en
 import { dirname, join } from 'path'
 import { getLogger } from '../../../shared/logger/logger'
 import { ResourcePaths } from '../../../shared/lsp/types'
-import { FileType } from 'vscode'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
+import globals from '../../../shared/extensionGlobals'
 
 function determineEnvironment(): CfnLspServerEnvType {
     if (isDebugInstance()) {
@@ -24,27 +24,53 @@ function determineEnvironment(): CfnLspServerEnvType {
 }
 
 export class CfnLspInstaller extends BaseLspInstaller {
-    private log = getLogger()
+    private readonly githubManifest = new GitHubManifestAdapter(
+        'aws-cloudformation',
+        'cloudformation-languageserver',
+        determineEnvironment()
+    )
 
     constructor() {
         super(
             {
                 manifestUrl: 'github',
-                supportedVersions: '0.*.*',
+                supportedVersions: '<2.0.0',
                 id: CfnLspName,
                 suppressPromptPrefix: 'cfnLsp',
             },
             'awsCfnLsp',
             {
                 resolve: async () => {
-                    const environment = determineEnvironment()
-                    this.log.info(`Resolving CloudFormation LSP from GitHub releases (${environment})`)
-                    const githubAdapter = new GitHubManifestAdapter(
-                        'aws-cloudformation',
-                        'cloudformation-languageserver',
-                        environment
-                    )
-                    return await githubAdapter.getManifest()
+                    const log = getLogger()
+                    const cfnManifestStorageKey = 'aws.cloudformation.lsp.manifest'
+
+                    try {
+                        const manifest = await this.githubManifest.getManifest()
+                        log.info(
+                            `Creating CloudFormation LSP manifest for ${this.githubManifest.environment}`,
+                            manifest.versions.map((v) => v.serverVersion)
+                        )
+
+                        // Cache in CloudFormation-specific global state storage
+                        globals.globalState.tryUpdate(cfnManifestStorageKey, {
+                            content: JSON.stringify(manifest),
+                        })
+
+                        return manifest
+                    } catch (error) {
+                        log.warn(`GitHub fetch failed, trying cached manifest: ${error}`)
+
+                        // Try cached manifest from CloudFormation-specific storage
+                        const manifestData = globals.globalState.tryGet(cfnManifestStorageKey, Object, {})
+
+                        if (manifestData?.content) {
+                            log.debug('Using cached manifest for offline mode')
+                            return JSON.parse(manifestData.content)
+                        }
+
+                        log.error('No cached manifest found')
+                        throw error
+                    }
                 },
             } as any
         )
@@ -53,26 +79,7 @@ export class CfnLspInstaller extends BaseLspInstaller {
     protected async postInstall(assetDirectory: string): Promise<void> {
         const resourcePaths = this.resourcePaths(assetDirectory)
         const rootDir = dirname(resourcePaths.lsp)
-        await this.makeLspExecutable(rootDir)
         await fs.chmod(join(rootDir, 'bin', process.platform === 'win32' ? 'cfn-init.exe' : 'cfn-init'), 0o755)
-    }
-
-    private async makeLspExecutable(directory: string): Promise<void> {
-        const extensions = ['.cjs', '.gyp', '.js', '.mjs', '.node', '.wasm', '.json', '.zip', '.map']
-        const entries = await fs.readdir(directory)
-
-        for (const [name, type] of entries) {
-            const fullPath = join(directory, name)
-            if (type === FileType.Directory) {
-                await this.makeLspExecutable(fullPath)
-            } else if (extensions.some((ext) => name.endsWith(ext))) {
-                try {
-                    await fs.chmod(fullPath, 0o755)
-                } catch (error) {
-                    this.log.error(`Failed to make ${name} executable`, error)
-                }
-            }
-        }
     }
 
     protected resourcePaths(assetDirectory?: string): ResourcePaths {

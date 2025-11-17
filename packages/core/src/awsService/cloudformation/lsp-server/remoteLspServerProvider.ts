@@ -11,6 +11,10 @@ export class RemoteLspServerProvider implements LspServerProviderI {
     private installer = new CfnLspInstaller()
     private serverPath?: string
 
+    name(): string {
+        return 'RemoteLspServerProvider'
+    }
+
     canProvide(): boolean {
         return true
     }

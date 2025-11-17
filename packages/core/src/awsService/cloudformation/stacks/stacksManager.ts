@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { commands, Disposable, window } from 'vscode'
+import { commands, Disposable } from 'vscode'
 import { StackStatus, StackSummary } from '@aws-sdk/client-cloudformation'
 import { RequestType } from 'vscode-languageserver-protocol'
 import { LanguageClient } from 'vscode-languageclient/node'
+import { handleLspError } from '../utils/onlineErrorHandler'
 import { commandKey } from '../utils'
 import { setContext } from '../../../shared/vscode/setContext'
 
@@ -72,9 +73,7 @@ export class StacksManager implements Disposable {
             this.stacks = response.stacks
             this.nextToken = response.nextToken
         } catch (error) {
-            void window.showErrorMessage(
-                `Failed to load more stacks: ${error instanceof Error ? error.message : String(error)}`
-            )
+            await handleLspError(error, 'Error loading more stacks')
         } finally {
             await setContext('aws.cloudformation.loadingStacks', false)
             this.notifyListeners()
@@ -108,6 +107,7 @@ export class StacksManager implements Disposable {
             this.stacks = response.stacks
             this.nextToken = response.nextToken
         } catch (error) {
+            await handleLspError(error, 'Error loading stacks')
             this.stacks = []
             this.nextToken = undefined
         } finally {

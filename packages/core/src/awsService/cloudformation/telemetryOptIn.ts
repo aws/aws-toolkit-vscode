@@ -8,8 +8,23 @@ import { CloudFormationTelemetrySettings } from './extensionConfig'
 import { commandKey } from './utils'
 import { isAutomation } from '../../shared/vscode/env'
 
+export async function promptTelemetryOptInWithTimeout(
+    context: ExtensionContext,
+    cfnTelemetrySettings: CloudFormationTelemetrySettings
+): Promise<boolean> {
+    const promptPromise = promptTelemetryOptIn(context, cfnTelemetrySettings)
+    const timeoutPromise = new Promise<false>((resolve) => setTimeout(() => resolve(false), 2500))
+
+    const result = await Promise.race([promptPromise, timeoutPromise])
+
+    // Keep prompt alive in background
+    void promptPromise
+
+    return result
+}
+
 /* eslint-disable aws-toolkits/no-banned-usages */
-export async function promptTelemetryOptIn(
+async function promptTelemetryOptIn(
     context: ExtensionContext,
     cfnTelemetrySettings: CloudFormationTelemetrySettings
 ): Promise<boolean> {

@@ -55,10 +55,6 @@ export function showChangeSetDeletionFailure(changeSetName: string, stackName: s
     )
 }
 
-export function showValidationComplete(stackName: string) {
-    void window.showInformationMessage(`Validation completed for stack: ${stackName}. Starting deployment...`)
-}
-
 export function showValidationStarted(stackName: string) {
     void window.showInformationMessage(`Validation started for stack: ${stackName}`)
 }
@@ -81,4 +77,13 @@ export function showChangeSetDeletionStarted(changeSetName: string, stackName: s
 
 export function showErrorMessage(message: string) {
     void window.showErrorMessage(message)
+}
+
+export async function showWarningConfirmation(warningCount: number): Promise<boolean> {
+    const proceed = await window.showWarningMessage(
+        `There are ${warningCount} warning(s). Do you want to proceed with deployment?`,
+        'Proceed',
+        'Cancel'
+    )
+    return proceed === 'Proceed'
 }
