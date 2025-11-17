@@ -132,7 +132,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 if (this.isFirstTimeSelection && !this.hasShownFirstTimeMessage) {
                     this.hasShownFirstTimeMessage = true
                     void vscode.window.showInformationMessage(
-                        'Find your space in the Explorer panel under SageMaker Unified Studio. Hover over any space and click the connection icon to connect remotely.'
+                        'Find your space in the Explorer panel under SageMaker Unified Studio. Hover over a space and click the connection icon to connect remotely.'
                     )
                 }
                 this.sagemakerClient = await this.initializeSagemakerClient(spaceAwsAccountRegion)
