@@ -24,7 +24,7 @@ export interface AuthenticationMethodSelection {
  * Authentication method selection dialog for SMUS
  */
 export class SmusAuthenticationMethodSelector {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
 
     /**
      * Shows the authentication method selection dialog matching the Figma design
@@ -84,7 +84,7 @@ export class SmusAuthenticationMethodSelector {
 
                 const method: SmusAuthenticationMethod = selectedItem === iamOption ? 'iam' : 'sso'
 
-                logger.debug(`SMUS Auth: User selected authentication method: ${method}`)
+                logger.debug(`User selected authentication method: ${method}`)
 
                 isCompleted = true
                 quickPick.dispose()

@@ -23,7 +23,7 @@ export async function createFederatedConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): Promise<TreeNode> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Check for error message in glue properties
     // Create error node directly in this case
@@ -140,7 +140,7 @@ function createGlueEntityNode(
     glueClient: GlueClient,
     glueConnectionName: string
 ): TreeNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const nodeType = getGlueNodeType(entity.Category)
     const isTable = nodeType === NodeType.GLUE_TABLE
 

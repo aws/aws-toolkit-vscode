@@ -31,7 +31,7 @@ export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_fol
  * S3 data node for SageMaker Unified Studio
  */
 export class S3Node implements TreeNode {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
 
@@ -113,7 +113,7 @@ export function createS3ConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): S3Node {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Parse S3 URI from connection
     const s3Info = parseS3Uri(connection)
@@ -410,7 +410,7 @@ export async function createS3AccessGrantNodes(
  * Creates a children provider function for a folder node
  */
 function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (node: S3Node) => Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return async (node: S3Node) => {
         try {
@@ -498,7 +498,7 @@ async function listCallerAccessGrants(
     accountId: string,
     connectionId: string
 ): Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     try {
         const clientStore = ConnectionClientStore.getInstance()
         const s3ControlClient = clientStore.getS3ControlClient(connectionId, region, connectionCredentialsProvider)
@@ -583,7 +583,7 @@ async function fetchAccessGrantChildren(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     connectionId: string
 ): Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const path = node.data.path
 
     try {

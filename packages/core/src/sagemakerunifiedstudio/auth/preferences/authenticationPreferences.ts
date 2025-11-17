@@ -32,7 +32,7 @@ export interface SmusAuthenticationPreferences {
  * Manager for SMUS authentication preferences
  */
 export class SmusAuthenticationPreferencesManager {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
     // eslint-disable-next-line @typescript-eslint/naming-convention
     private static readonly PREFERENCES_KEY = 'aws.smus.authenticationPreferences'
 
@@ -145,7 +145,7 @@ export class SmusAuthenticationPreferencesManager {
      */
     public static async clearPreferences(context?: vscode.ExtensionContext): Promise<void> {
         const logger = this.logger
-        logger.debug('SMUS Auth: Clearing authentication preferences')
+        logger.debug('Clearing authentication preferences')
 
         await globals.globalState.update(this.PREFERENCES_KEY, undefined)
     }
@@ -156,7 +156,7 @@ export class SmusAuthenticationPreferencesManager {
      */
     public static async clearConnectionPreferences(context?: vscode.ExtensionContext): Promise<void> {
         const logger = this.logger
-        logger.debug('SMUS Auth: Clearing connection-specific preferences (preserving auth method preference)')
+        logger.debug('Clearing connection-specific preferences (preserving auth method preference)')
 
         const currentPrefs = this.getPreferences()
 
@@ -182,7 +182,7 @@ export class SmusAuthenticationPreferencesManager {
         newMethod: SmusAuthenticationMethod
     ): Promise<void> {
         const logger = this.logger
-        logger.debug(`SMUS Auth: Switching authentication method to: ${newMethod}`)
+        logger.debug(`Switching authentication method to: ${newMethod}`)
 
         await this.updatePreferences(context, {
             preferredMethod: newMethod,

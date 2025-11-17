@@ -32,7 +32,7 @@ export const DataZoneErrorCode = {
 export class DataZoneCustomClientHelper {
     private datazoneCustomClient: DataZoneCustomClient | undefined
     private static instances = new Map<string, DataZoneCustomClientHelper>()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly credentialProvider: CredentialsProvider,
@@ -44,7 +44,7 @@ export class DataZoneCustomClientHelper {
      * @returns DataZoneCustomClientHelper instance
      */
     public static getInstance(credentialProvider: CredentialsProvider, region: string): DataZoneCustomClientHelper {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         const instanceKey = `${region}`
 
@@ -69,7 +69,7 @@ export class DataZoneCustomClientHelper {
      * Disposes all instances and cleans up resources
      */
     public static dispose(): void {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         logger.debug('DataZoneCustomClientHelper: Disposing all instances')
 
         for (const [key, instance] of DataZoneCustomClientHelper.instances.entries()) {
@@ -200,7 +200,7 @@ export class DataZoneCustomClientHelper {
      * @returns Promise resolving to the DataZone domain or undefined if not found
      */
     public async getIamDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         try {
             logger.info('DataZoneCustomClientHelper: Getting the domain info')

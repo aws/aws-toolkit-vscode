@@ -33,7 +33,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
     public project?: DataZoneProject
-    private logger = getLogger()
+    private logger = getLogger('smus')
     private sagemakerClient?: SagemakerClient
     private hasShownFirstTimeMessage = false
     private isFirstTimeSelection = false

@@ -23,7 +23,7 @@ export type GlueCatalog = GlueCatalogApi.Types.Catalog
 export class GlueCatalogClient {
     private glueClient: GlueCatalogApi | undefined
     private static instance: GlueCatalogClient | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly region: string,

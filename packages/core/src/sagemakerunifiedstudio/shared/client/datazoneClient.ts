@@ -117,7 +117,7 @@ const sageMakerProviderName = 'Amazon SageMaker'
 export class DataZoneClient {
     private datazoneClient: DataZone | undefined
     private static instances = new Map<string, DataZoneClient>()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly region: string,
@@ -141,12 +141,12 @@ export class DataZoneClient {
 
         if (DataZoneClient.instances.has(instanceKey)) {
             const existingInstance = DataZoneClient.instances.get(instanceKey)!
-            getLogger().debug(`DataZoneClient: Using existing instance, instance key is ${instanceKey}`)
+            getLogger('smus').debug(`DataZoneClient: Using existing instance, instance key is ${instanceKey}`)
             return existingInstance
         }
 
         // Create new instance
-        getLogger().debug(`DataZoneClient: Creating new instance with instance key ${instanceKey}`)
+        getLogger('smus').debug(`DataZoneClient: Creating new instance with instance key ${instanceKey}`)
         const instance = new DataZoneClient(region, domainId, credentialsProvider)
         DataZoneClient.instances.set(instanceKey, instance)
 
@@ -157,8 +157,8 @@ export class DataZoneClient {
      * Disposes all cached DataZoneClient instances
      */
     public static dispose(): void {
-        const logger = getLogger()
-        getLogger().debug('DataZoneClient: Disposing all cached instances')
+        const logger = getLogger('smus')
+        getLogger('smus').debug('DataZoneClient: Disposing all cached instances')
 
         for (const [key, instance] of DataZoneClient.instances.entries()) {
             instance.datazoneClient = undefined

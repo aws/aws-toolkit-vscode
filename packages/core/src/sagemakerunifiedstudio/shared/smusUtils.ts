@@ -159,7 +159,7 @@ export function validateCredentialFields(
  * Utility class for SageMaker Unified Studio domain URL parsing and validation
  */
 export class SmusUtils {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
 
     /**
      * Extracts the domain ID from a SageMaker Unified Studio domain URL
@@ -318,7 +318,7 @@ export class SmusUtils {
      */
     public static async getSsoInstanceInfo(domainUrl: string): Promise<SsoInstanceInfo> {
         try {
-            this.logger.info(`SMUS Auth: Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
+            this.logger.info(`Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
 
             // Extract domain ID from the domain URL
             const domainId = this.extractDomainIdFromUrl(domainUrl)
@@ -352,7 +352,7 @@ export class SmusUtils {
             // Extract region from domain URL
             const region = this.extractRegionFromUrl(domainUrl)
 
-            this.logger.info('SMUS Auth: Extracted SSO instance info: %s', ssoInstanceId)
+            this.logger.info('Extracted SSO instance info: %s', ssoInstanceId)
 
             return {
                 issuerUrl,
@@ -362,7 +362,7 @@ export class SmusUtils {
             }
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-            this.logger.error('SMUS Auth: Failed to get SSO instance info: %s', errorMsg)
+            this.logger.error('Failed to get SSO instance info: %s', errorMsg)
 
             if (error instanceof ToolkitError) {
                 throw error
@@ -517,10 +517,10 @@ export function extractAccountIdFromSageMakerArn(arn: string): string {
  * @throws ToolkitError if unable to extract account ID
  */
 export async function extractAccountIdFromResourceMetadata(): Promise<string> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
-        logger.debug('SMUS: Extracting account ID from ResourceArn in resource-metadata file')
+        logger.debug('Extracting account ID from ResourceArn in resource-metadata file')
 
         const resourceMetadata = getResourceMetadata()!
         const resourceArn = resourceMetadata.ResourceArn

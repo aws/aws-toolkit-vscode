@@ -33,7 +33,7 @@ import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 export class RedshiftNode implements TreeNode {
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         public readonly data: NodeData,
@@ -120,7 +120,7 @@ export function createRedshiftConnectionNode(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     return new RedshiftNode(
         {
             id: connection.connectionId,
@@ -292,7 +292,7 @@ async function wakeUpDatabase(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     connection: DataZoneConnection
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const clientStore = ConnectionClientStore.getInstance()
     const sqlClient = clientStore.getSQLWorkbenchClient(connection.connectionId, region, connectionCredentialsProvider)
     try {
@@ -310,7 +310,7 @@ function createDatabaseNode(
     connectionConfig: ConnectionConfig,
     parent: RedshiftNode
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {
@@ -398,7 +398,7 @@ function createDatabaseNode(
  * Creates a schema node
  */
 function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig, parent: RedshiftNode): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {
@@ -581,7 +581,7 @@ function createObjectNode(
     connectionConfig: ConnectionConfig,
     parent: RedshiftNode
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {

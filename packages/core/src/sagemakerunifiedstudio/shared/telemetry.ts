@@ -28,7 +28,7 @@ export async function recordSpaceTelemetry(
     span: Span<SmusOpenRemoteConnection> | Span<SmusStopSpace>,
     node: SagemakerUnifiedStudioSpaceNode
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const parent = node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
@@ -72,7 +72,7 @@ export async function recordAuthTelemetry(
     domainId: string | undefined,
     region: string | undefined
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     span.record({
         smusDomainId: domainId,
@@ -102,7 +102,7 @@ export async function recordDataConnectionTelemetry(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')

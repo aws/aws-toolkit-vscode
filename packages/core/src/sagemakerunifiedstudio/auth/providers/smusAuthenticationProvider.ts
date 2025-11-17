@@ -79,7 +79,7 @@ const authClassName = 'SmusAuthenticationProvider'
  * Manages authentication state and credentials for SMUS
  */
 export class SmusAuthenticationProvider {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     public readonly onDidChangeActiveConnection: vscode.Event<SmusConnection | undefined>
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChange = this.onDidChangeEmitter.event
@@ -215,7 +215,7 @@ export class SmusAuthenticationProvider {
                 // Get DataZoneCustomClientHelper instance and check if domain is IAM mode
                 const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(credentialsProvider, region)
                 const isIamMode = await datazoneCustomClientHelper.isIamDomain(domainId)
-                this.logger.debug(`SMUS Auth: is in IAM mode ${isIamMode}`)
+                this.logger.debug(`is in IAM mode ${isIamMode}`)
                 await setSmusIamModeContext(isIamMode)
             }
         } catch (error) {
@@ -229,7 +229,7 @@ export class SmusAuthenticationProvider {
      * Called when SMUS connection changes or extension deactivates
      */
     public stopAllSshCredentialRefresh(): void {
-        this.logger.debug('SMUS Auth: Stopping SSH credential refresh for all projects')
+        this.logger.debug('Stopping SSH credential refresh for all projects')
         for (const provider of this.projectCredentialProvidersCache.values()) {
             provider.stopProactiveCredentialRefresh()
         }
@@ -323,12 +323,12 @@ export class SmusAuthenticationProvider {
      * Validates domain metadata against profile and updates if needed before using saved connection
      */
     public async restore() {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         // Get the saved connection ID before restoring
         const savedConnectionId = this.secondaryAuth.state.get('smus.savedConnectionId') as string
         if (!savedConnectionId) {
-            logger.debug('SMUS: No saved connection ID found, proceeding with normal restore')
+            logger.debug('No saved connection ID found, proceeding with normal restore')
             await this.secondaryAuth.restoreConnection()
             return
         }
@@ -339,7 +339,7 @@ export class SmusAuthenticationProvider {
 
         // If no connection metadata exists, proceed with normal restore
         if (!connectionMetadata) {
-            logger.debug('SMUS: No connection metadata found, proceeding with normal restore')
+            logger.debug('No connection metadata found, proceeding with normal restore')
             await this.secondaryAuth.restoreConnection()
             return
         }
@@ -348,7 +348,7 @@ export class SmusAuthenticationProvider {
 
         // If no profile name in metadata, proceed with normal restore
         if (!savedProfileName) {
-            logger.debug('SMUS: No profile name in metadata, proceeding with normal restore')
+            logger.debug('No profile name in metadata, proceeding with normal restore')
             await this.secondaryAuth.restoreConnection()
             return
         }
@@ -356,7 +356,7 @@ export class SmusAuthenticationProvider {
         const profiles = await loadSharedCredentialsProfiles()
         const profile = profiles[savedProfileName]
         if (!profile) {
-            logger.debug(`SMUS: No profile found with name: ${savedProfileName}`)
+            logger.debug(`No profile found with name: ${savedProfileName}`)
             await this.secondaryAuth.restoreConnection()
             return
         }
@@ -364,14 +364,14 @@ export class SmusAuthenticationProvider {
 
         const validation = await this.validateIamProfile(savedProfileName)
         if (!validation.isValid) {
-            logger.debug(`SMUS Auth: Profile validation failed: ${validation.error}, proceeding with normal restore`)
+            logger.debug(`Profile validation failed: ${validation.error}, proceeding with normal restore`)
             await this.secondaryAuth.restoreConnection()
             return
         }
 
         let domainUrl
         try {
-            logger.debug(`SMUS Auth: Finding IAM-based domain in region using profile ${savedProfileName}`)
+            logger.debug(`Finding IAM-based domain in region using profile ${savedProfileName}`)
 
             // Get DataZoneCustomClientHelper instance
             const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
@@ -383,27 +383,27 @@ export class SmusAuthenticationProvider {
             const iamDomain = await datazoneCustomClientHelper.getIamDomain()
 
             if (!iamDomain) {
-                logger.warn(`SMUS Auth: No IAM-based domain found in region ${region}, proceeding with normal restore`)
+                logger.warn(`No IAM-based domain found in region ${region}, proceeding with normal restore`)
                 await this.secondaryAuth.restoreConnection()
                 return
             }
 
-            logger.debug(`SMUS Auth: Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
+            logger.debug(`Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
 
             // Construct domain URL from the IAM-based domain
             domainUrl = iamDomain.portalUrl || `https://${iamDomain.id}.sagemaker.${region}.on.aws/`
-            logger.debug(`SMUS Auth: Discovered IAM-based domain URL: ${domainUrl}`)
+            logger.debug(`Discovered IAM-based domain URL: ${domainUrl}`)
         } catch (error) {
-            logger.error(`SMUS Auth: Failed to find IAM-based domain: ${error} , proceeding with normal restore`)
+            logger.error(`Failed to find IAM-based domain: ${error} , proceeding with normal restore`)
             await this.secondaryAuth.restoreConnection()
             return
         }
 
         try {
-            logger.debug(`SMUS: Validating domain metadata for saved connection ${savedConnectionId}`)
+            logger.debug(`Validating domain metadata for saved connection ${savedConnectionId}`)
 
             if (!domainUrl) {
-                logger.info('SMUS: No domain URL constructed, proceeding with normal restore')
+                logger.info('No domain URL constructed, proceeding with normal restore')
                 await this.secondaryAuth.restoreConnection()
                 return
             }
@@ -415,7 +415,7 @@ export class SmusAuthenticationProvider {
             const savedRegion = connectionMetadata.region
 
             if (domainId === savedDomainId && region === savedRegion) {
-                logger.debug('SMUS: Domain metadata matches, proceeding with normal restore')
+                logger.debug('Domain metadata matches, proceeding with normal restore')
             } else {
                 logger.debug(
                     `SMUS: Domain metadata mismatch detected. Saved: ${savedDomainId}@${savedRegion}, Profile: ${domainId}@${region}. Updating metadata.`
@@ -429,10 +429,10 @@ export class SmusAuthenticationProvider {
                 smusConnections[savedConnectionId] = connectionMetadata
                 await this.secondaryAuth.state.update('smus.connections', smusConnections)
 
-                logger.debug('SMUS: Successfully updated domain metadata')
+                logger.debug('Successfully updated domain metadata')
             }
         } catch (error) {
-            logger.warn(`SMUS: Failed to validate domain metadata: ${error}. Proceeding with normal restore.`)
+            logger.warn(`Failed to validate domain metadata: ${error}. Proceeding with normal restore.`)
         }
 
         // Proceed with normal restore
@@ -446,16 +446,16 @@ export class SmusAuthenticationProvider {
      */
     @withTelemetryContext({ name: 'signOut', class: authClassName })
     public async signOut() {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         const activeConnection = this.activeConnection
         if (!activeConnection) {
-            logger.debug('SMUS: No active connection to sign out from')
+            logger.debug('No active connection to sign out from')
             return
         }
 
         const connectionId = activeConnection.id
-        logger.info(`SMUS: Signing out from connection ${connectionId}`)
+        logger.info(`Signing out from connection ${connectionId}`)
 
         try {
             // Clear SMUS-specific metadata from connections registry
@@ -470,23 +470,23 @@ export class SmusAuthenticationProvider {
             if ('type' in activeConnection && isSmusSsoConnection(activeConnection)) {
                 // For SSO connections, delete the connection (old behavior)
                 await this.secondaryAuth.deleteConnection()
-                logger.info(`SMUS: Deleted SSO connection ${connectionId}`)
+                logger.info(`Deleted SSO connection ${connectionId}`)
             } else if ('type' in activeConnection) {
                 // For IAM connections, forget the connection without affecting the underlying IAM profile
                 await this.secondaryAuth.forgetConnection()
-                logger.info(`SMUS: Forgot IAM connection ${connectionId} (preserved for other services)`)
+                logger.info(`Forgot IAM connection ${connectionId} (preserved for other services)`)
 
                 // Clear IAM mode context for IAM connections
                 await setSmusIamModeContext(false)
-                logger.debug('SMUS: Cleared IAM mode context')
+                logger.debug('Cleared IAM mode context')
             } else {
                 // Mock connection in SMUS space environment - no action needed
-                logger.info(`SMUS: Sign out completed for mock connection ${connectionId}`)
+                logger.info(`Sign out completed for mock connection ${connectionId}`)
             }
 
-            logger.info(`SMUS: Successfully signed out from connection ${connectionId}`)
+            logger.info(`Successfully signed out from connection ${connectionId}`)
         } catch (error) {
-            logger.error(`SMUS: Failed to sign out from connection ${connectionId}:`, error)
+            logger.error(`Failed to sign out from connection ${connectionId}:`, error)
             throw new ToolkitError('Failed to sign out from SageMaker Unified Studio', {
                 code: SmusErrorCodes.SignOutFailed,
                 cause: error instanceof Error ? error : undefined,
@@ -501,7 +501,7 @@ export class SmusAuthenticationProvider {
      */
     @withTelemetryContext({ name: 'connectToSmusWithSso', class: authClassName })
     public async connectToSmusWithSso(domainUrl: string): Promise<SmusConnection> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         try {
             // Extract domain info using SmusUtils
@@ -512,7 +512,7 @@ export class SmusAuthenticationProvider {
                 throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
-            logger.info(`SMUS: Connecting to domain ${domainId} in region ${region}`)
+            logger.info(`Connecting to domain ${domainId} in region ${region}`)
 
             // Check if we already have a connection for this domain
             const existingConn = (await this.auth.listConnections()).find(
@@ -522,11 +522,11 @@ export class SmusAuthenticationProvider {
 
             if (existingConn) {
                 const connectionState = this.auth.getConnectionState(existingConn)
-                logger.info(`SMUS: Found existing connection ${existingConn.id} with state: ${connectionState}`)
+                logger.info(`Found existing connection ${existingConn.id} with state: ${connectionState}`)
 
                 // If connection is valid, use it directly without triggering new auth flow
                 if (connectionState === 'valid') {
-                    logger.info('SMUS: Using existing valid connection')
+                    logger.info('Using existing valid connection')
 
                     // Only SSO connections can be used with connectToSmusWithSso
                     if (isSmusSsoConnection(existingConn)) {
@@ -546,7 +546,7 @@ export class SmusAuthenticationProvider {
                 if (connectionState === 'invalid') {
                     // Only SSO connections can be reauthenticated
                     if (isSmusSsoConnection(existingConn)) {
-                        logger.info('SMUS: Existing SSO connection is invalid, reauthenticating')
+                        logger.info('Existing SSO connection is invalid, reauthenticating')
                         const reauthenticatedConn = await this.reauthenticate(existingConn)
 
                         // Create the SMUS connection wrapper
@@ -557,7 +557,7 @@ export class SmusAuthenticationProvider {
                         }
 
                         const result = await this.secondaryAuth.useNewConnection(smusConn)
-                        logger.debug(`SMUS: Reauthenticated connection successfully, id=${result.id}`)
+                        logger.debug(`Reauthenticated connection successfully, id=${result.id}`)
 
                         // Auto-invoke project selection after successful reauthentication (but not in SMUS space environment)
                         if (!SmusUtils.isInSmusSpaceEnvironment()) {
@@ -570,7 +570,7 @@ export class SmusAuthenticationProvider {
             }
 
             // No existing connection found, create a new one
-            logger.info('SMUS: No existing connection found, creating new connection')
+            logger.info('No existing connection found, creating new connection')
 
             // Get SSO instance info from DataZone
             const ssoInstanceInfo = await SmusUtils.getSsoInstanceInfo(domainUrl)
@@ -578,7 +578,7 @@ export class SmusAuthenticationProvider {
             // Create a new connection with appropriate scope based on domain URL
             const profile = createSmusProfile(domainUrl, domainId, ssoInstanceInfo.issuerUrl, ssoInstanceInfo.region)
             const newConn = await this.auth.createConnection(profile)
-            logger.debug(`SMUS: Created new connection ${newConn.id}`)
+            logger.debug(`Created new connection ${newConn.id}`)
 
             const smusConn: SmusConnection = {
                 ...newConn,
@@ -616,7 +616,7 @@ export class SmusAuthenticationProvider {
         domainUrl: string,
         isIamDomain: boolean = false
     ): Promise<SmusIamConnection> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         try {
             // Extract domain info using SmusUtils
@@ -627,7 +627,7 @@ export class SmusAuthenticationProvider {
                 throw new ToolkitError('Invalid domain URL format', { code: SmusErrorCodes.InvalidDomainUrl })
             }
 
-            logger.info(`SMUS: Connecting with IAM profile ${profileName} to domain ${domainId} in region ${region}`)
+            logger.info(`Connecting with IAM profile ${profileName} to domain ${domainId} in region ${region}`)
 
             // Note: Credential validation is already done in the orchestrator via validateIamProfile()
             // No need for redundant validation here
@@ -637,7 +637,7 @@ export class SmusAuthenticationProvider {
             const existingConn = await this.auth.getConnection({ id: profileId })
 
             if (existingConn && existingConn.type === 'iam') {
-                logger.info(`SMUS: Found existing IAM profile connection ${profileId}`)
+                logger.info(`Found existing IAM profile connection ${profileId}`)
 
                 // Store SMUS metadata in the connections registry
                 const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
@@ -662,7 +662,7 @@ export class SmusAuthenticationProvider {
                 // Set IAM mode context if this is an IAM-based domain
                 if (isIamDomain) {
                     await setSmusIamModeContext(true)
-                    logger.debug('SMUS: Set IAM mode context to true')
+                    logger.debug('Set IAM mode context to true')
                 }
 
                 // Return a SMUS IAM connection wrapper for the caller
@@ -698,10 +698,10 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to validation result
      */
     public async validateIamProfile(profileName: string): Promise<{ isValid: boolean; error?: string }> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         try {
-            logger.debug(`SMUS: Validating IAM profile: ${profileName}`)
+            logger.debug(`Validating IAM profile: ${profileName}`)
 
             // Create credentials ID for the profile using the existing Toolkit pattern
             const credentialsId: CredentialsId = {
@@ -727,10 +727,10 @@ export class SmusAuthenticationProvider {
                 provider.getDefaultRegion() // Use the region from the profile, not hardcoded
             )
 
-            logger.debug(`SMUS: Profile validation successful: ${profileName}`)
+            logger.debug(`Profile validation successful: ${profileName}`)
             return { isValid: true }
         } catch (error) {
-            logger.error(`SMUS: Profile validation failed: ${profileName}`, error)
+            logger.error(`Profile validation failed: ${profileName}`, error)
             return {
                 isValid: false,
                 error: `Invalid profile '${profileName}' - ${(error as Error).message}`,
@@ -744,10 +744,10 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to credentials
      */
     public async getCredentialsForIamProfile(profileName: string): Promise<AwsCredentialIdentity> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         try {
-            logger.debug(`SMUS: Getting credentials for IAM profile: ${profileName}`)
+            logger.debug(`Getting credentials for IAM profile: ${profileName}`)
 
             // Create credentials ID for the profile using the existing Toolkit pattern
             const credentialsId: CredentialsId = {
@@ -766,10 +766,10 @@ export class SmusAuthenticationProvider {
             // Get credentials using the existing Toolkit provider
             const credentials = await provider.getCredentials()
 
-            logger.debug(`SMUS: Successfully retrieved credentials for IAM profile: ${profileName}`)
+            logger.debug(`Successfully retrieved credentials for IAM profile: ${profileName}`)
             return credentials
         } catch (error) {
-            logger.error(`SMUS: Failed to get credentials for IAM profile ${profileName}: %s`, error)
+            logger.error(`Failed to get credentials for IAM profile ${profileName}: %s`, error)
             throw new ToolkitError(
                 `Failed to get credentials for profile '${profileName}': ${(error as Error).message}`,
                 {
@@ -786,8 +786,8 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the credentials provider
      */
     public async getCredentialsProviderForIamProfile(profileName: string): Promise<CredentialsProvider> {
-        const logger = getLogger()
-        logger.debug(`SMUS: Getting credentials provider for IAM profile: ${profileName}`)
+        const logger = getLogger('smus')
+        logger.debug(`Getting credentials provider for IAM profile: ${profileName}`)
 
         // Create credentials ID for the profile using the existing Toolkit pattern
         const credentialsId: CredentialsId = {
@@ -815,7 +815,7 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the ARN, or undefined if not available or not an IAM connection
      */
     public async getCachedIamCallerIdentityArn(): Promise<string | undefined> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         try {
             const activeConn = this.activeConnection
             // Only cache for IAM connections
@@ -825,17 +825,17 @@ export class SmusAuthenticationProvider {
 
             // Check if we have a cached ARN for this connection
             if (this.iamCallerIdentityCache && this.iamCallerIdentityCache.connectionId === activeConn.id) {
-                logger.debug('SMUS: Using cached IAM caller identity ARN')
+                logger.debug('Using cached IAM caller identity ARN')
                 return this.iamCallerIdentityCache.arn
             }
 
             // Fetch fresh caller identity
-            logger.debug('SMUS: Fetching IAM caller identity from STS')
+            logger.debug('Fetching IAM caller identity from STS')
             const smusConnections = (this.secondaryAuth.state.get('smus.connections') as any) || {}
             const connectionMetadata = smusConnections[activeConn.id]
 
             if (!connectionMetadata?.profileName || !connectionMetadata?.region) {
-                logger.debug('SMUS: Missing profile name or region in connection metadata')
+                logger.debug('Missing profile name or region in connection metadata')
                 return undefined
             }
 
@@ -844,7 +844,7 @@ export class SmusAuthenticationProvider {
             const callerIdentity = await stsClient.getCallerIdentity()
 
             if (!callerIdentity.Arn) {
-                logger.debug('SMUS: No ARN found in caller identity')
+                logger.debug('No ARN found in caller identity')
                 return undefined
             }
 
@@ -853,11 +853,11 @@ export class SmusAuthenticationProvider {
                 arn: callerIdentity.Arn,
                 connectionId: activeConn.id,
             }
-            logger.debug(`SMUS: Cached IAM caller identity ARN for connection ${activeConn.id}`)
+            logger.debug(`Cached IAM caller identity ARN for connection ${activeConn.id}`)
 
             return callerIdentity.Arn
         } catch (error) {
-            logger.warn(`SMUS: Failed to get IAM caller identity: %s`, error)
+            logger.warn(`Failed to get IAM caller identity: %s`, error)
             return undefined
         }
     }
@@ -874,7 +874,7 @@ export class SmusAuthenticationProvider {
         }
 
         const sessionName = SmusUtils.extractSessionNameFromArn(arn)
-        this.logger.debug(`SMUS: Extracted session name: ${sessionName || 'none'}`)
+        this.logger.debug(`Extracted session name: ${sessionName || 'none'}`)
         return sessionName
     }
 
@@ -892,7 +892,7 @@ export class SmusAuthenticationProvider {
 
         // Convert assumed role ARN to IAM role ARN
         const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(arn)
-        this.logger.debug(`SMUS: Extracted role ARN: ${roleArn || 'none'}`)
+        this.logger.debug(`Extracted role ARN: ${roleArn || 'none'}`)
         return roleArn
     }
 
@@ -902,7 +902,7 @@ export class SmusAuthenticationProvider {
      */
     private clearIamCallerIdentityCache(): void {
         this.iamCallerIdentityCache = undefined
-        this.logger.debug('SMUS: Cleared IAM caller identity cache')
+        this.logger.debug('Cleared IAM caller identity cache')
     }
 
     /**
@@ -916,7 +916,7 @@ export class SmusAuthenticationProvider {
             // Check if this is an IAM connection
             if (isSmusIamConnection(conn)) {
                 // For IAM connections, show options menu
-                this.logger.debug('SMUS: Showing IAM credential expiry options for reauthentication')
+                this.logger.debug('Showing IAM credential expiry options for reauthentication')
                 const result = await showIamCredentialExpiryOptions(this, conn, globals.context)
 
                 // Handle the result - for most actions, return the original connection
@@ -968,7 +968,7 @@ export class SmusAuthenticationProvider {
      * @throws ToolkitError if unable to retrieve access token
      */
     public async getAccessToken(): Promise<string> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         const connection = this.activeConnection
         if (!connection) {
@@ -985,11 +985,11 @@ export class SmusAuthenticationProvider {
         try {
             // Type assertion is safe here because we've already checked with isSmusSsoConnection
             const accessToken = await this.auth.getSsoAccessToken(connection as SsoConnection)
-            logger.debug(`SMUS: Successfully retrieved SSO access token for connection ${connection.id}`)
+            logger.debug(`Successfully retrieved SSO access token for connection ${connection.id}`)
 
             return accessToken
         } catch (err) {
-            logger.error(`SMUS: Failed to retrieve SSO access token for connection ${connection.id}: %s`, err)
+            logger.error(`Failed to retrieve SSO access token for connection ${connection.id}: %s`, err)
 
             // Check if this is a reauth error that should be handled by showing SMUS-specific prompt
             if (err instanceof ToolkitError && err.code === 'InvalidConnection') {
@@ -1012,26 +1012,26 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the project credentials provider
      */
     public async getProjectCredentialProvider(projectId: string): Promise<ProjectRoleCredentialsProvider> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         if (!this.activeConnection) {
             throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
         }
 
-        logger.debug(`SMUS: Getting project provider for project ${projectId}`)
+        logger.debug(`Getting project provider for project ${projectId}`)
 
         // Check if we already have a cached provider for this project
         if (this.projectCredentialProvidersCache.has(projectId)) {
-            logger.debug('SMUS: Using cached project provider')
+            logger.debug('Using cached project provider')
             return this.projectCredentialProvidersCache.get(projectId)!
         }
 
-        logger.debug('SMUS: Creating new project provider')
+        logger.debug('Creating new project provider')
         // Create a new project provider and cache it
         const projectProvider = new ProjectRoleCredentialsProvider(this, projectId)
         this.projectCredentialProvidersCache.set(projectId, projectProvider)
 
-        logger.debug('SMUS: Cached new project provider')
+        logger.debug('Cached new project provider')
 
         return projectProvider
     }
@@ -1048,27 +1048,27 @@ export class SmusAuthenticationProvider {
         projectId: string,
         region: string
     ): Promise<ConnectionCredentialsProvider> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         if (!this.activeConnection) {
             throw new ToolkitError('No active SMUS connection available', { code: SmusErrorCodes.NoActiveConnection })
         }
 
         const cacheKey = `${this.getDomainId()}:${projectId}:${connectionId}`
-        logger.debug(`SMUS: Getting connection provider for connection ${connectionId}`)
+        logger.debug(`Getting connection provider for connection ${connectionId}`)
 
         // Check if we already have a cached provider for this connection
         if (this.connectionCredentialProvidersCache.has(cacheKey)) {
-            logger.debug('SMUS: Using cached connection provider')
+            logger.debug('Using cached connection provider')
             return this.connectionCredentialProvidersCache.get(cacheKey)!
         }
 
-        logger.debug('SMUS: Creating new connection provider')
+        logger.debug('Creating new connection provider')
         // Create a new connection provider and cache it
         const connectionProvider = new ConnectionCredentialsProvider(this, connectionId, projectId)
         this.connectionCredentialProvidersCache.set(cacheKey, connectionProvider)
 
-        logger.debug('SMUS: Cached new connection provider')
+        logger.debug('Cached new connection provider')
 
         return connectionProvider
     }
@@ -1123,11 +1123,11 @@ export class SmusAuthenticationProvider {
      * @throws ToolkitError if unable to retrieve account ID
      */
     public async getDomainAccountId(): Promise<string> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         // Return cached value if available
         if (this.cachedDomainAccountId) {
-            logger.debug('SMUS: Using cached domain account ID')
+            logger.debug('Using cached domain account ID')
             return this.cachedDomainAccountId
         }
 
@@ -1197,11 +1197,11 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the project's AWS account ID
      */
     public async getProjectAccountId(projectId: string): Promise<string> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         // Return cached value if available
         if (this.cachedProjectAccountIds.has(projectId)) {
-            logger.debug(`SMUS: Using cached project account ID for project ${projectId}`)
+            logger.debug(`Using cached project account ID for project ${projectId}`)
             return this.cachedProjectAccountIds.get(projectId)!
         }
 
@@ -1299,7 +1299,7 @@ export class SmusAuthenticationProvider {
      * @returns Promise resolving to the credentials provider
      */
     public async getDerCredentialsProvider(): Promise<any> {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         if (getContext('aws.smus.inSmusSpaceEnvironment')) {
             // When in SMUS space, DomainExecutionRoleCreds can be found in config file
@@ -1311,7 +1311,7 @@ export class SmusAuthenticationProvider {
 
                 if (profileConfig?.credential_process) {
                     // Normal SMUS domain: Use the profile with credential_process
-                    logger.debug('SMUS: Using DomainExecutionRoleCreds profile with credential_process')
+                    logger.debug('Using DomainExecutionRoleCreds profile with credential_process')
                     const credentials = fromIni({ profile: 'DomainExecutionRoleCreds' })
                     return convertToToolkitCredentialProvider(
                         async () => await credentials(),
@@ -1323,7 +1323,7 @@ export class SmusAuthenticationProvider {
                     // IAM-based domain with EcsContainer: Use ECS container credentials directly
                     // The environment has AWS_CONTAINER_CREDENTIALS_RELATIVE_URI set, so use fromContainerMetadata
                     // which properly handles the ECS credential endpoint
-                    logger.debug('SMUS: IAM-based domain detected, using ECS container credentials')
+                    logger.debug('IAM-based domain detected, using ECS container credentials')
                     const credentials = fromContainerMetadata({
                         timeout: 5000,
                         maxRetries: 3,
@@ -1348,7 +1348,7 @@ export class SmusAuthenticationProvider {
                     )
                 }
             } catch (error) {
-                logger.error('SMUS: Failed to load config file, falling back to default credential chain: %s', error)
+                logger.error('Failed to load config file, falling back to default credential chain: %s', error)
                 const credentials = fromNodeProviderChain()
                 return convertToToolkitCredentialProvider(
                     async () => await credentials(),
@@ -1374,15 +1374,15 @@ export class SmusAuthenticationProvider {
         // Create a cache key based on the connection details
         const cacheKey = `${connection.ssoRegion}:${connection.domainId}`
 
-        logger.debug(`SMUS: Getting credentials provider for cache key: ${cacheKey}`)
+        logger.debug(`Getting credentials provider for cache key: ${cacheKey}`)
 
         // Check if we already have a cached provider
         if (this.credentialsProviderCache.has(cacheKey)) {
-            logger.debug('SMUS: Using cached credentials provider')
+            logger.debug('Using cached credentials provider')
             return this.credentialsProviderCache.get(cacheKey)
         }
 
-        logger.debug('SMUS: Creating new credentials provider')
+        logger.debug('Creating new credentials provider')
 
         // Create a new provider and cache it
         const provider = new DomainExecRoleCredentialsProvider(
@@ -1393,7 +1393,7 @@ export class SmusAuthenticationProvider {
         )
 
         this.credentialsProviderCache.set(cacheKey, provider)
-        logger.debug('SMUS: Cached new credentials provider')
+        logger.debug('Cached new credentials provider')
 
         return provider
     }
@@ -1403,16 +1403,16 @@ export class SmusAuthenticationProvider {
      * Used during connection changes or logout
      */
     private async invalidateAllCredentialsInCache(): Promise<void> {
-        const logger = getLogger()
-        logger.debug('SMUS: Invalidating all cached credentials')
+        const logger = getLogger('smus')
+        logger.debug('Invalidating all cached credentials')
 
         // Clear all cached DER providers and their internal credentials
         for (const [cacheKey, provider] of this.credentialsProviderCache.entries()) {
             try {
                 provider.invalidate() // This will clear the provider's internal cache
-                logger.debug(`SMUS: Invalidated credentials for cache key: ${cacheKey}`)
+                logger.debug(`Invalidated credentials for cache key: ${cacheKey}`)
             } catch (err) {
-                logger.warn(`SMUS: Failed to invalidate credentials for cache key ${cacheKey}: %s`, err)
+                logger.warn(`Failed to invalidate credentials for cache key ${cacheKey}: %s`, err)
             }
         }
 
@@ -1423,34 +1423,34 @@ export class SmusAuthenticationProvider {
         for (const [cacheKey, connectionProvider] of this.connectionCredentialProvidersCache.entries()) {
             try {
                 connectionProvider.invalidate() // This will clear the connection provider's internal cache
-                logger.debug(`SMUS: Invalidated connection credentials for cache key: ${cacheKey}`)
+                logger.debug(`Invalidated connection credentials for cache key: ${cacheKey}`)
             } catch (err) {
-                logger.warn(`SMUS: Failed to invalidate connection credentials for cache key ${cacheKey}: %s`, err)
+                logger.warn(`Failed to invalidate connection credentials for cache key ${cacheKey}: %s`, err)
             }
         }
 
         // Clear cached domain account ID
         this.cachedDomainAccountId = undefined
-        logger.debug('SMUS: Cleared cached domain account ID')
+        logger.debug('Cleared cached domain account ID')
 
         // Clear cached project account IDs
         this.cachedProjectAccountIds.clear()
-        logger.debug('SMUS: Cleared cached project account IDs')
+        logger.debug('Cleared cached project account IDs')
     }
 
     /**
      * Invalidates all project cached credentials
      */
     public async invalidateAllProjectCredentialsInCache(): Promise<void> {
-        const logger = getLogger()
-        logger.debug('SMUS: Invalidating all cached project credentials')
+        const logger = getLogger('smus')
+        logger.debug('Invalidating all cached project credentials')
 
         for (const [projectId, projectProvider] of this.projectCredentialProvidersCache.entries()) {
             try {
                 projectProvider.invalidate() // This will clear the project provider's internal cache
-                logger.debug(`SMUS: Invalidated project credentials for project: ${projectId}`)
+                logger.debug(`Invalidated project credentials for project: ${projectId}`)
             } catch (err) {
-                logger.warn(`SMUS: Failed to invalidate project credentials for project ${projectId}: %s`, err)
+                logger.warn(`Failed to invalidate project credentials for project ${projectId}: %s`, err)
             }
         }
     }
@@ -1459,7 +1459,7 @@ export class SmusAuthenticationProvider {
      * Stops SSH credential refresh and cleans up resources
      */
     public dispose(): void {
-        this.logger.debug('SMUS Auth: Disposing authentication provider and all cached providers')
+        this.logger.debug('Disposing authentication provider and all cached providers')
 
         // Dispose all project providers
         for (const provider of this.projectCredentialProvidersCache.values()) {
@@ -1493,7 +1493,7 @@ export class SmusAuthenticationProvider {
         DataZoneClient.dispose()
         DataZoneCustomClientHelper.dispose()
 
-        this.logger.debug('SMUS Auth: Successfully disposed authentication provider')
+        this.logger.debug('Successfully disposed authentication provider')
     }
 
     static #instance: SmusAuthenticationProvider | undefined

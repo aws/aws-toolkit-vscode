@@ -33,7 +33,7 @@ const projectPickerPlaceholder = 'Select project'
 export class SageMakerUnifiedStudioRootNode implements TreeNode {
     public readonly id = 'smusRootNode'
     public readonly resource = this
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private readonly projectNode: SageMakerUnifiedStudioProjectNode
     private readonly authInfoNode: SageMakerUnifiedStudioAuthInfoNode
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
@@ -162,7 +162,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         try {
             // Check if the connection is valid using the authentication provider
             const result = this.authProvider.isConnectionValid()
-            this.logger.debug(`SMUS Root Node: Authentication check result: ${result}`)
+            this.logger.debug(`Authentication check result: ${result}`)
             return result
         } catch (err) {
             this.logger.debug('Authentication check failed: %s', (err as Error).message)
@@ -183,13 +183,13 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             const hasExpiredConnection = activeConnection && !isConnectionValid
 
             if (hasExpiredConnection) {
-                this.logger.debug('SMUS Root Node: Connection is expired')
+                this.logger.debug('Connection is expired')
                 // Only show reauthentication prompt for SSO connections, not IAM connections
                 if (isSmusSsoConnection(activeConnection)) {
-                    this.logger.debug('SMUS Root Node: Showing reauthentication prompt for SSO connection')
+                    this.logger.debug('Showing reauthentication prompt for SSO connection')
                     void this.authProvider.showReauthenticationPrompt(activeConnection)
                 } else {
-                    this.logger.debug('SMUS Root Node: Skipping reauthentication prompt for non-SSO connection')
+                    this.logger.debug('Skipping reauthentication prompt for non-SSO connection')
                 }
                 return true
             }
@@ -205,7 +205,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
  * Command to open the SageMaker Unified Studio documentation
  */
 export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () => async () => {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     try {
         // Open the SageMaker Unified Studio documentation
         await vscode.env.openExternal(vscode.Uri.parse('https://aws.amazon.com/sagemaker/unified-studio/'))
@@ -232,7 +232,7 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
  * Command to login to SageMaker Unified Studio
  */
 export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vscode.ExtensionContext) => async () => {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     return telemetry.smus_login.run(async (span) => {
         try {
             // Get the authentication provider instance
@@ -246,7 +246,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
 
             // Check for preferred authentication method
             const preferredMethod = SmusAuthenticationPreferencesManager.getPreferredMethod(context)
-            logger.debug(`SMUS Auth: Retrieved preferred method: ${preferredMethod}`)
+            logger.debug(`Retrieved preferred method: ${preferredMethod}`)
 
             let selectedMethod: SmusAuthenticationMethod | undefined = preferredMethod
             let authCompleted = false
@@ -255,16 +255,16 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
             while (!authCompleted) {
                 // Check if we should skip method selection (user has a remembered preference)
                 if (selectedMethod) {
-                    logger.debug(`SMUS Auth: Using authentication method: ${selectedMethod}`)
+                    logger.debug(`Using authentication method: ${selectedMethod}`)
                 } else {
                     // Show authentication method selection dialog
-                    logger.debug('SMUS Auth: Showing authentication method selection dialog')
+                    logger.debug('Showing authentication method selection dialog')
                     const methodSelection = await SmusAuthenticationMethodSelector.showAuthenticationMethodSelection()
                     selectedMethod = methodSelection.method
                 }
 
                 // Handle the selected authentication method
-                logger.debug(`SMUS Auth: Processing authentication method: ${selectedMethod}`)
+                logger.debug(`Processing authentication method: ${selectedMethod}`)
                 if (selectedMethod === 'sso') {
                     // SSO Authentication - use SSO flow
                     const ssoResult = await SmusAuthenticationOrchestrator.handleSsoAuthentication(
@@ -354,7 +354,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
 export const smusSignOutCommand = Commands.declare(
     'aws.smus.signOut',
     (context: vscode.ExtensionContext) => async () => {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         return telemetry.smus_signOut.run(async (span) => {
             try {
                 // Get the authentication provider instance
@@ -454,7 +454,7 @@ async function fetchProjectsByIamProfile(
     authProvider: SmusAuthenticationProvider,
     datazoneClient: DataZoneClient
 ): Promise<DataZoneProject[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Get credentials provider for IAM profile
     const activeConnection = authProvider.activeConnection
@@ -515,7 +515,7 @@ async function fetchProjectsByIamProfile(
 }
 
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return telemetry.smus_accessProject.run(async (span) => {
         try {

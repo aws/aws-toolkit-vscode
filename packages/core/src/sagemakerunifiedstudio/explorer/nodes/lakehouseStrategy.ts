@@ -43,7 +43,7 @@ import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 export class LakehouseNode implements TreeNode {
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         public readonly data: NodeData,
@@ -130,7 +130,7 @@ export function createLakehouseConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Create Glue clients
     const clientStore = ConnectionClientStore.getInstance()
@@ -367,7 +367,7 @@ function createCatalogNode(
     parent: LakehouseNode,
     isParent: boolean = false
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {
@@ -428,7 +428,7 @@ function createDatabaseNode(
     glueClient: GlueClient,
     parent: LakehouseNode
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {
@@ -501,7 +501,7 @@ function createTableNode(
     glueClient: GlueClient,
     parent: LakehouseNode
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {

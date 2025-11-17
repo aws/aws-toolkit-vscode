@@ -30,7 +30,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     private readonly sagemakerSpaceNodes: Map<string, SagemakerUnifiedStudioSpaceNode> = new Map()
     private spaceApps: Map<string, SagemakerSpaceApp> = new Map()
     private domainUserProfiles: Map<string, UserProfileMetadata> = new Map()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
@@ -200,7 +200,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             throw new Error('No active connection found to get SageMaker domain ID')
         }
 
-        this.logger.debug('SMUS: Getting DataZone client instance')
+        this.logger.debug('Getting DataZone client instance')
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
@@ -214,7 +214,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     if (!resource.value) {
                         throw new Error('SageMaker domain ID not found in tooling environment')
                     }
-                    getLogger().debug(`Found SageMaker domain ID: ${resource.value}`)
+                    getLogger('smus').debug(`Found SageMaker domain ID: ${resource.value}`)
                     return resource.value
                 }
             }
@@ -253,7 +253,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             // Determine if this is an IAM user or role session based on ARN format
             if (SmusUtils.isIamUserArn(callerArn)) {
                 // For IAM users, use GetUserProfile API directly via DataZoneClient
-                this.logger.debug(`SMUS: Detected IAM user, using GetUserProfile API with ARN: ${callerArn}`)
+                this.logger.debug(`Detected IAM user, using GetUserProfile API with ARN: ${callerArn}`)
 
                 const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
                 const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
@@ -265,7 +265,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     throw new ToolkitError('No user profile found for IAM user')
                 }
 
-                this.logger.debug(`SMUS: Retrieved user profile ID for IAM user: ${userProfileId}`)
+                this.logger.debug(`Retrieved user profile ID for IAM user: ${userProfileId}`)
                 return userProfileId
             } else {
                 // For IAM role sessions, use SearchUserProfile API via DataZoneCustomClientHelper
@@ -295,12 +295,12 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     assumedRoleArn
                 )
 
-                this.logger.debug(`SMUS: Retrieved user profile ID for role session: ${userProfileId}`)
+                this.logger.debug(`Retrieved user profile ID for role session: ${userProfileId}`)
                 return userProfileId
             }
         } catch (err) {
             const error = err as Error
-            this.logger.error(`SMUS: Failed to retrieve user profile information: ${error.message}`)
+            this.logger.error(`Failed to retrieve user profile information: ${error.message}`)
 
             if (error.name === 'AccessDeniedException') {
                 throw new Error("You don't have permissions to access this resource. Please contact your administrator")
@@ -328,7 +328,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         )
 
         // Filter spaceApps to only show spaces owned by current user
-        this.logger.debug(`SMUS: Filtering spaces for user profile ID: ${userProfileId}`)
+        this.logger.debug(`Filtering spaces for user profile ID: ${userProfileId}`)
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName

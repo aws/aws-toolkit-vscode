@@ -24,12 +24,12 @@ export function adaptConnectionCredentialsProvider(
 
         // Override the get method to use the connection credentials provider
         credentials.get = (callback) => {
-            getLogger().debug('Attempting to get credentials from ConnectionCredentialsProvider')
+            getLogger('smus').debug('Attempting to get credentials from ConnectionCredentialsProvider')
 
             connectionCredentialsProvider
                 .getCredentials()
                 .then((creds) => {
-                    getLogger().debug('Successfully got credentials')
+                    getLogger('smus').debug('Successfully got credentials')
 
                     credentials.accessKeyId = creds.accessKeyId as string
                     credentials.secretAccessKey = creds.secretAccessKey as string
@@ -38,7 +38,7 @@ export function adaptConnectionCredentialsProvider(
                     callback()
                 })
                 .catch((err) => {
-                    getLogger().debug(`Failed to get credentials: ${err}`)
+                    getLogger('smus').debug(`Failed to get credentials: ${err}`)
 
                     callback(err)
                 })

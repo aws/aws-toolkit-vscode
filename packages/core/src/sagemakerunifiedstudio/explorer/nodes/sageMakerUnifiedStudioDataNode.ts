@@ -33,7 +33,7 @@ import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 export class SageMakerUnifiedStudioDataNode implements TreeNode {
     public readonly id = 'smusDataExplorer'
     public readonly resource = {}
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private childrenNodes: TreeNode[] | undefined
     private readonly authProvider: SmusAuthenticationProvider
 

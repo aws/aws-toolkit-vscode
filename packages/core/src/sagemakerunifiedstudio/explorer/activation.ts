@@ -27,14 +27,14 @@ import { handleCredExpiredError } from '../shared/credentialExpiryHandler'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
-    const logger = getLogger()
-    logger.debug('SMUS: Initializing authentication provider')
+    const logger = getLogger('smus')
+    logger.debug('Initializing authentication provider')
     // Create the auth provider instance (this will trigger restore() in the constructor)
     const smusAuthProvider = SmusAuthenticationProvider.fromContext()
     await smusAuthProvider.restore()
     // Set initial auth context after restore
     void setSmusConnectedContext(smusAuthProvider.isConnected())
-    logger.debug('SMUS: Authentication provider initialized')
+    logger.debug('Authentication provider initialized')
 
     // Create the SMUS projects tree view
     const smusRootNode = new SageMakerUnifiedStudioRootNode(smusAuthProvider, extensionContext)
@@ -139,7 +139,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
                     // Show the detailed error message to the user
                     void vscode.window.showErrorMessage(`${errorMessage}`)
-                    logger.error('SMUS: Reauthentication failed: %O', error)
+                    logger.error('Reauthentication failed: %O', error)
                 }
             }
         }),
