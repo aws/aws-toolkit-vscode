@@ -36,7 +36,7 @@ export const InstanceTypeInsufficientMemoryMessage = (
     chosenInstanceType: string,
     recommendedInstanceType: string
 ) => {
-    return `Unable to create app for [${spaceName}] because instanceType [${chosenInstanceType}] is not supported for remote access enabled spaces. Use instanceType with at least 8 GiB memory. Would you like to start your space with instanceType [${recommendedInstanceType}]?`
+    return `[${chosenInstanceType}] does not support remote access. Use an instanceType with at least 8 GiB memory. Would you like to start your space with instanceType [${recommendedInstanceType}]?`
 }
 
 export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
@@ -45,3 +45,11 @@ export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
 
 export const RemoteAccessRequiredMessage =
     'This space requires remote access to be enabled.\nWould you like to restart the space and connect?\nAny unsaved work will be lost.'
+
+export const SmusDeeplinkSessionExpiredError = {
+    title: 'Session Disconnected',
+    message:
+        'Your SageMaker Unified Studio session has been disconnected. Select a local (non-remote) VS Code window and use the SageMaker Unified Studio portal to connect again.',
+    code: 'SMUS_SESSION_DISCONNECTED',
+    shortMessage: 'Session disconnected, re-connect from SageMaker Unified Studio portal.',
+} as const

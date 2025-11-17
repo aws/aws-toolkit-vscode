@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.84.0-SNAPSHOT",
+    "version": "3.85.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1747,12 +1747,12 @@
                 {
                     "command": "aws.sagemaker.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceNode)$/"
+                    "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceStoppedNode)$/"
                 },
                 {
                     "command": "aws.smus.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|smusSpaceNode)$/"
+                    "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceStoppedNode)$/"
                 },
                 {
                     "command": "_aws.toolkit.notifications.dismiss",
