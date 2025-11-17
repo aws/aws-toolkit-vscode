@@ -48,7 +48,7 @@ export function getIoTSTClientWithAgent(region: string): IoTSecureTunnelingClien
     return globals.sdkClientBuilderV3.createAwsService({
         serviceClient: IoTSecureTunnelingClient,
         clientOptions: {
-            customUserAgent: [[customUserAgentName, customUserAgentVersion]],
+            customUserAgent: getLambdaDebugUserAgentPairs(),
             region,
         },
         userAgent: false,
