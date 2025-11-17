@@ -301,7 +301,7 @@ async function handleRunningSpaceWithDisabledAccess(
 
     const confirmed = await showConfirmationMessage({
         prompt,
-        confirm: 'Restart and Connect',
+        confirm: 'Restart Space and Connect',
         cancel: 'Cancel',
         type: 'warning',
     })

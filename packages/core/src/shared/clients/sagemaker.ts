@@ -180,7 +180,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                         instanceType,
                         InstanceTypeInsufficientMemory[instanceType]
                     ),
-                    confirm: 'Restart and Connect',
+                    confirm: 'Restart Space and Connect',
                     cancel: 'Cancel',
                     type: 'warning',
                 })
