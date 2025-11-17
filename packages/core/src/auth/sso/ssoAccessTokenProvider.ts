@@ -107,8 +107,6 @@ export abstract class SsoAccessTokenProvider {
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
-        getLogger().warn(`getToken: CALLED for ${this.tokenCacheKey}`)
-
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(
@@ -130,7 +128,7 @@ export abstract class SsoAccessTokenProvider {
         )
 
         if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
-            getLogger().info(`getToken: refresh token available, calling refreshToken() (key=${this.tokenCacheKey})`)
+            getLogger().debug(`getToken: refresh token available, calling refreshToken() (key=${this.tokenCacheKey})`)
             // Check if a refresh is already in progress for this token
             const existingRefresh = SsoAccessTokenProvider.refreshPromises.get(this.tokenCacheKey)
             if (existingRefresh) {
@@ -210,21 +208,11 @@ export abstract class SsoAccessTokenProvider {
         }
 
         try {
-            // TEST: Log when refresh starts WITH STACK TRACE
-            const stack = new Error().stack
-                ?.split('\n')
-                .slice(2, 12) // Skip first 2 lines (Error + refreshToken itself), take next 10
-                .map((line) => line.trim())
-                .join('\n    ')
-            getLogger().warn(
-                `refreshToken: Starting OIDC API call for ${this.tokenCacheKey}\n  CALL STACK:\n    ${stack}`
-            )
-
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
             getLogger().debug(`refreshToken: calling OIDC createToken API (key=${this.tokenCacheKey})`)
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
 
-            getLogger().warn(`refreshToken: got response, now saving to cache...`)
+            getLogger().debug(`refreshToken: got response, now saving to cache...`)
 
             const refreshed = this.formatToken(response, registration)
             getLogger().debug(`refreshToken: saving refreshed token to cache (key=${this.tokenCacheKey})`)
