@@ -18,7 +18,8 @@ import { SmusAuthenticationProvider } from '../auth/providers/smusAuthentication
 import { getLogger } from '../../shared/logger/logger'
 import { getContext } from '../../shared/vscode/setContext'
 import { ConnectionCredentialsProvider } from '../auth/providers/connectionCredentialsProvider'
-import { DataZoneConnection, DataZoneClient } from './client/datazoneClient'
+import { DataZoneConnection } from './client/datazoneClient'
+import { createDZClientBaseOnDomainMode } from '../explorer/nodes/utils'
 
 /**
  * Records space telemetry
@@ -27,7 +28,7 @@ export async function recordSpaceTelemetry(
     span: Span<SmusOpenRemoteConnection> | Span<SmusStopSpace>,
     node: SagemakerUnifiedStudioSpaceNode
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const parent = node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
@@ -43,15 +44,16 @@ export async function recordSpaceTelemetry(
             projectAccountId = await authProvider.getProjectAccountId(projectId)
 
             // Get project region from tooling environment
-            const dzClient = await DataZoneClient.getInstance(authProvider)
+            const dzClient = await createDZClientBaseOnDomainMode(authProvider)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
             projectRegion = toolingEnv.awsAccountRegion
         }
 
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusSpaceKey: node.resource.DomainSpaceKey,
             smusDomainRegion: node.resource.regionCode,
-            smusDomainId: parent?.getAuthProvider()?.activeConnection?.domainId,
+            smusDomainId: parent?.getAuthProvider()?.getDomainId(),
             smusDomainAccountId: accountId,
             smusProjectId: projectId,
             smusProjectAccountId: projectAccountId,
@@ -71,9 +73,10 @@ export async function recordAuthTelemetry(
     domainId: string | undefined,
     region: string | undefined
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     span.record({
+        smusAuthMode: authProvider.activeConnection?.type,
         smusDomainId: domainId,
         awsRegion: region,
     })
@@ -101,12 +104,15 @@ export async function recordDataConnectionTelemetry(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+        const authProvider = SmusAuthenticationProvider.fromContext()
         const accountId = await connectionCredentialsProvider.getDomainAccountId()
+
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
             smusDomainId: connection.domainId,
             smusDomainAccountId: accountId,
