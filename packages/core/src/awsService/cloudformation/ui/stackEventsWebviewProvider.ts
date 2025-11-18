@@ -57,7 +57,17 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         this.allEvents = []
         this.currentPage = 0
         this.nextToken = undefined
-        await this.loadEvents()
+
+        try {
+            const result = await this.client.sendRequest(GetStackEventsRequest, {
+                stackName: this.stackName,
+            })
+            this.allEvents = result.events
+            this.nextToken = result.nextToken
+        } catch (error) {
+            this.renderError(`Failed to load events: ${extractErrorMessage(error)}`)
+        }
+
         this.render()
         this.startAutoRefresh()
     }
@@ -99,7 +109,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     }
 
     private async loadEvents(): Promise<void> {
-        if (!this.stackName) {
+        if (!this.stackName || !this.nextToken) {
             return
         }
 
@@ -128,10 +138,12 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             })
 
             if (result.gapDetected) {
-                this.allEvents = []
+                const initialResult = await this.client.sendRequest(GetStackEventsRequest, {
+                    stackName: this.stackName,
+                })
+                this.allEvents = initialResult.events
+                this.nextToken = initialResult.nextToken
                 this.currentPage = 0
-                this.nextToken = undefined
-                await this.loadEvents()
                 this.render('Event history reloaded due to high activity')
             } else if (result.events.length > 0) {
                 this.allEvents.unshift(...result.events)
