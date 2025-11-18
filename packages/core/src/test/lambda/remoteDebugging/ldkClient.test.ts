@@ -23,6 +23,105 @@ import {
     TunnelStatus,
 } from '@aws-sdk/client-iotsecuretunneling'
 import { AwsStub, mockClient } from 'aws-sdk-client-mock'
+import * as http from 'http'
+import { AWSClientBuilderV3 } from '../../../shared/awsClientBuilderV3'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { Any } from '../../../shared/utilities/typeConstructors'
+
+describe('Remote Debugging User-Agent test', () => {
+    let sandbox: sinon.SinonSandbox
+    let ldkClient: LdkClient
+    let mockServer: http.Server
+    let capturedHeaders: http.IncomingHttpHeaders | undefined
+    let sdkBuilderTmp: Any
+
+    before(async () => {
+        sdkBuilderTmp = globals.sdkClientBuilderV3
+
+        mockServer = http.createServer((req, res) => {
+            capturedHeaders = req.headers
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end()
+        })
+
+        // Start the mock server
+        await new Promise<void>((resolve) => {
+            mockServer.listen(0, '127.0.0.1', () => {
+                resolve()
+            })
+        })
+
+        const port = (mockServer.address() as any).port
+        globals.sdkClientBuilderV3 = new AWSClientBuilderV3(
+            new FakeAwsContext({
+                contextCredentials: {
+                    endpointUrl: `http://127.0.0.1:${port}`,
+                    credentials: undefined as any,
+                    credentialsId: '',
+                },
+            })
+        )
+    })
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        sandbox.stub(telemetryUtil, 'getClientId').returns('test-client-id')
+        capturedHeaders = undefined
+
+        ldkClient = LdkClient.instance
+        ldkClient.dispose()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    after(async () => {
+        globals.sdkClientBuilderV3 = sdkBuilderTmp
+        // Close the server
+        await new Promise<void>((resolve) => {
+            mockServer.close(() => resolve())
+        })
+    })
+
+    for (const scenario of ['Lambda', 'IoT']) {
+        it(`should send ${scenario} request with correct User-Agent header to mock server`, async () => {
+            try {
+                switch (scenario) {
+                    case 'Lambda':
+                        await ldkClient.getFunctionDetail('arn:aws:lambda:us-east-1:123456789012:function:testFunction')
+                        break
+                    case 'IoT':
+                        await ldkClient.createOrReuseTunnel('us-east-1')
+                        break
+                }
+            } catch (e) {
+                // Ignore errors from the mock response, we just want to capture headers
+            }
+
+            // Verify the User-Agent header was sent correctly
+            assert(capturedHeaders, 'Should have captured request headers')
+            const userAgent = capturedHeaders!['user-agent'] || capturedHeaders!['User-Agent']
+            assert(userAgent, 'Should have User-Agent header')
+
+            // The User-Agent should contain our custom user agent pairs
+            assert(
+                userAgent.includes('LAMBDA-DEBUG/1.0.0'),
+                `User-Agent should include LAMBDA-DEBUG/1.0.0, got: ${userAgent}`
+            )
+            // Check for presence of other user agent components without checking specific values
+            assert(
+                userAgent.includes('AWS-Toolkit-For-VSCode/'),
+                `User-Agent should include AWS-Toolkit-For-VSCode, got: ${userAgent}`
+            )
+            assert(
+                userAgent.includes('Visual-Studio-Code/'),
+                `User-Agent should include Visual-Studio-Code, got: ${userAgent}`
+            )
+            assert(userAgent.includes('ClientId/'), `User-Agent should include ClientId, got: ${userAgent}`)
+        })
+    }
+})
 
 describe('LdkClient', () => {
     let sandbox: sinon.SinonSandbox
