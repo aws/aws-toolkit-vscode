@@ -36,6 +36,8 @@ import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
 import { oneSecond } from '../../shared/datetime'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 
 export class OidcClient {
     public constructor(
@@ -86,14 +88,37 @@ export class OidcClient {
     }
 
     public async createToken(request: CreateTokenRequest) {
+        const startTime = this.clock.Date.now()
+        const grantType = request.grantType
+
         let response
         try {
             response = await this.client.createToken(request as CreateTokenRequest)
         } catch (err) {
+            telemetry.auth_ssoTokenOperation.emit({
+                result: 'Failed',
+                grantType: grantType ?? 'unknown',
+                duration: this.clock.Date.now() - startTime,
+                reason: getTelemetryReason(err),
+                reasonDesc: getTelemetryReasonDesc(err),
+            })
+
+            getLogger().error(`sso-oidc: createToken failed (grantType=${grantType}): ${err}`)
+
             const newError = AwsClientResponseError.instanceIf(err)
             throw newError
         }
         assertHasProps(response, 'accessToken', 'expiresIn')
+
+        telemetry.auth_ssoTokenOperation.emit({
+            result: 'Succeeded',
+            grantType: grantType ?? 'unknown',
+            duration: this.clock.Date.now() - startTime,
+        })
+
+        getLogger().debug(
+            `sso-oidc: createToken succeeded (grantType=${grantType}, requestId=${response.$metadata.requestId})`
+        )
 
         return {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
