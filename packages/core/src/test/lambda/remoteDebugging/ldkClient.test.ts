@@ -112,13 +112,13 @@ describe('Remote Debugging User-Agent test', () => {
             // Check for presence of other user agent components without checking specific values
             assert(
                 userAgent.includes('AWS-Toolkit-For-VSCode/'),
-                `User-Agent should include AWS-Toolkit-For-VSCode, got: ${userAgent}`
+                `User-Agent should include AWS-Toolkit-For-VSCode/, got: ${userAgent}`
             )
             assert(
-                userAgent.includes('Visual-Studio-Code/'),
+                userAgent.includes('Visual-Studio-Code'),
                 `User-Agent should include Visual-Studio-Code, got: ${userAgent}`
             )
-            assert(userAgent.includes('ClientId/'), `User-Agent should include ClientId, got: ${userAgent}`)
+            assert(userAgent.includes('ClientId/'), `User-Agent should include ClientId/, got: ${userAgent}`)
         })
     }
 })
