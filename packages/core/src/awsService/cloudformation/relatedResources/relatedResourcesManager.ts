@@ -11,13 +11,14 @@ import { insertRelatedResources } from './relatedResourcesApi'
 import { RelatedResourcesCodeAction } from './relatedResourcesProtocol'
 import { showErrorMessage } from '../ui/message'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
+import { ResourcesManager } from '../resources/resourcesManager'
 
 export class RelatedResourcesManager {
     constructor(
         private client: LanguageClient,
         private selector: RelatedResourceSelector,
         private resourceSelector: ResourceSelector,
-        private importResourceStates: (resourceNodes: ResourceNode[], parentResourceType?: string) => Promise<void>
+        private resourcesManager: ResourcesManager
     ) {}
 
     async addRelatedResources(preSelectedResourceType?: string): Promise<void> {
@@ -108,7 +109,11 @@ export class RelatedResourcesManager {
         relatedResourceTypes: string[],
         selectedParentResourceType: string
     ): Promise<void> {
-        const selections = await this.resourceSelector.selectResources(true, relatedResourceTypes)
+        const selections = await this.resourceSelector.selectResources(true, relatedResourceTypes, {
+            getCached: (type) => this.resourcesManager.get().find((r) => r.typeName === type),
+            loadMore: (type, token) => this.resourcesManager.loadMoreResources(type, token),
+            search: (type, id) => this.resourcesManager.searchResource(type, id),
+        })
         if (selections.length === 0) {
             return
         }
@@ -118,6 +123,6 @@ export class RelatedResourcesManager {
             resourceIdentifier: selection.resourceIdentifier,
         })) as ResourceNode[]
 
-        await this.importResourceStates(resourceNodes, selectedParentResourceType)
+        await this.resourcesManager.importResourceStates(resourceNodes, selectedParentResourceType)
     }
 }

@@ -57,13 +57,33 @@ export function validateChangeSetName(value: string): string | undefined {
 }
 
 export function validateParameterValue(input: string, param: TemplateParameter): string | undefined {
-    if (!input && !param.Default) {
-        return `Parameter ${param.name} is required`
-    }
-
     const actualValue = input ?? param.Default?.toString() ?? ''
 
-    if (param.AllowedValues && !param.AllowedValues.includes(actualValue)) {
+    // Handle CommaDelimitedList validation
+    if (param.Type === 'CommaDelimitedList') {
+        const items = actualValue.split(',').map((s) => s.trim())
+
+        if (param.AllowedValues) {
+            const allowedStrings = param.AllowedValues.map(String)
+            const invalidItems = items.filter((item) => !allowedStrings.includes(item))
+            if (invalidItems.length > 0) {
+                return `Invalid values: ${invalidItems.join(', ')}. Must be one of: ${param.AllowedValues.join(', ')}`
+            }
+        }
+
+        if (param.AllowedPattern) {
+            const pattern = new RegExp(param.AllowedPattern)
+            const invalidItems = items.filter((item) => !pattern.test(item))
+            if (invalidItems.length > 0) {
+                return `Values must match pattern: ${param.AllowedPattern}`
+            }
+        }
+
+        return undefined
+    }
+
+    // Handle other types
+    if (param.AllowedValues && !param.AllowedValues.map(String).includes(actualValue)) {
         return `Value must be one of: ${param.AllowedValues.join(', ')}`
     }
 

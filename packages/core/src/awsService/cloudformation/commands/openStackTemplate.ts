@@ -8,6 +8,7 @@ import { commands, window, workspace, ViewColumn, Position, Range, Selection, Pr
 import { LanguageClient } from 'vscode-languageclient/node'
 import { RequestType } from 'vscode-languageserver-protocol'
 import { commandKey, formatMessage } from '../utils'
+import { handleLspError } from '../utils/onlineErrorHandler'
 import { getLogger } from '../../../shared/logger/logger'
 
 interface GetStackTemplateParams {
@@ -81,26 +82,13 @@ export function openStackTemplateCommand(client: LanguageClient) {
 
                             return response
                         } catch (error) {
-                            const errorMessage = error instanceof Error ? error.message : String(error)
-
-                            // Log technical details for debugging
                             getLogger().error('Failed to get stack template: %O', {
                                 stackName,
                                 primaryIdentifier,
-                                error: errorMessage,
+                                error: error instanceof Error ? error.message : String(error),
                             })
 
-                            // Show user-friendly error message
-                            let userMessage = 'Failed to open stack template'
-                            if (errorMessage.includes('does not exist')) {
-                                userMessage = `Stack "${stackName}" not found`
-                            } else if (errorMessage.includes('Access Denied') || errorMessage.includes('Forbidden')) {
-                                userMessage = `Access denied to stack "${stackName}"`
-                            } else if (errorMessage.includes('Resource with PhysicalResourceId')) {
-                                userMessage = 'Resource not found in stack'
-                            }
-
-                            void window.showErrorMessage(formatMessage(userMessage))
+                            await handleLspError(error, `Failed to open template for stack: ${stackName}`)
                         }
                     }
                 )

@@ -5,7 +5,7 @@
 
 import { TreeItemCollapsibleState, ThemeIcon } from 'vscode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ResourceList } from '../../cfn/resourceRequestTypes'
+import { ResourceList } from '../../resources/resourceRequestTypes'
 import { ResourceNode } from './resourceNode'
 import { commandKey } from '../../utils'
 import { ResourcesManager } from '../../resources/resourcesManager'

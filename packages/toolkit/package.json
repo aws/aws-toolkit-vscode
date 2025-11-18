@@ -72,6 +72,7 @@
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts unit dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
+        "testE2ECfn": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/cloudformation/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testInteg": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts integration dist/test/integ/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "package": "ts-node ../../scripts/package.ts",
         "lint": "true",
@@ -1496,6 +1497,10 @@
                 {
                     "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
                     "when": "false"
+                },
+                {
+                    "command": "aws.cloudformation.server.restartServer",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1559,7 +1564,7 @@
             ],
             "editor/context": [
                 {
-                    "command": "aws.cloudformation.api.rerunLastValidation",
+                    "command": "aws.cloudformation.api.rerunValidateAndDeploy",
                     "when": "resourceExtname == .yaml || resourceExtname == .json || resourceExtname == .yml || resourceExtname == .txt || resourceExtname == .cfn || resourceExtname == .template",
                     "group": "1_cloudformation@1"
                 }
@@ -2659,16 +2664,6 @@
                     "group": "1@2"
                 },
                 {
-                    "command": "aws.cloudformation.api.validateDeployment",
-                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
-                    "group": "inline@1"
-                },
-                {
-                    "command": "aws.cloudformation.api.validateDeployment",
-                    "when": "view == aws.cloudformation && (viewItem == stackSection || viewItem == stackSectionWithMore) && !aws.cloudformation.refreshingStacks",
-                    "group": "1@1"
-                },
-                {
                     "command": "aws.cloudformation.api.loadMoreStacks",
                     "when": "view == aws.cloudformation && viewItem == stackSectionWithMore && !aws.cloudformation.loadingStacks",
                     "group": "1@1"
@@ -2679,19 +2674,9 @@
                     "group": "1@2"
                 },
                 {
-                    "command": "aws.cloudformation.api.validateDeployment",
-                    "when": "view == aws.cloudformation && (viewItem == stack)",
-                    "group": "inline@1"
-                },
-                {
                     "command": "aws.cloudformation.api.deployTemplate",
                     "when": "view == aws.cloudformation && (viewItem == stack)",
                     "group": "inline@2"
-                },
-                {
-                    "command": "aws.cloudformation.api.validateDeployment",
-                    "when": "view == aws.cloudformation && (viewItem == stack)",
-                    "group": "1@1"
                 },
                 {
                     "command": "aws.cloudformation.api.deployTemplate",
@@ -2785,7 +2770,8 @@
                 },
                 {
                     "command": "aws.cloudformation.removeResourceType",
-                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore)"
+                    "when": "view == aws.cloudformation && (viewItem == resourceType || viewItem == resourceTypeWithMore)",
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.cloudformation.api.addResourceTypes",
@@ -4870,13 +4856,13 @@
             },
             {
                 "command": "aws.cloudformation.api.addResourceTypes",
-                "title": "Add Resource Types",
+                "title": "Add Resource Types to List",
                 "icon": "$(add)",
                 "category": "AWS CloudFormation"
             },
             {
                 "command": "aws.cloudformation.removeResourceType",
-                "title": "Remove Resource Type",
+                "title": "Remove Resource Type from List",
                 "category": "AWS CloudFormation"
             },
             {
@@ -4927,26 +4913,20 @@
                 "category": "AWS CloudFormation"
             },
             {
-                "command": "aws.cloudformation.api.validateDeployment",
-                "title": "Validate Deployment",
-                "category": "AWS CloudFormation",
-                "icon": "$(go-to-file)"
-            },
-            {
                 "command": "aws.cloudformation.api.deployTemplate",
-                "title": "Deploy Template",
+                "title": "Validate and Deploy",
                 "category": "AWS CloudFormation",
                 "icon": "$(cloud-upload)"
             },
             {
                 "command": "aws.cloudformation.api.deployTemplateFromStacksMenu",
-                "title": "Deploy Template",
+                "title": "Validate and Deploy",
                 "category": "AWS CloudFormation",
                 "icon": "$(plus)"
             },
             {
-                "command": "aws.cloudformation.api.rerunLastValidation",
-                "title": "Rerun Last Validation",
+                "command": "aws.cloudformation.api.rerunValidateAndDeploy",
+                "title": "Rerun Validate and Deploy",
                 "category": "AWS CloudFormation"
             },
             {
@@ -5684,6 +5664,14 @@
                 "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default",
                 "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.{asl.json,asl.yaml,asl.yml}": "default"
             }
+        },
+        "[cloudformation]": {
+            "editor.quickSuggestions": {
+                "other": "on",
+                "comments": "off",
+                "strings": "on"
+            },
+            "editor.suggest.showWords": false
         }
     },
     "devDependencies": {},

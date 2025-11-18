@@ -13,6 +13,7 @@ export interface LspServerResolverI {
 
 export interface LspServerProviderI extends LspServerResolverI {
     canProvide(): boolean
+    name(): string
 }
 
 export class LspServerProvider implements LspServerResolverI, Disposable {
@@ -29,7 +30,7 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
 
         this.matchedProviders = matches
         getLogger().info(
-            `Found CloudFormation LSP provider: ${this.matchedProviders.map((provider) => provider.constructor.name)}`
+            `Found CloudFormation LSP provider: ${this.matchedProviders.map((provider) => provider.name())}`
         )
     }
 
@@ -57,7 +58,7 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
                 this._serverRootDir = dir
                 return
             } catch (err) {
-                getLogger().error(`Failed to resolve CloudFormation LSP provider ${provider.constructor.name}`, err)
+                getLogger().error(`Failed to resolve CloudFormation LSP provider ${provider.name()}`, err)
             }
         }
     }

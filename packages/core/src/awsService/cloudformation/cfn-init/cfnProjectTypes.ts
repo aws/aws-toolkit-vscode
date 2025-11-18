@@ -37,3 +37,5 @@ export type CfnEnvironmentFileSelectorItem = {
     compatibleParameters?: Parameter[]
     optionalFlags?: ChangeSetOptionalFlags
 }
+
+export const unselectedValue = '-'

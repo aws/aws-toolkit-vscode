@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { TreeItemCollapsibleState } from 'vscode'
 import { ResourceTypeNode } from '../../../../../awsService/cloudformation/explorer/nodes/resourceTypeNode'
-import { ResourceList } from '../../../../../awsService/cloudformation/cfn/resourceRequestTypes'
+import { ResourceList } from '../../../../../awsService/cloudformation/resources/resourceRequestTypes'
 import { ResourcesManager } from '../../../../../awsService/cloudformation/resources/resourcesManager'
 
 describe('ResourceTypeNode', function () {

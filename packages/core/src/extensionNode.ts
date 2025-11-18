@@ -154,7 +154,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCloudFormation(context)
+        // Start CloudFormation activation in background to avoid blocking other services
+        activateCloudFormation(context).catch((error) => {
+            getLogger().error(`CloudFormation activation failed: ${error}`)
+        })
 
         await activateAwsExplorer({
             context: extContext,

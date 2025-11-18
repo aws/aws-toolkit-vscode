@@ -9,6 +9,7 @@ import { LanguageClient } from 'vscode-languageclient/node'
 import { extractErrorMessage, getStackStatusClass, isStackInTransientState } from '../utils'
 import { GetStackEventsRequest, ClearStackEventsRequest } from '../stacks/actions/stackActionProtocol'
 import { StackViewCoordinator } from './stackViewCoordinator'
+import { arnToConsoleTabUrl, externalLinkSvg, consoleLinkStyles } from '../consoleLinksUtils'
 
 const EventsPerPage = 50
 const RefreshIntervalMs = 5000
@@ -16,6 +17,7 @@ const RefreshIntervalMs = 5000
 export class StackEventsWebviewProvider implements WebviewViewProvider, Disposable {
     private view?: WebviewView
     private stackName?: string
+    private stackArn?: string
     private allEvents: StackEvent[] = []
     private currentPage = 0
     private nextToken?: string
@@ -31,10 +33,12 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             try {
                 if (state.stackName && !state.isChangeSetMode) {
                     this.stopAutoRefresh()
+                    this.stackArn = state.stackArn
                     await this.showStackEvents(state.stackName)
                 } else if (!state.stackName || state.isChangeSetMode) {
                     this.stopAutoRefresh()
                     this.stackName = undefined
+                    this.stackArn = undefined
                     this.allEvents = []
                     this.render()
                 }
@@ -53,7 +57,17 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         this.allEvents = []
         this.currentPage = 0
         this.nextToken = undefined
-        await this.loadEvents()
+
+        try {
+            const result = await this.client.sendRequest(GetStackEventsRequest, {
+                stackName: this.stackName,
+            })
+            this.allEvents = result.events
+            this.nextToken = result.nextToken
+        } catch (error) {
+            this.renderError(`Failed to load events: ${extractErrorMessage(error)}`)
+        }
+
         this.render()
         this.startAutoRefresh()
     }
@@ -95,7 +109,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     }
 
     private async loadEvents(): Promise<void> {
-        if (!this.stackName) {
+        if (!this.stackName || !this.nextToken) {
             return
         }
 
@@ -124,10 +138,12 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             })
 
             if (result.gapDetected) {
-                this.allEvents = []
+                const initialResult = await this.client.sendRequest(GetStackEventsRequest, {
+                    stackName: this.stackName,
+                })
+                this.allEvents = initialResult.events
+                this.nextToken = initialResult.nextToken
                 this.currentPage = 0
-                this.nextToken = undefined
-                await this.loadEvents()
                 this.render('Event history reloaded due to high activity')
             } else if (result.events.length > 0) {
                 this.allEvents.unshift(...result.events)
@@ -252,10 +268,11 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             margin-bottom: 8px;
         }
         .stack-info {
-            display: flex;
-            gap: 12px;
-            align-items: baseline;
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
         }
+        ${consoleLinkStyles}
         .event-count {
             font-size: 11px;
             color: var(--vscode-descriptionForeground);
@@ -323,8 +340,9 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     <div class="header">
         <div class="header-content">
             <div class="stack-info">
-                <span>${this.stackName ?? ''}</span>
-                <span class="event-count">(${totalEvents} events)</span>
+                ${this.stackName ?? ''}
+                ${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'events')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
+                <span class="event-count">(${totalEvents} events${hasMore ? ' loaded' : ''})</span>
             </div>
             <div class="pagination">
                 <span>Page ${currentPage} of ${totalPages || 1}</span>

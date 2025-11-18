@@ -7,6 +7,7 @@ import { strict as assert } from 'assert'
 import * as sinon from 'sinon'
 import { CfnEnvironmentManager } from '../../../../awsService/cloudformation/cfn-init/cfnEnvironmentManager'
 import { Auth } from '../../../../auth/auth'
+import { Connection } from '../../../../auth/connection'
 import { globals } from '../../../../shared'
 import { workspace, commands } from 'vscode'
 import fs from '../../../../shared/fs/fs'
@@ -39,8 +40,8 @@ describe('CfnEnvironmentManager', () => {
                 type: 'iam',
                 label: 'test-profile',
                 state: 'valid',
-            } as any,
-        } as any
+            } as unknown as Connection,
+        } as sinon.SinonStubbedInstance<Auth>
 
         sinon.stub(Auth, 'instance').get(() => mockAuth)
 
@@ -52,11 +53,11 @@ describe('CfnEnvironmentManager', () => {
 
         mockEnvironmentSelector = {
             selectEnvironment: sinon.stub(),
-        } as any
+        } as unknown as sinon.SinonStubbedInstance<CfnEnvironmentSelector>
 
         mockEnvironmentFileSelector = {
             selectEnvironmentFile: sinon.stub(),
-        } as any
+        } as unknown as sinon.SinonStubbedInstance<CfnEnvironmentFileSelector>
 
         fsStub = sinon.stub(fs, 'readFileText')
         // Mock project as initialized by default
@@ -154,7 +155,7 @@ describe('CfnEnvironmentManager', () => {
                 type: 'iam',
                 label: 'test-profile',
                 state: 'valid',
-            } as any
+            } as unknown as Connection
             mockAuth.getConnection.resolves(mockConnection)
 
             const listener = sinon.stub()
@@ -214,7 +215,10 @@ describe('CfnEnvironmentManager', () => {
         it('should throw error when workspace not found', async () => {
             workspaceStub.value(undefined)
 
-            await assert.rejects(environmentManager.fetchAvailableEnvironments(), /No workspace folder found/)
+            await assert.rejects(
+                environmentManager.fetchAvailableEnvironments(),
+                /You must open a workspace to use CFN environment commands/
+            )
         })
 
         it('should throw error when file read fails', async () => {
@@ -430,6 +434,38 @@ describe('CfnEnvironmentManager', () => {
             const result = await environmentManager.selectEnvironmentFile('template.yaml', [{ name: 'Param1' }])
 
             assert.strictEqual(result, undefined)
+        })
+    })
+
+    describe('refreshSelectedEnvironment', () => {
+        it('should unselect environment if environment not in config', async () => {
+            mockWorkspaceState.get.returns('not-found')
+            const mockEnvironmentLookup = { env1: { name: 'env1', profile: 'profile1' } }
+            fsStub.resolves(JSON.stringify({ environments: mockEnvironmentLookup }))
+
+            await environmentManager.refreshSelectedEnvironment()
+
+            assert(mockWorkspaceState.update.calledWith('aws.cloudformation.selectedEnvironment', undefined))
+        })
+
+        it('should keep environment if environment is valid', async () => {
+            mockWorkspaceState.get.returns('env1')
+            const mockEnvironmentLookup = { env1: { name: 'env1', profile: 'profile1' } }
+            fsStub.resolves(JSON.stringify({ environments: mockEnvironmentLookup }))
+
+            await environmentManager.refreshSelectedEnvironment()
+
+            assert(mockWorkspaceState.update.notCalled)
+        })
+
+        it('should keep environment if environment is undefined', async () => {
+            mockWorkspaceState.get.returns(undefined)
+            const mockEnvironmentLookup = { env1: { name: 'env1', profile: 'profile1' } }
+            fsStub.resolves(JSON.stringify({ environments: mockEnvironmentLookup }))
+
+            await environmentManager.refreshSelectedEnvironment()
+
+            assert(mockWorkspaceState.update.notCalled)
         })
     })
 })

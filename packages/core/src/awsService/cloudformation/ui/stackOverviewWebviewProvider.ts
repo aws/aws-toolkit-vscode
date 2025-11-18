@@ -9,6 +9,7 @@ import { Stack } from '@aws-sdk/client-cloudformation'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
 import { extractErrorMessage, getStackStatusClass, isStackInTransientState } from '../utils'
+import { externalLinkSvg, consoleLinkStyles, arnToConsoleUrl } from '../consoleLinksUtils'
 
 export class StackOverviewWebviewProvider implements WebviewViewProvider, Disposable {
     private view?: WebviewView
@@ -70,7 +71,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
                 this.stack = result.stack
                 // Only update coordinator if status changed
                 if (this.coordinator.currentStackStatus !== result.stack.StackStatus) {
-                    await this.coordinator.setStack(stackName, result.stack.StackStatus)
+                    await this.coordinator.setStack(stackName, result.stack.StackStatus, result.stack.StackId)
                 }
                 this.render()
             }
@@ -182,6 +183,12 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
             margin-bottom: 12px;
             word-break: break-word;
         }
+        .stack-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        ${consoleLinkStyles}
         .status {
             display: inline-block;
             padding: 2px 8px;
@@ -205,7 +212,10 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 <body>
     <div class="section">
         <div class="label">Stack Name</div>
-        <div class="value">${stack.StackName ?? 'N/A'}</div>
+        <div class="stack-header">
+            ${stack.StackName ?? 'N/A'}
+            ${stack.StackId ? `<a href="${arnToConsoleUrl(stack.StackId)}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
+        </div>
     </div>
     <div class="section">
         <div class="label">Status</div>

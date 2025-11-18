@@ -1,12 +1,17 @@
 /*!
-import { getLogger } from '../../../shared/logger'
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { window } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient/node'
-import { ResourceTypesRequest, ListResourcesRequest, ResourceList } from '../cfn/resourceRequestTypes'
+import {
+    ResourceTypesRequest,
+    ListResourcesRequest,
+    ResourceList,
+    SearchResourceResult,
+} from '../resources/resourceRequestTypes'
+import { handleLspError } from '../utils/onlineErrorHandler'
 import { getLogger } from '../../../shared/logger/logger'
 
 export interface ResourceSelectionResult {
@@ -14,8 +19,20 @@ export interface ResourceSelectionResult {
     resourceIdentifier: string
 }
 
+export interface ResourceOperations {
+    getCached: (resourceType: string) => ResourceList | undefined
+    loadMore: (resourceType: string, nextToken: string) => Promise<void>
+    search: (resourceType: string, identifier: string) => Promise<SearchResourceResult>
+}
+
 export class ResourceSelector {
+    public refreshCallback?: () => void
+
     constructor(private client: LanguageClient) {}
+
+    setRefreshCallback(callback: () => void): void {
+        this.refreshCallback = callback
+    }
 
     async selectResourceTypes(selectedTypes: string[] = [], multiSelect = true): Promise<string[] | undefined> {
         try {
@@ -53,7 +70,11 @@ export class ResourceSelector {
         }
     }
 
-    async selectResources(multiSelect = true, preSelectedTypes?: string[]): Promise<ResourceSelectionResult[]> {
+    async selectResources(
+        multiSelect = true,
+        preSelectedTypes?: string[],
+        resourceOperations?: ResourceOperations
+    ): Promise<ResourceSelectionResult[]> {
         try {
             let selectedTypes: string[]
 
@@ -70,60 +91,112 @@ export class ResourceSelector {
             const allSelections: ResourceSelectionResult[] = []
 
             for (const resourceType of selectedTypes) {
-                const resourceIdentifiers = await this.getResourceIdentifiers(resourceType)
-                if (resourceIdentifiers.length === 0) {
-                    void window.showWarningMessage(`No resources found for type: ${resourceType}`)
-                    continue
-                }
-
-                const result = await window.showQuickPick(resourceIdentifiers, {
-                    canPickMany: multiSelect,
-                    placeHolder: `Select ${resourceType} identifiers`,
-                    title: `Select from all ${resourceType} Resources`,
-                })
-
-                if (!result) {
-                    continue
-                }
-
-                const identifiers = Array.isArray(result) ? result : [result]
-                for (const identifier of identifiers) {
-                    allSelections.push({ resourceType, resourceIdentifier: identifier })
-                }
+                const selection = await this.selectResourcesForType(resourceType, multiSelect, resourceOperations)
+                allSelections.push(...selection)
             }
 
             return allSelections
         } catch (error) {
-            void window.showErrorMessage('Failed to select resources')
+            await handleLspError(error, 'Error selecting resources')
             return []
         }
     }
 
-    async selectSingleResource(): Promise<ResourceSelectionResult | undefined> {
-        const result = await this.selectResources(false)
-        return result[0]
-    }
+    private async selectResourcesForType(
+        resourceType: string,
+        multiSelect: boolean,
+        resourceOperations?: ResourceOperations
+    ): Promise<ResourceSelectionResult[]> {
+        let resourceList = resourceOperations?.getCached(resourceType)
 
-    private async getResourceIdentifiers(resourceType: string, cachedResources?: ResourceList[]): Promise<string[]> {
-        // First try to use cached resources from CfnPanel
-        if (cachedResources) {
-            const cachedResource = cachedResources.find((r) => r.typeName === resourceType)
-            if (cachedResource) {
-                return cachedResource.resourceIdentifiers
+        if (!resourceList) {
+            resourceList = await this.fetchResourceList(resourceType)
+        }
+
+        if (!resourceList || resourceList.resourceIdentifiers.length === 0) {
+            void window.showWarningMessage(`No resources found for type: ${resourceType}`)
+            return []
+        }
+
+        while (resourceList.nextToken && resourceOperations) {
+            const action = await this.showLoadMoreMenu(resourceType, resourceList.resourceIdentifiers.length)
+
+            if (action === 'load') {
+                await resourceOperations.loadMore(resourceType, resourceList.nextToken)
+                this.refreshCallback?.()
+                const updatedList = resourceOperations.getCached(resourceType)
+                if (!updatedList) {
+                    break
+                }
+                resourceList = updatedList
+            } else if (action === 'search') {
+                const identifier = await window.showInputBox({
+                    prompt: `Enter ${resourceType} identifier`,
+                    placeHolder: 'Resource identifier must match exactly',
+                })
+
+                if (!identifier) {
+                    return []
+                }
+
+                const result = await resourceOperations.search(resourceType, identifier)
+                this.refreshCallback?.()
+
+                if (!result.found) {
+                    void window.showErrorMessage(
+                        `${resourceType} with identifier '${identifier}' was not found. The identifier must match exactly.`
+                    )
+                    return []
+                }
+
+                return [{ resourceType, resourceIdentifier: identifier }]
+            } else if (action === 'select') {
+                break
+            } else {
+                return []
             }
         }
 
-        // If not cached, fetch from server
-        try {
-            const resourcesResponse = await this.client.sendRequest(ListResourcesRequest, {
-                resources: [{ resourceType }],
-            })
+        const result = await window.showQuickPick(resourceList.resourceIdentifiers, {
+            canPickMany: multiSelect,
+            placeHolder: `Select ${resourceType} identifiers`,
+            title: `Select ${resourceType} Resources`,
+        })
 
-            const resources = resourcesResponse.resources.find((r: { typeName: string }) => r.typeName === resourceType)
-            return resources?.resourceIdentifiers ?? []
-        } catch (error) {
-            getLogger().error(`Failed to get resources for type ${resourceType}:`, error)
+        if (!result) {
             return []
         }
+
+        const identifiers = Array.isArray(result) ? result : [result]
+        return identifiers.map((identifier) => ({ resourceType, resourceIdentifier: identifier }))
+    }
+
+    private async showLoadMoreMenu(resourceType: string, loadedCount: number): Promise<string | undefined> {
+        const result = await window.showQuickPick(
+            [
+                { label: `Load more resources (${loadedCount} currently loaded)`, value: 'load' },
+                { label: 'Search by identifier', value: 'search' },
+                { label: `Select from loaded resources (${loadedCount} available)`, value: 'select' },
+            ],
+            {
+                placeHolder: `Choose how to select ${resourceType} resources`,
+                title: resourceType,
+            }
+        )
+
+        return result?.value
+    }
+
+    private async fetchResourceList(resourceType: string): Promise<ResourceList | undefined> {
+        const response = await this.client.sendRequest(ListResourcesRequest, {
+            resources: [{ resourceType }],
+        })
+
+        return response.resources.find((r: { typeName: string }) => r.typeName === resourceType)
+    }
+
+    async selectSingleResource(resourceOperations?: ResourceOperations): Promise<ResourceSelectionResult | undefined> {
+        const result = await this.selectResources(false, undefined, resourceOperations)
+        return result[0]
     }
 }

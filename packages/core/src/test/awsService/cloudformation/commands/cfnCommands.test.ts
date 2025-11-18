@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { OnStackFailure, Parameter } from '@aws-sdk/client-cloudformation'
 import {
-    rerunLastValidationCommand,
+    rerunValidateAndDeployCommand,
     extractToParameterPositionCursorCommand,
     promptForOptionalFlags,
     promptToSaveToFile,
@@ -35,12 +35,12 @@ describe('CfnCommands', function () {
         sandbox.restore()
     })
 
-    describe('rerunLastValidationCommand', function () {
+    describe('rerunValidateAndDeployCommand', function () {
         it('should register rerun last validation command', function () {
-            const result = rerunLastValidationCommand()
+            const result = rerunValidateAndDeployCommand()
             assert.ok(result)
             assert.ok(registerCommandStub.calledOnce)
-            assert.strictEqual(registerCommandStub.firstCall.args[0], 'aws.cloudformation.api.rerunLastValidation')
+            assert.strictEqual(registerCommandStub.firstCall.args[0], 'aws.cloudformation.api.rerunValidateAndDeploy')
         })
     })
 

@@ -13,6 +13,19 @@ describe('StackEventsWebviewProvider', () => {
     let mockClient: any
     let coordinatorCallback: any
 
+    function createMockView() {
+        return {
+            webview: {
+                onDidReceiveMessage: sandbox.stub(),
+                html: '',
+                options: {},
+            },
+            onDidChangeVisibility: sandbox.stub(),
+            visible: true,
+            onDidDispose: sandbox.stub(),
+        }
+    }
+
     beforeEach(() => {
         sandbox = sinon.createSandbox()
         mockClient = {
@@ -87,5 +100,74 @@ describe('StackEventsWebviewProvider', () => {
         assert.strictEqual(mockClient.sendRequest.callCount > initialCalls, true)
 
         clock.restore()
+    })
+
+    it('should include console link with ARN when stackArn is set', async () => {
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+
+        await coordinatorCallback({
+            stackName: 'test-stack',
+            stackArn: 'arn:aws:cloudformation:us-west-2:123456789012:stack/test-stack/xyz-456',
+            isChangeSetMode: false,
+        })
+
+        const html = view.webview.html
+        assert.ok(html.includes('href="https://us-west-2.console.aws.amazon.com'))
+        assert.ok(html.includes('/stacks/events?stackId='))
+        assert.ok(html.includes('View in AWS Console'))
+    })
+
+    it('should not include console link when stackArn is missing', async () => {
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+
+        await coordinatorCallback({
+            stackName: 'test-stack',
+            stackArn: undefined,
+            isChangeSetMode: false,
+        })
+
+        const html = view.webview.html
+        assert.ok(!html.includes('href="https://'))
+    })
+
+    it('should show "X events loaded" in header when nextToken is available', async () => {
+        mockClient.sendRequest.resolves({
+            events: Array.from({ length: 50 }, (_, i) => ({
+                EventId: `event-${i}`,
+                StackName: 'test-stack',
+                Timestamp: new Date(),
+                ResourceStatus: 'CREATE_IN_PROGRESS',
+            })),
+            nextToken: 'token123',
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('(50 events loaded)'))
+    })
+
+    it('should show "X events" in header when nextToken is not available', async () => {
+        mockClient.sendRequest.resolves({
+            events: Array.from({ length: 50 }, (_, i) => ({
+                EventId: `event-${i}`,
+                StackName: 'test-stack',
+                Timestamp: new Date(),
+                ResourceStatus: 'CREATE_IN_PROGRESS',
+            })),
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('(50 events)'))
+        assert.ok(!html.includes('(50 events loaded)'))
     })
 })

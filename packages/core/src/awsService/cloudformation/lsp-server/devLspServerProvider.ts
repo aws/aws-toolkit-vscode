@@ -18,6 +18,10 @@ export class DevLspServerProvider implements LspServerProviderI {
         this.devServerLocation = findServerInDevelopment(context.extensionPath)
     }
 
+    name(): string {
+        return 'DevLspServerProvider'
+    }
+
     canProvide(): boolean {
         return isDebugInstance() && this.devServerLocation !== undefined
     }
