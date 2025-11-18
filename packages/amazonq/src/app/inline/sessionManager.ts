@@ -28,6 +28,7 @@ export interface CodeWhispererSession {
     displayed: boolean
     // timestamp when the suggestion was last visible
     lastVisibleTime: number
+    fileContent: string
 }
 
 export class SessionManager {
@@ -42,6 +43,7 @@ export class SessionManager {
         suggestions: InlineCompletionItemWithReferences[],
         requestStartTime: number,
         startPosition: vscode.Position,
+        document: vscode.TextDocument,
         firstCompletionDisplayLatency?: number
     ) {
         const diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
@@ -55,6 +57,7 @@ export class SessionManager {
             diagnosticsBeforeAccept,
             displayed: false,
             lastVisibleTime: 0,
+            fileContent: document.getText(),
         }
         this._currentSuggestionIndex = 0
     }
