@@ -435,7 +435,7 @@ async function changeSetSteps(
     try {
         await environmentManager.refreshSelectedEnvironment()
     } catch (error) {
-        getLogger().warn(`Failed to refresh seelcted environment: ${extractErrorMessage(error)}`)
+        getLogger().warn(`Failed to refresh selected environment: ${extractErrorMessage(error)}`)
     }
 
     templateUri ??= await getTemplatePath(documentManager)
