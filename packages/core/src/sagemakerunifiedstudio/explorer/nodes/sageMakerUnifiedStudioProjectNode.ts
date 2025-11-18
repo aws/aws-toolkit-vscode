@@ -87,6 +87,10 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
         return telemetry.smus_renderProjectChildrenNode.run(async (span) => {
             try {
                 const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+
+                // Get auth mode directly from connection type
+                const authMode = this.authProvider.activeConnection?.type
+
                 const accountId = await this.authProvider.getDomainAccountId()
                 span.record({
                     smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
@@ -94,6 +98,7 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                     smusDomainAccountId: accountId,
                     smusProjectId: this.project?.id,
                     smusDomainRegion: this.authProvider.getDomainRegion(),
+                    ...(authMode && { smusAuthMode: authMode }),
                 })
 
                 // Skip access check if we're in SMUS space environment (already in project space)

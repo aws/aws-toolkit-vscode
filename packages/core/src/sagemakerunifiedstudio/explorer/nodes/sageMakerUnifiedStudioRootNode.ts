@@ -23,6 +23,7 @@ import { isSmusSsoConnection, isSmusIamConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
+import { recordAuthTelemetry } from '../../shared/telemetry'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -337,6 +338,11 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
                     authCompleted = true
                 }
             }
+
+            // Record telemetry with connection details after successful login
+            const domainId = authProvider.getDomainId?.()
+            const region = authProvider.getDomainRegion?.()
+            await recordAuthTelemetry(span, authProvider, domainId, region)
         } catch (err) {
             const isUserCancelled = err instanceof ToolkitError && err.code === SmusErrorCodes.UserCancelled
             if (!isUserCancelled) {
@@ -368,9 +374,13 @@ export const smusSignOutCommand = Commands.declare(
                     return
                 }
 
-                // Get connection details for logging
+                // Capture connection details BEFORE signing out (for telemetry)
                 const activeConnection = authProvider.activeConnection
-                const domainId = authProvider.getDomainId?.() || 'Unknown'
+                const domainId = authProvider.getDomainId?.()
+                const region = authProvider.getDomainRegion?.()
+
+                // Record telemetry with captured values BEFORE signing out
+                await recordAuthTelemetry(span, authProvider, domainId, region)
 
                 // Sign out from SMUS (behavior depends on connection type)
                 if (activeConnection) {
@@ -591,6 +601,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             const accountId = await authProvider.getDomainAccountId()
             span.record({
+                smusAuthMode: authProvider.activeConnection?.type,
                 smusDomainId: authProvider.getDomainId(),
                 smusProjectId: (selectedProject as DataZoneProject).id as string | undefined,
                 smusDomainRegion: authProvider.getDomainRegion(),

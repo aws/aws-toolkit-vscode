@@ -167,7 +167,7 @@ export class SmusAuthenticationProvider {
             }
             // Update IAM mode context in SMUS space environment
             if (getContext('aws.smus.inSmusSpaceEnvironment')) {
-                void this.initIamModeContextInSpaceEnvironment()
+                await this.initIamModeContextInSpaceEnvironment()
             }
 
             this.onDidChangeEmitter.fire()
@@ -179,22 +179,22 @@ export class SmusAuthenticationProvider {
 
         // Set initial IAM mode context
         void (async () => {
-            const activeConn = this.activeConnection
-            if (activeConn && 'type' in activeConn && activeConn.type === 'iam') {
-                const state = this.auth.getStateMemento()
-                const smusConnections = (state.get('smus.connections') as any) || {}
-                const connectionMetadata = smusConnections[activeConn.id]
-                const isIamDomain = connectionMetadata?.isIamDomain || false
-                await setSmusIamModeContext(isIamDomain)
+            // Update IAM mode context in SMUS space environment
+            if (getContext('aws.smus.inSmusSpaceEnvironment')) {
+                await this.initIamModeContextInSpaceEnvironment()
             } else {
-                await setSmusIamModeContext(false)
+                const activeConn = this.activeConnection
+                if (activeConn && 'type' in activeConn && activeConn.type === 'iam') {
+                    const state = this.auth.getStateMemento()
+                    const smusConnections = (state.get('smus.connections') as any) || {}
+                    const connectionMetadata = smusConnections[activeConn.id]
+                    const isIamDomain = connectionMetadata?.isIamDomain || false
+                    await setSmusIamModeContext(isIamDomain)
+                } else {
+                    await setSmusIamModeContext(false)
+                }
             }
         })()
-
-        // Update IAM mode context in SMUS space environment
-        if (getContext('aws.smus.inSmusSpaceEnvironment')) {
-            void this.initIamModeContextInSpaceEnvironment()
-        }
     }
 
     /**
@@ -243,12 +243,15 @@ export class SmusAuthenticationProvider {
             const resourceMetadata = getResourceMetadata()!
             if (resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion) {
                 // Return a mock connection object for SMUS space environment
-                // This is typed as SmusConnection to satisfy type checking
+                // Include type property based on IAM mode context for telemetry
+                // Note: type will be undefined initially until mode is detected
+                const isIamMode = getContext('aws.smus.isIamMode')
                 return {
                     domainId: resourceMetadata.AdditionalMetadata!.DataZoneDomainId!,
                     ssoRegion: resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion!,
                     domainUrl: `https://${resourceMetadata.AdditionalMetadata!.DataZoneDomainId!}.sagemaker.${resourceMetadata.AdditionalMetadata!.DataZoneDomainRegion!}.on.aws/`,
                     id: randomUUID(),
+                    type: isIamMode !== undefined ? (isIamMode ? 'iam' : 'sso') : undefined,
                 } as any as SmusConnection
             } else {
                 throw new ToolkitError('Domain region not found in metadata file.')

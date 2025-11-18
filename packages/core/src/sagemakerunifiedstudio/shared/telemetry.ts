@@ -50,6 +50,7 @@ export async function recordSpaceTelemetry(
         }
 
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusSpaceKey: node.resource.DomainSpaceKey,
             smusDomainRegion: node.resource.regionCode,
             smusDomainId: parent?.getAuthProvider()?.getDomainId(),
@@ -75,6 +76,7 @@ export async function recordAuthTelemetry(
     const logger = getLogger('smus')
 
     span.record({
+        smusAuthMode: authProvider.activeConnection?.type,
         smusDomainId: domainId,
         awsRegion: region,
     })
@@ -106,8 +108,11 @@ export async function recordDataConnectionTelemetry(
 
     try {
         const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+        const authProvider = SmusAuthenticationProvider.fromContext()
         const accountId = await connectionCredentialsProvider.getDomainAccountId()
+
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
             smusDomainId: connection.domainId,
             smusDomainAccountId: accountId,
