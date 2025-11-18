@@ -83,7 +83,8 @@ export function hasGlibcPatch(): boolean {
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
-    resourcePaths: AmazonQResourcePaths
+    resourcePaths: AmazonQResourcePaths,
+    registryUrl?: string
 ) {
     const toDispose = extensionContext.subscriptions
 
@@ -188,6 +189,7 @@ export async function startLanguageServer(
                         codeReviewInChat: codeReviewInChat,
                         // feature flag for displaying findings found not through CodeReview in the Code Issues Panel
                         displayFindings: true,
+                        registryUrl: registryUrl,
                     },
                     window: {
                         notifications: true,

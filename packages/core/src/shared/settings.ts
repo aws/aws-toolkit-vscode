@@ -778,6 +778,7 @@ const devSettings = {
     codewhispererService: Record(String, String),
     amazonqLsp: Record(String, String),
     amazonqWorkspaceLsp: Record(String, String),
+    amazonqRegistry: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
