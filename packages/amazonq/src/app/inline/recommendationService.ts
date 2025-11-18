@@ -241,6 +241,7 @@ export class RecommendationService {
                 result.items,
                 requestStartTime,
                 position,
+                document,
                 firstCompletionDisplayLatency
             )
 
