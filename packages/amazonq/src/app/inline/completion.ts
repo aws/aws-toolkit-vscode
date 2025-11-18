@@ -42,9 +42,9 @@ import {
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
+import { Experiments, getContext, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
-import { showEdits } from './EditRendering/imageRenderer'
+import { EditsSuggestionSvg } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { DocumentEventListener } from './documentEventListener'
 
@@ -215,6 +215,7 @@ export class InlineCompletionManager implements Disposable {
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     private logger = getLogger()
     private pendingRequest: Promise<InlineCompletionItem[]> | undefined
+    private lastEdit: EditsSuggestionSvg | undefined
 
     constructor(
         private readonly languageClient: BaseLanguageClient,
@@ -347,6 +348,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     ): Promise<InlineCompletionItem[]> {
         if (vsCodeState.isCodeWhispererEditing) {
             getLogger().info('Q is editing, returning empty')
+            return []
+        }
+
+        // Make edit suggestion blocking
+        if (getContext('aws.amazonq.editSuggestionActive') === true) {
             return []
         }
 
@@ -531,7 +537,12 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
-                        await showEdits(item, editor, session, this.languageClient, this)
+                        if (this.lastEdit) {
+                            await this.lastEdit.dispose()
+                        }
+                        const e = new EditsSuggestionSvg(item, editor, this.languageClient, session, this)
+                        await e.show()
+                        this.lastEdit = e
                         logstr += `- duration between trigger to edits suggestion is displayed: ${Date.now() - t0}ms`
                     }
                     return []
