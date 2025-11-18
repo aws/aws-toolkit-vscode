@@ -526,17 +526,23 @@ describe('LdkClient', () => {
 
     describe('Client User-Agent', () => {
         let expectedUserAgentPairs: UserAgent
-        before(() => {
+        let userAgentSandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            userAgentSandbox = sinon.createSandbox()
             // Stub getUserAgentPairs at the telemetryUtil level to return known pairs
-            const getUserAgentPairsStub = sandbox.stub(telemetryUtil, 'getUserAgentPairs')
+            const getUserAgentPairsStub = userAgentSandbox.stub(telemetryUtil, 'getUserAgentPairs')
             const generalUserAgents: UserAgent = [
-                ['AWS-Toolkit-For-VSCode', 'testVersion'],
+                ['AWS-Toolkit-For-VSCode', 'testVersionForUA'],
                 ['Visual-Studio-Code', '1.0.0'],
                 ['ClientId', 'test-client-id'],
             ]
             getUserAgentPairsStub.returns(generalUserAgents)
             const lambdaDebugUserAgent: UserAgent = [['LAMBDA-DEBUG', '1.0.0']]
             expectedUserAgentPairs = lambdaDebugUserAgent.concat(generalUserAgents)
+        })
+
+        afterEach(() => {
+            userAgentSandbox.restore()
         })
 
         it('should create Lambda client with correct user-agent', async () => {
@@ -550,7 +556,7 @@ describe('LdkClient', () => {
 
             // Stub the Lambda sdkClientBuilderV3 to capture the client options
             let capturedClientOptions: any
-            const createAwsServiceStubLambda = sandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            const createAwsServiceStubLambda = userAgentSandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
             createAwsServiceStubLambda.callsFake((options: any) => {
                 capturedClientOptions = options
                 // Return a mock Lambda client that has the required methods
@@ -590,7 +596,7 @@ describe('LdkClient', () => {
             }
             // Stub the sdkClientBuilderV3 to capture the client options
             let capturedClientOptions: any
-            const createAwsServiceStubIoT = sandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            const createAwsServiceStubIoT = userAgentSandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
             createAwsServiceStubIoT.callsFake((options: any) => {
                 capturedClientOptions = options
                 return mockIoTSTClient as any
