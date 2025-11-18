@@ -415,7 +415,7 @@
                 },
                 {
                     "command": "aws.amazonq.showLogs",
-                    "when": "!aws.isSageMakerUnifiedStudio",
+                    "when": "(view =~ /^aws\\.amazonq/) && !aws.isSageMakerUnifiedStudio",
                     "group": "1_amazonQ@5"
                 },
                 {
