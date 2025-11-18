@@ -4,6 +4,7 @@
  */
 
 export abstract class SagemakerConstants {
+    static readonly HyperPodPlaceHolderMessage = '[No HyperPod Spaces Found]'
     static readonly PlaceHolderMessage = '[No Sagemaker Spaces Found]'
     static readonly EnableIdentityFilteringSetting = 'aws.sagemaker.studio.spaces.enableIdentityFiltering'
     static readonly SelectedDomainUsersState = 'aws.sagemaker.selectedDomainUsers'

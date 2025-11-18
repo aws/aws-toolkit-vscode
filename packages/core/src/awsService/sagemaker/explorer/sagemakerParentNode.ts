@@ -22,7 +22,7 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     ) {
         super('SageMaker AI', vscode.TreeItemCollapsibleState.Collapsed)
         this.studioNode = new SagemakerStudioNode(regionCode, sagemakerClient)
-        this.hyperpodNode = new SagemakerHyperpodNode(regionCode)
+        this.hyperpodNode = new SagemakerHyperpodNode(regionCode, sagemakerClient)
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
