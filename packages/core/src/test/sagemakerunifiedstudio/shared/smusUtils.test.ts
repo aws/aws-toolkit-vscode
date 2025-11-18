@@ -13,6 +13,7 @@ import {
     validateCredentialFields,
     extractAccountIdFromSageMakerArn,
     extractAccountIdFromResourceMetadata,
+    isCredentialExpirationError,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
@@ -462,6 +463,132 @@ describe('SmusUtils', () => {
             assert.strictEqual(result, false)
         })
     })
+
+    describe('isIamUserArn', () => {
+        it('should return true for IAM user ARN', () => {
+            const iamUserArn = 'arn:aws:iam::619071339486:user/vabharga-test'
+            const result = SmusUtils.isIamUserArn(iamUserArn)
+            assert.strictEqual(result, true)
+        })
+
+        it('should return false for IAM role session ARN', () => {
+            const roleSessionArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession'
+            const result = SmusUtils.isIamUserArn(roleSessionArn)
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false for IAM role ARN', () => {
+            const roleArn = 'arn:aws:iam::123456789012:role/MyRole'
+            const result = SmusUtils.isIamUserArn(roleArn)
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false for undefined ARN', () => {
+            const result = SmusUtils.isIamUserArn(undefined)
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false for empty string', () => {
+            const result = SmusUtils.isIamUserArn('')
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false for invalid ARN format', () => {
+            const result = SmusUtils.isIamUserArn('not-an-arn')
+            assert.strictEqual(result, false)
+        })
+
+        it('should return false for non-IAM ARN', () => {
+            const s3Arn = 'arn:aws:s3:::my-bucket'
+            const result = SmusUtils.isIamUserArn(s3Arn)
+            assert.strictEqual(result, false)
+        })
+    })
+
+    describe('convertAssumedRoleArnToIamRoleArn', () => {
+        it('should convert basic assumed role ARN to IAM role ARN', () => {
+            const stsArn = 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should convert assumed role ARN with aws-cn partition', () => {
+            const stsArn = 'arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-cn:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should convert assumed role ARN with aws-us-gov partition', () => {
+            const stsArn = 'arn:aws-us-gov:sts::123456789012:assumed-role/MyRole/MySession'
+            const expected = 'arn:aws-us-gov:iam::123456789012:role/MyRole'
+
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(stsArn)
+            assert.strictEqual(result, expected)
+        })
+
+        it('should return IAM user ARN as-is', () => {
+            const iamUserArn = 'arn:aws:iam::619071339486:user/vabharga-test'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-cn partition as-is', () => {
+            const iamUserArn = 'arn:aws-cn:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM user ARN with aws-us-gov partition as-is', () => {
+            const iamUserArn = 'arn:aws-us-gov:iam::123456789012:user/my-user'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should return IAM role ARN as-is', () => {
+            const iamRoleArn = 'arn:aws:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should return IAM role ARN with aws-cn partition as-is', () => {
+            const iamRoleArn = 'arn:aws-cn:iam::123456789012:role/MyRole'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamRoleArn)
+            assert.strictEqual(result, iamRoleArn)
+        })
+
+        it('should handle IAM user ARN with special characters', () => {
+            const iamUserArn = 'arn:aws:iam::123456789012:user/path/to/user-name_123'
+            const result = SmusUtils.convertAssumedRoleArnToIamRoleArn(iamUserArn)
+            assert.strictEqual(result, iamUserArn)
+        })
+
+        it('should throw error for invalid ARN format - missing components', () => {
+            const invalidArn = 'arn:aws:sts::123456789012:assumed-role/MyRole'
+
+            assert.throws(
+                () => SmusUtils.convertAssumedRoleArnToIamRoleArn(invalidArn),
+                (error: Error) => {
+                    assert.ok(error.message.includes('Invalid STS ARN format'))
+                    assert.ok(error.message.includes(invalidArn))
+                    return true
+                }
+            )
+        })
+
+        it('should throw error for empty string', () => {
+            assert.throws(
+                () => SmusUtils.convertAssumedRoleArnToIamRoleArn(''),
+                (error: Error) => {
+                    assert.ok(error.message.includes('Invalid STS ARN format'))
+                    return true
+                }
+            )
+        })
+    })
 })
 
 describe('extractAccountIdFromSageMakerArn', () => {
@@ -575,5 +702,41 @@ describe('extractAccountIdFromResourceMetadata', () => {
                 )
             }
         )
+    })
+})
+
+describe('isCredentialExpirationError', () => {
+    describe('should return true for credential expiration errors', () => {
+        it('should detect ExpiredTokenException by error name (exact match)', () => {
+            const error = {
+                name: 'ExpiredTokenException',
+                message: 'Token has expired',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, true)
+        })
+
+        it('should detect ExpiredTokenException in error message', () => {
+            const error = {
+                name: 'SomeOtherError',
+                message: 'Request failed with ExpiredTokenException: Token has expired',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, true)
+        })
+    })
+
+    describe('should return false for non-expiration errors', () => {
+        it('should return false for different error names', () => {
+            const error = {
+                name: 'AccessDeniedException',
+                message: 'Access denied',
+            }
+
+            const result = isCredentialExpirationError(error)
+            assert.strictEqual(result, false)
+        })
     })
 })
