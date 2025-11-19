@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support"
+}
