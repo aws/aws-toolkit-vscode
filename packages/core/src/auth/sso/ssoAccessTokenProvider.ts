@@ -124,7 +124,7 @@ export abstract class SsoAccessTokenProvider {
         }
 
         getLogger().info(
-            `Auth: bearer token expired (expires at ${data.token.expiresAt}), attempting refresh (key=${this.tokenCacheKey})`
+            `Auth: bearer token expired (expires at ${data.token.expiresAt}), attempting refresh the token for (key=${this.tokenCacheKey})`
         )
 
         if (data.registration && !isExpired(data.registration) && hasProps(data.token, 'refreshToken')) {
