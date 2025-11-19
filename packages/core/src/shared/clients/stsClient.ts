@@ -10,6 +10,11 @@ import { Credentials } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
+// Extended response type that includes captured HTTP headers (added by global middleware)
+export interface GetCallerIdentityResponseWithHeaders extends GetCallerIdentityResponse {
+    $httpHeaders?: Record<string, string>
+}
+
 export type { GetCallerIdentityResponse }
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 
@@ -35,8 +40,9 @@ export class DefaultStsClient {
         return response
     }
 
-    public async getCallerIdentity(): Promise<GetCallerIdentityResponse> {
+    public async getCallerIdentity(): Promise<GetCallerIdentityResponseWithHeaders> {
         const sdkClient = this.createSdkClient()
+        // Note: $httpHeaders are added by global middleware in awsClientBuilderV3
         const response = await sdkClient.send(new GetCallerIdentityCommand({}))
         return response
     }
