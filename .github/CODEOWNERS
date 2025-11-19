@@ -2,3 +2,4 @@
 packages/core/src/codewhisperer/ @aws/codewhisperer-team
 packages/core/src/amazonqFeatureDev/ @aws/earlybird
 packages/core/src/awsService/accessanalyzer/ @aws/access-analyzer
+packages/core/src/awsService/cloudformation/ @aws/cfn-dev-productivity

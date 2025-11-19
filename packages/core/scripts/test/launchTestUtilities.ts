@@ -121,6 +121,7 @@ async function getVSCodeCliArgs(params: {
             ['DEVELOPMENT_PATH']: projectRootDir,
             ['AWS_TOOLKIT_AUTOMATION']: params.suite,
             ['TEST_DIR']: process.env.TEST_DIR,
+            ['JAVA_HOME']: process.env.JAVA_HOME,
             ...params.env,
         },
     }
