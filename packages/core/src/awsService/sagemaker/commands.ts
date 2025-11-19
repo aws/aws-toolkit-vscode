@@ -231,7 +231,6 @@ export async function openRemoteConnect(
         if (shouldSuppressError(err)) {
             return
         }
-        throw err
     }
 }
 

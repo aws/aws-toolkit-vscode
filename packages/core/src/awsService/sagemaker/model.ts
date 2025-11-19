@@ -101,12 +101,10 @@ export async function prepareDevEnvConnection(
         if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
             const sshConfigPath = path.join(os.homedir(), '.ssh', 'config')
 
+            // Extracting line number from SSH error message is the best-effort.
+            // SSH error formats are not standardized and may vary across implementations.
             await vscode.window
-                .showErrorMessage(
-                    SshConfigErrorMessage(sshConfigPath),
-                    { modal: true, detail: err.message },
-                    'Open SSH Config'
-                )
+                .showErrorMessage(SshConfigErrorMessage(), { modal: true, detail: err.message }, 'Open SSH Config')
                 .then((resp) => {
                     if (resp === 'Open SSH Config') {
                         void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
