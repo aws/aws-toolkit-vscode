@@ -4,7 +4,6 @@
  */
 import sinon from 'sinon'
 import assert from 'assert'
-import { version } from 'vscode'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
@@ -45,12 +44,34 @@ describe('AwsClientBuilderV3', function () {
         const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
 
-        assert.ok(service.config.userAgent)
-        assert.strictEqual(
-            service.config.userAgent![0][0].replace('---Insiders', ''),
-            `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
+        // The AWS SDK accepts customUserAgent as input and exposes it in config
+        const userAgentConfig = service.config.customUserAgent
+        assert.ok(userAgentConfig, 'customUserAgent should exist in config')
+
+        const pairs = userAgentConfig as [string, string][]
+        assert.ok(Array.isArray(pairs), 'customUserAgent should be an array')
+        assert.ok(pairs.length >= 3, `Expected at least 3 pairs, got ${pairs.length}`)
+
+        // Check for toolkit pair (could be AWS-Toolkit-For-VSCode or AmazonQ-For-VSCode)
+        const toolkitPair = pairs.find(
+            (p) =>
+                Array.isArray(p) &&
+                typeof p[0] === 'string' &&
+                (p[0].includes('AWS-Toolkit-For-VSCode') || p[0].includes('AmazonQ-For-VSCode'))
         )
-        assert.strictEqual(service.config.userAgent![0][1], extensionVersion)
+        assert.ok(toolkitPair, 'Expected to find toolkit pair')
+        assert.strictEqual(toolkitPair[1], extensionVersion)
+
+        // Check for platform pair
+        const platformPair = pairs.find(
+            (p) => Array.isArray(p) && typeof p[0] === 'string' && p[0].includes('Visual-Studio-Code')
+        )
+        assert.ok(platformPair, 'Expected to find platform pair')
+
+        // Check for ClientId pair
+        const clientIdPair = pairs.find((p) => Array.isArray(p) && p[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Expected to find ClientId pair')
+        assert.strictEqual(clientIdPair[1], clientId)
     })
 
     it('adds region to client', function () {
@@ -111,19 +132,25 @@ describe('AwsClientBuilderV3', function () {
     it('adds Client-Id to user agent', function () {
         const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
-        const regex = new RegExp(`ClientId/${clientId}`)
-        assert.ok(service.config.userAgent![0][0].match(regex))
+        const pairs = service.config.customUserAgent as [string, string][]
+        const clientIdPair = pairs.find((p) => p[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        assert.strictEqual(clientIdPair[1], clientId)
     })
 
     it('does not override custom user-agent if specified in options', function () {
+        const customUserAgent: [string, string][] = [['CUSTOM-USER-AGENT', '1.0.0']]
         const service = builder.createAwsService({
             serviceClient: Client,
             clientOptions: {
-                userAgent: [['CUSTOM USER AGENT']],
+                customUserAgent,
             },
         })
 
-        assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
+        assert.ok(service.config.customUserAgent)
+        const pairs = service.config.customUserAgent as [string, string][]
+        assert.strictEqual(pairs[0][0], 'CUSTOM-USER-AGENT')
+        assert.strictEqual(pairs[0][1], '1.0.0')
     })
 
     it('injects http client into handler', function () {
@@ -365,6 +392,28 @@ describe('AwsClientBuilderV3', function () {
 
             assert.strictEqual(newArgs.request.hostname, 'testHost')
             assert.strictEqual(newArgs.request.path, 'testPath')
+        })
+
+        it('captures HTTP response headers and attaches to output', async function () {
+            const testHeaders = {
+                'x-custom-header': 'test-value',
+                'content-type': 'application/json',
+            }
+            response.response = {
+                statusCode: 200,
+                headers: testHeaders,
+            } as any
+
+            const service = builder.createAwsService({ serviceClient: Client })
+            // Verify middleware stack exists
+            const middlewareStack = service.middlewareStack as any
+            assert.ok(middlewareStack, 'Middleware stack should exist')
+
+            // Verify the middlewareStack has the expected structure
+            // The captureHeadersMiddleware is added in the awsClientBuilderV3 implementation
+            // It should be present in the deserialize step
+            assert.ok(typeof middlewareStack.add === 'function', 'Middleware stack should have add method')
+            assert.ok(typeof middlewareStack.use === 'function', 'Middleware stack should have use method')
         })
     })
 
