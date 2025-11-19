@@ -13,8 +13,6 @@ export interface HyperpodDevSpace {
     name: string
     namespace: string
     cluster: string
-    environment: string
-    application: string
     group: string
     version: string
     plural: string
@@ -56,36 +54,17 @@ export class KubectlClient {
             }
 
             if ((res as any).body?.items) {
-                return (res as any).body.items.map((space: any) => {
-                    return {
-                        name: space.metadata?.name,
-                        namespace: space.metadata?.namespace,
-                        cluster: eksCluster.name,
-                        environment: 'Hyperpod',
-                        application: 'TBD',
-                        status: this.getStatusFromConditions(space.status?.conditions, space.spec?.desiredStatus),
-                        group: group,
-                        version: version,
-                        plural: plural,
-                        appType: space.spec?.appType,
-                        creator: space.metadata?.annotations['workspace.jupyter.org/created-by'],
-                        accessType: space.spec?.accessType,
-                    }
-                })
-            } else {
-                getLogger().info('[HyperPod] Namespaced query failed, trying cluster-scoped')
                 return (res as any).body.items.map((space: any) => ({
                     name: space.metadata?.name,
-                    namespace: 'cluster-scoped',
+                    namespace: space.metadata?.namespace,
                     cluster: eksCluster.name,
-                    environment: 'Hyperpod',
-                    application: 'TBD',
-                    status: this.getStatusFromConditions(space.status?.conditions),
-                    group: group,
-                    version: version,
-                    plural: plural,
+                    status: this.getStatusFromConditions(space.status?.conditions, space.spec?.desiredStatus),
+                    group,
+                    version,
+                    plural,
                     appType: space.spec?.appType,
                     creator: space.metadata?.annotations['workspace.jupyter.org/created-by'],
+                    accessType: space.spec?.accessType,
                 }))
             }
         } catch (error: any) {
@@ -106,50 +85,52 @@ export class KubectlClient {
     }
 
     private loadKubeConfig(eksCluster: Cluster, hyperpodCluster: HyperpodCluster): void {
-        const credentialId = globals.awsContext.getCredentialProfileName()
-        const awsProfile = credentialId?.startsWith('profile:') ? credentialId.split('profile:')[1] : credentialId
-        this.kubeConfig.loadFromOptions({
-            clusters: [
-                {
-                    name: eksCluster.name!,
-                    server: eksCluster.endpoint!,
-                    caData: eksCluster.certificateAuthority?.data,
-                    skipTLSVerify: false,
-                },
-            ],
-            users: [
-                {
-                    name: eksCluster.name!,
-                    exec: {
-                        apiVersion: 'client.authentication.k8s.io/v1beta1',
-                        command: 'aws',
-                        args: [
-                            'eks',
-                            'get-token',
-                            '--cluster-name',
-                            eksCluster.name,
-                            '--region',
-                            hyperpodCluster.regionCode,
-                        ],
-                        env: [
-                            {
-                                name: 'AWS_PROFILE',
-                                value: awsProfile,
-                            },
-                        ],
-                        interactiveMode: 'Never',
+        if (eksCluster.name && eksCluster.endpoint) {
+            const credentialId = globals.awsContext.getCredentialProfileName()
+            const awsProfile = credentialId?.startsWith('profile:') ? credentialId.split('profile:')[1] : credentialId
+            this.kubeConfig.loadFromOptions({
+                clusters: [
+                    {
+                        name: eksCluster.name,
+                        server: eksCluster.endpoint,
+                        caData: eksCluster.certificateAuthority?.data,
+                        skipTLSVerify: false,
                     },
-                },
-            ],
-            contexts: [
-                {
-                    name: eksCluster.name!,
-                    cluster: eksCluster.name!,
-                    user: eksCluster.name!,
-                },
-            ],
-            currentContext: eksCluster.name!,
-        })
+                ],
+                users: [
+                    {
+                        name: eksCluster.name,
+                        exec: {
+                            apiVersion: 'client.authentication.k8s.io/v1beta1',
+                            command: 'aws',
+                            args: [
+                                'eks',
+                                'get-token',
+                                '--cluster-name',
+                                eksCluster.name,
+                                '--region',
+                                hyperpodCluster.regionCode,
+                            ],
+                            env: [
+                                {
+                                    name: 'AWS_PROFILE',
+                                    value: awsProfile,
+                                },
+                            ],
+                            interactiveMode: 'Never',
+                        },
+                    },
+                ],
+                contexts: [
+                    {
+                        name: eksCluster.name,
+                        cluster: eksCluster.name,
+                        user: eksCluster.name,
+                    },
+                ],
+                currentContext: eksCluster.name,
+            })
+        }
     }
 
     async getHyperpodSpaceStatus(devSpace: HyperpodDevSpace): Promise<string> {

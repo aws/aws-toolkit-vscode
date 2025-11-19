@@ -17,7 +17,6 @@ import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { getLogger } from '../../../shared/logger/logger'
-import { int } from 'aws-sdk/clients/datapipeline'
 
 export const hyperpodContextValue = 'awsSagemakerHyperpodNode'
 
@@ -29,7 +28,6 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
     protected stsClient: DefaultStsClient
     callerIdentity: GetCallerIdentityResponse = {}
     clusterNamespaces: Map<string, HyperpodDevSpace> = new Map()
-    public nodeCount: int
     public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
 
     public constructor(
@@ -41,7 +39,6 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
         this.eksClient = this.sagemakerClient.getEKSClient()
         this.stsClient = new DefaultStsClient(regionCode)
         this.hyperpodDevSpaceNodes = new Map<string, SagemakerDevSpaceNode>()
-        this.nodeCount = 0
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -113,10 +110,7 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        if (this.nodeCount === 0 || this.nodeCount !== this.allSpaces.size) {
-            this.allSpaces = await this.listSpaces()
-            this.nodeCount = this.allSpaces.size
-        }
+        this.allSpaces = await this.listSpaces()
         const filterSpaces = new Map(this.allSpaces)
         this.callerIdentity = await this.stsClient.getCallerIdentity()
 

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { AppType } from '@aws-sdk/client-sagemaker'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { HyperpodCluster, HyperpodDevSpace } from '../../../shared/clients/kubectlClient'
 import { SagemakerHyperpodNode } from './sagemakerHyperpodNode'
@@ -14,21 +15,15 @@ export const devSpaceContextValueStopped = 'awsSagemakerHyperpodDevSpaceStoppedN
 export const devSpaceContextValueRunning = 'awsSagemakerHyperpodDevSpaceRunningNode'
 export const devSpaceContextValueTransitional = 'awsSagemakerHyperpodDevSpaceTransitionalNode'
 export const devSpaceContextValueError = 'awsSagemakerHyperpodDevSpaceErrorNode'
-export const devSpaceContextValueInvalid = 'awsSagemakerHyperpodDevSpaceInvalidNode'
 
 export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
-    public hyperpodDevSpace: HyperpodDevSpace
-    public hyperpodCluster: HyperpodCluster
-
     public constructor(
         public readonly parent: SagemakerHyperpodNode,
         public readonly devSpace: HyperpodDevSpace,
-        cluster: HyperpodCluster,
+        public readonly hpCluster: HyperpodCluster,
         public override readonly regionCode: string
     ) {
         super('')
-        this.hyperpodDevSpace = devSpace
-        this.hyperpodCluster = cluster
         this.updateWorkspace()
     }
 
@@ -44,11 +39,11 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
     }
 
     public buildLabel(): string {
-        return `${this.hyperpodDevSpace.name} (${this.hyperpodDevSpace.status})`
+        return `${this.devSpace.name} (${this.devSpace.status})`
     }
 
     public buildDescription(): string {
-        return `${this.hyperpodDevSpace.accessType ?? 'Public'} space`
+        return `${this.devSpace.accessType ?? 'Public'} space`
     }
 
     public buildTooltip(): string {
@@ -56,15 +51,15 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
                 \n**Namespace:** ${this.devSpace.namespace}
                 \n**Cluster:** ${this.devSpace.cluster}
                 \n**Creator:** ${this.devSpace.creator}
-                \n**Environment:** ${this.devSpace.environment}`
+                \n**Environment:** Hyperpod`
     }
 
     public buildIconPath() {
-        switch (this.hyperpodDevSpace.appType) {
-            case 'jupyterlab': {
+        switch (this.devSpace.appType) {
+            case AppType.JupyterLab: {
                 return getIcon('aws-sagemaker-jupyter-lab')
             }
-            case 'code-editor': {
+            case AppType.CodeEditor: {
                 return getIcon('aws-sagemaker-code-editor')
             }
             default: {
@@ -73,16 +68,13 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
         }
     }
 
-    private getContext(): string {
-        const status = this.getStatus()
-        if (status === 'Stopping' || status === 'Starting') {
+    public getContext(): string {
+        if (this.status === 'Stopping' || this.status === 'Starting') {
             return devSpaceContextValueTransitional
-        } else if (status === 'Stopped') {
+        } else if (this.status === 'Stopped') {
             return devSpaceContextValueStopped
-        } else if (status === 'Running') {
+        } else if (this.status === 'Running') {
             return devSpaceContextValueRunning
-        } else if (status === 'Invalid') {
-            return devSpaceContextValueInvalid
         } else {
             return devSpaceContextValueError
         }
@@ -90,31 +82,27 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
 
     public isPending(): boolean {
         return (
-            this.getStatus() !== 'Running' &&
-            this.getStatus() !== 'Stopped' &&
-            this.getStatus() !== 'Error' &&
-            this.getStatus() !== 'Invalid'
+            this.status !== 'Running' &&
+            this.status !== 'Stopped' &&
+            this.status !== 'Error' &&
+            this.status !== 'Invalid'
         )
     }
 
-    public getStatus(): string {
-        return this.status
+    public get status(): string {
+        return this.devSpace.status
     }
 
     public get name(): string {
-        return this.hyperpodDevSpace.name
+        return this.devSpace.name
     }
 
     public get namespace(): string {
-        return this.hyperpodDevSpace.namespace
+        return this.devSpace.namespace
     }
 
     public get cluster(): string {
-        return this.hyperpodDevSpace.cluster
-    }
-
-    public get status(): string {
-        return this.hyperpodDevSpace.status
+        return this.devSpace.cluster
     }
 
     public getParent(): SagemakerHyperpodNode {
@@ -127,13 +115,13 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
 
     public async updateWorkspaceStatus() {
         try {
-            this.hyperpodDevSpace.status = await this.getParent()
-                .getKubectlClient(this.hyperpodCluster.clusterName)
-                .getHyperpodSpaceStatus(this.hyperpodDevSpace)
+            this.devSpace.status = await this.getParent()
+                .getKubectlClient(this.hpCluster.clusterName)
+                .getHyperpodSpaceStatus(this.devSpace)
         } catch (error) {
             getLogger().warn(
                 '[Hyperpod] Failed to update status for %s: %s',
-                this.hyperpodDevSpace.name,
+                this.devSpace.name,
                 (error as Error).message
             )
         }
