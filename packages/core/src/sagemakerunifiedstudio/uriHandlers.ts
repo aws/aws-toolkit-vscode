@@ -8,6 +8,7 @@ import { SearchParams } from '../shared/vscode/uriHandler'
 import { ExtContext } from '../shared/extensions'
 import { deeplinkConnect } from '../awsService/sagemaker/commands'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { SmusAuthMode } from '../shared/telemetry/telemetry.gen'
 /**
  * Registers the SMUS deeplink URI handler at path `/connect/smus`.
  *
@@ -62,6 +63,7 @@ export function register(ctx: ExtContext) {
  * - smus_domain_account_id: SMUS domain account ID
  * - smus_project_id: SMUS project identifier
  * - smus_domain_region: SMUS domain region
+ * - smus_auth_mode: Authentication mode (sso or iam)
  *
  * Note: The ws_url from startSession API originally includes cell-number as a query parameter.
  * However, when the deeplink URL is processed, the URI handler extracts cell-number as a
@@ -86,7 +88,8 @@ export function parseConnectParams(query: SearchParams) {
         'smus_domain_id',
         'smus_domain_account_id',
         'smus_project_id',
-        'smus_domain_region'
+        'smus_domain_region',
+        'smus_auth_mode'
     )
 
     return { ...requiredParams, ...optionalParams }
@@ -109,6 +112,10 @@ function extractTelemetryMetadata(params: ReturnType<typeof parseConnectParams>)
     const domainIdFromArn = resourceParts?.[1] // domain-id from ARN
     const spaceName = resourceParts?.[2] // space-name from ARN
 
+    // Validate and cast smusAuthMode to the expected type
+    const authMode = params.smus_auth_mode
+    const smusAuthMode: SmusAuthMode | undefined = authMode === 'sso' || authMode === 'iam' ? authMode : undefined
+
     return {
         smusDomainId: params.smus_domain_id,
         smusDomainAccountId: params.smus_domain_account_id,
@@ -117,5 +124,6 @@ function extractTelemetryMetadata(params: ReturnType<typeof parseConnectParams>)
         smusProjectRegion: projectRegion,
         smusProjectAccountId: projectAccountId,
         smusSpaceKey: domainIdFromArn && spaceName ? `${domainIdFromArn}/${spaceName}` : undefined,
+        smusAuthMode: smusAuthMode,
     }
 }
