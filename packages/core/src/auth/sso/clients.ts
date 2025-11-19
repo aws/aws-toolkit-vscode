@@ -77,7 +77,7 @@ export class OidcClient {
         codeChallenge: string
         codeChallengeMethod: string
     }) {
-        // aws sdk doesn't convert to url params until right before you make the request, so we have to do
+        // aws sdk doesn't convert to url params until right before you make the request, so we have to do // test
         // it manually ahead of time
         const params = toSnakeCase(request)
         const searchParams = new URLSearchParams(params).toString()
