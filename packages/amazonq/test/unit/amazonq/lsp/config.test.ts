@@ -11,6 +11,7 @@ import { defaultAmazonQLspConfig, ExtendedAmazonQLSPConfig, getAmazonQLspConfig 
 describe('getAmazonQLspConfig', () => {
     let sandbox: sinon.SinonSandbox
     let serviceConfigStub: sinon.SinonStub
+    let getStub: sinon.SinonStub
     const settingConfig: ExtendedAmazonQLSPConfig = {
         manifestUrl: 'https://custom.url/manifest.json',
         supportedVersions: '4.0.0',
@@ -24,8 +25,10 @@ describe('getAmazonQLspConfig', () => {
         sandbox = sinon.createSandbox()
 
         serviceConfigStub = sandbox.stub()
+        getStub = sandbox.stub()
         sandbox.stub(DevSettings, 'instance').get(() => ({
             getServiceConfig: serviceConfigStub,
+            get: getStub,
         }))
     })
 
@@ -36,29 +39,45 @@ describe('getAmazonQLspConfig', () => {
 
     it('uses default config', () => {
         serviceConfigStub.returns({})
-        assert.deepStrictEqual(getAmazonQLspConfig(), defaultAmazonQLspConfig)
+        getStub.returns({})
+        assert.deepStrictEqual(getAmazonQLspConfig(), { ...defaultAmazonQLspConfig, registryUrl: undefined })
     })
 
     it('overrides path', () => {
         const path = '/custom/path/to/lsp'
         serviceConfigStub.returns({ path })
+        getStub.returns({})
 
         assert.deepStrictEqual(getAmazonQLspConfig(), {
             ...defaultAmazonQLspConfig,
             path,
+            registryUrl: undefined,
         })
     })
 
     it('overrides default settings', () => {
         serviceConfigStub.returns(settingConfig)
+        getStub.returns({})
 
-        assert.deepStrictEqual(getAmazonQLspConfig(), settingConfig)
+        assert.deepStrictEqual(getAmazonQLspConfig(), { ...settingConfig, registryUrl: undefined })
     })
 
     it('environment variable takes precedence over settings', () => {
         setEnv(settingConfig)
         serviceConfigStub.returns({})
-        assert.deepStrictEqual(getAmazonQLspConfig(), settingConfig)
+        getStub.returns({})
+        assert.deepStrictEqual(getAmazonQLspConfig(), { ...settingConfig, registryUrl: undefined })
+    })
+
+    it('includes registryUrl from amazonqRegistry setting', () => {
+        const registryUrl = 'https://custom.registry.url/manifest.json'
+        serviceConfigStub.returns({})
+        getStub.withArgs('amazonqRegistry', {}).returns({ registryUrl })
+
+        assert.deepStrictEqual(getAmazonQLspConfig(), {
+            ...defaultAmazonQLspConfig,
+            registryUrl,
+        })
     })
 
     function setEnv(envConfig: ExtendedAmazonQLSPConfig) {
