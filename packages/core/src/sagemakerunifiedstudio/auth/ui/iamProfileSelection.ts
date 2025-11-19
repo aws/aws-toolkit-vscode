@@ -332,6 +332,9 @@ export class SmusIamProfileSelector {
         )
         quickPick.items = regionItems
 
+        // Allow users to find matches by typing in the region code (e.g., us-east-1)
+        quickPick.matchOnDescription = true
+
         // Pre-select default region if provided
         if (options?.defaultRegion) {
             const defaultItem = regionItems.find((item) => (item as any).regionCode === options.defaultRegion)
