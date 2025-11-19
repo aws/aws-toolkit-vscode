@@ -85,10 +85,12 @@ export class SshConfig {
     protected async matchSshSection() {
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
-            // Format stderr error message
+            // Format stderr error message for display to user
             let errorMessage = result.stderr?.trim() || `ssh check against host failed: ${result.exitCode}`
             const sshConfigPath = getSshConfigPath()
-            errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:\\s*`, 'g'), '').trim()
+            // Remove the SSH config file path prefix from error messages to make them more readable
+            // SSH errors often include the full path like "/Users/name/.ssh/config: line 5: Bad configuration option"
+            errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
 
             if (result.error) {
                 // System level error

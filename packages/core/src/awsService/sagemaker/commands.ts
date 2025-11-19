@@ -17,18 +17,16 @@ import { prepareDevEnvConnection, tryRemoteConnection } from './model'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { AccessDeniedException } from '@amzn/sagemaker-client'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { RemoteSessionError } from '../../shared/remoteSession'
 import {
     ConnectFromRemoteWorkspaceMessage,
-    InstanceTypeError,
     InstanceTypeInsufficientMemory,
     InstanceTypeInsufficientMemoryMessage,
     RemoteAccess,
     RemoteAccessRequiredMessage,
     SpaceStatus,
-    SshConfigError,
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 
@@ -227,8 +225,10 @@ export async function openRemoteConnect(
             return await handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
         }
     } catch (err: any) {
-        // Suppress errors that were already shown to user
-        if (shouldSuppressError(err)) {
+        // Suppress errors that don't need additional error messages:
+        // - User cancellations (checked by isUserCancelledError)
+        // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+        if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
             return
         }
         throw err
@@ -355,8 +355,10 @@ async function handleRunningSpaceWithDisabledAccess(
                 )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
-                // Suppress errors that were already shown to user
-                if (shouldSuppressError(err)) {
+                // Suppress errors that don't need additional error messages:
+                // - User cancellations (checked by isUserCancelledError)
+                // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+                if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
                     return
                 }
                 throw new ToolkitError(`Remote connection failed: ${err.message}`, {
@@ -402,8 +404,10 @@ async function handleStoppedSpace(
             }
         )
     } catch (err: any) {
-        // Suppress errors that were already shown to user
-        if (shouldSuppressError(err)) {
+        // Suppress errors that don't need additional error messages:
+        // - User cancellations (checked by isUserCancelledError)
+        // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+        if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
             return
         }
         throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
@@ -433,11 +437,4 @@ async function handleRunningSpaceWithEnabledAccess(
             await tryRemoteConnection(node, ctx, progress)
         }
     )
-}
-
-/**
- * Helper function to determine if an error should be suppressed (already shown to user)
- */
-function shouldSuppressError(err: any): boolean {
-    return err.code === SshConfigError || err.code === InstanceTypeError
 }

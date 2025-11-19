@@ -6,7 +6,7 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable no-restricted-imports */
 import * as vscode from 'vscode'
-import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
+import { getSshConfigPath, sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
@@ -99,21 +99,23 @@ export async function prepareDevEnvConnection(
         logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
 
         if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
-            const sshConfigPath = path.join(os.homedir(), '.ssh', 'config')
+            const sshConfigPath = getSshConfigPath()
+            const openConfigButton = 'Open SSH Config'
+            const resp = await vscode.window.showErrorMessage(
+                SshConfigErrorMessage(),
+                { modal: true, detail: err.message },
+                openConfigButton
+            )
 
-            await vscode.window
-                .showErrorMessage(
-                    SshConfigErrorMessage(sshConfigPath),
-                    { modal: true, detail: err.message },
-                    'Open SSH Config'
-                )
-                .then((resp) => {
-                    if (resp === 'Open SSH Config') {
-                        void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
-                    }
-                })
+            if (resp === openConfigButton) {
+                void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+            }
 
-            throw new ToolkitError('SSH configuration error', { code: SshConfigError, cancelled: true })
+            // Throw error to stop the connection flow
+            // User is already notified via modal above, downstream handlers check the error code
+            throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
+                code: SshConfigError,
+            })
         }
 
         throw err

@@ -47,8 +47,8 @@ export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
 export const RemoteAccessRequiredMessage =
     'This space requires remote access to be enabled.\nWould you like to restart the space and connect?\nAny unsaved work will be lost.'
 
-export const SshConfigErrorMessage = (sshConfigPath: string) => {
-    return `Unable to connect. ${sshConfigPath} contains SSH configuration syntax errors. Fix the errors to continue.`
+export const SshConfigErrorMessage = () => {
+    return `Unable to connect. Your SSH config file contains errors. Fix the errors to continue.`
 }
 
 export const SmusDeeplinkSessionExpiredError = {
