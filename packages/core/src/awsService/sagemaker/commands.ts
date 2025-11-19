@@ -28,6 +28,7 @@ import {
     RemoteAccess,
     RemoteAccessRequiredMessage,
     SpaceStatus,
+    SshConfigError,
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 
@@ -210,19 +211,27 @@ export async function openRemoteConnect(
         return
     }
 
-    const spaceName = node.spaceApp.SpaceName!
-    await tryRefreshNode(node)
+    try {
+        const spaceName = node.spaceApp.SpaceName!
+        await tryRefreshNode(node)
 
-    const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
-    const nodeStatus = node.getStatus()
+        const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
+        const nodeStatus = node.getStatus()
 
-    // Route to appropriate handler based on space state
-    if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
-        return handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
-    } else if (nodeStatus === SpaceStatus.STOPPED) {
-        return handleStoppedSpace(node, ctx, spaceName, sageMakerClient)
-    } else if (nodeStatus === SpaceStatus.RUNNING) {
-        return handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
+        // Route to appropriate handler based on space state
+        if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
+            return await handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
+        } else if (nodeStatus === SpaceStatus.STOPPED) {
+            return await handleStoppedSpace(node, ctx, spaceName, sageMakerClient)
+        } else if (nodeStatus === SpaceStatus.RUNNING) {
+            return await handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
+        }
+    } catch (err: any) {
+        // Suppress errors that were already shown to user
+        if (shouldSuppressError(err)) {
+            return
+        }
+        throw err
     }
 }
 
@@ -346,8 +355,8 @@ async function handleRunningSpaceWithDisabledAccess(
                 )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
-                // Handle user declining instance type upgrade
-                if (err.code === InstanceTypeError) {
+                // Suppress errors that were already shown to user
+                if (shouldSuppressError(err)) {
                     return
                 }
                 throw new ToolkitError(`Remote connection failed: ${err.message}`, {
@@ -393,8 +402,8 @@ async function handleStoppedSpace(
             }
         )
     } catch (err: any) {
-        // Handle user declining instance type upgrade
-        if (err.code === InstanceTypeError) {
+        // Suppress errors that were already shown to user
+        if (shouldSuppressError(err)) {
             return
         }
         throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {
@@ -424,4 +433,11 @@ async function handleRunningSpaceWithEnabledAccess(
             await tryRemoteConnection(node, ctx, progress)
         }
     )
+}
+
+/**
+ * Helper function to determine if an error should be suppressed (already shown to user)
+ */
+function shouldSuppressError(err: any): boolean {
+    return err.code === SshConfigError || err.code === InstanceTypeError
 }
