@@ -42,6 +42,7 @@ export const toolkitSettings = {
     },
     "aws.experiments": {
         "jsonResourceModification": {},
+        "cloudFormationService": {},
         "amazonqLSP": {},
         "amazonqLSPInline": {},
         "amazonqChatLSP": {},
@@ -53,7 +54,20 @@ export const toolkitSettings = {
     "aws.accessAnalyzer.policyChecks.checkNoNewAccessFilePath": {},
     "aws.accessAnalyzer.policyChecks.checkAccessNotGrantedFilePath": {},
     "aws.accessAnalyzer.policyChecks.cloudFormationParameterFilePath": {},
-    "aws.sagemaker.studio.spaces.enableIdentityFiltering": {}
+    "aws.sagemaker.studio.spaces.enableIdentityFiltering": {},
+    "aws.cloudformation.telemetry.enabled": {},
+    "aws.cloudformation.hover.enabled": {},
+    "aws.cloudformation.completion.enabled": {},
+    "aws.cloudformation.diagnostics.cfnLint.enabled": {},
+    "aws.cloudformation.diagnostics.cfnLint.lintOnChange": {},
+    "aws.cloudformation.diagnostics.cfnLint.delayMs": {},
+    "aws.cloudformation.diagnostics.cfnLint.path": {},
+    "aws.cloudformation.diagnostics.cfnGuard.enabled": {},
+    "aws.cloudformation.diagnostics.cfnGuard.validateOnChange": {},
+    "aws.cloudformation.diagnostics.cfnGuard.enabledRulePacks": {},
+    "aws.cloudformation.diagnostics.cfnGuard.rulesFile": {},
+    "aws.cloudformation.s3": {},
+    "aws.cloudformation.environment.saveOptions": {}
 }
 
 export default toolkitSettings
