@@ -17,8 +17,11 @@ import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { getLogger } from '../../../shared/logger/logger'
+import globals from '../../../shared/extensionGlobals'
 
 export const hyperpodContextValue = 'awsSagemakerHyperpodNode'
+export type SelectedClusterNamespaces = [string, string[]][]
+export type SelectedClusterNameSpacesByRegion = [string, SelectedClusterNamespaces][]
 
 export class SagemakerHyperpodNode extends AWSTreeNodeBase {
     public readonly hyperpodDevSpaceNodes: Map<string, SagemakerDevSpaceNode>
@@ -111,8 +114,24 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         this.allSpaces = await this.listSpaces()
+        this.clusterNamespaces.clear()
+
+        for (const [_, { devSpace }] of this.allSpaces) {
+            const filterKey = this.getClusterNamespaceKey(devSpace)
+            this.clusterNamespaces.set(filterKey, devSpace)
+        }
+
         const filterSpaces = new Map(this.allSpaces)
         this.callerIdentity = await this.stsClient.getCallerIdentity()
+
+        const selectedClusterNamespaces = await this.getSelectedClusterNamespaces()
+
+        for (const [key, { devSpace }] of this.allSpaces) {
+            const filterKey = this.getClusterNamespaceKey(devSpace)
+            if (!selectedClusterNamespaces.has(filterKey)) {
+                filterSpaces.delete(key)
+            }
+        }
 
         updateInPlace(
             this.hyperpodDevSpaceNodes,
@@ -166,5 +185,48 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
     public getWorkspaceKey(space: HyperpodDevSpace): string {
         return `${space.cluster}-${space.namespace}-${space.name}`
+    }
+
+    public async getDefaultSelectedClusterNamespaces(): Promise<string[]> {
+        return [...this.clusterNamespaces.keys()]
+    }
+
+    public async getSelectedClusterNamespaces(): Promise<Set<string>> {
+        const selectedClusterNamespacesByRegionMap = new Map(
+            globals.globalState.get<SelectedClusterNameSpacesByRegion>(
+                SagemakerConstants.SelectedClusterNamespacesState,
+                []
+            )
+        )
+
+        const selectedClusterNamespacesMap = new Map(selectedClusterNamespacesByRegionMap.get(this.regionCode))
+        const defaultSelectedClusterNamespaces = await this.getDefaultSelectedClusterNamespaces()
+        const cachedClusterNamespaces = selectedClusterNamespacesMap.get(this.callerIdentity.Arn || '')
+
+        if (cachedClusterNamespaces && cachedClusterNamespaces.length > 0) {
+            return new Set(cachedClusterNamespaces)
+        } else {
+            return new Set(defaultSelectedClusterNamespaces)
+        }
+    }
+
+    public saveSelectedClusterNamespaces(selectedClusterNamespaces: string[]) {
+        const selectedClusterNamespacesByRegionMap = new Map(
+            globals.globalState.get<SelectedClusterNameSpacesByRegion>(
+                SagemakerConstants.SelectedClusterNamespacesState,
+                []
+            )
+        )
+
+        const selectedClusterNamespacesMap = new Map(selectedClusterNamespacesByRegionMap.get(this.regionCode))
+
+        if (this.callerIdentity.Arn) {
+            selectedClusterNamespacesMap?.set(this.callerIdentity.Arn, selectedClusterNamespaces)
+            selectedClusterNamespacesByRegionMap?.set(this.regionCode, [...selectedClusterNamespacesMap])
+
+            globals.globalState.tryUpdate(SagemakerConstants.SelectedClusterNamespacesState, [
+                ...selectedClusterNamespacesByRegionMap,
+            ])
+        }
     }
 }

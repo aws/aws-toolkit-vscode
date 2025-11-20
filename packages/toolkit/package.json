@@ -1463,6 +1463,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "false"
+                },
+                {
                     "command": "aws.smus.switchProject",
                     "when": "false"
                 },
@@ -1926,7 +1930,12 @@
                 },
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
-                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerStudioNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerHyperpodNode",
                     "group": "inline@1"
                 },
                 {
@@ -2116,7 +2125,12 @@
                 },
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
-                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerStudioNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerHyperpodNode",
                     "group": "0@1"
                 },
                 {
@@ -3112,6 +3126,18 @@
             {
                 "command": "aws.sagemaker.filterSpaceApps",
                 "title": "%AWS.command.sagemaker.filterSpaces%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(extensions-filter)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.hyperpod.filterDevSpaces",
+                "title": "Filter Hyperpod DevSpaces",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(extensions-filter)",

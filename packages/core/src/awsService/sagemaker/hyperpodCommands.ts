@@ -4,8 +4,12 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+import { getLogger } from '../../shared/logger/logger'
 import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
+
+const localize = nls.loadMessageBundle()
 
 export async function openHyperPodRemoteConnection(node: SagemakerDevSpaceNode): Promise<void> {
     await startHyperpodSpaceCommand(node)
@@ -56,4 +60,62 @@ export async function stopHyperPodSpaceCommand(node: SagemakerDevSpaceNode): Pro
 
     const kc = node.getParent().getKubectlClient(node.hpCluster.clusterName)
     await kc.stopHyperpodDevSpace(node)
+}
+
+export async function filterDevSpacesByNamespaceCluster(hpNode: SagemakerHyperpodNode): Promise<void> {
+    if (hpNode.clusterNamespaces.size === 0) {
+        // if hyperpodNode has not been expanded, then devSpaceNodes will be empty
+        // if so, this will attempt to populate devSpaceNodes
+        await hpNode.updateChildren()
+        if (hpNode.clusterNamespaces.size === 0) {
+            getLogger().info(SagemakerConstants.NoDevSpaceToFilter)
+            void vscode.window.showInformationMessage(SagemakerConstants.NoDevSpaceToFilter)
+            return
+        }
+    }
+
+    // Sort by EKS cluster name and namespace
+    const sortedClusterNamespaces = new Map(
+        [...hpNode.clusterNamespaces].sort((a, b) => {
+            const clusterA = a[1].cluster
+            const clusterB = b[1].cluster
+            const namespaceA = a[1].namespace
+            const namespaceB = b[1].namespace
+
+            return clusterA.localeCompare(clusterB) || namespaceA.localeCompare(namespaceB)
+        })
+    )
+
+    const previousSelection = await hpNode.getSelectedClusterNamespaces()
+    const items: (vscode.QuickPickItem & { key: string })[] = []
+
+    for (const [_, devSpace] of sortedClusterNamespaces) {
+        const filterKey = `${devSpace.cluster}-${devSpace.namespace}`
+        items.push({
+            label: devSpace.namespace,
+            detail: `In cluster: ${devSpace.cluster}`,
+            picked: previousSelection.has(filterKey),
+            key: filterKey,
+        })
+    }
+
+    const placeholder = localize(
+        SagemakerConstants.FilterHyperpodPlaceholderKey,
+        SagemakerConstants.FilterHyperpodPlaceholderMessage
+    )
+    const result = await vscode.window.showQuickPick(items, {
+        placeHolder: placeholder,
+        canPickMany: true,
+        matchOnDetail: true,
+    })
+
+    if (!result) {
+        return // User canceled
+    }
+
+    const newSelection = result.map((r) => r.key)
+    if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
+        hpNode.saveSelectedClusterNamespaces(newSelection)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', hpNode)
+    }
 }
