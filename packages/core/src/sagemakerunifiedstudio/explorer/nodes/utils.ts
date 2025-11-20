@@ -32,6 +32,9 @@ import { GlueCatalog } from '../../shared/client/glueCatalogClient'
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
 
+/**
+ * Check if a catalog is a RedLake catalog
+ */
 export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
     if (!catalog) {
         return false
@@ -42,6 +45,9 @@ export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
     )
 }
 
+/**
+ * Check if a catalog is a S3 table catalog
+ */
 export const isS3TablesCatalog = (catalog?: GlueCatalog) => {
     return catalog?.FederatedCatalog?.ConnectionName === 'aws:s3tables'
 }
