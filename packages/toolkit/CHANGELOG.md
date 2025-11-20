@@ -1,3 +1,8 @@
+## 3.85.0 2025-11-19
+
+- **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working
+- **Feature** CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support
+
 ## 3.84.0 2025-11-15
 
 - **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
