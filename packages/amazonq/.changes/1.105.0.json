@@ -1,0 +1,10 @@
+{
+	"date": "2025-11-19",
+	"version": "1.105.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Remove show logs menu item for non Q views"
+		}
+	]
+}
