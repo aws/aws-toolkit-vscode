@@ -16,13 +16,56 @@ enum TelemetryChoice {
     LearnMore = 'Learn More',
 }
 
-export async function promptTelemetryOptInWithTimeout(
+const telemetryKeys = {
+    hasResponded: commandKey('telemetry.hasResponded'),
+    lastPromptDate: commandKey('telemetry.lastPromptDate'),
+    unpersistedResponse: commandKey('telemetry.unpersistedResponse'),
+} as const
+
+const telemetrySettings = {
+    enabled: 'enabled',
+} as const
+
+const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+const promptTimeoutMs = 2500
+const telemetryDocsUrl = 'https://github.com/aws-cloudformation/cloudformation-languageserver/tree/main/src/telemetry'
+
+/* eslint-disable aws-toolkits/no-banned-usages */
+export async function handleTelemetryOptIn(
     context: ExtensionContext,
     cfnTelemetrySettings: CloudFormationTelemetrySettings
 ): Promise<boolean> {
-    const promptPromise = promptTelemetryOptIn(context, cfnTelemetrySettings)
-    const timeoutPromise = new Promise<false>((resolve) => setTimeout(() => resolve(false), 2500))
+    // If previous choice failed to persist, persist it now and return
+    const unpersistedResponse = (await context.globalState.get(telemetryKeys.unpersistedResponse)) as string
+    const lastPromptDate = context.globalState.get<number>(telemetryKeys.lastPromptDate, Date.now())
+    if (unpersistedResponse) {
+        await saveTelemetryResponse(unpersistedResponse, context, cfnTelemetrySettings, lastPromptDate)
+        await context.globalState.update(telemetryKeys.unpersistedResponse, undefined)
+        return unpersistedResponse === TelemetryChoice.Allow.toString() ? true : false
+    }
 
+    // Never throws because we provide a default
+    const telemetryEnabled = cfnTelemetrySettings.get(telemetrySettings.enabled, false)
+
+    if (isAutomation()) {
+        return telemetryEnabled
+    }
+
+    // If user has permanently responded, use their choice
+    const hasResponded = context.globalState.get<boolean>(telemetryKeys.hasResponded, false)
+    if (hasResponded) {
+        return telemetryEnabled
+    }
+
+    // Check if we should show reminder (30 days since last prompt)
+    const shouldPrompt = lastPromptDate === 0 || Date.now() - lastPromptDate >= thirtyDaysMs
+    if (!shouldPrompt) {
+        return telemetryEnabled
+    }
+
+    // Show prompt but set false if timeout
+    const promptPromise = promptTelemetryOptIn(context, cfnTelemetrySettings)
+    const timeoutPromise = new Promise<false>((resolve) => setTimeout(() => resolve(false), promptTimeoutMs))
     const result = await Promise.race([promptPromise, timeoutPromise])
 
     // Keep prompt alive in background
@@ -32,21 +75,21 @@ export async function promptTelemetryOptInWithTimeout(
 }
 
 /* eslint-disable aws-toolkits/no-banned-usages */
-async function handleTelemetryResponse(
+async function saveTelemetryResponse(
     response: string | undefined,
     context: ExtensionContext,
     cfnTelemetrySettings: CloudFormationTelemetrySettings,
     promptDate: number
 ): Promise<void> {
     if (response === TelemetryChoice.Allow) {
-        await cfnTelemetrySettings.update('enabled', true)
-        await context.globalState.update(commandKey('telemetry.hasResponded'), true)
+        await cfnTelemetrySettings.update(telemetrySettings.enabled, true)
+        await context.globalState.update(telemetryKeys.hasResponded, true)
     } else if (response === TelemetryChoice.Never) {
-        await cfnTelemetrySettings.update('enabled', false)
-        await context.globalState.update(commandKey('telemetry.hasResponded'), true)
+        await cfnTelemetrySettings.update(telemetrySettings.enabled, false)
+        await context.globalState.update(telemetryKeys.hasResponded, true)
     } else if (response === TelemetryChoice.Later) {
-        await cfnTelemetrySettings.update('enabled', false)
-        await context.globalState.update(commandKey('telemetry.lastPromptDate'), promptDate)
+        await cfnTelemetrySettings.update(telemetrySettings.enabled, false)
+        await context.globalState.update(telemetryKeys.lastPromptDate, promptDate)
     }
 }
 
@@ -55,37 +98,6 @@ async function promptTelemetryOptIn(
     context: ExtensionContext,
     cfnTelemetrySettings: CloudFormationTelemetrySettings
 ): Promise<boolean> {
-    const now = Date.now()
-
-    // If previous choice failed to persist, persist it now
-    const unpersistedResponse = (await context.globalState.get(commandKey('telemetry.unpersistedResponse'))) as string
-    const lastPromptDate = context.globalState.get<number>(commandKey('telemetry.lastPromptDate'), now)
-    if (unpersistedResponse) {
-        await handleTelemetryResponse(unpersistedResponse, context, cfnTelemetrySettings, lastPromptDate)
-        await context.globalState.update(commandKey('telemetry.unpersistedResponse'), undefined)
-        return unpersistedResponse === TelemetryChoice.Allow.toString() ? true : false
-    }
-
-    // Never throws because we provide a default
-    const telemetryEnabled = cfnTelemetrySettings.get('enabled', false)
-    if (isAutomation()) {
-        return telemetryEnabled
-    }
-
-    const hasResponded = context.globalState.get<boolean>(commandKey('telemetry.hasResponded'), false)
-
-    // If user has permanently responded, use their choice
-    if (hasResponded) {
-        return telemetryEnabled
-    }
-
-    // Check if we should show reminder (30 days since last prompt)
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
-    const shouldPrompt = lastPromptDate === 0 || now - lastPromptDate >= thirtyDaysMs
-    if (!shouldPrompt) {
-        return telemetryEnabled
-    }
-
     const message =
         'Help us improve the AWS CloudFormation Language Server by sharing anonymous telemetry data with AWS. You can change this preference at any time in aws.cloudformation Settings.'
 
@@ -98,26 +110,24 @@ async function promptTelemetryOptIn(
     )
 
     if (response === TelemetryChoice.LearnMore) {
-        await env.openExternal(
-            Uri.parse('https://github.com/aws-cloudformation/cloudformation-languageserver/tree/main/src/telemetry')
-        )
+        await env.openExternal(Uri.parse(telemetryDocsUrl))
         return promptTelemetryOptIn(context, cfnTelemetrySettings)
     }
 
-    // There's a chance our settings aren't registered yet, so we
+    // There's a chance our settings aren't registered yet from package.json, so we
     // see if we can persist to settings first
     try {
         // Throws if setting is not registered
-        cfnTelemetrySettings.get('enabled')
+        cfnTelemetrySettings.get(telemetrySettings.enabled)
     } catch (err) {
         getLogger().warn(err as Error)
         // Save the choice in globalState and save to settings next time
-        await context.globalState.update(commandKey('telemetry.unpersistedResponse'), response)
+        await context.globalState.update(telemetryKeys.unpersistedResponse, response)
         if (response === TelemetryChoice.Allow) {
-            await context.globalState.update(commandKey('telemetry.hasResponded'), true)
+            await context.globalState.update(telemetryKeys.hasResponded, true)
             return true
         } else if (response === TelemetryChoice.Never) {
-            await context.globalState.update(commandKey('telemetry.hasResponded'), true)
+            await context.globalState.update(telemetryKeys.hasResponded, true)
             return false
         } else {
             return false
@@ -125,6 +135,6 @@ async function promptTelemetryOptIn(
     }
 
     // At this point should be able to save and get successfully
-    await handleTelemetryResponse(response, context, cfnTelemetrySettings, now)
-    return cfnTelemetrySettings.get('enabled', false)
+    await saveTelemetryResponse(response, context, cfnTelemetrySettings, Date.now())
+    return cfnTelemetrySettings.get(telemetrySettings.enabled, false)
 }
