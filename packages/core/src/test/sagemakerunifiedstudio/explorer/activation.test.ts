@@ -61,7 +61,10 @@ describe('SMUS Explorer Activation', function () {
 
         mockSmusRootNode = {
             getChildren: sinon.stub().resolves([]),
-            getProjectSelectNode: sinon.stub().returns({ refreshNode: sinon.stub().resolves() }),
+            getProjectSelectNode: sinon.stub().returns({
+                getProject: sinon.stub().returns({ id: 'test-project', name: 'Test Project' }),
+                refreshNode: sinon.stub().resolves(),
+            }),
         } as any
 
         // Stub vscode APIs
