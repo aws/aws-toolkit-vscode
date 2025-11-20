@@ -12,6 +12,7 @@ import {
 
 export interface ExtendedAmazonQLSPConfig extends BaseLspInstaller.LspConfig {
     ui?: string
+    registryUrl?: string
 }
 
 // Taken from language server runtimes since they are not exported:
@@ -44,10 +45,12 @@ export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
 }
 
 export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
+    const registryConfig = DevSettings.instance.get('amazonqRegistry', {})
     return {
         ...defaultAmazonQLspConfig,
         ...(DevSettings.instance.getServiceConfig('amazonqLsp', {}) as ExtendedAmazonQLSPConfig),
         ...getServiceEnvVarConfig('amazonqLsp', Object.keys(defaultAmazonQLspConfig)),
+        registryUrl: (registryConfig as any)?.registryUrl,
     }
 }
 /**
