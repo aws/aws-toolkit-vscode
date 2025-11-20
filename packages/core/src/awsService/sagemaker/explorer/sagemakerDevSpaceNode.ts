@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { AppType } from '@aws-sdk/client-sagemaker'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { HyperpodCluster, HyperpodDevSpace } from '../../../shared/clients/kubectlClient'
 import { SagemakerHyperpodNode } from './sagemakerHyperpodNode'
@@ -56,10 +55,10 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
 
     public buildIconPath() {
         switch (this.devSpace.appType) {
-            case AppType.JupyterLab: {
+            case 'jupyterlab': {
                 return getIcon('aws-sagemaker-jupyter-lab')
             }
-            case AppType.CodeEditor: {
+            case 'code-editor': {
                 return getIcon('aws-sagemaker-code-editor')
             }
             default: {
