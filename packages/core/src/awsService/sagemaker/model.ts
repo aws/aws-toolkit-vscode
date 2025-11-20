@@ -22,6 +22,7 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { SshConfigError, SshConfigErrorMessage } from './constants'
 
 const logger = getLogger('sagemaker')
 
@@ -96,6 +97,23 @@ export async function prepareDevEnvConnection(
     if (config.isErr()) {
         const err = config.err()
         logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
+
+        if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
+            const sshConfigPath = path.join(os.homedir(), '.ssh', 'config')
+
+            // Extracting line number from SSH error message is the best-effort.
+            // SSH error formats are not standardized and may vary across implementations.
+            await vscode.window
+                .showErrorMessage(SshConfigErrorMessage(), { modal: true, detail: err.message }, 'Open SSH Config')
+                .then((resp) => {
+                    if (resp === 'Open SSH Config') {
+                        void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+                    }
+                })
+
+            throw new ToolkitError('SSH configuration error', { code: SshConfigError, cancelled: true })
+        }
+
         throw err
     }
 

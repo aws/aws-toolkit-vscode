@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: Enhanced SSH configuration error handling to show user-friendly modal dialogs with line numbers and an \"Open SSH Config\" button for quick fixes."
+}
