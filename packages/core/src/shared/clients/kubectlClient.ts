@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as k8s from '@kubernetes/client-node'
 import { getLogger } from '../logger/logger'
 import { Cluster } from '@aws-sdk/client-eks'
+import { SagemakerDevSpaceNode } from '../../awsService/sagemaker/explorer/sagemakerDevSpaceNode'
 import globals from '../extensionGlobals'
 
 export interface HyperpodDevSpace {
@@ -177,6 +178,47 @@ export class KubectlClient {
             return 'Stopped'
         } else {
             return 'Unknown'
+        }
+    }
+
+    async startHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
+        getLogger().info(`[Hyperpod] Starting devSpace: %s`, node.devSpace.name)
+        await this.patchDevSpaceStatus(node.devSpace, 'Running')
+        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
+        node.getParent().trackPendingNode(node.getDevSpaceKey())
+    }
+
+    async stopHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
+        getLogger().info(`[Hyperpod] Stopping devSpace: %s`, node.devSpace.name)
+        await this.patchDevSpaceStatus(node.devSpace, 'Stopped')
+        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
+        node.getParent().trackPendingNode(node.getDevSpaceKey())
+    }
+
+    async patchDevSpaceStatus(devSpace: HyperpodDevSpace, desiredStatus: 'Running' | 'Stopped'): Promise<void> {
+        try {
+            const patchBody = {
+                spec: {
+                    desiredStatus: desiredStatus,
+                },
+            }
+
+            await this.k8sApi!.patchNamespacedCustomObject(
+                devSpace.group,
+                devSpace.version,
+                devSpace.namespace,
+                devSpace.plural,
+                devSpace.name,
+                patchBody,
+                undefined,
+                undefined,
+                undefined,
+                { headers: { 'Content-Type': 'application/merge-patch+json' } }
+            )
+        } catch (error) {
+            throw new Error(
+                `[Hyperpod] Failed to update transitional status for devSpace ${devSpace.name}: ${(error as Error).message}`
+            )
         }
     }
 }

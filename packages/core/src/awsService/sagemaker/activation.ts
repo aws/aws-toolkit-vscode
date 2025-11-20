@@ -14,6 +14,8 @@ import { updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval 
 import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker, UserActivity } from '../../shared/extensionUtilities'
+import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
+import { openHyperPodRemoteConnection, stopHyperPodSpaceCommand } from './hyperpodCommands'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
 
@@ -41,6 +43,24 @@ export async function activate(ctx: ExtContext): Promise<void> {
             }
             await telemetry.sagemaker_stopSpace.run(async () => {
                 await stopSpace(node, ctx.extensionContext)
+            })
+        }),
+
+        Commands.register('aws.hyperpod.stopSpace', async (node: SagemakerDevSpaceNode) => {
+            if (!validateNode(node)) {
+                return
+            }
+            await telemetry.hyperpod_stopSpace.run(async () => {
+                await stopHyperPodSpaceCommand(node)
+            })
+        }),
+
+        Commands.register('aws.hyperpod.openRemoteConnection', async (node: SagemakerDevSpaceNode) => {
+            await telemetry.hyperpod_openRemoteConnection.run(async () => {
+                if (!validateNode(node)) {
+                    return
+                }
+                await openHyperPodRemoteConnection(node)
             })
         })
     )
