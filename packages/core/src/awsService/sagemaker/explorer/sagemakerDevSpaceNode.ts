@@ -115,9 +115,12 @@ export class SagemakerDevSpaceNode extends AWSTreeNodeBase {
 
     public async updateWorkspaceStatus() {
         try {
-            this.devSpace.status = await this.getParent()
-                .getKubectlClient(this.hpCluster.clusterName)
-                .getHyperpodSpaceStatus(this.devSpace)
+            const kubectlClient = this.getParent().getKubectlClient(this.hpCluster.clusterName)
+            if (!kubectlClient) {
+                getLogger().info(`Failed to update workspace status due to unavailable kubectl client`)
+                return
+            }
+            this.devSpace.status = await kubectlClient.getHyperpodSpaceStatus(this.devSpace)
         } catch (error) {
             getLogger().warn(
                 '[Hyperpod] Failed to update status for %s: %s',

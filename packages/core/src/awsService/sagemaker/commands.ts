@@ -30,6 +30,7 @@ import {
     SpaceStatus,
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { node } from 'webpack'
 
 const localize = nls.loadMessageBundle()
 
@@ -97,6 +98,9 @@ export async function deeplinkConnect(
     token: string,
     domain: string,
     appType?: string,
+    workspaceName?: string,
+    namespace?: string,
+    eksClusterArn?: string,
     isSMUS: boolean = false
 ) {
     getLogger().debug(
@@ -108,17 +112,34 @@ export async function deeplinkConnect(
         isSMUS
     )
 
+    getLogger().info(
+        `sm:deeplinkConnect: 
+        domain: ${domain}, 
+        appType: ${appType}, 
+        workspaceName: ${workspaceName}, 
+        namespace: ${namespace}, 
+        eksClusterArn: ${eksClusterArn}`
+    )
+
+    getLogger().info(
+        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, eksClusterArn: ${eksClusterArn}`
+    )
+
     if (isRemoteWorkspace()) {
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
 
     try {
+        let connectionType = 'sm_dl'
+        if (domain === '') {
+            connectionType = 'sm_hp'
+        }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
             ctx.extensionContext,
-            'sm_dl',
-            isSMUS,
+            connectionType,
+            isSMUS /* isSMUS */,
             undefined /* node */,
             session,
             wsUrl,
@@ -127,13 +148,20 @@ export async function deeplinkConnect(
             appType
         )
 
-        await startVscodeRemote(
-            remoteEnv.SessionProcess,
-            remoteEnv.hostname,
-            '/home/sagemaker-user',
-            remoteEnv.vscPath,
-            'sagemaker-user'
-        )
+        try {
+            await startVscodeRemote(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                '/home/sagemaker-user',
+                remoteEnv.vscPath,
+                'sagemaker-user'
+            )
+        } catch (remoteErr: any) {
+            throw new ToolkitError(
+                `Failed to establish remote connection: ${remoteErr.message}. Check Remote-SSH logs for details.`,
+                { cause: remoteErr, code: remoteErr.code || 'RemoteConnectionFailed' }
+            )
+        }
     } catch (err: any) {
         getLogger().error(
             'sm:OpenRemoteConnect: Unable to connect to target space with arn: %s error: %s isSMUS: %s',
@@ -143,6 +171,9 @@ export async function deeplinkConnect(
         )
 
         if (![RemoteSessionError.MissingExtension, RemoteSessionError.ExtensionVersionTooLow].includes(err.code)) {
+            void vscode.window.showErrorMessage(
+                `Remote connection failed: ${err.message || 'Unknown error'}. Check Output > Log (Window) for details.`
+            )
             throw err
         }
     }

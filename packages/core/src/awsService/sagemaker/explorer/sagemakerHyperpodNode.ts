@@ -90,8 +90,9 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
                     continue
                 }
 
-                const kcClient = new KubectlClient(eksCluster, cluster)
-                if (!this.kubectlClients.has(cluster.clusterName)) {
+                let kcClient = this.getKubectlClient(cluster.clusterName)
+                if (!kcClient) {
+                    kcClient = new KubectlClient(eksCluster, cluster)
                     this.kubectlClients.set(cluster.clusterName, kcClient)
                 }
                 const spacesPerCluster = await kcClient.getSpacesForCluster(eksCluster)
@@ -166,8 +167,8 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
         }
     }
 
-    public getKubectlClient(clusterName: string): KubectlClient {
-        return this.kubectlClients.get(clusterName)!
+    public getKubectlClient(clusterName: string): KubectlClient | undefined {
+        return this.kubectlClients.get(clusterName)
     }
 
     private getHyperpodNode(key: string): SagemakerDevSpaceNode {

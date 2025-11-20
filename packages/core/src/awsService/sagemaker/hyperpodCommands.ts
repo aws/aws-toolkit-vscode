@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger/logger'
+import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
@@ -15,6 +16,35 @@ const localize = nls.loadMessageBundle()
 
 export async function openHyperPodRemoteConnection(node: SagemakerDevSpaceNode): Promise<void> {
     await startHyperpodSpaceCommand(node)
+    await connectToHyperPodDevSpace(node)
+}
+
+export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
+    const logger = getLogger()
+
+    if (isRemoteWorkspace()) {
+        void vscode.window.showErrorMessage(
+            'Cannot connect to HyperPod from a remote workspace. Please use a local VS Code instance.'
+        )
+        return
+    }
+
+    try {
+        const kubectlClient = node.getParent().getKubectlClient(node.hpCluster.clusterName)
+        if (!kubectlClient) {
+            logger.error(`No kubectlClient available for cluster: ${node.hpCluster.clusterName}`)
+            return
+        }
+        const response = await kubectlClient.createWorkspaceConnection(node.devSpace)
+        getLogger().debug(`HyperPod connection response: &O`, response)
+        await vscode.env.openExternal(vscode.Uri.parse(response.url))
+        void vscode.window.showInformationMessage(`Started connection to HyperPod dev space: ${node.devSpace.name}`)
+    } catch (error) {
+        logger.error(`Failed to connect to HyperPod dev space: ${error}`)
+        void vscode.window.showErrorMessage(
+            `Failed to connect to HyperPod dev space: ${error instanceof Error ? error.message : String(error)}`
+        )
+    }
 }
 
 export async function startHyperpodSpaceCommand(node: SagemakerDevSpaceNode): Promise<void> {
@@ -35,6 +65,10 @@ export async function startHyperpodSpaceCommand(node: SagemakerDevSpaceNode): Pr
     await node.refreshNode()
 
     const kc = node.getParent().getKubectlClient(node.hpCluster.clusterName)
+    if (!kc) {
+        getLogger().error(`Failed to start space (${node.devSpace.name}) due to unavailable kubectl client`)
+        return
+    }
     await kc.startHyperpodDevSpace(node)
 }
 
@@ -61,6 +95,10 @@ export async function stopHyperPodSpaceCommand(node: SagemakerDevSpaceNode): Pro
     await node.refreshNode()
 
     const kc = node.getParent().getKubectlClient(node.hpCluster.clusterName)
+    if (!kc) {
+        getLogger().error(`Failed to start space (${node.devSpace.name}) due to unavailable kubectl client`)
+        return
+    }
     await kc.stopHyperpodDevSpace(node)
 }
 

@@ -34,7 +34,7 @@ export interface HyperpodCluster {
 
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
-    private k8sApi?: k8s.CustomObjectsApi
+    private k8sApi: k8s.CustomObjectsApi
 
     public constructor(eksCluster: Cluster, hyperpodCluster: HyperpodCluster) {
         this.kubeConfig = new k8s.KubeConfig()
@@ -218,6 +218,52 @@ export class KubectlClient {
         } catch (error) {
             throw new Error(
                 `[Hyperpod] Failed to update transitional status for devSpace ${devSpace.name}: ${(error as Error).message}`
+            )
+        }
+    }
+
+    async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<{ type: string; url: string }> {
+        try {
+            getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
+
+            const group = 'connection.workspace.jupyter.org'
+            const version = 'v1alpha1'
+            const plural = 'workspaceconnections'
+
+            const workspaceConnection = {
+                apiVersion: `${group}/${version}`,
+                kind: 'WorkspaceConnection',
+                metadata: {
+                    namespace: devSpace.namespace,
+                },
+                spec: {
+                    workspaceName: devSpace.name,
+                    workspaceConnectionType: 'vscode-remote',
+                },
+            }
+
+            getLogger().info(`[Hyperpod] Creating WorkspaceConnection: %O`, workspaceConnection)
+
+            const response = await this.k8sApi!.createNamespacedCustomObject(
+                group,
+                version,
+                devSpace.namespace,
+                plural,
+                workspaceConnection
+            )
+
+            const body = response.body as any
+            const presignedUrl = body.status?.workspaceConnectionUrl
+            const connectionType = body.status?.workspaceConnectionType
+
+            getLogger().info(`Connection Type: ${connectionType}`)
+            getLogger().info(`Presigned URL: ${presignedUrl}`)
+
+            return { type: connectionType || 'vscode-remote', url: presignedUrl }
+        } catch (error) {
+            getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)
+            throw new Error(
+                `Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
             )
         }
     }
