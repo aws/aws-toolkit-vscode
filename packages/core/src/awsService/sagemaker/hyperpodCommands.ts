@@ -8,6 +8,8 @@ import * as nls from 'vscode-nls'
 import { getLogger } from '../../shared/logger/logger'
 import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { SagemakerConstants } from './explorer/constants'
+import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
 
 const localize = nls.loadMessageBundle()
 
