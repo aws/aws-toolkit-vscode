@@ -88,7 +88,7 @@ describe('CreateWizard', async () => {
             assert.ok(resourceNodes[0] instanceof ResourceNode)
 
             const lambdaResource = resourceNodes[2] as ResourceNode
-            assert.strictEqual(lambdaResource.resource.resource.Runtime, 'python3.12')
+            assert.strictEqual(lambdaResource.resource.resource.Runtime, 'python3.14')
 
             prompterTester.assertCallAll()
         })
