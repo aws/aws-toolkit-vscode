@@ -527,6 +527,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 -   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
 
+#### CloudFormation LSP
+
+-   `__CLOUDFORMATIONLSP_PATH`: for aws.dev.cloudformationLsp.path
+-   `__CLOUDFORMATIONLSP_CLOUDFORMATION_ENDPOINT`: for aws.dev.cloudformationLsp.cloudformationEndpoint
+
 #### CI/Testing
 
 -   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
