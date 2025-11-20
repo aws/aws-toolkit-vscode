@@ -15,7 +15,11 @@ import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker, UserActivity } from '../../shared/extensionUtilities'
 import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
-import { filterDevSpacesByNamespaceCluster, openHyperPodRemoteConnection, stopHyperPodSpaceCommand } from './hyperpodCommands'
+import {
+    filterDevSpacesByNamespaceCluster,
+    openHyperPodRemoteConnection,
+    stopHyperPodSpaceCommand,
+} from './hyperpodCommands'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
