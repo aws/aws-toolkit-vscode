@@ -31,7 +31,6 @@ import {
     shouldImportResources,
     getResourcesToImport,
     getEnvironmentName,
-    getChangeSetName,
     chooseOptionalFlagSuggestion as chooseOptionalFlagMode,
     getTags,
     getOnStackFailure,
@@ -111,14 +110,8 @@ export function executeChangeSetCommand(client: LanguageClient, coordinator: Sta
 }
 
 export function deleteChangeSetCommand(client: LanguageClient) {
-    return commands.registerCommand(commandKey('stacks.deleteChangeSet'), async (params?: ChangeSetReference) => {
+    return commands.registerCommand(commandKey('stacks.deleteChangeSet'), async (params: ChangeSetReference) => {
         try {
-            params = params ?? (await promptForChangeSetReference())
-
-            if (!params) {
-                return
-            }
-
             const changeSetDeletion = new ChangeSetDeletion(params.stackName, params.changeSetName, client)
 
             await changeSetDeletion.delete()
@@ -129,14 +122,8 @@ export function deleteChangeSetCommand(client: LanguageClient) {
 }
 
 export function viewChangeSetCommand(client: LanguageClient, diffProvider: DiffWebviewProvider) {
-    return commands.registerCommand(commandKey('stacks.viewChangeSet'), async (params?: ChangeSetReference) => {
+    return commands.registerCommand(commandKey('stacks.viewChangeSet'), async (params: ChangeSetReference) => {
         try {
-            params = params ?? (await promptForChangeSetReference())
-
-            if (!params) {
-                return
-            }
-
             const describeChangeSetResult = await describeChangeSet(client, {
                 changeSetName: params.changeSetName,
                 stackName: params.stackName,
@@ -155,16 +142,6 @@ export function viewChangeSetCommand(client: LanguageClient, diffProvider: DiffW
             await handleLspError(error, 'Error viewing change set')
         }
     })
-}
-
-async function promptForChangeSetReference(): Promise<ChangeSetReference | undefined> {
-    const stackName = await getStackName()
-    const changeSetName = await getChangeSetName()
-    if (!stackName || !changeSetName) {
-        return undefined
-    }
-
-    return { stackName: stackName, changeSetName: changeSetName }
 }
 
 export function deployTemplateCommand(
