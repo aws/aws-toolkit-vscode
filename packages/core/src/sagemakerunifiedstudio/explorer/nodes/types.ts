@@ -17,6 +17,9 @@ export const DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP = /^(project\.default
 export const DATA_DEFAULT_ATHENA_CONNECTION_NAME_REGEXP = /^(project\.athena)|(default\.sql)$/
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_folder)|(default\.s3)$/
+// eslint-disable-next-line @typescript-eslint/naming-convention, id-length
+export const S3_PROJECT_NON_GIT_PROJECT_REPOSITORY_LOCATION_NAME_REGEXP =
+    /^(project\.non_git_project_repository_location)|(default\.s3_shared)$/
 
 // Database object types
 export enum DatabaseObjects {
@@ -205,3 +208,22 @@ export const LEAF_NODE_TYPES = [
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const NO_DATA_FOUND_MESSAGE = '[No data found]'
+
+/**
+ * Glue connection types
+ */
+export const glueConnectionTypes = [
+    'BIGQUERY',
+    'DOCUMENTDB',
+    'DYNAMODB',
+    'MYSQL',
+    'OPENSEARCH',
+    'ORACLE',
+    'POSTGRESQL',
+    'REDSHIFT',
+    'SAPHANA',
+    'SNOWFLAKE',
+    'SQLSERVER',
+    'TERADATA',
+    'VERTICA',
+]
