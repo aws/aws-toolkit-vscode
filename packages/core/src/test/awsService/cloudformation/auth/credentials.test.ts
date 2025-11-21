@@ -18,7 +18,7 @@ describe('AwsCredentialsService', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        mockStacksManager = { reload: sandbox.stub(), hasMore: sandbox.stub().returns(false) }
+        mockStacksManager = { reload: sandbox.stub(), hasMore: sandbox.stub().returns(false), clear: sandbox.stub() }
         mockResourcesManager = { reload: sandbox.stub() }
         mockClient = { sendRequest: sandbox.stub() }
 
@@ -29,13 +29,6 @@ describe('AwsCredentialsService', function () {
 
     afterEach(function () {
         sandbox.restore()
-    })
-
-    describe('constructor', function () {
-        it('should initialize credentials service', function () {
-            credentialsService = new AwsCredentialsService(mockStacksManager, mockResourcesManager, mockRegionManager)
-            assert(credentialsService !== undefined)
-        })
     })
 
     describe('createEncryptedCredentialsRequest', function () {
@@ -88,6 +81,12 @@ describe('AwsCredentialsService', function () {
             await credentialsService.initialize(mockClient)
             // Test passes if no error thrown
             assert(true)
+        })
+
+        it('should clear stacks', async function () {
+            credentialsService = new AwsCredentialsService(mockStacksManager, mockResourcesManager, mockRegionManager)
+            await credentialsService.initialize(mockClient)
+            assert(mockStacksManager.clear.calledOnce)
         })
     })
 })
