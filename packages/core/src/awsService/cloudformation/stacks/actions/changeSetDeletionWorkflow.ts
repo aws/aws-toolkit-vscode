@@ -15,20 +15,20 @@ import {
 import { deleteChangeSet, describeChangeSetDeletionStatus, getChangeSetDeletionStatus } from './stackActionApi'
 import { createChangeSetDeletionParams } from './stackActionUtil'
 import { getLogger } from '../../../../shared/logger/logger'
-import { extractErrorMessage } from '../../utils'
+import { commandKey, extractErrorMessage } from '../../utils'
+import { commands } from 'vscode'
+import globals from '../../../../shared/extensionGlobals'
 
 export class ChangeSetDeletion {
     private readonly id: string
-    private readonly stackName: string
-    private readonly changeSetName: string
-    private readonly client: LanguageClient
     private status: StackActionPhase | undefined
 
-    constructor(stackName: string, changeSetName: string, client: LanguageClient) {
+    constructor(
+        private readonly stackName: string,
+        private readonly changeSetName: string,
+        private readonly client: LanguageClient
+    ) {
         this.id = uuidv4()
-        this.stackName = stackName
-        this.changeSetName = changeSetName
-        this.client = client
     }
 
     async delete() {
@@ -38,7 +38,7 @@ export class ChangeSetDeletion {
     }
 
     private pollForProgress() {
-        const interval = setInterval(() => {
+        const interval = globals.clock.setInterval(() => {
             getChangeSetDeletionStatus(this.client, { id: this.id })
                 .then(async (deletionResult) => {
                     if (deletionResult.phase === this.status) {
@@ -66,7 +66,8 @@ export class ChangeSetDeletion {
                                     describeDeplomentStatusResult.FailureReason ?? 'No failure reason provided'
                                 )
                             }
-                            clearInterval(interval)
+                            void commands.executeCommand(commandKey('stacks.refresh'))
+                            globals.clock.clearInterval(interval)
                             break
                         case StackActionPhase.DELETION_FAILED: {
                             const describeDeplomentStatusResult = await describeChangeSetDeletionStatus(this.client, {
@@ -77,7 +78,8 @@ export class ChangeSetDeletion {
                                 this.stackName,
                                 describeDeplomentStatusResult.FailureReason ?? 'No failure reason provided'
                             )
-                            clearInterval(interval)
+                            void commands.executeCommand(commandKey('stacks.refresh'))
+                            globals.clock.clearInterval(interval)
                             break
                         }
                     }
@@ -85,7 +87,8 @@ export class ChangeSetDeletion {
                 .catch(async (error) => {
                     getLogger().error(`Error polling for deletion status: ${error}`)
                     showErrorMessage(`Error polling for deletion status: ${extractErrorMessage(error)}`)
-                    clearInterval(interval)
+                    void commands.executeCommand(commandKey('stacks.refresh'))
+                    globals.clock.clearInterval(interval)
                 })
         }, 1000)
     }
