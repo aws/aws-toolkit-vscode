@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "prevent eager loading of CloudFormation stacks"
+	"description": "CloudFormation: prevent eager loading of CloudFormation stacks"
 }
