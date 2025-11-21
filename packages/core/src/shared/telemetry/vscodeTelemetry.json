@@ -365,6 +365,33 @@
             ]
         },
         {
+            "name": "hyperpod_openRemoteConnection",
+            "description": "Perform a connection to a Hyperpod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_stopSpace",
+            "description": "Stop a HyperPod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_filterSpaces",
+            "description": "Filter HyperPod Spaces",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
             "name": "amazonq_didSelectProfile",
             "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
             "metadata": [

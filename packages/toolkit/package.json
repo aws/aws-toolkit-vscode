@@ -1463,6 +1463,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "false"
+                },
+                {
                     "command": "aws.smus.switchProject",
                     "when": "false"
                 },
@@ -1755,6 +1759,16 @@
                     "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceStoppedNode)$/"
                 },
                 {
+                    "command": "aws.hyperpod.openRemoteConnection",
+                    "group": "inline@0",
+                    "when": "viewItem == awsSagemakerHyperpodDevSpaceStoppedNode || viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
+                },
+                {
+                    "command": "aws.hyperpod.stopSpace",
+                    "group": "inline@1",
+                    "when": "viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
+                },
+                {
                     "command": "aws.smus.openRemoteConnection",
                     "group": "inline@1",
                     "when": "view == aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceStoppedNode)$/"
@@ -1916,7 +1930,12 @@
                 },
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
-                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerStudioNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerHyperpodNode",
                     "group": "inline@1"
                 },
                 {
@@ -2111,7 +2130,12 @@
                 },
                 {
                     "command": "aws.sagemaker.filterSpaceApps",
-                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerStudioNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.hyperpod.filterDevSpaces",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerHyperpodNode",
                     "group": "0@1"
                 },
                 {
@@ -3117,6 +3141,18 @@
                 }
             },
             {
+                "command": "aws.hyperpod.filterDevSpaces",
+                "title": "Filter Hyperpod DevSpaces",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(extensions-filter)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.sagemaker.openRemoteConnection",
                 "title": "Connect to SageMaker Space",
                 "icon": "$(remote-explorer)",
@@ -3143,6 +3179,30 @@
             {
                 "command": "aws.sagemaker.stopSpace",
                 "title": "Stop SageMaker Space",
+                "icon": "$(debug-stop)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.hyperpod.openRemoteConnection",
+                "title": "Connect to HyperPod Space",
+                "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.hyperpod.stopSpace",
+                "title": "Stop HyperPod Space",
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
