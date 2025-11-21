@@ -62,6 +62,7 @@ export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
         'python3.11',
         'python3.12',
         'python3.13',
+        'python3.14',
         'go1.x',
     ].includes(runtime)
 }
