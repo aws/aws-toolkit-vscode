@@ -83,6 +83,8 @@ export type globalKey =
     | 'aws.lambda.remoteDebugSnapshot'
     // List of Domain-Users to show/hide Sagemaker SpaceApps in AWS Explorer.
     | 'aws.sagemaker.selectedDomainUsers'
+    // List of Cluster-Namespaces to show/hide Hyperpod Spaces in AWS Explorer
+    | 'aws.hyperpod.selectedClusterNamespaces'
     // Name of the connection if it's not to the AWS cloud. Current supported value only 'localstack'
     | 'aws.toolkit.externalConnection'
     | 'aws.cloudformation.region'
