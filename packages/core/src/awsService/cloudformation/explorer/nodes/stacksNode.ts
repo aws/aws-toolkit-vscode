@@ -33,6 +33,7 @@ export class StacksNode extends AWSTreeNodeBase {
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
+        await this.stacksManager.ensureLoaded()
         this.updateNode()
         const stacks = this.stacksManager.get()
         const nodes = stacks.map((stack: StackSummary) => new StackNode(stack, this.changeSetsManager))
@@ -40,10 +41,15 @@ export class StacksNode extends AWSTreeNodeBase {
     }
 
     private updateNode(): void {
-        const count = this.stacksManager.get().length
-        const hasMore = this.stacksManager.hasMore()
-        this.description = hasMore ? `(${count}+)` : `(${count})`
-        this.contextValue = hasMore ? 'stackSectionWithMore' : 'stackSection'
+        if (this.stacksManager.isLoaded()) {
+            const count = this.stacksManager.get().length
+            const hasMore = this.stacksManager.hasMore()
+            this.description = hasMore ? `(${count}+)` : `(${count})`
+            this.contextValue = hasMore ? 'stackSectionWithMore' : 'stackSection'
+        } else {
+            this.description = undefined
+            this.contextValue = 'stackSection'
+        }
     }
 
     public async loadMoreStacks(): Promise<void> {
