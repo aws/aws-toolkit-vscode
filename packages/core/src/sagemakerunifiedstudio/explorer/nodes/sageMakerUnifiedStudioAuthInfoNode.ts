@@ -7,6 +7,9 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { SageMakerUnifiedStudioRootNode } from './sageMakerUnifiedStudioRootNode'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { SmusIamConnection } from '../../auth/model'
+import { getContext } from '../../../shared/vscode/setContext'
+import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
 
 /**
  * Node representing the SageMaker Unified Studio authentication information
@@ -26,9 +29,12 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         this.authProvider.onDidChange(() => {
             this.onDidChangeEmitter.fire()
         })
+        this.authProvider.onDidChangeActiveConnection(() => {
+            this.onDidChangeEmitter.fire()
+        })
     }
 
-    public getTreeItem(): vscode.TreeItem {
+    public async getTreeItem(): Promise<vscode.TreeItem> {
         // Use the cached authentication provider to check connection status
         const isConnected = this.authProvider.isConnected()
         const isValid = this.authProvider.isConnectionValid()
@@ -38,36 +44,60 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         let region = 'Unknown'
 
         if (isConnected && this.authProvider.activeConnection) {
-            const conn = this.authProvider.activeConnection
-            domainId = conn.domainId || 'Unknown'
-            region = conn.ssoRegion || 'Unknown'
+            domainId = this.authProvider.getDomainId() || 'Unknown'
+            region = this.authProvider.getDomainRegion() || 'Unknown'
         }
 
         // Create display based on connection status
         let label: string
         let iconPath: vscode.ThemeIcon
         let tooltip: string
+        let description: string | undefined
+
+        // Get profile name for IAM mode
+        const isIamMode = getContext('aws.smus.isIamMode')
+        let profileName: string | undefined
+        if (isIamMode) {
+            const activeConnection = this.authProvider.activeConnection!
+            const { configFile } = await loadSharedConfigFiles()
+            profileName =
+                (activeConnection as SmusIamConnection).profileName || (configFile['default'] ? 'default' : undefined)
+        }
 
         if (isConnected && isValid) {
-            label = `Domain: ${domainId}`
+            // Get session name and role ARN dynamically for IAM connections in IAM mode
+            let sessionName: string | undefined
+            let roleArn: string | undefined
+            if (isIamMode) {
+                sessionName = await this.authProvider.getSessionName()
+                roleArn = await this.authProvider.getIamPrincipalArn()
+            }
+
+            // Format label with session name if available
+            const sessionSuffix = sessionName ? ` (session: ${sessionName})` : ''
+            label = isIamMode ? `Connected with profile: ${profileName}${sessionSuffix}` : `Domain: ${domainId}`
             iconPath = new vscode.ThemeIcon('key', new vscode.ThemeColor('charts.green'))
-            tooltip = `Connected to SageMaker Unified Studio\nDomain ID: ${domainId}\nRegion: ${region}\nStatus: Connected`
+
+            // Add role ARN and session name to tooltip if available (role ARN before session)
+            const roleArnTooltip = roleArn ? `\nRole ARN: ${roleArn}` : ''
+            const sessionTooltip = sessionName ? `\nSession: ${sessionName}` : ''
+            tooltip = `Connected to SageMaker Unified Studio\n${isIamMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}${roleArnTooltip}${sessionTooltip}\nStatus: Connected`
+            description = region
         } else if (isConnected && !isValid) {
-            label = `Domain: ${domainId} (Expired) - Click to reauthenticate`
+            label = isIamMode
+                ? `Profile: ${profileName} (Expired) - Click to reauthenticate`
+                : `Domain: ${domainId} (Expired) - Click to reauthenticate`
             iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
-            tooltip = `Connection to SageMaker Unified Studio has expired\nDomain ID: ${domainId}\nRegion: ${region}\nStatus: Expired - Click to reauthenticate`
+            tooltip = `Connection to SageMaker Unified Studio has expired\n${isIamMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}\nStatus: Expired - Click to reauthenticate`
+            description = region
         } else {
             label = 'Not Connected'
             iconPath = new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('charts.red'))
             tooltip = 'Not connected to SageMaker Unified Studio\nPlease sign in to access your projects'
+            description = undefined
         }
 
         const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None)
-
-        // Add region as description (appears to the right) if connected
-        if (isConnected) {
-            item.description = region
-        }
 
         // Add command for reauthentication when connection is expired
         if (isConnected && !isValid) {
@@ -81,6 +111,7 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         item.tooltip = tooltip
         item.contextValue = 'smusAuthInfo'
         item.iconPath = iconPath
+        item.description = description
         return item
     }
 

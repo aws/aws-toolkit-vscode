@@ -17,8 +17,13 @@ import {
     DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP,
     redshiftColumnTypes,
     lakeHouseColumnTypes,
+    glueConnectionTypes,
 } from './types'
-import { DataZoneConnection } from '../../shared/client/datazoneClient'
+import { DataZoneClient, DataZoneConnection } from '../../shared/client/datazoneClient'
+import { getContext } from '../../../shared/vscode/setContext'
+import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import { SmusIamConnection } from '../../auth/model'
+import { ConnectionStatus } from '@aws-sdk/client-datazone'
 
 /**
  * Polling interval in milliseconds for checking space status updates
@@ -47,6 +52,9 @@ export function getLabel(data: {
             data.value?.connection?.type === ConnectionType.LAKEHOUSE &&
             DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(data.value?.connection?.name)
         ) {
+            if (getContext('aws.smus.isIamMode')) {
+                return 'Catalogs'
+            }
             return 'Lakehouse'
         }
         const formattedType = data.value?.connection?.type?.replace(/([A-Z]+(?:_[A-Z]+)*)/g, (match: string) => {
@@ -230,6 +238,14 @@ function getColumnIcon(columnType: string): vscode.ThemeIcon | IconPath {
         return getIcon('vscode-calendar')
     }
 
+    // Check if it's a boolean type
+    if (
+        lakeHouseColumnTypes.BOOLEAN.some((type) => upperType.includes(type)) ||
+        redshiftColumnTypes.BOOLEAN.some((type) => upperType.includes(type))
+    ) {
+        return getIcon('vscode-symbol-boolean')
+    }
+
     // Default icon for unknown types
     return new vscode.ThemeIcon('symbol-field')
 }
@@ -375,6 +391,69 @@ export function getRedshiftTypeFromHost(host?: string): RedshiftType | undefined
 }
 
 /**
+ * This function searches for property keys that end with "Properties" (like "snowflakeProperties",
+ * "redshiftProperties", "athenaProperties") and returns the actual property object, not just the key name.
+ * It only works for connections that have a glueConnectionName, indicating they are federated connections.
+ *
+ * @param connection - The DataZone connection object to search
+ * @returns The property object (not the key name) if found, undefined otherwise
+ *
+ * @example
+ * ```typescript
+ * // Redshift connection
+ * const redshiftConnection = {
+ *   glueConnectionName: 'my-redshift-glue-conn',
+ *   props: {
+ *     redshiftProperties: {
+ *       status: 'FAILED',
+ *       errorMessage: 'Connection timeout'
+ *     }
+ *   }
+ * }
+ * const result = getGluePropertiesKey(redshiftConnection)
+ * // Returns: { status: 'FAILED', errorMessage: 'Connection timeout' }
+ */
+export function getGluePropertiesKey(connection: DataZoneConnection) {
+    if (!connection?.props) {
+        return undefined
+    }
+    if (!connection.glueConnectionName) {
+        return undefined
+    }
+    // Check for other properties that might contain glue connection info
+    const propertiesKey = Object.keys(connection.props).find(
+        (key) =>
+            key.endsWith('Properties') &&
+            typeof connection.props![key] === 'object' &&
+            !Array.isArray(connection.props![key])
+    )
+
+    return propertiesKey ? connection.props[propertiesKey] : undefined
+}
+
+/**
+ * This function handles the refactor where connections moved from a single `glueProperties` object to
+ * connector-specific property bags (like `snowflakeProperties`, `redshiftProperties`, `athenaProperties`).
+ * It first checks for the legacy `glueProperties` field, then falls back to connector-specific properties.
+ *
+ * @param connection - The DataZone connection object to extract properties from
+ * @returns Object with optional status and errorMessage fields, or undefined if no properties found
+ */
+export function getGlueProperties(connection?: DataZoneConnection) {
+    if (!connection?.props) {
+        return undefined
+    }
+    // Check for direct glueProperties
+    if ('glueProperties' in connection.props) {
+        return connection.props.glueProperties
+    }
+
+    return connection?.props?.[getGluePropertiesKey(connection)!] as
+        | { status?: ConnectionStatus; errorMessage?: string }
+        | undefined
+}
+
+/**
  * Determines if a connection is a federated connection by checking its type.
  * A connection is considered federated if it's either:
  * 1. A Redshift connection with Glue properties, or
@@ -385,7 +464,57 @@ export function getRedshiftTypeFromHost(host?: string): RedshiftType | undefined
  */
 export function isFederatedConnection(connection?: DataZoneConnection): boolean {
     if (connection?.type === ConnectionType.REDSHIFT) {
-        return !!connection?.props?.glueProperties
+        return !!getGlueProperties(connection)
     }
-    return false
+
+    // Check if connection type exists in GlueConnectionType enum values
+    return glueConnectionTypes.includes(connection?.type || '')
+}
+
+/**
+ * Creates a DataZoneClient with appropriate credentials provider based on domain mode
+ * If domain mode is IAM mode, use the credential profile credential provider
+ * If domain mode is not IAM mode, use the DER credential provider
+ * @param smusAuthProvider The SMUS authentication provider
+ * @returns Promise resolving to DataZoneClient instance
+ */
+export async function createDZClientBaseOnDomainMode(
+    smusAuthProvider: SmusAuthenticationProvider
+): Promise<DataZoneClient> {
+    let credentialsProvider
+    if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
+        credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
+            (smusAuthProvider.activeConnection as SmusIamConnection).profileName
+        )
+    } else {
+        credentialsProvider = await smusAuthProvider.getDerCredentialsProvider()
+    }
+    return DataZoneClient.createWithCredentials(
+        smusAuthProvider.getDomainRegion(),
+        smusAuthProvider.getDomainId(),
+        credentialsProvider
+    )
+}
+
+/**
+ * Creates a DataZoneClient with appropriate credentials provider for a specific project
+ * If domain mode is IAM mode, use the project credential provider
+ * If domain mode is not IAM mode, use the DER credential provider
+ * @param smusAuthProvider The SMUS authentication provider
+ * @param projectId The project ID for project-specific credentials
+ * @returns Promise resolving to DataZoneClient instance
+ */
+export async function createDZClientForProject(
+    smusAuthProvider: SmusAuthenticationProvider,
+    projectId: string
+): Promise<DataZoneClient> {
+    const credentialsProvider = getContext('aws.smus.isIamMode')
+        ? await smusAuthProvider.getProjectCredentialProvider(projectId)
+        : await smusAuthProvider.getDerCredentialsProvider()
+
+    return DataZoneClient.createWithCredentials(
+        smusAuthProvider.getDomainRegion(),
+        smusAuthProvider.getDomainId(),
+        credentialsProvider
+    )
 }
