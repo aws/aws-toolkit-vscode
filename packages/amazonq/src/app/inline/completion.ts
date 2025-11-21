@@ -369,7 +369,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // yield event loop to let the document listen catch updates
         await sleep(1)
 
-        let logstr = `GenerateCompletion activity:\\n`
+        let logstr = `GenerateCompletion activity:\n`
         try {
             const t0 = Date.now()
             vsCodeState.isRecommendationsActive = true
