@@ -74,4 +74,80 @@ describe('StacksManager', () => {
             assert.deepStrictEqual(stacksBefore, stacksAfter)
         })
     })
+
+    describe('lazy loading', () => {
+        it('should not load stacks on construction', () => {
+            assert.strictEqual(mockClient.sendRequest.called, false)
+        })
+
+        it('should return empty array when not loaded', () => {
+            const stacks = manager.get()
+            assert.deepStrictEqual(stacks, [])
+        })
+
+        it('should report not loaded initially', () => {
+            assert.strictEqual(manager.isLoaded(), false)
+        })
+
+        it('should load stacks on ensureLoaded', async () => {
+            await manager.ensureLoaded()
+            assert.strictEqual(mockClient.sendRequest.calledOnce, true)
+        })
+
+        it('should not reload on subsequent ensureLoaded calls', async () => {
+            await manager.ensureLoaded()
+            await manager.ensureLoaded()
+            assert.strictEqual(mockClient.sendRequest.calledOnce, true)
+        })
+
+        it('should report loaded after ensureLoaded', async () => {
+            await manager.ensureLoaded()
+            assert.strictEqual(manager.isLoaded(), true)
+        })
+
+        it('should return stacks after ensureLoaded', async () => {
+            await manager.ensureLoaded()
+            const stacks = manager.get()
+            assert.strictEqual(stacks.length, 2)
+            assert.strictEqual(stacks[0].StackName, 'stack-1')
+        })
+    })
+
+    describe('clear', () => {
+        beforeEach(async () => {
+            await manager.ensureLoaded()
+        })
+
+        it('should clear stacks', () => {
+            manager.clear()
+            const stacks = manager.get()
+            assert.deepStrictEqual(stacks, [])
+        })
+
+        it('should reset loaded state', () => {
+            manager.clear()
+            assert.strictEqual(manager.isLoaded(), false)
+        })
+
+        it('should clear nextToken', () => {
+            manager.clear()
+            assert.strictEqual(manager.hasMore(), false)
+        })
+
+        it('should notify listeners', () => {
+            let listenerCalled = false
+            manager.addListener(() => {
+                listenerCalled = true
+            })
+            manager.clear()
+            assert.strictEqual(listenerCalled, true)
+        })
+
+        it('should allow reload after clear', async () => {
+            manager.clear()
+            mockClient.sendRequest.resetHistory()
+            await manager.ensureLoaded()
+            assert.strictEqual(mockClient.sendRequest.calledOnce, true)
+        })
+    })
 })
