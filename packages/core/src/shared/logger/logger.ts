@@ -24,6 +24,7 @@ export type LogTopic =
     | 'telemetry'
     | 'proxyUtil'
     | 'sagemaker'
+    | 'smus'
 
 class ErrorLog {
     constructor(
