@@ -36,6 +36,9 @@ export function register(ctx: ExtContext) {
                 params.token,
                 params.domain,
                 params.app_type,
+                undefined,
+                undefined,
+                undefined,
                 true // isSMUS=true for SMUS connections
             )
         })
