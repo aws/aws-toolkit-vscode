@@ -174,14 +174,14 @@ export async function prepareDevEnvConnection(
                   const logFileLocation = path.join(ctx.globalStorageUri.fsPath, 'hyperpod-connection.log')
                   const decodedWsUrl =
                       wsUrl
-                          ?.replace(/&amp;/g, '&')
-                          .replace(/&#39;/g, "'")
-                          .replace(/&quot;/g, '"') || ''
+                          ?.replace(/&#39;/g, "'")
+                          .replace(/&quot;/g, '"')
+                          .replace(/&amp;/g, '&') || ''
                   const decodedToken =
                       token
-                          ?.replace(/&amp;/g, '&')
-                          .replace(/&#39;/g, "'")
-                          .replace(/&quot;/g, '"') || ''
+                          ?.replace(/&#39;/g, "'")
+                          .replace(/&quot;/g, '"')
+                          .replace(/&amp;/g, '&') || ''
                   const region = decodedWsUrl ? extractRegionFromStreamUrl(decodedWsUrl) : ''
 
                   const hyperPodEnv: NodeJS.ProcessEnv = {
