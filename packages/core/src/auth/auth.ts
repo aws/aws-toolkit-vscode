@@ -598,7 +598,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     @withTelemetryContext({ name: 'updateConnectionState', class: authClassName })
-    private async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
+    public async updateConnectionState(id: Connection['id'], connectionState: ProfileMetadata['connectionState']) {
         getLogger().info(`auth: Updating connection state of ${id} to ${connectionState}`)
 
         if (connectionState === 'authenticating') {

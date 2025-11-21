@@ -8,11 +8,11 @@ import { ToolkitError } from '../../../shared/errors'
 import * as AWS from '@aws-sdk/types'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from '../../../auth/providers/credentials'
 
-import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
 import { loadMappings, saveMappings } from '../../../awsService/sagemaker/credentialMapping'
+import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 
 /**
  * Credentials provider for SageMaker Unified Studio Project Role credentials
@@ -23,7 +23,7 @@ import { loadMappings, saveMappings } from '../../../awsService/sagemaker/creden
  * with any AWS SDK client (S3Client, LambdaClient, etc.)
  */
 export class ProjectRoleCredentialsProvider implements CredentialsProvider {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private credentialCache?: {
         credentials: AWS.Credentials
         expiresAt: Date
@@ -112,18 +112,18 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
      * @returns Promise resolving to credentials
      */
     public async getCredentials(): Promise<AWS.Credentials> {
-        this.logger.debug(`SMUS Project: Getting credentials for project ${this.projectId}`)
+        this.logger.debug(`Getting credentials for project ${this.projectId}`)
 
         // Check cache first (10-minute expiry)
         if (this.credentialCache && this.credentialCache.expiresAt > new Date()) {
-            this.logger.debug(`SMUS Project: Using cached project credentials for project ${this.projectId}`)
+            this.logger.debug(`Using cached project credentials for project ${this.projectId}`)
             return this.credentialCache.credentials
         }
 
-        this.logger.debug(`SMUS Project: Fetching project credentials from API for project ${this.projectId}`)
+        this.logger.debug(`Fetching project credentials from API for project ${this.projectId}`)
 
         try {
-            const dataZoneClient = await DataZoneClient.getInstance(this.smusAuthProvider)
+            const dataZoneClient = await createDZClientBaseOnDomainMode(this.smusAuthProvider)
             const response = await dataZoneClient.getProjectDefaultEnvironmentCreds(this.projectId)
 
             this.logger.debug(
@@ -167,7 +167,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
 
             return awsCredentials
         } catch (err) {
-            this.logger.error('SMUS Project: Failed to get project credentials for project %s: %s', this.projectId, err)
+            this.logger.error('Failed to get project credentials for project %s: %s', this.projectId, err)
 
             // Handle InvalidGrantException specially - indicates need for reauthentication
             if (err instanceof Error && err.name === 'InvalidGrantException') {
@@ -203,7 +203,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
             }
             await saveMappings(mapping)
         } catch (err) {
-            this.logger.warn('SMUS Project: Failed to write project credentials to mapping file: %s', err)
+            this.logger.warn('Failed to write project credentials to mapping file: %s', err)
         }
     }
 
@@ -221,11 +221,11 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
      */
     public startProactiveCredentialRefresh(): void {
         if (this.sshRefreshActive) {
-            this.logger.debug(`SMUS Project: SSH refresh already active for project ${this.projectId}`)
+            this.logger.debug(`SSH refresh already active for project ${this.projectId}`)
             return
         }
 
-        this.logger.info(`SMUS Project: Starting SSH credential refresh for project ${this.projectId}`)
+        this.logger.info(`Starting SSH credential refresh for project ${this.projectId}`)
         this.sshRefreshActive = true
         this.lastRefreshTime = new Date() // Initialize refresh time
 
@@ -242,7 +242,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
             return
         }
 
-        this.logger.info(`SMUS Project: Stopping SSH credential refresh for project ${this.projectId}`)
+        this.logger.info(`Stopping SSH credential refresh for project ${this.projectId}`)
         this.sshRefreshActive = false
         this.lastRefreshTime = undefined
 
@@ -295,7 +295,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
     private shouldPerformRefresh(now: Date): boolean {
         if (!this.lastRefreshTime || !this.credentialCache) {
             // First refresh or no cached credentials
-            this.logger.debug(`SMUS Project: First refresh - no previous credentials for ${this.projectId}`)
+            this.logger.debug(`First refresh - no previous credentials for ${this.projectId}`)
             return true
         }
 
@@ -345,7 +345,7 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
      * Clears the internal cache without fetching new credentials
      */
     public invalidate(): void {
-        this.logger.debug(`SMUS Project: Invalidating cached credentials for project ${this.projectId}`)
+        this.logger.debug(`Invalidating cached credentials for project ${this.projectId}`)
         // Clear cache to force fresh fetch on next getCredentials() call
         this.credentialCache = undefined
         this.logger.debug(

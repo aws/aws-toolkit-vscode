@@ -6,7 +6,7 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
-import { startSagemakerSession, parseArn, isSmusConnection } from '../utils'
+import { startSagemakerSession, parseArn, isSmusConnection, isSmusIamConnection } from '../utils'
 import { resolveCredentialsFor } from '../credentials'
 import url from 'url'
 import { SageMakerServiceException } from '@amzn/sagemaker-client'
@@ -35,6 +35,7 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
     const { region } = parseArn(connectionIdentifier)
     // Detect if this is a SMUS connection for specialized error handling
     const isSmus = await isSmusConnection(connectionIdentifier)
+    const isSmusIamConn = await isSmusIamConnection(connectionIdentifier)
 
     try {
         const session = await startSagemakerSession({ region, connectionIdentifier, credentials })
@@ -50,7 +51,7 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
         const error = err as SageMakerServiceException
         console.error(`Failed to start SageMaker session for ${connectionIdentifier}:`, err)
         const errorTitle = getVSCodeErrorTitle(error)
-        const errorText = getVSCodeErrorText(error, isSmus)
+        const errorText = getVSCodeErrorText(error, isSmus, isSmusIamConn)
         await openErrorPage(errorTitle, errorText)
         res.writeHead(500, { 'Content-Type': 'text/plain' })
         res.end('Failed to start SageMaker session')
