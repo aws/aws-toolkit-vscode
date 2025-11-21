@@ -319,6 +319,12 @@
             "name": "smusProjectAccountId",
             "type": "string",
             "description": "SMUS project account id"
+        },
+        {
+            "name": "smusAuthMode",
+            "type": "string",
+            "allowedValues": ["sso", "iam"],
+            "description": "SMUS authentication mode (SSO or IAM)"
         }
     ],
     "metrics": [
@@ -1414,6 +1420,10 @@
                 {
                     "type": "smusDomainAccountId",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1427,6 +1437,10 @@
                 },
                 {
                     "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1449,6 +1463,10 @@
                 },
                 {
                     "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1475,6 +1493,10 @@
                 },
                 {
                     "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ],
@@ -1511,6 +1533,10 @@
                 {
                     "type": "smusProjectAccountId",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1544,6 +1570,10 @@
                 },
                 {
                     "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1583,6 +1613,10 @@
                 {
                     "type": "smusConnectionType",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1621,6 +1655,10 @@
                 {
                     "type": "smusConnectionType",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1658,6 +1696,10 @@
                 },
                 {
                     "type": "smusConnectionType",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1699,6 +1741,10 @@
                 },
                 {
                     "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
