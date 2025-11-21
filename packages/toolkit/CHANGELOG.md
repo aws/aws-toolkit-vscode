@@ -1,3 +1,7 @@
+## 3.87.0 2025-11-21
+
+- **Feature** Support IAM based domains for SageMaker Unified Studio
+
 ## 3.86.0 2025-11-21
 
 - **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
