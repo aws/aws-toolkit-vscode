@@ -21,6 +21,7 @@ import {
     DatabaseObjects,
     NO_DATA_FOUND_MESSAGE,
 } from './types'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import {
     getLabel,
     isLeafNode,
@@ -42,7 +43,7 @@ import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 export class LakehouseNode implements TreeNode {
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         public readonly data: NodeData,
@@ -81,7 +82,7 @@ export class LakehouseNode implements TreeNode {
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as LakehouseNode]
             }
         }
@@ -129,7 +130,7 @@ export function createLakehouseConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Create Glue clients
     const clientStore = ConnectionClientStore.getInstance()
@@ -177,15 +178,17 @@ export function createLakehouseConnectionNode(
                     const errors: LakehouseNode[] = []
 
                     if (awsDataCatalogResult.status === 'rejected') {
-                        const errorMessage = (awsDataCatalogResult.reason as Error).message
-                        void vscode.window.showErrorMessage(errorMessage)
+                        const error = awsDataCatalogResult.reason as Error
+                        const errorMessage = error.message
                         errors.push(createErrorItem(errorMessage, 'aws-data-catalog', node.id) as LakehouseNode)
+                        await handleCredExpiredError(error, true)
                     }
 
                     if (catalogsResult.status === 'rejected') {
-                        const errorMessage = (catalogsResult.reason as Error).message
-                        void vscode.window.showErrorMessage(errorMessage)
+                        const error = catalogsResult.reason as Error
+                        const errorMessage = error.message
                         errors.push(createErrorItem(errorMessage, 'catalogs', node.id) as LakehouseNode)
+                        await handleCredExpiredError(error, true)
                     }
 
                     const allNodes = [...awsDataCatalog, ...apiCatalogs, ...errors]
@@ -195,7 +198,7 @@ export function createLakehouseConnectionNode(
                 } catch (err) {
                     logger.error(`Failed to get Lakehouse catalogs: ${(err as Error).message}`)
                     const errorMessage = (err as Error).message
-                    void vscode.window.showErrorMessage(errorMessage)
+                    await handleCredExpiredError(err, true)
                     return [createErrorItem(errorMessage, 'lakehouse-catalogs', node.id) as LakehouseNode]
                 }
             })
@@ -364,7 +367,7 @@ function createCatalogNode(
     parent: LakehouseNode,
     isParent: boolean = false
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {
@@ -409,7 +412,7 @@ function createCatalogNode(
                   } catch (err) {
                       logger.error(`Failed to get databases for catalog ${catalogId}: ${(err as Error).message}`)
                       const errorMessage = (err as Error).message
-                      void vscode.window.showErrorMessage(errorMessage)
+                      await handleCredExpiredError(err, true)
                       return [createErrorItem(errorMessage, 'catalog-databases', node.id) as LakehouseNode]
                   }
               }
@@ -425,7 +428,7 @@ function createDatabaseNode(
     glueClient: GlueClient,
     parent: LakehouseNode
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {
@@ -482,7 +485,7 @@ function createDatabaseNode(
             } catch (err) {
                 logger.error(`Failed to get tables for database ${databaseName}: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'database-tables', node.id) as LakehouseNode]
             }
         }
@@ -498,7 +501,7 @@ function createTableNode(
     glueClient: GlueClient,
     parent: LakehouseNode
 ): LakehouseNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new LakehouseNode(
         {
@@ -530,6 +533,7 @@ function createTableNode(
                     : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             } catch (err) {
                 logger.error(`Failed to get columns for table ${tableName}: ${(err as Error).message}`)
+                await handleCredExpiredError(err)
                 return []
             }
         }
