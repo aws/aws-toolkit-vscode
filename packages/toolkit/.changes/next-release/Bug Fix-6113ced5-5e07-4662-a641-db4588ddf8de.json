@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered"
+}
