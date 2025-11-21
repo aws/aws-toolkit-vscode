@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Support IAM based domains for SageMaker Unified Studio"
+}
