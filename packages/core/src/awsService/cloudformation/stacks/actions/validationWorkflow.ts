@@ -4,7 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import { Parameter, Capability } from '@aws-sdk/client-cloudformation'
+import { Parameter, Capability, ChangeSetStatus } from '@aws-sdk/client-cloudformation'
 import {
     StackActionPhase,
     StackChange,
@@ -163,7 +163,8 @@ export class Validation {
             this.changeSetName,
             this.shouldEnableDeployment,
             validationDetail,
-            deploymentMode
+            deploymentMode,
+            ChangeSetStatus.CREATE_COMPLETE
         )
         void commands.executeCommand(commandKey('diff.focus'))
     }
