@@ -23,7 +23,6 @@ type ListStacksResult = {
 }
 
 const ListStacksRequest = new RequestType<ListStacksParams, ListStacksResult, void>('aws/cfn/stacks')
-const PollIntervalMs = 1000
 
 type StacksChangeListener = (stacks: StackSummary[]) => void
 
@@ -31,7 +30,7 @@ export class StacksManager implements Disposable {
     private stacks: StackSummary[] = []
     private nextToken?: string
     private readonly listeners: StacksChangeListener[] = []
-    private poller?: NodeJS.Timeout
+    private loaded = false
 
     constructor(private readonly client: LanguageClient) {}
 
@@ -49,6 +48,23 @@ export class StacksManager implements Disposable {
 
     reload() {
         void this.loadStacks()
+    }
+
+    isLoaded() {
+        return this.loaded
+    }
+
+    async ensureLoaded() {
+        if (!this.loaded) {
+            await this.loadStacks()
+        }
+    }
+
+    clear() {
+        this.stacks = []
+        this.nextToken = undefined
+        this.loaded = false
+        this.notifyListeners()
     }
 
     updateStackStatus(stackName: string, stackStatus: string) {
@@ -80,21 +96,8 @@ export class StacksManager implements Disposable {
         }
     }
 
-    startPolling() {
-        this.poller ??= setInterval(() => {
-            this.reload()
-        }, PollIntervalMs)
-    }
-
-    stopPolling() {
-        if (this.poller) {
-            clearInterval(this.poller)
-            this.poller = undefined
-        }
-    }
-
     dispose() {
-        this.stopPolling()
+        // do nothing
     }
 
     private async loadStacks() {
@@ -106,6 +109,7 @@ export class StacksManager implements Disposable {
             })
             this.stacks = response.stacks
             this.nextToken = response.nextToken
+            this.loaded = true
         } catch (error) {
             await handleLspError(error, 'Error loading stacks')
             this.stacks = []
@@ -113,9 +117,6 @@ export class StacksManager implements Disposable {
         } finally {
             await setContext('aws.cloudformation.refreshingStacks', false)
             this.notifyListeners()
-            if (this.stacks.length === 0) {
-                this.stopPolling()
-            }
         }
     }
 
