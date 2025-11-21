@@ -9,6 +9,7 @@ import { ExtensionContext } from 'vscode'
 import { handleTelemetryOptIn } from '../../../awsService/cloudformation/telemetryOptIn'
 import { CloudFormationTelemetrySettings } from '../../../awsService/cloudformation/extensionConfig'
 import { commandKey } from '../../../awsService/cloudformation/utils'
+import globals from '../../../shared/extensionGlobals'
 
 describe('telemetryOptIn', function () {
     let mockContext: ExtensionContext
@@ -57,7 +58,7 @@ describe('telemetryOptIn', function () {
 
     describe('promptTelemetryOptIn - prompt timing', function () {
         it('should not prompt if less than 30 days since last prompt', async function () {
-            const now = Date.now()
+            const now = globals.clock.Date.now()
             const twentyDaysAgo = now - 20 * 24 * 60 * 60 * 1000
             globalState.set(commandKey('telemetry.lastPromptDate'), twentyDaysAgo)
 
@@ -90,7 +91,7 @@ describe('telemetryOptIn', function () {
         })
 
         it('should persist unpersisted Later response', async function () {
-            const lastPromptDate = Date.now() - 1000
+            const lastPromptDate = globals.clock.Date.now() - 1000
             globalState.set(commandKey('telemetry.unpersistedResponse'), 'Not Now')
             globalState.set(commandKey('telemetry.lastPromptDate'), lastPromptDate)
             ;(mockSettings.update as sinon.SinonStub).resolves(true)
@@ -106,7 +107,7 @@ describe('telemetryOptIn', function () {
         it('should clear all state if setting save fails', async function () {
             globalState.set(commandKey('telemetry.unpersistedResponse'), 'Yes, Allow')
             globalState.set(commandKey('telemetry.hasResponded'), true)
-            globalState.set(commandKey('telemetry.lastPromptDate'), Date.now())
+            globalState.set(commandKey('telemetry.lastPromptDate'), globals.clock.Date.now())
             ;(mockSettings.update as sinon.SinonStub).resolves(false)
 
             const result = await handleTelemetryOptIn(mockContext, mockSettings)

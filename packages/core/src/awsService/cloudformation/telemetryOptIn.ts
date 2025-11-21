@@ -8,6 +8,7 @@ import { CloudFormationTelemetrySettings } from './extensionConfig'
 import { commandKey } from './utils'
 import { isAutomation } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
+import globals from '../../shared/extensionGlobals'
 
 enum TelemetryChoice {
     Allow = 'Yes, Allow',
@@ -71,14 +72,16 @@ export async function handleTelemetryOptIn(
     }
 
     // Check if we should show reminder (30 days since last prompt)
-    const shouldPrompt = lastPromptDate === undefined || Date.now() - lastPromptDate >= thirtyDaysMs
+    const shouldPrompt = lastPromptDate === undefined || globals.clock.Date.now() - lastPromptDate >= thirtyDaysMs
     if (!shouldPrompt) {
         return logAndReturnTelemetryChoice(telemetryEnabled, hasResponded, lastPromptDate)
     }
 
     // Show prompt but set false if timeout
     const promptPromise = promptTelemetryOptIn(context, cfnTelemetrySettings)
-    const timeoutPromise = new Promise<false>((resolve) => setTimeout(() => resolve(false), promptTimeoutMs))
+    const timeoutPromise = new Promise<false>((resolve) =>
+        globals.clock.setTimeout(() => resolve(false), promptTimeoutMs)
+    )
     const result = await Promise.race([promptPromise, timeoutPromise])
 
     // Keep prompt alive in background
@@ -138,7 +141,7 @@ async function promptTelemetryOptIn(
         return promptTelemetryOptIn(context, cfnTelemetrySettings)
     }
 
-    const now = Date.now()
+    const now = globals.clock.Date.now()
     await context.globalState.update(telemetryKeys.lastPromptDate, now)
 
     // There's a chance our settings aren't registered yet from package.json, so we
