@@ -16,7 +16,28 @@ const localize = nls.loadMessageBundle()
 
 export async function openHyperPodRemoteConnection(node: SagemakerDevSpaceNode): Promise<void> {
     await startHyperpodSpaceCommand(node)
+    await waitForDevSpaceRunning(node)
     await connectToHyperPodDevSpace(node)
+}
+
+async function waitForDevSpaceRunning(node: SagemakerDevSpaceNode): Promise<void> {
+    const kubectlClient = node.getParent().getKubectlClient(node.hpCluster.clusterName)
+    if (!kubectlClient) {
+        getLogger().error(`No kubectlClient available for cluster: ${node.hpCluster.clusterName}`)
+        return
+    }
+    const timeout = 5 * 60 * 1000 // 5 minutes
+    const startTime = Date.now()
+
+    while (Date.now() - startTime < timeout) {
+        const status = await kubectlClient.getHyperpodSpaceStatus(node.devSpace)
+        if (status === 'Running') {
+            return
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+    }
+
+    throw new Error('Timeout waiting for dev space to reach Running status')
 }
 
 export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
