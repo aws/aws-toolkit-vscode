@@ -135,7 +135,7 @@ export async function createRedshiftConnectionConfig(
 export class SQLWorkbenchClient {
     private sqlClient: SQLWorkbench | undefined
     private static instance: SQLWorkbenchClient | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly region: string,
