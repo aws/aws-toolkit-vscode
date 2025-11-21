@@ -19,9 +19,9 @@ export class AwsCredentialsService implements Disposable {
     private client: LanguageClient | undefined
 
     constructor(
-        private stacksManager: StacksManager,
-        private resourcesManager: ResourcesManager,
-        private regionManager: CloudFormationRegionManager
+        private readonly stacksManager: StacksManager,
+        private readonly resourcesManager: ResourcesManager,
+        private readonly regionManager: CloudFormationRegionManager
     ) {
         this.authChangeListener = globals.awsContext.onDidChangeContext(() => {
             void this.updateCredentialsFromActiveConnection()
@@ -53,7 +53,7 @@ export class AwsCredentialsService implements Disposable {
             await this.client.sendRequest('aws/credentials/iam/update', encryptedRequest)
         }
 
-        void this.stacksManager.reload()
+        this.stacksManager.clear()
         void this.resourcesManager.reload()
     }
 
