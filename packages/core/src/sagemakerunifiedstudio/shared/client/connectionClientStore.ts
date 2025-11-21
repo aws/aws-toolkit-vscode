@@ -132,7 +132,7 @@ export class ConnectionClientStore {
      * Clears all cached clients
      */
     public clearAll(): void {
-        getLogger().info('SMUS Connection: Clearing all cached clients')
+        getLogger('smus').info('SMUS Connection: Clearing all cached clients')
         this.clientCache = {}
     }
 }

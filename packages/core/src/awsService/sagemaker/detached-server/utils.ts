@@ -148,6 +148,24 @@ export async function isSmusConnection(connectionIdentifier: string): Promise<bo
 }
 
 /**
+ * Detects if the connection identifier is using SMUS IAM credentials
+ * @param connectionIdentifier - The connection identifier to check
+ * @returns Promise<boolean> - true if SMUS IAM connection, false otherwise
+ */
+export async function isSmusIamConnection(connectionIdentifier: string): Promise<boolean> {
+    try {
+        const mapping = await readMapping()
+        const profile = mapping.localCredential?.[connectionIdentifier]
+
+        // Check if profile exists, has smusProjectId, and type is 'iam'
+        return profile && 'smusProjectId' in profile && profile.type === 'iam'
+    } catch (err) {
+        // If we can't detect it is iam connection, assume not SMUS IAM to avoid breaking existing functionality
+        return false
+    }
+}
+
+/**
  * Writes the mapping to a temp file and atomically renames it to the target path.
  * Uses a queue to prevent race conditions when multiple requests try to write simultaneously.
  */

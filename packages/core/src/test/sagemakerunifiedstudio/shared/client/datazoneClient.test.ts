@@ -8,6 +8,9 @@ import * as sinon from 'sinon'
 import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types/commands/GetEnvironmentCommand'
+import { DefaultStsClient } from '../../../../shared/clients/stsClient'
+import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { ToolkitError } from '../../../../shared/errors'
 
 describe('DataZoneClient', () => {
     let dataZoneClient: DataZoneClient
@@ -18,6 +21,7 @@ describe('DataZoneClient', () => {
     beforeEach(async () => {
         // Create mock connection object
         const mockConnection = {
+            id: 'connection-id',
             domainId: testDomainId,
             ssoRegion: testRegion,
         }
@@ -31,42 +35,62 @@ describe('DataZoneClient', () => {
             onDidChangeActiveConnection: sinon.stub().returns({
                 dispose: sinon.stub(),
             }),
+            secondaryAuth: {
+                state: {
+                    get: sinon.stub().returns({
+                        'connection-id': {
+                            profileName: 'test-profile',
+                        },
+                    }),
+                },
+            },
+            getCredentialsProviderForIamProfile: sinon.stub(),
         } as any
 
-        // Set up the DataZoneClient using getInstance since constructor is private
-        DataZoneClient.dispose()
-        dataZoneClient = await DataZoneClient.getInstance(mockAuthProvider)
+        // Create mock credentials provider
+        const mockCredentialsProvider = {
+            getCredentials: sinon.stub().resolves({
+                accessKeyId: 'test-key',
+                secretAccessKey: 'test-secret',
+                sessionToken: 'test-token',
+            }),
+            getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+            getProviderType: () => 'temp' as const,
+            getTelemetryType: () => 'other' as any,
+            getDefaultRegion: () => testRegion,
+            getHashCode: () => 'test-hash',
+            canAutoConnect: () => Promise.resolve(false),
+            isAvailable: () => Promise.resolve(true),
+        }
+
+        // Set up the DataZoneClient using createWithCredentials
+        dataZoneClient = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
     })
 
     afterEach(() => {
         sinon.restore()
     })
 
-    describe('getInstance', () => {
-        it('should return singleton instance', async () => {
-            const instance1 = await DataZoneClient.getInstance(mockAuthProvider)
-            const instance2 = await DataZoneClient.getInstance(mockAuthProvider)
+    describe('createWithCredentials', () => {
+        it('should create new instance with credentials', () => {
+            const mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+                getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+                getProviderType: () => 'temp' as const,
+                getTelemetryType: () => 'other' as any,
+                getDefaultRegion: () => testRegion,
+                getHashCode: () => 'test-hash',
+                canAutoConnect: () => Promise.resolve(false),
+                isAvailable: () => Promise.resolve(true),
+            }
 
-            assert.strictEqual(instance1, instance2)
-        })
-
-        it('should create new instance after dispose', async () => {
-            const instance1 = await DataZoneClient.getInstance(mockAuthProvider)
-            DataZoneClient.dispose()
-            const instance2 = await DataZoneClient.getInstance(mockAuthProvider)
-
-            assert.notStrictEqual(instance1, instance2)
-        })
-    })
-
-    describe('dispose', () => {
-        it('should clear singleton instance', async () => {
-            const instance = await DataZoneClient.getInstance(mockAuthProvider)
-            DataZoneClient.dispose()
-
-            // Should create new instance after dispose
-            const newInstance = await DataZoneClient.getInstance(mockAuthProvider)
-            assert.notStrictEqual(instance, newInstance)
+            const instance = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
+            assert.ok(instance)
+            assert.strictEqual(instance.getRegion(), testRegion)
+            assert.strictEqual(instance.getDomainId(), testDomainId)
         })
     })
 
@@ -151,6 +175,9 @@ describe('DataZoneClient', () => {
                 getEnvironmentCredentials: sinon.stub().resolves(mockCredentials),
             }
 
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getProjectDefaultEnvironmentCreds('project-1')
@@ -215,9 +242,7 @@ describe('DataZoneClient', () => {
 
     describe('fetchAllProjects', function () {
         it('fetches all projects by handling pagination', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
-            // Create a stub for listProjects that returns paginated results
+            // Create a stub for listProjects that returns paginated resultssults
             const listProjectsStub = sinon.stub()
 
             // First call returns first page with nextToken
@@ -247,10 +272,10 @@ describe('DataZoneClient', () => {
             })
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects
-            const result = await client.fetchAllProjects()
+            const result = await dataZoneClient.fetchAllProjects()
 
             // Verify results
             assert.strictEqual(result.length, 2)
@@ -270,8 +295,6 @@ describe('DataZoneClient', () => {
         })
 
         it('returns empty array when no projects found', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
             // Create a stub for listProjects that returns empty results
             const listProjectsStub = sinon.stub().resolves({
                 projects: [],
@@ -279,10 +302,10 @@ describe('DataZoneClient', () => {
             })
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects
-            const result = await client.fetchAllProjects()
+            const result = await dataZoneClient.fetchAllProjects()
 
             // Verify results
             assert.strictEqual(result.length, 0)
@@ -290,16 +313,14 @@ describe('DataZoneClient', () => {
         })
 
         it('handles errors gracefully', async function () {
-            const client = await DataZoneClient.getInstance(mockAuthProvider)
-
             // Create a stub for listProjects that throws an error
             const listProjectsStub = sinon.stub().rejects(new Error('API error'))
 
             // Replace the listProjects method with our stub
-            client.listProjects = listProjectsStub
+            dataZoneClient.listProjects = listProjectsStub
 
             // Call fetchAllProjects and expect it to throw
-            await assert.rejects(() => client.fetchAllProjects(), /API error/)
+            await assert.rejects(() => dataZoneClient.fetchAllProjects(), /API error/)
         })
     })
 
@@ -313,6 +334,9 @@ describe('DataZoneClient', () => {
                     items: [{ id: 'env-1', name: 'Tooling' }],
                 }),
             }
+
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
@@ -374,6 +398,9 @@ describe('DataZoneClient', () => {
                 getEnvironment: sinon.stub().resolves(mockEnvironment),
             }
 
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getToolingEnvironment('project-123')
@@ -395,7 +422,7 @@ describe('DataZoneClient', () => {
 
             await assert.rejects(
                 () => dataZoneClient.getToolingEnvironment('project-123'),
-                /Failed to get tooling environment ID: No default Tooling environment found for project/
+                /No default Tooling environment found for project/
             )
         })
 
@@ -478,6 +505,132 @@ describe('DataZoneClient', () => {
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             await assert.rejects(() => dataZoneClient.fetchAllProjectMemberships('project-1'), error)
+        })
+    })
+
+    describe('getUserProfileId', () => {
+        let stsClientStub: sinon.SinonStub
+        let convertAssumedRoleArnStub: sinon.SinonStub
+        let mockCredentialsProvider: any
+
+        beforeEach(() => {
+            // Mock connection with ID
+            mockAuthProvider.activeConnection = { id: 'connection-id' }
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'id',
+                    secretAccessKey: 'secret',
+                    sessionToken: 'token',
+                }),
+            }
+
+            mockAuthProvider.getCredentialsProviderForIamProfile.resolves(mockCredentialsProvider)
+
+            // Stub STS client
+            stsClientStub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity')
+
+            // Stub SmusUtils method
+            convertAssumedRoleArnStub = sinon.stub(SmusUtils as any, 'convertAssumedRoleArnToIamRoleArn')
+        })
+
+        afterEach(() => {
+            stsClientStub.restore()
+            convertAssumedRoleArnStub.restore()
+        })
+
+        it('should successfully get user profile ID with role ARN', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const mockUserProfileId = 'user-profile-123'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockRoleArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockRoleArn,
+                })
+            )
+        })
+
+        it('should handle DataZone getUserProfile API failure', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const datazoneError = new Error('DataZone API Error')
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().rejects(datazoneError),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Failed to get user profile ID'))
+                    return true
+                }
+            )
+        })
+
+        it('should get user profile ID for IAM user ARN', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+            const mockUserProfileId = 'user-profile-456'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockUserArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockUserArn,
+                })
+            )
+        })
+
+        it('should throw error when user profile ID is not returned', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    // No id field
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual((error as ToolkitError).code, SmusErrorCodes.NoUserProfileFound)
+                    return true
+                }
+            )
         })
     })
 })
