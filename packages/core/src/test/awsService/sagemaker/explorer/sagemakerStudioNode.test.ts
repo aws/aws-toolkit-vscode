@@ -10,17 +10,17 @@ import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../../shared/clients/sagemaker'
 import { SagemakerConstants } from '../../../../awsService/sagemaker/explorer/constants'
 import {
-    SagemakerParentNode,
+    SagemakerStudioNode,
     SelectedDomainUsers,
     SelectedDomainUsersByRegion,
-} from '../../../../awsService/sagemaker/explorer/sagemakerParentNode'
+} from '../../../../awsService/sagemaker/explorer/sagemakerStudioNode'
 import { globals } from '../../../../shared'
 import { DefaultStsClient } from '../../../../shared/clients/stsClient'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../../utilities/explorerNodeAssertions'
 import assert from 'assert'
 
-describe('sagemakerParentNode', function () {
-    let testNode: SagemakerParentNode
+describe('sagemakerStudioNode', function () {
+    let testNode: SagemakerStudioNode
     let client: SagemakerClient
     let fetchSpaceAppsAndDomainsStub: sinon.SinonStub<
         [domainId?: string | undefined, filterSmusDomains?: boolean | undefined],
@@ -111,7 +111,7 @@ describe('sagemakerParentNode', function () {
     beforeEach(function () {
         fetchSpaceAppsAndDomainsStub = sinon.stub(SagemakerClient.prototype, 'fetchSpaceAppsAndDomains')
         getCallerIdentityStub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity')
-        testNode = new SagemakerParentNode(testRegion, client)
+        testNode = new SagemakerStudioNode(testRegion, client)
     })
 
     afterEach(function () {
@@ -194,7 +194,7 @@ describe('sagemakerParentNode', function () {
         let originalState: Map<string, SelectedDomainUsers>
 
         beforeEach(async function () {
-            testNode = new SagemakerParentNode(testRegion, client)
+            testNode = new SagemakerStudioNode(testRegion, client)
             originalState = new Map(
                 globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
             )
@@ -242,7 +242,7 @@ describe('sagemakerParentNode', function () {
         let originalState: Map<string, SelectedDomainUsers>
 
         beforeEach(async function () {
-            testNode = new SagemakerParentNode(testRegion, client)
+            testNode = new SagemakerStudioNode(testRegion, client)
             originalState = new Map(
                 globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
             )
@@ -277,7 +277,7 @@ describe('sagemakerParentNode', function () {
         })
 
         beforeEach(function () {
-            testNode = new SagemakerParentNode(testRegion, client)
+            testNode = new SagemakerStudioNode(testRegion, client)
         })
 
         it('matches IAM user ARN when filtering is enabled', async function () {
