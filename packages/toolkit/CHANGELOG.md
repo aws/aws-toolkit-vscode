@@ -1,3 +1,7 @@
+## 3.86.0 2025-11-21
+
+- **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
+
 ## 3.85.0 2025-11-19
 
 - **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working

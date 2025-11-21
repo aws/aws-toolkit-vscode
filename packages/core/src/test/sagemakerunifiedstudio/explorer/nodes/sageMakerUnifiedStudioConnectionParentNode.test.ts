@@ -50,14 +50,24 @@ describe('SageMakerUnifiedStudioConnectionParentNode', function () {
         } as any
 
         mockComputeNode = {
-            authProvider: {} as any,
+            authProvider: {
+                getDerCredentialsProvider: sinon.stub().resolves({
+                    getCredentials: sinon.stub().resolves({
+                        accessKeyId: 'test-key',
+                        secretAccessKey: 'test-secret',
+                        sessionToken: 'test-token',
+                    }),
+                }),
+                getDomainId: sinon.stub().returns('domain-123'),
+                getDomainRegion: sinon.stub().returns('us-east-1'),
+            } as any,
             parent: {
                 project: mockProject,
             } as any,
         } as any
 
         // Stub static methods
-        sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').resolves(mockDataZoneClient as any)
         sinon.stub(getLogger(), 'debug')
 
         connectionParentNode = new SageMakerUnifiedStudioConnectionParentNode(
@@ -135,7 +145,17 @@ describe('SageMakerUnifiedStudioConnectionParentNode', function () {
         it('handles missing project information gracefully', async function () {
             const nodeWithoutProject = new SageMakerUnifiedStudioConnectionParentNode(
                 {
-                    authProvider: {} as any,
+                    authProvider: {
+                        getDerCredentialsProvider: sinon.stub().resolves({
+                            getCredentials: sinon.stub().resolves({
+                                accessKeyId: 'test-key',
+                                secretAccessKey: 'test-secret',
+                                sessionToken: 'test-token',
+                            }),
+                        }),
+                        getDomainId: sinon.stub().returns('domain-123'),
+                        getDomainRegion: sinon.stub().returns('us-east-1'),
+                    } as any,
                     parent: {
                         project: undefined,
                     } as any,
@@ -164,7 +184,7 @@ describe('SageMakerUnifiedStudioConnectionParentNode', function () {
     describe('error handling', function () {
         it('handles DataZoneClient.getInstance error', async function () {
             sinon.restore()
-            sinon.stub(DataZoneClient, 'getInstance').rejects(new Error('Client error'))
+            sinon.stub(DataZoneClient, 'createWithCredentials').rejects(new Error('Client error'))
             sinon.stub(getLogger(), 'debug')
 
             try {
