@@ -57,7 +57,8 @@
                         :disabled="
                             !initialData.runtimeSupportsRemoteDebug ||
                             !initialData.remoteDebugLayer ||
-                            !initialData.LambdaFunctionNode?.configuration.SnapStart
+                            (!initialData.LambdaFunctionNode?.configuration.SnapStart &&
+                                initialData.LambdaFunctionNode?.configuration.State !== 'Active')
                         "
                         class="remote-debug-checkbox"
                     />
@@ -94,7 +95,10 @@
                             Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
                         </info>
                         <info
-                            v-else-if="!initialData.LambdaFunctionNode?.configuration.SnapStart"
+                            v-else-if="
+                                !initialData.LambdaFunctionNode?.configuration.SnapStart &&
+                                initialData.LambdaFunctionNode?.configuration.State !== 'Active'
+                            "
                             style="color: var(--vscode-errorForeground)"
                         >
                             Doesn't support remote debugging yet
