@@ -52,7 +52,7 @@ import { AwsCredentialsService, encryptionKey } from './auth/credentials'
 import { ExtensionId, ExtensionName, Version, CloudFormationTelemetrySettings } from './extensionConfig'
 import { commandKey } from './utils'
 import { CloudFormationExplorer } from './explorer/explorer'
-import { promptTelemetryOptInWithTimeout } from './telemetryOptIn'
+import { handleTelemetryOptIn } from './telemetryOptIn'
 
 import { refreshCommand, StacksManager } from './stacks/stacksManager'
 import { StackOverviewWebviewProvider } from './ui/stackOverviewWebviewProvider'
@@ -89,7 +89,7 @@ let clientDisposables: Disposable[] = []
 
 async function startClient(context: ExtensionContext) {
     const cfnTelemetrySettings = new CloudFormationTelemetrySettings()
-    const telemetryEnabled = await promptTelemetryOptInWithTimeout(context, cfnTelemetrySettings)
+    const telemetryEnabled = await handleTelemetryOptIn(context, cfnTelemetrySettings)
 
     const cfnLspConfig = {
         ...DevSettings.instance.getServiceConfig('cloudformationLsp', {}),
