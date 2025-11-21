@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters"
-}
