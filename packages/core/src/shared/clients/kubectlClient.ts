@@ -73,13 +73,13 @@ export class KubectlClient {
                 void vscode.window.showErrorMessage(
                     `You do not have permission to view ${eksCluster.name} or its spaces. Please contact your administrator.`
                 )
-                throw new Error(
-                    `Error: User has insufficient permissions to view EKS cluster (${eksCluster.name}) or its spaces.`
+                getLogger().warn(
+                    `[Warning]: User has insufficient permissions to view EKS cluster (${eksCluster.name}) or its spaces.`
                 )
             }
 
-            getLogger().error(
-                `Error: Unavailable spaces for EKS Cluster (${eksCluster.name}): ${error}\nStack trace: ${(error as Error).stack}`
+            getLogger().warn(
+                `[Warning]: Unavailable spaces for EKS Cluster (${eksCluster.name}): ${error}\nStack trace: ${(error as Error).stack}`
             )
         }
         return []
