@@ -339,14 +339,8 @@ describe('DiffWebviewProvider', function () {
         })
 
         it('should not show deploy button when changeset is not CREATE_COMPLETE', function () {
-            const changes: StackChange[] = [
-                {
-                    resourceChange: {
-                        action: 'Add',
-                        logicalResourceId: 'TestResource',
-                    },
-                },
-            ]
+            // changes are not available if a changeset is not created
+            const changes: StackChange[] = []
 
             void provider.updateData(
                 'test-stack',
@@ -405,6 +399,53 @@ describe('DiffWebviewProvider', function () {
             provider.resolveWebviewView(mockWebview as any)
 
             assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+
+        it('should not show deployment buttons when changeset status is DELETE_PENDING', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                    },
+                },
+            ]
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                true,
+                undefined,
+                undefined,
+                'DELETE_PENDING'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('Delete Changeset'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+
+        it('should not show deployment buttons when changeset status is CREATE_PENDING', function () {
+            const changes: StackChange[] = []
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                true,
+                undefined,
+                undefined,
+                'CREATE_PENDING'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('Delete Changeset'))
             assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
         })
     })
