@@ -8,12 +8,12 @@ import sinon from 'sinon'
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioAuthInfoNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioAuthInfoNode'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
-import { SmusConnection } from '../../../../sagemakerunifiedstudio/auth/model'
+import { SmusConnection, SmusSsoConnection } from '../../../../sagemakerunifiedstudio/auth/model'
 
 describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     let authInfoNode: SageMakerUnifiedStudioAuthInfoNode
     let mockAuthProvider: any
-    let mockConnection: SmusConnection
+    let mockConnection: SmusSsoConnection
     let currentActiveConnection: SmusConnection | undefined
 
     beforeEach(function () {
@@ -39,6 +39,20 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             onDidChange: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
+            onDidChangeActiveConnection: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
+            getDomainId: sinon.stub().callsFake(() => {
+                return currentActiveConnection?.domainId
+            }),
+            getDomainRegion: sinon.stub().callsFake(() => {
+                if (currentActiveConnection?.type === 'sso') {
+                    return (currentActiveConnection as any).ssoRegion
+                } else if (currentActiveConnection?.type === 'iam') {
+                    return (currentActiveConnection as any).region
+                }
+                return undefined
+            }),
+            getSessionName: sinon.stub().resolves(undefined),
+            getRoleArn: sinon.stub().resolves(undefined),
             get activeConnection() {
                 return currentActiveConnection
             },
@@ -46,6 +60,9 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 currentActiveConnection = value
             },
         }
+
+        // Stub getContext to return false for IAM mode by default (SSO connections)
+        sinon.stub(require('../../../../shared/vscode/setContext'), 'getContext').returns(false)
 
         // Stub SmusAuthenticationProvider.fromContext
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
@@ -80,8 +97,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = mockConnection
             })
 
-            it('should return connected tree item', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return connected tree item', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: dzd_domainId')
                 assert.strictEqual(treeItem.description, 'us-east-2')
@@ -111,8 +128,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = mockConnection
             })
 
-            it('should return expired tree item with reauthenticate command', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return expired tree item with reauthenticate command', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: dzd_domainId (Expired) - Click to reauthenticate')
                 assert.strictEqual(treeItem.description, 'us-east-2')
@@ -142,8 +159,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = undefined
             })
 
-            it('should return not connected tree item', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should return not connected tree item', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Not Connected')
                 assert.strictEqual(treeItem.description, undefined)
@@ -176,8 +193,8 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
                 mockAuthProvider.activeConnection = incompleteConnection
             })
 
-            it('should handle missing domain ID and region gracefully', function () {
-                const treeItem = authInfoNode.getTreeItem()
+            it('should handle missing domain ID and region gracefully', async function () {
+                const treeItem = await authInfoNode.getTreeItem()
 
                 assert.strictEqual(treeItem.label, 'Domain: Unknown')
                 assert.strictEqual(treeItem.description, 'Unknown')
@@ -220,32 +237,32 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     })
 
     describe('theme icon colors', function () {
-        it('should use green color for connected state', function () {
+        it('should use green color for connected state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
             assert.strictEqual((icon.color as any).id, 'charts.green')
         })
 
-        it('should use yellow color for expired state', function () {
+        it('should use yellow color for expired state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
             assert.strictEqual((icon.color as any).id, 'charts.yellow')
         })
 
-        it('should use red color for not connected state', function () {
+        it('should use red color for not connected state', async function () {
             mockAuthProvider.isConnected.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const icon = treeItem.iconPath as vscode.ThemeIcon
 
             assert.ok(icon.color instanceof vscode.ThemeColor)
@@ -254,11 +271,11 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
     })
 
     describe('tooltip content', function () {
-        it('should include all relevant information for connected state', function () {
+        it('should include all relevant information for connected state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Connected to SageMaker Unified Studio'))
@@ -267,25 +284,143 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             assert.ok(tooltip.includes('Status: Connected'))
         })
 
-        it('should include expiration information for expired state', function () {
+        it('should include expiration information for expired state', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Connection to SageMaker Unified Studio has expired'))
             assert.ok(tooltip.includes('Status: Expired - Click to reauthenticate'))
         })
 
-        it('should include sign-in prompt for not connected state', function () {
+        it('should include sign-in prompt for not connected state', async function () {
             mockAuthProvider.isConnected.returns(false)
 
-            const treeItem = authInfoNode.getTreeItem()
+            const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
 
             assert.ok(tooltip.includes('Not connected to SageMaker Unified Studio'))
             assert.ok(tooltip.includes('Please sign in to access your projects'))
+        })
+    })
+
+    describe('IAM connections in IAM mode', function () {
+        let mockIamConnection: any
+
+        beforeEach(function () {
+            mockIamConnection = {
+                id: 'profile:test-profile',
+                type: 'iam',
+                label: 'Test IAM Profile',
+                profileName: 'test-profile',
+                region: 'us-west-2',
+                domainUrl: 'https://dzd_domainId.sagemaker.us-west-2.on.aws',
+                domainId: 'dzd_domainId',
+                getCredentials: sinon.stub().resolves(),
+            }
+
+            currentActiveConnection = mockIamConnection
+
+            // Override getContext stub to return true for IAM mode
+            const getContextModule = require('../../../../shared/vscode/setContext')
+            const existingStub = getContextModule.getContext as sinon.SinonStub
+            existingStub.withArgs('aws.smus.isIamMode').returns(true)
+        })
+
+        it('should display profile name with session name for IAM connection', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(true)
+            mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
+
+            const treeItem = await authInfoNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, 'Connected with profile: test-profile (session: my-session-name)')
+            assert.strictEqual(treeItem.description, 'us-west-2')
+        })
+
+        it('should display profile name without session name when unavailable', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(true)
+            mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
+
+            const treeItem = await authInfoNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, 'Connected with profile: test-profile')
+            assert.strictEqual(treeItem.description, 'us-west-2')
+        })
+
+        it('should include session name and role ARN in tooltip when available', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(true)
+            mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
+
+            const treeItem = await authInfoNode.getTreeItem()
+            const tooltip = treeItem.tooltip as string
+
+            assert.ok(tooltip.includes('Connected to SageMaker Unified Studio'))
+            assert.ok(tooltip.includes('Profile: test-profile'))
+            assert.ok(tooltip.includes('Region: us-west-2'))
+            assert.ok(tooltip.includes('Session: my-session-name'))
+            assert.ok(tooltip.includes('Role ARN: arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'))
+            assert.ok(tooltip.includes('Status: Connected'))
+        })
+
+        it('should not include session name or role ARN in tooltip when unavailable', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(true)
+            mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
+
+            const treeItem = await authInfoNode.getTreeItem()
+            const tooltip = treeItem.tooltip as string
+
+            assert.ok(tooltip.includes('Connected to SageMaker Unified Studio'))
+            assert.ok(tooltip.includes('Profile: test-profile'))
+            assert.ok(tooltip.includes('Region: us-west-2'))
+            assert.ok(!tooltip.includes('Session:'))
+            assert.ok(!tooltip.includes('Role ARN:'))
+            assert.ok(tooltip.includes('Status: Connected'))
+        })
+
+        it('should handle getSessionName errors gracefully', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(true)
+            mockAuthProvider.getSessionName = sinon.stub().resolves(undefined) // Return undefined instead of rejecting
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
+
+            // Should not throw, just display without session name
+            const treeItem = await authInfoNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, 'Connected with profile: test-profile')
+            assert.strictEqual(treeItem.description, 'us-west-2')
+        })
+
+        it('should display expired IAM connection with profile name', async function () {
+            mockAuthProvider.isConnected.returns(true)
+            mockAuthProvider.isConnectionValid.returns(false)
+            mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
+
+            const treeItem = await authInfoNode.getTreeItem()
+
+            assert.strictEqual(treeItem.label, 'Profile: test-profile (Expired) - Click to reauthenticate')
+            assert.strictEqual(treeItem.description, 'us-west-2')
+
+            // Check icon
+            assert.ok(treeItem.iconPath instanceof vscode.ThemeIcon)
+            assert.strictEqual((treeItem.iconPath as vscode.ThemeIcon).id, 'warning')
+
+            // Should have reauthenticate command
+            assert.ok(treeItem.command)
+            assert.strictEqual(treeItem.command.command, 'aws.smus.reauthenticate')
         })
     })
 })
