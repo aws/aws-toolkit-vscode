@@ -9,6 +9,7 @@ import { DiffViewHelper } from './diffViewHelper'
 import { commandKey } from '../utils'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { showWarningConfirmation } from './message'
+import { ChangeSetStatus } from '@aws-sdk/client-cloudformation'
 
 const webviewCommandOpenDiff = 'openDiff'
 
@@ -153,7 +154,9 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 <body>
                     <p>No changes detected for stack: ${this.stackName}</p>
                     ${
-                        this.changeSetName
+                        this.changeSetName &&
+                        (this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE ||
+                            this.changeSetStatus === ChangeSetStatus.FAILED)
                             ? `
                     <div class="deletion-button" style="margin: 10px 0; text-align: left; display: inline-block;">
                         ${deletionButton}
@@ -381,11 +384,14 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         `
 
         const deploymentButtons =
-            this.changeSetName && this.enableDeployments
+            this.changeSetName &&
+            this.enableDeployments &&
+            (this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE ||
+                this.changeSetStatus === ChangeSetStatus.FAILED)
                 ? `
             <div class="deployment-actions" style="margin: 10px 0; text-align: left; display: inline-block;">
                 ${
-                    this.changeSetStatus === 'CREATE_COMPLETE'
+                    this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE
                         ? `
                 <button id="confirmDeploy" onclick="confirmDeploy()" style="
                     background-color: var(--vscode-button-background);
