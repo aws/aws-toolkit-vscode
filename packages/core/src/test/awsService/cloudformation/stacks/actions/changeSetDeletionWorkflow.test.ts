@@ -30,7 +30,6 @@ describe('ChangeSetDeletion', function () {
         let executeCommandStub: SinonStub
         let getChangeSetDeletionStatusStub: SinonStub
         let describeChangeSetDeletionStatusStub: SinonStub
-        let setIntervalStub: SinonStub
 
         beforeEach(function () {
             mockClient = { sendRequest: sandbox.stub().resolves({}) }
@@ -40,11 +39,6 @@ describe('ChangeSetDeletion', function () {
             getChangeSetDeletionStatusStub = sandbox.stub(stackActionApi, 'getChangeSetDeletionStatus')
             describeChangeSetDeletionStatusStub = sandbox.stub(stackActionApi, 'describeChangeSetDeletionStatus')
             sandbox.stub(stackActionApi, 'deleteChangeSet').resolves()
-
-            setIntervalStub = sandbox.stub(globals.clock, 'setInterval').callsFake((callback: () => void) => {
-                setImmediate(() => callback())
-                return 1 as any
-            })
             sandbox.stub(globals.clock, 'clearInterval')
         })
 
