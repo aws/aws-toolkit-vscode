@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+# HyperPod Connection Script
+# 
+# This script establishes a connection to an AWS SageMaker HyperPod instance using AWS Systems Manager (SSM).
+# HyperPod is AWS's managed service for distributed machine learning training at scale.
+#
+# OVERVIEW:
+# The script acts as a wrapper around the AWS SSM CLI to create a secure session tunnel to a HyperPod 
+# compute instance. It validates required parameters, logs the connection attempt, and executes the 
+# SSM StartSession command with HyperPod-specific connection details.
+#
+# REQUIRED ENVIRONMENT VARIABLES:
+#   AWS_REGION          - AWS region where the HyperPod cluster is located (e.g., us-west-2)
+#   AWS_SSM_CLI         - Path to the AWS SSM CLI executable
+#   STREAM_URL          - WebSocket stream URL for the HyperPod session connection
+#   TOKEN               - Authentication token for the HyperPod session
+#   SESSION_ID          - Unique identifier for the HyperPod session
+#
+# OPTIONAL ENVIRONMENT VARIABLES:
+#   LOG_FILE_LOCATION   - Path to log file (default: /tmp/hyperpod_connect.log)
+#   DEBUG_LOG           - Enable debug logging (default: 0)
+#
+# USAGE:
+#   AWS_REGION=us-west-2 AWS_SSM_CLI=/usr/local/bin/session-manager-plugin \
+#   STREAM_URL=wss://... TOKEN=abc123... SESSION_ID=session-xyz \
+#   ./hyperpod_connect
+#
+# SECURITY NOTE:
+# This script handles sensitive authentication tokens. Ensure proper file permissions
+# and avoid logging sensitive values in production environments. 
+set -x
+set -e
+set -u
+
+_DATE_CMD=true
+
+if command > /dev/null 2>&1 -v date; then
+    _DATE_CMD=date
+elif command > /dev/null 2>&1 -v /bin/date; then
+    _DATE_CMD=/bin/date
+fi
+
+_log() {
+    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
+}
+
+_require_nolog() {
+    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+        _log "error: missing required arg: $1"
+        exit 1
+    fi
+}
+
+_require() {
+    _require_nolog "$@"
+    _log "$1=$2"
+}
+
+_hyperpod() {
+    # Function inputs
+    local AWS_SSM_CLI=$1
+    local AWS_REGION=$2
+    local STREAM_URL=$3
+    local TOKEN=$4
+    local SESSION_ID=$5
+
+    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
+}
+
+_main() {
+    # Set defaults for missing environment variables
+    DEBUG_LOG=${DEBUG_LOG:-0}
+    LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
+
+    _log "=============================================================================="
+    _require AWS_REGION "${AWS_REGION:-}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+    _require SESSION_ID "${SESSION_ID:-}"
+    _require_nolog STREAM_URL "${STREAM_URL:-}"
+    _require_nolog TOKEN "${TOKEN:-}"
+
+    _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
+}
+
+_main
