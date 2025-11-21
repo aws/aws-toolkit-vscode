@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Cloudformation: refresh stacks after change set deletion"
+	"description": "CloudFormation: refresh stacks after change set deletion"
 }
