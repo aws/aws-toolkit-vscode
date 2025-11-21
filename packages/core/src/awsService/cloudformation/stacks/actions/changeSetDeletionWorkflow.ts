@@ -15,7 +15,8 @@ import {
 import { deleteChangeSet, describeChangeSetDeletionStatus, getChangeSetDeletionStatus } from './stackActionApi'
 import { createChangeSetDeletionParams } from './stackActionUtil'
 import { getLogger } from '../../../../shared/logger/logger'
-import { extractErrorMessage } from '../../utils'
+import { commandKey, extractErrorMessage } from '../../utils'
+import { commands } from 'vscode'
 
 export class ChangeSetDeletion {
     private readonly id: string
@@ -66,6 +67,7 @@ export class ChangeSetDeletion {
                                     describeDeplomentStatusResult.FailureReason ?? 'No failure reason provided'
                                 )
                             }
+                            void commands.executeCommand(commandKey('stacks.refresh'))
                             clearInterval(interval)
                             break
                         case StackActionPhase.DELETION_FAILED: {
@@ -77,6 +79,7 @@ export class ChangeSetDeletion {
                                 this.stackName,
                                 describeDeplomentStatusResult.FailureReason ?? 'No failure reason provided'
                             )
+                            void commands.executeCommand(commandKey('stacks.refresh'))
                             clearInterval(interval)
                             break
                         }
