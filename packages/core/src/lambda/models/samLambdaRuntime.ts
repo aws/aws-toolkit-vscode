@@ -30,6 +30,7 @@ export type RuntimePackageType = 'Image' | 'Zip'
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
 export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'nodejs24.x' as Runtime,
     'nodejs22.x' as Runtime,
     'nodejs20.x',
     'nodejs18.x',
@@ -51,6 +52,7 @@ export function getNodeMajorVersion(version?: string): number | undefined {
 }
 
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.14' as Runtime,
     'python3.13' as Runtime,
     'python3.12',
     'python3.11',
@@ -66,6 +68,7 @@ export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'java8',
     'java8.al2',
     'java21',
+    'java25' as Runtime,
 ])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6', 'dotnet8'])
 export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3', 'ruby3.4' as Runtime])
@@ -94,12 +97,12 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'ruby2.7',
 ])
 const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
-    [RuntimeFamily.NodeJS, 'nodejs22.x' as Runtime],
-    [RuntimeFamily.Python, 'python3.13' as Runtime],
+    [RuntimeFamily.NodeJS, 'nodejs24.x' as Runtime],
+    [RuntimeFamily.Python, 'python3.14' as Runtime],
     [RuntimeFamily.DotNet, 'dotnet8'],
     [RuntimeFamily.Go, 'go1.x'],
-    [RuntimeFamily.Java, 'java21'],
-    [RuntimeFamily.Ruby, 'ruby3.3'],
+    [RuntimeFamily.Java, 'java25' as Runtime],
+    [RuntimeFamily.Ruby, 'ruby3.4' as Runtime],
 ])
 
 export const mapFamilyToDebugType = ImmutableMap<RuntimeFamily, string>([
