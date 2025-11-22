@@ -15,6 +15,8 @@ import {
     isRedLakeDatabase,
     getTooltip,
     getRedshiftTypeFromHost,
+    isRedLakeCatalog,
+    isS3TablesCatalog,
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/utils'
 import { NodeType, ConnectionType, RedshiftType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
 
@@ -247,6 +249,65 @@ describe('utils', function () {
         it('should return undefined for unrecognized domains', function () {
             const unknownHost = 'host.example.com'
             assert.strictEqual(getRedshiftTypeFromHost(unknownHost), undefined)
+        })
+    })
+
+    describe('isRedLakeCatalog', function () {
+        it('should return true for RedLake catalogs with FederatedCatalog connection', function () {
+            const catalog = {
+                FederatedCatalog: {
+                    ConnectionName: 'aws:redshift',
+                },
+            }
+            assert.strictEqual(isRedLakeCatalog(catalog), true)
+        })
+
+        it('should return true for RedLake catalogs with CatalogProperties', function () {
+            const catalog = {
+                CatalogProperties: {
+                    DataLakeAccessProperties: {
+                        CatalogType: 'aws:redshift',
+                    },
+                },
+            }
+            assert.strictEqual(isRedLakeCatalog(catalog), true)
+        })
+
+        it('should return false for non-RedLake catalogs', function () {
+            const catalog = {
+                FederatedCatalog: {
+                    ConnectionName: 'aws:s3tables',
+                },
+            }
+            assert.strictEqual(isRedLakeCatalog(catalog), false)
+        })
+
+        it('should return false for undefined catalog', function () {
+            assert.strictEqual(isRedLakeCatalog(undefined), false)
+        })
+    })
+
+    describe('isS3TablesCatalog', function () {
+        it('should return true for S3 Tables catalogs', function () {
+            const catalog = {
+                FederatedCatalog: {
+                    ConnectionName: 'aws:s3tables',
+                },
+            }
+            assert.strictEqual(isS3TablesCatalog(catalog), true)
+        })
+
+        it('should return false for non-S3 Tables catalogs', function () {
+            const catalog = {
+                FederatedCatalog: {
+                    ConnectionName: 'aws:redshift',
+                },
+            }
+            assert.strictEqual(isS3TablesCatalog(catalog), false)
+        })
+
+        it('should return false for undefined catalog', function () {
+            assert.strictEqual(isS3TablesCatalog(undefined), false)
         })
     })
 })

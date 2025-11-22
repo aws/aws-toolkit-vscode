@@ -30,6 +30,8 @@ import {
     createColumnTreeItem,
     getColumnType,
     createErrorItem,
+    isRedLakeCatalog,
+    isS3TablesCatalog,
 } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { Column, Database, Table } from '@aws-sdk/client-glue'
@@ -353,7 +355,15 @@ async function getCatalogs(
         }
 
         // For catalogs without children, create regular catalog node
-        return createCatalogNode(parentCatalog.CatalogId || '', parentCatalog, glueClient, parent, false)
+        // For RedLake and S3TableCatalog, they are supposed to have children
+        // Pass isParent as true
+        return createCatalogNode(
+            parentCatalog.CatalogId || '',
+            parentCatalog,
+            glueClient,
+            parent,
+            isRedLakeCatalog(parentCatalog) || isS3TablesCatalog(parentCatalog)
+        )
     })
 }
 
@@ -385,7 +395,7 @@ function createCatalogNode(
         },
         // Child catalogs load databases, parent catalogs will have their children provider overridden
         isParent
-            ? async () => [] // Placeholder, will be overridden for parent catalogs with children
+            ? async () => [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as LakehouseNode]
             : async (node) => {
                   try {
                       logger.info(`Loading databases for catalog ${catalogId}`)
