@@ -283,9 +283,18 @@ export class RemoteInvokeWebview extends VueWebview {
         this.channel.appendLine('Loading response...')
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
-                const funcResponse = remoteDebugEnabled
-                    ? await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
-                    : await this.client.invoke(this.data.FunctionArn, input, qualifier)
+                let funcResponse
+                if (remoteDebugEnabled) {
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                } else if (
+                    !this.data.LambdaFunctionNode?.configuration.SnapStart &&
+                    this.data.LambdaFunctionNode?.configuration.State !== 'Active'
+                ) {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                } else {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier)
+                }
+
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
                 const decodedPayload = funcResponse.Payload ? new TextDecoder().decode(funcResponse.Payload) : ''
                 const payload = decodedPayload || JSON.stringify({})
