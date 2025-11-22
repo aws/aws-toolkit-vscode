@@ -1,3 +1,10 @@
+## 3.88.0 2025-11-22
+
+- **Bug Fix** CloudFormation: refresh stacks after change set deletion
+- **Bug Fix** CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered
+- **Bug Fix** CloudFormation: prevent eager loading of CloudFormation stacks
+- **Feature** Remote debugging now supports nodejs24.x, python3.14, java25
+
 ## 3.87.0 2025-11-21
 
 - **Feature** Support IAM based domains for SageMaker Unified Studio
