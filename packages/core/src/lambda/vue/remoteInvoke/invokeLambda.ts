@@ -284,12 +284,12 @@ export class RemoteInvokeWebview extends VueWebview {
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
                 let funcResponse
-                if (remoteDebugEnabled) {
-                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
-                } else if (
+                const snapStartDisabled =
                     !this.data.LambdaFunctionNode?.configuration.SnapStart &&
                     this.data.LambdaFunctionNode?.configuration.State !== 'Active'
-                ) {
+                if (remoteDebugEnabled) {
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                } else if (snapStartDisabled) {
                     funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
                 } else {
                     funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier)
@@ -300,9 +300,11 @@ export class RemoteInvokeWebview extends VueWebview {
                 const payload = decodedPayload || JSON.stringify({})
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
-                this.channel.appendLine('Logs:')
-                this.channel.appendLine(logs)
-                this.channel.appendLine('')
+                if (!snapStartDisabled) {
+                    this.channel.appendLine('Logs:')
+                    this.channel.appendLine(logs)
+                    this.channel.appendLine('')
+                }
                 this.channel.appendLine('Payload:')
                 this.channel.appendLine(String(payload))
                 this.channel.appendLine('')
