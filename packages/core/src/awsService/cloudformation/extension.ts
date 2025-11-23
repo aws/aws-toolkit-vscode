@@ -13,7 +13,7 @@ import {
     CloseHandlerResult,
 } from 'vscode-languageclient/node'
 import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
-import { formatMessage, toString } from './utils'
+import { toString } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -167,13 +167,17 @@ async function startClient(context: ExtensionContext) {
         },
         errorHandler: {
             error: (error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult => {
-                void window.showErrorMessage(formatMessage(`Error count = ${count}): ${toString(message)}`))
+                getLogger().warn(`CloudFormation LSP error (count: ${count}): ${toString(message)}`)
                 return { action: ErrorAction.Continue }
             },
             closed: (): CloseHandlerResult => {
-                void window.showWarningMessage(formatMessage(`Server connection closed`))
-                return { action: CloseAction.DoNotRestart }
+                getLogger().info('CloudFormation LSP connection closed')
+                return { action: CloseAction.DoNotRestart, message: '' }
             },
+        },
+        initializationFailedHandler: () => {
+            getLogger().error('CloudFormation LSP initialization failed')
+            return false
         },
     }
 
@@ -181,7 +185,12 @@ async function startClient(context: ExtensionContext) {
 
     const stacksManager = new StacksManager(client)
 
-    await client.start()
+    try {
+        await client.start()
+    } catch (error) {
+        getLogger().error(`CloudFormation LSP failed to start: ${toString(error)}`)
+        return
+    }
 
     const documentManager = new DocumentManager(client)
     const resourceSelector = new ResourceSelector(client)
@@ -322,9 +331,7 @@ export async function activate(context: ExtensionContext) {
             try {
                 await restartClient(context)
             } catch (error) {
-                void window.showErrorMessage(
-                    formatMessage(`Failed to restart CloudFormation language server: ${toString(error)}`)
-                )
+                getLogger().error(`Failed to restart CloudFormation language server: ${toString(error)}`)
             }
         })
     )
