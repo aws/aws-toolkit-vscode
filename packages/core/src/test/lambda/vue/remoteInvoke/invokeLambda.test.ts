@@ -58,6 +58,11 @@ describe('RemoteInvokeWebview', () => {
                 FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
                 FunctionRegion: 'us-west-2',
                 InputSamples: [],
+                LambdaFunctionNode: {
+                    configuration: {
+                        State: 'Active',
+                    },
+                } as LambdaFunctionNode,
             }
             const result = remoteInvokeWebview.init()
             assert.deepEqual(result, mockData)

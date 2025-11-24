@@ -301,7 +301,6 @@ export class RemoteInvokeWebview extends VueWebview {
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
                 if (!snapStartDisabled) {
-                    console.log('Displaying logs from invocation')
                     this.channel.appendLine('Logs:')
                     this.channel.appendLine(logs)
                     this.channel.appendLine('')
