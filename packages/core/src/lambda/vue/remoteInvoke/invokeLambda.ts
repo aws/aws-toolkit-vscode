@@ -292,7 +292,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 } else if (snapStartDisabled) {
                     funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
                 } else {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier)
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
                 }
 
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
@@ -301,6 +301,7 @@ export class RemoteInvokeWebview extends VueWebview {
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
                 if (!snapStartDisabled) {
+                    console.log('Displaying logs from invocation')
                     this.channel.appendLine('Logs:')
                     this.channel.appendLine(logs)
                     this.channel.appendLine('')
