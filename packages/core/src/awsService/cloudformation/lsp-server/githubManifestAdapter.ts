@@ -24,12 +24,9 @@ export class GitHubManifestAdapter {
         const versions = dedupeAndGetLatestVersions(sortedReleases.map((release) => this.convertRelease(release)))
         getLogger('awsCfnLsp').info(
             'Candidate versions: %s',
-            JSON.stringify(
-                versions.map((v) => ({
-                    serverVersion: v.serverVersion,
-                    targets: v.targets.map((t) => `${t.platform}-${t.arch}`),
-                }))
-            )
+            versions
+                .map((v) => `${v.serverVersion}[${v.targets.map((t) => `${t.platform}-${t.arch}`).join(',')}]`)
+                .join(', ')
         )
         return {
             manifestSchemaVersion: '1.0',
