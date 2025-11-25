@@ -220,9 +220,16 @@ describe('LakehouseStrategy', function () {
     })
 
     describe('Catalog nodes', function () {
-        it('should create catalog nodes from API', async function () {
+        it('should create regular catalog nodes and load databases', async function () {
+            const regularCatalog = {
+                CatalogId: 'regular-catalog',
+                Name: 'regular-catalog',
+                CatalogType: 'HIVE',
+            }
+
             mockGlueCatalogClient.getCatalogs.resolves({
-                catalogs: [{ CatalogId: 'test-catalog', CatalogType: 'HIVE' }],
+                catalogs: [regularCatalog],
+                nextToken: undefined,
             })
             mockGlueClient.getDatabases.resolves({
                 databases: [{ Name: 'test-db' }],
@@ -236,8 +243,13 @@ describe('LakehouseStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.ok(children.length > 0)
+            const catalogNode = children.find((child) => child.id === 'regular-catalog') as LakehouseNode
+            assert.ok(catalogNode)
             assert.ok(mockGlueCatalogClient.getCatalogs.called)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.strictEqual((catalogChildren[0] as LakehouseNode).data.nodeType, NodeType.GLUE_DATABASE)
         })
 
         it('should handle catalog database pagination', async function () {
@@ -276,6 +288,64 @@ describe('LakehouseStrategy', function () {
 
             assert.strictEqual(children.length, 2)
             assert.ok(mockGlueClient.getDatabases.calledTwice)
+        })
+
+        it('should treat RedLake catalogs as parent catalogs', async function () {
+            const redLakeCatalog = {
+                CatalogId: 'redlake-catalog',
+                Name: 'redlake-catalog',
+                FederatedCatalog: {
+                    ConnectionName: 'aws:redshift',
+                },
+            }
+
+            mockGlueCatalogClient.getCatalogs.resolves({
+                catalogs: [redLakeCatalog],
+                nextToken: undefined,
+            })
+
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+            const children = await node.getChildren()
+
+            const catalogNode = children.find((child) => child.id === 'redlake-catalog') as LakehouseNode
+            assert.ok(catalogNode)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.ok(catalogChildren[0].resource === '[No data found]')
+        })
+
+        it('should treat S3Tables catalogs as parent catalogs', async function () {
+            const s3TablesCatalog = {
+                CatalogId: 's3tables-catalog',
+                Name: 's3tables-catalog',
+                FederatedCatalog: {
+                    ConnectionName: 'aws:s3tables',
+                },
+            }
+
+            mockGlueCatalogClient.getCatalogs.resolves({
+                catalogs: [s3TablesCatalog],
+                nextToken: undefined,
+            })
+
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+            const children = await node.getChildren()
+
+            const catalogNode = children.find((child) => child.id === 's3tables-catalog') as LakehouseNode
+            assert.ok(catalogNode)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.ok(catalogChildren[0].resource === '[No data found]')
         })
     })
 
@@ -435,98 +505,6 @@ describe('LakehouseStrategy', function () {
             const children = await tableNode.getChildren()
 
             assert.strictEqual(children.length, 0)
-        })
-
-        it('should treat RedLake catalogs as parent catalogs', async function () {
-            const redLakeCatalog = {
-                CatalogId: 'redlake-catalog',
-                Name: 'redlake-catalog',
-                FederatedCatalog: {
-                    ConnectionName: 'aws:redshift',
-                },
-            }
-
-            mockGlueCatalogClient.getCatalogs.resolves({
-                catalogs: [redLakeCatalog],
-                nextToken: undefined,
-            })
-
-            const node = createLakehouseConnectionNode(
-                mockConnection as any,
-                mockCredentialsProvider as ConnectionCredentialsProvider,
-                'us-east-1'
-            )
-            const children = await node.getChildren()
-
-            const catalogNode = children.find((child) => child.id === 'redlake-catalog') as LakehouseNode
-            assert.ok(catalogNode)
-
-            // Parent catalogs should return placeholder message instead of empty array
-            const catalogChildren = await catalogNode.getChildren()
-            assert.strictEqual(catalogChildren.length, 1)
-            assert.ok(catalogChildren[0].resource === '[No data found]')
-        })
-
-        it('should treat S3Tables catalogs as parent catalogs', async function () {
-            const s3TablesCatalog = {
-                CatalogId: 's3tables-catalog',
-                Name: 's3tables-catalog',
-                FederatedCatalog: {
-                    ConnectionName: 'aws:s3tables',
-                },
-            }
-
-            mockGlueCatalogClient.getCatalogs.resolves({
-                catalogs: [s3TablesCatalog],
-                nextToken: undefined,
-            })
-
-            const node = createLakehouseConnectionNode(
-                mockConnection as any,
-                mockCredentialsProvider as ConnectionCredentialsProvider,
-                'us-east-1'
-            )
-            const children = await node.getChildren()
-
-            const catalogNode = children.find((child) => child.id === 's3tables-catalog') as LakehouseNode
-            assert.ok(catalogNode)
-
-            // Parent catalogs should return placeholder message instead of empty array
-            const catalogChildren = await catalogNode.getChildren()
-            assert.strictEqual(catalogChildren.length, 1)
-            assert.ok(catalogChildren[0].resource === '[No data found]')
-        })
-
-        it('should treat regular catalogs as non-parent catalogs', async function () {
-            const regularCatalog = {
-                CatalogId: 'regular-catalog',
-                Name: 'regular-catalog',
-                CatalogType: 'HIVE',
-            }
-
-            mockGlueCatalogClient.getCatalogs.resolves({
-                catalogs: [regularCatalog],
-                nextToken: undefined,
-            })
-            mockGlueClient.getDatabases.resolves({
-                databases: [{ Name: 'test-db' }],
-                nextToken: undefined,
-            })
-
-            const node = createLakehouseConnectionNode(
-                mockConnection as any,
-                mockCredentialsProvider as ConnectionCredentialsProvider,
-                'us-east-1'
-            )
-            const children = await node.getChildren()
-
-            const catalogNode = children.find((child) => child.id === 'regular-catalog') as LakehouseNode
-            assert.ok(catalogNode)
-
-            // Regular catalogs should load databases normally
-            const catalogChildren = await catalogNode.getChildren()
-            assert.strictEqual(catalogChildren.length, 1)
-            assert.strictEqual((catalogChildren[0] as LakehouseNode).data.nodeType, NodeType.GLUE_DATABASE)
         })
     })
 
