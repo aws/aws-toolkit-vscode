@@ -276,7 +276,7 @@ export async function getDeploymentMode(): Promise<DeploymentMode | undefined> {
             [
                 {
                     label: 'Revert Drift',
-                    description: 'Revert drift during deployment',
+                    description: 'Revert drift during deployment (disables dev friendly flags)',
                     value: DeploymentMode.REVERT_DRIFT,
                 },
                 { label: 'Standard', description: 'No special handling during deployment', value: undefined },

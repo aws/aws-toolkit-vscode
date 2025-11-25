@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Cloudformation: Shorten/simplify deployment prompts by prompting for deployment mode first"
+}
