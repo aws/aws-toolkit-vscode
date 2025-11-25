@@ -10,6 +10,7 @@ import {
     DeploymentMode,
     StackChange,
 } from '../../../../awsService/cloudformation/stacks/actions/stackActionRequestType'
+import { ChangeSetStatus } from '@aws-sdk/client-cloudformation'
 
 describe('DiffWebviewProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -342,15 +343,7 @@ describe('DiffWebviewProvider', function () {
             // changes are not available if a changeset is not created
             const changes: StackChange[] = []
 
-            void provider.updateData(
-                'test-stack',
-                changes,
-                'test-changeset',
-                true,
-                undefined,
-                undefined,
-                'CREATE_IN_PROGRESS'
-            )
+            void provider.updateData('test-stack', changes, 'test-changeset', true, undefined, undefined, 'FAILED')
             const mockWebview = createMockWebview()
             provider.resolveWebviewView(mockWebview as any)
 
@@ -505,7 +498,15 @@ describe('DiffWebviewProvider', function () {
 
     describe('empty changes handling', function () {
         it('should show no changes message when changes is undefined', function () {
-            void provider.updateData('test-stack', undefined as any, 'test-changeset')
+            void provider.updateData(
+                'test-stack',
+                undefined as any,
+                'test-changeset',
+                undefined,
+                undefined,
+                undefined,
+                ChangeSetStatus.FAILED
+            )
             const mockWebview = createMockWebview()
             provider.resolveWebviewView(mockWebview as any)
 
@@ -515,7 +516,15 @@ describe('DiffWebviewProvider', function () {
         })
 
         it('should show no changes message when changes array is empty', function () {
-            void provider.updateData('empty-stack', [], 'test-changeset')
+            void provider.updateData(
+                'empty-stack',
+                [],
+                'test-changeset',
+                undefined,
+                undefined,
+                undefined,
+                ChangeSetStatus.FAILED
+            )
             const mockWebview = createMockWebview()
             provider.resolveWebviewView(mockWebview as any)
             const html = mockWebview.webview.html
@@ -525,10 +534,14 @@ describe('DiffWebviewProvider', function () {
             assert.ok(html.includes('Delete Changeset'))
         })
 
-        it('should not show delete button when no changeset name', function () {
-            const html = setupProviderWithChanges('empty-stack', [])
+        it('should not show delete button when no changeset status', function () {
+            void provider.updateData('empty-stack', [], 'test-changeset', undefined, undefined, undefined, undefined)
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+            const html = mockWebview.webview.html
 
             assert.ok(html.includes('No changes detected'))
+            assert.ok(html.includes('empty-stack'))
             assert.ok(!html.includes('Delete Changeset'))
         })
 
