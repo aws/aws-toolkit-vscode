@@ -295,9 +295,11 @@ async function extractTempPatternsFromSourceMaps(mapFiles: string[]): Promise<Se
 
             if (sourceMap.sources && Array.isArray(sourceMap.sources)) {
                 for (const source of sourceMap.sources) {
-                    // Look for patterns like tmp followed by 8 alphanumeric characters
-                    // e.g., tmp5bmwuffn, tmpA1b2C3d4
-                    const tempMatch = source.match(/\btmp[a-zA-Z0-9]{8}\b/)
+                    // SAM uses Python's tempfile.mkdtemp() to create tmp dir which we want to detect
+                    // tempfile.mkdtemp() uses lowercase letters, digits, and underscores
+                    // The pattern is: tmp followed by 8 characters from [a-z0-9_]
+                    // see https://github.com/python/cpython/blob/20a677d75a95fa63be904f7ca4f8cb268aec95c1/Lib/tempfile.py#L132-L140
+                    const tempMatch = source.match(/\btmp[a-z0-9_]{8}\b/)
                     if (tempMatch) {
                         tempPatterns.add(tempMatch[0])
                         getLogger().debug(`Found temp pattern in source map: ${tempMatch[0]}`)

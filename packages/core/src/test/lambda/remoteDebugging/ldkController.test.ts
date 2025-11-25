@@ -674,12 +674,14 @@ describe('Source Map Pattern Extraction', () => {
 
     it('should handle multiple temp patterns in source maps', async () => {
         // Create a mock source map with multiple temp patterns
+        // Updated to use lowercase and underscore patterns matching Python's tempfile.mkdtemp()
         const mockSourceMap = {
             version: 3,
             file: 'index.js',
             sources: [
-                '../../../../../../tmpA1b2C3d4/index.ts',
-                '../../../../../../tmpX9y8Z7w6/utils.ts',
+                '../../../../../../tmpa1b2c3d4/index.ts',
+                '../../../../../../tmpx9y8_7w6/utils.ts',
+                '../../../../../../tmp_test123/helper.ts',
                 '/var/task/regular-path.ts', // This should not match
             ],
             mappings: 'AAAA',
@@ -696,9 +698,10 @@ describe('Source Map Pattern Extraction', () => {
         const result = await validateSourceMapFiles(['/test/path/*'])
 
         assert(result.isValid, 'Should be valid')
-        assert(result.tempPatterns.has('tmpA1b2C3d4'), 'Should extract first temp pattern')
-        assert(result.tempPatterns.has('tmpX9y8Z7w6'), 'Should extract second temp pattern')
-        assert.strictEqual(result.tempPatterns.size, 2, 'Should have exactly 2 temp patterns')
+        assert(result.tempPatterns.has('tmpa1b2c3d4'), 'Should extract first temp pattern')
+        assert(result.tempPatterns.has('tmpx9y8_7w6'), 'Should extract second temp pattern')
+        assert(result.tempPatterns.has('tmp_test123'), 'Should extract third temp pattern')
+        assert.strictEqual(result.tempPatterns.size, 3, 'Should have exactly 3 temp patterns')
     })
 
     it('should handle source maps without temp patterns', async () => {
