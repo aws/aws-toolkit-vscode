@@ -124,6 +124,11 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         const displayedChanges = changes.slice(startIndex, endIndex)
         const hasNext = this.currentPage < this.totalPages - 1
         const hasPrev = this.currentPage > 0
+        const terminalChangeSetStatuses: string[] = [
+            ChangeSetStatus.CREATE_COMPLETE,
+            ChangeSetStatus.FAILED,
+            ChangeSetStatus.DELETE_FAILED,
+        ]
 
         const deletionButton = `
         <button id="deleteChangeSet" onclick="deleteChangeSet()" style="
@@ -155,8 +160,8 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     <p>No changes detected for stack: ${this.stackName}</p>
                     ${
                         this.changeSetName &&
-                        (this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE ||
-                            this.changeSetStatus === ChangeSetStatus.FAILED)
+                        this.changeSetStatus &&
+                        terminalChangeSetStatuses.includes(this.changeSetStatus)
                             ? `
                     <div class="deletion-button" style="margin: 10px 0; text-align: left; display: inline-block;">
                         ${deletionButton}
@@ -386,8 +391,8 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         const deploymentButtons =
             this.changeSetName &&
             this.enableDeployments &&
-            (this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE ||
-                this.changeSetStatus === ChangeSetStatus.FAILED)
+            this.changeSetStatus &&
+            terminalChangeSetStatuses.includes(this.changeSetStatus)
                 ? `
             <div class="deployment-actions" style="margin: 10px 0; text-align: left; display: inline-block;">
                 ${
