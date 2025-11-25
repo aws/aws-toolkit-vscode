@@ -281,18 +281,64 @@ function isVscodeGlob(pattern: string): boolean {
 }
 
 /**
- * Helper function to validate source map files exist for given outFiles patterns
+ * Extract temp directory patterns from source map files
+ * @param mapFiles Array of source map file paths
+ * @returns Set of temp directory patterns found in source maps
  */
-async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
+async function extractTempPatternsFromSourceMaps(mapFiles: string[]): Promise<Set<string>> {
+    const tempPatterns = new Set<string>()
+
+    for (const mapFile of mapFiles) {
+        try {
+            const content = await fs.readFileText(mapFile)
+            const sourceMap = JSON.parse(content)
+
+            if (sourceMap.sources && Array.isArray(sourceMap.sources)) {
+                for (const source of sourceMap.sources) {
+                    // SAM uses Python's tempfile.mkdtemp() to create tmp dir which we want to detect
+                    // tempfile.mkdtemp() uses lowercase letters, digits, and underscores
+                    // The pattern is: tmp followed by 8 characters from [a-z0-9_]
+                    // see https://github.com/python/cpython/blob/20a677d75a95fa63be904f7ca4f8cb268aec95c1/Lib/tempfile.py#L132-L140
+                    const tempMatch = source.match(/\btmp[a-z0-9_]{8}\b/)
+                    if (tempMatch) {
+                        tempPatterns.add(tempMatch[0])
+                        getLogger().debug(`Found temp pattern in source map: ${tempMatch[0]}`)
+                    }
+                }
+            }
+        } catch (error) {
+            getLogger().debug(`Failed to read or parse source map ${mapFile}: ${error}`)
+        }
+    }
+
+    return tempPatterns
+}
+
+/**
+ * Helper function to validate source map files exist for given outFiles patterns
+ * @returns Object with validation result and temp patterns found in source maps
+ */
+export async function validateSourceMapFiles(
+    outFiles: string[]
+): Promise<{ isValid: boolean; tempPatterns: Set<string> }> {
+    getLogger().debug(`validating outFiles ${outFiles}`)
     const allAreGlobs = outFiles.every((pattern) => isVscodeGlob(pattern))
     if (!allAreGlobs) {
-        return false
+        return { isValid: false, tempPatterns: new Set() }
     }
 
     try {
         let jsfileCount = 0
         let mapfileCount = 0
-        const jsFiles = await glob(outFiles, { ignore: 'node_modules/**' })
+        const mapFiles: string[] = []
+
+        // Convert Windows paths to use forward slashes for glob
+        const normalizedOutFiles = outFiles.map((pattern) => {
+            // Replace backslashes with forward slashes for glob compatibility
+            return pattern.replaceAll(/\\/g, '/')
+        })
+        getLogger().debug(`normalizedOutFiles ${normalizedOutFiles}`)
+        const jsFiles = await glob(normalizedOutFiles, { ignore: 'node_modules/**' })
 
         for (const file of jsFiles) {
             if (file.includes('js')) {
@@ -300,13 +346,20 @@ async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
             }
             if (file.includes('.map')) {
                 mapfileCount += 1
+                mapFiles.push(file)
             }
         }
 
-        return jsfileCount === 0 || mapfileCount === 0 ? false : true
+        // Extract temp patterns from source map files
+        const tempPatterns = await extractTempPatternsFromSourceMaps(mapFiles)
+
+        return {
+            isValid: jsfileCount > 0 && mapfileCount > 0,
+            tempPatterns,
+        }
     } catch (error) {
         getLogger().warn(`Error validating source map files: ${error}`)
-        return false
+        return { isValid: false, tempPatterns: new Set() }
     }
 }
 
@@ -412,19 +465,26 @@ async function getVscodeDebugConfig(
                 debugConfig.outFiles = processOutFiles(debugConfig.outFiles, debugConfig.localRoot)
 
                 // Use glob to search if there are any matching js file or source map file
-                const hasSourceMaps = await validateSourceMapFiles(debugConfig.outFiles)
+                const sourceMapValidation = await validateSourceMapFiles(debugConfig.outFiles)
 
-                if (hasSourceMaps) {
-                    // support mapping common sam cli location
-                    additionalParams['sourceMapPathOverrides'] = {
+                if (sourceMapValidation.isValid) {
+                    // Start with basic source map overrides
+                    const sourceMapOverrides: Record<string, string> = {
                         ...additionalParams['sourceMapPathOverrides'],
-                        '?:*/T/?:*/*': path.join(debugConfig.localRoot, '*'),
                     }
+
+                    // Add specific temp directory patterns found in source maps
+                    for (const tempPattern of sourceMapValidation.tempPatterns) {
+                        sourceMapOverrides[`?:*/${tempPattern}/*`] = path.join(debugConfig.localRoot, '*')
+                        getLogger().info(`Added source map override for temp pattern: ${tempPattern}`)
+                    }
+
+                    additionalParams['sourceMapPathOverrides'] = sourceMapOverrides
                     debugConfig.localRoot = debugConfig.outFiles[0].split('*')[0]
                 } else {
                     debugConfig.sourceMap = false
                     debugConfig.outFiles = undefined
-                    await showMessage(
+                    void showMessage(
                         'warn',
                         localize(
                             'AWS.lambda.remoteDebug.outFileNotFound',
