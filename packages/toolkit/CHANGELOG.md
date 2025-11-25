@@ -1,3 +1,7 @@
+## 3.89.0 2025-11-25
+
+- Miscellaneous non-user-facing changes
+
 ## 3.88.0 2025-11-22
 
 - **Bug Fix** CloudFormation: refresh stacks after change set deletion
