@@ -284,6 +284,7 @@ function isVscodeGlob(pattern: string): boolean {
  * Helper function to validate source map files exist for given outFiles patterns
  */
 async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
+    getLogger().debug(`validating outFiles ${outFiles}`)
     const allAreGlobs = outFiles.every((pattern) => isVscodeGlob(pattern))
     if (!allAreGlobs) {
         return false
@@ -292,7 +293,14 @@ async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
     try {
         let jsfileCount = 0
         let mapfileCount = 0
-        const jsFiles = await glob(outFiles, { ignore: 'node_modules/**' })
+
+        // Convert Windows paths to use forward slashes for glob
+        const normalizedOutFiles = outFiles.map((pattern) => {
+            // Replace backslashes with forward slashes for glob compatibility
+            return pattern.replace(/\\/g, '/')
+        })
+
+        const jsFiles = await glob(normalizedOutFiles, { ignore: 'node_modules/**' })
 
         for (const file of jsFiles) {
             if (file.includes('js')) {
@@ -416,15 +424,17 @@ async function getVscodeDebugConfig(
 
                 if (hasSourceMaps) {
                     // support mapping common sam cli location
+                    // on windows: ../../../../../../ADMINI~1/AppData/Local/Temp/2/tmp5bmwuffn/app.ts
                     additionalParams['sourceMapPathOverrides'] = {
                         ...additionalParams['sourceMapPathOverrides'],
                         '?:*/T/?:*/*': path.join(debugConfig.localRoot, '*'),
+                        '?:*/AppData/?:*/?:*/?:*/?:*/*': path.join(debugConfig.localRoot, '*'),
                     }
                     debugConfig.localRoot = debugConfig.outFiles[0].split('*')[0]
                 } else {
                     debugConfig.sourceMap = false
                     debugConfig.outFiles = undefined
-                    await showMessage(
+                    void showMessage(
                         'warn',
                         localize(
                             'AWS.lambda.remoteDebug.outFileNotFound',
