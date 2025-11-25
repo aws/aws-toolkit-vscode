@@ -12,6 +12,7 @@ import {
     activateRemoteDebugging,
     revertExistingConfig,
     tryAutoDetectOutFile,
+    validateSourceMapFiles,
 } from '../../../lambda/remoteDebugging/ldkController'
 import { getLambdaSnapshot, type DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger'
 import { LdkClient } from '../../../lambda/remoteDebugging/ldkClient'
@@ -32,6 +33,7 @@ import {
 import { getRemoteDebugLayer } from '../../../lambda/remoteDebugging/remoteLambdaDebugger'
 import { fs } from '../../../shared/fs/fs'
 import * as detectCdkProjects from '../../../awsService/cdk/explorer/detectCdkProjects'
+import * as glob from 'glob'
 
 describe('RemoteDebugController', () => {
     let sandbox: sinon.SinonSandbox
@@ -645,6 +647,91 @@ describe('tryAutoDetectOutFile', () => {
         const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
 
         assert.strictEqual(result, expectedPath.fsPath, 'Should handle .tsx files')
+    })
+})
+
+describe('Source Map Pattern Extraction', () => {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should extract temp patterns from source map files', async () => {
+        assert(vscode.workspace.workspaceFolders?.[0]?.uri, 'Test env should have a workdir')
+        const testPath = vscode.Uri.joinPath(vscode.workspace.workspaceFolders?.[0]?.uri, 'remote-debug-ts-app').fsPath
+
+        // Call validateSourceMapFiles which will extract temp patterns
+        const result = await validateSourceMapFiles([`${testPath}/*`])
+
+        assert(result.isValid, 'Should find valid source map files')
+        assert(result.tempPatterns.has('tmp5bmwuffn'), 'Should extract temp pattern tmp5bmwuffn from source map')
+    })
+
+    it('should handle multiple temp patterns in source maps', async () => {
+        // Create a mock source map with multiple temp patterns
+        const mockSourceMap = {
+            version: 3,
+            file: 'index.js',
+            sources: [
+                '../../../../../../tmpA1b2C3d4/index.ts',
+                '../../../../../../tmpX9y8Z7w6/utils.ts',
+                '/var/task/regular-path.ts', // This should not match
+            ],
+            mappings: 'AAAA',
+        }
+
+        // Mock fs.readFileText to return our mock source map
+        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockSourceMap))
+
+        // Call extractTempPatternsFromSourceMaps directly (we need to export it first)
+        // For now, we'll test through validateSourceMapFiles
+
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should be valid')
+        assert(result.tempPatterns.has('tmpA1b2C3d4'), 'Should extract first temp pattern')
+        assert(result.tempPatterns.has('tmpX9y8Z7w6'), 'Should extract second temp pattern')
+        assert.strictEqual(result.tempPatterns.size, 2, 'Should have exactly 2 temp patterns')
+    })
+
+    it('should handle source maps without temp patterns', async () => {
+        // Create a mock source map without temp patterns
+        const mockSourceMap = {
+            version: 3,
+            file: 'index.js',
+            sources: ['./index.ts', '../utils/helper.ts'],
+            mappings: 'AAAA',
+        }
+
+        // Mock fs.readFileText
+        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockSourceMap))
+
+        // Mock glob
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should be valid even without temp patterns')
+        assert.strictEqual(result.tempPatterns.size, 0, 'Should have no temp patterns')
+    })
+
+    it('should handle malformed source map files gracefully', async () => {
+        // Mock fs.readFileText to return invalid JSON
+        sandbox.stub(fs, 'readFileText').resolves('{ invalid json }')
+
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should still be valid despite malformed source map')
+        assert.strictEqual(result.tempPatterns.size, 0, 'Should have no temp patterns when parsing fails')
     })
 })
 
