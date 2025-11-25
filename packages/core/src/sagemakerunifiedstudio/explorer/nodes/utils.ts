@@ -36,12 +36,9 @@ export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
  * Check if a catalog is a RedLake catalog
  */
 export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
-    if (!catalog) {
-        return false
-    }
     return (
-        catalog.FederatedCatalog?.ConnectionName === 'aws:redshift' ||
-        catalog.CatalogProperties?.DataLakeAccessProperties?.CatalogType === 'aws:redshift'
+        catalog?.FederatedCatalog?.ConnectionName === 'aws:redshift' ||
+        catalog?.CatalogProperties?.DataLakeAccessProperties?.CatalogType === 'aws:redshift'
     )
 }
 
