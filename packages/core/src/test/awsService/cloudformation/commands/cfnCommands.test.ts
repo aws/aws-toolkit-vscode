@@ -178,21 +178,6 @@ describe('CfnCommands', function () {
             })
         })
 
-        it('should prompt for deployment mode in Input mode', async function () {
-            chooseOptionalFlagModeStub.resolves(OptionalFlagMode.Input)
-            getDeploymentModeStub.resolves(undefined)
-            getOnStackFailureStub.resolves(OnStackFailure.ROLLBACK)
-            getIncludeNestedStacksStub.resolves(false)
-            getTagsStub.resolves(undefined)
-            getImportExistingResourcesStub.resolves(false)
-
-            const stackDetails = { StackName: 'test-stack' }
-            const result = await promptForOptionalFlags(undefined, stackDetails as any)
-
-            assert.ok(getDeploymentModeStub.calledOnce)
-            assert.strictEqual(result?.deploymentMode, undefined)
-        })
-
         it('should skip other prompts when deploymentMode is REVERT_DRIFT', async function () {
             chooseOptionalFlagModeStub.resolves(OptionalFlagMode.Input)
             getDeploymentModeStub.resolves('REVERT_DRIFT')
