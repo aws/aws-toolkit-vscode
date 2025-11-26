@@ -176,7 +176,7 @@ describe('CfnCommands', function () {
             getImportExistingResourcesStub.resolves(true)
 
             const stackDetails = { StackName: 'test-stack' }
-            const result = await promptForOptionalFlags(undefined, stackDetails as any)
+            await promptForOptionalFlags(undefined, stackDetails as any)
 
             assert.ok(getDeploymentModeStub.calledOnce)
             assert.ok(getOnStackFailureStub.calledOnce)
