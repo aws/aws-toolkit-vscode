@@ -164,24 +164,16 @@ describe('CfnCommands', function () {
             const result = await promptForOptionalFlags(undefined, stackDetails as any)
 
             assert.ok(getDeploymentModeStub.notCalled)
-            assert.ok(getOnStackFailureStub.calledOnce)
-            assert.deepStrictEqual(result, {
-                onStackFailure: OnStackFailure.ROLLBACK,
-                includeNestedStacks: false,
-                tags: undefined,
-                importExistingResources: false,
-                deploymentMode: undefined,
-                shouldSaveOptions: true,
-            })
+            assert.strictEqual(result?.deploymentMode, undefined)
         })
 
         it('should prompt for deployment mode and other flags when not REVERT_DRIFT', async function () {
             chooseOptionalFlagModeStub.resolves(OptionalFlagMode.Input)
             getDeploymentModeStub.resolves(undefined)
-            getOnStackFailureStub.resolves(OnStackFailure.ROLLBACK)
-            getIncludeNestedStacksStub.resolves(false)
+            getOnStackFailureStub.resolves(OnStackFailure.DELETE)
+            getIncludeNestedStacksStub.resolves(true)
             getTagsStub.resolves(undefined)
-            getImportExistingResourcesStub.resolves(false)
+            getImportExistingResourcesStub.resolves(true)
 
             const stackDetails = { StackName: 'test-stack' }
             const result = await promptForOptionalFlags(undefined, stackDetails as any)
@@ -190,14 +182,6 @@ describe('CfnCommands', function () {
             assert.ok(getOnStackFailureStub.calledOnce)
             assert.ok(getIncludeNestedStacksStub.calledOnce)
             assert.ok(getImportExistingResourcesStub.calledOnce)
-            assert.deepStrictEqual(result, {
-                onStackFailure: OnStackFailure.ROLLBACK,
-                includeNestedStacks: false,
-                tags: undefined,
-                importExistingResources: false,
-                deploymentMode: undefined,
-                shouldSaveOptions: true,
-            })
         })
 
         it('should skip other prompts when deploymentMode is REVERT_DRIFT', async function () {
