@@ -181,6 +181,33 @@ jobs:
               with:
                   run: npm run testWeb
 
+    cloudformation-integ:
+        needs: lint-commits
+        name: CloudFormation LSP Integration Tests
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+                vscode-version: [stable]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup CloudFormation LSP
+              run: bash packages/core/src/testE2E/cloudformation/setup-local-lsp.sh
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Run CloudFormation Integration Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run testE2ECfn -w packages/toolkit
+
     windows:
         needs: lint-commits
         name: test Windows
