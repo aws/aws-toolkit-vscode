@@ -22,7 +22,7 @@ import { Command } from 'vscode-languageclient/node'
 import * as yaml from 'js-yaml'
 
 import { Deployment } from '../stacks/actions/deploymentWorkflow'
-import { Parameter, Capability, OnStackFailure, Stack } from '@aws-sdk/client-cloudformation'
+import { Parameter, Capability, OnStackFailure, Stack, StackStatus } from '@aws-sdk/client-cloudformation'
 import {
     getParameterValues,
     getStackName,
@@ -209,13 +209,13 @@ type OptionalFlagSelection = ChangeSetOptionalFlags & {
     shouldSaveOptions?: boolean
 }
 
-function canDefaultToRevertDrift(
+function isRevertDriftEligible(
     stackDetails: Stack | undefined,
     importExistingResources: boolean | undefined,
     includeNestedStacks: boolean | undefined,
     onStackFailure: OnStackFailure | undefined
 ): boolean {
-    const isCreate = !stackDetails
+    const isCreate = !stackDetails || stackDetails.StackStatus === StackStatus.REVIEW_IN_PROGRESS
     const hasDisableRollback = onStackFailure === OnStackFailure.DO_NOTHING
 
     return !isCreate && !importExistingResources && !includeNestedStacks && !hasDisableRollback
@@ -246,7 +246,7 @@ export async function promptForOptionalFlags(
                 // default to REVERT_DRIFT if possible because it's generally useful
                 deploymentMode:
                     fileFlags?.deploymentMode ??
-                    (canDefaultToRevertDrift(
+                    (isRevertDriftEligible(
                         stackDetails,
                         fileFlags?.importExistingResources,
                         fileFlags?.includeNestedStacks,
@@ -259,15 +259,19 @@ export async function promptForOptionalFlags(
 
             break
         case OptionalFlagMode.Input: {
-            // Only available for UPDATE stack
-            const deploymentMode = fileFlags?.deploymentMode ?? (stackDetails && (await getDeploymentMode()))
+            // Only available for UPDATE stack and is incompatible with the other options
+            const deploymentMode =
+                fileFlags?.deploymentMode ??
+                (isRevertDriftEligible(stackDetails, undefined, undefined, undefined)
+                    ? await getDeploymentMode()
+                    : undefined)
 
             let onStackFailure: OnStackFailure | undefined
             let includeNestedStacks: boolean | undefined
             let importExistingResources: boolean | undefined
 
             if (deploymentMode !== DeploymentMode.REVERT_DRIFT) {
-                onStackFailure = fileFlags?.onStackFailure ?? (await getOnStackFailure(!!stackDetails))
+                onStackFailure = fileFlags?.onStackFailure ?? (await getOnStackFailure(stackDetails))
                 includeNestedStacks = fileFlags?.includeNestedStacks ?? (await getIncludeNestedStacks())
                 importExistingResources = fileFlags?.importExistingResources ?? (await getImportExistingResources())
             }
