@@ -4,6 +4,7 @@
  */
 
 import * as AWS from '@aws-sdk/types'
+import { fromLoginCredentials } from '@aws-sdk/credential-providers'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@smithy/types'
 import { chain } from '@aws-sdk/property-provider'
@@ -87,6 +88,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public getTelemetryType(): CredentialType {
         if (hasProps(this.profile, SharedCredentialsKeys.SSO_START_URL)) {
             return 'ssoProfile'
+        } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
+            // @ts-ignore wait for https://github.com/aws/aws-toolkit-common/commit/f3a7c462000b1261ffce2b31ef00e99f73255d48
+            return 'consoleSessionProfile'
         } else if (this.isCredentialSource(credentialSources.EC2_INSTANCE_METADATA)) {
             return 'ec2Metadata'
         } else if (this.isCredentialSource(credentialSources.ECS_CONTAINER)) {
@@ -198,6 +202,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY
             )
         } else if (isSsoProfile(this.profile)) {
+            return undefined
+        } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
             return undefined
         } else {
             return 'not supported by the Toolkit'
@@ -349,6 +355,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSsoCredentaislProvider()
         }
 
+        if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
+            logger.verbose(
+                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as regular Shared Credentials`
+            )
+
+            return this.makeConsoleSessionCredentialsProvider()
+        }
+
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
@@ -379,6 +393,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 roleName: data[SharedCredentialsKeys.SSO_ROLE_NAME],
             })
         }
+    }
+
+    private makeConsoleSessionCredentialsProvider() {
+        return fromLoginCredentials({ profile: this.profileName })
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
