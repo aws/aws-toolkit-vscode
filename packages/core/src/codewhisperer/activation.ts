@@ -88,7 +88,7 @@ import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
-export async function activate(context: ExtContext): Promise<void> {
+//export async function activate(context: ExtContext): Promise<void> {
     localize = nls.loadMessageBundle()
 
     // Import old CodeWhisperer settings into Amazon Q
