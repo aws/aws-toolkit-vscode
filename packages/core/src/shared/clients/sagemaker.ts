@@ -1,5 +1,4 @@
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+/*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -33,6 +32,12 @@ import {
     UpdateSpaceCommandOutput,
     paginateListApps,
     paginateListSpaces,
+    ListClustersCommandInput,
+    DescribeClusterCommand,
+    DescribeClusterCommandInput,
+    DescribeClusterCommandOutput,
+    ClusterSummary,
+    paginateListClusters,
 } from '@amzn/sagemaker-client'
 import { isEmpty } from 'lodash'
 import { sleep } from '../utilities/timeoutUtils'
@@ -53,11 +58,20 @@ import { continueText, cancel } from '../localizedText'
 import { showConfirmationMessage } from '../utilities/messages'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
+import { HyperpodCluster } from './kubectlClient'
+import { EKSClient } from '@aws-sdk/client-eks'
+import { DevSettings } from '../settings'
 
 const appTypeSettingsMap: Record<string, string> = {
     [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
     [AppType.CodeEditor as string]: 'CodeEditorAppSettings',
 } as const
+
+export const waitForAppConfig = {
+    softTimeoutRetries: 12,
+    hardTimeoutRetries: 120,
+    intervalMs: 5000,
+}
 
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
@@ -74,11 +88,14 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
     protected override getClient(ignoreCache: boolean = false) {
         if (!this.client || ignoreCache) {
+            const devSettings = DevSettings.instance
+            const customEndpoint = devSettings.get('endpoints', {})['sagemaker']
+            const endpoint = customEndpoint || `https://sagemaker.${this.regionCode}.amazonaws.com`
             const args = {
                 serviceClient: SageMakerClient,
                 region: this.regionCode,
                 clientOptions: {
-                    endpoint: `https://sagemaker.${this.regionCode}.amazonaws.com`,
+                    endpoint: endpoint,
                     region: this.regionCode,
                     ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
                 },
@@ -175,7 +192,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                         instanceType,
                         InstanceTypeInsufficientMemory[instanceType]
                     ),
-                    confirm: 'Restart and Connect',
+                    confirm: 'Restart Space and Connect',
                     cancel: 'Cancel',
                     type: 'warning',
                 })
@@ -364,10 +381,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         domainId: string,
         spaceName: string,
         appType: string,
-        maxRetries = 30,
-        intervalMs = 5000
+        progress?: vscode.Progress<{ message?: string; increment?: number }>
     ): Promise<void> {
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
+        for (let attempt = 0; attempt < waitForAppConfig.hardTimeoutRetries; attempt++) {
             const { Status } = await this.describeApp({
                 DomainId: domainId,
                 SpaceName: spaceName,
@@ -383,7 +399,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 throw new ToolkitError(`App failed to start. Status: ${Status}`)
             }
 
-            await sleep(intervalMs)
+            if (attempt === waitForAppConfig.softTimeoutRetries) {
+                progress?.report({
+                    message: `Starting the space is taking longer than usual. The space will connect when ready`,
+                })
+            }
+
+            await sleep(waitForAppConfig.intervalMs)
         }
 
         throw new ToolkitError(`Timed out waiting for app "${spaceName}" to reach "InService" status.`)
@@ -398,5 +420,62 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         } else {
             throw err
         }
+    }
+
+    public listClusters(request: ListClustersCommandInput = {}): AsyncCollection<ClusterSummary[]> {
+        // @ts-ignore: Suppressing type mismatch on paginator return type
+        return this.makePaginatedRequest(paginateListClusters, request, (page) => page.ClusterSummaries)
+    }
+
+    public describeCluster(request: DescribeClusterCommandInput): Promise<DescribeClusterCommandOutput> {
+        return this.makeRequest(DescribeClusterCommand, request)
+    }
+
+    public async listHyperpodClusters(): Promise<HyperpodCluster[]> {
+        const clusterSummaries = await this.listClusters().flatten().promise()
+        const clusters: HyperpodCluster[] = []
+
+        for (const summary of clusterSummaries) {
+            clusters.push(await this.getHyperpodCluster(summary.ClusterName!))
+        }
+        return clusters
+    }
+
+    async getHyperpodCluster(clusterName: string): Promise<HyperpodCluster> {
+        const response = await this.describeCluster({ ClusterName: clusterName })
+
+        if (!response.ClusterArn) {
+            throw new Error(`Cluster ${clusterName} not found`)
+        }
+
+        const orchestrator = response.Orchestrator
+        let eksClusterName: string | undefined
+        let eksClusterArn: string | undefined
+
+        if (orchestrator?.Eks) {
+            eksClusterName = orchestrator.Eks.ClusterArn?.split('/').pop()
+            eksClusterArn = orchestrator.Eks.ClusterArn
+        }
+
+        return {
+            clusterName: response.ClusterName!,
+            clusterArn: response.ClusterArn,
+            status: response.ClusterStatus!,
+            eksClusterName,
+            eksClusterArn,
+            regionCode: this.regionCode,
+        }
+    }
+
+    public getEKSClient(ignoreCache: boolean = false) {
+        const args = {
+            serviceClient: EKSClient as any,
+            region: this.regionCode,
+            clientOptions: {
+                region: this.regionCode,
+                ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
+            },
+        }
+        return globals.sdkClientBuilderV3.createAwsService(args) as EKSClient
     }
 }

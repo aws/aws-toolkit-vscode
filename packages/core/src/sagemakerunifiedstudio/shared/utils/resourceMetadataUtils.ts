@@ -51,7 +51,7 @@ export function getResourceMetadata(): ResourceMetadata | undefined {
  * Initializes resource metadata by reading and parsing the resource-metadata.json file
  */
 export async function initializeResourceMetadata(): Promise<void> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     if (!isSageMaker('SMUS') && !isSageMaker('SMUS-SPACE-REMOTE-ACCESS')) {
         logger.debug(`Not in SageMaker Unified Studio space, skipping initialization of resource metadata`)
@@ -79,7 +79,7 @@ export async function resourceMetadataFileExists(): Promise<boolean> {
     try {
         return await fs.existsFile(resourceMetadataPath)
     } catch (error) {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         logger.error(`Failed to check if resource metadata file exists: ${error as Error}`)
         return false
     }

@@ -42,7 +42,7 @@
         "scan-licenses": "ts-node ./scripts/scan-licenses.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.329",
+        "@aws-toolkits/telemetry": "^1.0.338",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",

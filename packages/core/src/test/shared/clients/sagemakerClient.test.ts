@@ -11,6 +11,7 @@ import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getTestWindow } from '../vscode/window'
+import { InstanceTypeInsufficientMemoryMessage } from '../../../awsService/sagemaker/constants'
 
 describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
     const region = 'test-region'
@@ -251,10 +252,18 @@ describe('SagemakerClient.waitForAppInService', function () {
     it('times out after max retries', async function () {
         describeAppStub.resolves({ Status: 'Pending' })
 
-        await assert.rejects(
-            client.waitForAppInService('domain1', 'space1', 'CodeEditor', 2, 10),
-            /Timed out waiting for app/
-        )
+        const sagemakerModule = await import('../../../shared/clients/sagemaker.js')
+        const originalValue = sagemakerModule.waitForAppConfig.hardTimeoutRetries
+        sagemakerModule.waitForAppConfig.hardTimeoutRetries = 3
+
+        try {
+            await assert.rejects(
+                client.waitForAppInService('domain1', 'space1', 'CodeEditor'),
+                /Timed out waiting for app/
+            )
+        } finally {
+            sagemakerModule.waitForAppConfig.hardTimeoutRetries = originalValue
+        }
     })
 })
 
@@ -390,9 +399,10 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "Restart and Connect"
-        await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('Restart and Connect')
+        // Wait for the error message to appear and select "Restart Space and Connect"
+        const expectedMessage = InstanceTypeInsufficientMemoryMessage('my-space', 'ml.t3.medium', 'ml.t3.large')
+        await getTestWindow().waitForMessage(new RegExp(expectedMessage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+        getTestWindow().getFirstMessage().selectItem('Restart Space and Connect')
 
         await promise
         sinon.assert.calledOnce(updateSpaceStub)
@@ -416,7 +426,8 @@ describe('SagemakerClient.startSpace', function () {
         const promise = client.startSpace('my-space', 'my-domain')
 
         // Wait for the error message to appear and select "Cancel"
-        await getTestWindow().waitForMessage(/not supported for remote access/)
+        const expectedMessage = InstanceTypeInsufficientMemoryMessage('my-space', 'ml.t3.medium', 'ml.t3.large')
+        await getTestWindow().waitForMessage(new RegExp(expectedMessage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
         getTestWindow().getFirstMessage().selectItem('Cancel')
 
         await assert.rejects(promise, (err: ToolkitError) => err.message === 'InstanceType has insufficient memory.')
