@@ -319,6 +319,12 @@
             "name": "smusProjectAccountId",
             "type": "string",
             "description": "SMUS project account id"
+        },
+        {
+            "name": "smusAuthMode",
+            "type": "string",
+            "allowedValues": ["sso", "iam"],
+            "description": "SMUS authentication mode (SSO or IAM)"
         }
     ],
     "metrics": [
@@ -352,6 +358,33 @@
         {
             "name": "sagemaker_deeplinkConnect",
             "description": "Connect to SageMake Space via a deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_openRemoteConnection",
+            "description": "Perform a connection to a Hyperpod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_stopSpace",
+            "description": "Stop a HyperPod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_filterSpaces",
+            "description": "Filter HyperPod Spaces",
             "metadata": [
                 {
                     "type": "result"
@@ -1387,6 +1420,10 @@
                 {
                     "type": "smusDomainAccountId",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1400,6 +1437,10 @@
                 },
                 {
                     "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1422,6 +1463,10 @@
                 },
                 {
                     "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1448,6 +1493,10 @@
                 },
                 {
                     "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ],
@@ -1484,6 +1533,10 @@
                 {
                     "type": "smusProjectAccountId",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1517,6 +1570,10 @@
                 },
                 {
                     "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1556,6 +1613,10 @@
                 {
                     "type": "smusConnectionType",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1594,6 +1655,10 @@
                 {
                     "type": "smusConnectionType",
                     "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
                 }
             ]
         },
@@ -1631,6 +1696,10 @@
                 },
                 {
                     "type": "smusConnectionType",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]
@@ -1672,6 +1741,10 @@
                 },
                 {
                     "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
                     "required": false
                 }
             ]

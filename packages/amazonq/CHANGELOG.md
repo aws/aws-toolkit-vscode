@@ -1,3 +1,11 @@
+## 1.106.0 2025-11-21
+
+- Miscellaneous non-user-facing changes
+
+## 1.105.0 2025-11-19
+
+- **Bug Fix** Remove show logs menu item for non Q views
+
 ## 1.104.0 2025-11-15
 
 - Miscellaneous non-user-facing changes

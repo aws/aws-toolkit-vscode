@@ -42,6 +42,11 @@ describe('RemoteInvokeWebview', () => {
             FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
             FunctionRegion: 'us-west-2',
             InputSamples: [],
+            LambdaFunctionNode: {
+                configuration: {
+                    State: 'Active',
+                },
+            } as LambdaFunctionNode,
         } as InitialData
 
         remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, data)
@@ -53,6 +58,11 @@ describe('RemoteInvokeWebview', () => {
                 FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:testFunction',
                 FunctionRegion: 'us-west-2',
                 InputSamples: [],
+                LambdaFunctionNode: {
+                    configuration: {
+                        State: 'Active',
+                    },
+                } as LambdaFunctionNode,
             }
             const result = remoteInvokeWebview.init()
             assert.deepEqual(result, mockData)
@@ -74,7 +84,7 @@ describe('RemoteInvokeWebview', () => {
 
             await remoteInvokeWebview.invokeLambda(input)
             assert(client.invoke.calledOnce)
-            assert(client.invoke.calledWith(data.FunctionArn, input))
+            assert(client.invoke.calledWith(data.FunctionArn, input, sinon.match.any, 'Tail'))
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',

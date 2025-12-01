@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { SshConfig } from '../../shared/sshConfig'
+import { Result } from '../../shared/utilities/result'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
 import * as os from 'os'
@@ -22,8 +23,39 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import globals from '../../shared/extensionGlobals'
 
 const logger = getLogger('sagemaker')
+
+class HyperPodSshConfig extends SshConfig {
+    constructor(
+        sshPath: string,
+        private readonly hyperpodConnectPath: string
+    ) {
+        super(sshPath, 'hp_', 'hyperpod_connect')
+    }
+
+    protected override createSSHConfigSection(proxyCommand: string): string {
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host hp_*
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand '${this.hyperpodConnectPath}' '%h'
+    IdentitiesOnly yes
+`
+    }
+
+    public override async ensureValid() {
+        const proxyCommand = `'${this.hyperpodConnectPath}' '%h'`
+        const verifyHost = await this.verifySSHHost(proxyCommand)
+        if (verifyHost.isErr()) {
+            return verifyHost
+        }
+        return Result.ok()
+    }
+}
 
 export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
@@ -47,6 +79,15 @@ export async function tryRemoteConnection(
             `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${await node.getAppArn()} error: ${err}`
         )
     }
+}
+
+export function extractRegionFromStreamUrl(streamUrl: string): string {
+    const url = new URL(streamUrl)
+    const match = url.hostname.match(/^[^.]+\.([^.]+)\.amazonaws\.com$/)
+    if (!match) {
+        throw new Error(`Unable to get region from stream url: ${streamUrl}`)
+    }
+    return match[1]
 }
 
 export async function prepareDevEnvConnection(
@@ -75,8 +116,12 @@ export async function prepareDevEnvConnection(
     }
 
     const hostnamePrefix = connectionType
-    const hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
-
+    let hostname: string
+    if (connectionType === 'sm_hp') {
+        hostname = `hp_${session}`
+    } else {
+        hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
+    }
     // save space credential mapping
     if (connectionType === 'sm_lc') {
         if (!isSMUS) {
@@ -88,27 +133,106 @@ export async function prepareDevEnvConnection(
         await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
     }
 
-    await startLocalServer(ctx)
+    // HyperPod doesn't need the local server (only for SageMaker Studio)
+    if (connectionType !== 'sm_hp') {
+        await startLocalServer(ctx)
+    }
     await removeKnownHost(hostname)
 
-    const sshConfig = new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+    const hyperpodConnectPath = path.join(ctx.globalStorageUri.fsPath, 'hyperpod_connect')
+
+    // Copy hyperpod_connect script if needed
+    if (connectionType === 'sm_hp') {
+        const sourceScriptPath = ctx.asAbsolutePath('resources/hyperpod_connect')
+        if (!(await fs.existsFile(hyperpodConnectPath))) {
+            try {
+                await fs.copy(sourceScriptPath, hyperpodConnectPath)
+                await fs.chmod(hyperpodConnectPath, 0o755)
+                logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
+            } catch (err) {
+                logger.error(`Failed to copy hyperpod_connect script: ${err}`)
+            }
+        }
+    }
+
+    const sshConfig =
+        connectionType === 'sm_hp'
+            ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
+            : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
     const config = await sshConfig.ensureValid()
     if (config.isErr()) {
         const err = config.err()
-        logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
+        const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
+        logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
         throw err
     }
 
     // set envirionment variables
-    const vars = getSmSsmEnv(ssm, path.join(ctx.globalStorageUri.fsPath, 'sagemaker-local-server-info.json'))
+    const vars: NodeJS.ProcessEnv =
+        connectionType === 'sm_hp'
+            ? await (async () => {
+                  const logFileLocation = path.join(ctx.globalStorageUri.fsPath, 'hyperpod-connection.log')
+                  const decodedWsUrl =
+                      wsUrl
+                          ?.replace(/&#39;/g, "'")
+                          .replace(/&quot;/g, '"')
+                          .replace(/&amp;/g, '&') || ''
+                  const decodedToken =
+                      token
+                          ?.replace(/&#39;/g, "'")
+                          .replace(/&quot;/g, '"')
+                          .replace(/&amp;/g, '&') || ''
+                  const region = decodedWsUrl ? extractRegionFromStreamUrl(decodedWsUrl) : ''
+
+                  const hyperPodEnv: NodeJS.ProcessEnv = {
+                      AWS_REGION: region,
+                      SESSION_ID: session || '',
+                      STREAM_URL: decodedWsUrl,
+                      TOKEN: decodedToken,
+                      AWS_SSM_CLI: ssm,
+                      DEBUG_LOG: '1',
+                      LOG_FILE_LOCATION: logFileLocation,
+                  }
+
+                  // Add AWS credentials
+                  try {
+                      const creds = await globals.awsContext.getCredentials()
+                      if (creds) {
+                          hyperPodEnv.AWS_ACCESS_KEY_ID = creds.accessKeyId
+                          hyperPodEnv.AWS_SECRET_ACCESS_KEY = creds.secretAccessKey
+                          if (creds.sessionToken) {
+                              hyperPodEnv.AWS_SESSION_TOKEN = creds.sessionToken
+                          }
+                          logger.info('Added AWS credentials to environment')
+                      } else {
+                          logger.warn('No AWS credentials available for HyperPod connection')
+                      }
+                  } catch (err) {
+                      logger.warn(`Failed to get AWS credentials: ${err}`)
+                  }
+
+                  return { ...process.env, ...hyperPodEnv }
+              })()
+            : getSmSsmEnv(ssm, path.join(ctx.globalStorageUri.fsPath, 'sagemaker-local-server-info.json'))
+
     logger.info(`connect script logs at ${vars.LOG_FILE_LOCATION}`)
 
     const envProvider = async () => {
         return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
     }
     const SessionProcess = createBoundProcess(envProvider).extend({
-        onStdout: remoteLogger,
-        onStderr: remoteLogger,
+        onStdout: (data: string) => {
+            remoteLogger(data)
+            if (connectionType === 'sm_hp') {
+                getLogger().info(`[ProxyCommand stdout] ${data}`)
+            }
+        },
+        onStderr: (data: string) => {
+            remoteLogger(data)
+            if (connectionType === 'sm_hp') {
+                getLogger().error(`[ProxyCommand stderr] ${data}`)
+            }
+        },
         rejectOnErrorCode: true,
     })
 

@@ -15,6 +15,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { parseArn } from './detached-server/utils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
+import { isSmusSsoConnection } from '../../sagemakerunifiedstudio/auth/model'
 
 const mappingFileName = '.sagemaker-space-profiles'
 const mappingFilePath = path.join(os.homedir(), '.aws', mappingFileName)
@@ -74,10 +75,11 @@ export async function persistLocalCredentials(spaceArn: string): Promise<void> {
 export async function persistSmusProjectCreds(spaceArn: string, node: SagemakerUnifiedStudioSpaceNode): Promise<void> {
     const nodeParent = node.getParent() as SageMakerUnifiedStudioSpacesParentNode
     const authProvider = nodeParent.getAuthProvider()
+    const activeConnection = authProvider.activeConnection
     const projectId = nodeParent.getProjectId()
     const projectAuthProvider = await authProvider.getProjectCredentialProvider(projectId)
     await projectAuthProvider.getCredentials()
-    await setSmusSpaceSsoProfile(spaceArn, projectId)
+    await setSmusSpaceProfile(spaceArn, projectId, isSmusSsoConnection(activeConnection) ? 'sso' : 'iam')
     // Trigger SSH credential refresh for the project
     projectAuthProvider.startProactiveCredentialRefresh()
 }
@@ -177,11 +179,16 @@ export async function setSpaceSsoProfile(
  * Sets the SM Space to map to SageMaker Unified Studio Project.
  * @param spaceArn - The arn of the SageMaker Unified Studio space.
  * @param projectId - The project ID associated with the SageMaker Unified Studio space.
+ * @param credentialType - The type of credential ('sso' or 'iam').
  */
-export async function setSmusSpaceSsoProfile(spaceArn: string, projectId: string): Promise<void> {
+export async function setSmusSpaceProfile(
+    spaceArn: string,
+    projectId: string,
+    credentialType: 'iam' | 'sso'
+): Promise<void> {
     const data = await loadMappings()
     data.localCredential ??= {}
-    data.localCredential[spaceArn] = { type: 'sso', smusProjectId: projectId }
+    data.localCredential[spaceArn] = { type: credentialType, smusProjectId: projectId }
     await saveMappings(data)
 }
 
