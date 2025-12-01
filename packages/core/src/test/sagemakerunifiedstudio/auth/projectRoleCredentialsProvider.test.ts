@@ -36,6 +36,25 @@ describe('ProjectRoleCredentialsProvider', function () {
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns(testRegion),
             isConnected: sinon.stub().returns(true),
+            activeConnection: {
+                profileName: 'test-profile',
+                domainId: testDomainId,
+                ssoRegion: testRegion,
+            },
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
+            getCredentialsProviderForIamProfile: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'profile-key',
+                    secretAccessKey: 'profile-secret',
+                    sessionToken: 'profile-token',
+                }),
+            }),
         } as any
 
         // Mock DataZone client
@@ -43,8 +62,7 @@ describe('ProjectRoleCredentialsProvider', function () {
             getProjectDefaultEnvironmentCreds: sinon.stub().resolves(mockGetEnvironmentCredentialsResponse),
         } as any
 
-        // Stub DataZoneClient.getInstance
-        dataZoneClientStub = sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
+        dataZoneClientStub = sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
 
         projectProvider = new ProjectRoleCredentialsProvider(mockSmusAuthProvider, testProjectId)
     })
@@ -111,8 +129,8 @@ describe('ProjectRoleCredentialsProvider', function () {
         it('should fetch and cache project credentials', async function () {
             const credentials = await projectProvider.getCredentials()
 
-            // Verify DataZone client getInstance was called
-            assert.ok(dataZoneClientStub.calledWith(mockSmusAuthProvider))
+            // Verify DataZone client createWithCredentials was called with correct parameters
+            assert.ok(dataZoneClientStub.calledWith(testRegion, testDomainId, sinon.match.any))
 
             // Verify getProjectDefaultEnvironmentCreds was called
             assert.ok(mockDataZoneClient.getProjectDefaultEnvironmentCreds.called)
