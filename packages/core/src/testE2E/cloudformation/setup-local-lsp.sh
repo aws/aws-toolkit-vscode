@@ -40,14 +40,23 @@ MANIFEST_URL="https://raw.githubusercontent.com/aws-cloudformation/cloudformatio
 
 # Try manifest first
 if command -v jq &> /dev/null; then
+    echo "Trying manifest: $MANIFEST_URL"
     DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[0].targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
+    if [ -n "$DOWNLOAD_URL" ]; then
+        echo "✓ Using manifest URL"
+    fi
+else
+    echo "jq not available, skipping manifest"
 fi
 
 # Fallback to GitHub API if manifest fails
 if [ -z "$DOWNLOAD_URL" ]; then
-    echo "Manifest failed, trying GitHub API..."
+    echo "Trying GitHub API fallback..."
     RELEASE_URL="https://api.github.com/repos/aws-cloudformation/cloudformation-languageserver/releases/latest"
     DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-${ARCH}-node${NODE_VERSION}.zip" | cut -d'"' -f4 | head -1)
+    if [ -n "$DOWNLOAD_URL" ]; then
+        echo "✓ Using GitHub API URL"
+    fi
 fi
 
 if [ -z "$DOWNLOAD_URL" ]; then
