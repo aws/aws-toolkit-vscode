@@ -213,7 +213,7 @@ jobs:
               if: runner.os == 'Windows'
               run: npm run testE2ECfn -w packages/toolkit
             - name: Print Extension Logs
-              if: always()
+              if: failure()
               shell: bash
               run: |
                   echo "=== AWS Toolkit Extension Logs ==="
