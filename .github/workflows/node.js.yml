@@ -38,148 +38,148 @@ jobs:
               run: |
                   node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
 
-    # lint:
-    #     needs: lint-commits
-    #     runs-on: ubuntu-latest
-    #     strategy:
-    #         matrix:
-    #             node-version: [18.x]
-    #             vscode-version: [stable]
-    #     env:
-    #         NODE_OPTIONS: '--max-old-space-size=8192'
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #         - name: Use Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #               node-version: ${{ matrix.node-version }}
-    #         - run: npm ci
-    #         - run: npm run testCompile
-    #         - run: npm run lint
+    lint:
+        needs: lint-commits
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+                vscode-version: [stable]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run testCompile
+            - run: npm run lint
 
-    # lint-duplicate-code:
-    #     needs: lint-commits
-    #     if: ${{ github.event_name == 'pull_request'}}
-    #     runs-on: ubuntu-latest
-    #     strategy:
-    #         matrix:
-    #             node-version: [18.x]
-    #     env:
-    #         NODE_OPTIONS: '--max-old-space-size=8192'
+    lint-duplicate-code:
+        needs: lint-commits
+        if: ${{ github.event_name == 'pull_request'}}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
 
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #           with:
-    #               fetch-depth: 0
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-    #         - name: Use Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #               node-version: ${{ matrix.node-version }}
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
 
-    #         - name: Fetch fork upstream
-    #           env:
-    #               REPO_NAME: ${{ github.event.pull_request.head.repo.full_name }}
-    #           run: |
-    #               git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
-    #               git fetch forkUpstream  # Fetch fork
+            - name: Fetch fork upstream
+              env:
+                  REPO_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+              run: |
+                  git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
+                  git fetch forkUpstream  # Fetch fork
 
-    #         - name: Merge in target branch to avoid false negatives.
-    #           env:
-    #               TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
-    #           # Note: "git merge" should always succeed here, because GHA won't
-    #           # start the job if there are merge conflicts. https://github.com/orgs/community/discussions/11265
-    #           # Also, because `git merge` makes a commit, we need to establish an identity to avoid 'Committer identity unknown' error
-    #           run: |
-    #               git config --global user.name "aws-toolkit-automation"
-    #               git config --global user.email "<>"
-    #               git merge origin/$TARGET_BRANCH
+            - name: Merge in target branch to avoid false negatives.
+              env:
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              # Note: "git merge" should always succeed here, because GHA won't
+              # start the job if there are merge conflicts. https://github.com/orgs/community/discussions/11265
+              # Also, because `git merge` makes a commit, we need to establish an identity to avoid 'Committer identity unknown' error
+              run: |
+                  git config --global user.name "aws-toolkit-automation"
+                  git config --global user.email "<>"
+                  git merge origin/$TARGET_BRANCH
 
-    #         - name: Compute git diff
-    #           env:
-    #               CURRENT_BRANCH: ${{ github.head_ref }}
-    #               TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
-    #           run: git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
+            - name: Compute git diff
+              env:
+                  CURRENT_BRANCH: ${{ github.head_ref }}
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              run: git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
 
-    #         - run: npm install -g jscpd
+            - run: npm install -g jscpd
 
-    #         - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+            - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
-    #         - if: always()
-    #           uses: actions/upload-artifact@v4
-    #           with:
-    #               name: unfiltered-jscpd-report
-    #               path: ./jscpd-report.json
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: unfiltered-jscpd-report
+                  path: ./jscpd-report.json
 
-    #         - name: Check for Duplicates
-    #           env:
-    #               COMMIT_HASH: ${{ github.sha}}
-    #               REPO_NAME: ${{ github.repository }}
-    #           run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json $COMMIT_HASH $REPO_NAME
+            - name: Check for Duplicates
+              env:
+                  COMMIT_HASH: ${{ github.sha}}
+                  REPO_NAME: ${{ github.repository }}
+              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json $COMMIT_HASH $REPO_NAME
 
-    # macos:
-    #     needs: lint-commits
-    #     name: test macOS
-    #     runs-on: macos-latest
-    #     strategy:
-    #         fail-fast: false
-    #         matrix:
-    #             node-version: [18.x]
-    #             vscode-version: [minimum, stable, insiders]
-    #             package: [amazonq, toolkit]
-    #     env:
-    #         VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-    #         NODE_OPTIONS: '--max-old-space-size=8192'
-    #         AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
-    #         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #         - name: Use Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #               node-version: ${{ matrix.node-version }}
-    #         - run: npm ci
-    #         - name: Tests
-    #           uses: coactions/setup-xvfb@v1
-    #           with:
-    #               run: npm run test -w packages/${{ matrix.package }}
-    #         - name: Code coverage for ${{ matrix.package }}
-    #           env:
-    #               # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-    #               NODE_OPTIONS: ''
-    #           if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
-    #           uses: codecov/codecov-action@v5
-    #           with:
-    #               flags: macos-${{ matrix.package }}-unittests
-    #               verbose: true
-    #               file: ./coverage/${{ matrix.package }}/lcov.info
-    #               token: ${{ secrets.CODECOV_TOKEN }}
+    macos:
+        needs: lint-commits
+        name: test macOS
+        runs-on: macos-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                node-version: [18.x]
+                vscode-version: [minimum, stable, insiders]
+                package: [amazonq, toolkit]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
+              with:
+                  flags: macos-${{ matrix.package }}-unittests
+                  verbose: true
+                  file: ./coverage/${{ matrix.package }}/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
-    # web:
-    #     needs: lint-commits
-    #     name: test Web
-    #     runs-on: ubuntu-latest
-    #     strategy:
-    #         fail-fast: true
-    #         matrix:
-    #             node-version: [18.x]
-    #             vscode-version: [stable, insiders]
-    #     env:
-    #         VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-    #         NODE_OPTIONS: '--max-old-space-size=8192'
-    #         AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
-    #         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #         - name: Use Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #               node-version: ${{ matrix.node-version }}
-    #         - run: npm ci
-    #         - name: Tests
-    #           uses: coactions/setup-xvfb@v1
-    #           with:
-    #               run: npm run testWeb
+    web:
+        needs: lint-commits
+        name: test Web
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                node-version: [18.x]
+                vscode-version: [stable, insiders]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run testWeb
 
     cloudformation-integ:
         needs: lint-commits
@@ -242,36 +242,36 @@ jobs:
                     echo "Environment variable __CLOUDFORMATIONLSP_PATH is not set"
                   fi
 
-    # windows:
-    #     needs: lint-commits
-    #     name: test Windows
-    #     runs-on: windows-latest
-    #     strategy:
-    #         fail-fast: false
-    #         matrix:
-    #             node-version: [18.x]
-    #             vscode-version: [stable, insiders]
-    #             package: [amazonq, toolkit]
-    #     env:
-    #         VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-    #         NODE_OPTIONS: '--max-old-space-size=8192'
-    #     steps:
-    #         - uses: actions/checkout@v4
-    #         - name: Use Node.js ${{ matrix.node-version }}
-    #           uses: actions/setup-node@v4
-    #           with:
-    #               node-version: ${{ matrix.node-version }}
-    #         - run: npm ci
-    #         - name: Tests
-    #           run: npm run test -w packages/${{ matrix.package }}
-    #         - name: Code coverage for ${{ matrix.package }}
-    #           env:
-    #               # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-    #               NODE_OPTIONS: ''
-    #           if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
-    #           uses: codecov/codecov-action@v5
-    #           with:
-    #               flags: windows-${{ matrix.package }}-unittests
-    #               verbose: true
-    #               file: ./coverage/${{ matrix.package }}/lcov.info
-    #               token: ${{ secrets.CODECOV_TOKEN }}
+    windows:
+        needs: lint-commits
+        name: test Windows
+        runs-on: windows-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                node-version: [18.x]
+                vscode-version: [stable, insiders]
+                package: [amazonq, toolkit]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
+              with:
+                  flags: windows-${{ matrix.package }}-unittests
+                  verbose: true
+                  file: ./coverage/${{ matrix.package }}/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
