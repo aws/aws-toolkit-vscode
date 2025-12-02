@@ -36,27 +36,23 @@ NODE_VERSION="22"
 
 # Fetch latest release
 echo "Fetching latest LSP server release..."
-RELEASE_URL="https://api.github.com/repos/aws-cloudformation/cloudformation-languageserver/releases/latest"
-DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-${ARCH}-node${NODE_VERSION}.zip" | cut -d'"' -f4 | head -1)
+MANIFEST_URL="https://raw.githubusercontent.com/aws-cloudformation/cloudformation-languageserver/main/assets/release-manifest.json"
+
+# Try manifest first
+if command -v jq &> /dev/null; then
+    DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[0].targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
+fi
+
+# Fallback to GitHub API if manifest fails
+if [ -z "$DOWNLOAD_URL" ]; then
+    echo "Manifest failed, trying GitHub API..."
+    RELEASE_URL="https://api.github.com/repos/aws-cloudformation/cloudformation-languageserver/releases/latest"
+    DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-${ARCH}-node${NODE_VERSION}.zip" | cut -d'"' -f4 | head -1)
+fi
 
 if [ -z "$DOWNLOAD_URL" ]; then
-    echo "GitHub API failed or rate limited, trying manifest fallback..."
-    MANIFEST_URL="https://raw.githubusercontent.com/aws-cloudformation/cloudformation-languageserver/main/assets/release-manifest.json"
-    
-    # Check if jq is available
-    if command -v jq &> /dev/null; then
-        DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[0].targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
-    else
-        echo "Error: jq not found. Install jq or fix GitHub API access."
-        exit 1
-    fi
-    
-    if [ -z "$DOWNLOAD_URL" ]; then
-        echo "Error: Could not find LSP server release for ${PLATFORM}-${ARCH}-node${NODE_VERSION}"
-        exit 1
-    fi
-    
-    echo "Using manifest fallback URL: $DOWNLOAD_URL"
+    echo "Error: Could not find LSP server release for ${PLATFORM}-${ARCH}-node${NODE_VERSION}"
+    exit 1
 fi
 
 # Clean and recreate directory
