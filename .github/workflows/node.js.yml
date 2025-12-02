@@ -183,7 +183,7 @@ jobs:
 
     cloudformation-integ:
         needs: lint-commits
-        name: CloudFormation LSP Integration Tests
+        name: CloudFormation LSP E2E Tests
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
@@ -204,12 +204,12 @@ jobs:
               shell: bash
               run: bash packages/core/src/testE2E/cloudformation/setup-local-lsp.sh
             - run: npm ci
-            - name: Run CloudFormation Integration Tests (Unix)
+            - name: Run CloudFormation E2E Tests (Unix)
               if: runner.os != 'Windows'
               uses: coactions/setup-xvfb@v1
               with:
                   run: npm run testE2ECfn -w packages/toolkit
-            - name: Run CloudFormation Integration Tests (Windows)
+            - name: Run CloudFormation E2E Tests (Windows)
               if: runner.os == 'Windows'
               run: npm run testE2ECfn -w packages/toolkit
             - name: Print Extension Logs
