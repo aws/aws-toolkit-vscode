@@ -4,22 +4,25 @@
  */
 import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
-import { closeAllTabs } from '../utils/cleanupUtils'
+import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import {
     clickAWSResponsibleAIPolicy,
     clickQuickActionsCommand,
     getQuickActionsCommands,
     testCompactCommand,
+    testTransformCommand,
+    testClearCommand,
+    clickOpenJobHistory,
 } from '../helpers/quickActionsHelper'
-import { clearChatInput } from '../utils/generalUtils'
+import { clearChatInput, validateAmazonQResponse, closeTerminal, sleep } from '../utils/generalUtils'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
-    this.timeout(300000)
+    this.timeout(150000)
     let webviewView: WebviewView
 
-    before(async function () {
+    this.beforeEach(async function () {
         webviewView = testContext.webviewView
     })
 
@@ -34,10 +37,11 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
 
     it('/help Test', async () => {
         await clickQuickActionsCommand(webviewView, '/help')
+        await validateAmazonQResponse(webviewView, true)
     })
 
     it('/clear Test', async () => {
-        await clickQuickActionsCommand(webviewView, '/clear')
+        await testClearCommand(webviewView)
     })
 
     it('/compact Test', async () => {
@@ -45,7 +49,15 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     })
 
     it('/transform Test', async () => {
+        await testTransformCommand(webviewView)
+    })
+
+    it('/transform history', async () => {
         await clickQuickActionsCommand(webviewView, '/transform')
+        await sleep(2000)
+        await dismissOverlayIfPresent(webviewView)
+        await clickOpenJobHistory(webviewView)
+        await closeTerminal(webviewView)
     })
 
     it('Click AWS Responsible AI Policy', async () => {

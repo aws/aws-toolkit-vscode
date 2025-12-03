@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { By, WebviewView } from 'vscode-extension-tester'
-import { sleep, waitForElement } from '../utils/generalUtils'
+import { sleep, waitForElement, clickButton } from '../utils/generalUtils'
 import { WebElement } from 'vscode-extension-tester'
 
 /**
@@ -166,5 +166,34 @@ export async function clickCreatePromptButton(webviewView: WebviewView): Promise
         await createPrompt.click()
     } catch (e) {
         throw new Error(`Failed to click create prompt button`)
+    }
+}
+
+export async function clickImageFile(webview: WebviewView, fileName: string): Promise<void> {
+    try {
+        const imageFile = await waitForElement(
+            webview,
+            By.xpath(`//span[contains(@class, 'monaco-highlighted-label') and text()='${fileName}']`)
+        )
+        await imageFile.click()
+    } catch (e) {
+        throw new Error(`Failed to click image file '${fileName}'`)
+    }
+}
+
+export async function clickContextButton(webviewView: WebviewView): Promise<void> {
+    await clickButton(
+        webviewView,
+        '[data-testid="chat-item-file-tree-wrapper"]',
+        '.mynah-ui-icon-right-open',
+        'context button'
+    )
+}
+
+export async function validateFileInContext(webviewView: WebviewView, fileName: string): Promise<void> {
+    const text = await webviewView.findWebElement(By.css('.mynah-chat-item-tree-view-file-item-title'))
+    const textValue = await text.getText()
+    if (textValue !== fileName) {
+        throw new Error(`${fileName} is not added as context`)
     }
 }

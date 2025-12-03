@@ -10,6 +10,8 @@ import {
     waitForChatResponse,
     findMynahCardsBody,
     findItemByText,
+    clickMoreContentIndicator,
+    clickButton,
 } from '../utils/generalUtils'
 import { sleep } from '../utils/generalUtils'
 
@@ -108,7 +110,61 @@ export async function testCompactCommand(webviewView: WebviewView): Promise<void
     await clickQuickActionsCommand(webviewView, '/compact')
     await waitForChatResponse(webviewView)
     await sleep(5000)
+    await clickMoreContentIndicator(webviewView)
     const list = await findMynahCardsBody(webviewView)
     await sleep(5000)
     await findItemByText(list, 'Conversation history has been compacted successfully!')
+}
+
+/**
+ * Tests the /transform command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testTransformCommand(webviewView: WebviewView): Promise<void> {
+    await clickQuickActionsCommand(webviewView, '/transform')
+    const list = await findMynahCardsBody(webviewView)
+    try {
+        await findItemByText(list, 'Welcome to Code Transformation!')
+    } catch (e) {
+        throw new Error('Transform command failed: Expected welcome message not found')
+    }
+}
+
+/**
+ * Tests the /clear command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testClearCommand(webviewView: WebviewView): Promise<void> {
+    await writeToChat('Hello, Amazon Q!', webviewView)
+    await sleep(5000)
+    await clickQuickActionsCommand(webviewView, '/clear')
+    await sleep(500)
+
+    const list = await findMynahCardsBody(webviewView)
+
+    // Verify the message is no longer present
+    let messageFound = false
+    try {
+        await findItemByText(list, 'Hello, Amazon Q!')
+        messageFound = true
+    } catch (e) {
+        // Message not found - this is expected after /clear
+    }
+
+    if (messageFound) {
+        throw new Error('Clear command failed: User message still present')
+    }
+}
+
+/**
+ * Clicks the Open Job History button in transform view
+ * @param webviewView The WebviewView instance
+ */
+export async function clickOpenJobHistory(webviewView: WebviewView): Promise<void> {
+    await clickButton(
+        webviewView,
+        '[data-testid="chat-item-buttons-wrapper"]',
+        '[action-id="gumbyViewJobHistory"]',
+        'Open Job History'
+    )
 }
