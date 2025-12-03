@@ -298,6 +298,8 @@ export class LanguageServerResolver {
                 if (hash === fetchResult.hash) {
                     return [{ filename: fetchResult.filename, data }]
                 }
+
+                logger.error('Invalid hash')
                 return []
             })
         if (verifyTasks.length !== contents.length) {

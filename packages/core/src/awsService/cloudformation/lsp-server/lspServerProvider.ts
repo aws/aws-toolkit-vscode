@@ -5,6 +5,7 @@
 
 import { Disposable } from 'vscode'
 import { getLogger } from '../../../shared/logger/logger'
+import { ToolkitError } from '../../../shared/errors'
 
 export interface LspServerResolverI {
     serverExecutable(): Promise<string>
@@ -58,7 +59,9 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
                 this._serverRootDir = dir
                 return
             } catch (err) {
-                getLogger().error(`Failed to resolve CloudFormation LSP provider ${provider.name()}`, err)
+                getLogger('awsCfnLsp').error(
+                    ToolkitError.chain(err, `Failed to resolve CloudFormation LSP provider ${provider.name()}`)
+                )
             }
         }
     }

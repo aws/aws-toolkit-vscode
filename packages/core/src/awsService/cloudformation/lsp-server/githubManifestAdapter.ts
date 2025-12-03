@@ -3,10 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Manifest, LspVersion, Target } from '../../../shared/lsp/types'
 import { CfnLspName, CfnLspServerEnvType } from './lspServerConfig'
-import { addWindows, dedupeAndGetLatestVersions } from './utils'
+import {
+    addWindows,
+    CfnManifest,
+    CfnTarget,
+    CfnLspVersion,
+    dedupeAndGetLatestVersions,
+    extractPlatformAndArch,
+    useOldLinuxVersion,
+} from './utils'
 import { getLogger } from '../../../shared/logger/logger'
+import { ToolkitError } from '../../../shared/errors'
 
 export class GitHubManifestAdapter {
     constructor(
@@ -15,7 +23,78 @@ export class GitHubManifestAdapter {
         readonly environment: CfnLspServerEnvType
     ) {}
 
-    async getManifest(): Promise<Manifest> {
+    async getManifest(): Promise<CfnManifest> {
+        let manifest: CfnManifest
+        try {
+            manifest = await this.getManifestJson()
+        } catch (err) {
+            getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'Failed to get CloudFormation manifest'))
+            manifest = await this.getFromReleases()
+        }
+
+        getLogger('awsCfnLsp').info(
+            'Candidate versions: %s',
+            manifest.versions
+                .map(
+                    (v) =>
+                        `${v.serverVersion}[${v.targets
+                            .sort()
+                            .map((t) => `${t.platform}-${t.arch}-${t.nodejs}`)
+                            .join(',')}]`
+                )
+                .join(', ')
+        )
+
+        if (process.platform !== 'linux') {
+            return manifest
+        }
+
+        const useFallbackLinux = useOldLinuxVersion()
+        if (!useFallbackLinux) {
+            return manifest
+        }
+
+        getLogger('awsCfnLsp').warn('Using GLIBC compatible version for Linux')
+        const versions = manifest.versions.map((version) => {
+            const targets = version.targets
+                .filter((target) => {
+                    return target.platform !== 'linux'
+                })
+                .map((target) => {
+                    if (target.platform !== 'linuxglib2.28') {
+                        return target
+                    }
+
+                    return {
+                        ...target,
+                        platform: 'linux',
+                    }
+                })
+
+            return {
+                ...version,
+                targets,
+            }
+        })
+
+        manifest.versions = versions
+
+        getLogger('awsCfnLsp').info(
+            'Remapped candidate versions from platform linuxglib2.28 to linux: %s',
+            manifest.versions
+                .map(
+                    (v) =>
+                        `${v.serverVersion}[${v.targets
+                            .sort()
+                            .map((t) => `${t.platform}-${t.arch}-${t.nodejs}`)
+                            .join(',')}]`
+                )
+                .join(', ')
+        )
+        return manifest
+    }
+
+    private async getFromReleases(): Promise<CfnManifest> {
         const releases = await this.fetchGitHubReleases()
         const envReleases = this.filterByEnvironment(releases)
         const sortedReleases = envReleases.sort((a, b) => {
@@ -51,7 +130,7 @@ export class GitHubManifestAdapter {
         return response.json()
     }
 
-    private convertRelease(release: GitHubRelease): LspVersion {
+    private convertRelease(release: GitHubRelease): CfnLspVersion {
         return {
             serverVersion: release.tag_name,
             isDelisted: false,
@@ -59,13 +138,14 @@ export class GitHubManifestAdapter {
         }
     }
 
-    private extractTargets(assets: GitHubAsset[]): Target[] {
-        return this.filterByNodeVersion(assets).map((asset) => {
-            const { arch, platform } = this.extractPlatformAndArch(asset.name)
+    private extractTargets(assets: GitHubAsset[]): CfnTarget[] {
+        return assets.map((asset) => {
+            const { arch, platform, nodejs } = extractPlatformAndArch(asset.name)
 
             return {
                 platform,
                 arch,
+                nodejs,
                 contents: [
                     {
                         filename: asset.name,
@@ -78,58 +158,28 @@ export class GitHubManifestAdapter {
         })
     }
 
-    private filterByNodeVersion(assets: GitHubAsset[]): GitHubAsset[] {
-        const hasNodeVersion = assets.map((asset) => asset.name).some((name) => name.includes('-node'))
-        const nodeVersion = process.version.replaceAll('v', '').split('.')[0]
-
-        if (hasNodeVersion) {
-            const matchedVersion = assets.filter((asset) => {
-                return asset.name.includes(`-node${nodeVersion}`)
-            })
-
-            if (matchedVersion.length > 0) {
-                return matchedVersion
-            }
-
-            const latestVersion = this.getLatestNodeVersion(assets)
-            getLogger().warn(`Could not find bundle for Node.js version ${nodeVersion}, using latest ${latestVersion}`)
-            return assets.filter((asset) => asset.name.includes(`-node${latestVersion}`))
+    private async getManifestJson(): Promise<CfnManifest> {
+        const response = await fetch(
+            `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/refs/heads/main/assets/release-manifest.json`
+        )
+        if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status}`)
         }
 
-        return assets
-    }
+        const json = (await response.json()) as Record<string, unknown>
 
-    private extractPlatformAndArch(filename: string): {
-        arch: string
-        platform: string
-    } {
-        const lower = filename.toLowerCase().replaceAll(/-node.*$/g, '')
-        const parts = lower.split('-')
-
-        const arch = parts.pop()
-        const platform = parts.pop()
-
-        if (!platform || !arch) {
-            throw new Error(`Unknown arch and platform ${arch} ${platform}`)
+        return {
+            manifestSchemaVersion: json.manifestSchemaVersion as string,
+            artifactId: json.artifactId as string,
+            artifactDescription: json.artifactDescription as string,
+            isManifestDeprecated: json.isManifestDeprecated as boolean,
+            versions: json[this.environment] as CfnLspVersion[],
         }
-
-        return { arch, platform }
-    }
-
-    private getLatestNodeVersion(assets: GitHubAsset[]): number {
-        const versions = assets
-            .map((asset) => {
-                const match = asset.name.match(/-node(\d+)/)
-                return match ? parseInt(match[1]) : undefined
-            })
-            .filter((v): v is number => v !== undefined)
-
-        return Math.max(...versions)
     }
 }
 
 /* eslint-disable @typescript-eslint/naming-convention */
-export interface GitHubAsset {
+interface GitHubAsset {
     url: string
     browser_download_url: string
     id: number
@@ -144,7 +194,7 @@ export interface GitHubAsset {
     updated_at: string
 }
 
-export interface GitHubRelease {
+interface GitHubRelease {
     url: string
     html_url: string
     assets_url: string
