@@ -86,7 +86,7 @@ async function getVSCodeCliArgs(params: {
                 VSCODE_EXTENSION_ID.java,
                 VSCODE_EXTENSION_ID.javadebug,
                 VSCODE_EXTENSION_ID.git,
-                VSCODE_EXTENSION_ID.remotessh,
+                VSCODE_EXTENSION_ID.remotessh.id,
             ],
         })
         disableWorkspaceTrustArg = [disableWorkspaceTrust]

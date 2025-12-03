@@ -11,7 +11,7 @@ import { Settings } from '../shared/settings'
 import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
+import { VSCODE_EXTENSION_ID } from './extensions'
 import { Err, Result } from '../shared/utilities/result'
 import { ToolkitError, UnknownError } from './errors'
 import { getLogger } from './logger/logger'
@@ -108,19 +108,19 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
 }
 
 export async function ensureRemoteSshInstalled(): Promise<void> {
-    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
+    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id, VSCODE_EXTENSION_ID.remotessh.minVersion)) {
         showInstallExtensionMsg(
-            VSCODE_EXTENSION_ID.remotessh,
+            VSCODE_EXTENSION_ID.remotessh.id,
             'Remote SSH',
             'Connecting to Dev Environment',
-            vscodeExtensionMinVersion.remotessh
+            VSCODE_EXTENSION_ID.remotessh.minVersion
         )
 
-        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id)) {
             throw new ToolkitError('Remote SSH extension version is too low', {
                 cancelled: true,
                 code: RemoteSessionError.ExtensionVersionTooLow,
-                details: { expected: vscodeExtensionMinVersion.remotessh },
+                details: { expected: VSCODE_EXTENSION_ID.remotessh.minVersion },
             })
         } else {
             throw new ToolkitError('Remote SSH extension not installed', {
