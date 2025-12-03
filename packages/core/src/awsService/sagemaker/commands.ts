@@ -132,8 +132,10 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (domain === '') {
+        if (domain === '' && eksClusterArn) {
+            const { accountId, region, clusterName } = parseEKSClusterArn(eksClusterArn)
             connectionType = 'sm_hp'
+            session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
@@ -177,6 +179,17 @@ export async function deeplinkConnect(
             throw err
         }
     }
+}
+
+function parseEKSClusterArn(eksClusterArn: string): { accountId: string; region: string; clusterName: string } {
+    const parts = eksClusterArn.split(':')
+    if (parts.length !== 6) {
+        throw new Error(`Invalid EKS cluster ARN: ${eksClusterArn}`)
+    }
+    const accountId = parts[4]
+    const region = parts[3]
+    const clusterName = parts[5].split('/')[1]
+    return { accountId, region, clusterName }
 }
 
 export async function stopSpace(
