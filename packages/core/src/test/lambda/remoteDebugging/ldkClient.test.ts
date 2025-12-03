@@ -77,6 +77,7 @@ describe('Remote Debugging User-Agent test', () => {
         sandbox.stub(LocalProxy.prototype, 'start').callsFake(mockLocalProxy.start)
         sandbox.stub(LocalProxy.prototype, 'stop').callsFake(mockLocalProxy.stop)
         ldkClient = LdkClient.instance
+        ;(ldkClient as any).localProxy = mockLocalProxy
         ldkClient.dispose()
     })
 
