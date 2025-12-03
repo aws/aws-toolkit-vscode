@@ -12,12 +12,6 @@ import { getLogger } from './common/logger'
 import { getVSCodeServerConfig } from './serverConfig'
 import SSHConnection, { executeShellCommand } from './sshConnection'
 
-// Hard-code environment variables that are required for the install script to work on SageMaker Spaces.
-const envVariables = {
-    USER: 'sagemaker-user',
-    HOME: '/home/sagemaker-user',
-}
-
 export interface ServerInstallOptions {
     id: string
     quality: string
@@ -48,11 +42,43 @@ export class ServerInstallError extends Error {
     }
 }
 
+interface ProxyConfig {
+    httpProxy?: string
+    httpsProxy?: string
+}
+
+function getEnvVariables(proxyConfig?: ProxyConfig): Record<string, string> {
+    // Hard-code environment variables that are required for the install script to work on SageMaker Spaces.
+    const envVariables: Record<string, string> = {
+        USER: 'sagemaker-user',
+        HOME: '/home/sagemaker-user',
+    }
+
+    // Set proxy environment variables for the Kiro remote server.
+    // These are used during installation (wget/curl for downloading the server) and at runtime by the server itself.
+    //
+    // Code-OSS server reads the environment variables here:
+    // https://github.com/microsoft/vscode/blob/main/src/vs/platform/request/node/proxy.ts
+    //
+    // Note: For consistency with the Microsoft Remote SSH extension, we intentionally do not set the uppercase variant (HTTP_PROXY / HTTPS_PROXY).
+    // Source code for that extension isn't available, so this was determined by running `printenv` on the VS Code server process after connecting with VS Code.
+    if (proxyConfig?.httpProxy) {
+        envVariables.http_proxy = proxyConfig.httpProxy
+    }
+
+    if (proxyConfig?.httpsProxy) {
+        envVariables.https_proxy = proxyConfig.httpsProxy
+    }
+
+    return envVariables
+}
+
 export async function installCodeServer(
     conn: SSHConnection,
     serverDownloadUrlTemplate: string | undefined,
     extensionIds: string[],
-    useSocketPath: boolean
+    useSocketPath: boolean,
+    proxyConfig?: ProxyConfig
 ): Promise<ServerInstallResult> {
     const logger = getLogger()
     const scriptId = crypto.randomBytes(12).toString('hex')
@@ -77,7 +103,7 @@ export async function installCodeServer(
         // Fish shell does not support heredoc so let's workaround it using -c option,
         // also replace single quotes (') within the script with ('\'') as there's no quoting within single quotes, see https://unix.stackexchange.com/a/24676
         `bash -c '${installServerScript.replace(/'/g, `'\\''`)}'`,
-        envVariables
+        getEnvVariables(proxyConfig)
     )
 
     if (commandOutput.stderr) {

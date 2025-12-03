@@ -64,6 +64,16 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
 
         const awsSagemakerConfig = vscode.workspace.getConfiguration('aws.sagemaker.ssh.kiro')
         const serverDownloadUrlTemplate = awsSagemakerConfig.get<string>('serverDownloadUrlTemplate')
+        const httpProxy = awsSagemakerConfig.get<string>('httpProxy')
+        const httpsProxy = awsSagemakerConfig.get<string>('httpsProxy')
+
+        if (httpProxy) {
+            this.logger.info(`Using HTTP proxy: ${httpProxy}`)
+        }
+        if (httpsProxy) {
+            this.logger.info(`Using HTTPS proxy: ${httpsProxy}`)
+        }
+
         let defaultExtensions = awsSagemakerConfig.get<string[]>('defaultExtensions', [])
 
         // Ensure the AWS Toolkit is always installed. In VS Code, this is done by updating the user's
@@ -203,7 +213,10 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                             installCommandTimeoutSeconds,
                             new Error('Timed out while setting up remote server.')
                         ),
-                        installCodeServer(this.sshConnection, serverDownloadUrlTemplate, defaultExtensions, false),
+                        installCodeServer(this.sshConnection, serverDownloadUrlTemplate, defaultExtensions, false, {
+                            httpProxy,
+                            httpsProxy,
+                        }),
                     ])
 
                     const tunnelConfig = await Promise.race([

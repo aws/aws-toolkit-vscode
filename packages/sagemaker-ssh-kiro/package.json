@@ -2,7 +2,7 @@
     "name": "sagemaker-ssh-kiro",
     "displayName": "Amazon SageMaker SSH Plugin for Kiro",
     "description": "Plugin for AWS Toolkit that enables secure remote development in Amazon SageMaker Spaces using the Kiro IDE.",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -60,6 +60,24 @@
                 "aws.sagemaker.ssh.kiro.serverDownloadUrlTemplate": {
                     "type": "string",
                     "description": "The URL from where the Kiro remote server will be downloaded for SageMaker Spaces.",
+                    "scope": "application"
+                },
+                "aws.sagemaker.ssh.kiro.httpProxy": {
+                    "type": "string",
+                    "markdownDescription": "Set the 'http_proxy' environment variable. This will be set for install and launch of the remote Kiro server. After changing this value, restart the SageMaker Space for it to take effect.",
+                    "examples": [
+                        "http://proxy.example.com:8080",
+                        "http://user:pass@proxy.example.com:8080"
+                    ],
+                    "scope": "application"
+                },
+                "aws.sagemaker.ssh.kiro.httpsProxy": {
+                    "type": "string",
+                    "markdownDescription": "Set the 'https_proxy' environment variable. This will be set for install and launch of the remote Kiro server. After changing this value, restart the SageMaker Space for it to take effect.",
+                    "examples": [
+                        "http://proxy.example.com:8080",
+                        "http://user:pass@proxy.example.com:8080"
+                    ],
                     "scope": "application"
                 }
             }
