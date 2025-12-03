@@ -336,13 +336,15 @@ export async function clickMoreContentIndicator(webviewView: WebviewView): Promi
 /**
  * Validates Amazon Q streaming response
  * @param webviewView The WebviewView instance
+ * @param isHelpCommand Whether this is a /help command (defaults to false)
  * @throws Error if insufficient response is received
  */
-export async function validateAmazonQResponse(webviewView: WebviewView): Promise<void> {
+export async function validateAmazonQResponse(webviewView: WebviewView, isHelpCommand = false): Promise<void> {
     const streamingResponses = await webviewView.findWebElements({
         css: '[data-testid="chat-item-answer-stream"]',
     })
-    if (streamingResponses.length >= 2) {
+    const requiredLength = isHelpCommand ? 1 : 2
+    if (streamingResponses.length >= requiredLength) {
         // console.log('Amazon Q responded successfully with meaningful content')
         // Print streaming responses
         // for (let i = 0; i < streamingResponses.length; i++) {
@@ -355,18 +357,34 @@ export async function validateAmazonQResponse(webviewView: WebviewView): Promise
 }
 
 /**
- * Opens testFile through Explorer
+ * Opens testFile.py through Explorer
  * @param editorView The EditorView instance
  * @returns Promise<TextEditor> The text editor for the opened file
  */
 export async function openTestFile(editorView: EditorView): Promise<TextEditor> {
-    // Open testFile through Explorer
+    // Open testFile.py through Explorer
     const explorerView = await new ActivityBar().getViewControl('Explorer')
     const sideBar = (await explorerView?.openView()) as SideBarView
-    const item = await (await sideBar.getContent().getSections())[0].findItem('testFile')
+    const item = await (await sideBar.getContent().getSections())[0].findItem('testFile.py')
     await item?.click()
     await sleep(1000)
 
-    const textEditor = (await editorView.openEditor('testFile')) as TextEditor
+    const textEditor = (await editorView.openEditor('testFile.py')) as TextEditor
     return textEditor
+}
+
+/**
+ * Closes the terminal panel if it's open
+ * @param webview The WebviewView instance
+ */
+export async function closeTerminal(webview: WebviewView): Promise<void> {
+    try {
+        await webview.switchBack()
+        const workbench = new Workbench()
+        await workbench.executeCommand('View: Close Panel')
+        await sleep(500)
+        await webview.switchToFrame()
+    } catch (error) {
+        console.log('Terminal close operation completed or no terminal was open')
+    }
 }

@@ -16,7 +16,7 @@ import {
     findItemByText,
     writeToChat,
 } from '../utils/generalUtils'
-import { setupFactorialFunction } from '../helpers/inlineHelper'
+import { setupFactorialFunction, validateTestFileGeneration } from '../helpers/inlineHelper'
 import { closeAllTabs } from '../utils/cleanupUtils'
 import assert from 'assert'
 
@@ -36,6 +36,12 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         editorView = new EditorView()
         if (this.currentTest?.title !== 'Allows User to Open Command Palette Test') {
             textEditor = await openTestFile(editorView)
+        }
+        if (
+            this.currentTest?.title !== 'Allows User to Accept Inline Suggestions with Enter Key' &&
+            this.currentTest?.title !== 'Allows User to Reject Inline Suggestions with ESC Key' &&
+            this.currentTest?.title !== 'Allows User to Open Command Palette Test'
+        ) {
             await setupFactorialFunction(textEditor)
         }
         driver = webviewView.getDriver()
@@ -50,7 +56,8 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
 
         // Skip webview cleanup for Inline Keybind Shortcut and Command Palette test
         if (
-            this.currentTest?.title !== 'Allows User to Inline Keybind Shortcut' &&
+            this.currentTest?.title !== 'Allows User to Accept Inline Suggestions with Enter Key' &&
+            this.currentTest?.title !== 'Allows User to Reject Inline Suggestions with ESC Key' &&
             this.currentTest?.title !== 'Allows User to Open Command Palette Test'
         ) {
             // Switch back to webview
@@ -67,15 +74,28 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await input.sendKeys(Key.ENTER)
     })
 
-    it('Allows User to Inline Keybind Shortcut', async () => {
+    it('Allows User to Accept Inline Suggestions with Enter Key', async () => {
         const textBefore = await textEditor.getText()
         await pressShortcut(driver, Key.COMMAND, 'i')
         const input = new InputBox()
         await input.sendKeys('Generate the fibonacci sequence through recursion')
         await input.sendKeys(Key.ENTER)
         await waitForInlineGeneration(textEditor)
+        await pressShortcut(driver, Key.ENTER)
         const textAfter = await textEditor.getText()
         assert(textAfter.length > textBefore.length, 'Amazon Q generated code')
+    })
+
+    it('Allows User to Reject Inline Suggestions with ESC Key', async () => {
+        const textBefore = await textEditor.getText()
+        await pressShortcut(driver, Key.COMMAND, 'i')
+        const input = new InputBox()
+        await input.sendKeys('Generate the fibonacci sequence through recursion')
+        await input.sendKeys(Key.ENTER)
+        await waitForInlineGeneration(textEditor)
+        await pressShortcut(driver, Key.ESCAPE)
+        const textAfter = await textEditor.getText()
+        assert(textAfter.length === textBefore.length, 'Amazon Q generated code')
     })
 
     it('Allows User to Explain Code Using Shortcut', async () => {
@@ -145,6 +165,7 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         await findItemByText(textElements, 'Generate Tests the following part of my code:')
         await clickMoreContentIndicator(webviewView)
         await validateAmazonQResponse(webviewView)
+        await validateTestFileGeneration(webviewView)
         await webviewView.switchBack()
     })
 })

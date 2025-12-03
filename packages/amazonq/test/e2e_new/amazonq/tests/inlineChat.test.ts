@@ -16,7 +16,7 @@ import {
     writeToChat,
 } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
-import { setupFactorialFunction } from '../helpers/inlineHelper'
+import { setupFactorialFunction, validateTestFileGeneration, clickInlineAction } from '../helpers/inlineHelper'
 import assert from 'assert'
 
 describe('Amazon Q Inline Chat Functionality', function () {
@@ -34,7 +34,10 @@ describe('Amazon Q Inline Chat Functionality', function () {
         editorView = new EditorView()
         textEditor = await openTestFile(editorView)
         // Skip webview cleanup for Inline Chat Test
-        if (this.currentTest?.title !== 'Inline Chat Test') {
+        if (
+            this.currentTest?.title !== 'Inline Chat Accept Test' &&
+            this.currentTest?.title !== 'Inline Chat Reject Test'
+        ) {
             await setupFactorialFunction(textEditor)
         }
     })
@@ -45,7 +48,10 @@ describe('Amazon Q Inline Chat Functionality', function () {
         await editorView.closeAllEditors()
 
         // Skip webview cleanup for Inline Chat Test
-        if (this.currentTest?.title !== 'Inline Chat Test') {
+        if (
+            this.currentTest?.title !== 'Inline Chat Accept Test' &&
+            this.currentTest?.title !== 'Inline Chat Reject Test'
+        ) {
             // Switch back to webview
             await webviewView.switchToFrame()
             await sleep(1000)
@@ -117,17 +123,31 @@ describe('Amazon Q Inline Chat Functionality', function () {
         await findItemByText(textElements, 'Generate Tests the following part of my code:')
         await clickMoreContentIndicator(webviewView)
         await validateAmazonQResponse(webviewView)
+        await validateTestFileGeneration(webviewView)
         await webviewView.switchBack()
     })
 
-    it('Inline Chat Test', async () => {
+    it('Inline Chat Accept Test', async () => {
         const textBefore = await textEditor.getText()
         await workbench.executeCommand('Amazon Q: Inline Chat')
         const input = new InputBox()
         await input.sendKeys('Generate the fibonacci sequence through iteration')
         await input.sendKeys(Key.ENTER)
         await waitForInlineGeneration(textEditor)
+        await clickInlineAction(textEditor, 'Accept')
         const textAfter = await textEditor.getText()
         assert(textAfter.length > textBefore.length, 'Amazon Q generated code')
+    })
+
+    it('Inline Chat Reject Test', async () => {
+        const textBefore = await textEditor.getText()
+        await workbench.executeCommand('Amazon Q: Inline Chat')
+        const input = new InputBox()
+        await input.sendKeys('Generate the fibonacci sequence through iteration')
+        await input.sendKeys(Key.ENTER)
+        await waitForInlineGeneration(textEditor)
+        await clickInlineAction(textEditor, 'Reject')
+        const textAfter = await textEditor.getText()
+        assert(textAfter.length === textBefore.length, 'Amazon Q generated code')
     })
 })

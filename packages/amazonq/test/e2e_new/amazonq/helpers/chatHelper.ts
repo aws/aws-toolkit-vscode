@@ -50,7 +50,11 @@ export async function verifyMaxTabsTooltip(webviewView: WebviewView): Promise<vo
 }
 
 export async function verifyAmazonQResponse(webviewView: WebviewView): Promise<void> {
-    const list = await findMynahCardsBody(webviewView)
-    await sleep(500)
-    await findItemByText(list, "Hello! I'm Amazon Q")
+    try {
+        const list = await findMynahCardsBody(webviewView)
+        await sleep(500)
+        await findItemByText(list, "Hello! I'm Amazon Q")
+    } catch (e) {
+        throw new Error(`Failed to verify Amazon Q response: ${e}`)
+    }
 }
