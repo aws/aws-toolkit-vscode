@@ -88,9 +88,7 @@ describe('Remote Debugging User-Agent test', () => {
     after(async () => {
         globals.sdkClientBuilderV3 = sdkBuilderTmp
         // Close the server
-        await new Promise<void>((resolve) => {
-            mockServer.close(() => resolve())
-        })
+        mockServer.close()
     })
 
     for (const scenario of ['Lambda', 'IoT']) {
