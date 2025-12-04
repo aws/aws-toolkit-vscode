@@ -105,7 +105,7 @@ async function startClient(context: ExtensionContext) {
     if (!(await fs.existsFile(serverFile))) {
         throw new Error(`CloudFormation LSP ${serverFile} not found`)
     }
-    getLogger().info(`Found CloudFormation LSP executable: ${serverFile}`)
+    getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverFile}`)
     const serverRootDir = await serverProvider.serverRootDir()
 
     const envOptions = {
