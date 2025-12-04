@@ -28,7 +28,7 @@ export async function recordSpaceTelemetry(
     span: Span<SmusOpenRemoteConnection> | Span<SmusStopSpace>,
     node: SagemakerUnifiedStudioSpaceNode
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const parent = node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
@@ -50,6 +50,7 @@ export async function recordSpaceTelemetry(
         }
 
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusSpaceKey: node.resource.DomainSpaceKey,
             smusDomainRegion: node.resource.regionCode,
             smusDomainId: parent?.getAuthProvider()?.getDomainId(),
@@ -72,9 +73,10 @@ export async function recordAuthTelemetry(
     domainId: string | undefined,
     region: string | undefined
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     span.record({
+        smusAuthMode: authProvider.activeConnection?.type,
         smusDomainId: domainId,
         awsRegion: region,
     })
@@ -102,12 +104,15 @@ export async function recordDataConnectionTelemetry(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
         const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+        const authProvider = SmusAuthenticationProvider.fromContext()
         const accountId = await connectionCredentialsProvider.getDomainAccountId()
+
         span.record({
+            smusAuthMode: authProvider.activeConnection?.type,
             smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
             smusDomainId: connection.domainId,
             smusDomainAccountId: accountId,

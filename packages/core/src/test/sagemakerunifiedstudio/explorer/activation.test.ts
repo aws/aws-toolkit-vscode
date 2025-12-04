@@ -42,6 +42,7 @@ describe('SMUS Explorer Activation', function () {
             isConnected: sinon.stub().returns(true),
             reauthenticate: sinon.stub().resolves(),
             onDidChange: sinon.stub().callsFake((_listener: () => void) => ({ dispose: sinon.stub() })),
+            onDidChangeActiveConnection: sinon.stub().callsFake((_listener: () => void) => ({ dispose: sinon.stub() })),
             activeConnection: {
                 id: 'test-connection',
                 domainId: 'test-domain',

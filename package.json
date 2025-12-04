@@ -42,7 +42,7 @@
         "scan-licenses": "ts-node ./scripts/scan-licenses.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.329",
+        "@aws-toolkits/telemetry": "^1.0.338",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",
@@ -75,7 +75,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
-        "@aws/language-server-runtimes": "^0.2.128",
+        "@aws/language-server-runtimes": "^0.3.5",
         "@types/node": "^22.7.5",
         "jaro-winkler": "^0.2.8",
         "vscode-nls": "^5.2.0",

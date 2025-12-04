@@ -14,7 +14,7 @@ import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { UserWrittenCodeTracker } from 'aws-core-vscode/codewhisperer'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     codicon,
     getIcon,
@@ -41,7 +41,7 @@ export class InlineChatController {
 
     constructor(
         context: vscode.ExtensionContext,
-        client: LanguageClient,
+        client: BaseLanguageClient,
         encryptionKey: Buffer,
         inlineChatTutorialAnnotation: InlineChatTutorialAnnotation
     ) {

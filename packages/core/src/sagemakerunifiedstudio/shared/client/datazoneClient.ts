@@ -21,8 +21,9 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { getContext } from '../../../shared/vscode/setContext'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
-import { SmusUtils } from '../smusUtils'
 import { DevSettings } from '../../../shared/settings'
+import { ToolkitError } from '../../../shared/errors'
+import { SmusErrorCodes } from '../smusUtils'
 
 /**
  * Represents a DataZone domain
@@ -116,7 +117,7 @@ const sageMakerProviderName = 'Amazon SageMaker'
 export class DataZoneClient {
     private datazoneClient: DataZone | undefined
     private static instances = new Map<string, DataZoneClient>()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly region: string,
@@ -140,12 +141,12 @@ export class DataZoneClient {
 
         if (DataZoneClient.instances.has(instanceKey)) {
             const existingInstance = DataZoneClient.instances.get(instanceKey)!
-            getLogger().debug(`DataZoneClient: Using existing instance, instance key is ${instanceKey}`)
+            getLogger('smus').debug(`DataZoneClient: Using existing instance, instance key is ${instanceKey}`)
             return existingInstance
         }
 
         // Create new instance
-        getLogger().debug(`DataZoneClient: Creating new instance with instance key ${instanceKey}`)
+        getLogger('smus').debug(`DataZoneClient: Creating new instance with instance key ${instanceKey}`)
         const instance = new DataZoneClient(region, domainId, credentialsProvider)
         DataZoneClient.instances.set(instanceKey, instance)
 
@@ -156,8 +157,8 @@ export class DataZoneClient {
      * Disposes all cached DataZoneClient instances
      */
     public static dispose(): void {
-        const logger = getLogger()
-        getLogger().debug('DataZoneClient: Disposing all cached instances')
+        const logger = getLogger('smus')
+        getLogger('smus').debug('DataZoneClient: Disposing all cached instances')
 
         for (const [key, instance] of DataZoneClient.instances.entries()) {
             instance.datazoneClient = undefined
@@ -819,31 +820,54 @@ export class DataZoneClient {
         return callerIdentity.UserId
     }
 
-    public async getUserProfileId(): Promise<string | undefined> {
-        if (!this.credentialsProvider) {
-            throw new Error('Credentials provider is required for getUserId')
+    /**
+     * Gets the user profile ID for a given IAM principal
+     * @param userIdentifier IAM user or role ARN
+     * @param domainIdentifier Optional domain identifier. If not provided, uses the client's domain ID
+     * @returns Promise resolving to the user profile ID
+     * @throws ToolkitError with appropriate error code
+     */
+    public async getUserProfileIdForIamPrincipal(
+        userIdentifier: string,
+        domainIdentifier?: string
+    ): Promise<string | undefined> {
+        try {
+            this.logger.debug(`DataZoneClient: Getting user profile for IAM ARN: ${userIdentifier}`)
+
+            const datazoneClient = await this.getDataZoneClient()
+
+            const params = {
+                domainIdentifier: domainIdentifier || this.getDomainId(),
+                userIdentifier: userIdentifier,
+            }
+
+            const userProfile = await datazoneClient.getUserProfile(params)
+
+            if (!userProfile.id) {
+                this.logger.error(`DataZoneClient: No user profile ID returned for ARN: ${userIdentifier}`)
+                throw new ToolkitError(`No user profile found for IAM principal: ${userIdentifier}`, {
+                    code: SmusErrorCodes.NoUserProfileFound,
+                })
+            }
+
+            this.logger.debug(`DataZoneClient: Retrieved user profile ID: ${userProfile.id}`)
+            return userProfile.id
+        } catch (err) {
+            // Re-throw if it's already a ToolkitError
+            if (err instanceof ToolkitError) {
+                throw err
+            }
+
+            // Log and wrap other errors
+            this.logger.error('DataZoneClient: Failed to get user profile ID: %s', (err as Error).message)
+            throw ToolkitError.chain(err, 'Failed to get user profile ID')
         }
-        const callerCredentials = await this.credentialsProvider.getCredentials()
-
-        const stsClient = new DefaultStsClient(this.getRegion(), callerCredentials)
-        const callerIdentity = await stsClient.getCallerIdentity()
-        this.logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
-
-        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-        this.logger.debug(`Retrieved user identity, IAM ARN: ${roleArn}`)
-
-        const datazoneClient = await this.getDataZoneClient()
-        const userProfile = await datazoneClient.getUserProfile({
-            domainIdentifier: this.getDomainId(),
-            userIdentifier: roleArn,
-        })
-        return userProfile.id
     }
 
     /**
      * Gets the correct tooling blueprint name
      */
     private getToolingBlueprintName(): string {
-        return getContext('aws.smus.isExpressMode') ? 'ToolingLite' : toolingBlueprintName
+        return getContext('aws.smus.isIamMode') ? 'ToolingLite' : toolingBlueprintName
     }
 }

@@ -15,12 +15,15 @@ import { ToolkitError } from '../../../shared/errors'
 import { SmusUtils } from '../smusUtils'
 import { DevSettings } from '../../../shared/settings'
 
+import { SmusErrorCodes } from '../smusUtils'
+
 /**
  * Error codes for DataZone operations
+ * @deprecated Use SmusErrorCodes instead
  */
 export const DataZoneErrorCode = {
-    NoGroupProfileFound: 'NoGroupProfileFound',
-    NoUserProfileFound: 'NoUserProfileFound',
+    NoGroupProfileFound: SmusErrorCodes.NoGroupProfileFound,
+    NoUserProfileFound: SmusErrorCodes.NoUserProfileFound,
 } as const
 
 /**
@@ -29,7 +32,7 @@ export const DataZoneErrorCode = {
 export class DataZoneCustomClientHelper {
     private datazoneCustomClient: DataZoneCustomClient | undefined
     private static instances = new Map<string, DataZoneCustomClientHelper>()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     private constructor(
         private readonly credentialProvider: CredentialsProvider,
@@ -41,7 +44,7 @@ export class DataZoneCustomClientHelper {
      * @returns DataZoneCustomClientHelper instance
      */
     public static getInstance(credentialProvider: CredentialsProvider, region: string): DataZoneCustomClientHelper {
-        const logger = getLogger()
+        const logger = getLogger('smus')
 
         const instanceKey = `${region}`
 
@@ -66,7 +69,7 @@ export class DataZoneCustomClientHelper {
      * Disposes all instances and cleans up resources
      */
     public static dispose(): void {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         logger.debug('DataZoneCustomClientHelper: Disposing all instances')
 
         for (const [key, instance] of DataZoneCustomClientHelper.instances.entries()) {
@@ -193,11 +196,11 @@ export class DataZoneCustomClientHelper {
     }
 
     /**
-     * Gets the domain with EXPRESS mode in preferences using pagination with early termination
+     * Gets the domain with IAM authentication mode in preferences using pagination with early termination
      * @returns Promise resolving to the DataZone domain or undefined if not found
      */
-    public async getExpressDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
-        const logger = getLogger()
+    public async getIamDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
+        const logger = getLogger('smus')
 
         try {
             logger.info('DataZoneCustomClientHelper: Getting the domain info')
@@ -206,7 +209,7 @@ export class DataZoneCustomClientHelper {
             let totalDomainsChecked = 0
             const maxResultsPerPage = 25
 
-            // Paginate through domains and check each page for EXPRESS domain
+            // Paginate through domains and check each page for IAM-based domain
             do {
                 const response = await this.listDomains({
                     status: 'AVAILABLE',
@@ -221,11 +224,11 @@ export class DataZoneCustomClientHelper {
                     `DataZoneCustomClientHelper: Checking ${domains.length} domains in current page (total checked: ${totalDomainsChecked})`
                 )
 
-                // Check each domain in the current page for EXPRESS mode
+                // Check each domain in the current page for IAM authentication mode
                 for (const domain of domains) {
                     if (domain.preferences && domain.preferences.DOMAIN_MODE === 'EXPRESS') {
                         logger.info(
-                            `DataZoneCustomClientHelper: Found EXPRESS domain, id: ${domain.id} (${domain.name})`
+                            `DataZoneCustomClientHelper: Found IAM-based domain, id: ${domain.id} (${domain.name})`
                         )
                         return domain
                     }
@@ -235,7 +238,7 @@ export class DataZoneCustomClientHelper {
             } while (nextToken)
 
             logger.info(
-                `DataZoneCustomClientHelper: No domain with (DOMAIN_MODE: EXPRESS) found after checking all ${totalDomainsChecked} domains`
+                `DataZoneCustomClientHelper: No domain with IAM authentication (DOMAIN_MODE: EXPRESS) found after checking all ${totalDomainsChecked} domains`
             )
             return undefined
         } catch (err) {
@@ -270,23 +273,23 @@ export class DataZoneCustomClientHelper {
     }
 
     /**
-     * Checks if a specific domain is an EXPRESS domain
+     * Checks if a specific domain is an IAM-based domain
      * @param domainId The ID of the domain to check
-     * @returns Promise resolving to true if the domain is EXPRESS, false otherwise
+     * @returns Promise resolving to true if the domain is IAM-based, false otherwise
      */
-    public async isExpressDomain(domainId: string): Promise<boolean> {
+    public async isIamDomain(domainId: string): Promise<boolean> {
         try {
-            this.logger.debug(`DataZoneCustomClientHelper: Checking if domain ${domainId} is EXPRESS`)
+            this.logger.debug(`DataZoneCustomClientHelper: Checking if domain ${domainId} is IAM-based`)
 
             const domain = await this.getDomain(domainId)
-            const isExpress = domain.preferences?.DOMAIN_MODE === 'EXPRESS' || false
+            const isIamMode = domain.preferences?.DOMAIN_MODE === 'EXPRESS' || false
 
             this.logger.debug(
-                `DataZoneCustomClientHelper: Domain ${domainId} is ${isExpress ? 'EXPRESS' : 'not EXPRESS'}`
+                `DataZoneCustomClientHelper: Domain ${domainId} is ${isIamMode ? 'IAM-based' : 'not IAM-based'}`
             )
-            return isExpress
+            return isIamMode
         } catch (err) {
-            this.logger.error('DataZoneCustomClientHelper: Failed to check if domain is EXPRESS: %s', err as Error)
+            this.logger.error('DataZoneCustomClientHelper: Failed to check if domain is IAM-based: %s', err as Error)
             throw err
         }
     }
@@ -428,7 +431,7 @@ export class DataZoneCustomClientHelper {
             // No matching profile found
             this.logger.error(`DataZoneCustomClientHelper: No group profile found for IAM role: ${roleArn}`)
             throw new ToolkitError(`No group profile found for IAM role: ${roleArn}`, {
-                code: DataZoneErrorCode.NoGroupProfileFound,
+                code: SmusErrorCodes.NoGroupProfileFound,
             })
         } catch (err) {
             // Re-throw if it's already a ToolkitError
@@ -460,7 +463,7 @@ export class DataZoneCustomClientHelper {
             const sessionName = SmusUtils.extractSessionNameFromArn(roleArnWithSession)
             if (!sessionName) {
                 throw new ToolkitError(`Unable to extract session name from ARN: ${roleArnWithSession}`, {
-                    code: DataZoneErrorCode.NoUserProfileFound,
+                    code: SmusErrorCodes.NoUserProfileFound,
                 })
             }
 
@@ -469,7 +472,7 @@ export class DataZoneCustomClientHelper {
             const iamRoleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(roleArnWithSession)
             if (!iamRoleArn) {
                 throw new ToolkitError(`Unable to convert assumed role ARN to IAM role ARN: ${roleArnWithSession}`, {
-                    code: DataZoneErrorCode.NoUserProfileFound,
+                    code: SmusErrorCodes.NoUserProfileFound,
                 })
             }
 
@@ -521,7 +524,7 @@ export class DataZoneCustomClientHelper {
                 `DataZoneCustomClientHelper: No user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
             )
             throw new ToolkitError(`No user profile found for role: ${iamRoleArn} with session: ${sessionName}`, {
-                code: DataZoneErrorCode.NoUserProfileFound,
+                code: SmusErrorCodes.NoUserProfileFound,
             })
         } catch (err) {
             // Re-throw if it's already a ToolkitError

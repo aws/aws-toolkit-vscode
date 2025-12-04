@@ -15,6 +15,7 @@ export type LogTopic =
     | 'amazonqWorkspaceLsp'
     | 'amazonqLsp'
     | 'amazonqLsp.lspClient'
+    | 'awsCfnLsp'
     | 'chat'
     | 'stepfunctions'
     | 'unknown'
@@ -23,6 +24,7 @@ export type LogTopic =
     | 'telemetry'
     | 'proxyUtil'
     | 'sagemaker'
+    | 'smus'
 
 class ErrorLog {
     constructor(

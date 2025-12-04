@@ -67,8 +67,8 @@ export const SmusErrorCodes = {
     GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
     /** Error code for when region is missing */
     RegionNotFound: 'RegionNotFound',
-    /** Error code for when Express domain is not found in the specified region */
-    ExpressDomainNotFound: 'ExpressDomainNotFound',
+    /** Error code for when IAM-based domain is not found in the specified region */
+    IamDomainNotFound: 'IamDomainNotFound',
     /** Error code for when IAM profile is not found */
     ProfileNotFound: 'ProfileNotFound',
     /** Error code for when IAM credential retrieval fails */
@@ -89,6 +89,10 @@ export const SmusErrorCodes = {
     ConnectionNotFound: 'ConnectionNotFound',
     /** Error code for when connection type is invalid for the operation */
     InvalidConnectionType: 'InvalidConnectionType',
+    /** Error code for when no group profile is found for IAM role */
+    NoGroupProfileFound: 'NoGroupProfileFound',
+    /** Error code for when no user profile is found for IAM principal */
+    NoUserProfileFound: 'NoUserProfileFound',
 } as const
 
 /**
@@ -155,7 +159,7 @@ export function validateCredentialFields(
  * Utility class for SageMaker Unified Studio domain URL parsing and validation
  */
 export class SmusUtils {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
 
     /**
      * Extracts the domain ID from a SageMaker Unified Studio domain URL
@@ -314,7 +318,7 @@ export class SmusUtils {
      */
     public static async getSsoInstanceInfo(domainUrl: string): Promise<SsoInstanceInfo> {
         try {
-            this.logger.info(`SMUS Auth: Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
+            this.logger.info(`Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
 
             // Extract domain ID from the domain URL
             const domainId = this.extractDomainIdFromUrl(domainUrl)
@@ -348,7 +352,7 @@ export class SmusUtils {
             // Extract region from domain URL
             const region = this.extractRegionFromUrl(domainUrl)
 
-            this.logger.info('SMUS Auth: Extracted SSO instance info: %s', ssoInstanceId)
+            this.logger.info('Extracted SSO instance info: %s', ssoInstanceId)
 
             return {
                 issuerUrl,
@@ -358,7 +362,7 @@ export class SmusUtils {
             }
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-            this.logger.error('SMUS Auth: Failed to get SSO instance info: %s', errorMsg)
+            this.logger.error('Failed to get SSO instance info: %s', errorMsg)
 
             if (error instanceof ToolkitError) {
                 throw error
@@ -431,6 +435,22 @@ export class SmusUtils {
     }
 
     /**
+     * Determines if an ARN represents an IAM user (vs IAM role session)
+     * @param arn The ARN to check (format: arn:aws:iam::ACCOUNT:user/USER_NAME for IAM users,
+     *                                      arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME for role sessions)
+     * @returns True if the ARN is an IAM user, false otherwise
+     */
+    public static isIamUserArn(arn: string | undefined): boolean {
+        if (!arn) {
+            return false
+        }
+
+        // IAM user ARN format: arn:aws:iam::ACCOUNT:user/USER_NAME
+        // IAM role session ARN format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+        return arn.includes(':iam::') && arn.includes(':user/')
+    }
+
+    /**
      * Converts an STS assumed-role ARN to its corresponding IAM role ARN, or returns IAM user ARN as-is.
      * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
      * Examples:
@@ -497,10 +517,10 @@ export function extractAccountIdFromSageMakerArn(arn: string): string {
  * @throws ToolkitError if unable to extract account ID
  */
 export async function extractAccountIdFromResourceMetadata(): Promise<string> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     try {
-        logger.debug('SMUS: Extracting account ID from ResourceArn in resource-metadata file')
+        logger.debug('Extracting account ID from ResourceArn in resource-metadata file')
 
         const resourceMetadata = getResourceMetadata()!
         const resourceArn = resourceMetadata.ResourceArn
@@ -543,4 +563,43 @@ export function convertToToolkitCredentialProvider(
         canAutoConnect: () => Promise.resolve(false),
         isAvailable: () => Promise.resolve(true),
     }
+}
+
+/**
+ * Checks if an error indicates credential/token expiration
+ *
+ * @param error The error to check (can be any type)
+ * @returns true if the error indicates expired credentials, false otherwise
+ *
+ */
+export function isCredentialExpirationError(error: any): boolean {
+    if (!error) {
+        return false
+    }
+
+    const errorName = (error.name || '') as string
+    const errorMessage = (error.message || '') as string
+    const errorNameLower = errorName.toLowerCase()
+    const errorMessageLower = errorMessage.toLowerCase()
+
+    const expirationErrorNames = ['ExpiredTokenException']
+
+    const expirationErrorMessages = ['The security token included in the request is expired']
+
+    // Return true if error name matches any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((name) => name.toLowerCase() === errorNameLower)) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((errorName) => errorMessageLower.includes(errorName.toLowerCase()))) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error messages
+    if (expirationErrorMessages.some((keyword) => errorMessageLower.includes(keyword.toLowerCase()))) {
+        return true
+    }
+
+    return false
 }

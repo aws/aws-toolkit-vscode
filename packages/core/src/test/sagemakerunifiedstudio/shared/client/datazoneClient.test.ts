@@ -9,7 +9,8 @@ import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types/commands/GetEnvironmentCommand'
 import { DefaultStsClient } from '../../../../shared/clients/stsClient'
-import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { ToolkitError } from '../../../../shared/errors'
 
 describe('DataZoneClient', () => {
     let dataZoneClient: DataZoneClient
@@ -539,73 +540,33 @@ describe('DataZoneClient', () => {
             convertAssumedRoleArnStub.restore()
         })
 
-        it('should successfully get user profile ID', async () => {
-            const mockStsResponse = {
-                Arn: 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession',
-                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
-            }
-
-            const mockIamRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+        it('should successfully get user profile ID with role ARN', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
             const mockUserProfileId = 'user-profile-123'
-
-            stsClientStub.resolves(mockStsResponse)
-            convertAssumedRoleArnStub.returns(mockIamRoleArn)
 
             const mockDataZone = {
                 getUserProfile: sinon.stub().resolves({
                     id: mockUserProfileId,
-                    userIdentifier: mockIamRoleArn,
+                    userIdentifier: mockRoleArn,
                 }),
             }
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
-            const result = await dataZoneClient.getUserProfileId()
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
 
             assert.strictEqual(result, mockUserProfileId)
-
-            // Verify the flow
-            assert.ok(stsClientStub.calledOnce)
-            assert.ok(convertAssumedRoleArnStub.calledWith(mockStsResponse.Arn))
             assert.ok(
                 mockDataZone.getUserProfile.calledWith({
                     domainIdentifier: testDomainId,
-                    userIdentifier: mockIamRoleArn,
+                    userIdentifier: mockRoleArn,
                 })
             )
         })
 
-        it('should handle STS getCallerIdentity failure', async () => {
-            const stsError = new Error('STS API Error')
-            stsClientStub.rejects(stsError)
-
-            await assert.rejects(() => dataZoneClient.getUserProfileId(), stsError)
-        })
-
-        it('should handle convertAssumedRoleArnToIamRoleArn failure', async () => {
-            const mockStsResponse = {
-                Arn: 'invalid-arn-format',
-                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
-            }
-
-            const conversionError = new Error('Invalid STS ARN format')
-            stsClientStub.resolves(mockStsResponse)
-            convertAssumedRoleArnStub.throws(conversionError)
-
-            await assert.rejects(() => dataZoneClient.getUserProfileId(), conversionError)
-        })
-
-        it('should handle DataZone getUserProfile failure', async () => {
-            const mockStsResponse = {
-                Arn: 'arn:aws:sts::123456789012:assumed-role/MyRole/MySession',
-                UserId: 'AIDACKCEVSQ6C2EXAMPLE',
-            }
-
-            const mockIamRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+        it('should handle DataZone getUserProfile API failure', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
             const datazoneError = new Error('DataZone API Error')
-
-            stsClientStub.resolves(mockStsResponse)
-            convertAssumedRoleArnStub.returns(mockIamRoleArn)
 
             const mockDataZone = {
                 getUserProfile: sinon.stub().rejects(datazoneError),
@@ -613,7 +574,63 @@ describe('DataZoneClient', () => {
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
-            await assert.rejects(() => dataZoneClient.getUserProfileId(), datazoneError)
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Failed to get user profile ID'))
+                    return true
+                }
+            )
+        })
+
+        it('should get user profile ID for IAM user ARN', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+            const mockUserProfileId = 'user-profile-456'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockUserArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockUserArn,
+                })
+            )
+        })
+
+        it('should throw error when user profile ID is not returned', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    // No id field
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual((error as ToolkitError).code, SmusErrorCodes.NoUserProfileFound)
+                    return true
+                }
+            )
         })
     })
 })

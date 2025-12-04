@@ -38,7 +38,7 @@ export class SageMakerUnifiedStudioComputeNode implements TreeNode {
         const projectId = this.parent.getProject()?.id
 
         if (projectId) {
-            if (!getContext('aws.smus.isExpressMode')) {
+            if (!getContext('aws.smus.isIamMode')) {
                 childrenNodes.push(
                     new SageMakerUnifiedStudioConnectionParentNode(this, ConnectionType.REDSHIFT, 'Data warehouse')
                 )

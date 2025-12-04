@@ -39,6 +39,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             isConnected: sinon.stub().returns(true),
             isConnectionValid: sinon.stub().returns(true),
             onDidChange: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
+            onDidChangeActiveConnection: sinon.stub().callsFake((listener: () => void) => ({ dispose: sinon.stub() })),
             getDomainId: sinon.stub().callsFake(() => {
                 return currentActiveConnection?.domainId
             }),
@@ -60,7 +61,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             },
         }
 
-        // Stub getContext to return false for express mode by default (SSO connections)
+        // Stub getContext to return false for IAM mode by default (SSO connections)
         sinon.stub(require('../../../../shared/vscode/setContext'), 'getContext').returns(false)
 
         // Stub SmusAuthenticationProvider.fromContext
@@ -305,7 +306,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
         })
     })
 
-    describe('IAM connections in express mode', function () {
+    describe('IAM connections in IAM mode', function () {
         let mockIamConnection: any
 
         beforeEach(function () {
@@ -322,16 +323,19 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
 
             currentActiveConnection = mockIamConnection
 
-            // Override getContext stub to return true for express mode
+            // Override getContext stub to return true for IAM mode
             const getContextModule = require('../../../../shared/vscode/setContext')
             const existingStub = getContextModule.getContext as sinon.SinonStub
-            existingStub.withArgs('aws.smus.isExpressMode').returns(true)
+            existingStub.withArgs('aws.smus.isIamMode').returns(true)
         })
 
         it('should display profile name with session name for IAM connection', async function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
 
             const treeItem = await authInfoNode.getTreeItem()
 
@@ -343,6 +347,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             const treeItem = await authInfoNode.getTreeItem()
 
@@ -354,7 +359,9 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves('my-session-name')
-            mockAuthProvider.getRoleArn = sinon.stub().resolves('arn:aws:iam::123456789012:role/MyRole')
+            mockAuthProvider.getIamPrincipalArn = sinon
+                .stub()
+                .resolves('arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name')
 
             const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
@@ -363,7 +370,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             assert.ok(tooltip.includes('Profile: test-profile'))
             assert.ok(tooltip.includes('Region: us-west-2'))
             assert.ok(tooltip.includes('Session: my-session-name'))
-            assert.ok(tooltip.includes('Role ARN: arn:aws:iam::123456789012:role/MyRole'))
+            assert.ok(tooltip.includes('Role ARN: arn:aws:sts::123456789012:assumed-role/MyRole/my-session-name'))
             assert.ok(tooltip.includes('Status: Connected'))
         })
 
@@ -371,7 +378,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined)
-            mockAuthProvider.getRoleArn = sinon.stub().resolves(undefined)
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             const treeItem = await authInfoNode.getTreeItem()
             const tooltip = treeItem.tooltip as string
@@ -388,6 +395,7 @@ describe('SageMakerUnifiedStudioAuthInfoNode', function () {
             mockAuthProvider.isConnected.returns(true)
             mockAuthProvider.isConnectionValid.returns(true)
             mockAuthProvider.getSessionName = sinon.stub().resolves(undefined) // Return undefined instead of rejecting
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
 
             // Should not throw, just display without session name
             const treeItem = await authInfoNode.getTreeItem()

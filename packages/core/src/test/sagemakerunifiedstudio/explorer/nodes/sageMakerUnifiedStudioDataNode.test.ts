@@ -170,7 +170,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
                 { connectionId: 'redshift-conn', type: 'REDSHIFT', name: 'redshift-connection' },
             ]
 
-            // Mock express mode to be false so Redshift connections are included
+            // Mock IAM mode to be false so Redshift connections are included
             sandbox.stub(setContext, 'getContext').returns(false)
 
             mockDataZoneClient.listConnections.resolves(mockConnections as any)

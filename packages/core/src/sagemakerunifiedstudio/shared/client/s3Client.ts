@@ -24,7 +24,7 @@ export interface S3Path {
  */
 export class S3Client {
     private s3Client: S3 | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         private readonly region: string,

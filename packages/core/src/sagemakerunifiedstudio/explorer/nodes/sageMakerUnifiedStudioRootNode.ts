@@ -14,6 +14,7 @@ import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
 import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
@@ -22,7 +23,7 @@ import { isSmusSsoConnection, isSmusIamConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { recordAuthTelemetry } from '../../shared/telemetry'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -33,7 +34,7 @@ const projectPickerPlaceholder = 'Select project'
 export class SageMakerUnifiedStudioRootNode implements TreeNode {
     public readonly id = 'smusRootNode'
     public readonly resource = this
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private readonly projectNode: SageMakerUnifiedStudioProjectNode
     private readonly authInfoNode: SageMakerUnifiedStudioAuthInfoNode
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
@@ -138,7 +139,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             ]
         }
 
-        // When authenticated, show auth info and projects (same for both Express and non-Express mode)
+        // When authenticated, show auth info and projects (same for both IAM and non-IAM mode)
         return [this.authInfoNode, this.projectNode]
     }
 
@@ -162,7 +163,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
         try {
             // Check if the connection is valid using the authentication provider
             const result = this.authProvider.isConnectionValid()
-            this.logger.debug(`SMUS Root Node: Authentication check result: ${result}`)
+            this.logger.debug(`Authentication check result: ${result}`)
             return result
         } catch (err) {
             this.logger.debug('Authentication check failed: %s', (err as Error).message)
@@ -183,13 +184,13 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
             const hasExpiredConnection = activeConnection && !isConnectionValid
 
             if (hasExpiredConnection) {
-                this.logger.debug('SMUS Root Node: Connection is expired')
+                this.logger.debug('Connection is expired')
                 // Only show reauthentication prompt for SSO connections, not IAM connections
                 if (isSmusSsoConnection(activeConnection)) {
-                    this.logger.debug('SMUS Root Node: Showing reauthentication prompt for SSO connection')
+                    this.logger.debug('Showing reauthentication prompt for SSO connection')
                     void this.authProvider.showReauthenticationPrompt(activeConnection)
                 } else {
-                    this.logger.debug('SMUS Root Node: Skipping reauthentication prompt for non-SSO connection')
+                    this.logger.debug('Skipping reauthentication prompt for non-SSO connection')
                 }
                 return true
             }
@@ -205,7 +206,7 @@ export class SageMakerUnifiedStudioRootNode implements TreeNode {
  * Command to open the SageMaker Unified Studio documentation
  */
 export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () => async () => {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     try {
         // Open the SageMaker Unified Studio documentation
         await vscode.env.openExternal(vscode.Uri.parse('https://aws.amazon.com/sagemaker/unified-studio/'))
@@ -232,7 +233,7 @@ export const smusLearnMoreCommand = Commands.declare('aws.smus.learnMore', () =>
  * Command to login to SageMaker Unified Studio
  */
 export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vscode.ExtensionContext) => async () => {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     return telemetry.smus_login.run(async (span) => {
         try {
             // Get the authentication provider instance
@@ -246,7 +247,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
 
             // Check for preferred authentication method
             const preferredMethod = SmusAuthenticationPreferencesManager.getPreferredMethod(context)
-            logger.debug(`SMUS Auth: Retrieved preferred method: ${preferredMethod}`)
+            logger.debug(`Retrieved preferred method: ${preferredMethod}`)
 
             let selectedMethod: SmusAuthenticationMethod | undefined = preferredMethod
             let authCompleted = false
@@ -255,16 +256,16 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
             while (!authCompleted) {
                 // Check if we should skip method selection (user has a remembered preference)
                 if (selectedMethod) {
-                    logger.debug(`SMUS Auth: Using authentication method: ${selectedMethod}`)
+                    logger.debug(`Using authentication method: ${selectedMethod}`)
                 } else {
                     // Show authentication method selection dialog
-                    logger.debug('SMUS Auth: Showing authentication method selection dialog')
+                    logger.debug('Showing authentication method selection dialog')
                     const methodSelection = await SmusAuthenticationMethodSelector.showAuthenticationMethodSelection()
                     selectedMethod = methodSelection.method
                 }
 
                 // Handle the selected authentication method
-                logger.debug(`SMUS Auth: Processing authentication method: ${selectedMethod}`)
+                logger.debug(`Processing authentication method: ${selectedMethod}`)
                 if (selectedMethod === 'sso') {
                     // SSO Authentication - use SSO flow
                     const ssoResult = await SmusAuthenticationOrchestrator.handleSsoAuthentication(
@@ -337,6 +338,11 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
                     authCompleted = true
                 }
             }
+
+            // Record telemetry with connection details after successful login
+            const domainId = authProvider.getDomainId?.()
+            const region = authProvider.getDomainRegion?.()
+            await recordAuthTelemetry(span, authProvider, domainId, region)
         } catch (err) {
             const isUserCancelled = err instanceof ToolkitError && err.code === SmusErrorCodes.UserCancelled
             if (!isUserCancelled) {
@@ -354,7 +360,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
 export const smusSignOutCommand = Commands.declare(
     'aws.smus.signOut',
     (context: vscode.ExtensionContext) => async () => {
-        const logger = getLogger()
+        const logger = getLogger('smus')
         return telemetry.smus_signOut.run(async (span) => {
             try {
                 // Get the authentication provider instance
@@ -368,9 +374,13 @@ export const smusSignOutCommand = Commands.declare(
                     return
                 }
 
-                // Get connection details for logging
+                // Capture connection details BEFORE signing out (for telemetry)
                 const activeConnection = authProvider.activeConnection
-                const domainId = authProvider.getDomainId?.() || 'Unknown'
+                const domainId = authProvider.getDomainId?.()
+                const region = authProvider.getDomainRegion?.()
+
+                // Record telemetry with captured values BEFORE signing out
+                await recordAuthTelemetry(span, authProvider, domainId, region)
 
                 // Sign out from SMUS (behavior depends on connection type)
                 if (activeConnection) {
@@ -442,53 +452,80 @@ async function showQuickPick(items: any[]) {
 }
 
 /**
- * Fetches projects filtered by group profile for Express mode IAM authentication
+ * Fetches projects filtered by IAM principal
+ * For IAM users: filters by user profile using userIdentifier
+ * For IAM role sessions: filters by group profile using groupIdentifier
  * @param authProvider The SMUS authentication provider
- * @param client The DataZone client instance
+ * @param datazoneClient The DataZone client instance
  * @returns Promise resolving to filtered projects array
- * @throws Error if group profile retrieval fails
+ * @throws Error if profile retrieval fails
  */
-async function fetchProjectsByGroupProfile(
+async function fetchProjectsByIamProfile(
     authProvider: SmusAuthenticationProvider,
-    client: DataZoneClient
+    datazoneClient: DataZoneClient
 ): Promise<DataZoneProject[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Get credentials provider for IAM profile
     const activeConnection = authProvider.activeConnection
     if (!isSmusIamConnection(activeConnection)) {
         throw new Error('Active connection is not a valid IAM connection')
     }
-    const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
 
-    const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-        credentialsProvider,
-        authProvider.getDomainRegion()
+    // Use cached caller identity ARN from auth provider
+    const callerIdentityArn = await authProvider.getIamPrincipalArn()
+    if (!callerIdentityArn) {
+        throw new Error('Unable to retrieve caller identity ARN from cache')
+    }
+
+    // Determine if this is an IAM user or IAM role session using utility method
+    const isIamUser = SmusUtils.isIamUserArn(callerIdentityArn)
+    logger.debug(
+        `Using cached caller identity ARN: ${callerIdentityArn}. Identity type: ${isIamUser ? 'IAM User' : 'IAM Role Session'}`
     )
 
-    // Get caller identity to extract role ARN
-    const callerCredentials = await credentialsProvider.getCredentials()
-    const stsClient = new DefaultStsClient(authProvider.getDomainRegion(), callerCredentials)
-    const callerIdentity = await stsClient.getCallerIdentity()
-    logger.debug(`Retrieved caller identity, Arn: ${callerIdentity.Arn}`)
+    let projects: DataZoneProject[]
 
-    // Convert assumed role ARN to IAM role ARN for group profile matching
-    const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentity.Arn!)
-    logger.debug(`Converted to IAM role ARN: ${roleArn}`)
+    if (isIamUser) {
+        // IAM User flow - use GetUserProfile and filter by userIdentifier
+        logger.debug('Using IAM user flow with GetUserProfile API')
 
-    // Get group profile ID for the current role
-    const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
-    logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+        // Get user profile ID for the IAM user using DataZone client
+        const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+            callerIdentityArn,
+            authProvider.getDomainId()
+        )
+        logger.info(`Retrieved user profile ID: ${userProfileId} for IAM principal ${callerIdentityArn}`)
 
-    // Fetch projects filtered by group profile
-    const projects = await client.fetchAllProjects({ groupIdentifier: groupProfileId })
-    logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+        // Fetch projects filtered by user profile
+        projects = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
+        logger.debug(`Fetched ${projects.length} projects for user profile ${userProfileId}`)
+    } else {
+        const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
+        const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+            credentialsProvider,
+            authProvider.getDomainRegion()
+        )
+
+        // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
+        // The cached ARN needs conversion for role sessions
+        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
+        logger.debug(`Using IAM role ARN: ${roleArn}`)
+
+        // Get group profile ID for the current role
+        const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
+        logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+
+        // Fetch projects filtered by group profile
+        projects = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
+        logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+    }
 
     return projects
 }
 
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return telemetry.smus_accessProject.run(async (span) => {
         try {
@@ -503,25 +540,32 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             let allProjects: DataZoneProject[]
 
-            if (getContext('aws.smus.isExpressMode')) {
-                // In Express mode, filter projects by group profile
+            if (getContext('aws.smus.isIamMode')) {
+                // Filter projects by IAM profile (user or role session)
                 try {
-                    allProjects = await fetchProjectsByGroupProfile(authProvider, datazoneClient)
+                    allProjects = await fetchProjectsByIamProfile(authProvider, datazoneClient)
                 } catch (err) {
                     const error = err as Error
 
-                    // Handle no group profile found
-                    if (error instanceof ToolkitError && error.message.includes('No group profile found')) {
-                        logger.error('No group profile found for IAM role: %s', error.message)
+                    // Handle no profile found (user or group)
+                    if (
+                        error instanceof ToolkitError &&
+                        (error.code === SmusErrorCodes.NoGroupProfileFound ||
+                            error.code === SmusErrorCodes.NoUserProfileFound)
+                    ) {
+                        logger.error('No profile found for IAM principal: %s', error.message)
+
+                        const principalArn = await authProvider.getIamPrincipalArn()
+                        const arnSuffix = principalArn ? `: ${principalArn}` : ''
                         void vscode.window.showErrorMessage(
-                            'No resources found for your IAM principal. Ensure SageMaker Unified Studio resources exist for this IAM principal.'
+                            `No resources found for IAM principal${arnSuffix}. Ensure SageMaker Unified Studio resources exist for this IAM principal.`
                         )
                         return error
                     }
 
                     // Handle access denied
                     if (isAccessDenied(error)) {
-                        logger.error('Access denied when retrieving group profile: %s', error.message)
+                        logger.error('Access denied when retrieving profile: %s', error.message)
                         void vscode.window.showErrorMessage(
                             "You don't have permissions to access this resource. Please contact your administrator"
                         )
@@ -529,12 +573,12 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                     }
 
                     // Handle other errors
-                    logger.error('Failed to retrieve group profile information: %s', error.message)
-                    void vscode.window.showErrorMessage('Failed to fetch IAM prinicpal information. Try again.')
+                    logger.error('Failed to retrieve profile information: %s', error.message)
+                    void vscode.window.showErrorMessage('Failed to fetch IAM principal information. Try again.')
                     return error
                 }
             } else {
-                // In non-Express mode, fetch all projects without filtering
+                // In non-IAM mode, fetch all projects without filtering
                 allProjects = await datazoneClient.fetchAllProjects()
             }
 
@@ -542,7 +586,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             // Handle no projects scenario
             if (items.length === 0) {
-                if (getContext('aws.smus.isExpressMode')) {
+                if (getContext('aws.smus.isIamMode')) {
                     logger.debug('No accessible projects found for IAM principal')
                     void vscode.window.showInformationMessage('No accessible projects found for your IAM principal')
                 } else {
@@ -557,6 +601,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             const accountId = await authProvider.getDomainAccountId()
             span.record({
+                smusAuthMode: authProvider.activeConnection?.type,
                 smusDomainId: authProvider.getDomainId(),
                 smusProjectId: (selectedProject as DataZoneProject).id as string | undefined,
                 smusDomainRegion: authProvider.getDomainRegion(),
@@ -591,7 +636,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
 
             // Handle network/API failures
             logger.error('Failed to select project: %s', error.message)
-            void vscode.window.showErrorMessage(`Failed to select project: ${error.message}`)
+            await handleCredExpiredError(err, true)
         }
     })
 }

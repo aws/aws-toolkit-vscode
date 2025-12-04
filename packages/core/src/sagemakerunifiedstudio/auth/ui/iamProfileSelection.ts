@@ -67,7 +67,7 @@ export interface IamProfileBackNavigation {
  * IAM profile selection interface for SMUS
  */
 export class SmusIamProfileSelector {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
 
     // Validation regex patterns (based on AWS STS API specifications)
     // Reference: https://docs.aws.amazon.com/STS/latest/APIReference/API_Credentials.html
@@ -223,7 +223,7 @@ export class SmusIamProfileSelector {
                     const profileName = itemWithAction.profileName
                     const profileRegion = itemWithAction.region
 
-                    logger.debug(`SMUS Auth: User selected profile: ${profileName}`)
+                    logger.debug(`User selected profile: ${profileName}`)
 
                     // Check if region is not set and prompt for region selection
                     if (profileRegion === 'not-set') {
@@ -289,7 +289,7 @@ export class SmusIamProfileSelector {
             if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
                 throw error
             }
-            logger.error('SMUS Auth: Failed to show IAM profile selection: %s', error)
+            logger.error('Failed to show IAM profile selection: %s', error)
             throw ToolkitError.chain(error, 'Failed to show IAM profile selection')
         }
     }
@@ -332,6 +332,9 @@ export class SmusIamProfileSelector {
         )
         quickPick.items = regionItems
 
+        // Allow users to find matches by typing in the region code (e.g., us-east-1)
+        quickPick.matchOnDescription = true
+
         // Pre-select default region if provided
         if (options?.defaultRegion) {
             const defaultItem = regionItems.find((item) => (item as any).regionCode === options.defaultRegion)
@@ -366,7 +369,7 @@ export class SmusIamProfileSelector {
 
                 const regionItem = selectedItem as vscode.QuickPickItem & { regionCode: string }
 
-                logger.debug(`SMUS Auth: User selected region: ${regionItem.regionCode}`)
+                logger.debug(`User selected region: ${regionItem.regionCode}`)
 
                 resolve(regionItem.regionCode)
             })
@@ -406,7 +409,7 @@ export class SmusIamProfileSelector {
     public static async showCredentialManagement(): Promise<boolean | IamProfileSelection> {
         const logger = this.logger
 
-        logger.debug('SMUS Auth: Showing credential management options')
+        logger.debug('Showing credential management options')
 
         const options: (vscode.QuickPickItem & { action: CredentialManagementAction })[] = [
             {
@@ -534,7 +537,7 @@ export class SmusIamProfileSelector {
             const filePath = isCredentials ? getCredentialsFilename() : getConfigFilename()
             const fileLabel = isCredentials ? 'credentials' : 'config'
 
-            logger.debug(`SMUS Auth: Opening ${fileLabel} file: ${filePath}`)
+            logger.debug(`Opening ${fileLabel} file: ${filePath}`)
 
             // Ensure the .aws directory exists
             await this.ensureAwsDirectoryExists()
@@ -542,17 +545,17 @@ export class SmusIamProfileSelector {
             // Create the file if it doesn't exist
             if (!(await fs.existsFile(filePath))) {
                 await fs.writeFile(filePath, '')
-                logger.debug(`SMUS Auth: Created new ${fileLabel} file`)
+                logger.debug(`Created new ${fileLabel} file`)
             }
 
             // Open the file in VS Code
             const document = await vscode.workspace.openTextDocument(filePath)
             await vscode.window.showTextDocument(document)
 
-            logger.debug(`SMUS Auth: ${fileLabel} file opened successfully`)
+            logger.debug(`${fileLabel} file opened successfully`)
         } catch (error) {
             const fileLabel = isCredentials ? 'credentials' : 'config'
-            logger.error(`SMUS Auth: Failed to open ${fileLabel} file: %s`, error)
+            logger.error(`Failed to open ${fileLabel} file: %s`, error)
             throw new ToolkitError(`Failed to open AWS ${fileLabel} file: ${(error as Error).message}`, {
                 code: isCredentials ? 'CredentialsFileError' : 'ConfigFileError',
             })
@@ -567,7 +570,7 @@ export class SmusIamProfileSelector {
         const logger = this.logger
 
         try {
-            logger.debug('SMUS Auth: Starting add new profile flow')
+            logger.debug('Starting add new profile flow')
 
             const profileData = await this.collectProfileData()
 
@@ -590,7 +593,7 @@ export class SmusIamProfileSelector {
                 `AWS profile '${profileData.profileName}' has been added successfully and will be used for authentication.`
             )
 
-            logger.debug(`SMUS Auth: Successfully added new profile: ${profileData.profileName}`)
+            logger.debug(`Successfully added new profile: ${profileData.profileName}`)
 
             // Return the profile data to use it directly
             return {
@@ -600,10 +603,10 @@ export class SmusIamProfileSelector {
         } catch (error) {
             // Only log actual errors, not user cancellations
             if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
-                logger.debug('SMUS Auth: User cancelled add new profile flow')
+                logger.debug('User cancelled add new profile flow')
                 throw error // Re-throw for telemetry but don't log as error
             }
-            logger.error('SMUS Auth: Failed to add new profile: %s', error)
+            logger.error('Failed to add new profile: %s', error)
             throw new ToolkitError(`Failed to add new profile: ${(error as Error).message}`, {
                 code: 'AddProfileError',
             })
@@ -1240,7 +1243,7 @@ export class SmusIamProfileSelector {
         const logger = this.logger
 
         try {
-            logger.debug(`SMUS Auth: Updating profile ${profileName} with region ${region}`)
+            logger.debug(`Updating profile ${profileName} with region ${region}`)
 
             const credentialsPath = getCredentialsFilename()
 
@@ -1297,9 +1300,9 @@ export class SmusIamProfileSelector {
             // Write back to file
             await fs.writeFile(credentialsPath, updatedContent)
 
-            logger.debug(`SMUS Auth: Successfully updated profile ${profileName} with region ${region}`)
+            logger.debug(`Successfully updated profile ${profileName} with region ${region}`)
         } catch (error) {
-            logger.error('SMUS Auth: Failed to update profile region: %s', error)
+            logger.error('Failed to update profile region: %s', error)
             throw new ToolkitError(`Failed to update profile region: ${(error as Error).message}`, {
                 code: 'UpdateProfileError',
             })
