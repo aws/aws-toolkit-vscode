@@ -41,7 +41,7 @@ export class CfnLspInstaller extends BaseLspInstaller {
             'awsCfnLsp',
             {
                 resolve: async () => {
-                    const log = getLogger()
+                    const log = getLogger('awsCfnLsp')
                     const cfnManifestStorageKey = 'aws.cloudformation.lsp.manifest'
 
                     try {
