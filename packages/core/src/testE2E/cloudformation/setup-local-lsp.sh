@@ -41,7 +41,7 @@ MANIFEST_URL="https://raw.githubusercontent.com/aws-cloudformation/cloudformatio
 # Try manifest first
 if command -v jq &> /dev/null; then
     echo "Trying manifest: $MANIFEST_URL"
-    DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[0].targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
+    DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[] | select(.latest == true) | .targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
     if [ -n "$DOWNLOAD_URL" ]; then
         echo "✓ Using manifest URL"
     fi
