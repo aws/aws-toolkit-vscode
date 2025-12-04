@@ -33,7 +33,6 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add File as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Files')
         await clickSubMenuItem(webviewView, 'Active file')
@@ -48,7 +47,6 @@ describe('Amazon Q Pin Context Functionality', function () {
     // })
 
     it('Allows User to Add Folder as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Folders')
         await clickSubMenuItem(webviewView, 'Factorial')
@@ -58,13 +56,11 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add Sage as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, '@sage')
     })
 
     it('Allows User to Add Code as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Code')
         await clickSubMenuItem(webviewView, 'TestFactorial')
@@ -76,7 +72,6 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add Image as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Image')
         await webviewView.switchBack()
@@ -90,7 +85,6 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add Prompt as Context', async () => {
-        await sleep(1000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Prompts')
         await clickAddPromptButton(webviewView)

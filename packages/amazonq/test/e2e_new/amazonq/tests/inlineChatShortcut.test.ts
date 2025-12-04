@@ -32,7 +32,6 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
     beforeEach(async function () {
         webviewView = testContext.webviewView
         await webviewView.switchBack()
-        // workbench = testContext.workbench
         editorView = new EditorView()
         if (this.currentTest?.title !== 'Allows User to Open Command Palette Test') {
             textEditor = await openTestFile(editorView)

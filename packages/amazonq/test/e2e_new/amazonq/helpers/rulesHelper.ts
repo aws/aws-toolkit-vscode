@@ -28,7 +28,7 @@ export async function clickRulesButton(webview: WebviewView): Promise<void> {
  */
 export async function clickCreateNewRuleOption(webview: WebviewView): Promise<void> {
     try {
-        await sleep(10000)
+        await sleep(5000)
         const overlayContainer = await waitForElement(webview, By.css('.mynah-overlay-container'))
         const quickPickItems = await overlayContainer.findElements(
             By.css('[data-testid="prompt-input-quick-pick-item"]')
@@ -57,7 +57,6 @@ export async function clickCreateNewRuleOption(webview: WebviewView): Promise<vo
  */
 export async function enterRuleName(webview: WebviewView, ruleName: string): Promise<void> {
     try {
-        await sleep(1000)
         const sheetWrapper = await waitForElement(webview, By.css('[data-testid="sheet-wrapper"]'))
         const ruleNameInput = await sheetWrapper.findElement(By.css('[data-testid="chat-item-form-item-text-input"]'))
 
