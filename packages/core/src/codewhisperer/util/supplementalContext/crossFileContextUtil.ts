@@ -23,13 +23,9 @@ import {
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { FeatureConfigProvider } from '../../../shared/featureConfig'
 import fs from '../../../shared/fs/fs'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
-import {
-    GetSupplementalContextParams,
-    getSupplementalContextRequestType,
-    SupplementalContextItem,
-} from '@aws/language-server-runtimes/protocol'
+import { GetSupplementalContextParams, getSupplementalContextRequestType } from '@aws/language-server-runtimes/protocol'
 type CrossFileSupportedLanguage =
     | 'java'
     | 'python'
@@ -73,7 +69,7 @@ type SupplementalContextConfig = 'none' | 'opentabs' | 'codemap' | 'bm25' | 'def
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken,
-    languageClient?: LanguageClient
+    languageClient?: BaseLanguageClient
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const supplementalContextConfig = getSupplementalContextConfig(editor.document.languageId)
 
@@ -200,17 +196,14 @@ export async function fetchSupplementalContextForSrc(
 export async function fetchProjectContext(
     editor: vscode.TextEditor,
     target: 'default' | 'codemap' | 'bm25',
-    languageclient?: LanguageClient
+    languageclient?: BaseLanguageClient
 ): Promise<CodeWhispererSupplementalContextItem[]> {
     try {
         if (languageclient) {
             const request: GetSupplementalContextParams = {
                 filePath: editor.document.uri.fsPath,
             }
-            const response = await languageclient.sendRequest<SupplementalContextItem[]>(
-                getSupplementalContextRequestType.method,
-                request
-            )
+            const response = await languageclient.sendRequest(getSupplementalContextRequestType.method, request)
             return response as CodeWhispererSupplementalContextItem[]
         }
     } catch (error) {

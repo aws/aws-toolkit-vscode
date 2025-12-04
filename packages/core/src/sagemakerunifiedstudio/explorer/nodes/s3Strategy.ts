@@ -18,6 +18,7 @@ import {
     ListCallerAccessGrantsEntry,
 } from '@aws-sdk/client-s3-control'
 import { S3, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
@@ -30,7 +31,7 @@ export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_fol
  * S3 data node for SageMaker Unified Studio
  */
 export class S3Node implements TreeNode {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
 
@@ -71,7 +72,7 @@ export class S3Node implements TreeNode {
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as S3Node]
             }
         }
@@ -112,7 +113,7 @@ export function createS3ConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): S3Node {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Parse S3 URI from connection
     const s3Info = parseS3Uri(connection)
@@ -214,7 +215,7 @@ export function createS3ConnectionNode(
                                         } catch (err) {
                                             logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
                                             const errorMessage = (err as Error).message
-                                            void vscode.window.showErrorMessage(errorMessage)
+                                            await handleCredExpiredError(err, true)
                                             return [
                                                 createErrorItem(
                                                     errorMessage,
@@ -229,7 +230,7 @@ export function createS3ConnectionNode(
                         } catch (err) {
                             logger.error(`Failed to list buckets: ${(err as Error).message}`)
                             const errorMessage = (err as Error).message
-                            void vscode.window.showErrorMessage(errorMessage)
+                            await handleCredExpiredError(err, true)
                             return [createErrorItem(errorMessage, 'list-buckets', node.id) as S3Node]
                         }
                     } else if (isDefaultConnection && s3Info.prefix) {
@@ -294,7 +295,7 @@ export function createS3ConnectionNode(
                                     } catch (err) {
                                         logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
                                         const errorMessage = (err as Error).message
-                                        void vscode.window.showErrorMessage(errorMessage)
+                                        await handleCredExpiredError(err, true)
                                         return [
                                             createErrorItem(
                                                 errorMessage,
@@ -365,7 +366,7 @@ export function createS3ConnectionNode(
                                     } catch (err) {
                                         logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
                                         const errorMessage = (err as Error).message
-                                        void vscode.window.showErrorMessage(errorMessage)
+                                        await handleCredExpiredError(err, true)
                                         return [
                                             createErrorItem(
                                                 errorMessage,
@@ -381,7 +382,7 @@ export function createS3ConnectionNode(
                 } catch (err) {
                     logger.error(`Failed to create bucket node: ${(err as Error).message}`)
                     const errorMessage = (err as Error).message
-                    void vscode.window.showErrorMessage(errorMessage)
+                    await handleCredExpiredError(err, true)
                     return [createErrorItem(errorMessage, 'bucket-node', node.id) as S3Node]
                 }
             })
@@ -409,7 +410,7 @@ export async function createS3AccessGrantNodes(
  * Creates a children provider function for a folder node
  */
 function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (node: S3Node) => Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return async (node: S3Node) => {
         try {
@@ -451,7 +452,7 @@ function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (nod
         } catch (err) {
             logger.error(`Failed to list folder contents: ${(err as Error).message}`)
             const errorMessage = (err as Error).message
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(err, true)
             return [createErrorItem(errorMessage, 'folder-contents', node.id) as S3Node]
         }
     }
@@ -497,7 +498,7 @@ async function listCallerAccessGrants(
     accountId: string,
     connectionId: string
 ): Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     try {
         const clientStore = ConnectionClientStore.getInstance()
         const s3ControlClient = clientStore.getS3ControlClient(connectionId, region, connectionCredentialsProvider)
@@ -525,6 +526,7 @@ async function listCallerAccessGrants(
         return accessGrantNodes
     } catch (error) {
         logger.error(`Failed to list caller access grants: ${(error as Error).message}`)
+        await handleCredExpiredError(error)
         return []
     }
 }
@@ -581,7 +583,7 @@ async function fetchAccessGrantChildren(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     connectionId: string
 ): Promise<S3Node[]> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const path = node.data.path
 
     try {
@@ -690,7 +692,7 @@ async function fetchAccessGrantChildren(
     } catch (error) {
         logger.error(`Failed to fetch access grant children: ${(error as Error).message}`)
         const errorMessage = (error as Error).message
-        void vscode.window.showErrorMessage(errorMessage)
+        await handleCredExpiredError(error, true)
         return [createErrorItem(errorMessage, 'access-grant-children', node.id) as S3Node]
     }
 }

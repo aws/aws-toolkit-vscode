@@ -54,11 +54,22 @@
                         id="attachDebugger"
                         v-model="debugState.remoteDebuggingEnabled"
                         @change="debugPreCheck"
-                        :disabled="!initialData.runtimeSupportsRemoteDebug || !initialData.remoteDebugLayer"
+                        :disabled="
+                            !initialData.runtimeSupportsRemoteDebug ||
+                            !initialData.remoteDebugLayer ||
+                            (!initialData.LambdaFunctionNode?.configuration.SnapStart &&
+                                initialData.LambdaFunctionNode?.configuration.State !== 'Active')
+                        "
                         class="remote-debug-checkbox"
                     />
                     <div class="setting-description">
-                        <info-wrap v-if="initialData.runtimeSupportsRemoteDebug && initialData.remoteDebugLayer">
+                        <info-wrap
+                            v-if="
+                                initialData.runtimeSupportsRemoteDebug &&
+                                initialData.remoteDebugLayer &&
+                                initialData.LambdaFunctionNode?.configuration.SnapStart
+                            "
+                        >
                             Remote debugging is not recommended for production environments. The AWS Toolkit modifies
                             your function by deploying it with an additional layer to enable remote debugging. Your
                             local code breakpoints are then used to step through the remote function invocation.
@@ -82,6 +93,15 @@
                         </info>
                         <info v-else-if="!initialData.remoteDebugLayer" style="color: var(--vscode-errorForeground)">
                             Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
+                        </info>
+                        <info
+                            v-else-if="
+                                !initialData.LambdaFunctionNode?.configuration.SnapStart &&
+                                initialData.LambdaFunctionNode?.configuration.State !== 'Active'
+                            "
+                            style="color: var(--vscode-errorForeground)"
+                        >
+                            Doesn't support remote debugging yet
                         </info>
                     </div>
                 </div>

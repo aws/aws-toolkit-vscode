@@ -13,8 +13,11 @@ import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
 import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { getLogger } from '../../../../shared/logger/logger'
-import { SmusUtils } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { ToolkitError } from '../../../../shared/errors'
 import * as vscodeUtils from '../../../../shared/vscode/setContext'
+import * as utils from '../../../../sagemakerunifiedstudio/explorer/nodes/utils'
+import { DataZoneCustomClientHelper } from '../../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper'
 
 describe('SageMakerUnifiedStudioSpacesParentNode', function () {
     let spacesNode: SageMakerUnifiedStudioSpacesParentNode
@@ -33,6 +36,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             activeConnection: { domainId: 'test-domain', ssoRegion: 'us-west-2', profileName: 'test-profile' },
             getDomainId: sinon.stub().returns('test-domain'),
             getDomainRegion: sinon.stub().returns('us-west-2'),
+            getIamPrincipalArn: sinon.stub().resolves(undefined),
             getDerCredentialsProvider: sinon.stub().resolves({
                 getCredentials: sinon.stub().resolves({
                     accessKeyId: 'test-key',
@@ -437,9 +441,16 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
     })
 
-    describe('Express mode error handling', function () {
-        it('should return no user profile error node when Express mode fails with no profile error', async function () {
-            const noProfileError = new Error('No user profile found for your session')
+    describe('IAM mode error handling', function () {
+        beforeEach(function () {
+            // Add getIamPrincipalArn stub to mockAuthProvider
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves('arn:aws:iam::123456789012:user/test-user')
+        })
+
+        it('should return no user profile error node when NoUserProfileFound error is thrown', async function () {
+            const noProfileError = new ToolkitError('No user profile found for IAM principal', {
+                code: SmusErrorCodes.NoUserProfileFound,
+            })
             const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
             updateChildrenStub.rejects(noProfileError)
 
@@ -449,10 +460,26 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children[0].id, 'smusNoUserProfile')
 
             const treeItem = await children[0].getTreeItem()
-            assert.strictEqual(treeItem.label, 'No spaces found for your IAM principal')
+            assert.strictEqual(treeItem.label, 'No spaces found for IAM principal')
         })
 
-        it('should return access denied error node when Express mode returns AccessDeniedException', async function () {
+        it('should return no user profile error node when NoGroupProfileFound error is thrown', async function () {
+            const noProfileError = new ToolkitError('No group profile found for IAM role', {
+                code: SmusErrorCodes.NoGroupProfileFound,
+            })
+            const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
+            updateChildrenStub.rejects(noProfileError)
+
+            const children = await spacesNode.getChildren()
+
+            assert.strictEqual(children.length, 1)
+            assert.strictEqual(children[0].id, 'smusNoUserProfile')
+
+            const treeItem = await children[0].getTreeItem()
+            assert.strictEqual(treeItem.label, 'No spaces found for IAM principal')
+        })
+
+        it('should return access denied error node when IAM mode returns AccessDeniedException', async function () {
             const accessDeniedError = new Error("You don't have permissions to access this resource")
             accessDeniedError.name = 'AccessDeniedException'
             const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
@@ -464,7 +491,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children[0].id, 'smusAccessDenied')
         })
 
-        it('should return user profile error node when Express mode returns generic error', async function () {
+        it('should return user profile error node when IAM mode returns generic error', async function () {
             const genericError = new Error('Failed to retrieve user profile information')
             const updateChildrenStub = sinon.stub(spacesNode as any, 'updateChildren')
             updateChildrenStub.rejects(genericError)
@@ -476,6 +503,116 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
             const treeItem = await children[0].getTreeItem()
             assert.strictEqual(treeItem.label, 'Failed to retrieve spaces. Please try again.')
+        })
+    })
+
+    describe('getUserProfileIdForIamAuthMode - IAM user flow', function () {
+        let createDZClientStub: sinon.SinonStub
+        let getContextStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getContextStub = vscodeUtils.getContext as sinon.SinonStub
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
+            createDZClientStub = sinon.stub(utils, 'createDZClientBaseOnDomainMode')
+        })
+
+        afterEach(function () {
+            createDZClientStub.restore()
+        })
+
+        it('should use GetUserProfile API for IAM user', async function () {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+            const mockUserProfileId = 'up_user123'
+
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(mockUserArn)
+            mockAuthProvider.getDomainId = sinon.stub().returns('domain-123')
+
+            const mockGetUserProfileId = sinon.stub().resolves(mockUserProfileId)
+            mockDataZoneClient.getUserProfileIdForIamPrincipal = mockGetUserProfileId as any
+            createDZClientStub.resolves(mockDataZoneClient)
+
+            const result = await spacesNode['getUserProfileIdForIamAuthMode']()
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert(mockGetUserProfileId.calledWith(mockUserArn, 'domain-123'))
+        })
+
+        it('should throw error when IAM user profile not found', async function () {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(mockUserArn)
+            mockAuthProvider.getDomainId = sinon.stub().returns('domain-123')
+
+            mockDataZoneClient.getUserProfileIdForIamPrincipal = sinon.stub().resolves(undefined) as any
+            createDZClientStub.resolves(mockDataZoneClient)
+
+            await assert.rejects(
+                async () => await spacesNode['getUserProfileIdForIamAuthMode'](),
+                /No user profile found for IAM user/
+            )
+        })
+
+        it('should throw error when caller ARN cannot be retrieved', async function () {
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(undefined)
+
+            await assert.rejects(
+                async () => await spacesNode['getUserProfileIdForIamAuthMode'](),
+                /Unable to retrieve caller identity ARN/
+            )
+        })
+    })
+
+    describe('getUserProfileIdForIamAuthMode - IAM role session flow', function () {
+        let mockDataZoneCustomClientHelper: any
+        let getInstanceStub: sinon.SinonStub
+        let getContextStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getContextStub = vscodeUtils.getContext as sinon.SinonStub
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
+
+            mockDataZoneCustomClientHelper = {
+                getUserProfileIdForSession: sinon.stub(),
+            }
+
+            // Mock the DataZoneCustomClientHelper.getInstance
+            getInstanceStub = sinon
+                .stub(DataZoneCustomClientHelper, 'getInstance')
+                .returns(mockDataZoneCustomClientHelper)
+        })
+
+        afterEach(function () {
+            getInstanceStub.restore()
+        })
+
+        it('should use SearchUserProfile API for IAM role session', async function () {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/TestRole'
+            const mockAssumedRoleArn = 'arn:aws:sts::123456789012:assumed-role/TestRole/test-session'
+            const mockUserProfileId = 'up_session123'
+
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(mockRoleArn)
+            mockAuthProvider.getCachedIamCallerIdentityArn = sinon.stub().resolves(mockAssumedRoleArn)
+            mockAuthProvider.getDomainId = sinon.stub().returns('domain-123')
+            mockDataZoneCustomClientHelper.getUserProfileIdForSession.resolves(mockUserProfileId)
+
+            const result = await spacesNode['getUserProfileIdForIamAuthMode']()
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert(
+                mockDataZoneCustomClientHelper.getUserProfileIdForSession.calledWith('domain-123', mockAssumedRoleArn)
+            )
+        })
+
+        it('should throw error when assumed role ARN cannot be retrieved', async function () {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/TestRole'
+
+            mockAuthProvider.getIamPrincipalArn = sinon.stub().resolves(mockRoleArn)
+            mockAuthProvider.getCachedIamCallerIdentityArn = sinon.stub().resolves(undefined)
+
+            await assert.rejects(
+                async () => await spacesNode['getUserProfileIdForIamAuthMode'](),
+                /Unable to retrieve assumed role ARN with session/
+            )
         })
     })
 })

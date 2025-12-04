@@ -11,18 +11,18 @@ import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
-import { UserProfileMetadata } from '../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { UserProfileMetadata } from '../../../awsService/sagemaker/explorer/sagemakerStudioNode'
 import { SagemakerUnifiedStudioSpaceNode } from './sageMakerUnifiedStudioSpaceNode'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
-import { SmusUtils } from '../../shared/smusUtils'
+import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
 import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { SmusIamConnection } from '../../auth/model'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { ToolkitError } from '../../../shared/errors'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -30,7 +30,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     private readonly sagemakerSpaceNodes: Map<string, SagemakerUnifiedStudioSpaceNode> = new Map()
     private spaceApps: Map<string, SagemakerSpaceApp> = new Map()
     private domainUserProfiles: Map<string, UserProfileMetadata> = new Map()
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private readonly onDidChangeEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
@@ -74,8 +74,12 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             if (error.name === 'AccessDeniedException') {
                 return this.getAccessDeniedChildren()
             }
-            if (error.message.includes('No user profile found')) {
-                return this.getNoUserProfileChildren()
+            // Handle no profile found (user or group) using error codes
+            if (
+                error instanceof ToolkitError &&
+                (error.code === SmusErrorCodes.NoGroupProfileFound || error.code === SmusErrorCodes.NoUserProfileFound)
+            ) {
+                return await this.getNoUserProfileChildren()
             }
             if (error.message.includes('Failed to retrieve user profile information')) {
                 return this.getUserProfileErrorChildren(error.message)
@@ -118,14 +122,20 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         ]
     }
 
-    private getNoUserProfileChildren(): TreeNode[] {
+    private async getNoUserProfileChildren(): Promise<TreeNode[]> {
+        // Log the IAM principal ARN for debugging
+        const principalArn = await this.authProvider.getIamPrincipalArn()
+        if (principalArn) {
+            this.logger.error(`No spaces found for IAM principal: ${principalArn}`)
+        }
+
         return [
             {
                 id: 'smusNoUserProfile',
                 resource: {},
                 getTreeItem: () => {
                     const item = new vscode.TreeItem(
-                        'No spaces found for your IAM principal',
+                        'No spaces found for IAM principal',
                         vscode.TreeItemCollapsibleState.None
                     )
                     item.iconPath = getIcon('vscode-error')
@@ -190,7 +200,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             throw new Error('No active connection found to get SageMaker domain ID')
         }
 
-        this.logger.debug('SMUS: Getting DataZone client instance')
+        this.logger.debug('Getting DataZone client instance')
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
@@ -204,7 +214,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     if (!resource.value) {
                         throw new Error('SageMaker domain ID not found in tooling environment')
                     }
-                    getLogger().debug(`Found SageMaker domain ID: ${resource.value}`)
+                    getLogger('smus').debug(`Found SageMaker domain ID: ${resource.value}`)
                     return resource.value
                 }
             }
@@ -228,46 +238,70 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     }
 
     /**
-     * Retrieves the user profile ID for Express mode (IAM authentication)
+     * Retrieves the user profile ID for IAM mode (IAM authentication)
      * @returns Promise resolving to the user profile ID
      * @throws Error if user profile retrieval fails
      */
-    private async getUserProfileIdForExpressMode(): Promise<string> {
+    private async getUserProfileIdForIamAuthMode(): Promise<string> {
         try {
-            // Get DataZoneCustomClientHelper instance
-            const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(
-                (this.authProvider.activeConnection as SmusIamConnection).profileName
-            )
-            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-                credentialsProvider,
-                this.authProvider.getDomainRegion()
-            )
+            // Get cached caller IAM identity ARN from auth provider
+            const callerArn = await this.authProvider.getIamPrincipalArn()
 
-            // Get caller identity to extract role ARN with session
-            const credentials = await credentialsProvider.getCredentials()
-            const stsClient = new DefaultStsClient(this.authProvider.getDomainRegion(), credentials)
-            const callerIdentity = await stsClient.getCallerIdentity()
-            const roleArnWithSession = callerIdentity.Arn
-
-            if (!roleArnWithSession) {
+            if (!callerArn) {
                 throw new Error('Unable to retrieve caller identity ARN')
             }
+            // Determine if this is an IAM user or role session based on ARN format
+            if (SmusUtils.isIamUserArn(callerArn)) {
+                // For IAM users, use GetUserProfile API directly via DataZoneClient
+                this.logger.debug(`Detected IAM user, using GetUserProfile API with ARN: ${callerArn}`)
 
-            this.logger.debug(`SMUS: Retrieved role ARN with session: ${roleArnWithSession}`)
+                const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
+                const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                    callerArn,
+                    this.authProvider.getDomainId()
+                )
 
-            // Call getUserProfileIdForSession with domain identifier and role ARN
-            const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
-                this.authProvider.getDomainId(),
-                roleArnWithSession
-            )
+                if (!userProfileId) {
+                    throw new ToolkitError('No user profile found for IAM user')
+                }
 
-            this.logger.debug(`SMUS: Retrieved user profile ID for session: ${userProfileId}`)
-            return userProfileId
+                this.logger.debug(`Retrieved user profile ID for IAM user: ${userProfileId}`)
+                return userProfileId
+            } else {
+                // For IAM role sessions, use SearchUserProfile API via DataZoneCustomClientHelper
+                // Need to get the full assumed role ARN (with session) for filtering
+                const assumedRoleArn = await this.authProvider.getCachedIamCallerIdentityArn()
+
+                if (!assumedRoleArn) {
+                    throw new Error('Unable to retrieve assumed role ARN with session')
+                }
+
+                this.logger.debug(
+                    `SMUS: Detected IAM role session, using SearchUserProfile API with ARN: ${assumedRoleArn}`
+                )
+
+                // Get credentials provider for the IAM profile
+                const credentialsProvider = await this.authProvider.getCredentialsProviderForIamProfile(
+                    (this.authProvider.activeConnection as SmusIamConnection).profileName
+                )
+
+                const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                    credentialsProvider,
+                    this.authProvider.getDomainRegion()
+                )
+
+                const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
+                    this.authProvider.getDomainId(),
+                    assumedRoleArn
+                )
+
+                this.logger.debug(`Retrieved user profile ID for role session: ${userProfileId}`)
+                return userProfileId
+            }
         } catch (err) {
             const error = err as Error
-            this.logger.error(`SMUS: Failed to retrieve user profile information: ${error.message}`)
+            this.logger.error(`Failed to retrieve user profile information: ${error.message}`)
 
-            // Display appropriate error message based on error type
             if (error.name === 'AccessDeniedException') {
                 throw new Error("You don't have permissions to access this resource. Please contact your administrator")
             }
@@ -279,8 +313,8 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
-        if (getContext('aws.smus.isExpressMode')) {
-            userProfileId = await this.getUserProfileIdForExpressMode()
+        if (getContext('aws.smus.isIamMode')) {
+            userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
@@ -294,7 +328,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         )
 
         // Filter spaceApps to only show spaces owned by current user
-        this.logger.debug(`SMUS: Filtering spaces for user profile ID: ${userProfileId}`)
+        this.logger.debug(`Filtering spaces for user profile ID: ${userProfileId}`)
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName

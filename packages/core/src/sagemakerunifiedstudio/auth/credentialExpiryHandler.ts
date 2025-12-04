@@ -39,7 +39,7 @@ export async function showIamCredentialExpiryOptions(
     connection: any,
     extensionContext: vscode.ExtensionContext
 ): Promise<IamCredentialExpiryResult> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     type QuickPickItemWithAction = vscode.QuickPickItem & { action: IamCredentialExpiryAction }
     const options: QuickPickItemWithAction[] = [
@@ -119,7 +119,7 @@ export async function showIamCredentialExpiryOptions(
                         break
                     }
                     case IamCredentialExpiryAction.EditCredentials: {
-                        logger.debug('SMUS: Opening AWS credentials and config files for editing')
+                        logger.debug('Opening AWS credentials and config files for editing')
                         // Open both credentials and config files like AWS Explorer does
                         const credentialsPath = getCredentialsFilename()
                         const configPath = getConfigFilename()
@@ -144,13 +144,13 @@ export async function showIamCredentialExpiryOptions(
                         break
                     }
                     case IamCredentialExpiryAction.SwitchProfile: {
-                        logger.debug('SMUS: Switching to another IAM profile')
+                        logger.debug('Switching to another IAM profile')
                         try {
                             const profileSelection = await SmusIamProfileSelector.showIamProfileSelection()
 
                             // Handle back navigation - show the credential expiry menu again
                             if ('isBack' in profileSelection) {
-                                logger.debug('SMUS: User clicked back, showing credential expiry options again')
+                                logger.debug('User clicked back, showing credential expiry options again')
                                 // Recursively show the credential expiry options menu
                                 const result = await showIamCredentialExpiryOptions(
                                     authProvider,
@@ -163,7 +163,7 @@ export async function showIamCredentialExpiryOptions(
 
                             // Handle editing mode - This is if user picks edit during the profile selection
                             if ('isEditing' in profileSelection) {
-                                logger.debug('SMUS: User is editing credentials')
+                                logger.debug('User is editing credentials')
                                 resolve({ action: IamCredentialExpiryAction.EditCredentials })
                                 return
                             }
@@ -197,20 +197,20 @@ export async function showIamCredentialExpiryOptions(
                                 switchError instanceof ToolkitError &&
                                 switchError.code === SmusErrorCodes.UserCancelled
                             ) {
-                                logger.debug('SMUS: Profile switch cancelled by user')
+                                logger.debug('Profile switch cancelled by user')
                                 resolve({ action: IamCredentialExpiryAction.Cancelled })
                             } else {
                                 // Show error message for actual failures
                                 const errorMsg = (switchError as Error).message
                                 void vscode.window.showErrorMessage(`Failed to switch profile: ${errorMsg}`)
-                                logger.error('SMUS: Profile switch failed: %s', switchError)
+                                logger.error('Profile switch failed: %s', switchError)
                                 resolve({ action: IamCredentialExpiryAction.SwitchProfile })
                             }
                         }
                         break
                     }
                     case IamCredentialExpiryAction.SignOut: {
-                        logger.debug('SMUS: Signing out from connection')
+                        logger.debug('Signing out from connection')
                         // Use the provider's signOut method which properly handles metadata cleanup
                         await authProvider.signOut()
                         void vscode.window.showInformationMessage('Successfully signed out')
@@ -219,7 +219,7 @@ export async function showIamCredentialExpiryOptions(
                     }
                 }
             } catch (error) {
-                logger.error('SMUS: Failed to handle credential expiry action: %s', error)
+                logger.error('Failed to handle credential expiry action: %s', error)
                 // Only show error for non-reauthenticate cases (reauthenticate handles its own errors)
                 if (itemWithAction.action !== IamCredentialExpiryAction.Reauthenticate) {
                     void vscode.window.showErrorMessage(`Failed to complete action: ${(error as Error).message}`)
@@ -231,7 +231,7 @@ export async function showIamCredentialExpiryOptions(
         quickPick.onDidHide(() => {
             if (!isCompleted) {
                 quickPick.dispose()
-                logger.debug('SMUS: Credential expiry options cancelled by user')
+                logger.debug('Credential expiry options cancelled by user')
                 resolve({ action: IamCredentialExpiryAction.Cancelled })
             }
         })

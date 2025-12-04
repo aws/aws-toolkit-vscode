@@ -301,21 +301,22 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             assert.strictEqual(hasAccess, false)
         })
 
-        it('returns false when getCredentials fails', async function () {
+        it('throws error when getCredentials fails', async function () {
             const mockCredProvider = {
                 getCredentials: sinon.stub().rejects(new Error('Credentials error')),
             }
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
 
-            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
-            assert.strictEqual(hasAccess, false)
+            await assert.rejects(
+                async () => await projectNode['checkProjectCredsAccess']('project-123'),
+                /Credentials error/
+            )
         })
 
-        it('returns false when access check throws non-AccessDeniedException error', async function () {
+        it('throws error when access check throws non-AccessDeniedException error', async function () {
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(new Error('Other error'))
 
-            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
-            assert.strictEqual(hasAccess, false)
+            await assert.rejects(async () => await projectNode['checkProjectCredsAccess']('project-123'), /Other error/)
         })
     })
 

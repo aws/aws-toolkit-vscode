@@ -6,9 +6,11 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-
-// Mock the setContext function BEFORE importing modules that use it
-const setContextModule = require('../../../shared/vscode/setContext')
+import * as setContextModule from '../../../shared/vscode/setContext'
+import * as secondaryAuthModule from '../../../auth/secondaryAuth'
+import * as sharedCredentialsModule from '../../../auth/credentials/sharedCredentials'
+import * as stsClientModule from '../../../shared/clients/stsClient'
+import { DataZoneCustomClientHelper } from '../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper'
 
 import { SmusAuthenticationProvider } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { SmusConnection } from '../../../sagemakerunifiedstudio/auth/model'
@@ -111,7 +113,7 @@ describe('SmusAuthenticationProvider', function () {
         getSsoInstanceInfoStub = sinon.stub(SmusUtils, 'getSsoInstanceInfo').resolves(testSsoInstanceInfo)
         isInSmusSpaceEnvironmentStub = sinon.stub(SmusUtils, 'isInSmusSpaceEnvironment').returns(false)
         executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
-        sinon.stub(require('../../../auth/secondaryAuth'), 'getSecondaryAuth').returns(mockSecondaryAuth)
+        sinon.stub(secondaryAuthModule, 'getSecondaryAuth').returns(mockSecondaryAuth)
 
         smusAuthProvider = new SmusAuthenticationProvider(mockAuth)
 
@@ -202,10 +204,7 @@ describe('SmusAuthenticationProvider', function () {
             }
             mockSecondaryAuth.state = mockState
 
-            loadSharedCredentialsProfilesStub = sinon.stub(
-                require('../../../auth/credentials/sharedCredentials'),
-                'loadSharedCredentialsProfiles'
-            )
+            loadSharedCredentialsProfilesStub = sinon.stub(sharedCredentialsModule, 'loadSharedCredentialsProfiles')
             validateIamProfileStub = sinon.stub(smusAuthProvider, 'validateIamProfile')
         })
 
@@ -729,7 +728,7 @@ describe('SmusAuthenticationProvider', function () {
             beforeEach(function () {
                 getContextStub.withArgs('aws.smus.inSmusSpaceEnvironment').returns(false)
                 // Stub the DefaultStsClient constructor to return our mock instance
-                const stsClientModule = require('../../../shared/clients/stsClient')
+                // stsClientModule imported at top
                 stsConstructorStub = sinon.stub(stsClientModule, 'DefaultStsClient').callsFake(() => mockStsClient)
             })
 
@@ -1012,7 +1011,7 @@ describe('SmusAuthenticationProvider', function () {
                         region: testRegion,
                         domainUrl: testDomainUrl,
                         domainId: testDomainId,
-                        isExpressDomain: false,
+                        isIamDomain: false,
                     },
                 })
             )
@@ -1040,7 +1039,7 @@ describe('SmusAuthenticationProvider', function () {
                         region: testRegion,
                         domainUrl: testDomainUrl,
                         domainId: testDomainId,
-                        isExpressDomain: false,
+                        isIamDomain: false,
                     },
                 })
             )
@@ -1371,11 +1370,11 @@ describe('SmusAuthenticationProvider', function () {
         })
     })
 
-    describe('initExpressModeContextInSpaceEnvironment', function () {
+    describe('initIamModeContextInSpaceEnvironment', function () {
         let getResourceMetadataStub: sinon.SinonStub
         let getDerCredentialsProviderStub: sinon.SinonStub
         let getInstanceStub: sinon.SinonStub
-        let isExpressDomainStub: sinon.SinonStub
+        let isIamDomainStub: sinon.SinonStub
         let mockCredentialsProvider: any
         let mockClientHelper: any
 
@@ -1405,29 +1404,23 @@ describe('SmusAuthenticationProvider', function () {
                 .resolves(mockCredentialsProvider)
 
             // Mock DataZoneCustomClientHelper
-            isExpressDomainStub = sinon.stub()
+            isIamDomainStub = sinon.stub()
             mockClientHelper = {
-                isExpressDomain: isExpressDomainStub,
+                isIamDomain: isIamDomainStub,
             }
 
-            getInstanceStub = sinon
-                .stub(
-                    require('../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper')
-                        .DataZoneCustomClientHelper,
-                    'getInstance'
-                )
-                .returns(mockClientHelper)
+            getInstanceStub = sinon.stub(DataZoneCustomClientHelper, 'getInstance').returns(mockClientHelper)
         })
 
         afterEach(function () {
             sinon.restore()
         })
 
-        it('should set express mode context to true when domain is express mode', async function () {
+        it('should set IAM mode context to true when domain is IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isExpressDomainStub.resolves(true)
+            isIamDomainStub.resolves(true)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
@@ -1437,15 +1430,15 @@ describe('SmusAuthenticationProvider', function () {
                     testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
-            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', true))
+            assert.ok(isIamDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', true))
         })
 
-        it('should set express mode context to false when domain is not express mode', async function () {
+        it('should set IAM mode context to false when domain is not IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
-            isExpressDomainStub.resolves(false)
+            isIamDomainStub.resolves(false)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
@@ -1455,19 +1448,19 @@ describe('SmusAuthenticationProvider', function () {
                     testResourceMetadata.AdditionalMetadata.DataZoneDomainRegion
                 )
             )
-            assert.ok(isExpressDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+            assert.ok(isIamDomainStub.calledWith(testResourceMetadata.AdditionalMetadata.DataZoneDomainId))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', false))
         })
 
-        it('should not call express mode check when resource metadata is missing', async function () {
+        it('should not call IAM mode check when resource metadata is missing', async function () {
             getResourceMetadataStub.returns(undefined)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.notCalled)
             assert.ok(getInstanceStub.notCalled)
-            assert.ok(isExpressDomainStub.notCalled)
+            assert.ok(isIamDomainStub.notCalled)
             assert.ok(setContextStubGlobal.notCalled)
         })
 
@@ -1476,13 +1469,13 @@ describe('SmusAuthenticationProvider', function () {
             const testError = new Error('Failed to get credentials provider')
             getDerCredentialsProviderStub.rejects(testError)
 
-            await smusAuthProvider['initExpressModeContextInSpaceEnvironment']()
+            await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
             assert.ok(getDerCredentialsProviderStub.called)
             assert.ok(getInstanceStub.notCalled)
-            assert.ok(isExpressDomainStub.notCalled)
-            assert.ok(setContextStubGlobal.calledWith('aws.smus.isExpressMode', false))
+            assert.ok(isIamDomainStub.notCalled)
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', false))
         })
     })
 
@@ -1776,7 +1769,7 @@ describe('SmusAuthenticationProvider', function () {
             }
             mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             // Should convert assumed role ARN to IAM role ARN
             assert.strictEqual(roleArn, 'arn:aws:iam::123456789012:role/MyRole')
@@ -1786,7 +1779,7 @@ describe('SmusAuthenticationProvider', function () {
         it('should return undefined for SSO connection', async function () {
             mockSecondaryAuthState.activeConnection = mockSmusConnection
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             assert.strictEqual(roleArn, undefined)
             assert.ok(mockStsClient.getCallerIdentity.notCalled)
@@ -1795,7 +1788,7 @@ describe('SmusAuthenticationProvider', function () {
         it('should return undefined when not connected', async function () {
             mockSecondaryAuthState.activeConnection = undefined
 
-            const roleArn = await smusAuthProvider.getRoleArn()
+            const roleArn = await smusAuthProvider.getIamPrincipalArn()
 
             assert.strictEqual(roleArn, undefined)
             assert.ok(mockStsClient.getCallerIdentity.notCalled)
@@ -1834,12 +1827,12 @@ describe('SmusAuthenticationProvider', function () {
             mockSecondaryAuth.state.get.withArgs('smus.connections').returns(smusConnections)
 
             // First call - should fetch from STS
-            const roleArn1 = await smusAuthProvider.getRoleArn()
+            const roleArn1 = await smusAuthProvider.getIamPrincipalArn()
             assert.strictEqual(roleArn1, 'arn:aws:iam::123456789012:role/MyRole')
             assert.ok(mockStsClient.getCallerIdentity.calledOnce)
 
             // Second call - should use cached value
-            const roleArn2 = await smusAuthProvider.getRoleArn()
+            const roleArn2 = await smusAuthProvider.getIamPrincipalArn()
             assert.strictEqual(roleArn2, 'arn:aws:iam::123456789012:role/MyRole')
             assert.ok(mockStsClient.getCallerIdentity.calledOnce) // Still only called once
         })

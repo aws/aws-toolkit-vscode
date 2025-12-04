@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { CursorUpdateManager } from '../../../../src/app/inline/cursorUpdateManager'
 import { globals } from 'aws-core-vscode/shared'
 import assert from 'assert'
@@ -14,7 +14,7 @@ import { CodeSuggestionsState } from 'aws-core-vscode/codewhisperer'
 
 describe('CursorUpdateManager', () => {
     let cursorUpdateManager: CursorUpdateManager
-    let languageClient: LanguageClient
+    let languageClient: BaseLanguageClient
     let clock: sinon.SinonFakeTimers
     let sendRequestStub: sinon.SinonStub
     let setIntervalStub: sinon.SinonStub
@@ -28,7 +28,7 @@ describe('CursorUpdateManager', () => {
 
         languageClient = {
             sendRequest: sendRequestStub,
-        } as unknown as LanguageClient
+        } as unknown as BaseLanguageClient
 
         // Setup clock stubs
         clock = sinon.useFakeTimers()

@@ -25,6 +25,7 @@ import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticat
 import { createFederatedConnectionNode } from './federatedConnectionStrategy'
 import { createDZClientForProject } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 
 /**
  * Tree node representing a Data folder that contains S3 and Redshift connections
@@ -32,7 +33,7 @@ import { getContext } from '../../../shared/vscode/setContext'
 export class SageMakerUnifiedStudioDataNode implements TreeNode {
     public readonly id = 'smusDataExplorer'
     public readonly resource = {}
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private childrenNodes: TreeNode[] | undefined
     private readonly authProvider: SmusAuthenticationProvider
 
@@ -83,7 +84,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             const projectInfo = project ? `project: ${project.id}, domain: ${project.domainId}` : 'unknown project'
             const errorMessage = 'Failed to get connections'
             this.logger.error(`Failed to get connections for ${projectInfo}: ${(err as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(err, true)
             return [createErrorItem(errorMessage, 'connections', this.id)]
         }
     }
@@ -114,7 +115,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         }
 
         // Add Redshift nodes second
-        if (!getContext('aws.smus.isExpressMode')) {
+        if (!getContext('aws.smus.isIamMode')) {
             for (const connection of redshiftConnections) {
                 if (connection.name.startsWith('project.lakehouse')) {
                     continue
@@ -172,7 +173,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get S3 connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get S3 connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(connErr, true)
             return [createErrorItem(errorMessage, `s3-${connection.connectionId}`, this.id)]
         }
     }
@@ -200,7 +201,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get Redshift connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Redshift connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(connErr, true)
             return createErrorItem(errorMessage, `redshift-${connection.connectionId}`, this.id)
         }
     }
@@ -221,7 +222,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
         } catch (connErr) {
             const errorMessage = `Failed to get Lakehouse connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get Lakehouse connection details: ${(connErr as Error).message}`)
-            void vscode.window.showErrorMessage(errorMessage)
+            await handleCredExpiredError(connErr, true)
             return createErrorItem(errorMessage, `lakehouse-${connection.connectionId}`, this.id)
         }
     }
@@ -303,6 +304,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                             `Failed to create federated connection ${connection.name}: ${(err as Error).message}`
                         )
                         nodes.push(createErrorItem(errorMessage, `federated-${connection.connectionId}`, this.id))
+                        await handleCredExpiredError(err)
                     }
                 }
                 return nodes

@@ -13,6 +13,7 @@ import { getIcon } from '../../../shared/icons'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { createErrorItem, createColumnTreeItem } from './utils'
 import { NO_DATA_FOUND_MESSAGE, NodeType } from './types'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 
 /**
  * Creates a federated connection node
@@ -22,7 +23,7 @@ export async function createFederatedConnectionNode(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     region: string
 ): Promise<TreeNode> {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     // Check for error message in glue properties
     // Create error node directly in this case
@@ -47,7 +48,7 @@ export async function createFederatedConnectionNode(
             } catch (err) {
                 logger.error(`Failed to get federated entities: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [
                     createErrorItem(`Failed to load entities - ${errorMessage}`, 'entities', connection.connectionId),
                 ]
@@ -139,7 +140,7 @@ function createGlueEntityNode(
     glueClient: GlueClient,
     glueConnectionName: string
 ): TreeNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const nodeType = getGlueNodeType(entity.Category)
     const isTable = nodeType === NodeType.GLUE_TABLE
 
@@ -169,7 +170,7 @@ function createGlueEntityNode(
             } catch (err) {
                 logger.error(`Failed to get children for entity ${entity.EntityName}: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [
                     createErrorItem(
                         `Failed to load children - ${errorMessage}`,

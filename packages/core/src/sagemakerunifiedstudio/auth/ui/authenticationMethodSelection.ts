@@ -24,7 +24,7 @@ export interface AuthenticationMethodSelection {
  * Authentication method selection dialog for SMUS
  */
 export class SmusAuthenticationMethodSelector {
-    private static readonly logger = getLogger()
+    private static readonly logger = getLogger('smus')
 
     /**
      * Shows the authentication method selection dialog matching the Figma design
@@ -37,15 +37,13 @@ export class SmusAuthenticationMethodSelector {
         const logger = this.logger
 
         const iamOption: vscode.QuickPickItem = {
-            label: '$(key) IAM Role',
-            description: 'SageMaker Unified Studio Express',
-            detail: 'Use login IAM role credentials to access your Unified Studio Express resources',
+            label: '$(key) IAM Credential',
+            detail: 'Use IAM credentials to access resources in SageMaker Unified Studio IAM-based domains.',
         }
 
         const ssoOption: vscode.QuickPickItem = {
-            label: '$(organization) SSO',
-            description: 'SageMaker Unified Studio',
-            detail: "Use your organization's Single Sign-On to access Unified Studio resources",
+            label: '$(organization) IAM Identity Center',
+            detail: 'Use Identity Center to access resources in SageMaker Unified Studio IdC-based domains.',
         }
 
         const options = [iamOption, ssoOption]
@@ -86,7 +84,7 @@ export class SmusAuthenticationMethodSelector {
 
                 const method: SmusAuthenticationMethod = selectedItem === iamOption ? 'iam' : 'sso'
 
-                logger.debug(`SMUS Auth: User selected authentication method: ${method}`)
+                logger.debug(`User selected authentication method: ${method}`)
 
                 isCompleted = true
                 quickPick.dispose()

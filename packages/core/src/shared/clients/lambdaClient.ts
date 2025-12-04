@@ -41,6 +41,7 @@ import { CancellationError } from '../utilities/timeoutUtils'
 import { fromSSO } from '@aws-sdk/credential-provider-sso'
 import { getIAMConnection } from '../../auth/utils'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
+import type { UserAgent } from '@aws-sdk/types'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
 
@@ -49,7 +50,7 @@ export class DefaultLambdaClient {
 
     public constructor(
         public readonly regionCode: string,
-        public readonly userAgent: string | undefined = undefined
+        public readonly userAgent: UserAgent | undefined = undefined
     ) {
         this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes (SDK default is 2 minutes)
     }
@@ -65,13 +66,18 @@ export class DefaultLambdaClient {
         )
     }
 
-    public async invoke(name: string, payload?: BlobPayloadInputTypes, version?: string): Promise<InvocationResponse> {
+    public async invoke(
+        name: string,
+        payload?: BlobPayloadInputTypes,
+        version?: string,
+        logtype: 'Tail' | 'None' = 'Tail'
+    ): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
         const response = await sdkClient.send(
             new InvokeCommand({
                 FunctionName: name,
-                LogType: 'Tail',
+                LogType: logtype,
                 Payload: payload,
                 Qualifier: version,
             })
@@ -322,7 +328,7 @@ export class DefaultLambdaClient {
             serviceClient: LambdaSdkClient,
             userAgent: !this.userAgent,
             clientOptions: {
-                userAgent: this.userAgent ? [[this.userAgent]] : undefined,
+                customUserAgent: this.userAgent,
                 region: this.regionCode,
                 requestHandler: new NodeHttpHandler({
                     requestTimeout: this.defaultTimeoutInMs,

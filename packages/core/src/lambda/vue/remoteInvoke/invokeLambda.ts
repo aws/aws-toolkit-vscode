@@ -36,7 +36,7 @@ import { getLambdaHandlerFile } from '../../../awsService/appBuilder/utils'
 import { runUploadDirectory } from '../../commands/uploadLambda'
 import fs from '../../../shared/fs/fs'
 import { showConfirmationMessage, showMessage } from '../../../shared/utilities/messages'
-import { getLambdaClientWithAgent, getLambdaDebugUserAgent } from '../../remoteDebugging/utils'
+import { getLambdaClientWithAgent, getLambdaDebugUserAgentPairs } from '../../remoteDebugging/utils'
 import { isLocalStackConnection } from '../../../auth/utils'
 import { getRemoteDebugLayer } from '../../remoteDebugging/remoteLambdaDebugger'
 
@@ -283,17 +283,28 @@ export class RemoteInvokeWebview extends VueWebview {
         this.channel.appendLine('Loading response...')
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
-                const funcResponse = remoteDebugEnabled
-                    ? await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
-                    : await this.client.invoke(this.data.FunctionArn, input, qualifier)
+                let funcResponse
+                const snapStartDisabled =
+                    !this.data.LambdaFunctionNode?.configuration.SnapStart &&
+                    this.data.LambdaFunctionNode?.configuration.State !== 'Active'
+                if (remoteDebugEnabled) {
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                } else if (snapStartDisabled) {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                } else {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
+                }
+
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
                 const decodedPayload = funcResponse.Payload ? new TextDecoder().decode(funcResponse.Payload) : ''
                 const payload = decodedPayload || JSON.stringify({})
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
-                this.channel.appendLine('Logs:')
-                this.channel.appendLine(logs)
-                this.channel.appendLine('')
+                if (!snapStartDisabled) {
+                    this.channel.appendLine('Logs:')
+                    this.channel.appendLine(logs)
+                    this.channel.appendLine('')
+                }
                 this.channel.appendLine('Payload:')
                 this.channel.appendLine(String(payload))
                 this.channel.appendLine('')
@@ -906,7 +917,7 @@ export async function invokeRemoteLambda(
     const resource: LambdaFunctionNode = params.functionNode
     const source: string = params.source || 'AwsExplorerRemoteInvoke'
     const client = getLambdaClientWithAgent(resource.regionCode)
-    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgent())
+    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgentPairs())
 
     const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 

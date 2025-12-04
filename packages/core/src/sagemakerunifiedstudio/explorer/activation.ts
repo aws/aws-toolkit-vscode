@@ -23,17 +23,18 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker } from '../../shared/extensionUtilities'
 import { recordSpaceTelemetry } from '../shared/telemetry'
 import { DataZoneClient } from '../shared/client/datazoneClient'
+import { handleCredExpiredError } from '../shared/credentialExpiryHandler'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
-    const logger = getLogger()
-    logger.debug('SMUS: Initializing authentication provider')
+    const logger = getLogger('smus')
+    logger.debug('Initializing authentication provider')
     // Create the auth provider instance (this will trigger restore() in the constructor)
     const smusAuthProvider = SmusAuthenticationProvider.fromContext()
     await smusAuthProvider.restore()
     // Set initial auth context after restore
     void setSmusConnectedContext(smusAuthProvider.isConnected())
-    logger.debug('SMUS: Authentication provider initialized')
+    logger.debug('Authentication provider initialized')
 
     // Create the SMUS projects tree view
     const smusRootNode = new SageMakerUnifiedStudioRootNode(smusAuthProvider, extensionContext)
@@ -80,8 +81,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 return
             }
             await telemetry.smus_stopSpace.run(async (span) => {
-                await recordSpaceTelemetry(span, node)
-                await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+                try {
+                    await recordSpaceTelemetry(span, node)
+                    await stopSpace(node.resource, extensionContext, node.resource.sageMakerClient)
+                } catch (err) {
+                    await handleCredExpiredError(err)
+                    throw err
+                }
             })
         }),
 
@@ -92,8 +98,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                     return
                 }
                 await telemetry.smus_openRemoteConnection.run(async (span) => {
-                    await recordSpaceTelemetry(span, node)
-                    await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                    try {
+                        await recordSpaceTelemetry(span, node)
+                        await openRemoteConnect(node.resource, extensionContext, node.resource.sageMakerClient)
+                    } catch (err) {
+                        await handleCredExpiredError(err)
+                        throw err
+                    }
                 })
             }
         ),
@@ -128,7 +139,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
                     // Show the detailed error message to the user
                     void vscode.window.showErrorMessage(`${errorMessage}`)
-                    logger.error('SMUS: Reauthentication failed: %O', error)
+                    logger.error('Reauthentication failed: %O', error)
                 }
             }
         }),

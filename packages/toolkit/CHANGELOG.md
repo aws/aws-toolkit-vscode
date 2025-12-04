@@ -1,4 +1,37 @@
-## 3.82.0 20ß25-10-30
+## 3.89.0 2025-11-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.88.0 2025-11-22
+
+- **Bug Fix** CloudFormation: refresh stacks after change set deletion
+- **Bug Fix** CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered
+- **Bug Fix** CloudFormation: prevent eager loading of CloudFormation stacks
+- **Feature** Remote debugging now supports nodejs24.x, python3.14, java25
+
+## 3.87.0 2025-11-21
+
+- **Feature** Support IAM based domains for SageMaker Unified Studio
+
+## 3.86.0 2025-11-21
+
+- **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
+
+## 3.85.0 2025-11-19
+
+- **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working
+- **Feature** CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support
+
+## 3.84.0 2025-11-15
+
+- **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
+- **Feature** Deeplink support for SageMaker Unified Studio
+
+## 3.83.0 2025-11-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.82.0 2025-10-30
 
 - **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
 

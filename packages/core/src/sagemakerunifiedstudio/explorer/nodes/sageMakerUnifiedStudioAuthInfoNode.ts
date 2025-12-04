@@ -29,6 +29,9 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         this.authProvider.onDidChange(() => {
             this.onDidChangeEmitter.fire()
         })
+        this.authProvider.onDidChangeActiveConnection(() => {
+            this.onDidChangeEmitter.fire()
+        })
     }
 
     public async getTreeItem(): Promise<vscode.TreeItem> {
@@ -51,10 +54,10 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         let tooltip: string
         let description: string | undefined
 
-        // Get profile name for express mode
-        const isExpressMode = getContext('aws.smus.isExpressMode')
+        // Get profile name for IAM mode
+        const isIamMode = getContext('aws.smus.isIamMode')
         let profileName: string | undefined
-        if (isExpressMode) {
+        if (isIamMode) {
             const activeConnection = this.authProvider.activeConnection!
             const { configFile } = await loadSharedConfigFiles()
             profileName =
@@ -62,30 +65,30 @@ export class SageMakerUnifiedStudioAuthInfoNode implements TreeNode {
         }
 
         if (isConnected && isValid) {
-            // Get session name and role ARN dynamically for IAM connections in express mode
+            // Get session name and role ARN dynamically for IAM connections in IAM mode
             let sessionName: string | undefined
             let roleArn: string | undefined
-            if (isExpressMode) {
+            if (isIamMode) {
                 sessionName = await this.authProvider.getSessionName()
-                roleArn = await this.authProvider.getRoleArn()
+                roleArn = await this.authProvider.getIamPrincipalArn()
             }
 
             // Format label with session name if available
             const sessionSuffix = sessionName ? ` (session: ${sessionName})` : ''
-            label = isExpressMode ? `Connected with profile: ${profileName}${sessionSuffix}` : `Domain: ${domainId}`
+            label = isIamMode ? `Connected with profile: ${profileName}${sessionSuffix}` : `Domain: ${domainId}`
             iconPath = new vscode.ThemeIcon('key', new vscode.ThemeColor('charts.green'))
 
             // Add role ARN and session name to tooltip if available (role ARN before session)
             const roleArnTooltip = roleArn ? `\nRole ARN: ${roleArn}` : ''
             const sessionTooltip = sessionName ? `\nSession: ${sessionName}` : ''
-            tooltip = `Connected to SageMaker Unified Studio\n${isExpressMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}${roleArnTooltip}${sessionTooltip}\nStatus: Connected`
+            tooltip = `Connected to SageMaker Unified Studio\n${isIamMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}${roleArnTooltip}${sessionTooltip}\nStatus: Connected`
             description = region
         } else if (isConnected && !isValid) {
-            label = isExpressMode
+            label = isIamMode
                 ? `Profile: ${profileName} (Expired) - Click to reauthenticate`
                 : `Domain: ${domainId} (Expired) - Click to reauthenticate`
             iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('charts.yellow'))
-            tooltip = `Connection to SageMaker Unified Studio has expired\n${isExpressMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}\nStatus: Expired - Click to reauthenticate`
+            tooltip = `Connection to SageMaker Unified Studio has expired\n${isIamMode ? `Profile: ${profileName}` : `Domain ID: ${domainId}`}\nRegion: ${region}\nStatus: Expired - Click to reauthenticate`
             description = region
         } else {
             label = 'Not Connected'
