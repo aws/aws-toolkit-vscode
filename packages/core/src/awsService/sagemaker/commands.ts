@@ -132,10 +132,13 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (domain === '' && eksClusterArn) {
+        if (!domain && eksClusterArn && workspaceName && namespace) {
             const { accountId, region, clusterName } = parseEKSClusterArn(eksClusterArn)
             connectionType = 'sm_hp'
             session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            if (!isValidK8sLabel(session)) {
+                session = createValidK8sSession(workspaceName, namespace, clusterName, region, accountId)
+            }
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
@@ -190,6 +193,41 @@ function parseEKSClusterArn(eksClusterArn: string): { accountId: string; region:
     const region = parts[3]
     const clusterName = parts[5].split('/')[1]
     return { accountId, region, clusterName }
+}
+
+/**
+ * Validates and sanitizes session names for Kubernetes DNS label compliance
+ */
+function createValidK8sSession(
+    workspaceName: string,
+    namespace: string,
+    clusterName: string,
+    region: string,
+    accountId: string
+): string {
+    const sanitize = (str: string): string =>
+        str
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 15)
+
+    const components = [workspaceName, namespace, clusterName, region, accountId]
+        .map(sanitize)
+        .filter((c) => c.length > 0)
+
+    const session = components
+        .join('_')
+        .substring(0, 63)
+        .replace(/^-+|-+$/g, '')
+    return session
+}
+
+/**
+ * Validates if a string meets K8s DNS label requirements
+ */
+function isValidK8sLabel(label: string): boolean {
+    return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
