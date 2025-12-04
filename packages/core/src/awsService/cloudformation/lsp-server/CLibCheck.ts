@@ -54,6 +54,7 @@ export class CLibCheck {
             const output = execSync(`strings "${libPath}" | grep GLIBCXX`, {
                 encoding: 'utf8',
                 stdio: ['ignore', 'pipe', 'ignore'],
+                timeout: 10000,
             })
             return this.parseGLibCXXOutput(output)
         } catch (e) {
