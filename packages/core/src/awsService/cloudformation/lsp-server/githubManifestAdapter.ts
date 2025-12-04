@@ -100,12 +100,19 @@ export class GitHubManifestAdapter {
         const sortedReleases = envReleases.sort((a, b) => {
             return b.tag_name.localeCompare(a.tag_name)
         })
+        const versions = dedupeAndGetLatestVersions(sortedReleases.map((release) => this.convertRelease(release)))
+        getLogger('awsCfnLsp').info(
+            'Candidate versions: %s',
+            versions
+                .map((v) => `${v.serverVersion}[${v.targets.map((t) => `${t.platform}-${t.arch}`).join(',')}]`)
+                .join(', ')
+        )
         return {
             manifestSchemaVersion: '1.0',
             artifactId: CfnLspName,
             artifactDescription: 'GitHub CloudFormation Language Server',
             isManifestDeprecated: false,
-            versions: dedupeAndGetLatestVersions(sortedReleases.map((release) => this.convertRelease(release))),
+            versions: versions,
         }
     }
 

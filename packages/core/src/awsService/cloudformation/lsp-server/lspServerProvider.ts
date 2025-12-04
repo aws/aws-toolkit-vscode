@@ -30,7 +30,7 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
         }
 
         this.matchedProviders = matches
-        getLogger().info(
+        getLogger('awsCfnLsp').info(
             `Found CloudFormation LSP provider: ${this.matchedProviders.map((provider) => provider.name())}`
         )
     }
