@@ -20,7 +20,11 @@ export class CLibCheck {
      */
     public static getGLibCVersion(): string | undefined {
         try {
-            const output = execSync('ldd --version', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+            const output = execSync('ldd --version', {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'ignore'],
+                timeout: 5000,
+            })
             // Output usually looks like: "ldd (Ubuntu GLIBC 2.35-0ubuntu3.1) 2.35"
             // We look for the first version number pattern on the first line.
             const firstLine = output.split('\n')[0]
@@ -107,7 +111,7 @@ export class CLibCheck {
     private static findLibStdCpp(): string | undefined {
         // 1. Try ldconfig cache (most reliable on standard linux)
         try {
-            const ldconfig = execSync('/sbin/ldconfig -p | grep libstdc++.so.6', { encoding: 'utf8' })
+            const ldconfig = execSync('/sbin/ldconfig -p | grep libstdc++.so.6', { encoding: 'utf8', timeout: 5000 })
             // Output: "libstdc++.so.6 (libc6,x86-64) => /lib/x86_64-linux-gnu/libstdc++.so.6"
             const match = ldconfig.match(/=>\s+(.+)$/m)
             if (match && match[1]) {
