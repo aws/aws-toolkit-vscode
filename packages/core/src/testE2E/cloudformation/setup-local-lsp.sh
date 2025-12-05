@@ -22,6 +22,7 @@ ARCH=$(uname -m)
 case "$OS" in
     darwin) PLATFORM="darwin" ;;
     linux) PLATFORM="linux" ;;
+    mingw*|msys*|cygwin*) PLATFORM="win32" ;;
     *) echo "Unsupported OS: $OS"; exit 1 ;;
 esac
 
@@ -35,13 +36,31 @@ NODE_VERSION="22"
 
 # Fetch latest release
 echo "Fetching latest LSP server release..."
-RELEASE_URL="https://api.github.com/repos/aws-cloudformation/cloudformation-languageserver/releases/latest"
-DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-${ARCH}-node${NODE_VERSION}.zip" | cut -d'"' -f4 | head -1)
+MANIFEST_URL="https://raw.githubusercontent.com/aws-cloudformation/cloudformation-languageserver/main/assets/release-manifest.json"
+
+# Try manifest first
+if command -v jq &> /dev/null; then
+    echo "Trying manifest: $MANIFEST_URL"
+    DOWNLOAD_URL=$(curl -s "$MANIFEST_URL" | jq -r ".prod[] | select(.latest == true) | .targets[] | select(.platform == \"$PLATFORM\" and .arch == \"$ARCH\" and .nodejs == \"$NODE_VERSION\") | .contents[0].url")
+    if [ -n "$DOWNLOAD_URL" ]; then
+        echo "✓ Using manifest URL"
+    fi
+else
+    echo "jq not available, skipping manifest"
+fi
+
+# Fallback to GitHub API if manifest fails
+if [ -z "$DOWNLOAD_URL" ]; then
+    echo "Trying GitHub API fallback..."
+    RELEASE_URL="https://api.github.com/repos/aws-cloudformation/cloudformation-languageserver/releases/latest"
+    DOWNLOAD_URL=$(curl -s "$RELEASE_URL" | grep "browser_download_url.*${PLATFORM}-${ARCH}-node${NODE_VERSION}.zip" | cut -d'"' -f4 | head -1)
+    if [ -n "$DOWNLOAD_URL" ]; then
+        echo "✓ Using GitHub API URL"
+    fi
+fi
 
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "Error: Could not find LSP server release for ${PLATFORM}-${ARCH}-node${NODE_VERSION}"
-    echo "Available releases:"
-    curl -s "$RELEASE_URL" | grep "browser_download_url" | cut -d'"' -f4
     exit 1
 fi
 
@@ -78,5 +97,20 @@ done
 echo ""
 echo "✓ LSP server ready at: $LSP_SERVER_DIR"
 echo ""
+
+# Export to GitHub Actions environment if running in CI
+if [ -n "$GITHUB_ENV" ]; then
+    # Convert to Windows path format if on Windows
+    if [[ "$PLATFORM" == "win32" ]]; then
+        # Convert /d/path to D:/path format for Node.js on Windows
+        WIN_PATH=$(echo "$LSP_SERVER_DIR" | sed 's|^/\([a-z]\)/|\U\1:/|')
+        echo "__CLOUDFORMATIONLSP_PATH=$WIN_PATH" >> "$GITHUB_ENV"
+        echo "Exported __CLOUDFORMATIONLSP_PATH=$WIN_PATH to GitHub Actions environment"
+    else
+        echo "__CLOUDFORMATIONLSP_PATH=$LSP_SERVER_DIR" >> "$GITHUB_ENV"
+        echo "Exported __CLOUDFORMATIONLSP_PATH=$LSP_SERVER_DIR to GitHub Actions environment"
+    fi
+fi
+
 echo "Run tests with:"
 echo "__CLOUDFORMATIONLSP_PATH=\"$LSP_SERVER_DIR\" npm run testE2E -w packages/toolkit"
