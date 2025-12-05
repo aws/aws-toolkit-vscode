@@ -10,6 +10,7 @@ import {
     DeploymentMode,
     StackChange,
 } from '../../../../awsService/cloudformation/stacks/actions/stackActionRequestType'
+import { ChangeSetStatus } from '@aws-sdk/client-cloudformation'
 
 describe('DiffWebviewProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -308,6 +309,248 @@ describe('DiffWebviewProvider', function () {
             const html = mockWebview.webview.html
 
             assert.ok(html.includes('Drift Status'))
+        })
+    })
+
+    describe('deployment button conditional rendering', function () {
+        it('should show deploy button when changeset is CREATE_COMPLETE and deployments enabled', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                    },
+                },
+            ]
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                true,
+                undefined,
+                undefined,
+                'CREATE_COMPLETE'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(mockWebview.webview.html.includes('Delete Changeset'))
+        })
+
+        it('should not show deploy button when changeset is not CREATE_COMPLETE', function () {
+            // changes are not available if a changeset is not created
+            const changes: StackChange[] = []
+
+            void provider.updateData('test-stack', changes, 'test-changeset', true, undefined, undefined, 'FAILED')
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(mockWebview.webview.html.includes('Delete Changeset'))
+        })
+
+        it('should not show deployment buttons when deployments not enabled', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                    },
+                },
+            ]
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                false,
+                undefined,
+                undefined,
+                'CREATE_COMPLETE'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+
+        it('should not show deployment buttons when no changeset name', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                    },
+                },
+            ]
+
+            void provider.updateData('test-stack', changes, undefined, true, undefined, undefined, 'CREATE_COMPLETE')
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+
+        it('should not show deployment buttons when changeset status is DELETE_PENDING', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                    },
+                },
+            ]
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                true,
+                undefined,
+                undefined,
+                'DELETE_PENDING'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('Delete Changeset'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+
+        it('should not show deployment buttons when changeset status is CREATE_PENDING', function () {
+            const changes: StackChange[] = []
+
+            void provider.updateData(
+                'test-stack',
+                changes,
+                'test-changeset',
+                true,
+                undefined,
+                undefined,
+                'CREATE_PENDING'
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(!mockWebview.webview.html.includes('Deploy Changes'))
+            assert.ok(!mockWebview.webview.html.includes('Delete Changeset'))
+            assert.ok(!mockWebview.webview.html.includes('deployment-actions'))
+        })
+    })
+
+    describe('pagination', function () {
+        it('should show pagination controls when changes exceed page size', function () {
+            // Create 60 changes (exceeds default pageSize of 50)
+            const changes: StackChange[] = Array.from({ length: 60 }, (_, i) => ({
+                resourceChange: {
+                    action: 'Add',
+                    logicalResourceId: `Resource${i}`,
+                    resourceType: 'AWS::S3::Bucket',
+                },
+            }))
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(html.includes('Page 1 of 2'))
+            assert.ok(html.includes('nextPage()'))
+            assert.ok(html.includes('prevPage()'))
+            assert.ok(html.includes('pagination-controls'))
+        })
+
+        it('should not show pagination for small change sets', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'SingleResource',
+                        resourceType: 'AWS::S3::Bucket',
+                    },
+                },
+            ]
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(!html.includes('pagination-controls'))
+            assert.ok(!html.includes('Page 1 of'))
+        })
+
+        it('should display correct page numbers and navigation state', function () {
+            const changes: StackChange[] = Array.from({ length: 150 }, (_, i) => ({
+                resourceChange: {
+                    action: 'Add',
+                    logicalResourceId: `Resource${i}`,
+                },
+            }))
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(html.includes('Page 1 of 3'))
+            // Previous button should be disabled on first page
+            assert.ok(html.includes('opacity: 0.5'))
+            assert.ok(html.includes('cursor: not-allowed'))
+        })
+    })
+
+    describe('empty changes handling', function () {
+        it('should show no changes message when changes is undefined', function () {
+            void provider.updateData(
+                'test-stack',
+                undefined as any,
+                'test-changeset',
+                undefined,
+                undefined,
+                undefined,
+                ChangeSetStatus.FAILED
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+
+            assert.ok(mockWebview.webview.html.includes('No changes detected'))
+            assert.ok(mockWebview.webview.html.includes('test-stack'))
+            assert.ok(mockWebview.webview.html.includes('Delete Changeset'))
+        })
+
+        it('should show no changes message when changes array is empty', function () {
+            void provider.updateData(
+                'empty-stack',
+                [],
+                'test-changeset',
+                undefined,
+                undefined,
+                undefined,
+                ChangeSetStatus.FAILED
+            )
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+            const html = mockWebview.webview.html
+
+            assert.ok(html.includes('No changes detected'))
+            assert.ok(html.includes('empty-stack'))
+            assert.ok(html.includes('Delete Changeset'))
+        })
+
+        it('should not show delete button when no changeset status', function () {
+            void provider.updateData('empty-stack', [], 'test-changeset', undefined, undefined, undefined, undefined)
+            const mockWebview = createMockWebview()
+            provider.resolveWebviewView(mockWebview as any)
+            const html = mockWebview.webview.html
+
+            assert.ok(html.includes('No changes detected'))
+            assert.ok(html.includes('empty-stack'))
+            assert.ok(!html.includes('Delete Changeset'))
+        })
+
+        it('should not show table when no changes', function () {
+            const html = setupProviderWithChanges('empty-stack', [])
+
+            assert.ok(!html.includes('<table'))
+            assert.ok(!html.includes('Action'))
+            assert.ok(!html.includes('LogicalResourceId'))
         })
     })
 })

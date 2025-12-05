@@ -135,7 +135,8 @@ export function viewChangeSetCommand(client: LanguageClient, diffProvider: DiffW
                 params.changeSetName,
                 true,
                 [],
-                describeChangeSetResult.deploymentMode
+                describeChangeSetResult.deploymentMode,
+                describeChangeSetResult.status
             )
             void commands.executeCommand(commandKey('diff.focus'))
         } catch (error) {
@@ -483,7 +484,7 @@ async function changeSetSteps(
     try {
         environmentFile = await environmentManager.selectEnvironmentFile(templateUri, paramDefinition)
     } catch (error) {
-        getLogger().warn(`Failed to select environment file:: ${extractErrorMessage(error)}`)
+        getLogger().warn(`Failed to select environment file: ${extractErrorMessage(error)}`)
     }
 
     if (paramDefinition.length > 0) {
