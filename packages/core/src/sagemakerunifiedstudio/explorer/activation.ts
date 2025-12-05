@@ -113,6 +113,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             if (connection) {
                 try {
                     await smusAuthProvider.reauthenticate(connection)
+                    const projectNode = smusRootNode.getProjectSelectNode()
+                    if (projectNode) {
+                        const project = projectNode.getProject()
+                        if (!project) {
+                            await vscode.commands.executeCommand('aws.smus.switchProject')
+                        }
+                    }
                     treeDataProvider.refresh()
 
                     // IAM connections handle their own success messages
