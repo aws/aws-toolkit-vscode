@@ -59,7 +59,7 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
                 this._serverRootDir = dir
                 return
             } catch (err) {
-                getLogger().error(
+                getLogger('awsCfnLsp').error(
                     ToolkitError.chain(err, `Failed to resolve CloudFormation LSP provider ${provider.name()}`)
                 )
             }
