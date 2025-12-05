@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty"
+}
