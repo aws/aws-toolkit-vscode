@@ -284,7 +284,7 @@ export class RemoteInvokeWebview extends VueWebview {
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
                 let funcResponse
-                const isLMI = (this.data.LambdaFunctionNode?.configuration as any).CapacityProviderConfig
+                const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
                 if (remoteDebugEnabled) {
                     funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
                 } else if (isLMI) {
