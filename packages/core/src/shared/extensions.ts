@@ -11,6 +11,14 @@ import { CredentialsStore } from '../auth/credentials/store'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
 
+// Determine the remote SSH extension based on the editor
+const getRemoteSshExtension = () => {
+    const isCursor = vscode.env.appName?.toLowerCase().includes('cursor')
+    return isCursor
+        ? { id: 'anysphere.remote-ssh', minVersion: '1.0.2' }
+        : { id: 'ms-vscode-remote.remote-ssh', minVersion: '0.74.0' }
+}
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
@@ -24,12 +32,8 @@ export const VSCODE_EXTENSION_ID = {
     javadebug: 'vscjava.vscode-java-debug',
     dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
-    remotessh: 'ms-vscode-remote.remote-ssh',
+    remotessh: getRemoteSshExtension(),
 } as const
-
-export const vscodeExtensionMinVersion = {
-    remotessh: '0.74.0',
-}
 
 /** @deprecated Use `extensionGlobals.ts:globals` instead. */
 export interface ExtContext {

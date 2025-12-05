@@ -202,7 +202,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('prompts to install the ssh extension if not available', async function () {
-            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id)) {
                 skipTest(this, 'remote ssh already installed')
             }
 
