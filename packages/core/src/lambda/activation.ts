@@ -233,7 +233,6 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register('aws.launchDebugConfigForm', async (node: ResourceNode) =>
             registerSamDebugInvokeVueCommand(context.extensionContext, { resource: node })
         ),
-
         Commands.register('aws.appBuilder.tailLogs', async (node: LambdaFunctionNode | TreeNode) => {
             let functionConfiguration: FunctionConfiguration
             try {

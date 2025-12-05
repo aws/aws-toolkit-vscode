@@ -26,9 +26,11 @@ import {
     SERVERLESS_FUNCTION_TYPE,
     SERVERLESS_API_TYPE,
     s3BucketType,
+    SERVERLESS_CAPACITY_PROVIDER_TYPE,
 } from '../../../../shared/cloudformation/cloudformation'
 import { ToolkitError } from '../../../../shared/errors'
-import { ResourceTreeEntity } from '../samProject'
+import { ResourceTreeEntity, isFunctionResource } from '../samProject'
+import { LambdaCapacityProviderNode } from '../../../../lambda/explorer/lambdaCapacityProviderNode'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {
@@ -43,6 +45,7 @@ export const DeployedResourceContextValues: Record<string, string> = {
     [SERVERLESS_FUNCTION_TYPE]: 'awsRegionFunctionNodeDownloadable',
     [SERVERLESS_API_TYPE]: 'awsApiGatewayNode',
     [s3BucketType]: 'awsS3BucketNode',
+    [SERVERLESS_CAPACITY_PROVIDER_TYPE]: 'awsCapacityProviderNode',
 }
 
 export class DeployedResourceNode implements TreeNode<DeployedResource> {
@@ -93,12 +96,13 @@ export async function generateDeployedNode(
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
                         .Configuration as FunctionConfiguration
+                    const codeUri = isFunctionResource(resourceTreeEntity) ? resourceTreeEntity.CodeUri : undefined
                     newDeployedResource = new LambdaFunctionNode(
                         lambdaNode,
                         regionCode,
                         configuration,
                         undefined,
-                        location ? vscode.Uri.joinPath(location, resourceTreeEntity.CodeUri ?? '').fsPath : undefined,
+                        location ? vscode.Uri.joinPath(location, codeUri ?? '').fsPath : undefined,
                         location,
                         deployedResource.LogicalResourceId
                     )
@@ -122,6 +126,12 @@ export async function generateDeployedNode(
                 const apiNodes = await apiParentNode.getChildren()
                 const apiNode = apiNodes.find((node) => node.id === deployedResource.PhysicalResourceId)
                 newDeployedResource = new RestApiNode(apiParentNode, partitionId, regionCode, apiNode as RestApi)
+                break
+            }
+            case SERVERLESS_CAPACITY_PROVIDER_TYPE: {
+                const defaultClient = new DefaultLambdaClient(regionCode)
+                const lambdaNode = new LambdaNode(regionCode, defaultClient)
+                newDeployedResource = new LambdaCapacityProviderNode(lambdaNode, regionCode, deployedResource)
                 break
             }
             default:

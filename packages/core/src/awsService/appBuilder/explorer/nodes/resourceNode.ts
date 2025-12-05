@@ -12,6 +12,7 @@ import {
     s3BucketType,
     appRunnerType,
     ecrRepositoryType,
+    SERVERLESS_CAPACITY_PROVIDER_TYPE,
 } from '../../../../shared/cloudformation/cloudformation'
 import { generatePropertyNodes } from './propertyNode'
 import { generateDeployedNode } from './deployedNode'
@@ -24,6 +25,7 @@ enum ResourceTypeId {
     Function = 'function',
     DeployedFunction = 'deployed-function',
     Api = 'api',
+    CapacityProvider = 'capacityprovider',
     Other = '',
 }
 
@@ -88,7 +90,10 @@ export class ResourceNode implements TreeNode {
                 this.location.projectRoot
             )) as DeployedResourceNode[]
         }
-        if (this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE) {
+        if (
+            this.resourceTreeEntity.Type === SERVERLESS_FUNCTION_TYPE ||
+            this.resourceTreeEntity.Type === SERVERLESS_CAPACITY_PROVIDER_TYPE
+        ) {
             propertyNodes = generatePropertyNodes(this.resourceTreeEntity)
         }
 
@@ -132,6 +137,8 @@ export class ResourceNode implements TreeNode {
                 return getIcon('aws-apprunner-service')
             case ecrRepositoryType:
                 return getIcon('aws-ecr-registry')
+            case SERVERLESS_CAPACITY_PROVIDER_TYPE:
+                return getIcon('vscode-gear')
             default:
                 return getIcon('vscode-info')
         }
@@ -146,6 +153,8 @@ export class ResourceNode implements TreeNode {
                 return ResourceTypeId.Function
             case 'Api':
                 return ResourceTypeId.Api
+            case SERVERLESS_CAPACITY_PROVIDER_TYPE:
+                return ResourceTypeId.CapacityProvider
             default:
                 return ResourceTypeId.Other
         }

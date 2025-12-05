@@ -115,3 +115,24 @@ Resources:
             Bucket: !Ref SourceBucket
             Events: s3:ObjectCreated:*
 `
+
+export const capacityProviderTemplateData = `
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyCapacityProvider:
+    Type: AWS::Serverless::CapacityProvider
+    Properties:
+      InstanceRequirements:
+        Architectures:
+          - x86_64
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      Runtime: python3.13
+      CodeUri: ./src
+      CapacityProviderConfig:
+        Arn: !GetAtt MyCapacityProvider.Arn
+`

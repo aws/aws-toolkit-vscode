@@ -12,6 +12,7 @@ import fs from '../../../shared/fs/fs'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 import path from 'path'
 import { SERVERLESS_FUNCTION_TYPE } from '../../../shared/cloudformation/cloudformation'
+import { FunctionResourceEntity } from '../../../awsService/appBuilder/explorer/samProject'
 import {
     runOpenHandler,
     runOpenTemplate,
@@ -153,7 +154,7 @@ describe('AppBuilder Utils', function () {
                         Runtime: scenario.runtime,
                         Handler: scenario.handler,
                         CodeUri: scenario.codeUri,
-                    }
+                    } as FunctionResourceEntity
                 )
                 await fs.mkdir(path.join(tempFolder, ...path.dirname(scenario.fileLocation).split('/')))
                 await fs.writeFile(path.join(tempFolder, ...scenario.fileLocation.split('/')), scenario.fileInfo)
@@ -199,7 +200,7 @@ describe('AppBuilder Utils', function () {
                         Runtime: scenario.runtime,
                         Handler: scenario.handler,
                         CodeUri: scenario.codeUri,
-                    }
+                    } as FunctionResourceEntity
                 )
                 await fs.mkdir(path.join(tempFolder, ...path.dirname(scenario.fileLocation).split('/')))
                 await fs.writeFile(path.join(tempFolder, ...scenario.fileLocation.split('/')), scenario.fileInfo)
@@ -226,7 +227,7 @@ describe('AppBuilder Utils', function () {
                     Runtime: 'java21',
                     Handler: 'resizer.App::handleRequest',
                     CodeUri: 'ResizerFunction',
-                }
+                } as FunctionResourceEntity
             )
             // When 2 java handler with right name under code URI
             await fs.mkdir(

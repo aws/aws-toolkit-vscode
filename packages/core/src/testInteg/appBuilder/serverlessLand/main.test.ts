@@ -122,8 +122,11 @@ describe('Serverless Land Integration', async () => {
             // Validate Lambda resource configuration
             const lambdaResource = resourceNodes[0] as ResourceNode
             assert.strictEqual(lambdaResource.resource.resource.Type, 'AWS::Serverless::Function')
-            assert.strictEqual(lambdaResource.resource.resource.Runtime, 'dotnet8')
+            assert(
+                'Runtime' in lambdaResource.resource.resource && lambdaResource.resource.resource.Runtime === 'dotnet8'
+            )
             assert.strictEqual(lambdaResource.resource.resource.Id, 'HelloWorldFunction')
+            assert('Events' in lambdaResource.resource.resource)
             assert.deepStrictEqual(lambdaResource.resource.resource.Events, [
                 {
                     Id: 'HelloWorld',
@@ -132,6 +135,7 @@ describe('Serverless Land Integration', async () => {
                     Method: 'get',
                 },
             ])
+            assert('Environment' in lambdaResource.resource.resource)
             assert.deepStrictEqual(lambdaResource.resource.resource.Environment, {
                 Variables: {
                     PARAM1: 'VALUE',

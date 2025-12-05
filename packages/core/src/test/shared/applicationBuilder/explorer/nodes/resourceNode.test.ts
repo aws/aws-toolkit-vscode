@@ -8,6 +8,7 @@ import {
     ecrRepositoryType,
     s3BucketType,
     SERVERLESS_FUNCTION_TYPE,
+    SERVERLESS_CAPACITY_PROVIDER_TYPE,
 } from '../../../../../shared/cloudformation/cloudformation'
 import assert from 'assert'
 import { ResourceTreeEntity, SamAppLocation } from '../../../../../awsService/appBuilder/explorer/samProject'
@@ -274,6 +275,7 @@ describe('ResourceNode', () => {
             { type: appRunnerType, expectedIconKey: 'aws-apprunner-service' },
             { type: ecrRepositoryType, expectedIconKey: 'aws-ecr-registry' },
             { type: 'Unsupported', expectedIconKey: 'info' },
+            { type: SERVERLESS_CAPACITY_PROVIDER_TYPE, expectedIconKey: 'gear' },
         ]
 
         testCase.map((test) => {
