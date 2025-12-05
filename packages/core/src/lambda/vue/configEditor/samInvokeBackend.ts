@@ -28,6 +28,7 @@ import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { getSampleLambdaPayloads } from '../../utils'
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
+import { isFunctionResource } from '../../../awsService/appBuilder/explorer/samProject'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
@@ -440,6 +441,10 @@ export async function registerSamDebugInvokeVueCommand(
     const launchConfig = launchConfigs.find(
         (config) => (config.invokeTarget as TemplateTargetProperties).logicalId === resource.resource.Id
     )
+
+    if (!isFunctionResource(resource.resource)) {
+        throw new Error('Resource is not a Lambda function')
+    }
 
     const webview = new WebviewPanel(context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
