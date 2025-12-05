@@ -13,6 +13,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { ResourcePaths } from '../../../shared/lsp/types'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import globals from '../../../shared/extensionGlobals'
+import { toString } from '../utils'
 
 function determineEnvironment(): CfnLspServerEnvType {
     if (isDebugInstance()) {
@@ -95,7 +96,7 @@ export class CfnLspInstaller extends BaseLspInstaller {
         const folders = entries.filter((entry) => entry.isDirectory())
 
         if (folders.length !== 1) {
-            throw new Error(`1 or more CloudFormation LSP folders found ${folders}`)
+            throw new Error(`${folders.length} CloudFormation LSP folders found ${toString(folders)}`)
         }
 
         return {
