@@ -27,8 +27,10 @@ describe('SMUS Explorer Activation', function () {
     let mockTreeView: sinon.SinonStubbedInstance<vscode.TreeView<any>>
     let mockTreeDataProvider: sinon.SinonStubbedInstance<ResourceTreeDataProvider>
     let mockSmusRootNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioRootNode>
+    let mockProjectNode: any
     let createTreeViewStub: sinon.SinonStub
     let registerCommandStub: sinon.SinonStub
+    let executeCommandSpy: sinon.SinonSpy
     let dataZoneDisposeStub: sinon.SinonStub
     let setupUserActivityMonitoringStub: sinon.SinonStub
 
@@ -59,14 +61,20 @@ describe('SMUS Explorer Activation', function () {
             refresh: sinon.stub(),
         } as any
 
+        mockProjectNode = {
+            getProject: sinon.stub().returns({ id: 'test-project', name: 'Test Project' }),
+            refreshNode: sinon.stub().resolves(),
+        }
+
         mockSmusRootNode = {
             getChildren: sinon.stub().resolves([]),
-            getProjectSelectNode: sinon.stub().returns({ refreshNode: sinon.stub().resolves() }),
+            getProjectSelectNode: sinon.stub().returns(mockProjectNode),
         } as any
 
         // Stub vscode APIs
         createTreeViewStub = sinon.stub(vscode.window, 'createTreeView').returns(mockTreeView as any)
         registerCommandStub = sinon.stub(vscode.commands, 'registerCommand').returns({ dispose: sinon.stub() } as any)
+        executeCommandSpy = sinon.spy(vscode.commands, 'executeCommand')
 
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockSmusAuthProvider as any)
@@ -214,6 +222,9 @@ describe('SMUS Explorer Activation', function () {
                 await reauthCommand.args[1](mockConnection)
 
                 assert.ok(mockSmusAuthProvider.reauthenticate.calledWith(mockConnection))
+                assert.ok(mockSmusRootNode.getProjectSelectNode.called)
+                assert.ok((mockProjectNode.getProject as sinon.SinonStub).called)
+                assert.ok(executeCommandSpy.neverCalledWith('aws.smus.switchProject'))
                 assert.ok(mockTreeDataProvider.refresh.called)
 
                 // Check that an information message was shown
