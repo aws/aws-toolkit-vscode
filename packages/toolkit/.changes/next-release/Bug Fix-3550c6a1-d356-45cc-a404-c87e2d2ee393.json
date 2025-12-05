@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: SSH configuration errors now display line numbers and include an \"Open SSH Config\" button"
+}
