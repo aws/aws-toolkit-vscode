@@ -7,6 +7,7 @@ export const ConnectFromRemoteWorkspaceMessage =
     'Unable to establish new remote connection. Your last active VS Code window is connected to a remote workspace. To open a new SageMaker Studio connection, select your local VS Code window and try again.'
 
 export const InstanceTypeError = 'InstanceTypeError'
+export const SshConfigError = 'SshConfigError'
 
 export const InstanceTypeMinimum = 'ml.t3.large'
 
@@ -45,6 +46,10 @@ export const InstanceTypeNotSelectedMessage = (spaceName: string) => {
 
 export const RemoteAccessRequiredMessage =
     'This space requires remote access to be enabled.\nWould you like to restart the space and connect?\nAny unsaved work will be lost.'
+
+export const SshConfigErrorMessage = () => {
+    return `Unable to connect. Your SSH config file contains errors. Fix the errors to continue.`
+}
 
 export const SmusDeeplinkSessionExpiredError = {
     title: 'Session Disconnected',
