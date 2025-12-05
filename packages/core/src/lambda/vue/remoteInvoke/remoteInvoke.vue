@@ -57,8 +57,7 @@
                         :disabled="
                             !initialData.runtimeSupportsRemoteDebug ||
                             !initialData.remoteDebugLayer ||
-                            (!initialData.LambdaFunctionNode?.configuration.SnapStart &&
-                                initialData.LambdaFunctionNode?.configuration.State !== 'Active')
+                            (initialData.LambdaFunctionNode?.configuration as any).CapacityProviderConfig
                         "
                         class="remote-debug-checkbox"
                     />
@@ -95,13 +94,10 @@
                             Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
                         </info>
                         <info
-                            v-else-if="
-                                !initialData.LambdaFunctionNode?.configuration.SnapStart &&
-                                initialData.LambdaFunctionNode?.configuration.State !== 'Active'
-                            "
+                            v-else-if="(initialData.LambdaFunctionNode?.configuration as any).CapacityProviderConfig"
                             style="color: var(--vscode-errorForeground)"
                         >
-                            Doesn't support remote debugging yet
+                            Lambda Managed Instances Function doesn't support remote debugging yet
                         </info>
                     </div>
                 </div>
