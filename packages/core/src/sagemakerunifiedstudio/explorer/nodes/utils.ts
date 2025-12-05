@@ -24,12 +24,30 @@ import { getContext } from '../../../shared/vscode/setContext'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusIamConnection } from '../../auth/model'
 import { ConnectionStatus } from '@aws-sdk/client-datazone'
+import { GlueCatalog } from '../../shared/client/glueCatalogClient'
 
 /**
  * Polling interval in milliseconds for checking space status updates
  */
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
+
+/**
+ * Check if a catalog is a RedLake catalog
+ */
+export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
+    return (
+        catalog?.FederatedCatalog?.ConnectionName === 'aws:redshift' ||
+        catalog?.CatalogProperties?.DataLakeAccessProperties?.CatalogType === 'aws:redshift'
+    )
+}
+
+/**
+ * Check if a catalog is a S3 table catalog
+ */
+export const isS3TablesCatalog = (catalog?: GlueCatalog) => {
+    return catalog?.FederatedCatalog?.ConnectionName === 'aws:s3tables'
+}
 
 /**
  * Gets the label for a node based on its data
