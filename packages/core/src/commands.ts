@@ -32,7 +32,6 @@ import {
     promptAndUseConnection,
 } from './auth/utils'
 import { showCodeWhispererConnectionPrompt } from './codewhisperer/util/showSsoPrompt'
-import { authenticateWithConsoleLogin } from './auth/consoleSessionUtils'
 import { CommonAuthWebview } from './login/webview/vue/backend'
 import { AuthSource, AuthSources } from './login/webview/util'
 import { ServiceItemId, isServiceItemId } from './login/webview/vue/types'
@@ -145,6 +144,18 @@ export function registerCommands(context: vscode.ExtensionContext) {
         }
     )
 
+    if (!isWeb()) {
+        context.subscriptions.push(
+            Commands.register('aws.toolkit.auth.consoleLogin', async (profileName?: string, region?: string) => {
+                // Track entry into flow (raw count)
+                telemetry.auth_consoleLoginStart.emit({ result: 'Succeeded' })
+                // Dynamically import prevent the Node.js modules from being included in the web extension bundle
+                const { authenticateWithConsoleLogin } = await import('./auth/consoleSessionUtils.js')
+                return await authenticateWithConsoleLogin(profileName, region)
+            })
+        )
+    }
+
     context.subscriptions.push(
         addConnection,
         manageConnections,
@@ -188,9 +199,6 @@ export function registerCommands(context: vscode.ExtensionContext) {
             } catch (err) {
                 throw ToolkitError.chain(err, 'Unable to authenticate connection')
             }
-        }),
-        Commands.register('aws.toolkit.auth.consoleLogin', async (profileName?: string, region?: string) => {
-            return await authenticateWithConsoleLogin(profileName, region)
         })
     )
 }

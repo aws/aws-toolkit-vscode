@@ -1274,6 +1274,18 @@
             "description": "User used a LocalStack connection"
         },
         {
+            "name": "auth_consoleLoginStart",
+            "description": "Emitted when user initiates the console login flow"
+        },
+        {
+            "name": "aws_consoleLoginCLISuccess",
+            "description": "Emitted when AWS CLI 'aws login' command completes successfully with exit code 0"
+        },
+        {
+            "name": "auth_consoleLoginCommand",
+            "description": "Tracks the complete console login flow, including profile creation and activation"
+        },
+        {
             "name": "lambda_remoteDebugStop",
             "description": "user stop remote debugging",
             "metadata": [
