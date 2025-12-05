@@ -422,11 +422,19 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 ) {
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
                     // Execute the console login command with the existing profile and region
-                    await vscode.commands.executeCommand(
-                        'aws.toolkit.auth.consoleLogin',
-                        this.profileName,
-                        defaultRegion
-                    )
+                    try {
+                        await vscode.commands.executeCommand(
+                            'aws.toolkit.auth.consoleLogin',
+                            this.profileName,
+                            defaultRegion
+                        )
+                    } catch (reAuthError) {
+                        throw ToolkitError.chain(
+                            reAuthError,
+                            `Failed to refresh credentials for profile ${this.profileName}. Run 'aws login --profile ${this.profileName}' to authenticate.`,
+                            { code: 'LoginSessionReAuthError' }
+                        )
+                    }
 
                     getLogger().info(
                         'Authentication completed for profile %s, refreshing credentials...',
