@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
 import { fromLoginCredentials } from '@aws-sdk/credential-providers'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
@@ -396,7 +397,63 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     private makeConsoleSessionCredentialsProvider() {
-        return fromLoginCredentials({ profile: this.profileName })
+        const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
+        return async () => {
+            try {
+                const provider = fromLoginCredentials({
+                    profile: this.profileName,
+                    clientConfig: {
+                        region: defaultRegion,
+                    },
+                })
+                return await provider()
+            } catch (error) {
+                getLogger().error(
+                    'Console login authentication failed for profile %s in region %s: %O',
+                    this.profileName,
+                    defaultRegion,
+                    error
+                )
+
+                if (
+                    error instanceof Error &&
+                    (error.message.includes('Your session has expired') ||
+                        error.message.includes('Failed to load a token for session'))
+                ) {
+                    getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
+                    // Execute the console login command with the existing profile and region
+                    try {
+                        await vscode.commands.executeCommand(
+                            'aws.toolkit.auth.consoleLogin',
+                            this.profileName,
+                            defaultRegion
+                        )
+                    } catch (reAuthError) {
+                        throw ToolkitError.chain(
+                            reAuthError,
+                            `Failed to refresh credentials for profile ${this.profileName}. Run 'aws login --profile ${this.profileName}' to authenticate.`,
+                            { code: 'LoginSessionReAuthError' }
+                        )
+                    }
+
+                    getLogger().info(
+                        'Authentication completed for profile %s, refreshing credentials...',
+                        this.profileName
+                    )
+                    // Retry with fresh credentials
+                    const refreshedProvider = fromLoginCredentials({
+                        profile: this.profileName,
+                        clientConfig: {
+                            region: defaultRegion,
+                        },
+                    })
+                    return await refreshedProvider()
+                }
+                throw ToolkitError.chain(error, `Failed to get console credentials`, {
+                    code: 'FromLoginCredentialProviderError',
+                })
+            }
+        }
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {

@@ -25,6 +25,7 @@ import { createRegionPrompter } from '../shared/ui/common/region'
  */
 export async function authenticateWithConsoleLogin(profileName?: string, region?: string): Promise<void> {
     await telemetry.auth_consoleLoginCommand.run(async (span) => {
+        span.record({ authConsoleLoginStarted: true }) // Track entry into flow (raw count)
         const logger = getLogger()
 
         // Prompt for profile name if not provided
