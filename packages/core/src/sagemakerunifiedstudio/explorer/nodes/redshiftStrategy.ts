@@ -22,7 +22,7 @@ import {
 } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
-import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { Catalog as GlueCatalog } from '@amzn/glue-catalog-client'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'

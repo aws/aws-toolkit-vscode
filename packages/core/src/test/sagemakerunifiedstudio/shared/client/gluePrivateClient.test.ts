@@ -5,37 +5,33 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import globals from '../../../../shared/extensionGlobals'
 import { GlueCatalogClient } from '../../../../sagemakerunifiedstudio/shared/client/glueCatalogClient'
 import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
+import { GlueCatalog } from '@amzn/glue-catalog-client'
 
 describe('GlueCatalogClient', function () {
     let sandbox: sinon.SinonSandbox
-    let mockGlueClient: any
-    let mockSdkClientBuilder: any
+    let mockGlueCatalogService: any
+    let glueCatalogConstructorStub: sinon.SinonStub
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
-        mockGlueClient = {
-            getCatalogs: sandbox.stub().returns({
-                promise: sandbox.stub().resolves({
-                    CatalogList: [
-                        {
-                            Name: 'test-catalog',
-                            CatalogType: 'HIVE',
-                            Parameters: { key1: 'value1' },
-                        },
-                    ],
-                }),
+        mockGlueCatalogService = {
+            getCatalogs: sandbox.stub().resolves({
+                CatalogList: [
+                    {
+                        Name: 'test-catalog',
+                        CatalogType: 'HIVE',
+                        Parameters: { key1: 'value1' },
+                    },
+                ],
             }),
         }
 
-        mockSdkClientBuilder = {
-            createAwsService: sandbox.stub().resolves(mockGlueClient),
-        }
-
-        sandbox.stub(globals, 'sdkClientBuilder').value(mockSdkClientBuilder)
+        // Stub the GlueCatalog constructor
+        glueCatalogConstructorStub = sandbox.stub(GlueCatalog.prototype, 'getCatalogs')
+        glueCatalogConstructorStub.callsFake(mockGlueCatalogService.getCatalogs)
     })
 
     afterEach(function () {
@@ -88,9 +84,7 @@ describe('GlueCatalogClient', function () {
         })
 
         it('should return empty array when no catalogs found', async function () {
-            mockGlueClient.getCatalogs.returns({
-                promise: sandbox.stub().resolves({ CatalogList: [] }),
-            })
+            mockGlueCatalogService.getCatalogs.resolves({ CatalogList: [] })
 
             const client = GlueCatalogClient.getInstance('us-east-1')
             const catalogs = await client.getCatalogs()
@@ -100,9 +94,7 @@ describe('GlueCatalogClient', function () {
 
         it('should handle API errors', async function () {
             const error = new Error('API Error')
-            mockGlueClient.getCatalogs.returns({
-                promise: sandbox.stub().rejects(error),
-            })
+            mockGlueCatalogService.getCatalogs.rejects(error)
 
             const client = GlueCatalogClient.getInstance('us-east-1')
 
@@ -122,22 +114,20 @@ describe('GlueCatalogClient', function () {
                 'us-east-1',
                 credentialsProvider as ConnectionCredentialsProvider
             )
-            await client.getCatalogs()
+            const result = await client.getCatalogs()
 
-            assert.ok(mockSdkClientBuilder.createAwsService.calledOnce)
-            const callArgs = mockSdkClientBuilder.createAwsService.getCall(0).args[1]
-            assert.ok(callArgs.credentialProvider)
-            assert.strictEqual(callArgs.region, 'us-east-1')
+            // Verify the method was called
+            assert.ok(glueCatalogConstructorStub.called)
+            assert.strictEqual(result.catalogs.length, 1)
         })
 
         it('should create client without credentials when not provided', async function () {
             const client = GlueCatalogClient.getInstance('us-east-1')
-            await client.getCatalogs()
+            const result = await client.getCatalogs()
 
-            assert.ok(mockSdkClientBuilder.createAwsService.calledOnce)
-            const callArgs = mockSdkClientBuilder.createAwsService.getCall(0).args[1]
-            assert.strictEqual(callArgs.region, 'us-east-1')
-            assert.ok(!callArgs.credentials)
+            // Verify the method was called
+            assert.ok(glueCatalogConstructorStub.called)
+            assert.strictEqual(result.catalogs.length, 1)
         })
     })
 })

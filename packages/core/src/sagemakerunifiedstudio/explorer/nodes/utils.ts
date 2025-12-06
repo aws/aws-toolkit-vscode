@@ -24,7 +24,7 @@ import { getContext } from '../../../shared/vscode/setContext'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusIamConnection } from '../../auth/model'
 import { ConnectionStatus } from '@aws-sdk/client-datazone'
-import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { Catalog as GlueCatalog } from '@amzn/glue-catalog-client'
 
 /**
  * Polling interval in milliseconds for checking space status updates
