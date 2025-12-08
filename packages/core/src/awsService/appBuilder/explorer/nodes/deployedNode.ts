@@ -129,9 +129,7 @@ export async function generateDeployedNode(
                 break
             }
             case SERVERLESS_CAPACITY_PROVIDER_TYPE: {
-                const defaultClient = new DefaultLambdaClient(regionCode)
-                const lambdaNode = new LambdaNode(regionCode, defaultClient)
-                newDeployedResource = new LambdaCapacityProviderNode(lambdaNode, regionCode, deployedResource)
+                newDeployedResource = new LambdaCapacityProviderNode(regionCode, deployedResource)
                 break
             }
             default:

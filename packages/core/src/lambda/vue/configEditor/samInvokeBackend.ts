@@ -443,7 +443,7 @@ export async function registerSamDebugInvokeVueCommand(
     )
 
     if (!isFunctionResource(resource.resource)) {
-        throw new Error('Resource is not a Lambda function')
+        throw new ToolkitError('Resource is not a Lambda function')
     }
 
     const webview = new WebviewPanel(context, launchConfig, {

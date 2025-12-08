@@ -9,12 +9,12 @@ import { getIcon } from '../../shared/icons'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 
 export const contextValueLambdaCapacityProvider = 'awsCapacityProviderNode'
 
 export class LambdaCapacityProviderNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
-        public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
         public readonly deployedResource: any,
         public override readonly contextValue?: string
@@ -35,7 +35,7 @@ export class LambdaCapacityProviderNode extends AWSTreeNodeBase implements AWSRe
     private get accountId(): string {
         const accountId = globals.awsContext.getCredentialAccountId()
         if (!accountId) {
-            throw new Error('Aws account ID not found')
+            throw new ToolkitError('Aws account ID not found')
         }
         return accountId
     }

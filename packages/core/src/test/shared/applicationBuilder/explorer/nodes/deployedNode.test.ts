@@ -360,9 +360,6 @@ describe('generateDeployedNode', () => {
     })
 
     describe('LambdaCapacityProviderNode', () => {
-        let mockDefaultLambdaClientInstance: sinon.SinonStubbedInstance<LambdaClientModule.DefaultLambdaClient>
-        let mockLambdaNodeInstance: sinon.SinonStubbedInstance<LambdaNodeModule.LambdaNode>
-
         const capacityProviderDeployedNodeInput = {
             deployedResource: {
                 LogicalResourceId: 'MyCapacityProvider',
@@ -376,12 +373,6 @@ describe('generateDeployedNode', () => {
             },
         }
         beforeEach(() => {
-            // Stub the constructor of DefaultLambdaClient to return the stub instance
-            mockDefaultLambdaClientInstance = sandbox.createStubInstance(LambdaClientModule.DefaultLambdaClient)
-            sandbox.stub(LambdaClientModule, 'DefaultLambdaClient').returns(mockDefaultLambdaClientInstance)
-            //  Stub the constructor of LambdaNode to return stub instance
-            mockLambdaNodeInstance = sandbox.createStubInstance(LambdaNodeModule.LambdaNode)
-            sandbox.stub(LambdaNodeModule, 'LambdaNode').returns(mockLambdaNodeInstance)
             // Default mock account ID for testing
             sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns('123456789012')
         })
