@@ -14,6 +14,11 @@ import {
     extractAccountIdFromSageMakerArn,
     extractAccountIdFromResourceMetadata,
     isCredentialExpirationError,
+    isIamDomain,
+    IamSignInRole,
+    IamSignInUser,
+    DomainVersionV1,
+    DomainVersionV2,
 } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
@@ -738,5 +743,55 @@ describe('isCredentialExpirationError', () => {
             const result = isCredentialExpirationError(error)
             assert.strictEqual(result, false)
         })
+    })
+})
+
+describe('isIamDomain', () => {
+    it('should return false for V1 domains regardless of IamSignIns', () => {
+        const result = isIamDomain({
+            domainVersion: DomainVersionV1,
+            iamSignIns: [IamSignInRole, IamSignInUser],
+        })
+        assert.strictEqual(result, false)
+    })
+
+    it('should return true for V2 domain with both IAM_ROLE and IAM_USER', () => {
+        const result = isIamDomain({
+            domainVersion: DomainVersionV2,
+            iamSignIns: [IamSignInRole, IamSignInUser],
+        })
+        assert.strictEqual(result, true)
+    })
+
+    it('should return false for V2 domain with only IAM_ROLE', () => {
+        const result = isIamDomain({
+            domainVersion: DomainVersionV2,
+            iamSignIns: [IamSignInRole],
+        })
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false for V2 domain with only IAM_USER', () => {
+        const result = isIamDomain({
+            domainVersion: DomainVersionV2,
+            iamSignIns: [IamSignInUser],
+        })
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false for V2 domain with missing IamSignIns', () => {
+        const result = isIamDomain({
+            domainVersion: DomainVersionV2,
+            iamSignIns: undefined,
+        })
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false for undefined domain version', () => {
+        const result = isIamDomain({
+            domainVersion: undefined,
+            iamSignIns: [IamSignInRole, IamSignInUser],
+        })
+        assert.strictEqual(result, false)
     })
 })
