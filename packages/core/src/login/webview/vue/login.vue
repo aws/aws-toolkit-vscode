@@ -330,6 +330,7 @@
                 name="profileName"
                 v-model="profileName"
                 placeholder="profile-name"
+                @input="validateProfileName"
                 @keydown.enter="handleContinueClick()"
                 @keydown="preventInvalidChars"
             />
@@ -696,6 +697,14 @@ export default defineComponent({
         shouldDisableConsoleSessionContinue() {
             const profilePattern = /^[a-zA-Z0-9_-]+$/
             return this.profileName.length <= 0 || !this.selectedRegion || !profilePattern.test(this.profileName)
+        },
+        validateProfileName(event: Event) {
+            const input = event.target as HTMLInputElement
+            // Clean invalid characters immediately after paste
+            const validValue = input.value.replace(/[^a-zA-Z0-9_-]/g, '')
+            if (validValue !== input.value) {
+                this.profileName = validValue
+            }
         },
         preventInvalidChars(event: KeyboardEvent) {
             // Allow control keys (backspace, delete, arrows, etc)

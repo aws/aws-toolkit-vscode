@@ -54,6 +54,7 @@ export type AuthUiClick =
     | 'auth_builderIdOption'
     | 'auth_credentialsOption'
     | 'auth_codecatalystOption'
+    | 'auth_consoleCredentialsOption'
     | 'auth_existingAuthOption'
     | 'auth_regionSelection'
     | 'auth_codeCatalystSignIn'
