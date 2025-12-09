@@ -77,7 +77,9 @@
             <div class="title">
                 {{ itemTitle }}
                 <template v-if="itemSubTitle">
-                    - <i>{{ itemSubTitle }}</i>
+                    <span
+                        >- <i>{{ itemSubTitle }}</i></span
+                    >
                 </template>
             </div>
             <div class="p" v-if="itemText" :title="itemText">{{ itemText }}</div>
@@ -181,6 +183,11 @@ body.vscode-high-contrast-light .item-container-base.focussed:before {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0.2rem;
+}
+
+.title span {
+    font-size: var(--font-size-sm);
+    color: var(--vscode-textLink-foreground);
 }
 
 .p {

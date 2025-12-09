@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "AWS Toolkit login webview now pre-selects Console credentials (previously Enterprise SSO) as the recommended authentication option. xisting Enterprise SSO users are unaffected and can still select their preferred authentication method."
+	"description": "AWS Toolkit login webview now pre-selects Console credentials (previously Enterprise SSO) as the recommended authentication option. Existing Enterprise SSO users are unaffected and can still select their preferred authentication method."
 }

@@ -129,7 +129,8 @@
                     :isSelected="selectedLoginOption === LoginOption.CONSOLE_CREDENTIAL"
                     :itemId="LoginOption.CONSOLE_CREDENTIAL"
                     :itemText="'Use credentials from the AWS Console'"
-                    :itemTitle="'Console credentials - recommended'"
+                    :itemTitle="'Console credentials'"
+                    :itemSubTitle="'recommended'"
                     :itemType="LoginOption.CONSOLE_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -536,6 +537,7 @@ export default defineComponent({
                 if (this.shouldDisableSsoContinue()) {
                     return
                 }
+                this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
 
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
