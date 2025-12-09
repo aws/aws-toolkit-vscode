@@ -12,7 +12,7 @@ import * as DataZoneCustomClient from './datazonecustomclient'
 import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { ToolkitError } from '../../../shared/errors'
-import { SmusUtils } from '../smusUtils'
+import { SmusUtils, isIamDomain } from '../smusUtils'
 import { DevSettings } from '../../../shared/settings'
 
 import { SmusErrorCodes } from '../smusUtils'
@@ -196,7 +196,7 @@ export class DataZoneCustomClientHelper {
     }
 
     /**
-     * Gets the domain with IAM authentication mode in preferences using pagination with early termination
+     * Gets the domain with IAM authentication mode using pagination with early termination
      * @returns Promise resolving to the DataZone domain or undefined if not found
      */
     public async getIamDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
@@ -209,7 +209,7 @@ export class DataZoneCustomClientHelper {
             let totalDomainsChecked = 0
             const maxResultsPerPage = 25
 
-            // Paginate through domains and check each page for IAM-based domain
+            // Paginate through domains and check each page for IAM domain
             do {
                 const response = await this.listDomains({
                     status: 'AVAILABLE',
@@ -224,12 +224,19 @@ export class DataZoneCustomClientHelper {
                     `DataZoneCustomClientHelper: Checking ${domains.length} domains in current page (total checked: ${totalDomainsChecked})`
                 )
 
-                // Check each domain in the current page for IAM authentication mode
+                // Check each domain in the current page for IAM domain
                 for (const domain of domains) {
-                    if (domain.preferences && domain.preferences.DOMAIN_MODE === 'EXPRESS') {
-                        logger.info(
-                            `DataZoneCustomClientHelper: Found IAM-based domain, id: ${domain.id} (${domain.name})`
-                        )
+                    // Log the complete domain object for debugging
+                    logger.debug(`DataZoneCustomClientHelper: Domain ${domain.id} full response: %O`, domain)
+
+                    const isIam = isIamDomain({
+                        domainVersion: domain.domainVersion,
+                        iamSignIns: domain.iamSignIns,
+                        domainId: domain.id,
+                    })
+
+                    if (isIam) {
+                        logger.info(`DataZoneCustomClientHelper: Found IAM domain, id: ${domain.id} (${domain.name})`)
                         return domain
                     }
                 }
@@ -238,7 +245,7 @@ export class DataZoneCustomClientHelper {
             } while (nextToken)
 
             logger.info(
-                `DataZoneCustomClientHelper: No domain with IAM authentication (DOMAIN_MODE: EXPRESS) found after checking all ${totalDomainsChecked} domains`
+                `DataZoneCustomClientHelper: No IAM domain found after checking all ${totalDomainsChecked} domains`
             )
             return undefined
         } catch (err) {
@@ -268,28 +275,6 @@ export class DataZoneCustomClientHelper {
             return response
         } catch (err) {
             this.logger.error('DataZoneCustomClientHelper: Failed to get domain: %s', (err as Error).message)
-            throw err
-        }
-    }
-
-    /**
-     * Checks if a specific domain is an IAM-based domain
-     * @param domainId The ID of the domain to check
-     * @returns Promise resolving to true if the domain is IAM-based, false otherwise
-     */
-    public async isIamDomain(domainId: string): Promise<boolean> {
-        try {
-            this.logger.debug(`DataZoneCustomClientHelper: Checking if domain ${domainId} is IAM-based`)
-
-            const domain = await this.getDomain(domainId)
-            const isIamMode = domain.preferences?.DOMAIN_MODE === 'EXPRESS' || false
-
-            this.logger.debug(
-                `DataZoneCustomClientHelper: Domain ${domainId} is ${isIamMode ? 'IAM-based' : 'not IAM-based'}`
-            )
-            return isIamMode
-        } catch (err) {
-            this.logger.error('DataZoneCustomClientHelper: Failed to check if domain is IAM-based: %s', err as Error)
             throw err
         }
     }
