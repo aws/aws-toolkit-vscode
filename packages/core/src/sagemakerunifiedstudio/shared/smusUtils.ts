@@ -109,6 +109,27 @@ export const SmusTimeouts = {
 export const DataZoneServiceId = 'datazone'
 
 /**
+ * Domain version constants
+ */
+export const DomainVersionV1 = 'V1'
+export const DomainVersionV2 = 'V2'
+
+/**
+ * IAM sign-in type constants
+ */
+export const IamSignInRole = 'IAM_ROLE'
+export const IamSignInUser = 'IAM_USER'
+
+/**
+ * Input interface for IAM domain check function
+ */
+export interface IamDomainCheckInput {
+    domainVersion: string | undefined
+    iamSignIns?: string[] | undefined
+    domainId?: string
+}
+
+/**
  * Interface for AWS credential objects that need validation
  */
 interface CredentialObject {
@@ -488,6 +509,49 @@ export class SmusUtils {
 
         return `arn:${partition}:iam::${accountId}:role/${roleName}`
     }
+}
+
+/**
+ * Determines if a domain is an IAM domain based on IamSignIns field.
+ *
+ * IAM domains are V2 domains that support both IAM role and IAM user authentication.
+ * A domain is considered an IAM domain if its IamSignIns array contains both:
+ * - IAM_ROLE
+ * - IAM_USER
+ *
+ * @param input - Object containing domain version, IamSignIns, and optional domainId for logging
+ * @returns true if the domain is an IAM domain, false otherwise
+ */
+export function isIamDomain(input: IamDomainCheckInput): boolean {
+    const logger = getLogger('smus')
+    const domainIdLog = input.domainId ? ` for domain ${input.domainId}` : ''
+
+    // Only V2 domains can be IAM domains
+    if (input.domainVersion !== DomainVersionV2) {
+        logger.debug(
+            `IAM domain check${domainIdLog}: Domain version is not V2 (value: ${input.domainVersion}), returning false`
+        )
+        return false
+    }
+
+    // Check if IamSignIns contains both IAM_ROLE and IAM_USER
+    if (!input.iamSignIns || !Array.isArray(input.iamSignIns)) {
+        logger.debug(`IAM domain check${domainIdLog}: IamSignIns is missing or invalid, returning false`)
+        return false
+    }
+
+    const hasIamRole = input.iamSignIns.includes(IamSignInRole)
+    const hasIamUser = input.iamSignIns.includes(IamSignInUser)
+
+    if (hasIamRole && hasIamUser) {
+        logger.debug(`IAM domain check${domainIdLog}: IAM domain detected via IamSignIns`)
+        return true
+    }
+
+    logger.debug(
+        `IAM domain check${domainIdLog}: IamSignIns does not contain both IAM_ROLE and IAM_USER, returning false`
+    )
+    return false
 }
 
 /**
