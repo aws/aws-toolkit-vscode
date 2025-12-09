@@ -247,6 +247,8 @@ describe('DataZoneCustomClientHelper', () => {
                         managedAccountId: '123456789012',
                         status: 'AVAILABLE',
                         createdAt: new Date(),
+                        domainVersion: 'V2',
+                        iamSignIns: ['IAM_ROLE'],
                         preferences: { DOMAIN_MODE: 'STANDARD' },
                     },
                     {
@@ -256,6 +258,8 @@ describe('DataZoneCustomClientHelper', () => {
                         managedAccountId: '123456789012',
                         status: 'AVAILABLE',
                         createdAt: new Date(),
+                        domainVersion: 'V2',
+                        iamSignIns: ['IAM_ROLE', 'IAM_USER'],
                         preferences: { DOMAIN_MODE: 'EXPRESS' },
                     },
                 ] as DataZoneDomain[],
