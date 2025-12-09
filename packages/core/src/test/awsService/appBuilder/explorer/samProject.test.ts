@@ -16,6 +16,7 @@ import {
     samconfigCompleteData,
     samconfigInvalidData,
     validTemplateData,
+    capacityProviderTemplateData,
 } from '../../../shared/sam/samTestUtils'
 import { assertLogsContain } from '../../../globalSetup.test'
 import { getTestWindow } from '../../../shared/vscode/window'
@@ -129,10 +130,13 @@ describe('samProject', () => {
             assert(lambdaResourceNode)
             assert(s3BucketResourceNode)
             // validate Lambda node
-            assert.strictEqual(lambdaResourceNode.Handler, 'app.lambda_handler')
+            assert('Handler' in lambdaResourceNode && lambdaResourceNode.Handler === 'app.lambda_handler')
             assert.strictEqual(lambdaResourceNode.Id, 'ResizerFunction')
-            assert.strictEqual(lambdaResourceNode.Runtime, 'python3.12')
-            assert(lambdaResourceNode.Events && lambdaResourceNode.Events.length === 1)
+            assert('Runtime' in lambdaResourceNode && lambdaResourceNode.Runtime === 'python3.12')
+            assert(
+                'Events' in lambdaResourceNode && lambdaResourceNode.Events && lambdaResourceNode.Events.length === 1
+            )
+            assert('Events' in lambdaResourceNode && lambdaResourceNode.Events)
             assert.deepStrictEqual(lambdaResourceNode.Events[0], {
                 Id: 'FileUpload',
                 Type: 'S3',
@@ -141,10 +145,10 @@ describe('samProject', () => {
             })
             // validate S3 Bucket
             assert.strictEqual(s3BucketResourceNode.Id, 'SourceBucket')
-            assert(!s3BucketResourceNode.Events)
-            assert(!s3BucketResourceNode.Handler)
-            assert(!s3BucketResourceNode.Method)
-            assert(!s3BucketResourceNode.Runtime)
+            assert(!('Events' in s3BucketResourceNode))
+            assert(!('Handler' in s3BucketResourceNode))
+            assert(!('Method' in s3BucketResourceNode))
+            assert(!('Runtime' in s3BucketResourceNode))
         })
 
         it('throws ToolkitError when fails to load Cloudformation template values', async () => {
@@ -153,6 +157,34 @@ describe('samProject', () => {
                 () => getApp(mockSamAppLocation),
                 new ToolkitError(`Template at ${mockSamAppLocation.samTemplateUri.fsPath} is not valid`)
             )
+        })
+
+        it('parses capacity provider resources correctly', async () => {
+            await testFolder.write('template.yaml', capacityProviderTemplateData)
+            const { resourceTree } = await getApp(mockSamAppLocation)
+
+            // Should have 2 resources: capacity provider and function
+            assert.strictEqual(resourceTree.length, 2)
+
+            const capacityProviderNode = resourceTree.find((node) => node.Type === 'AWS::Serverless::CapacityProvider')
+            const functionNode = resourceTree.find((node) => node.Type === 'AWS::Serverless::Function')
+
+            // Validate capacity provider node
+            assert(capacityProviderNode)
+            assert.strictEqual(capacityProviderNode.Id, 'MyCapacityProvider')
+            assert('Architectures' in capacityProviderNode && capacityProviderNode.Architectures === 'x86_64')
+
+            // Validate function node has capacity provider config with intrinsic function
+            assert(functionNode)
+            assert.strictEqual(functionNode.Id, 'MyFunction')
+            assert('CapacityProviderConfig' in functionNode && typeof functionNode.CapacityProviderConfig === 'object')
+
+            // Verify the intrinsic function is preserved as an object (not stringified)
+            const config = functionNode.CapacityProviderConfig as any
+            assert(config.Arn)
+            assert.strictEqual(typeof config.Arn, 'object')
+            assert('Fn::GetAtt' in config.Arn)
+            assert.deepStrictEqual(config.Arn['Fn::GetAtt'], ['MyCapacityProvider', 'Arn'])
         })
     })
 })
