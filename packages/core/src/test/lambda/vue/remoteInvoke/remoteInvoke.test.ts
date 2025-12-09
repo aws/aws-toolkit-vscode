@@ -14,59 +14,74 @@ import { InvocationResponse } from '@aws-sdk/client-lambda'
 
 describe('RemoteInvokeWebview', function () {
     let client: SinonStubbedInstance<LambdaClient>
-    let remoteInvokeWebview: RemoteInvokeWebview
     let outputChannel: vscode.OutputChannel
-    let mockData: any
-    before(async () => {
-        client = createStubInstance(DefaultLambdaClient)
+    const mockData = {
+        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+    } as any
+    const mockDataLMI = {
+        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+        LambdaFunctionNode: {
+            configuration: {
+                CapacityProviderConfig: {
+                    blah: 'blah',
+                },
+            },
+        },
+    } as any
+    const input = '{"key": "value"}'
+    const mockResponse = {
+        LogResult: Buffer.from('Test log').toString('base64'),
+        Payload: new TextEncoder().encode('{"result": "success"}'),
+    } satisfies InvocationResponse
+
+    before(() => {
         outputChannel = {
             appendLine: (line: string) => {},
             show: () => {},
         } as vscode.OutputChannel
-        mockData = {
-            FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
-        }
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
     })
-    describe('Invoke Remote Lambda Function with Payload', () => {
-        it('should invoke with a simple payload', async function () {
-            const input = '{"key": "value"}'
-            const mockResponse = {
-                LogResult: Buffer.from('Test log').toString('base64'),
-                Payload: new TextEncoder().encode('{"result": "success"}'),
-            } satisfies InvocationResponse
-            client.invoke.resolves(mockResponse)
-            await remoteInvokeWebview.invokeLambda(input)
-            sinon.assert.calledOnce(client.invoke)
-            sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input)
-        })
+    beforeEach(() => {
+        client = createStubInstance(DefaultLambdaClient)
     })
-    describe('Invoke Remote Lambda Function with Saved Events Payload', () => {
-        const mockEvent = {
-            name: 'TestEvent',
-            arn: 'arn:aws:lambda:us-west-2:123456789012:function:myFunction',
-            region: 'us-west-2',
-        }
-        const expectedParams = {
-            name: mockEvent.name,
-            operation: TestEventsOperation.Get,
-            functionArn: mockEvent.arn,
-            region: mockEvent.region,
-        }
-        const mockResponse = 'true'
-        let runSamCliRemoteTestEventsStub: sinon.SinonStub
-        beforeEach(() => {
-            runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvent, 'runSamCliRemoteTestEvents')
-        })
-        afterEach(() => {
-            sinon.restore()
-        })
-        it('should get saved event and invoke with it', async function () {
-            runSamCliRemoteTestEventsStub.resolves(mockResponse)
-            await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
+    afterEach(() => {
+        sinon.restore()
+    })
+    it('should invoke with a simple payload', async function () {
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
+        client.invoke.resolves(mockResponse)
+        await remoteInvokeWebview.invokeLambda(input)
+        sinon.assert.calledOnce(client.invoke)
+        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'Tail')
+    })
 
-            sinon.assert.calledOnce(runSamCliRemoteTestEventsStub)
-            sinon.assert.calledWith(runSamCliRemoteTestEventsStub, expectedParams)
-        })
+    it('should invoke with no tail in LMI', async function () {
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataLMI)
+        client.invoke.resolves(mockResponse)
+        await remoteInvokeWebview.invokeLambda(input)
+        sinon.assert.calledOnce(client.invoke)
+        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'None')
+    })
+
+    const mockEvent = {
+        name: 'TestEvent',
+        arn: 'arn:aws:lambda:us-west-2:123456789012:function:myFunction',
+        region: 'us-west-2',
+    }
+    const expectedParams = {
+        name: mockEvent.name,
+        operation: TestEventsOperation.Get,
+        functionArn: mockEvent.arn,
+        region: mockEvent.region,
+    }
+    const mockEventResponse = 'true'
+
+    it('should get saved event and invoke with it', async function () {
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
+        const runSamCliRemoteTestEventsStub = sinon.stub(samCliRemoteTestEvent, 'runSamCliRemoteTestEvents')
+        runSamCliRemoteTestEventsStub.resolves(mockEventResponse)
+        await remoteInvokeWebview.getRemoteTestEvents(mockEvent)
+
+        sinon.assert.calledOnce(runSamCliRemoteTestEventsStub)
+        sinon.assert.calledWith(runSamCliRemoteTestEventsStub, expectedParams)
     })
 })
