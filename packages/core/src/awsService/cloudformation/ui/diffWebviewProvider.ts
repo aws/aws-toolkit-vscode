@@ -9,6 +9,7 @@ import { DiffViewHelper } from './diffViewHelper'
 import { commandKey } from '../utils'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { showWarningConfirmation } from './message'
+import { ChangeSetStatus } from '@aws-sdk/client-cloudformation'
 
 const webviewCommandOpenDiff = 'openDiff'
 
@@ -24,6 +25,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
     private readonly disposables: Disposable[] = []
     private validationDetail: ValidationDetail[] = []
     private deploymentMode?: DeploymentMode
+    private changeSetStatus?: string
 
     constructor(private readonly coordinator: StackViewCoordinator) {
         this.disposables.push(
@@ -46,7 +48,8 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         changeSetName?: string,
         enableDeployments = false,
         validationDetail?: ValidationDetail[],
-        deploymentMode?: DeploymentMode
+        deploymentMode?: DeploymentMode,
+        changeSetStatus?: string
     ) {
         this.stackName = stackName
         this.changes = changes
@@ -58,6 +61,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
             this.validationDetail = validationDetail
         }
         this.deploymentMode = deploymentMode
+        this.changeSetStatus = changeSetStatus
 
         await this.coordinator.setChangeSetMode(stackName, true)
         if (this._view) {
@@ -120,6 +124,23 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         const displayedChanges = changes.slice(startIndex, endIndex)
         const hasNext = this.currentPage < this.totalPages - 1
         const hasPrev = this.currentPage > 0
+        const terminalChangeSetStatuses: string[] = [
+            ChangeSetStatus.CREATE_COMPLETE,
+            ChangeSetStatus.FAILED,
+            ChangeSetStatus.DELETE_FAILED,
+        ]
+
+        const deletionButton = `
+        <button id="deleteChangeSet" onclick="deleteChangeSet()" style="
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 2px;
+        ">Delete Changeset</button>
+        `
 
         if (!changes || changes.length === 0) {
             return `
@@ -137,6 +158,23 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 </head>
                 <body>
                     <p>No changes detected for stack: ${this.stackName}</p>
+                    ${
+                        this.changeSetName &&
+                        this.changeSetStatus &&
+                        terminalChangeSetStatuses.includes(this.changeSetStatus)
+                            ? `
+                    <div class="deletion-button" style="margin: 10px 0; text-align: left; display: inline-block;">
+                        ${deletionButton}
+                    </div>
+                    <script>
+                        const vscode = acquireVsCodeApi();
+                        function deleteChangeSet() {
+                            vscode.postMessage({ command: 'deleteChangeSet' });
+                        }
+                    </script>
+                    `
+                            : ''
+                    }
                 </body>
                 </html>
             `
@@ -351,9 +389,15 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         `
 
         const deploymentButtons =
-            this.changeSetName && this.enableDeployments
+            this.changeSetName &&
+            this.enableDeployments &&
+            this.changeSetStatus &&
+            terminalChangeSetStatuses.includes(this.changeSetStatus)
                 ? `
             <div class="deployment-actions" style="margin: 10px 0; text-align: left; display: inline-block;">
+                ${
+                    this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE
+                        ? `
                 <button id="confirmDeploy" onclick="confirmDeploy()" style="
                     background-color: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
@@ -362,16 +406,10 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     margin: 0 5px;
                     cursor: pointer;
                     border-radius: 2px;
-                ">Deploy Changes</button>
-                <button id="deleteChangeSet" onclick="deleteChangeSet()" style="
-                    background-color: var(--vscode-button-secondaryBackground);
-                    color: var(--vscode-button-secondaryForeground);
-                    border: none;
-                    padding: 8px 16px;
-                    margin: 0 5px;
-                    cursor: pointer;
-                    border-radius: 2px;
-                ">Delete Changeset</button>
+                ">Deploy Changes</button>`
+                        : ''
+                }
+                ${deletionButton}
             </div>
         `
                 : ''
