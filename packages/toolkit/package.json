@@ -349,6 +349,82 @@
                     "default": "",
                     "description": "Path to locally installed cfn-lint executable. If empty, uses bundled version."
                 },
+                "aws.cloudformation.diagnostics.cfnLint.customization": {
+                    "type": "object",
+                    "default": {
+                        "includeChecks": [
+                            "I"
+                        ]
+                    },
+                    "description": "CFN-Lint customization options",
+                    "properties": {
+                        "ignoreChecks": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Rule IDs to ignore"
+                        },
+                        "includeChecks": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Only check these rule IDs"
+                        },
+                        "mandatoryChecks": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Always check these rules"
+                        },
+                        "includeExperimental": {
+                            "type": "boolean",
+                            "description": "Include experimental rules"
+                        },
+                        "configureRules": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Rule configurations (RuleId:key=value)"
+                        },
+                        "regions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "AWS regions to validate against"
+                        },
+                        "customRules": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Paths to custom rule files"
+                        },
+                        "appendRules": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Additional rule directories"
+                        },
+                        "overrideSpec": {
+                            "type": "string",
+                            "description": "CloudFormation spec override file path"
+                        },
+                        "registrySchemas": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "CloudFormation Registry schema paths"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "aws.cloudformation.diagnostics.cfnGuard.enabled": {
                     "type": "boolean",
                     "default": true,
