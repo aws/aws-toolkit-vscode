@@ -13,6 +13,21 @@
     >
         <div class="icon">
             <svg
+                v-if="itemType === LoginOption.CONSOLE_CREDENTIAL"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <path
+                    class="svg-path"
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M1.50024 1H14.5002L15.0002 1.5V4.5V13.5L14.5002 14H1.50024L1.00024 13.5V4.5V1.5L1.50024 1ZM2.00024 5V13H14.0002V5H2.00024ZM2.00024 4H14.0002V2H2.00024V4Z"
+                />
+            </svg>
+            <svg
                 v-if="itemType === LoginOption.BUILDER_ID"
                 width="16"
                 height="16"

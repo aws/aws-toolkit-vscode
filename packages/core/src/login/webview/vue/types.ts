@@ -36,6 +36,7 @@ export type AuthFlowState = (typeof AuthFlowStates)[keyof typeof AuthFlowStates]
 export enum LoginOption {
     NONE,
     BUILDER_ID,
+    CONSOLE_CREDENTIAL,
     ENTERPRISE_SSO,
     IAM_CREDENTIAL,
     IMPORTED_LOGINS,

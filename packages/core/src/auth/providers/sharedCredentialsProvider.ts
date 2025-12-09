@@ -398,15 +398,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     private makeConsoleSessionCredentialsProvider() {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
+        const baseProvider = fromLoginCredentials({
+            profile: this.profileName,
+            clientConfig: {
+                region: this.getDefaultRegion() ?? 'us-east-1',
+            },
+        })
+
         return async () => {
             try {
-                const provider = fromLoginCredentials({
-                    profile: this.profileName,
-                    clientConfig: {
-                        region: defaultRegion,
-                    },
-                })
-                return await provider()
+                return await baseProvider()
             } catch (error) {
                 getLogger().error(
                     'Console login authentication failed for profile %s in region %s: %O',
@@ -440,14 +441,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                         'Authentication completed for profile %s, refreshing credentials...',
                         this.profileName
                     )
-                    // Retry with fresh credentials
-                    const refreshedProvider = fromLoginCredentials({
-                        profile: this.profileName,
-                        clientConfig: {
-                            region: defaultRegion,
-                        },
-                    })
-                    return await refreshedProvider()
+                    // Use the same provider instance but get fresh credentials
+                    return await baseProvider()
                 }
                 throw ToolkitError.chain(error, `Failed to get console credentials`, {
                     code: 'FromLoginCredentialProviderError',
