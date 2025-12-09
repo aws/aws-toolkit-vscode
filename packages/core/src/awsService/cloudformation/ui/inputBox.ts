@@ -9,7 +9,7 @@ import {
     validateParameterValue,
     validateChangeSetName,
 } from '../stacks/actions/stackActionInputValidation'
-import { Parameter, Capability, Tag, OnStackFailure } from '@aws-sdk/client-cloudformation'
+import { Parameter, Capability, Tag, OnStackFailure, Stack, StackStatus } from '@aws-sdk/client-cloudformation'
 import {
     TemplateParameter,
     ResourceToImport,
@@ -255,13 +255,13 @@ export async function getImportExistingResources(): Promise<boolean | undefined>
     )?.value
 }
 
-export async function getOnStackFailure(stackExists?: boolean): Promise<OnStackFailure | undefined> {
+export async function getOnStackFailure(stackDetails?: Stack): Promise<OnStackFailure | undefined> {
     const options: Array<{ label: string; description: string; value: OnStackFailure }> = [
         { label: 'Do nothing', description: 'Leave stack in failed state', value: OnStackFailure.DO_NOTHING },
         { label: 'Rollback', description: 'Rollback to previous state', value: OnStackFailure.ROLLBACK },
     ]
 
-    if (!stackExists) {
+    if (!stackDetails || stackDetails.StackStatus === StackStatus.REVIEW_IN_PROGRESS) {
         // only a valid option for CREATE
         options.unshift({ label: 'Delete', description: 'Delete the stack on failure', value: OnStackFailure.DELETE })
     }
@@ -276,7 +276,7 @@ export async function getDeploymentMode(): Promise<DeploymentMode | undefined> {
             [
                 {
                     label: 'Revert Drift',
-                    description: 'Revert drift during deployment',
+                    description: 'Revert drift during deployment (disables dev friendly flags)',
                     value: DeploymentMode.REVERT_DRIFT,
                 },
                 { label: 'Standard', description: 'No special handling during deployment', value: undefined },
