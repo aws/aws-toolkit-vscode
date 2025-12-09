@@ -12,6 +12,7 @@ import {
     dedupeAndGetLatestVersions,
     extractPlatformAndArch,
     useOldLinuxVersion,
+    mapLegacyLinux,
 } from './utils'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
@@ -54,33 +55,11 @@ export class GitHubManifestAdapter {
             return manifest
         }
 
-        getLogger('awsCfnLsp').warn('Using GLIBC compatible version for Linux')
-        const versions = manifest.versions.map((version) => {
-            const targets = version.targets
-                .filter((target) => {
-                    return target.platform !== 'linux'
-                })
-                .map((target) => {
-                    if (target.platform !== 'linuxglib2.28') {
-                        return target
-                    }
-
-                    return {
-                        ...target,
-                        platform: 'linux',
-                    }
-                })
-
-            return {
-                ...version,
-                targets,
-            }
-        })
-
-        manifest.versions = versions
+        getLogger('awsCfnLsp').info('In a legacy or sandbox Linux environment')
+        manifest.versions = mapLegacyLinux(manifest.versions)
 
         getLogger('awsCfnLsp').info(
-            'Remapped candidate versions from platform linuxglib2.28 to linux: %s',
+            'Remapped candidate versions: %s',
             manifest.versions
                 .map(
                     (v) =>
