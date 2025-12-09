@@ -124,7 +124,6 @@ export function useOldLinuxVersion(): boolean {
     }
 
     if (process.env.SNAP !== undefined) {
-        getLogger('awsCfnLsp').info('In Linux sandbox environment')
         return true
     }
 
@@ -136,4 +135,41 @@ export function useOldLinuxVersion(): boolean {
 
     getLogger('awsCfnLsp').info(`Found GLIBCXX ${toString(glibcxx)}`)
     return semver.lt(maxAvailGLibCXX, '3.4.29')
+}
+
+const LegacyLinuxGLibPlatform = 'linuxglib2.28'
+
+export function mapLegacyLinux(versions: CfnLspVersion[]): CfnLspVersion[] {
+    const remappedVersions: CfnLspVersion[] = []
+
+    for (const version of versions) {
+        const hasLegacyLinux = version.targets.some((t) => t.platform === LegacyLinuxGLibPlatform)
+
+        if (!hasLegacyLinux) {
+            getLogger('awsCfnLsp').warn(`Found no compatible legacy linux builds for ${version.serverVersion}`)
+            remappedVersions.push(version)
+        } else {
+            const newTargets = version.targets
+                .filter((target) => {
+                    return target.platform !== 'linux'
+                })
+                .map((target) => {
+                    if (target.platform !== LegacyLinuxGLibPlatform) {
+                        return target
+                    }
+
+                    return {
+                        ...target,
+                        platform: 'linux',
+                    }
+                })
+
+            remappedVersions.push({
+                ...version,
+                targets: newTargets,
+            })
+        }
+    }
+
+    return remappedVersions
 }
