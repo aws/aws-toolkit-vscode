@@ -412,65 +412,6 @@ describe('DataZoneCustomClientHelper', () => {
         })
     })
 
-    describe('isIamDomain', () => {
-        it('should return true for EXPRESS domain', async () => {
-            const mockDomainId = 'dzd_express123'
-            const mockResponse = {
-                id: mockDomainId,
-                name: 'Express Domain',
-                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
-                status: 'AVAILABLE',
-                preferences: { DOMAIN_MODE: 'EXPRESS' },
-            }
-
-            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
-
-            const result = await client.isIamDomain(mockDomainId)
-
-            assert.strictEqual(result, true)
-            assert.ok(getDomainStub.calledOnce)
-            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
-        })
-
-        it('should return false for STANDARD domain', async () => {
-            const mockDomainId = 'dzd_standard123'
-            const mockResponse = {
-                id: mockDomainId,
-                name: 'Standard Domain',
-                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
-                status: 'AVAILABLE',
-                preferences: { DOMAIN_MODE: 'STANDARD' },
-            }
-
-            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
-
-            const result = await client.isIamDomain(mockDomainId)
-
-            assert.strictEqual(result, false)
-            assert.ok(getDomainStub.calledOnce)
-            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
-        })
-
-        it('should return false for domain without preferences', async () => {
-            const mockDomainId = 'dzd_no_prefs123'
-            const mockResponse = {
-                id: mockDomainId,
-                name: 'Domain Without Preferences',
-                arn: `arn:aws:datazone:us-east-1:123456789012:domain/${mockDomainId}`,
-                status: 'AVAILABLE',
-                // No preferences field
-            }
-
-            const getDomainStub = sinon.stub(client, 'getDomain').resolves(mockResponse)
-
-            const result = await client.isIamDomain(mockDomainId)
-
-            assert.strictEqual(result, false)
-            assert.ok(getDomainStub.calledOnce)
-            assert.strictEqual(getDomainStub.firstCall.args[0], mockDomainId)
-        })
-    })
-
     describe('searchGroupProfiles', () => {
         const mockDomainId = 'dzd_test123'
 
