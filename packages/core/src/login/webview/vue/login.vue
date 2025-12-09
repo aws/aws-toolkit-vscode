@@ -150,7 +150,7 @@
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
-                    :itemTitle="'IAM Credentials'"
+                    :itemTitle="'IAM credentials'"
                     :itemType="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -266,14 +266,14 @@
                     />
                 </svg>
             </button>
-            <div class="header">IAM Credentials:</div>
+            <div class="header">IAM credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
             <a
                 class="hint"
                 href="https://docs.aws.amazon.com/sdkref/latest/guide/access-iam-users.html#step1authIamUser"
                 >Learn More</a
             >
-            <div class="title topMargin">Profile Name</div>
+            <div class="title topMargin">Profile name</div>
             <div class="hint">The identifier for these credentials</div>
             <input
                 class="iamInput bottomMargin"
@@ -283,7 +283,7 @@
                 v-model="profileName"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Access Key</div>
+            <div class="title">Access key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -292,7 +292,7 @@
                 v-model="accessKey"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Secret Key</div>
+            <div class="title">Secret key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -322,7 +322,7 @@
             <a class="hint" href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html"
                 >Learn More</a
             >
-            <div class="title topMargin">Profile Name</div>
+            <div class="title topMargin">Profile name</div>
             <div class="hint">Use letters, numbers, underscores, or hyphens</div>
             <input
                 class="iamInput bottomMargin"
