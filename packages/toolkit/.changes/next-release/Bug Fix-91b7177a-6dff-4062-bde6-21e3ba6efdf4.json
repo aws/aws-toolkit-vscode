@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes"
-}
