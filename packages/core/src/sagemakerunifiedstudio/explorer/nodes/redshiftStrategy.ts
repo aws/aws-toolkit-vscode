@@ -458,7 +458,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                             parentType: ResourceType.SCHEMA,
                         },
                         {
-                            parentId: schemaConnectionConfig.database,
+                            parentId: schemaConnectionConfig.database || '',
                             parentType: ResourceType.DATABASE,
                         },
                     ],

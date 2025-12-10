@@ -246,10 +246,6 @@ void (async () => {
             serviceName: 'GlueCatalogApi',
         },
         {
-            serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/sqlworkbench.json',
-            serviceName: 'SQLWorkbench',
-        },
-        {
             serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/datazonecustomclient.json',
             serviceName: 'DataZoneCustomClient',
         },
