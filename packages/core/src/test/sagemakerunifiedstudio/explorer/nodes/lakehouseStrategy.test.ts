@@ -10,7 +10,7 @@ import {
     LakehouseNode,
     createLakehouseConnectionNode,
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/lakehouseStrategy'
-import { GlueCatalogClient } from '../../../../sagemakerunifiedstudio/shared/client/glueCatalogClient'
+import { GlueCatalog } from '@amzn/glue-catalog-client'
 import { GlueClient } from '../../../../sagemakerunifiedstudio/shared/client/glueClient'
 import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
@@ -18,7 +18,7 @@ import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudi
 
 describe('LakehouseStrategy', function () {
     let sandbox: sinon.SinonSandbox
-    let mockGlueCatalogClient: sinon.SinonStubbedInstance<GlueCatalogClient>
+    let mockGlueCatalogClient: sinon.SinonStubbedInstance<GlueCatalog>
     let mockGlueClient: sinon.SinonStubbedInstance<GlueClient>
 
     const mockConnection = {
@@ -51,7 +51,8 @@ describe('LakehouseStrategy', function () {
             getTable: sandbox.stub(),
         } as any
 
-        sandbox.stub(GlueCatalogClient, 'createWithCredentials').returns(mockGlueCatalogClient as any)
+        // Stub the GlueCatalog constructor to return our mock
+        sandbox.stub(GlueCatalog.prototype, 'getCatalogs').callsFake(mockGlueCatalogClient.getCatalogs)
         sandbox.stub(GlueClient.prototype, 'getDatabases').callsFake(mockGlueClient.getDatabases)
         sandbox.stub(GlueClient.prototype, 'getTables').callsFake(mockGlueClient.getTables)
         sandbox.stub(GlueClient.prototype, 'getTable').callsFake(mockGlueClient.getTable)
@@ -206,6 +207,7 @@ describe('LakehouseStrategy', function () {
         })
 
         it('should create placeholder when no catalogs found', async function () {
+            // Mock getCatalogs to return empty array in the correct format
             mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
 
             const node = createLakehouseConnectionNode(
@@ -215,7 +217,12 @@ describe('LakehouseStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.ok(children.some((child) => child.resource === '[No data found]'))
+            // Check if placeholder exists - it should be a TreeItem with label '[No data found]'
+            const hasPlaceholder = children.some((child) => {
+                const treeItem = (child as any).data?.value
+                return treeItem === '[No data found]' || child.id.includes('placeholder')
+            })
+            assert.ok(hasPlaceholder, 'Should have placeholder node when no catalogs found')
         })
     })
 

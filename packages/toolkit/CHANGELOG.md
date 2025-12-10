@@ -1,3 +1,11 @@
+## 3.90.0 2025-12-09
+
+- **Bug Fix** SageMaker: SSH configuration errors now display line numbers and include an "Open SSH Config" button
+- **Bug Fix** SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty
+- **Bug Fix** CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes
+- **Feature** CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first
+- **Feature** feat(lambda): add support for lmi function resource node
+
 ## 3.89.0 2025-11-25
 
 - Miscellaneous non-user-facing changes
