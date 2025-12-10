@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
-import { GlueCatalog, GlueCatalogClient } from '../../shared/client/glueCatalogClient'
+import { Catalog } from '@amzn/glue-catalog-client'
 import { GlueClient } from '../../shared/client/glueClient'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
 import {
@@ -38,6 +38,7 @@ import { Column, Database, Table } from '@aws-sdk/client-glue'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
+import { GlueCatalogClient } from '../../shared/client/glueCatalogClient'
 
 /**
  * Lakehouse data node for SageMaker Unified Studio
@@ -249,8 +250,8 @@ function createAwsDataCatalogNode(parent: LakehouseNode, glueClient: GlueClient)
 }
 
 export interface CatalogTree {
-    parent: GlueCatalog
-    children?: GlueCatalog[]
+    parent: Catalog
+    children?: Catalog[]
 }
 
 /**
@@ -265,7 +266,7 @@ export interface CatalogTree {
  *
  * Without the first pass, we'd need O(n²) time to find parent catalogs for each child catalog.
  */
-function buildCatalogTree(catalogs: GlueCatalog[]): CatalogTree[] {
+function buildCatalogTree(catalogs: Catalog[]): CatalogTree[] {
     const catalogMap: Record<string, CatalogTree> = {}
     const rootCatalogs: CatalogTree[] = []
 
@@ -372,7 +373,7 @@ async function getCatalogs(
  */
 function createCatalogNode(
     catalogId: string,
-    catalog: GlueCatalog,
+    catalog: Catalog,
     glueClient: GlueClient,
     parent: LakehouseNode,
     isParent: boolean = false
