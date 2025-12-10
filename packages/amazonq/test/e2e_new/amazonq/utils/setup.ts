@@ -10,7 +10,7 @@ import path from 'path'
 import { rm } from 'fs/promises'
 
 before(async function () {
-    this.timeout(60000)
+    this.timeout(150000)
     await VSBrowser.instance.openResources(path.join(__dirname, '..', 'utils', 'resources', 'testFolder'))
     console.log('\n\n*** MANUAL INTERVENTION REQUIRED ***')
     console.log('When prompted, you must manually click to open the browser and complete authentication')

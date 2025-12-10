@@ -124,7 +124,7 @@ describe('Amazon Q MCP Functionality', function () {
         await sleep(100)
         await clickMCPEditButton(webviewView)
         await updateMCPTimeout(webviewView, 60)
-        await saveMCPServerConfiguration(webviewView)
+        await saveMCPServerConfiguration(webviewView, 5000)
     })
 
     it('Edit MCP Server with Fault Automation', async () => {
@@ -134,12 +134,12 @@ describe('Amazon Q MCP Functionality', function () {
         await sleep(100)
         await clickMCPEditButton(webviewView)
         await updateMCPCommand(webviewView, 'uv')
-        await saveMCPServerConfiguration(webviewView)
+        await saveMCPServerConfiguration(webviewView, 5000)
         await clickMCPCloseButton(webviewView)
         await clickToolsButton(webviewView)
         await checkMCPServerErrorStatus(webviewView, 'aws-documentation')
         await clickMCPFixConfigurationButton(webviewView)
         await updateMCPCommand(webviewView, 'uvx')
-        await saveMCPServerConfiguration(webviewView)
+        await saveMCPServerConfiguration(webviewView, 10000)
     })
 })

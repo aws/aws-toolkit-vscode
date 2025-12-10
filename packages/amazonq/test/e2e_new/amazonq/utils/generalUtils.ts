@@ -357,19 +357,19 @@ export async function validateAmazonQResponse(webviewView: WebviewView, isHelpCo
 }
 
 /**
- * Opens testFile.py through Explorer
+ * Opens a file through Explorer
  * @param editorView The EditorView instance
+ * @param filename The name of the file to open (defaults to 'testFile.py')
  * @returns Promise<TextEditor> The text editor for the opened file
  */
-export async function openTestFile(editorView: EditorView): Promise<TextEditor> {
-    // Open testFile.py through Explorer
+export async function openTestFile(editorView: EditorView, filename = 'testFile.py'): Promise<TextEditor> {
     const explorerView = await new ActivityBar().getViewControl('Explorer')
     const sideBar = (await explorerView?.openView()) as SideBarView
-    const item = await (await sideBar.getContent().getSections())[0].findItem('testFile.py')
+    const item = await (await sideBar.getContent().getSections())[0].findItem(filename)
     await item?.click()
     await sleep(1000)
 
-    const textEditor = (await editorView.openEditor('testFile.py')) as TextEditor
+    const textEditor = (await editorView.openEditor(filename)) as TextEditor
     return textEditor
 }
 

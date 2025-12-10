@@ -54,7 +54,7 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
 
     it('/transform history', async () => {
         await clickQuickActionsCommand(webviewView, '/transform')
-        await sleep(2000)
+        await sleep(3000)
         await dismissOverlayIfPresent(webviewView)
         await clickOpenJobHistory(webviewView)
         await closeTerminal(webviewView)

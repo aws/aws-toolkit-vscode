@@ -260,7 +260,7 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
     }
 }
 
-export async function saveMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
+export async function saveMCPServerConfiguration(webviewView: WebviewView, sleepTime: number = 20000): Promise<void> {
     try {
         await clickButton(
             webviewView,
@@ -268,7 +268,7 @@ export async function saveMCPServerConfiguration(webviewView: WebviewView): Prom
             '[action-id="save-mcp"] .mynah-button-label',
             'save button'
         )
-        await sleep(50000)
+        await sleep(sleepTime)
     } catch (e) {
         throw new Error(`Failed to save MCP server configuration`)
     }
