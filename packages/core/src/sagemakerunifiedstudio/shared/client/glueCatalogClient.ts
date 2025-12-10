@@ -3,25 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Service } from 'aws-sdk'
-import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger/logger'
-import * as GlueCatalogApi from './gluecatalogapi'
-import apiConfig = require('./gluecatalogapi.json')
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { GlueCatalog, Catalog } from '@amzn/glue-catalog-client'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
-import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
-
-/**
- * Represents a Glue catalog
- */
-export type GlueCatalog = GlueCatalogApi.Types.Catalog
 
 /**
  * Client for interacting with Glue Catalog API
  */
 export class GlueCatalogClient {
-    private glueClient: GlueCatalogApi | undefined
+    private glueClient: GlueCatalog | undefined
     private static instance: GlueCatalogClient | undefined
     private readonly logger = getLogger('smus')
 
@@ -67,21 +57,19 @@ export class GlueCatalogClient {
      * @param nextToken Optional pagination token
      * @returns Object containing catalogs and nextToken
      */
-    public async getCatalogs(nextToken?: string): Promise<{ catalogs: GlueCatalog[]; nextToken?: string }> {
+    public async getCatalogs(nextToken?: string): Promise<{ catalogs: Catalog[]; nextToken?: string }> {
         try {
             this.logger.info(`GlueCatalogClient: Getting catalogs in region ${this.region}`)
 
             const glueClient = await this.getGlueCatalogClient()
 
             // Call the GetCatalogs API with pagination
-            const response = await glueClient
-                .getCatalogs({
-                    Recursive: true,
-                    NextToken: nextToken,
-                })
-                .promise()
+            const response = await glueClient.getCatalogs({
+                Recursive: true,
+                NextToken: nextToken,
+            })
 
-            const catalogs: GlueCatalog[] = response.CatalogList || []
+            const catalogs: Catalog[] = response.CatalogList || []
 
             this.logger.info(`GlueCatalogClient: Found ${catalogs.length} catalogs in this page`)
             return {
@@ -97,32 +85,30 @@ export class GlueCatalogClient {
     /**
      * Gets the Glue client, initializing it if necessary
      */
-    private async getGlueCatalogClient(): Promise<GlueCatalogApi> {
+    private async getGlueCatalogClient(): Promise<GlueCatalog> {
         if (!this.glueClient) {
             try {
                 if (this.connectionCredentialsProvider) {
-                    // Create client with provided credentials
-                    this.glueClient = (await globals.sdkClientBuilder.createAwsService(
-                        Service,
-                        {
-                            apiConfig: apiConfig,
-                            region: this.region,
-                            credentialProvider: adaptConnectionCredentialsProvider(this.connectionCredentialsProvider),
-                        } as ServiceConfigurationOptions,
-                        undefined,
-                        false
-                    )) as GlueCatalogApi
+                    // Create client with credential provider function for auto-refresh
+                    const awsCredentialProvider = async () => {
+                        const credentials = await this.connectionCredentialsProvider!.getCredentials()
+                        return {
+                            accessKeyId: credentials.accessKeyId,
+                            secretAccessKey: credentials.secretAccessKey,
+                            sessionToken: credentials.sessionToken,
+                            expiration: credentials.expiration,
+                        }
+                    }
+
+                    this.glueClient = new GlueCatalog({
+                        region: this.region,
+                        credentials: awsCredentialProvider,
+                    })
                 } else {
-                    // Use the SDK client builder for default credentials
-                    this.glueClient = (await globals.sdkClientBuilder.createAwsService(
-                        Service,
-                        {
-                            apiConfig: apiConfig,
-                            region: this.region,
-                        } as ServiceConfigurationOptions,
-                        undefined,
-                        false
-                    )) as GlueCatalogApi
+                    // Use default credentials
+                    this.glueClient = new GlueCatalog({
+                        region: this.region,
+                    })
                 }
 
                 this.logger.debug('GlueCatalogClient: Successfully created Glue client')
