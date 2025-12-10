@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { profilePattern } from '../shared/constants'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
@@ -46,7 +47,7 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                             'Profile name cannot contain spaces'
                         )
                     }
-                    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+                    if (!profilePattern.test(value)) {
                         return localize(
                             'AWS.message.error.consoleLogin.invalidCharacters',
                             'Profile name can only contain letters, numbers, underscores, and hyphens'
