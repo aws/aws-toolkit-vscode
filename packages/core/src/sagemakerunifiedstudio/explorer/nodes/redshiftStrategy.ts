@@ -22,7 +22,7 @@ import {
 } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
-import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { Catalog } from '@amzn/glue-catalog-client'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
@@ -169,7 +169,7 @@ export function createRedshiftConnectionNode(
 
                 // Fetch Glue catalogs for filtering purposes only
                 // This will help determine which catalogs are accessible within the project
-                let glueCatalogs: GlueCatalog[] = []
+                let glueCatalogs: Catalog[] = []
                 try {
                     glueCatalogs = await listGlueCatalogs(
                         connection.connectionId,
@@ -771,7 +771,7 @@ async function listGlueCatalogs(
     connectionId: string,
     region: string,
     connectionCredentialsProvider: ConnectionCredentialsProvider
-): Promise<GlueCatalog[]> {
+): Promise<Catalog[]> {
     const clientStore = ConnectionClientStore.getInstance()
     const glueCatalogClient = clientStore.getGlueCatalogClient(connectionId, region, connectionCredentialsProvider)
 
