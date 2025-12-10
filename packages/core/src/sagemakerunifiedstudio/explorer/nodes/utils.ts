@@ -24,7 +24,7 @@ import { getContext } from '../../../shared/vscode/setContext'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { SmusIamConnection } from '../../auth/model'
 import { ConnectionStatus } from '@aws-sdk/client-datazone'
-import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { Catalog } from '@amzn/glue-catalog-client'
 
 /**
  * Polling interval in milliseconds for checking space status updates
@@ -35,7 +35,7 @@ export const PENDING_NODE_POLLING_INTERVAL_MS = 5000
 /**
  * Check if a catalog is a RedLake catalog
  */
-export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
+export const isRedLakeCatalog = (catalog?: Catalog) => {
     return (
         catalog?.FederatedCatalog?.ConnectionName === 'aws:redshift' ||
         catalog?.CatalogProperties?.DataLakeAccessProperties?.CatalogType === 'aws:redshift'
@@ -45,7 +45,7 @@ export const isRedLakeCatalog = (catalog?: GlueCatalog) => {
 /**
  * Check if a catalog is a S3 table catalog
  */
-export const isS3TablesCatalog = (catalog?: GlueCatalog) => {
+export const isS3TablesCatalog = (catalog?: Catalog) => {
     return catalog?.FederatedCatalog?.ConnectionName === 'aws:s3tables'
 }
 
