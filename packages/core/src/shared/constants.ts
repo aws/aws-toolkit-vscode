@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { manageAccessGuideURL } from '../amazonq/webview/ui/texts/constants'
 
 export const profileSettingKey = 'profile'
-export const profilePattern = /^[a-zA-Z0-9_-]+$/
 export const productName: string = 'aws-toolkit-vscode'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'

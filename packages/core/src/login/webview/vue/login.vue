@@ -359,7 +359,6 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { profilePattern } from '../../../shared/constants'
 import SelectableItem from './selectableItem.vue'
 import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
@@ -698,7 +697,7 @@ export default defineComponent({
             return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
         },
         shouldDisableConsoleSessionContinue() {
-            return this.profileName.length <= 0 || !this.selectedRegion || !profilePattern.test(this.profileName)
+            return this.profileName.length <= 0 || !this.selectedRegion || !/^[a-zA-Z0-9_-]+$/.test(this.profileName)
         },
         validateProfileName(event: Event) {
             const input = event.target as HTMLInputElement
