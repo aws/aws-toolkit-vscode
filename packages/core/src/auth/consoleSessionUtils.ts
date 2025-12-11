@@ -25,46 +25,45 @@ import { createRegionPrompter } from '../shared/ui/common/region'
  * @param region Optional AWS region. If not provided, user will be prompted.
  */
 export async function authenticateWithConsoleLogin(profileName?: string, region?: string): Promise<void> {
+    const logger = getLogger()
+
+    // Prompt for profile name if not provided
+    if (!profileName) {
+        const profileNameInput = await vscode.window.showInputBox({
+            prompt: localize('AWS.message.prompt.consoleLogin.profileName', 'Enter a name for this profile'),
+            placeHolder: localize('AWS.message.placeholder.consoleLogin.profileName', 'profile-name'),
+            validateInput: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return localize('AWS.message.error.consoleLogin.emptyProfileName', 'Profile name cannot be empty')
+                }
+                if (/\s/.test(value)) {
+                    return localize(
+                        'AWS.message.error.consoleLogin.spacesInProfileName',
+                        'Profile name cannot contain spaces'
+                    )
+                }
+                if (!profilePattern.test(value)) {
+                    return localize(
+                        'AWS.message.error.consoleLogin.invalidCharacters',
+                        'Profile name can only contain letters, numbers, underscores, and hyphens'
+                    )
+                }
+                return undefined
+            },
+        })
+
+        if (!profileNameInput) {
+            throw new ToolkitError('User cancelled entering profile', {
+                cancelled: true,
+            })
+        }
+
+        profileName = profileNameInput.trim()
+    }
+
+    // After user interaction has occurred, we can safely emit telemetry
     await telemetry.auth_consoleLoginCommand.run(async (span) => {
         span.record({ authConsoleLoginStarted: true }) // Track entry into flow (raw count)
-        const logger = getLogger()
-
-        // Prompt for profile name if not provided
-        if (!profileName) {
-            const profileNameInput = await vscode.window.showInputBox({
-                prompt: localize('AWS.message.prompt.consoleLogin.profileName', 'Enter a name for this profile'),
-                placeHolder: localize('AWS.message.placeholder.consoleLogin.profileName', 'profile-name'),
-                validateInput: (value) => {
-                    if (!value || value.trim().length === 0) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.emptyProfileName',
-                            'Profile name cannot be empty'
-                        )
-                    }
-                    if (/\s/.test(value)) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.spacesInProfileName',
-                            'Profile name cannot contain spaces'
-                        )
-                    }
-                    if (!profilePattern.test(value)) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.invalidCharacters',
-                            'Profile name can only contain letters, numbers, underscores, and hyphens'
-                        )
-                    }
-                    return undefined
-                },
-            })
-
-            if (!profileNameInput) {
-                throw new ToolkitError('User cancelled entering profile', {
-                    cancelled: true,
-                })
-            }
-
-            profileName = profileNameInput.trim()
-        }
 
         // Prompt for region if not provided
         if (!region) {

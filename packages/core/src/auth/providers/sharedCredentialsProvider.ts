@@ -419,8 +419,22 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 if (
                     error instanceof Error &&
                     (error.message.includes('Your session has expired') ||
-                        error.message.includes('Failed to load a token for session'))
+                        error.message.includes('Failed to load a token for session') ||
+                        error.message.includes('Failed to load token from'))
                 ) {
+                    // Ask for user confirmation before refreshing
+                    const response = await vscode.window.showInformationMessage(
+                        `Unable to use your console credentials for profile "${this.profileName}". Would you like to refresh it?`,
+                        'Refresh',
+                        'Cancel'
+                    )
+
+                    if (response !== 'Refresh') {
+                        throw ToolkitError.chain(error, 'User cancelled console credentials token refresh.', {
+                            code: 'LoginSessionRefreshCancelled',
+                            cancelled: true,
+                        })
+                    }
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
                     // Execute the console login command with the existing profile and region
                     try {
