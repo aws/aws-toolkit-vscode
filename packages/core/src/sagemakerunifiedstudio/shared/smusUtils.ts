@@ -1,0 +1,669 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared/errors'
+import { isSageMaker } from '../../shared/extensionUtilities'
+import { getResourceMetadata } from './utils/resourceMetadataUtils'
+import fetch from 'node-fetch'
+import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
+import { CredentialType } from '../../shared/telemetry/telemetry'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
+
+/**
+ * Represents SSO instance information retrieved from DataZone
+ */
+export interface SsoInstanceInfo {
+    issuerUrl: string
+    ssoInstanceId: string
+    clientId: string
+    region: string
+}
+
+/**
+ * Response from DataZone /sso/login endpoint
+ */
+interface DataZoneSsoLoginResponse {
+    redirectUrl: string
+}
+
+/**
+ * Credential expiry time constants for SMUS providers (in milliseconds)
+ */
+export const SmusCredentialExpiry = {
+    /** Domain Execution Role (DER) credentials expiry time: 10 minutes */
+    derExpiryMs: 10 * 60 * 1000,
+    /** Project Role credentials expiry time: 10 minutes */
+    projectExpiryMs: 10 * 60 * 1000,
+    /** Connection credentials expiry time: 10 minutes */
+    connectionExpiryMs: 10 * 60 * 1000,
+} as const
+
+/**
+ * Error codes for SMUS-related operations
+ */
+export const SmusErrorCodes = {
+    /** Error code for when no active SMUS connection is available */
+    NoActiveConnection: 'NoActiveConnection',
+    /** Error code for when API calls timeout */
+    ApiTimeout: 'ApiTimeout',
+    /** Error code for when SMUS login fails */
+    SmusLoginFailed: 'SmusLoginFailed',
+    /** Error code for when redeeming access token fails */
+    RedeemAccessTokenFailed: 'RedeemAccessTokenFailed',
+    /** Error code for when connection establish fails */
+    FailedAuthConnecton: 'FailedAuthConnecton',
+    /** Error code for when user cancels an operation */
+    UserCancelled: 'UserCancelled',
+    /** Error code for when domain account Id is missing */
+    AccountIdNotFound: 'AccountIdNotFound',
+    /** Error code for when resource ARN is missing */
+    ResourceArnNotFound: 'ResourceArnNotFound',
+    /** Error code for when fails to get domain account Id */
+    GetDomainAccountIdFailed: 'GetDomainAccountIdFailed',
+    /** Error code for when fails to get project account Id */
+    GetProjectAccountIdFailed: 'GetProjectAccountIdFailed',
+    /** Error code for when region is missing */
+    RegionNotFound: 'RegionNotFound',
+    /** Error code for when IAM-based domain is not found in the specified region */
+    IamDomainNotFound: 'IamDomainNotFound',
+    /** Error code for when IAM profile is not found */
+    ProfileNotFound: 'ProfileNotFound',
+    /** Error code for when IAM credential retrieval fails */
+    CredentialRetrievalFailed: 'CredentialRetrievalFailed',
+    /** Error code for when IAM credential provider initialization fails */
+    CredentialProviderInitFailed: 'CredentialProviderInitFailed',
+    /** Error code for when IAM profile type is invalid */
+    InvalidProfileType: 'InvalidProfileType',
+    /** Error code for when IAM credential validation fails */
+    IamValidationFailed: 'IamValidationFailed',
+    /** Error code for when sign out operation fails */
+    SignOutFailed: 'SignOutFailed',
+    /** Error code for when domain URL format is invalid */
+    InvalidDomainUrl: 'InvalidDomainUrl',
+    /** Error code for when connection to SMUS fails */
+    FailedToConnect: 'FailedToConnect',
+    /** Error code for when connection is not found */
+    ConnectionNotFound: 'ConnectionNotFound',
+    /** Error code for when connection type is invalid for the operation */
+    InvalidConnectionType: 'InvalidConnectionType',
+    /** Error code for when no group profile is found for IAM role */
+    NoGroupProfileFound: 'NoGroupProfileFound',
+    /** Error code for when no user profile is found for IAM principal */
+    NoUserProfileFound: 'NoUserProfileFound',
+} as const
+
+/**
+ * Timeout constants for SMUS API calls (in milliseconds)
+ */
+export const SmusTimeouts = {
+    /** Default timeout for API calls: 10 seconds */
+    apiCallTimeoutMs: 10 * 1000,
+} as const
+
+/**
+ * DataZone service ID used for filtering regions
+ */
+export const DataZoneServiceId = 'datazone'
+
+/**
+ * Domain version constants
+ */
+export const DomainVersionV1 = 'V1'
+export const DomainVersionV2 = 'V2'
+
+/**
+ * IAM sign-in type constants
+ */
+export const IamSignInRole = 'IAM_ROLE'
+export const IamSignInUser = 'IAM_USER'
+
+/**
+ * Input interface for IAM domain check function
+ */
+export interface IamDomainCheckInput {
+    domainVersion: string | undefined
+    iamSignIns?: string[] | undefined
+    domainId?: string
+}
+
+/**
+ * Interface for AWS credential objects that need validation
+ */
+interface CredentialObject {
+    accessKeyId?: unknown
+    secretAccessKey?: unknown
+    sessionToken?: unknown
+    expiration?: unknown
+}
+
+/**
+ * Validates AWS credential fields and throws appropriate errors if invalid
+ * @param credentials The credential object to validate
+ * @param errorCode The error code to use in ToolkitError
+ * @param contextMessage The context message for error messages (e.g., "API response", "project credential response")
+ * @throws ToolkitError if any credential field is invalid
+ */
+export function validateCredentialFields(
+    credentials: CredentialObject,
+    errorCode: string,
+    contextMessage: string,
+    validateExpireTime: boolean = false
+): void {
+    if (!credentials.accessKeyId || typeof credentials.accessKeyId !== 'string') {
+        throw new ToolkitError(`Invalid accessKeyId in ${contextMessage}: ${typeof credentials.accessKeyId}`, {
+            code: errorCode,
+        })
+    }
+    if (!credentials.secretAccessKey || typeof credentials.secretAccessKey !== 'string') {
+        throw new ToolkitError(`Invalid secretAccessKey in ${contextMessage}: ${typeof credentials.secretAccessKey}`, {
+            code: errorCode,
+        })
+    }
+    if (!credentials.sessionToken || typeof credentials.sessionToken !== 'string') {
+        throw new ToolkitError(`Invalid sessionToken in ${contextMessage}: ${typeof credentials.sessionToken}`, {
+            code: errorCode,
+        })
+    }
+    if (validateExpireTime) {
+        if (!credentials.expiration || !(credentials.expiration instanceof Date)) {
+            throw new ToolkitError(`Invalid expireTime in ${contextMessage}: ${typeof credentials.expiration}`, {
+                code: errorCode,
+            })
+        }
+    }
+}
+
+/**
+ * Utility class for SageMaker Unified Studio domain URL parsing and validation
+ */
+export class SmusUtils {
+    private static readonly logger = getLogger('smus')
+
+    /**
+     * Extracts the domain ID from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns The extracted domain ID or undefined if not found
+     */
+    public static extractDomainIdFromUrl(domainUrl: string): string | undefined {
+        try {
+            // Domain URL format: https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
+            const url = new URL(domainUrl)
+            const hostname = url.hostname
+
+            // Extract domain ID from hostname (dzd_d3hr1nfjbtwui1 or dzd-d3hr1nfjbtwui1)
+            const domainIdMatch = hostname.match(/^(dzd[-_][a-zA-Z0-9_-]{1,36})\./)
+            return domainIdMatch?.[1]
+        } catch (error) {
+            this.logger.error('Failed to extract domain ID from URL: %s', error as Error)
+            return undefined
+        }
+    }
+
+    /**
+     * Extracts the AWS region from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @param fallbackRegion Fallback region if extraction fails (default: 'us-east-1')
+     * @returns The extracted AWS region or the fallback region if not found
+     */
+    public static extractRegionFromUrl(domainUrl: string, fallbackRegion: string = 'us-east-1'): string {
+        try {
+            // Domain URL formats:
+            // - https://dzd_d3hr1nfjbtwui1.sagemaker.us-east-2.on.aws
+            // - https://dzd_4gickdfsxtoxg0.sagemaker-gamma.us-west-2.on.aws
+            const url = new URL(domainUrl)
+            const hostname = url.hostname
+
+            // Extract region from hostname, handling both prod and non-prod stages
+            // Pattern matches: .sagemaker[-stage].{region}.on.aws
+            const regionMatch = hostname.match(/\.sagemaker(?:-[a-z]+)?\.([a-z0-9-]+)\.on\.aws$/)
+            return regionMatch?.[1] || fallbackRegion
+        } catch (error) {
+            this.logger.error('Failed to extract region from URL: %s', error as Error)
+            return fallbackRegion
+        }
+    }
+
+    /**
+     * Extracts both domain ID and region from a SageMaker Unified Studio domain URL
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @param fallbackRegion Fallback region if extraction fails (default: 'us-east-1')
+     * @returns Object containing domainId and region
+     */
+    public static extractDomainInfoFromUrl(
+        domainUrl: string,
+        fallbackRegion: string = 'us-east-1'
+    ): { domainId: string | undefined; region: string } {
+        return {
+            domainId: this.extractDomainIdFromUrl(domainUrl),
+            region: this.extractRegionFromUrl(domainUrl, fallbackRegion),
+        }
+    }
+
+    /**
+     * Validates the domain URL format for SageMaker Unified Studio
+     * @param value The URL to validate
+     * @returns Error message if invalid, undefined if valid
+     */
+    public static validateDomainUrl(value: string): string | undefined {
+        if (!value || value.trim() === '') {
+            return 'Domain URL is required'
+        }
+
+        const trimmedValue = value.trim()
+
+        // Check HTTPS requirement
+        if (!trimmedValue.startsWith('https://')) {
+            return 'Domain URL must use HTTPS (https://)'
+        }
+
+        // Check basic URL format
+        try {
+            const url = new URL(trimmedValue)
+
+            // Check if it looks like a SageMaker Unified Studio domain
+            if (!url.hostname.includes('sagemaker') || !url.hostname.includes('on.aws')) {
+                return 'URL must be a valid SageMaker Unified Studio domain (e.g., https://dzd_xxxxxxxxx.sagemaker.us-east-1.on.aws)'
+            }
+
+            // Extract domain ID to validate
+            const domainId = this.extractDomainIdFromUrl(trimmedValue)
+
+            if (!domainId) {
+                return 'URL must contain a valid domain ID (starting with dzd- or dzd_)'
+            }
+
+            return undefined // Valid
+        } catch (err) {
+            return 'Invalid URL format'
+        }
+    }
+
+    /**
+     * Makes HTTP call to DataZone /sso/login endpoint
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @param domainId The extracted domain ID
+     * @returns Promise resolving to the login response
+     * @throws ToolkitError if the API call fails
+     */
+    private static async callDataZoneLogin(domainUrl: string, domainId: string): Promise<DataZoneSsoLoginResponse> {
+        const loginUrl = new URL('/sso/login', domainUrl)
+        const requestBody = {
+            domainId: domainId,
+        }
+
+        try {
+            const response = await fetch(loginUrl.toString(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'User-Agent': 'aws-toolkit-vscode',
+                },
+                body: JSON.stringify(requestBody),
+                timeout: SmusTimeouts.apiCallTimeoutMs,
+            })
+
+            if (!response.ok) {
+                throw new ToolkitError(`SMUS login failed: ${response.status} ${response.statusText}`, {
+                    code: SmusErrorCodes.SmusLoginFailed,
+                })
+            }
+
+            return (await response.json()) as DataZoneSsoLoginResponse
+        } catch (error) {
+            // Handle timeout errors specifically
+            if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('timeout'))) {
+                throw new ToolkitError(
+                    `DataZone login request timed out after ${SmusTimeouts.apiCallTimeoutMs / 1000} seconds`,
+                    {
+                        code: SmusErrorCodes.ApiTimeout,
+                        cause: error,
+                    }
+                )
+            }
+            // Re-throw other errors as-is
+            throw error
+        }
+    }
+
+    /**
+     * Gets SSO instance information by calling DataZone /sso/login endpoint
+     * This extracts the proper SSO instance ID and issuer URL needed for OAuth client registration
+     *
+     * @param domainUrl The SageMaker Unified Studio domain URL
+     * @returns Promise resolving to SSO instance information
+     * @throws ToolkitError if the API call fails or response is invalid
+     */
+    public static async getSsoInstanceInfo(domainUrl: string): Promise<SsoInstanceInfo> {
+        try {
+            this.logger.info(`Getting SSO instance info from DataZone for domainurl: ${domainUrl}`)
+
+            // Extract domain ID from the domain URL
+            const domainId = this.extractDomainIdFromUrl(domainUrl)
+            if (!domainId) {
+                throw new ToolkitError('Invalid domain URL format', { code: 'InvalidDomainUrl' })
+            }
+
+            // Call DataZone /sso/login endpoint to get redirect URL with SSO instance info
+            const loginData = await this.callDataZoneLogin(domainUrl, domainId)
+            if (!loginData.redirectUrl) {
+                throw new ToolkitError('No redirect URL received from DataZone login', { code: 'InvalidLoginResponse' })
+            }
+
+            // Parse the redirect URL to extract SSO instance information
+            const redirectUrl = new URL(loginData.redirectUrl)
+            const clientIdParam = redirectUrl.searchParams.get('client_id')
+            if (!clientIdParam) {
+                throw new ToolkitError('No client_id found in DataZone redirect URL', { code: 'InvalidRedirectUrl' })
+            }
+
+            // Decode the client_id ARN: arn:aws:sso::785498918019:application/ssoins-6684636af7e1a207/apl-5f60548b7f5677a2
+            const decodedClientId = decodeURIComponent(clientIdParam)
+            const arnParts = decodedClientId.split('/')
+            if (arnParts.length < 2) {
+                throw new ToolkitError('Invalid client_id ARN format', { code: 'InvalidArnFormat' })
+            }
+
+            const ssoInstanceId = arnParts[1] // Extract ssoins-6684636af7e1a207
+            const issuerUrl = `https://identitycenter.amazonaws.com/${ssoInstanceId}`
+
+            // Extract region from domain URL
+            const region = this.extractRegionFromUrl(domainUrl)
+
+            this.logger.info('Extracted SSO instance info: %s', ssoInstanceId)
+
+            return {
+                issuerUrl,
+                ssoInstanceId,
+                clientId: decodedClientId,
+                region,
+            }
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+            this.logger.error('Failed to get SSO instance info: %s', errorMsg)
+
+            if (error instanceof ToolkitError) {
+                throw error
+            }
+
+            throw new ToolkitError(`Failed to get SSO instance info: ${errorMsg}`, {
+                code: 'SsoInstanceInfoFailed',
+                cause: error instanceof Error ? error : undefined,
+            })
+        }
+    }
+    /**
+     * Extracts SSO ID from a user ID in the format "user-<sso-id>"
+     * @param userId The user ID to extract SSO ID from
+     * @returns The extracted SSO ID
+     * @throws Error if the userId format is invalid
+     */
+    public static extractSSOIdFromUserId(userId: string): string {
+        const match = userId.match(/user-(.+)$/)
+        if (!match) {
+            this.logger.error(`Invalid UserId format: ${userId}`)
+            throw new Error(`Invalid UserId format: ${userId}`)
+        }
+        return match[1]
+    }
+
+    /**
+     * Checks if we're in SMUS space environment (should hide certain UI elements)
+     * @returns True if in SMUS space environment with DataZone domain ID
+     */
+    public static isInSmusSpaceEnvironment(): boolean {
+        const isSMUSspace = isSageMaker('SMUS') || isSageMaker('SMUS-SPACE-REMOTE-ACCESS')
+        const resourceMetadata = getResourceMetadata()
+        return isSMUSspace && !!resourceMetadata?.AdditionalMetadata?.DataZoneDomainId
+    }
+
+    /**
+     * Extracts the session name from an assumed role ARN.
+     *
+     * Note: This function ONLY works for assumed role ARNs (arn:aws:sts::*:assumed-role/*).
+     * It will return undefined for other IAM principal types such as:
+     * - IAM users (arn:aws:iam::*:user/*)
+     * - IAM roles (arn:aws:iam::*:role/*)
+     *
+     * @param arn The assumed role ARN (format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME)
+     * @returns The session name if the ARN is a valid assumed role ARN, undefined otherwise
+     */
+    public static extractSessionNameFromArn(arn: string): string | undefined {
+        try {
+            // Expected format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+            const parts = arn.split(':')
+            if (parts.length < 6) {
+                return undefined
+            }
+
+            // The resource part is after the 5th colon
+            const resourcePart = parts.slice(5).join(':')
+
+            // Split by '/' to get assumed-role, ROLE_NAME, and SESSION_NAME
+            const resourceParts = resourcePart.split('/')
+            if (resourceParts.length < 3 || resourceParts[0] !== 'assumed-role') {
+                return undefined
+            }
+
+            // Session name is the last part
+            return resourceParts[2]
+        } catch (err) {
+            return undefined
+        }
+    }
+
+    /**
+     * Determines if an ARN represents an IAM user (vs IAM role session)
+     * @param arn The ARN to check (format: arn:aws:iam::ACCOUNT:user/USER_NAME for IAM users,
+     *                                      arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME for role sessions)
+     * @returns True if the ARN is an IAM user, false otherwise
+     */
+    public static isIamUserArn(arn: string | undefined): boolean {
+        if (!arn) {
+            return false
+        }
+
+        // IAM user ARN format: arn:aws:iam::ACCOUNT:user/USER_NAME
+        // IAM role session ARN format: arn:aws:sts::ACCOUNT:assumed-role/ROLE_NAME/SESSION_NAME
+        return arn.includes(':iam::') && arn.includes(':user/')
+    }
+
+    /**
+     * Converts an STS assumed-role ARN to its corresponding IAM role ARN, or returns IAM user ARN as-is.
+     * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
+     * Examples:
+     *   Input:  arn:aws:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws:iam::123456789012:role/MyRole
+     *
+     *   Input:  arn:aws:iam::123456789012:user/MyUser
+     *   Output: arn:aws:iam::123456789012:user/MyUser
+     *
+     *   Input:  arn:aws-cn:sts::123456789012:assumed-role/MyRole/MySession
+     *   Output: arn:aws-cn:iam::123456789012:role/MyRole
+     */
+    public static convertAssumedRoleArnToIamRoleArn(stsArn: string): string {
+        // Check if it's already an IAM user ARN - return as-is
+        // Supports all AWS partitions: aws, aws-cn, aws-us-gov, etc.
+        const iamUserRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):user\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamUserRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Check if it's already an IAM role ARN - return as-is
+        const iamRoleRegex = /^arn:(aws[a-z-]*):iam::(\d{12}):role\/([A-Za-z0-9+=,.@_\/-]+)$/
+        if (iamRoleRegex.test(stsArn)) {
+            return stsArn
+        }
+
+        // Try to convert STS assumed-role ARN to IAM role ARN
+        const arnRegex = /^arn:(aws[a-z-]*):sts::(\d{12}):assumed-role\/([A-Za-z0-9+=,.@_\/-]+)\/([A-Za-z0-9+=,.@_-]+)$/
+        const match = stsArn.match(arnRegex)
+        if (!match) {
+            throw new Error(`Invalid STS ARN format: ${stsArn}`)
+        }
+
+        const [, partition, accountId, roleName] = match
+
+        return `arn:${partition}:iam::${accountId}:role/${roleName}`
+    }
+}
+
+/**
+ * Determines if a domain is an IAM domain based on IamSignIns field.
+ *
+ * IAM domains are V2 domains that support both IAM role and IAM user authentication.
+ * A domain is considered an IAM domain if its IamSignIns array contains both:
+ * - IAM_ROLE
+ * - IAM_USER
+ *
+ * @param input - Object containing domain version, IamSignIns, and optional domainId for logging
+ * @returns true if the domain is an IAM domain, false otherwise
+ */
+export function isIamDomain(input: IamDomainCheckInput): boolean {
+    const logger = getLogger('smus')
+    const domainIdLog = input.domainId ? ` for domain ${input.domainId}` : ''
+
+    // Only V2 domains can be IAM domains
+    if (input.domainVersion !== DomainVersionV2) {
+        logger.debug(
+            `IAM domain check${domainIdLog}: Domain version is not V2 (value: ${input.domainVersion}), returning false`
+        )
+        return false
+    }
+
+    // Check if IamSignIns contains both IAM_ROLE and IAM_USER
+    if (!input.iamSignIns || !Array.isArray(input.iamSignIns)) {
+        logger.debug(`IAM domain check${domainIdLog}: IamSignIns is missing or invalid, returning false`)
+        return false
+    }
+
+    const hasIamRole = input.iamSignIns.includes(IamSignInRole)
+    const hasIamUser = input.iamSignIns.includes(IamSignInUser)
+
+    if (hasIamRole && hasIamUser) {
+        logger.debug(`IAM domain check${domainIdLog}: IAM domain detected via IamSignIns`)
+        return true
+    }
+
+    logger.debug(
+        `IAM domain check${domainIdLog}: IamSignIns does not contain both IAM_ROLE and IAM_USER, returning false`
+    )
+    return false
+}
+
+/**
+ * Extracts the account ID from a SageMaker ARN.
+ * Supports formats like:
+ *   arn:aws:sagemaker:<region>:<account_id>:app/*
+ *
+ * @param arn - The full SageMaker ARN string
+ * @returns The account ID from the ARN
+ * @throws If the ARN format is invalid
+ */
+export function extractAccountIdFromSageMakerArn(arn: string): string {
+    // Match the ARN components to extract account ID
+    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space)\/.+$/i
+    const match = arn.match(regex)
+
+    if (!match?.groups) {
+        throw new ToolkitError(`Invalid SageMaker ARN format: "${arn}"`)
+    }
+
+    return match.groups.accountId
+}
+
+/**
+ * Extracts account ID from ResourceArn in SMUS space environment
+ * @returns Promise resolving to the account ID
+ * @throws ToolkitError if unable to extract account ID
+ */
+export async function extractAccountIdFromResourceMetadata(): Promise<string> {
+    const logger = getLogger('smus')
+
+    try {
+        logger.debug('Extracting account ID from ResourceArn in resource-metadata file')
+
+        const resourceMetadata = getResourceMetadata()!
+        const resourceArn = resourceMetadata.ResourceArn
+
+        if (!resourceArn) {
+            throw new Error('ResourceArn not found in metadata file')
+        }
+
+        const accountId = extractAccountIdFromSageMakerArn(resourceArn)
+        logger.debug(`Successfully extracted account ID from resource-metadata file: ${accountId}`)
+
+        return accountId
+    } catch (err) {
+        logger.error(`Failed to extract account ID from ResourceArn: %s`, err)
+        throw new Error('Failed to extract AWS account ID from ResourceArn in SMUS space environment')
+    }
+}
+
+/**
+ * Creates a CredentialsProvider from an AWS credentials function
+ * @param credentialsFunction Function that returns AWS credentials
+ * @param credentialTypeId Identifier for the credential type
+ * @param hashCode Unique hash code for caching
+ * @param region Domain region
+ * @returns Complete CredentialsProvider object
+ */
+export function convertToToolkitCredentialProvider(
+    credentialsFunction: () => Promise<AwsCredentialIdentity>,
+    credentialTypeId: string,
+    hashCode: string,
+    region: string
+): CredentialsProvider {
+    return {
+        getCredentials: credentialsFunction,
+        getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId }),
+        getProviderType: () => 'temp' as CredentialsProviderType,
+        getTelemetryType: () => 'other' as CredentialType,
+        getDefaultRegion: () => region,
+        getHashCode: () => hashCode,
+        canAutoConnect: () => Promise.resolve(false),
+        isAvailable: () => Promise.resolve(true),
+    }
+}
+
+/**
+ * Checks if an error indicates credential/token expiration
+ *
+ * @param error The error to check (can be any type)
+ * @returns true if the error indicates expired credentials, false otherwise
+ *
+ */
+export function isCredentialExpirationError(error: any): boolean {
+    if (!error) {
+        return false
+    }
+
+    const errorName = (error.name || '') as string
+    const errorMessage = (error.message || '') as string
+    const errorNameLower = errorName.toLowerCase()
+    const errorMessageLower = errorMessage.toLowerCase()
+
+    const expirationErrorNames = ['ExpiredTokenException']
+
+    const expirationErrorMessages = ['The security token included in the request is expired']
+
+    // Return true if error name matches any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((name) => name.toLowerCase() === errorNameLower)) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error names (case-insensitive)
+    if (expirationErrorNames.some((errorName) => errorMessageLower.includes(errorName.toLowerCase()))) {
+        return true
+    }
+
+    // Return true if error message contains any expiration error messages
+    if (expirationErrorMessages.some((keyword) => errorMessageLower.includes(keyword.toLowerCase()))) {
+        return true
+    }
+
+    return false
+}

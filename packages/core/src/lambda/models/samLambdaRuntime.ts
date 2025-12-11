@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { PrompterButtons } from '../../shared/ui/buttons'
@@ -30,7 +30,8 @@ export type RuntimePackageType = 'Image' | 'Zip'
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
 export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
-    'nodejs22.x',
+    'nodejs24.x' as Runtime,
+    'nodejs22.x' as Runtime,
     'nodejs20.x',
     'nodejs18.x',
     'nodejs16.x',
@@ -51,7 +52,8 @@ export function getNodeMajorVersion(version?: string): number | undefined {
 }
 
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
-    'python3.13',
+    'python3.14' as Runtime,
+    'python3.13' as Runtime,
     'python3.12',
     'python3.11',
     'python3.10',
@@ -66,9 +68,13 @@ export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'java8',
     'java8.al2',
     'java21',
+    'java25' as Runtime,
 ])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6', 'dotnet8'])
-export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3', 'ruby3.4'])
+export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3', 'ruby3.4' as Runtime])
+
+// Image runtimes are not a direct subset of valid ZIP lambda types
+const dotnet50 = 'dotnet5.0' as Runtime
 
 /**
  * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html
@@ -91,12 +97,12 @@ export const deprecatedRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'ruby2.7',
 ])
 const defaultRuntimes = ImmutableMap<RuntimeFamily, Runtime>([
-    [RuntimeFamily.NodeJS, 'nodejs22.x'],
-    [RuntimeFamily.Python, 'python3.13'],
+    [RuntimeFamily.NodeJS, 'nodejs24.x' as Runtime],
+    [RuntimeFamily.Python, 'python3.14' as Runtime],
     [RuntimeFamily.DotNet, 'dotnet8'],
     [RuntimeFamily.Go, 'go1.x'],
-    [RuntimeFamily.Java, 'java21'],
-    [RuntimeFamily.Ruby, 'ruby3.3'],
+    [RuntimeFamily.Java, 'java25' as Runtime],
+    [RuntimeFamily.Ruby, 'ruby3.4' as Runtime],
 ])
 
 export const mapFamilyToDebugType = ImmutableMap<RuntimeFamily, string>([
@@ -120,7 +126,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.9',
     'python3.8',
-    'nodejs22.x',
+    'nodejs22.x' as Runtime,
     'nodejs20.x',
     'nodejs18.x',
     'nodejs16.x',
@@ -145,8 +151,6 @@ export function samLambdaCreatableRuntimes(cloud9: boolean = isCloud9()): Immuta
     return cloud9 ? cloud9SupportedRuntimes : samZipLambdaRuntimes
 }
 
-// Image runtimes are not a direct subset of valid ZIP lambda types
-const dotnet50 = 'dotnet5.0'
 export function samImageLambdaRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
     // Note: SAM also supports ruby, but Toolkit does not.
     return ImmutableSet<Runtime>([...samLambdaCreatableRuntimes(cloud9), ...(cloud9 ? [] : [dotnet50])])
@@ -172,7 +176,7 @@ export function getDependencyManager(runtime: Runtime): DependencyManager[] {
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
 }
 
-export function getFamily(runtime: string): RuntimeFamily {
+export function getFamily(runtime: Runtime): RuntimeFamily {
     if (deprecatedRuntimes.has(runtime)) {
         handleDeprecatedRuntime(runtime)
     } else if (nodeJsRuntimes.has(runtime)) {
@@ -248,7 +252,7 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
 /**
  * Provides the default runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
  */
-export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
+export function getDefaultRuntime(runtime: RuntimeFamily): Runtime | undefined {
     return defaultRuntimes.get(runtime)
 }
 

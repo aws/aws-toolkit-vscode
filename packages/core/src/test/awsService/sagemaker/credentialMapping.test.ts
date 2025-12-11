@@ -5,10 +5,22 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { persistLocalCredentials, persistSSMConnection } from '../../../awsService/sagemaker/credentialMapping'
+import {
+    persistLocalCredentials,
+    persistSSMConnection,
+    persistSmusProjectCreds,
+    loadMappings,
+    saveMappings,
+    setSpaceIamProfile,
+    setSpaceSsoProfile,
+    setSmusSpaceProfile,
+    setSpaceCredentials,
+} from '../../../awsService/sagemaker/credentialMapping'
 import { Auth } from '../../../auth'
 import { DevSettings, fs } from '../../../shared'
 import globals from '../../../shared/extensionGlobals'
+import { SagemakerUnifiedStudioSpaceNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { SageMakerUnifiedStudioSpacesParentNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
 
 describe('credentialMapping', () => {
     describe('persistLocalCredentials', () => {
@@ -204,6 +216,302 @@ describe('credentialMapping', () => {
                 name: 'Error',
                 message:
                     'Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: UnsupportedApp',
+            })
+        })
+
+        it('stores undefined refreshUrl when isSMUS=true', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(appArn, domain, 'sess-123', 'wss://smus-ws', 'token-xyz', 'jupyterlab', true)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is undefined for SMUS connections
+            assert.strictEqual(data.deepLink?.[appArn]?.refreshUrl, undefined)
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-123',
+                url: 'wss://smus-ws',
+                token: 'token-xyz',
+                status: 'fresh',
+            })
+        })
+
+        it('stores valid refreshUrl when isSMUS=false (SageMaker AI behavior)', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(appArn, domain, 'sess-456', 'wss://sm-ws', 'token-abc', 'jupyterlab', false)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is present for SageMaker AI connections
+            assert.ok(data.deepLink?.[appArn]?.refreshUrl)
+            assertRefreshUrlMatches(data.deepLink?.[appArn]?.refreshUrl, 'studio.us-west-2.sagemaker.aws')
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-456',
+                url: 'wss://sm-ws',
+                token: 'token-abc',
+                status: 'fresh',
+            })
+        })
+
+        it('stores valid refreshUrl when isSMUS is undefined (default SageMaker AI behavior)', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            // Call without isSMUS parameter (should default to SageMaker AI behavior)
+            await persistSSMConnection(appArn, domain, 'sess-789', 'wss://default-ws', 'token-def', 'jupyterlab')
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // Verify refreshUrl is present when isSMUS is not specified
+            assert.ok(data.deepLink?.[appArn]?.refreshUrl)
+            assertRefreshUrlMatches(data.deepLink?.[appArn]?.refreshUrl, 'studio.us-west-2.sagemaker.aws')
+
+            // Verify SSM connection info is stored correctly
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-789',
+                url: 'wss://default-ws',
+                token: 'token-def',
+                status: 'fresh',
+            })
+        })
+    })
+
+    describe('persistSmusProjectCreds', () => {
+        const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-f0lwireyzpjp/test-space'
+        const projectId = 'test-project-id'
+        let sandbox: sinon.SinonSandbox
+        let mockNode: sinon.SinonStubbedInstance<SagemakerUnifiedStudioSpaceNode>
+        let mockParent: sinon.SinonStubbedInstance<SageMakerUnifiedStudioSpacesParentNode>
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            mockNode = sandbox.createStubInstance(SagemakerUnifiedStudioSpaceNode)
+            mockParent = sandbox.createStubInstance(SageMakerUnifiedStudioSpacesParentNode)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('persists SMUS project credentials', async () => {
+            const mockCredentialProvider = {
+                getCredentials: sandbox.stub().resolves(),
+                startProactiveCredentialRefresh: sandbox.stub(),
+            }
+
+            const mockAuthProvider = {
+                getProjectCredentialProvider: sandbox.stub().resolves(mockCredentialProvider),
+            }
+
+            mockNode.getParent.returns(mockParent as any)
+            mockParent.getAuthProvider.returns(mockAuthProvider as any)
+            mockParent.getProjectId.returns(projectId)
+            sandbox.stub(require('../../../sagemakerunifiedstudio/auth/model'), 'isSmusSsoConnection').returns(true)
+
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSmusProjectCreds(appArn, mockNode as any)
+
+            assert.ok(writeStub.calledOnce)
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+            assert.deepStrictEqual(data.localCredential?.[appArn], {
+                type: 'sso',
+                smusProjectId: projectId,
+            })
+
+            // Verify the correct methods were called
+            assert.ok(mockAuthProvider.getProjectCredentialProvider.calledWith(projectId))
+            assert.ok(mockCredentialProvider.getCredentials.calledOnce)
+            assert.ok(mockCredentialProvider.startProactiveCredentialRefresh.calledOnce)
+        })
+    })
+
+    describe('loadMappings', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('returns empty object when file does not exist', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+
+            const result = await loadMappings()
+
+            assert.deepStrictEqual(result, {})
+        })
+
+        it('loads and parses existing mappings', async () => {
+            const mockData = { localCredential: { 'test-arn': { type: 'iam' as const, profileName: 'test' } } }
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockData))
+
+            const result = await loadMappings()
+
+            assert.deepStrictEqual(result, mockData)
+        })
+
+        it('returns empty object on parse error', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves('invalid json')
+
+            const result = await loadMappings()
+
+            assert.deepStrictEqual(result, {})
+        })
+    })
+
+    describe('saveMappings', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('saves mappings to file', async () => {
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+            const testData = { localCredential: { 'test-arn': { type: 'iam' as const, profileName: 'test' } } }
+
+            await saveMappings(testData)
+
+            assert.ok(writeStub.calledOnce)
+            const [, content, options] = writeStub.firstCall.args
+            assert.strictEqual(content, JSON.stringify(testData, undefined, 2))
+            assert.deepStrictEqual(options, { mode: 0o600, atomic: true })
+        })
+    })
+
+    describe('setSpaceIamProfile', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('sets IAM profile for space', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await setSpaceIamProfile('test-space', 'test-profile')
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+            assert.deepStrictEqual(data.localCredential?.['test-space'], {
+                type: 'iam',
+                profileName: 'test-profile',
+            })
+        })
+    })
+
+    describe('setSpaceSsoProfile', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('sets SSO profile for space', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await setSpaceSsoProfile('test-space', 'access-key', 'secret', 'token')
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+            assert.deepStrictEqual(data.localCredential?.['test-space'], {
+                type: 'sso',
+                accessKey: 'access-key',
+                secret: 'secret',
+                token: 'token',
+            })
+        })
+    })
+
+    describe('setSmusSpaceProfile', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('sets SMUS SSO profile for space', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await setSmusSpaceProfile('test-space', 'project-id', 'sso')
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+            assert.deepStrictEqual(data.localCredential?.['test-space'], {
+                type: 'sso',
+                smusProjectId: 'project-id',
+            })
+        })
+    })
+
+    describe('setSpaceCredentials', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('sets space credentials with refresh URL', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+            const credentials = { sessionId: 'sess', url: 'ws://test', token: 'token' }
+
+            await setSpaceCredentials('test-space', 'https://refresh.url', credentials)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+            assert.deepStrictEqual(data.deepLink?.['test-space'], {
+                refreshUrl: 'https://refresh.url',
+                requests: {
+                    'initial-connection': {
+                        ...credentials,
+                        status: 'fresh',
+                    },
+                },
             })
         })
     })

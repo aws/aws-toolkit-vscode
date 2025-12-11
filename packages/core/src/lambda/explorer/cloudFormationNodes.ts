@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { CloudFormationClient, StackSummary } from '../../shared/clients/cloudFormation'
@@ -15,6 +15,7 @@ import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { intersection, toArrayAsync, toMap, toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listCloudFormationStacks, listLambdaFunctions } from '../utils'
@@ -40,11 +41,38 @@ export class CloudFormationNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 await this.updateChildren()
 
-                return [...this.stackNodes.values()]
+                const panelNode = new AWSCommandTreeNode(
+                    this,
+                    '✨ Try the new CloudFormation panel',
+                    'aws.cloudformation.focus',
+                    undefined,
+                    'Open the enhanced CloudFormation panel with improved features'
+                )
+                panelNode.iconPath = getIcon('vscode-star-full')
+
+                return [panelNode, ...this.stackNodes.values()]
             },
-            getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
-            sort: (nodeA, nodeB) => nodeA.stackName.localeCompare(nodeB.stackName),
+            getNoChildrenPlaceholderNode: async () => {
+                const panelNode = new AWSCommandTreeNode(
+                    this,
+                    '✨ Try the new CloudFormation panel',
+                    'aws.cloudformation.focus',
+                    undefined,
+                    'Open the enhanced CloudFormation panel with improved features'
+                )
+                panelNode.iconPath = getIcon('vscode-star-full')
+                return panelNode
+            },
+            sort: (nodeA, nodeB) => {
+                // Keep the panel node at the top
+                if (nodeA instanceof AWSCommandTreeNode) {
+                    return -1
+                }
+                if (nodeB instanceof AWSCommandTreeNode) {
+                    return 1
+                }
+                return nodeA.stackName.localeCompare(nodeB.stackName)
+            },
         })
     }
 
@@ -78,7 +106,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         this.iconPath = getIcon('aws-cloudformation-stack')
     }
 
-    public get stackId(): CloudFormation.StackId | undefined {
+    public get stackId(): string | undefined {
         return this.stackSummary.StackId
     }
 
@@ -94,7 +122,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         return this.stackName
     }
 
-    public get stackName(): CloudFormation.StackName {
+    public get stackName(): string {
         return this.stackSummary.StackName
     }
 
@@ -122,7 +150,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
     private async updateChildren(): Promise<void> {
         const resources: string[] = await this.resolveLambdaResources()
-        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+        const functions: Map<string, FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.lambdaClient)),
             (functionInfo) => functionInfo.FunctionName
         )
@@ -151,7 +179,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 function makeCloudFormationLambdaFunctionNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration, contextValueCloudformationLambdaFunction)
 

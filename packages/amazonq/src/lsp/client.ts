@@ -5,7 +5,8 @@
 
 import vscode, { version } from 'vscode'
 import * as nls from 'vscode-nls'
-import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
+import { BaseLanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
+import { LanguageClient } from 'vscode-languageclient/node'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import {
@@ -21,6 +22,7 @@ import {
 import {
     AuthUtil,
     CodeWhispererSettings,
+    FeatureConfigProvider,
     getSelectedCustomization,
     TelemetryHelper,
     vsCodeState,
@@ -45,6 +47,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
+import { activate as activateInline } from '../app/inline/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
@@ -224,9 +227,7 @@ export async function startLanguageServer(
         clientOptions
     )
 
-    const disposable = client.start()
-    toDispose.push(disposable)
-    await client.onReady()
+    await client.start()
 
     // Set up connection metadata handler
     client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
@@ -261,14 +262,14 @@ export async function startLanguageServer(
     return client
 }
 
-async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
+async function initializeAuth(client: BaseLanguageClient): Promise<AmazonQLspAuth> {
     const auth = new AmazonQLspAuth(client)
     await auth.refreshConnection(true)
     return auth
 }
 
 // jscpd:ignore-start
-async function initializeLanguageServerConfiguration(client: LanguageClient, context: string = 'startup') {
+async function initializeLanguageServerConfiguration(client: BaseLanguageClient, context: string = 'startup') {
     const logger = getLogger('amazonqLsp')
 
     if (AuthUtil.instance.isConnectionValid()) {
@@ -306,7 +307,7 @@ async function initializeLanguageServerConfiguration(client: LanguageClient, con
     }
 }
 
-async function sendProfileToLsp(client: LanguageClient) {
+async function sendProfileToLsp(client: BaseLanguageClient) {
     const logger = getLogger('amazonqLsp')
     const profileArn = AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn
 
@@ -323,7 +324,7 @@ async function sendProfileToLsp(client: LanguageClient) {
 async function onLanguageServerReady(
     extensionContext: vscode.ExtensionContext,
     auth: AmazonQLspAuth,
-    client: LanguageClient,
+    client: BaseLanguageClient,
     resourcePaths: AmazonQResourcePaths,
     toDispose: vscode.Disposable[]
 ) {
@@ -338,8 +339,42 @@ async function onLanguageServerReady(
     // tutorial for inline chat
     const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
-    const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
-    inlineManager.registerInlineCompletion()
+    const enableInlineRollback = FeatureConfigProvider.instance.getPreFlareRollbackGroup() === 'treatment'
+    if (enableInlineRollback) {
+        // use VSC inline
+        getLogger().info('Entering preflare logic')
+        await activateInline(client)
+    } else {
+        // use language server for inline completion
+        getLogger().info('Entering postflare logic')
+        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
+        inlineManager.registerInlineCompletion()
+        toDispose.push(
+            inlineManager,
+            Commands.register('aws.amazonq.showPrev', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+                sessionManager.onPrevSuggestion()
+            }),
+            Commands.register('aws.amazonq.showNext', async () => {
+                await sessionManager.maybeRefreshSessionUx()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+                sessionManager.onNextSuggestion()
+            }),
+            // this is a workaround since handleDidShowCompletionItem is not public API
+            Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
+                sessionManager.checkInlineSuggestionVisibility()
+            }),
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                vsCodeState.lastManualTriggerTime = performance.now()
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            }),
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            })
+        )
+    }
+
     activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
     if (Experiments.instance.get('amazonqChatLSP', true)) {
@@ -354,25 +389,6 @@ async function onLanguageServerReady(
     await initializeLanguageServerConfiguration(client, 'startup')
 
     toDispose.push(
-        inlineManager,
-        Commands.register('aws.amazonq.showPrev', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
-            sessionManager.onPrevSuggestion()
-        }),
-        Commands.register('aws.amazonq.showNext', async () => {
-            await sessionManager.maybeRefreshSessionUx()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
-            sessionManager.onNextSuggestion()
-        }),
-        // this is a workaround since handleDidShowCompletionItem is not public API
-        Commands.register('aws.amazonq.checkInlineSuggestionVisibility', async () => {
-            sessionManager.checkInlineSuggestionVisibility()
-        }),
-        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-            vsCodeState.lastManualTriggerTime = performance.now()
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-        }),
         Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
             telemetry.record({
                 traceId: TelemetryHelper.instance.traceId,
@@ -398,14 +414,11 @@ async function onLanguageServerReady(
                 getLogger().debug(`codewhisperer: user dismiss tutorial.`)
             }
         }),
-        vscode.workspace.onDidCloseTextDocument(async () => {
-            await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
-        }),
         AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
             await auth.refreshConnection()
         }),
         AuthUtil.instance.auth.onDidDeleteConnection(async () => {
-            client.sendNotification(notificationTypes.deleteBearerToken.method)
+            void client.sendNotification(notificationTypes.deleteBearerToken.method)
         }),
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => sendProfileToLsp(client)),
         vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
@@ -418,28 +431,28 @@ async function onLanguageServerReady(
             return workspaceIdResp
         }),
         vscode.workspace.onDidCreateFiles((e) => {
-            client.sendNotification('workspace/didCreateFiles', {
+            void client.sendNotification('workspace/didCreateFiles', {
                 files: e.files.map((it) => {
                     return { uri: it.fsPath }
                 }),
             } as CreateFilesParams)
         }),
         vscode.workspace.onDidDeleteFiles((e) => {
-            client.sendNotification('workspace/didDeleteFiles', {
+            void client.sendNotification('workspace/didDeleteFiles', {
                 files: e.files.map((it) => {
                     return { uri: it.fsPath }
                 }),
             } as DeleteFilesParams)
         }),
         vscode.workspace.onDidRenameFiles((e) => {
-            client.sendNotification('workspace/didRenameFiles', {
+            void client.sendNotification('workspace/didRenameFiles', {
                 files: e.files.map((it) => {
                     return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
                 }),
             } as RenameFilesParams)
         }),
         vscode.workspace.onDidChangeWorkspaceFolders((e) => {
-            client.sendNotification('workspace/didChangeWorkspaceFolder', {
+            void client.sendNotification('workspace/didChangeWorkspaceFolder', {
                 event: {
                     added: e.added.map((it) => {
                         return {
@@ -466,7 +479,7 @@ async function onLanguageServerReady(
  * When the server restarts (likely due to a crash, then the LanguageClient automatically starts it again)
  * we need to run some server intialization again.
  */
-function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
+function onServerRestartHandler(client: BaseLanguageClient, auth: AmazonQLspAuth) {
     return client.onDidChangeState(async (e) => {
         // Ensure we are in a "restart" state
         if (!(e.oldState === State.Starting && e.newState === State.Running)) {

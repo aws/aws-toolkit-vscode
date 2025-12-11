@@ -29,21 +29,50 @@ export async function resolveCredentialsFor(connectionIdentifier: string): Promi
 
     switch (profile.type) {
         case 'iam': {
-            const name = profile.profileName?.split(':')[1]
-            if (!name) {
-                throw new Error(`Invalid IAM profile name for "${connectionIdentifier}"`)
+            if ('profileName' in profile) {
+                const name = profile.profileName?.split(':')[1]
+                if (!name) {
+                    throw new Error(`Invalid IAM profile name for "${connectionIdentifier}"`)
+                }
+                return fromIni({ profile: name })
+            } else if ('smusProjectId' in profile) {
+                const { accessKey, secret, token } = mapping.smusProjects?.[profile.smusProjectId] || {}
+                if (!accessKey || !secret || !token) {
+                    throw new Error(`Missing ProjectRole credentials for SMUS Space "${connectionIdentifier}"`)
+                }
+                return {
+                    accessKeyId: accessKey,
+                    secretAccessKey: secret,
+                    sessionToken: token,
+                }
+            } else {
+                throw new Error(`Missing IAM credentials for "${connectionIdentifier}"`)
             }
-            return fromIni({ profile: name })
         }
         case 'sso': {
-            const { accessKey, secret, token } = profile
-            if (!accessKey || !secret || !token) {
+            if ('accessKey' in profile && 'secret' in profile && 'token' in profile) {
+                const { accessKey, secret, token } = profile
+                if (!accessKey || !secret || !token) {
+                    throw new Error(`Missing SSO credentials for "${connectionIdentifier}"`)
+                }
+                return {
+                    accessKeyId: accessKey,
+                    secretAccessKey: secret,
+                    sessionToken: token,
+                }
+            } else if ('smusProjectId' in profile) {
+                // Handle SMUS project ID case
+                const { accessKey, secret, token } = mapping.smusProjects?.[profile.smusProjectId] || {}
+                if (!accessKey || !secret || !token) {
+                    throw new Error(`Missing ProjectRole credentials for SMUS Space "${connectionIdentifier}"`)
+                }
+                return {
+                    accessKeyId: accessKey,
+                    secretAccessKey: secret,
+                    sessionToken: token,
+                }
+            } else {
                 throw new Error(`Missing SSO credentials for "${connectionIdentifier}"`)
-            }
-            return {
-                accessKeyId: accessKey,
-                secretAccessKey: secret,
-                sessionToken: token,
             }
         }
         default:

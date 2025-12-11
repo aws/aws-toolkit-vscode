@@ -403,9 +403,11 @@ export class GumbyController {
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
                 break
             case ButtonActions.STOP_TRANSFORMATION_JOB:
-                await stopTransformByQ(transformByQState.getJobId())
-                await postTransformationJob()
-                await cleanupTransformationJob()
+                if (transformByQState.isRunning() || transformByQState.isRefreshInProgress()) {
+                    await stopTransformByQ(transformByQState.getJobId())
+                    await postTransformationJob()
+                    await cleanupTransformationJob()
+                }
                 break
             case ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW:
                 this.resetTransformationChatFlow()
@@ -580,11 +582,11 @@ export class GumbyController {
             return
         }
         const fileContents = await fs.readFileText(fileUri[0].fsPath)
-        const missingKey = await validateCustomVersionsFile(fileContents)
+        const errorMessage = validateCustomVersionsFile(fileContents)
 
-        if (missingKey) {
+        if (errorMessage) {
             this.messenger.sendMessage(
-                CodeWhispererConstants.invalidCustomVersionsFileMessage(missingKey),
+                CodeWhispererConstants.invalidCustomVersionsFileMessage(errorMessage),
                 message.tabID,
                 'ai-prompt'
             )

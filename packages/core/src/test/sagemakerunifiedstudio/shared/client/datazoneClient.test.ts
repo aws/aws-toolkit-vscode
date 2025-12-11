@@ -1,0 +1,636 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as assert from 'assert'
+import * as sinon from 'sinon'
+import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
+import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types/commands/GetEnvironmentCommand'
+import { DefaultStsClient } from '../../../../shared/clients/stsClient'
+import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
+import { ToolkitError } from '../../../../shared/errors'
+
+describe('DataZoneClient', () => {
+    let dataZoneClient: DataZoneClient
+    let mockAuthProvider: any
+    const testDomainId = 'dzd_domainId'
+    const testRegion = 'us-east-2'
+
+    beforeEach(async () => {
+        // Create mock connection object
+        const mockConnection = {
+            id: 'connection-id',
+            domainId: testDomainId,
+            ssoRegion: testRegion,
+        }
+
+        // Create mock auth provider
+        mockAuthProvider = {
+            isConnected: sinon.stub().returns(true),
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns(testRegion),
+            activeConnection: mockConnection,
+            onDidChangeActiveConnection: sinon.stub().returns({
+                dispose: sinon.stub(),
+            }),
+            secondaryAuth: {
+                state: {
+                    get: sinon.stub().returns({
+                        'connection-id': {
+                            profileName: 'test-profile',
+                        },
+                    }),
+                },
+            },
+            getCredentialsProviderForIamProfile: sinon.stub(),
+        } as any
+
+        // Create mock credentials provider
+        const mockCredentialsProvider = {
+            getCredentials: sinon.stub().resolves({
+                accessKeyId: 'test-key',
+                secretAccessKey: 'test-secret',
+                sessionToken: 'test-token',
+            }),
+            getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+            getProviderType: () => 'temp' as const,
+            getTelemetryType: () => 'other' as any,
+            getDefaultRegion: () => testRegion,
+            getHashCode: () => 'test-hash',
+            canAutoConnect: () => Promise.resolve(false),
+            isAvailable: () => Promise.resolve(true),
+        }
+
+        // Set up the DataZoneClient using createWithCredentials
+        dataZoneClient = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    describe('createWithCredentials', () => {
+        it('should create new instance with credentials', () => {
+            const mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                }),
+                getCredentialsId: () => ({ credentialSource: 'temp' as const, credentialTypeId: 'test' }),
+                getProviderType: () => 'temp' as const,
+                getTelemetryType: () => 'other' as any,
+                getDefaultRegion: () => testRegion,
+                getHashCode: () => 'test-hash',
+                canAutoConnect: () => Promise.resolve(false),
+                isAvailable: () => Promise.resolve(true),
+            }
+
+            const instance = DataZoneClient.createWithCredentials(testRegion, testDomainId, mockCredentialsProvider)
+            assert.ok(instance)
+            assert.strictEqual(instance.getRegion(), testRegion)
+            assert.strictEqual(instance.getDomainId(), testDomainId)
+        })
+    })
+
+    describe('getRegion', () => {
+        it('should return configured region', () => {
+            const result = dataZoneClient.getRegion()
+            assert.strictEqual(typeof result, 'string')
+            assert.ok(result.length > 0)
+        })
+    })
+
+    describe('listProjects', () => {
+        it('should list projects with pagination', async () => {
+            const mockDataZone = {
+                listProjects: sinon.stub().resolves({
+                    items: [
+                        {
+                            id: 'project-1',
+                            name: 'Project 1',
+                            description: 'First project',
+                            createdAt: new Date('2023-01-01'),
+                            updatedAt: new Date('2023-01-02'),
+                        },
+                    ],
+                    nextToken: 'next-token',
+                }),
+            }
+
+            // Mock the getDataZoneClient method
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.listProjects({
+                maxResults: 10,
+            })
+
+            assert.strictEqual(result.projects.length, 1)
+            assert.strictEqual(result.projects[0].id, 'project-1')
+            assert.strictEqual(result.projects[0].name, 'Project 1')
+            assert.strictEqual(result.projects[0].domainId, testDomainId)
+            assert.strictEqual(result.nextToken, 'next-token')
+        })
+
+        it('should handle empty results', async () => {
+            const mockDataZone = {
+                listProjects: sinon.stub().resolves({
+                    items: [],
+                    nextToken: undefined,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.listProjects()
+
+            assert.strictEqual(result.projects.length, 0)
+            assert.strictEqual(result.nextToken, undefined)
+        })
+
+        it('should handle API errors', async () => {
+            const error = new Error('API Error')
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').rejects(error)
+
+            await assert.rejects(() => dataZoneClient.listProjects(), error)
+        })
+    })
+
+    describe('getProjectDefaultEnvironmentCreds', () => {
+        it('should get environment credentials for project', async () => {
+            const mockCredentials = {
+                accessKeyId: 'AKIATEST',
+                secretAccessKey: 'secret',
+                sessionToken: 'token',
+            }
+
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [{ id: 'env-1', name: 'Tooling' }],
+                }),
+                getEnvironmentCredentials: sinon.stub().resolves(mockCredentials),
+            }
+
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getProjectDefaultEnvironmentCreds('project-1')
+
+            assert.deepStrictEqual(result, mockCredentials)
+            assert.ok(
+                mockDataZone.listEnvironmentBlueprints.calledWith({
+                    domainIdentifier: testDomainId,
+                    managed: true,
+                    name: 'Tooling',
+                })
+            )
+            assert.ok(
+                mockDataZone.listEnvironments.calledWith({
+                    domainIdentifier: testDomainId,
+                    projectIdentifier: 'project-1',
+                    environmentBlueprintIdentifier: 'blueprint-1',
+                    provider: 'Amazon SageMaker',
+                })
+            )
+            assert.ok(
+                mockDataZone.getEnvironmentCredentials.calledWith({
+                    domainIdentifier: testDomainId,
+                    environmentIdentifier: 'env-1',
+                })
+            )
+        })
+
+        it('should throw error when tooling blueprint not found', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [],
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
+                /Failed to get tooling blueprint/
+            )
+        })
+
+        it('should throw error when default environment not found', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [],
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
+                /Failed to find default Tooling environment/
+            )
+        })
+    })
+
+    describe('fetchAllProjects', function () {
+        it('fetches all projects by handling pagination', async function () {
+            // Create a stub for listProjects that returns paginated resultssults
+            const listProjectsStub = sinon.stub()
+
+            // First call returns first page with nextToken
+            listProjectsStub.onFirstCall().resolves({
+                projects: [
+                    {
+                        id: 'project-1',
+                        name: 'Project 1',
+                        description: 'First project',
+                        domainId: testDomainId,
+                    },
+                ],
+                nextToken: 'next-page-token',
+            })
+
+            // Second call returns second page with no nextToken
+            listProjectsStub.onSecondCall().resolves({
+                projects: [
+                    {
+                        id: 'project-2',
+                        name: 'Project 2',
+                        description: 'Second project',
+                        domainId: testDomainId,
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            // Replace the listProjects method with our stub
+            dataZoneClient.listProjects = listProjectsStub
+
+            // Call fetchAllProjects
+            const result = await dataZoneClient.fetchAllProjects()
+
+            // Verify results
+            assert.strictEqual(result.length, 2)
+            assert.strictEqual(result[0].id, 'project-1')
+            assert.strictEqual(result[1].id, 'project-2')
+
+            // Verify listProjects was called correctly
+            assert.strictEqual(listProjectsStub.callCount, 2)
+            assert.deepStrictEqual(listProjectsStub.firstCall.args[0], {
+                maxResults: 50,
+                nextToken: undefined,
+            })
+            assert.deepStrictEqual(listProjectsStub.secondCall.args[0], {
+                maxResults: 50,
+                nextToken: 'next-page-token',
+            })
+        })
+
+        it('returns empty array when no projects found', async function () {
+            // Create a stub for listProjects that returns empty results
+            const listProjectsStub = sinon.stub().resolves({
+                projects: [],
+                nextToken: undefined,
+            })
+
+            // Replace the listProjects method with our stub
+            dataZoneClient.listProjects = listProjectsStub
+
+            // Call fetchAllProjects
+            const result = await dataZoneClient.fetchAllProjects()
+
+            // Verify results
+            assert.strictEqual(result.length, 0)
+            assert.strictEqual(listProjectsStub.callCount, 1)
+        })
+
+        it('handles errors gracefully', async function () {
+            // Create a stub for listProjects that throws an error
+            const listProjectsStub = sinon.stub().rejects(new Error('API error'))
+
+            // Replace the listProjects method with our stub
+            dataZoneClient.listProjects = listProjectsStub
+
+            // Call fetchAllProjects and expect it to throw
+            await assert.rejects(() => dataZoneClient.fetchAllProjects(), /API error/)
+        })
+    })
+
+    describe('getToolingEnvironmentId', () => {
+        it('should get tooling environment ID successfully', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [{ id: 'env-1', name: 'Tooling' }],
+                }),
+            }
+
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1')
+
+            assert.strictEqual(result, 'env-1')
+        })
+
+        it('should handle listEnvironmentBlueprints error', async () => {
+            const error = new Error('Blueprint API Error')
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+        })
+
+        it('should handle listEnvironments error', async () => {
+            const error = new Error('Environment API Error')
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+        })
+    })
+
+    describe('getToolingEnvironment', () => {
+        beforeEach(() => {
+            mockAuthProvider = {} as SmusAuthenticationProvider
+        })
+
+        it('should return environment details when successful', async () => {
+            const mockEnvironment: GetEnvironmentCommandOutput = {
+                id: 'env-123',
+                awsAccountRegion: 'us-east-1',
+                projectId: undefined,
+                domainId: undefined,
+                createdBy: undefined,
+                name: undefined,
+                provider: undefined,
+                $metadata: {},
+            }
+
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [{ id: 'env-1', name: 'Tooling' }],
+                }),
+                getEnvironment: sinon.stub().resolves(mockEnvironment),
+            }
+
+            // Mock getToolingBlueprintName to return 'Tooling'
+            sinon.stub(dataZoneClient as any, 'getToolingBlueprintName').returns('Tooling')
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getToolingEnvironment('project-123')
+
+            assert.strictEqual(result, mockEnvironment)
+        })
+
+        it('should throw error when no tooling environment ID found', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().resolves({
+                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
+                }),
+                listEnvironments: sinon.stub().resolves({
+                    items: [],
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                () => dataZoneClient.getToolingEnvironment('project-123'),
+                /No default Tooling environment found for project/
+            )
+        })
+
+        it('should throw error when getToolingEnvironmentId fails', async () => {
+            const mockDataZone = {
+                listEnvironmentBlueprints: sinon.stub().rejects(new Error('API error')),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.getToolingEnvironment('project-123'), /API error/)
+        })
+    })
+
+    describe('fetchAllProjectMemberships', () => {
+        it('should fetch all project memberships with pagination', async () => {
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub(),
+            }
+
+            // First call returns first page with nextToken
+            mockDataZone.listProjectMemberships.onFirstCall().resolves({
+                members: [
+                    {
+                        memberDetails: {
+                            user: {
+                                userId: 'user-1',
+                            },
+                        },
+                    },
+                ],
+                nextToken: 'next-token',
+            })
+
+            // Second call returns second page without nextToken
+            mockDataZone.listProjectMemberships.onSecondCall().resolves({
+                members: [
+                    {
+                        memberDetails: {
+                            user: {
+                                userId: 'user-2',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.fetchAllProjectMemberships('project-1')
+
+            assert.strictEqual(result.length, 2)
+            assert.strictEqual(result[0].memberDetails?.user?.userId, 'user-1')
+            assert.strictEqual(result[1].memberDetails?.user?.userId, 'user-2')
+            assert.strictEqual(mockDataZone.listProjectMemberships.callCount, 2)
+        })
+
+        it('should handle empty memberships', async () => {
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub().resolves({
+                    members: [],
+                    nextToken: undefined,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.fetchAllProjectMemberships('project-1')
+
+            assert.strictEqual(result.length, 0)
+        })
+
+        it('should handle API errors', async () => {
+            const error = new Error('Membership API Error')
+            const mockDataZone = {
+                listProjectMemberships: sinon.stub().rejects(error),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(() => dataZoneClient.fetchAllProjectMemberships('project-1'), error)
+        })
+    })
+
+    describe('getUserProfileId', () => {
+        let stsClientStub: sinon.SinonStub
+        let convertAssumedRoleArnStub: sinon.SinonStub
+        let mockCredentialsProvider: any
+
+        beforeEach(() => {
+            // Mock connection with ID
+            mockAuthProvider.activeConnection = { id: 'connection-id' }
+
+            // Mock credentials provider
+            mockCredentialsProvider = {
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'id',
+                    secretAccessKey: 'secret',
+                    sessionToken: 'token',
+                }),
+            }
+
+            mockAuthProvider.getCredentialsProviderForIamProfile.resolves(mockCredentialsProvider)
+
+            // Stub STS client
+            stsClientStub = sinon.stub(DefaultStsClient.prototype, 'getCallerIdentity')
+
+            // Stub SmusUtils method
+            convertAssumedRoleArnStub = sinon.stub(SmusUtils as any, 'convertAssumedRoleArnToIamRoleArn')
+        })
+
+        afterEach(() => {
+            stsClientStub.restore()
+            convertAssumedRoleArnStub.restore()
+        })
+
+        it('should successfully get user profile ID with role ARN', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const mockUserProfileId = 'user-profile-123'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockRoleArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockRoleArn,
+                })
+            )
+        })
+
+        it('should handle DataZone getUserProfile API failure', async () => {
+            const mockRoleArn = 'arn:aws:iam::123456789012:role/service-role/MyRole'
+            const datazoneError = new Error('DataZone API Error')
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().rejects(datazoneError),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockRoleArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.ok(error.message.includes('Failed to get user profile ID'))
+                    return true
+                }
+            )
+        })
+
+        it('should get user profile ID for IAM user ARN', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+            const mockUserProfileId = 'user-profile-456'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    id: mockUserProfileId,
+                    userIdentifier: mockUserArn,
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            const result = await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+
+            assert.strictEqual(result, mockUserProfileId)
+            assert.ok(
+                mockDataZone.getUserProfile.calledWith({
+                    domainIdentifier: testDomainId,
+                    userIdentifier: mockUserArn,
+                })
+            )
+        })
+
+        it('should throw error when user profile ID is not returned', async () => {
+            const mockUserArn = 'arn:aws:iam::123456789012:user/test-user'
+
+            const mockDataZone = {
+                getUserProfile: sinon.stub().resolves({
+                    // No id field
+                }),
+            }
+
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+
+            await assert.rejects(
+                async () => {
+                    await dataZoneClient.getUserProfileIdForIamPrincipal(mockUserArn)
+                },
+                (error: Error) => {
+                    assert.ok(error instanceof ToolkitError)
+                    assert.strictEqual((error as ToolkitError).code, SmusErrorCodes.NoUserProfileFound)
+                    return true
+                }
+            )
+        })
+    })
+})

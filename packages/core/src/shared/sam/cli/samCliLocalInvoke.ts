@@ -15,7 +15,7 @@ import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
 import { fs } from '../../fs/fs'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { getSamCliPathAndVersion } from '../utils'
 import { deprecatedRuntimes } from '../../../lambda/models/samLambdaRuntime'
 

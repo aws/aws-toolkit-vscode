@@ -10,7 +10,6 @@ import { CodeScanIssue, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { getLogger } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { codeReviewInChat } from '../../app/amazonqScan/models/constants'
 import { telemetry, AmazonqCodeReviewTool } from 'aws-core-vscode/telemetry'
 
 /**
@@ -30,7 +29,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 issue,
                 filePath,
                 'Explain',
-                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user.',
+                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user. You must start with the information stored in the recommendation.text field if it is present.',
                 provider,
                 'explainIssue'
             )
@@ -68,11 +67,6 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerShellCommandShortCut('aws.amazonq.rejectCmdExecution', 'reject-shell-command', provider),
         registerShellCommandShortCut('aws.amazonq.stopCmdExecution', 'stop-shell-command', provider)
     )
-    if (codeReviewInChat) {
-        globals.context.subscriptions.push(
-            registerGenericCommand('aws.amazonq.security.scan-statusbar', 'Review', provider)
-        )
-    }
 }
 
 async function handleIssueCommand(

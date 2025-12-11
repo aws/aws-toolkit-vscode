@@ -138,10 +138,16 @@ export const runningSecurityScan = 'Reviewing project for code issues...'
 
 export const runningFileScan = 'Reviewing current file for code issues...'
 
+export const noSuggestions = 'No suggestions from Amazon Q'
+
 export const noInlineSuggestionsMsg = 'No suggestions from Amazon Q'
 
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 
+/**
+ * the interval of the background thread invocation, which is triggered by the timer
+ */
+export const defaultCheckPeriodMillis = 1000 * 60 * 5
 /**
  * Key bindings JSON file path
  */
@@ -582,8 +588,8 @@ export const invalidMetadataFileUnsupportedSourceDB =
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
-export const invalidCustomVersionsFileMessage = (missingKey: string) =>
-    `The dependency upgrade file provided is missing required field \`${missingKey}\`. Check that it is configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).`
+export const invalidCustomVersionsFileMessage = (errorMessage: string) =>
+    `The dependency upgrade file provided is malformed: ${errorMessage}. Check that it is configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).`
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
@@ -934,6 +940,10 @@ export const predictionTrackerDefaultConfig = {
     debounceIntervalMs: 2000,
     maxAgeMs: 30000,
     maxSupplementalContext: 15,
+}
+
+export enum InlineCompletionLoggingReason {
+    IMPLICIT_REJECT = 'IMPLICIT_REJECT',
 }
 
 export const codeReviewFindingsSuffix = '_codeReviewFindings'

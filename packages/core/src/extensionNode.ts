@@ -8,11 +8,13 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
+import { activate as activateCloudFormation } from './awsService/cloudformation/extension'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
@@ -42,6 +44,7 @@ import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
 import { activate as activateSagemaker } from './awsService/sagemaker/activation'
+import { activate as activateSageMakerUnifiedStudio } from './sagemakerunifiedstudio/activation'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
@@ -151,6 +154,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
+        // Start CloudFormation activation in background to avoid blocking other services
+        activateCloudFormation(context).catch((error) => {
+            getLogger().error(`CloudFormation activation failed: ${error}`)
+        })
+
         await activateAwsExplorer({
             context: extContext,
             regionProvider: globals.regionProvider,
@@ -197,6 +205,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
             await handleAmazonQInstall()
         }
+
+        await activateSageMakerUnifiedStudio(extContext)
+
         await activateApplicationComposer(context)
         await activateThreatComposerEditor(context)
 

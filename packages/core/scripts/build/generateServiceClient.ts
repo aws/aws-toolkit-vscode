@@ -241,6 +241,14 @@ void (async () => {
             serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
             serviceName: 'CodeWhispererUserClient',
         },
+        {
+            serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/sqlworkbench.json',
+            serviceName: 'SQLWorkbench',
+        },
+        {
+            serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/datazonecustomclient.json',
+            serviceName: 'DataZoneCustomClient',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()
