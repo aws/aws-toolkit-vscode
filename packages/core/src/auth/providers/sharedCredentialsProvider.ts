@@ -357,7 +357,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
             logger.verbose(
-                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as regular Shared Credentials`
+                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as Console Credentials`
             )
 
             return this.makeConsoleSessionCredentialsProvider()

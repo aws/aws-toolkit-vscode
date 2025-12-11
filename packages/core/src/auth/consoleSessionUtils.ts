@@ -215,7 +215,8 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 void vscode.window.showErrorMessage(
                     localize(
                         'AWS.message.error.consoleLogin.signinServiceError',
-                        'The command was successfully parsed and a request was made to the AWS Sign-in service but the service returned an error. Please try again.'
+                        'Unable to sign in with console credentials in "{0}". Please try another region.',
+                        region
                     )
                 )
                 throw new ToolkitError('AWS Sign-in service returned an error', {
@@ -255,9 +256,6 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 cause: error as Error,
             })
         }
-
-        // Buffer for file system caching so that the profile exists at .aws/config file
-        await new Promise((resolve) => setTimeout(resolve, 1000))
 
         // Activate the newly created profile
         try {
