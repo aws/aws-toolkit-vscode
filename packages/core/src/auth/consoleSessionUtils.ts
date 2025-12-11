@@ -256,6 +256,9 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
             })
         }
 
+        // Buffer for file system caching so that the profile exists at .aws/config file
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
         // Activate the newly created profile
         try {
             logger.info(`Activating profile: ${profileName}`)
