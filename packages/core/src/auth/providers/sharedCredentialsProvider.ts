@@ -90,7 +90,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         if (hasProps(this.profile, SharedCredentialsKeys.SSO_START_URL)) {
             return 'ssoProfile'
         } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
-            // @ts-ignore wait for https://github.com/aws/aws-toolkit-common/commit/f3a7c462000b1261ffce2b31ef00e99f73255d48
             return 'consoleSessionProfile'
         } else if (this.isCredentialSource(credentialSources.EC2_INSTANCE_METADATA)) {
             return 'ec2Metadata'

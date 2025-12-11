@@ -108,7 +108,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         }
         const result = await runAuth()
         this.storeMetricMetadata({
-            // @ts-ignore wait for https://github.com/aws/aws-toolkit-common/pull/1108
             credentialSourceId: 'consoleCredentials',
             authEnabledFeatures: 'awsExplorer',
             ...this.getResultForMetrics(result),
