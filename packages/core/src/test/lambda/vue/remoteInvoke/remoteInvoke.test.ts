@@ -28,6 +28,16 @@ describe('RemoteInvokeWebview', function () {
             },
         },
     } as any
+    const mockDataDAR = {
+        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+        LambdaFunctionNode: {
+            configuration: {
+                DurableConfig: {
+                    blah: 'blah',
+                },
+            },
+        },
+    } as any
     const input = '{"key": "value"}'
     const mockResponse = {
         LogResult: Buffer.from('Test log').toString('base64'),
@@ -60,6 +70,14 @@ describe('RemoteInvokeWebview', function () {
         await remoteInvokeWebview.invokeLambda(input)
         sinon.assert.calledOnce(client.invoke)
         sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'None')
+    })
+
+    it('should invoke $LATEST in DAR', async function () {
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataDAR)
+        client.invoke.resolves(mockResponse)
+        await remoteInvokeWebview.invokeLambda(input)
+        sinon.assert.calledOnce(client.invoke)
+        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, '$LATEST', 'Tail')
     })
 
     const mockEvent = {
