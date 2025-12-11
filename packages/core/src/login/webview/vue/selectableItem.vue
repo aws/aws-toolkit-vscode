@@ -174,7 +174,7 @@ body.vscode-high-contrast-light .item-container-base.focussed:before {
 }
 
 .selected {
-    border-color: #3675f4;
+    border-color: var(--vscode-textLink-foreground);
 }
 
 .title {

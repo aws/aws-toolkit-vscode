@@ -9,7 +9,8 @@ const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
-import { getOrInstallCli } from '../shared/utilities/cliUtils'
+import { getOrInstallCli, updateAwsCli } from '../shared/utilities/cliUtils'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Auth } from './auth'
@@ -225,6 +226,21 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                         exitCode: result.exitCode,
                     },
                 })
+            } else if (result.exitCode === 252) {
+                // AWS CLI is outdated, attempt to update
+                try {
+                    await updateAwsCli()
+                    // Retry the login command after successful update
+                    return await authenticateWithConsoleLogin(profileName, region)
+                } catch (err) {
+                    if (CancellationError.isUserCancelled(err)) {
+                        throw new ToolkitError('User cancelled updating AWS CLI', {
+                            cancelled: true,
+                        })
+                    }
+                    logger.error('Failed to update AWS CLI: %O', err)
+                    throw ToolkitError.chain(err, 'AWS CLI update failed')
+                }
             } else {
                 // Show generic error message
                 void vscode.window.showErrorMessage(
