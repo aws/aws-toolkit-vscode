@@ -18,26 +18,6 @@ describe('RemoteInvokeWebview', function () {
     const mockData = {
         FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
     } as any
-    const mockDataLMI = {
-        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
-        LambdaFunctionNode: {
-            configuration: {
-                CapacityProviderConfig: {
-                    blah: 'blah',
-                },
-            },
-        },
-    } as any
-    const mockDataDurable = {
-        FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
-        LambdaFunctionNode: {
-            configuration: {
-                DurableConfig: {
-                    blah: 'blah',
-                },
-            },
-        },
-    } as any
     const input = '{"key": "value"}'
     const mockResponse = {
         LogResult: Buffer.from('Test log').toString('base64'),
@@ -56,29 +36,83 @@ describe('RemoteInvokeWebview', function () {
     afterEach(() => {
         sinon.restore()
     })
-    it('should invoke with a simple payload', async function () {
-        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockData)
-        client.invoke.resolves(mockResponse)
-        await remoteInvokeWebview.invokeLambda(input)
-        sinon.assert.calledOnce(client.invoke)
-        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'Tail')
-    })
+    const invokeScenarios: {
+        name: string
+        data: any
+        expectedQualifier: string | undefined
+        expectedLogType: 'Tail' | 'None'
+    }[] = [
+        {
+            name: 'should invoke with a simple payload',
+            data: mockData,
+            expectedQualifier: undefined,
+            expectedLogType: 'Tail',
+        },
+        {
+            name: 'should invoke with no tail in LMI',
+            data: {
+                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+                LambdaFunctionNode: {
+                    configuration: {
+                        CapacityProviderConfig: {
+                            blah: 'blah',
+                        },
+                    },
+                },
+            },
+            expectedQualifier: undefined,
+            expectedLogType: 'None',
+        },
+        {
+            name: 'should invoke $LATEST in Durable Function',
+            data: {
+                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+                LambdaFunctionNode: {
+                    configuration: {
+                        DurableConfig: {
+                            blah: 'blah',
+                        },
+                    },
+                },
+            },
+            expectedQualifier: '$LATEST',
+            expectedLogType: 'Tail',
+        },
+        {
+            name: 'should invoke $LATEST.PUBLISHED in LMI Durable Function',
+            data: {
+                FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+                LambdaFunctionNode: {
+                    configuration: {
+                        DurableConfig: {
+                            blah: 'blah',
+                        },
+                        CapacityProviderConfig: {
+                            blah: 'blah',
+                        },
+                    },
+                },
+            },
+            expectedQualifier: '$LATEST.PUBLISHED',
+            expectedLogType: 'None',
+        },
+    ]
 
-    it('should invoke with no tail in LMI', async function () {
-        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataLMI)
-        client.invoke.resolves(mockResponse)
-        await remoteInvokeWebview.invokeLambda(input)
-        sinon.assert.calledOnce(client.invoke)
-        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'None')
-    })
-
-    it('should invoke $LATEST in Durable Function', async function () {
-        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataDurable)
-        client.invoke.resolves(mockResponse)
-        await remoteInvokeWebview.invokeLambda(input)
-        sinon.assert.calledOnce(client.invoke)
-        sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, '$LATEST', 'Tail')
-    })
+    for (const scenario of invokeScenarios) {
+        it(scenario.name, async function () {
+            const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, scenario.data)
+            client.invoke.resolves(mockResponse)
+            await remoteInvokeWebview.invokeLambda(input)
+            sinon.assert.calledOnce(client.invoke)
+            sinon.assert.calledWith(
+                client.invoke,
+                mockData.FunctionArn,
+                input,
+                scenario.expectedQualifier,
+                scenario.expectedLogType
+            )
+        })
+    }
 
     const mockEvent = {
         name: 'TestEvent',

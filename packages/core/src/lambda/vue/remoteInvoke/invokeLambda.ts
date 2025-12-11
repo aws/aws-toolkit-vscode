@@ -287,8 +287,8 @@ export class RemoteInvokeWebview extends VueWebview {
                 const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
                 const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
                 if (isDurable && !qualifier) {
-                    // Make sure to invoke $LATEST for DAR, invoking unqualified will fail
-                    qualifier = '$LATEST'
+                    // Make sure to invoke $LATEST for Durable Function, invoking unqualified will fail
+                    qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
                 }
                 if (remoteDebugEnabled) {
                     funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
