@@ -28,7 +28,7 @@ describe('RemoteInvokeWebview', function () {
             },
         },
     } as any
-    const mockDataDAR = {
+    const mockDataDurable = {
         FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
         LambdaFunctionNode: {
             configuration: {
@@ -72,8 +72,8 @@ describe('RemoteInvokeWebview', function () {
         sinon.assert.calledWith(client.invoke, mockData.FunctionArn, input, undefined, 'None')
     })
 
-    it('should invoke $LATEST in DAR', async function () {
-        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataDAR)
+    it('should invoke $LATEST in Durable Function', async function () {
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, mockDataDurable)
         client.invoke.resolves(mockResponse)
         await remoteInvokeWebview.invokeLambda(input)
         sinon.assert.calledOnce(client.invoke)
