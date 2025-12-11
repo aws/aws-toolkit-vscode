@@ -282,16 +282,24 @@ export class LanguageServerResolver {
             }
         })
         const fetchResults = await Promise.all(fetchTasks)
+
         const verifyTasks = fetchResults
             .filter((fetchResult) => fetchResult.res && fetchResult.res.ok && fetchResult.res.body)
             .flatMap(async (fetchResult) => {
                 const arrBuffer = await fetchResult.res!.arrayBuffer()
                 const data = Buffer.from(arrBuffer)
 
+                // Skip hash verification if no hash is provided
+                if (!fetchResult.hash) {
+                    return [{ filename: fetchResult.filename, data }]
+                }
+
                 const hash = createHash('sha384', data)
                 if (hash === fetchResult.hash) {
                     return [{ filename: fetchResult.filename, data }]
                 }
+
+                logger.error('Invalid hash')
                 return []
             })
         if (verifyTasks.length !== contents.length) {

@@ -15,6 +15,7 @@ import {
     RuntimeLocationWizard,
     genWalkthroughProject,
     openProjectInWorkspace,
+    installLocalStackExtension,
 } from '../../../awsService/appBuilder/walkthrough'
 import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
 import { fs } from '../../../shared'
@@ -25,6 +26,7 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { assertTelemetryCurried } from '../../testUtil'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/node/httpResourceFetcher'
 import { SamCliInfoInvocation } from '../../../shared/sam/cli/samCliInfo'
+import type { ToolId } from '../../../shared/telemetry/telemetry'
 import { CodeScansState } from '../../../codewhisperer'
 
 interface TestScenario {
@@ -50,6 +52,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'win32',
+        shouldSucceed: false,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'darwin',
         shouldSucceed: true,
@@ -65,6 +72,11 @@ const scenarios: TestScenario[] = [
         shouldSucceed: true,
     },
     {
+        toolID: 'finch',
+        platform: 'darwin',
+        shouldSucceed: true,
+    },
+    {
         toolID: 'aws-cli',
         platform: 'linux',
         shouldSucceed: false,
@@ -76,6 +88,11 @@ const scenarios: TestScenario[] = [
     },
     {
         toolID: 'docker',
+        platform: 'linux',
+        shouldSucceed: false,
+    },
+    {
+        toolID: 'finch',
         platform: 'linux',
         shouldSucceed: false,
     },
@@ -207,11 +224,14 @@ describe('AppBuilder Walkthrough', function () {
                 })
 
                 it('download serverlessland proj', async function () {
+                    const config = vscode.workspace.getConfiguration('aws.samcli')
+                    await config.update('enableCodeLenses', false, vscode.ConfigurationTarget.Global)
                     // When
                     await genWalkthroughProject('API', workspaceUri, 'python')
                     // Then template should be overwritten
                     assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                    await config.update('enableCodeLenses', true, vscode.ConfigurationTarget.Global)
                 })
             })
 
@@ -458,6 +478,98 @@ describe('AppBuilder Walkthrough', function () {
             assertTelemetry({
                 result: 'Succeeded',
                 toolId: 'sam-cli',
+            })
+        })
+
+        describe('Install LocalStack Extension', function () {
+            // @ts-ignore until TODO from src/awsService/appBuilder/walkthrough.ts:installLocalStackExtension
+            const expectedLocalStackToolId: ToolId = 'localstack'
+
+            it('should show already installed message when extension exists', async function () {
+                const mockExtension = { id: 'localstack.localstack' }
+                sandbox
+                    .stub(vscode.extensions, 'getExtension')
+                    .withArgs('localstack.localstack')
+                    .returns(mockExtension as any)
+                const spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
+                await installLocalStackExtension('test-source')
+
+                const message = await getTestWindow().waitForMessage(/LocalStack extension is already installed/)
+                message.close()
+
+                // Verify installation command was not called
+                sandbox.assert.neverCalledWith(spyExecuteCommand, 'workbench.extensions.installExtension')
+
+                // Verify telemetry
+                assertTelemetry({
+                    result: 'Succeeded',
+                    source: 'test-source',
+                    toolId: expectedLocalStackToolId,
+                })
+            })
+
+            it('should successfully install extension when not present', async function () {
+                sandbox.stub(vscode.extensions, 'getExtension').withArgs('localstack.localstack').returns(undefined)
+                const spyExecuteCommand = sandbox.stub(vscode.commands, 'executeCommand').resolves()
+
+                await installLocalStackExtension('test-source')
+
+                const message = await getTestWindow().waitForMessage(/LocalStack extension has been installed/)
+                message.close()
+
+                // Verify installation command was called with correct extension ID
+                sandbox.assert.calledWith(
+                    spyExecuteCommand,
+                    'workbench.extensions.installExtension',
+                    'localstack.localstack'
+                )
+
+                // Verify telemetry
+                assertTelemetry({
+                    result: 'Succeeded',
+                    source: 'test-source',
+                    toolId: expectedLocalStackToolId,
+                })
+            })
+
+            it('should handle installation failure and throw ToolkitError', async function () {
+                sandbox.stub(vscode.extensions, 'getExtension').withArgs('localstack.localstack').returns(undefined)
+                const installError = new Error('Installation failed')
+                sandbox.stub(vscode.commands, 'executeCommand').rejects(installError)
+
+                await assert.rejects(installLocalStackExtension('test-source'), (error: any) => {
+                    assert.strictEqual(error.message, 'Failed to install LocalStack extension')
+                    assert.strictEqual(error.cause, installError)
+                    return true
+                })
+
+                // Verify telemetry is still recorded even on failure
+                assertTelemetry({
+                    result: 'Failed',
+                    source: 'test-source',
+                    toolId: expectedLocalStackToolId,
+                })
+            })
+
+            it('should record telemetry with correct source parameter', async function () {
+                const mockExtension = { id: 'localstack.localstack' }
+                sandbox
+                    .stub(vscode.extensions, 'getExtension')
+                    .withArgs('localstack.localstack')
+                    .returns(mockExtension as any)
+
+                await installLocalStackExtension('walkthrough-button')
+
+                const message = await getTestWindow().waitForMessage(/LocalStack extension is already installed/)
+                message.close()
+
+                // Verify telemetry includes the correct source
+                assertTelemetry({
+                    result: 'Succeeded',
+                    source: 'walkthrough-button',
+                    toolId: expectedLocalStackToolId,
+                })
             })
         })
     })

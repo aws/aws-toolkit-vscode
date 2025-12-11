@@ -5,30 +5,73 @@
 
 import vscode from 'vscode'
 import {
+    acceptSuggestion,
     AuthUtil,
+    CodeSuggestionsState,
+    CodeWhispererCodeCoverageTracker,
     CodeWhispererConstants,
+    CodeWhispererSettings,
+    ConfigurationEntry,
+    DefaultCodeWhispererClient,
+    invokeRecommendation,
     isInlineCompletionEnabled,
+    KeyStrokeHandler,
+    RecommendationHandler,
     runtimeLanguageContext,
     TelemetryHelper,
     UserWrittenCodeTracker,
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
-import { globals, sleep } from 'aws-core-vscode/shared'
+import { Commands, getLogger, globals, sleep } from 'aws-core-vscode/shared'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
-export async function activate() {
+export async function activate(languageClient: BaseLanguageClient) {
+    const codewhispererSettings = CodeWhispererSettings.instance
+    const client = new DefaultCodeWhispererClient()
+
     if (isInlineCompletionEnabled()) {
-        // Debugging purpose: only initialize NextEditPredictionPanel when development
-        // NextEditPredictionPanel.getInstance()
-
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
+        RecommendationHandler.instance.setLanguageClient(languageClient)
+    }
+
+    function getAutoTriggerStatus(): boolean {
+        return CodeSuggestionsState.instance.isSuggestionsEnabled()
+    }
+
+    async function getConfigEntry(): Promise<ConfigurationEntry> {
+        const isShowMethodsEnabled: boolean =
+            vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
+        const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
+        const isManualTriggerEnabled: boolean = true
+        const isSuggestionsWithCodeReferencesEnabled = codewhispererSettings.isSuggestionsWithCodeReferencesEnabled()
+
+        // TODO:remove isManualTriggerEnabled
+        return {
+            isShowMethodsEnabled,
+            isManualTriggerEnabled,
+            isAutomatedTriggerEnabled,
+            isSuggestionsWithCodeReferencesEnabled,
+        }
     }
 
     async function setSubscriptionsforInlineCompletion() {
+        RecommendationHandler.instance.subscribeSuggestionCommands()
+
         /**
          * Automated trigger
          */
         globals.context.subscriptions.push(
+            acceptSuggestion.register(globals.context),
+            vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+                await RecommendationHandler.instance.onEditorChange()
+            }),
+            vscode.window.onDidChangeWindowState(async (e) => {
+                await RecommendationHandler.instance.onFocusChange()
+            }),
+            vscode.window.onDidChangeTextEditorSelection(async (e) => {
+                await RecommendationHandler.instance.onCursorChange(e)
+            }),
             vscode.workspace.onDidChangeTextDocument(async (e) => {
                 const editor = vscode.window.activeTextEditor
                 if (!editor) {
@@ -41,6 +84,7 @@ export async function activate() {
                     return
                 }
 
+                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
                 UserWrittenCodeTracker.instance.onTextDocumentChange(e)
                 /**
                  * Handle this keystroke event only when
@@ -54,10 +98,10 @@ export async function activate() {
 
                 if (vsCodeState.lastUserModificationTime) {
                     TelemetryHelper.instance.setTimeSinceLastModification(
-                        performance.now() - vsCodeState.lastUserModificationTime
+                        Date.now() - vsCodeState.lastUserModificationTime
                     )
                 }
-                vsCodeState.lastUserModificationTime = performance.now()
+                vsCodeState.lastUserModificationTime = Date.now()
                 /**
                  * Important:  Doing this sleep(10) is to make sure
                  * 1. this event is processed by vs code first
@@ -65,6 +109,19 @@ export async function activate() {
                  * Then this event can be processed by our code.
                  */
                 await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+                if (!RecommendationHandler.instance.isSuggestionVisible()) {
+                    await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
+                }
+            }),
+            // manual trigger
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                invokeRecommendation(
+                    vscode.window.activeTextEditor as vscode.TextEditor,
+                    client,
+                    await getConfigEntry()
+                ).catch((e: Error) => {
+                    getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
+                })
             })
         )
     }

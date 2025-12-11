@@ -14,12 +14,12 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
-import { onceChanged } from 'aws-core-vscode/utils'
+import { onceChanged, onceChangedWithComparator } from 'aws-core-vscode/utils'
 import { getLogger, oneMinute, isSageMaker } from 'aws-core-vscode/shared'
-import { isSsoConnection, isIamConnection } from 'aws-core-vscode/auth'
+import { isSsoConnection, isIamConnection, areCredentialsEqual } from 'aws-core-vscode/auth'
 
 export const encryptionKey = crypto.randomBytes(32)
 
@@ -70,7 +70,7 @@ export const notificationTypes = {
 export class AmazonQLspAuth {
     #logErrorIfChanged = onceChanged((s) => getLogger('amazonqLsp').error(s))
     constructor(
-        private readonly client: LanguageClient,
+        private readonly client: BaseLanguageClient,
         private readonly authUtil: AuthUtil = AuthUtil.instance
     ) {}
 
@@ -108,14 +108,17 @@ export class AmazonQLspAuth {
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
 
-    public updateIamCredentials = onceChanged(this._updateIamCredentials.bind(this))
+    public updateIamCredentials = onceChangedWithComparator(
+        this._updateIamCredentials.bind(this),
+        ([prevCreds], [currentCreds]) => areCredentialsEqual(prevCreds, currentCreds)
+    )
     private async _updateIamCredentials(credentials: any) {
         getLogger().info(
             `[SageMaker Debug] Updating IAM credentials - credentials received: ${credentials ? 'YES' : 'NO'}`
         )
         if (credentials) {
             getLogger().info(
-                `[SageMaker Debug] IAM credentials structure: accessKeyId=${credentials.accessKeyId ? 'present' : 'missing'}, secretAccessKey=${credentials.secretAccessKey ? 'present' : 'missing'}, sessionToken=${credentials.sessionToken ? 'present' : 'missing'}`
+                `[SageMaker Debug] IAM credentials structure: accessKeyId=${credentials.accessKeyId ? 'present' : 'missing'}, secretAccessKey=${credentials.secretAccessKey ? 'present' : 'missing'}, sessionToken=${credentials.sessionToken ? 'present' : 'missing'},  expiration=${credentials.expiration ? 'present' : 'missing'}`
             )
         }
 
@@ -160,6 +163,7 @@ export class AmazonQLspAuth {
             accessKeyId: credentials.accessKeyId,
             secretAccessKey: credentials.secretAccessKey,
             sessionToken: credentials.sessionToken,
+            expiration: credentials.expiration,
         }
         const payload = new TextEncoder().encode(JSON.stringify({ data: iamCredentials }))
 

@@ -20,6 +20,7 @@ import {
 import { Set } from 'immutable'
 
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 let validTemplateOptions: Set<SamTemplate>
 let validPythonTemplateOptions: Set<SamTemplate>
@@ -66,7 +67,8 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.10':
                 case 'python3.11':
                 case 'python3.12':
-                case 'python3.13':
+                case 'python3.13' as Runtime:
+                case 'python3.14' as Runtime:
                     assert.deepStrictEqual(
                         result,
                         validPythonTemplateOptions,

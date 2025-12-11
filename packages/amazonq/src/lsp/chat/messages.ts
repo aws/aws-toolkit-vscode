@@ -69,7 +69,8 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
-import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
+import * as path from 'path'
+import { Disposable, BaseLanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import {
     AggregatedCodeScanIssue,
@@ -81,22 +82,8 @@ import {
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import {
-    amazonQDiffScheme,
-    AmazonQPromptSettings,
-    messages,
-    openUrl,
-    isTextEditor,
-    globals,
-    setContext,
-} from 'aws-core-vscode/shared'
-import {
-    DefaultAmazonQAppInitContext,
-    messageDispatcher,
-    EditorContentController,
-    ViewDiffMessage,
-    referenceLogText,
-} from 'aws-core-vscode/amazonq'
+import { AmazonQPromptSettings, messages, openUrl, isTextEditor, globals, setContext } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
@@ -105,7 +92,7 @@ import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 import { CommentUtils } from 'aws-core-vscode/utils'
 
-export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
+export function registerActiveEditorChangeListener(languageClient: BaseLanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
     vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (debounceTimer) {
@@ -120,7 +107,7 @@ export function registerActiveEditorChangeListener(languageClient: LanguageClien
                 }
                 cursorState = getCursorState(editor.selections)
             }
-            languageClient.sendNotification(activeEditorChangedNotificationType.method, {
+            void languageClient.sendNotification(activeEditorChangedNotificationType.method, {
                 textDocument,
                 cursorState,
             })
@@ -128,7 +115,10 @@ export function registerActiveEditorChangeListener(languageClient: LanguageClien
     })
 }
 
-export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
+export function registerLanguageServerEventListener(
+    languageClient: BaseLanguageClient,
+    provider: AmazonQChatViewProvider
+) {
     languageClient.info(
         'Language client received initializeResult from server:',
         JSON.stringify(languageClient.initializeResult)
@@ -142,7 +132,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     }
 
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
-    languageClient.onTelemetry((e) => {
+    languageClient.onTelemetry((e: any) => {
         const telemetryName: string = e.name
         languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
         try {
@@ -156,7 +146,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
 }
 
 export function registerMessageListeners(
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
@@ -197,7 +187,7 @@ export function registerMessageListeners(
                         languageClient.info(
                             `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
                         )
-                        languageClient.sendNotification(message.command, message.params)
+                        void languageClient.sendNotification(message.command, message.params)
                     } catch (err) {
                         languageClient.error(
                             `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
@@ -209,7 +199,7 @@ export function registerMessageListeners(
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
                 try {
                     await messages.copyToClipboard(message.params.code)
-                } catch (e) {
+                } catch (e: unknown) {
                     languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
                 }
                 break
@@ -222,7 +212,7 @@ export function registerMessageListeners(
                     textDocument = { uri: editor.document.uri.toString() }
                 }
 
-                languageClient.sendNotification(insertToCursorPositionNotificationType.method, {
+                void languageClient.sendNotification(insertToCursorPositionNotificationType.method, {
                     ...message.params,
                     cursorPosition,
                     textDocument,
@@ -290,12 +280,15 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
-                        (result) => {
-                            lastPartialResult = result
-                        }
-                    )
+                const chatDisposable = languageClient.onProgress(
+                    chatRequestType,
+                    partialResultToken,
+                    (partialResult: any) =>
+                        handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                            (result) => {
+                                lastPartialResult = result
+                            }
+                        )
                 )
 
                 const editor =
@@ -409,7 +402,7 @@ export function registerMessageListeners(
                 const quickActionDisposable = languageClient.onProgress(
                     quickActionRequestType,
                     quickActionPartialResultToken,
-                    (partialResult) =>
+                    (partialResult: any) =>
                         handlePartialResult<QuickActionResult>(
                             partialResult,
                             encryptionKey,
@@ -479,7 +472,7 @@ export function registerMessageListeners(
                 break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
-                    languageClient.sendNotification(followUpClickNotificationType.method, message.params)
+                    void languageClient.sendNotification(followUpClickNotificationType.method, message.params)
                 }
                 break
             case buttonClickRequestType.method: {
@@ -501,7 +494,7 @@ export function registerMessageListeners(
                     } else if (exitFocus(message.params)) {
                         await setContext('aws.amazonq.amazonqChatLSP.isFocus', false)
                     }
-                    languageClient.sendNotification(message.command, message.params)
+                    void languageClient.sendNotification(message.command, message.params)
                 }
                 break
         }
@@ -611,7 +604,7 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+            focusAmazonQPanel().catch((e: Error) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
 
             try {
                 const uri = vscode.Uri.parse(params.uri)
@@ -664,31 +657,53 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-        )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
-                },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+        // Handle both file:// URIs and raw file paths, ensuring proper Windows path handling
+        let currentFileUri: vscode.Uri
+
+        // Check if it's already a proper file:// URI
+        if (params.originalFileUri.startsWith('file://')) {
+            currentFileUri = vscode.Uri.parse(params.originalFileUri)
+        } else {
+            // Decode URL-encoded characters and treat as file path
+            const decodedPath = decodeURIComponent(params.originalFileUri)
+            currentFileUri = vscode.Uri.file(decodedPath)
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
+
+        const originalContent = params.originalFileContent ?? ''
+        const fileName = path.basename(currentFileUri.fsPath)
+
+        // Use custom scheme to avoid adding to recent files
+        const originalFileUri = vscode.Uri.parse(`amazonq-diff:${fileName}_original_${Date.now()}`)
+
+        // Register content provider for the custom scheme
+        const disposable = vscode.workspace.registerTextDocumentContentProvider('amazonq-diff', {
+            provideTextDocumentContent: () => originalContent,
+        })
+
+        try {
+            // Open diff view with custom scheme URI (left) vs current file (right)
+            await vscode.commands.executeCommand(
+                'vscode.diff',
+                originalFileUri,
+                currentFileUri,
+                `${vscode.workspace.asRelativePath(currentFileUri)} (Original ↔ Current, Editable)`,
+                { preview: false }
+            )
+
+            // Clean up content provider when diff view is closed
+            const cleanupDisposable = vscode.window.onDidChangeVisibleTextEditors(() => {
+                const isDiffViewOpen = vscode.window.visibleTextEditors.some(
+                    (editor) => editor.document.uri.toString() === originalFileUri.toString()
+                )
+                if (!isDiffViewOpen) {
+                    disposable.dispose()
+                    cleanupDisposable.dispose()
+                }
+            })
+        } catch (error) {
+            disposable.dispose()
+            languageClient.error(`[VSCode Client] Failed to open diff view: ${error}`)
+        }
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
@@ -760,7 +775,7 @@ async function handleCompleteResult<T extends ChatResult>(
     provider: AmazonQChatViewProvider,
     tabId: string,
     disposable: Disposable,
-    languageClient: LanguageClient
+    languageClient: BaseLanguageClient
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
 
@@ -781,7 +796,7 @@ async function handleCompleteResult<T extends ChatResult>(
 
 async function handleSecurityFindings(
     decryptedMessage: { additionalMessages?: ChatMessage[] },
-    languageClient: LanguageClient
+    languageClient: BaseLanguageClient
 ): Promise<void> {
     if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
         return
@@ -830,7 +845,7 @@ async function handleSecurityFindings(
 async function resolveChatResponse(
     requestMethod: string,
     params: any,
-    languageClient: LanguageClient,
+    languageClient: BaseLanguageClient,
     webview: vscode.Webview | undefined
 ) {
     const result = await languageClient.sendRequest(requestMethod, params)

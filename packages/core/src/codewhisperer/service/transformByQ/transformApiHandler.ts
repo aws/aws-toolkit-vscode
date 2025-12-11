@@ -68,12 +68,29 @@ export function throwIfCancelled() {
 }
 
 export function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
+    if (transformByQState.getJobId() !== '' && transformByQState.getSourceJDKVersion() !== undefined) {
         sessionJobHistory[transformByQState.getJobId()] = {
             startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
             duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+            transformationType: transformByQState.getTransformationType() ?? 'N/A',
+            sourceJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getSourceJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            targetJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getTargetJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            customDependencyVersionsFilePath:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomDependencyVersionFilePath() || 'N/A'
+                    : 'N/A',
+            customBuildCommand:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomBuildCommand() || 'N/A'
+                    : 'N/A',
         }
     }
     return sessionJobHistory
@@ -275,7 +292,8 @@ function isExcludedSourceFile(path: string): boolean {
     return sourceExcludedExtensions.some((extension) => path.endsWith(extension))
 }
 
-// zip all dependency files and all source files excluding "target" (contains large JARs) plus ".git" and ".idea" (may appear in diff.patch)
+// zip all dependency files and all source files
+// excludes "target" (contains large JARs) plus ".git", ".idea", and ".github" (may appear in diff.patch)
 export function getFilesRecursively(dir: string, isDependenciesFolder: boolean): string[] {
     const entries = nodefs.readdirSync(dir, { withFileTypes: true })
     const files = entries.flatMap((entry) => {
@@ -284,7 +302,12 @@ export function getFilesRecursively(dir: string, isDependenciesFolder: boolean):
             if (isDependenciesFolder) {
                 // include all dependency files
                 return getFilesRecursively(res, isDependenciesFolder)
-            } else if (entry.name !== 'target' && entry.name !== '.git' && entry.name !== '.idea') {
+            } else if (
+                entry.name !== 'target' &&
+                entry.name !== '.git' &&
+                entry.name !== '.idea' &&
+                entry.name !== '.github'
+            ) {
                 // exclude the above directories when zipping source code
                 return getFilesRecursively(res, isDependenciesFolder)
             } else {
@@ -743,7 +766,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
+            getLogger().error(`CodeTransformation: error = %O`, e)
             throw e
         }
     }
@@ -827,11 +850,11 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
     getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
     const diffContents = await fs.readFileText(clientInstructionsPath)
     if (diffContents.trim()) {
-        const diffModel = new DiffModel()
-        diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
         // show user the diff.patch
         const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
         await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+        const diffModel = new DiffModel()
+        diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
     } else {
         // still need to set the project copy so that we can use it below
         transformByQState.setProjectCopyFilePath(path.join(destinationPath, 'sources'))

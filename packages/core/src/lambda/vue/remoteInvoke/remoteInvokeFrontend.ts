@@ -9,7 +9,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
+import type { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
 
 const client = WebviewClientFactory.create<RemoteInvokeWebview>()
 const defaultInitialData = {
@@ -25,6 +25,7 @@ const defaultInitialData = {
     supportCodeDownload: true,
     runtimeSupportsRemoteDebug: true,
     remoteDebugLayer: '',
+    isLambdaRemote: true,
 }
 
 export default defineComponent({
@@ -32,7 +33,7 @@ export default defineComponent({
         return {
             initialData: { ...defaultInitialData },
             debugConfig: {
-                debugPort: 9229,
+                debugPort: undefined,
                 localRootPath: '',
                 remoteRootPath: '/var/task',
                 shouldPublishVersion: true,
@@ -56,16 +57,10 @@ export default defineComponent({
             },
             uiState: {
                 isCollapsed: true,
-                showNameInput: false,
-                payload: 'sampleEvents',
+                extraRegionInfo: '',
             },
             payloadData: {
-                selectedSampleRequest: '',
                 sampleText: '{}',
-                selectedFile: '',
-                selectedFilePath: '',
-                selectedTestEvent: '',
-                newTestEventName: '',
             },
         }
     },
@@ -173,6 +168,9 @@ export default defineComponent({
         // Sync state from workspace storage
         async syncStateFromWorkspace() {
             try {
+                // Detect Lambda remote debugging connection
+                this.uiState.extraRegionInfo = this.initialData.isLambdaRemote ? '' : '(LocalStack running)'
+
                 // Update debugging state
                 this.debugState.isDebugging = await client.isWebViewDebugging()
                 this.debugConfig.localRootPath = await client.getLocalPath()
@@ -197,36 +195,21 @@ export default defineComponent({
                 console.error('Failed to sync state from workspace:', error)
             }
         },
-        async newSelection() {
-            const eventData = {
-                name: this.payloadData.selectedTestEvent,
-                region: this.initialData.FunctionRegion,
-                arn: this.initialData.FunctionArn,
-            }
-            const resp = await client.getRemoteTestEvents(eventData)
-            this.payloadData.sampleText = JSON.stringify(JSON.parse(resp), undefined, 4)
-        },
         async saveEvent() {
-            const eventData = {
-                name: this.payloadData.newTestEventName,
-                event: this.payloadData.sampleText,
-                region: this.initialData.FunctionRegion,
-                arn: this.initialData.FunctionArn,
+            if (this.initialData.FunctionArn && this.initialData.FunctionRegion) {
+                // Use the backend method that shows a quickpick for save
+                await client.saveRemoteTestEvent(
+                    this.initialData.FunctionArn,
+                    this.initialData.FunctionRegion,
+                    this.payloadData.sampleText
+                )
             }
-            await client.createRemoteTestEvents(eventData)
-            this.uiState.showNameInput = false
-            this.payloadData.newTestEventName = ''
-            this.payloadData.selectedTestEvent = eventData.name
-            this.initialData.TestEvents = await client.listRemoteTestEvents(
-                this.initialData.FunctionArn,
-                this.initialData.FunctionRegion
-            )
         },
         async promptForFileLocation() {
             const resp = await client.promptFile()
             if (resp) {
-                this.payloadData.selectedFile = resp.selectedFile
-                this.payloadData.selectedFilePath = resp.selectedFilePath
+                // Populate the textarea with file content
+                this.payloadData.sampleText = resp.sample
             }
         },
         async promptForFolderLocation() {
@@ -234,23 +217,6 @@ export default defineComponent({
             if (resp) {
                 this.debugConfig.localRootPath = resp
                 this.debugState.handlerFileAvailable = await client.getHandlerAvailable()
-            }
-        },
-
-        onFileChange(event: Event) {
-            const input = event.target as HTMLInputElement
-            if (input.files && input.files.length > 0) {
-                const file = input.files[0]
-                this.payloadData.selectedFile = file.name
-
-                // Use Blob.text() to read the file as text
-                file.text()
-                    .then((text) => {
-                        this.payloadData.sampleText = text
-                    })
-                    .catch((error) => {
-                        console.error('Error reading file:', error)
-                    })
             }
         },
         async debugPreCheck() {
@@ -265,11 +231,6 @@ export default defineComponent({
                 this.debugState.remoteDebuggingEnabled = await client.debugPreCheck()
                 this.debugConfig.localRootPath = await client.getLocalPath()
                 this.debugState.handlerFileAvailable = await client.getHandlerAvailable()
-            }
-        },
-        showNameField() {
-            if (this.initialData.FunctionRegion || this.initialData.FunctionRegion) {
-                this.uiState.showNameInput = true
             }
         },
 
@@ -295,11 +256,13 @@ export default defineComponent({
                     return
                 }
 
+                const defaultPort = this.initialData.isLambdaRemote ? 9229 : undefined
+
                 if (!this.debugState.isDebugging) {
                     this.debugState.isDebugging = await client.startDebugging({
                         functionArn: this.initialData.FunctionArn,
                         functionName: this.initialData.FunctionName,
-                        port: this.debugConfig.debugPort ?? 9229,
+                        port: this.debugConfig.debugPort ?? defaultPort,
                         sourceMap: this.runtimeSettings.sourceMapEnabled,
                         localRoot: this.debugConfig.localRootPath,
                         shouldPublishVersion: this.debugConfig.shouldPublishVersion,
@@ -315,6 +278,7 @@ export default defineComponent({
                         layerArn: this.initialData.remoteDebugLayer,
                         lambdaTimeout: this.debugConfig.lambdaTimeout ?? 900,
                         outFiles: this.runtimeSettings.outFiles?.split(','),
+                        isLambdaRemote: this.initialData.isLambdaRemote ?? true,
                     })
                     if (!this.debugState.isDebugging) {
                         // user cancel or failed to start debugging
@@ -324,20 +288,11 @@ export default defineComponent({
                 this.debugState.showDebugTimer = false
             }
 
-            let event = ''
-
-            if (this.uiState.payload === 'sampleEvents' || this.uiState.payload === 'savedEvents') {
-                event = this.payloadData.sampleText
-            } else if (this.uiState.payload === 'localFile') {
-                if (this.payloadData.selectedFile && this.payloadData.selectedFilePath) {
-                    const resp = await client.loadFile(this.payloadData.selectedFilePath)
-                    if (resp) {
-                        event = resp.sample
-                    }
-                }
-            }
-
-            await client.invokeLambda(event, this.initialData.Source, this.debugState.remoteDebuggingEnabled)
+            await client.invokeLambda(
+                this.payloadData.sampleText,
+                this.initialData.Source,
+                this.debugState.remoteDebuggingEnabled
+            )
             await this.syncStateFromWorkspace()
         },
 
@@ -415,16 +370,25 @@ export default defineComponent({
         },
 
         async loadRemoteTestEvents() {
-            const shouldLoadEvents =
-                this.uiState.payload === 'savedEvents' &&
-                this.initialData.FunctionArn &&
-                this.initialData.FunctionRegion
-
-            if (shouldLoadEvents) {
-                this.initialData.TestEvents = await client.listRemoteTestEvents(
+            if (this.initialData.FunctionArn && this.initialData.FunctionRegion) {
+                // Use the backend method that shows a quickpick
+                const eventContent = await client.selectRemoteTestEvent(
                     this.initialData.FunctionArn,
                     this.initialData.FunctionRegion
                 )
+
+                if (eventContent) {
+                    // Populate the textarea with the selected event
+                    this.payloadData.sampleText = JSON.stringify(JSON.parse(eventContent), undefined, 4)
+                }
+            }
+        },
+        onDebugPortChange(event: Event) {
+            const value = (event.target as HTMLInputElement).value
+            if (value === '') {
+                this.debugConfig.debugPort = undefined
+            } else {
+                this.debugConfig.debugPort = Number(value)
             }
         },
     },

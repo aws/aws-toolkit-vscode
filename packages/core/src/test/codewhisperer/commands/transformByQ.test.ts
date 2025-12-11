@@ -6,7 +6,7 @@
 import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import { DB, JDKVersion, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
 import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
@@ -65,9 +65,10 @@ dependencyManagement:
       targetVersion: "3.0.0"
       originType: "THIRD_PARTY"
   plugins:
-    - identifier: "com.example:plugin"
+    - identifier: "plugin.id"
       targetVersion: "1.2.0"
-      versionProperty: "plugin.version"  # Optional`
+      versionProperty: "plugin.version"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"`
 
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
@@ -282,6 +283,8 @@ dependencyManagement:
 
     it(`WHEN update job history called THEN returns details of last run job`, async function () {
         transformByQState.setJobId('abc-123')
+        transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+        transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
         transformByQState.setProjectName('test-project')
         transformByQState.setPolledJobStatus('COMPLETED')
         transformByQState.setStartTime('05/03/24, 11:35 AM')
@@ -502,6 +505,10 @@ dependencyManagement:
         await fs.mkdir(gitFolder)
         await fs.writeFile(path.join(gitFolder, 'config'), 'sample content for the test file')
 
+        const githubFolder = path.join(tempDir, '.github')
+        await fs.mkdir(githubFolder)
+        await fs.writeFile(path.join(githubFolder, 'config'), 'more sample content for the test file')
+
         const zippedFiles = getFilesRecursively(tempDir, false)
         assert.strictEqual(zippedFiles.length, 1)
     })
@@ -570,15 +577,45 @@ dependencyManagement:
         assert.strictEqual(expectedWarning, warningMessage)
     })
 
-    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, async function () {
-        const missingKey = await validateCustomVersionsFile(validCustomVersionsFile)
-        assert.strictEqual(missingKey, undefined)
+    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, function () {
+        const errorMessage = validateCustomVersionsFile(validCustomVersionsFile)
+        assert.strictEqual(errorMessage, undefined)
     })
 
-    it(`WHEN validateCustomVersionsFile on invalid .yaml file THEN fails validation`, async function () {
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing key THEN fails validation`, function () {
         const invalidFile = validCustomVersionsFile.replace('dependencyManagement', 'invalidKey')
-        const missingKey = await validateCustomVersionsFile(invalidFile)
-        assert.strictEqual(missingKey, 'dependencyManagement')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, `Missing required key: \`dependencyManagement\``)
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with invalid dependency identifier format THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('com.example:library1', 'com.example-library1')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(
+            errorMessage,
+            `Invalid dependency identifier format: \`com.example-library1\`. Must be in format \`groupId:artifactId\` without spaces`
+        )
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing plugin identifier format THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('plugin.id', '')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, 'Missing `identifier` in plugin')
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with invalid originType THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('FIRST_PARTY', 'INVALID_TYPE')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(
+            errorMessage,
+            `Invalid originType: \`INVALID_TYPE\`. Must be either \`FIRST_PARTY\` or \`THIRD_PARTY\``
+        )
+    })
+
+    it(`WHEN validateCustomVersionsFile on .yaml file with missing targetVersion THEN fails validation`, function () {
+        const invalidFile = validCustomVersionsFile.replace('targetVersion: "2.1.0"', '')
+        const errorMessage = validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(errorMessage, `Missing \`targetVersion\` in: \`com.example:library1\``)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {

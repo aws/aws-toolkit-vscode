@@ -375,6 +375,7 @@ export function getTelemetryResult(error: unknown | undefined): Result {
  * Examples:
  * - "Failed to save c:/fooß/bar/baz.txt" => "Failed to save c:/xß/x/x.txt"
  * - "EPERM for dir c:/Users/user1/.aws/sso/cache/abc123.json" => "EPERM for dir c:/Users/x/.aws/sso/cache/x.json"
+ * - "Error with profile my-profile" => "Error with profile [REDACTED]"
  */
 export function scrubNames(s: string, username?: string) {
     let r = ''
@@ -404,6 +405,10 @@ export function scrubNames(s: string, username?: string) {
     if (username && username.length > 2) {
         s = s.replaceAll(username, 'x')
     }
+
+    // Remove profile names that might appear in error messages
+    // Matches "profile" followed by optional punctuation and the profile name
+    s = s.replace(/(profile)\s*[:'"]?\s*([\w-]+)['"']?/gi, '$1 [REDACTED]')
 
     // Replace contiguous whitespace with 1 space.
     s = s.replace(/\s+/g, ' ')
@@ -598,6 +603,10 @@ export function isAwsError(error: unknown): error is AWSError & { error_descript
     }
 
     return error instanceof Error && hasCode(error) && hasTime(error)
+}
+
+export function isServiceException(error: unknown): error is ServiceException {
+    return error instanceof ServiceException
 }
 
 export function hasCode<T>(error: T): error is T & { code: string } {

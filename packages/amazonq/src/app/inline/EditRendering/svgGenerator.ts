@@ -7,6 +7,7 @@ import { diffWordsWithSpace, diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
+import { stripCommonIndentation } from './stringUtils'
 type Range = { line: number; start: number; end: number }
 
 const logger = getLogger('nextEditPrediction')
@@ -17,6 +18,8 @@ export const emptyDiffSvg = {
     newCode: '',
     originalCodeHighlightRange: [],
 }
+
+const defaultLineHighlightLength = 4
 
 export class SvgGenerationService {
     /**
@@ -76,6 +79,7 @@ export class SvgGenerationService {
 
         const highlightRanges = this.generateHighlightRanges(removedLines, addedLines, modifiedLines)
         const diffAddedWithHighlight = this.getHighlightEdit(addedLines, highlightRanges.addedRanges)
+        const normalizedDiffLines = stripCommonIndentation(diffAddedWithHighlight)
 
         // Create SVG window, document, and container
         const window = createSVGWindow()
@@ -88,7 +92,7 @@ export class SvgGenerationService {
 
         // Generate CSS for syntax highlighting HTML content based on theme
         const styles = this.generateStyles(currentTheme)
-        const htmlContent = this.generateHtmlContent(diffAddedWithHighlight, styles, offset)
+        const htmlContent = this.generateHtmlContent(normalizedDiffLines, styles, offset)
 
         // Create foreignObject to embed HTML
         const foreignObject = draw.foreignObject(width + offset, height)
@@ -160,6 +164,9 @@ export class SvgGenerationService {
                 white-space: pre-wrap; /* Preserve whitespace */
                 background-color: ${diffAdded};
             }
+            .diff-unchanged {
+                white-space: pre-wrap; /* Preserve indentation for unchanged lines */
+            }
         `
     }
 
@@ -227,7 +234,7 @@ export class SvgGenerationService {
 
             // If no ranges for this line, leave it as-is with HTML escaping
             if (lineRanges.length === 0) {
-                result.push(this.escapeHtml(line))
+                result.push(`<span class="diff-unchanged">${this.escapeHtml(line)}</span>`)
                 continue
             }
 
@@ -242,7 +249,7 @@ export class SvgGenerationService {
                 // Add text before the current range (with HTML escaping)
                 if (range.start > currentPos) {
                     const beforeText = line.substring(currentPos, range.start)
-                    highlightedLine += this.escapeHtml(beforeText)
+                    highlightedLine += `<span class="diff-unchanged">${this.escapeHtml(beforeText)}</span>`
                 }
 
                 // Add the highlighted part (with HTML escaping)
@@ -256,7 +263,7 @@ export class SvgGenerationService {
             // Add any remaining text after the last range (with HTML escaping)
             if (currentPos < line.length) {
                 const afterText = line.substring(currentPos)
-                highlightedLine += this.escapeHtml(afterText)
+                highlightedLine += `<span class="diff-unchanged">${this.escapeHtml(afterText)}</span>`
             }
 
             result.push(highlightedLine)
@@ -431,8 +438,12 @@ export class SvgGenerationService {
         for (let lineIndex = 0; lineIndex < originalCode.length; lineIndex++) {
             const line = originalCode[lineIndex]
 
+            /**
+             * If [line] is an empty line or only contains whitespace char, [diffWordsWithSpace] will say it's not an "remove", i.e. [part.removed] will be undefined,
+             * therefore the deletion will not be highlighted. Thus fallback this scenario to highlight the entire line
+             */
             // If line exists in modifiedLines as a key, process character diffs
-            if (Array.from(modifiedLines.keys()).includes(line)) {
+            if (Array.from(modifiedLines.keys()).includes(line) && line.trim().length > 0) {
                 const modifiedLine = modifiedLines.get(line)!
                 const changes = diffWordsWithSpace(line, modifiedLine)
 
@@ -455,7 +466,7 @@ export class SvgGenerationService {
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
-                    end: line.length,
+                    end: line.length ?? defaultLineHighlightLength,
                 })
             }
         }

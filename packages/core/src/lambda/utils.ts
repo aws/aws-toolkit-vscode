@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import path from 'path'
 import xml2js = require('xml2js')
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration, LayerVersionsListItem } from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
 import { CloudFormationClient, StackSummary } from '../shared/clients/cloudFormation'
 import { DefaultLambdaClient, LambdaClient } from '../shared/clients/lambdaClient'
@@ -36,7 +36,7 @@ export async function* listCloudFormationStacks(client: CloudFormationClient): A
     }
 }
 
-export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<FunctionConfiguration> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...')
     )
@@ -53,7 +53,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
 export async function* listLayerVersions(
     client: LambdaClient,
     name: string
-): AsyncIterableIterator<Lambda.LayerVersionsListItem> {
+): AsyncIterableIterator<LayerVersionsListItem> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.lambda', 'Loading Lambda Layer Versions...')
     )
@@ -72,7 +72,7 @@ export async function* listLayerVersions(
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
+export function getLambdaDetails(configuration: FunctionConfiguration): {
     fileName: string
     functionName: string
 } {
@@ -206,4 +206,9 @@ export function getTempRegionLocation(region: string) {
 
 export function getTempLocation(functionName: string, region: string) {
     return path.join(getTempRegionLocation(region), functionName)
+}
+
+// LocalStack hot-reloading: https://docs.localstack.cloud/aws/tooling/lambda-tools/hot-reloading/
+export function isHotReloadingFunction(codeSha256: string | undefined): boolean {
+    return codeSha256?.startsWith('hot-reloading') ?? false
 }
