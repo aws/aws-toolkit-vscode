@@ -44,6 +44,12 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
         this.view = webviewView
         webviewView.webview.options = { enableScripts: true }
 
+        webviewView.onDidChangeVisibility(() => {
+            if (webviewView.visible) {
+                this.render()
+            }
+        })
+
         if (this.stackName) {
             await this.loadOutputs()
         } else {
