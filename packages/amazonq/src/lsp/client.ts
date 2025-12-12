@@ -22,7 +22,6 @@ import {
 import {
     AuthUtil,
     CodeWhispererSettings,
-    FeatureConfigProvider,
     getSelectedCustomization,
     TelemetryHelper,
     vsCodeState,
