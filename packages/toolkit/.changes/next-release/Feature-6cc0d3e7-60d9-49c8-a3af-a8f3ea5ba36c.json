@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Lambda Remote Invoke panel now supports invoking Lambda durable functions"
+}
