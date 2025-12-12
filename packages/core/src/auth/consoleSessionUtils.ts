@@ -9,7 +9,8 @@ const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
-import { getOrInstallCli } from '../shared/utilities/cliUtils'
+import { getOrInstallCli, updateAwsCli } from '../shared/utilities/cliUtils'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Auth } from './auth'
@@ -24,46 +25,45 @@ import { createRegionPrompter } from '../shared/ui/common/region'
  * @param region Optional AWS region. If not provided, user will be prompted.
  */
 export async function authenticateWithConsoleLogin(profileName?: string, region?: string): Promise<void> {
+    const logger = getLogger()
+
+    // Prompt for profile name if not provided
+    if (!profileName) {
+        const profileNameInput = await vscode.window.showInputBox({
+            prompt: localize('AWS.message.prompt.consoleLogin.profileName', 'Enter a name for this profile'),
+            placeHolder: localize('AWS.message.placeholder.consoleLogin.profileName', 'profile-name'),
+            validateInput: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return localize('AWS.message.error.consoleLogin.emptyProfileName', 'Profile name cannot be empty')
+                }
+                if (/\s/.test(value)) {
+                    return localize(
+                        'AWS.message.error.consoleLogin.spacesInProfileName',
+                        'Profile name cannot contain spaces'
+                    )
+                }
+                if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+                    return localize(
+                        'AWS.message.error.consoleLogin.invalidCharacters',
+                        'Profile name can only contain letters, numbers, underscores, and hyphens'
+                    )
+                }
+                return undefined
+            },
+        })
+
+        if (!profileNameInput) {
+            throw new ToolkitError('User cancelled entering profile', {
+                cancelled: true,
+            })
+        }
+
+        profileName = profileNameInput.trim()
+    }
+
+    // After user interaction has occurred, we can safely emit telemetry
     await telemetry.auth_consoleLoginCommand.run(async (span) => {
         span.record({ authConsoleLoginStarted: true }) // Track entry into flow (raw count)
-        const logger = getLogger()
-
-        // Prompt for profile name if not provided
-        if (!profileName) {
-            const profileNameInput = await vscode.window.showInputBox({
-                prompt: localize('AWS.message.prompt.consoleLogin.profileName', 'Enter a name for this profile'),
-                placeHolder: localize('AWS.message.placeholder.consoleLogin.profileName', 'profile-name'),
-                validateInput: (value) => {
-                    if (!value || value.trim().length === 0) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.emptyProfileName',
-                            'Profile name cannot be empty'
-                        )
-                    }
-                    if (/\s/.test(value)) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.spacesInProfileName',
-                            'Profile name cannot contain spaces'
-                        )
-                    }
-                    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-                        return localize(
-                            'AWS.message.error.consoleLogin.invalidCharacters',
-                            'Profile name can only contain letters, numbers, underscores, and hyphens'
-                        )
-                    }
-                    return undefined
-                },
-            })
-
-            if (!profileNameInput) {
-                throw new ToolkitError('User cancelled entering profile', {
-                    cancelled: true,
-                })
-            }
-
-            profileName = profileNameInput.trim()
-        }
 
         // Prompt for region if not provided
         if (!region) {
@@ -216,7 +216,8 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 void vscode.window.showErrorMessage(
                     localize(
                         'AWS.message.error.consoleLogin.signinServiceError',
-                        'The command was successfully parsed and a request was made to the AWS Sign-in service but the service returned an error. Please try again.'
+                        'Unable to sign in with console credentials in "{0}". Please try another region.',
+                        region
                     )
                 )
                 throw new ToolkitError('AWS Sign-in service returned an error', {
@@ -225,6 +226,21 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                         exitCode: result.exitCode,
                     },
                 })
+            } else if (result.exitCode === 252) {
+                // AWS CLI is outdated, attempt to update
+                try {
+                    await updateAwsCli()
+                    // Retry the login command after successful update
+                    return await authenticateWithConsoleLogin(profileName, region)
+                } catch (err) {
+                    if (CancellationError.isUserCancelled(err)) {
+                        throw new ToolkitError('User cancelled updating AWS CLI', {
+                            cancelled: true,
+                        })
+                    }
+                    logger.error('Failed to update AWS CLI: %O', err)
+                    throw ToolkitError.chain(err, 'AWS CLI update failed')
+                }
             } else {
                 // Show generic error message
                 void vscode.window.showErrorMessage(

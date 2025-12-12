@@ -90,7 +90,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         if (hasProps(this.profile, SharedCredentialsKeys.SSO_START_URL)) {
             return 'ssoProfile'
         } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
-            // @ts-ignore wait for https://github.com/aws/aws-toolkit-common/commit/f3a7c462000b1261ffce2b31ef00e99f73255d48
             return 'consoleSessionProfile'
         } else if (this.isCredentialSource(credentialSources.EC2_INSTANCE_METADATA)) {
             return 'ec2Metadata'
@@ -358,7 +357,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
             logger.verbose(
-                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as regular Shared Credentials`
+                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as Console Credentials`
             )
 
             return this.makeConsoleSessionCredentialsProvider()
@@ -398,15 +397,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     private makeConsoleSessionCredentialsProvider() {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
+        const baseProvider = fromLoginCredentials({
+            profile: this.profileName,
+            clientConfig: {
+                region: this.getDefaultRegion() ?? 'us-east-1',
+            },
+        })
+
         return async () => {
             try {
-                const provider = fromLoginCredentials({
-                    profile: this.profileName,
-                    clientConfig: {
-                        region: defaultRegion,
-                    },
-                })
-                return await provider()
+                return await baseProvider()
             } catch (error) {
                 getLogger().error(
                     'Console login authentication failed for profile %s in region %s: %O',
@@ -418,8 +418,22 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 if (
                     error instanceof Error &&
                     (error.message.includes('Your session has expired') ||
-                        error.message.includes('Failed to load a token for session'))
+                        error.message.includes('Failed to load a token for session') ||
+                        error.message.includes('Failed to load token from'))
                 ) {
+                    // Ask for user confirmation before refreshing
+                    const response = await vscode.window.showInformationMessage(
+                        `Unable to use your console credentials for profile "${this.profileName}". Would you like to refresh it?`,
+                        'Refresh',
+                        'Cancel'
+                    )
+
+                    if (response !== 'Refresh') {
+                        throw ToolkitError.chain(error, 'User cancelled console credentials token refresh.', {
+                            code: 'LoginSessionRefreshCancelled',
+                            cancelled: true,
+                        })
+                    }
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
                     // Execute the console login command with the existing profile and region
                     try {
@@ -440,14 +454,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                         'Authentication completed for profile %s, refreshing credentials...',
                         this.profileName
                     )
-                    // Retry with fresh credentials
-                    const refreshedProvider = fromLoginCredentials({
-                        profile: this.profileName,
-                        clientConfig: {
-                            region: defaultRegion,
-                        },
-                    })
-                    return await refreshedProvider()
+                    // Use the same provider instance but get fresh credentials
+                    return await baseProvider()
                 }
                 throw ToolkitError.chain(error, `Failed to get console credentials`, {
                     code: 'FromLoginCredentialProviderError',
