@@ -243,8 +243,8 @@
                 >
                     <div class="header">Opening AWS sign-in in your default browser...</div>
                     <div class="hint">
-                        If you're already signed in to AWS Console, you can select that session. Or follow the steps to
-                        sign in with your AWS account.
+                        If you're already signed in to AWS Console, you can select that session. Otherwise, follow the
+                        steps to sign in with your AWS account.
                     </div>
                     <a
                         class="hint"
@@ -335,7 +335,7 @@
                 @keydown.enter="handleContinueClick()"
                 @keydown="preventInvalidChars"
             />
-            <div class="title topMargin">(Optional) Region</div>
+            <div class="title topMargin">Region (optional)</div>
             <select
                 class="regionSelect"
                 id="regions"
