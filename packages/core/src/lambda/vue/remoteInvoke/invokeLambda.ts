@@ -272,6 +272,13 @@ export class RemoteInvokeWebview extends VueWebview {
             qualifier = RemoteDebugController.instance.qualifier
         }
 
+        const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
+        const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
+        if (isDurable && !qualifier) {
+            // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
+            qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
+        }
+
         this.isInvoking = true
 
         // If debugging is active, reset the timer during invoke
@@ -284,12 +291,7 @@ export class RemoteInvokeWebview extends VueWebview {
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
                 let funcResponse
-                const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
-                const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
-                if (isDurable && !qualifier) {
-                    // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
-                    qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
-                }
+
                 if (remoteDebugEnabled) {
                     funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
                 } else if (isLMI) {
@@ -318,6 +320,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 this.channel.appendLine('')
             } finally {
                 let action = remoteDebugEnabled ? 'debug' : 'invoke'
+                action = `${action}${isDurable ? '-durable' : ''}${isLMI ? '-lmi' : ''}`
                 if (!this.data.isLambdaRemote) {
                     action = `${action}LocalStack`
                 }
