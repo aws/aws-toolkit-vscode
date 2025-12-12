@@ -75,6 +75,7 @@ export enum Command {
     UNSUPPORTED_COMMAND = 'UNSUPPORTED_COMMAND',
     START_EXECUTION = 'START_EXECUTION',
     EDIT_STATE_MACHINE = 'EDIT_STATE_MACHINE',
+    REDRIVE = 'REDRIVE',
 }
 
 export type FileWatchInfo = {
@@ -114,6 +115,11 @@ export interface SyncFileRequestMessage extends SaveFileRequestMessage {
 
 export interface StartExecutionMessage extends Message {
     executionInput?: string
+}
+
+export interface RedriveMessage extends Message {
+    openInNewTab: boolean
+    executionArn: string
 }
 
 export enum ApiAction {
