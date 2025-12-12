@@ -106,7 +106,7 @@ describe('RemoteInvokeWebview', function () {
             sinon.assert.calledOnce(client.invoke)
             sinon.assert.calledWith(
                 client.invoke,
-                mockData.FunctionArn,
+                scenario.data.FunctionArn,
                 input,
                 scenario.expectedQualifier,
                 scenario.expectedLogType
