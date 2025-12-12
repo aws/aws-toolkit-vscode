@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CloudFormation: group stack events by operation id and display in stack events view"
+}

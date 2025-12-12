@@ -61,6 +61,65 @@ describe('StackEventsWebviewProvider', () => {
         assert.strictEqual(mockClient.sendRequest.calledOnce, true)
     })
 
+    it('should group events by operation ID', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    OperationId: 'op-123',
+                },
+                {
+                    EventId: 'event-2',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_IN_PROGRESS',
+                    OperationId: 'op-123',
+                },
+                {
+                    EventId: 'event-3',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'UPDATE_COMPLETE',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('op-123'))
+        assert.ok(html.includes('parent-row'))
+        assert.ok(html.includes('child-row'))
+    })
+
+    it('should expand first operation group by default', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    OperationId: 'op-123',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('expanded'))
+    })
+
     it('should stop auto-refresh on terminal state', async () => {
         const clock = sandbox.useFakeTimers()
 
