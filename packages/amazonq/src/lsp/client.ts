@@ -22,7 +22,6 @@ import {
 import {
     AuthUtil,
     CodeWhispererSettings,
-    FeatureConfigProvider,
     getSelectedCustomization,
     TelemetryHelper,
     vsCodeState,
@@ -339,7 +338,7 @@ async function onLanguageServerReady(
     // tutorial for inline chat
     const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
-    const enableInlineRollback = FeatureConfigProvider.instance.getPreFlareRollbackGroup() === 'treatment'
+    const enableInlineRollback = true
     if (enableInlineRollback) {
         // use VSC inline
         getLogger().info('Entering preflare logic')
