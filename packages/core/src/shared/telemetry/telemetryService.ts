@@ -348,7 +348,7 @@ export class DefaultTelemetryService {
      */
     public assertPassiveTelemetry(didReload: boolean) {
         // Special case: these may be non-passive during a VSCode "reload". #1592
-        const maybeActiveOnReload = ['sam_init']
+        const maybeActiveOnReload = ['sam_init', 'aws_consoleLoginCLISuccess']
         // Metrics from the previous session can be arbitrary: we can't reason
         // about whether they should be passive/active.
         let readingCache = true
