@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { parseKnownFiles } from '@smithy/shared-ini-file-loader'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { getOrInstallCli, updateAwsCli } from '../shared/utilities/cliUtils'
@@ -205,7 +206,7 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                             profileName
                         )
                     )
-                    logger.info('login with console credentials command completed successfully')
+                    logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
                 })
             } else if (result.exitCode === 254) {
                 logger.error(
@@ -273,6 +274,18 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
             })
         }
 
+        // Load and verify profile with ignoreCache to get newly written config from disk to catch CLI's async writes
+        logger.info(`Verifying profile configuration for ${profileName}`)
+        const profiles = await parseKnownFiles({ ignoreCache: true })
+        const profile = profiles[profileName]
+        logger.info('Profile found: %O', profile)
+        logger.info('Login session value: %s, type: %s', profile?.login_session, typeof profile?.login_session)
+        if (!profiles[profileName]?.login_session) {
+            throw new ToolkitError(`Console login succeeded but profile ${profileName} not properly configured`, {
+                code: 'ConsoleLoginConfigError',
+            })
+        }
+
         // Activate the newly created profile
         try {
             logger.info(`Activating profile: ${profileName}`)
@@ -297,8 +310,10 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 })
             }
 
-            await Auth.instance.useConnection(connection)
-            logger.info('Profile activated successfully')
+            const activeConnection = await Auth.instance.useConnection(connection)
+            if (activeConnection) {
+                logger.info(`Profile ${profileName} activated successfully with console credentials`)
+            }
         } catch (error) {
             logger.error('Failed to activate profile: %O', error)
             void vscode.window.showErrorMessage(
