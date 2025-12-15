@@ -3137,6 +3137,12 @@
                 "category": "%AWS.title%"
             },
             {
+                "command": "aws.toolkit.auth.consoleLogin",
+                "title": "%AWS.command.auth.consoleLogin%",
+                "category": "%AWS.title%",
+                "when": "!aws.isWebExtHost"
+            },
+            {
                 "command": "aws.codecatalyst.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
