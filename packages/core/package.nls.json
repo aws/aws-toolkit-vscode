@@ -115,6 +115,7 @@
     "AWS.command.refreshappBuilderExplorer": "Refresh Application Builder Explorer",
     "AWS.command.applicationComposer.openDialog": "Open Template with Infrastructure Composer...",
     "AWS.command.auth.addConnection": "Add New Connection",
+    "AWS.command.auth.consoleLogin": "Login with console credentials (Recommended)",
     "AWS.command.auth.showConnectionsPage": "Add New Connection",
     "AWS.command.auth.switchConnections": "Switch Connections",
     "AWS.command.auth.signout": "Sign Out",
