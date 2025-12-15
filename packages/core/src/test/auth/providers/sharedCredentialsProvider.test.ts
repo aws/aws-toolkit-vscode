@@ -184,3 +184,32 @@ describe('SharedCredentialsProvider - Endpoint URL', function () {
         assert.strictEqual(await provider.isAvailable(), true)
     })
 })
+
+describe('SharedCredentialsProvider - Console Session', function () {
+    it('recognizes console session profile type and validates console session profile as valid', async function () {
+        const ini = `
+            [profile console-session-profile]
+            login_session = arn:aws:iam::0123456789012:user/username
+            region = us-west-2
+        `
+        const sections = await createTestSections(ini)
+        const provider = new SharedCredentialsProvider('console-session-profile', sections)
+
+        assert.strictEqual(provider.validate(), undefined)
+        assert.strictEqual(await provider.isAvailable(), true)
+        assert.strictEqual(provider.getProviderType(), 'profile')
+        assert.strictEqual(provider.getTelemetryType(), 'consoleSessionProfile')
+    })
+
+    it('fails for profile without required properties', async function () {
+        const ini = `
+            [profile invalid-console-profile]
+            region = us-west-2
+        `
+        const sections = await createTestSections(ini)
+        const provider = new SharedCredentialsProvider('invalid-console-profile', sections)
+
+        assert.notStrictEqual(provider.validate(), undefined)
+        assert.strictEqual(await provider.isAvailable(), false)
+    })
+})
