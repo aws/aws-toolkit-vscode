@@ -14,6 +14,7 @@ import {
     promptToSaveToFile,
     addResourceTypesCommand,
     removeResourceTypeCommand,
+    refreshResourceListCommand,
 } from '../../../../awsService/cloudformation/commands/cfnCommands'
 import { OptionalFlagMode } from '../../../../awsService/cloudformation/stacks/actions/stackActionRequestType'
 import * as inputBox from '../../../../awsService/cloudformation/ui/inputBox'
@@ -416,6 +417,43 @@ describe('CfnCommands', function () {
             await commandHandler(mockNode)
 
             assert.ok(mockResourcesManager.removeResourceType.calledOnceWith('AWS::S3::Bucket'))
+        })
+    })
+
+    describe('refreshResourceListCommand', function () {
+        it('should register refresh resource list command', function () {
+            const mockResourcesManager = { refreshResourceList: sinon.stub() } as any
+            const result = refreshResourceListCommand(mockResourcesManager, {} as any)
+            assert.ok(result)
+            assert.ok(registerCommandStub.calledOnce)
+            assert.strictEqual(registerCommandStub.firstCall.args[0], 'aws.cloudformation.api.refreshResourceList')
+        })
+
+        it('should call refreshResourceList with node typeName', async function () {
+            const mockResourcesManager = { refreshResourceList: sinon.stub().resolves() } as any
+            refreshResourceListCommand(mockResourcesManager, {} as any)
+
+            const commandHandler = registerCommandStub.firstCall.args[1]
+            const mockNode = { typeName: 'AWS::Lambda::Function' } as ResourceTypeNode
+
+            await commandHandler(mockNode)
+
+            assert.ok(mockResourcesManager.refreshResourceList.calledOnceWith('AWS::Lambda::Function'))
+        })
+
+        it('should not throw when refreshResourceList fails', async function () {
+            const mockResourcesManager = {
+                refreshResourceList: sinon.stub().rejects(new Error('Network error')),
+            } as any
+            refreshResourceListCommand(mockResourcesManager, {} as any)
+
+            const commandHandler = registerCommandStub.firstCall.args[1]
+            const mockNode = { typeName: 'AWS::Lambda::Function' } as ResourceTypeNode
+
+            // Should not throw - error handling is done in ResourcesManager
+            await assert.doesNotReject(async () => {
+                await commandHandler(mockNode)
+            })
         })
     })
 })

@@ -168,7 +168,8 @@ async function startClient(context: ExtensionContext) {
         },
         errorHandler: {
             error: (error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult => {
-                void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
+                // Log but don't show popup - let callers handle user-facing errors
+                getLogger().error(`LSP Error: ${toString(message)} - ${toString(error)}`)
                 return { action: ErrorAction.Continue }
             },
             closed: (): CloseHandlerResult => {
