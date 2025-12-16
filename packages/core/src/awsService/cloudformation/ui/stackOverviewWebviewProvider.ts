@@ -87,6 +87,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 
         webviewView.onDidChangeVisibility(() => {
             if (webviewView.visible && this.currentStackName) {
+                this.render()
                 this.startAutoRefresh()
             } else {
                 this.stopAutoRefresh()

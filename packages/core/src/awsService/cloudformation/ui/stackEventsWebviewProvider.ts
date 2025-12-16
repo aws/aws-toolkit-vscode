@@ -80,6 +80,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         })
         webviewView.onDidChangeVisibility(() => {
             if (webviewView.visible) {
+                this.render()
                 this.startAutoRefresh()
             } else {
                 this.stopAutoRefresh()
