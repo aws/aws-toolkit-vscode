@@ -177,7 +177,6 @@ export class DefaultLambdaClient {
             const response = await client.send(
                 new UpdateFunctionCodeCommand({
                     FunctionName: name,
-                    Publish: true,
                     ZipFile: zipFile,
                 })
             )
