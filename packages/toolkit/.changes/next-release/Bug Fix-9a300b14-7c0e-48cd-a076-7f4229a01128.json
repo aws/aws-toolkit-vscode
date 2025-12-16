@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Improved credential refresh flow prevents hanging progress messages during re-authentication of console session profile"
+}

@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Console session authentication now prompts for confirmation when overwriting an existing console session on a profile, allowing them to choose whether to overwrite or cancel"
+}
