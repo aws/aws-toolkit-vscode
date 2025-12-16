@@ -6,7 +6,7 @@ import '../utils/setup'
 import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
 import { closeAllTabs } from '../utils/cleanupUtils'
-import { clickAcknowledgeButton, toggleAgenticChat } from '../helpers/agenticCodingHelper'
+import { clickAcknowledgeButton, clickAWSResponsibleAIPolicy, toggleAgenticChat } from '../helpers/agenticCodingHelper'
 import { findItemByText, findMynahCards } from '../utils/generalUtils'
 
 describe('Amazon Q Agentic Coding Functionality', function () {
@@ -20,6 +20,10 @@ describe('Amazon Q Agentic Coding Functionality', function () {
 
     after(async function () {
         await closeAllTabs(webviewView)
+    })
+
+    it('Click AWS Responsible AI Policy', async () => {
+        await clickAWSResponsibleAIPolicy(webviewView)
     })
 
     it('Clicks on acknowledge button', async () => {

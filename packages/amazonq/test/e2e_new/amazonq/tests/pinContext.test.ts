@@ -75,16 +75,16 @@ describe('Amazon Q Pin Context Functionality', function () {
         await clickPinContextMenuItem(webviewView, '@sage')
     })
 
-    // it('Allows User to Add Code as Context', async () => {
-    //     await clickPinContextButton(webviewView)
-    //     await clickPinContextMenuItem(webviewView, 'Code')
-    //     await clickSubMenuItem(webviewView, 'TestFactorial')
-    //     await writeToChat('Explain', webviewView)
-    //     await sleep(7000)
-    //     await clickContextButton(webviewView)
-    //     await sleep(2000)
-    //     await validateFileInContext(webviewView, 'testFile')
-    // })
+    it('Allows User to Add Code as Context', async () => {
+        await clickPinContextButton(webviewView)
+        await clickPinContextMenuItem(webviewView, 'Code')
+        await clickSubMenuItem(webviewView, 'TestFactorial')
+        await writeToChat('Explain', webviewView)
+        await sleep(7000)
+        await clickContextButton(webviewView)
+        await sleep(2000)
+        await validateFileInContext(webviewView, 'testFile.py')
+    })
 
     it('Allows User to Add Image as Context', async () => {
         await clickPinContextButton(webviewView)

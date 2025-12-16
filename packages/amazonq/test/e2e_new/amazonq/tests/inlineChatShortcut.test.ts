@@ -71,6 +71,33 @@ describe('Amazon Q Inline Completion / Chat Functionality', function () {
         const input = new InputBox()
         await input.sendKeys('Preferences: Open Keyboard Shortcuts')
         await input.sendKeys(Key.ENTER)
+        await sleep(5000)
+        await webviewView.switchBack()
+        const editor = new TextEditor()
+        const content = await editor.getText()
+        const jsonContent = content.replace(/^\/\/.*$/gm, '').trim()
+        const bindings = JSON.parse(jsonContent)
+
+        const rejectBinding = bindings.find(
+            (b: any) => b.key === 'shift+cmd+r' && b.command === 'aws.amazonq.rejectCmdExecution'
+        )
+        if (!rejectBinding) {
+            throw new Error('Key binding for shift+cmd+r with aws.amazonq.rejectCmdExecution not found')
+        }
+
+        const runBinding = bindings.find(
+            (b: any) => b.key === 'shift+cmd+enter' && b.command === 'aws.amazonq.runCmdExecution'
+        )
+        if (!runBinding) {
+            throw new Error('Key binding for shift+cmd+enter with aws.amazonq.runCmdExecution not found')
+        }
+
+        const stopBinding = bindings.find(
+            (b: any) => b.key === 'shift+cmd+backspace' && b.command === 'aws.amazonq.stopCmdExecution'
+        )
+        if (!stopBinding) {
+            throw new Error('Key binding for shift+cmd+backspace with aws.amazonq.stopCmdExecution not found')
+        }
     })
 
     it('Allows User to Accept Inline Suggestions with Enter Key', async () => {

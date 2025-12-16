@@ -7,7 +7,6 @@ import { WebviewView } from 'vscode-extension-tester'
 import { closeAllTabs, dismissOverlayIfPresent } from '../utils/cleanupUtils'
 import { testContext } from '../utils/testContext'
 import {
-    clickAWSResponsibleAIPolicy,
     clickQuickActionsCommand,
     getQuickActionsCommands,
     testCompactCommand,
@@ -16,6 +15,7 @@ import {
     clickOpenJobHistory,
 } from '../helpers/quickActionsHelper'
 import { clearChatInput, validateAmazonQResponse, closeTerminal, sleep } from '../utils/generalUtils'
+import { clickAWSResponsibleAIPolicy } from '../helpers/agenticCodingHelper'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite

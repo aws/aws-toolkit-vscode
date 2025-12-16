@@ -124,7 +124,7 @@ describe('Amazon Q MCP Functionality', function () {
         await sleep(100)
         await clickMCPEditButton(webviewView)
         await updateMCPTimeout(webviewView, 60)
-        await saveMCPServerConfiguration(webviewView, 5000)
+        await saveMCPServerConfiguration(webviewView, 6000)
     })
 
     it('Edit MCP Server with Fault Automation', async () => {

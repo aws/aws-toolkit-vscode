@@ -84,20 +84,6 @@ export async function clickQuickActionsCommand(webview: WebviewView, commandName
         throw new Error(`Failed to click quick actions command '${commandName}'`)
     }
 }
-/**
- * Clicks on the AWS Responsible AI Policy link
- * @param webview The WebviewView instance
- */
-export async function clickAWSResponsibleAIPolicy(webview: WebviewView): Promise<void> {
-    try {
-        const policyLink = await webview.findWebElement(
-            By.css(`a.mynah-ui-clickable-item:contains("AWS Responsible AI Policy")`)
-        )
-        await policyLink.click()
-    } catch (error) {
-        throw new Error(`Failed to click AWS Responsible AI Policy`)
-    }
-}
 
 /**
  * Tests the /compact command functionality
