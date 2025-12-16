@@ -99,6 +99,7 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
     private setupLifecycleHandlers(webviewView: WebviewView) {
         webviewView.onDidChangeVisibility(() => {
             if (webviewView.visible) {
+                this.render()
                 this.startAutoUpdate()
             } else {
                 this.stopAutoUpdate()
