@@ -109,12 +109,12 @@ export class StacksManager implements Disposable {
             })
             this.stacks = response.stacks
             this.nextToken = response.nextToken
-            this.loaded = true
         } catch (error) {
             await handleLspError(error, 'Error loading stacks')
             this.stacks = []
             this.nextToken = undefined
         } finally {
+            this.loaded = true
             await setContext('aws.cloudformation.refreshingStacks', false)
             this.notifyListeners()
         }

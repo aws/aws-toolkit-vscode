@@ -699,7 +699,7 @@ export function refreshResourceListCommand(resourcesManager: ResourcesManager, e
         try {
             await resourcesManager.refreshResourceList(resourceTypeNode.typeName)
         } catch (error) {
-            await handleLspError(error, 'Error refreshing resource list')
+            // ResourcesManager already handles the error, don't duplicate
         }
     })
 }

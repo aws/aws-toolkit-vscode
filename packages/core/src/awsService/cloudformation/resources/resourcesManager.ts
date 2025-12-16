@@ -119,12 +119,11 @@ export class ResourcesManager {
             if (response.resources.length > 0) {
                 this.resources.set(resourceType, response.resources[0])
             }
-
-            this.notifyAllListeners()
         } catch (error) {
-            await handleLspError(error, 'Error loading more resources')
+            await handleLspError(error, `Loading ${resourceType} resources`)
         } finally {
             await setContext('aws.cloudformation.loadingResources', false)
+            this.notifyAllListeners()
         }
     }
 

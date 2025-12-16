@@ -150,4 +150,20 @@ describe('StacksManager', () => {
             assert.strictEqual(mockClient.sendRequest.calledOnce, true)
         })
     })
+
+    describe('error handling', () => {
+        it('should set loaded=true even when loadStacks fails', async () => {
+            // Arrange: Mock client to reject with an error
+            mockClient.sendRequest.rejects(new Error('Access denied'))
+
+            // Act: Try to load stacks (should fail but not throw)
+            await manager.ensureLoaded()
+
+            // Assert: Manager should still be marked as loaded to prevent infinite retries
+            assert.strictEqual(manager.isLoaded(), true)
+
+            // Assert: Stacks should be empty array after error
+            assert.deepStrictEqual(manager.get(), [])
+        })
+    })
 })
