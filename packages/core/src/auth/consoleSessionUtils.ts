@@ -16,7 +16,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Auth } from './auth'
-import { CredentialsId, asString, fromString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { createRegionPrompter } from '../shared/ui/common/region'
 
 /**
