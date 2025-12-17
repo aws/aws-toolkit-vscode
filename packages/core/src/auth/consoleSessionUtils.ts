@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { parseKnownFiles } from '@smithy/shared-ini-file-loader'
+import { globals } from 'aws-core-vscode/shared'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { getOrInstallCli, updateAwsCli } from '../shared/utilities/cliUtils'
@@ -173,6 +174,27 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                                         }
                                     })
                             }
+                            // Check if profile is already configured with a session
+                            const overwriteMatch = text.match(
+                                /Profile .+ is already configured to use session .+\. Do you want to overwrite it to use .+ instead\?/s
+                            )
+                            if (overwriteMatch) {
+                                const cliMessage = overwriteMatch[0].trim() // Extract the matched string
+                                const overwriteBtn = localize('AWS.generic.overwrite', 'Overwrite')
+                                const cancelBtn = localize('AWS.generic.cancel', 'Cancel')
+                                void vscode.window
+                                    .showInformationMessage(cliMessage, overwriteBtn, cancelBtn)
+                                    .then(async (selection) => {
+                                        if (selection === overwriteBtn && loginProcess) {
+                                            // Send "y" to stdin to proceed with overwrite
+                                            await loginProcess.send('y\n')
+                                        } else if (loginProcess) {
+                                            // User cancelled, stop the process
+                                            await loginProcess.send('n\n')
+                                            userCancelled = true
+                                        }
+                                    })
+                            }
                         },
                     })
 
@@ -197,17 +219,16 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
             }
 
             if (result.exitCode === 0) {
-                await telemetry.aws_consoleLoginCLISuccess.run(async () => {
-                    // Show generic success message
-                    void vscode.window.showInformationMessage(
-                        localize(
-                            'AWS.message.success.consoleLogin',
-                            'Login with console credentials successful! Profile "{0}" is now available.',
-                            profileName
-                        )
+                telemetry.aws_consoleLoginCLISuccess.emit({ result: 'Succeeded' })
+                // Show generic success message
+                void vscode.window.showInformationMessage(
+                    localize(
+                        'AWS.message.success.consoleLogin',
+                        'Login with console credentials command completed. Profile "{0}" is now available.',
+                        profileName
                     )
-                    logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
-                })
+                )
+                logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
             } else if (result.exitCode === 254) {
                 logger.error(
                     'AWS Sign-in service returned an error. Exit code %d: %s',
@@ -295,6 +316,9 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 credentialTypeId: profileName,
             }
             const connectionId = asString(credentialsId)
+            // Invalidate cached credentials to force fresh fetch
+            getLogger().info(`Invalidated cached credentials for ${connectionId}`)
+            globals.loginManager.store.invalidateCredentials(credentialsId)
             logger.info(`Looking for connection with ID: ${connectionId}`)
 
             const connection = await Auth.instance.getConnection({ id: connectionId })
@@ -309,11 +333,8 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                     code: 'MissingConnection',
                 })
             }
-
-            const activeConnection = await Auth.instance.useConnection(connection)
-            if (activeConnection) {
-                logger.info(`Profile ${profileName} activated successfully with console credentials`)
-            }
+            // Don't call useConnection() - let credentials be fetched naturally when needed
+            await Auth.instance.updateConnectionState(connectionId, 'valid')
         } catch (error) {
             logger.error('Failed to activate profile: %O', error)
             void vscode.window.showErrorMessage(
