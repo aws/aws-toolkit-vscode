@@ -181,9 +181,10 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                             )
                             if (overwriteMatch) {
                                 const cliMessage = overwriteMatch[0].trim() // Extract the matched string
-                                const overwriteBtn = localize('AWS.button.overwrite', 'Overwrite')
+                                const overwriteBtn = localize('AWS.generic.overwrite', 'Overwrite')
+                                const cancelBtn = localize('AWS.generic.cancel', 'Cancel')
                                 void vscode.window
-                                    .showInformationMessage(cliMessage, overwriteBtn)
+                                    .showInformationMessage(cliMessage, overwriteBtn, cancelBtn)
                                     .then(async (selection) => {
                                         if (selection === overwriteBtn && loginProcess) {
                                             // Send "y" to stdin to proceed with overwrite
@@ -318,7 +319,7 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
             const connectionId = asString(credentialsId)
             // Invalidate cached credentials to force fresh fetch
             getLogger().info(`Invalidated cached credentials for ${connectionId}`)
-            globals.loginManager.store.invalidateCredentials(fromString(connectionId))
+            globals.loginManager.store.invalidateCredentials(credentialsId)
             logger.info(`Looking for connection with ID: ${connectionId}`)
 
             const connection = await Auth.instance.getConnection({ id: connectionId })

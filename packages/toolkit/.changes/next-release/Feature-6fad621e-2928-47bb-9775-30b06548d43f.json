@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. This integration works with the new AWS CLI `aws login` command to enable browser-based authentication for local development."
-}
