@@ -26,6 +26,21 @@ describe('StackEventsWebviewProvider', () => {
         }
     }
 
+    function mockSingleEventWithOperationId() {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    OperationId: 'op-123',
+                },
+            ],
+            nextToken: undefined,
+        })
+    }
+
     beforeEach(() => {
         sandbox = sinon.createSandbox()
         mockClient = {
@@ -99,18 +114,7 @@ describe('StackEventsWebviewProvider', () => {
     })
 
     it('should expand first operation group by default', async () => {
-        mockClient.sendRequest.resolves({
-            events: [
-                {
-                    EventId: 'event-1',
-                    StackName: 'test-stack',
-                    Timestamp: new Date(),
-                    ResourceStatus: 'CREATE_COMPLETE',
-                    OperationId: 'op-123',
-                },
-            ],
-            nextToken: undefined,
-        })
+        mockSingleEventWithOperationId()
 
         const view = createMockView()
         provider.resolveWebviewView(view as any)
@@ -231,18 +235,7 @@ describe('StackEventsWebviewProvider', () => {
     })
 
     it('should not hyperlink operation ID when stackArn is malformed', async () => {
-        mockClient.sendRequest.resolves({
-            events: [
-                {
-                    EventId: 'event-1',
-                    StackName: 'test-stack',
-                    Timestamp: new Date(),
-                    ResourceStatus: 'CREATE_COMPLETE',
-                    OperationId: 'op-123',
-                },
-            ],
-            nextToken: undefined,
-        })
+        mockSingleEventWithOperationId()
 
         const view = createMockView()
         provider.resolveWebviewView(view as any)
