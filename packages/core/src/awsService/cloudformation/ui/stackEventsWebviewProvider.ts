@@ -312,56 +312,153 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
                 ? '<div style="padding:20px;text-align:center;color:var(--vscode-descriptionForeground);">No events found.</div>'
                 : ''
 
-        return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<style>
-body{font-family:var(--vscode-font-family);padding:0;margin:0;color:var(--vscode-foreground);font-size:12px;}
-.header{position:sticky;top:0;background:var(--vscode-editor-background);z-index:10;padding:8px;border-bottom:1px solid var(--vscode-panel-border);}
-.header-content{display:flex;justify-content:space-between;align-items:center;}
-.stack-info{display:inline-flex;gap:6px;align-items:center;}
-${consoleLinkStyles}
-.event-count{font-size:11px;color:var(--vscode-descriptionForeground);}
-.pagination{display:flex;gap:8px;align-items:center;}
-button{background:var(--vscode-button-background);color:var(--vscode-button-foreground);border:none;padding:4px 12px;cursor:pointer;border-radius:2px;}
-button:hover{background:var(--vscode-button-hoverBackground);}
-button:disabled{opacity:0.5;cursor:not-allowed;}
-.content{padding:8px;}
-table{width:100%;border-collapse:collapse;}
-th,td{padding:8px;text-align:left;border-bottom:1px solid var(--vscode-panel-border);}
-th{background:var(--vscode-sideBar-background);font-weight:600;position:sticky;top:56px;z-index:5;}
-.parent-row{cursor:pointer;font-weight:500;background:var(--vscode-sideBarSectionHeader-background);}
-.parent-row:hover{background:var(--vscode-list-hoverBackground);}
-.parent-row td{border-bottom:2px solid var(--vscode-panel-border);}
-.child-row{display:none;}
-.child-row.visible{display:table-row;}
-.child-row:hover{background:var(--vscode-list-hoverBackground);}
-.chevron{display:inline-block;width:12px;transition:transform 0.15s;}
-.chevron.expanded{transform:rotate(90deg);}
-.status-complete{color:#3fb950;}
-.status-failed{color:#f85149;}
-.status-progress{color:#d29922;}
-.notification{background:var(--vscode-inputValidation-warningBackground);border:1px solid var(--vscode-inputValidation-warningBorder);color:var(--vscode-inputValidation-warningForeground);padding:8px 12px;margin:8px;border-radius:3px;}
-.dim{color:var(--vscode-descriptionForeground);}
-</style>
-</head><body>
-<div class="header">
-<div class="header-content">
-<div class="stack-info">${this.stackName ?? ''}
-${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'events')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
-<span class="event-count">(${totalEvents} events${hasMore ? ' loaded' : ''})</span>
-</div>
-<div class="pagination">
-<span>Page ${currentPage} of ${totalPages || 1}</span>
-<button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-<button onclick="nextPage()" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>${currentPage >= totalPages && hasMore ? 'Load More' : 'Next'}</button>
-</div>
-</div>
-</div>
-${notification ? `<div class="notification">${notification}</div>` : ''}
-<div class="content">
-${
-    emptyMessage ||
-    `<table>
+        return /* HTML */ `<!doctype html>
+            <html>
+                <head>
+                    <meta charset="UTF-8" />
+                    <style>
+                        body {
+                            font-family: var(--vscode-font-family);
+                            padding: 0;
+                            margin: 0;
+                            color: var(--vscode-foreground);
+                            font-size: 12px;
+                        }
+                        .header {
+                            position: sticky;
+                            top: 0;
+                            background: var(--vscode-editor-background);
+                            z-index: 10;
+                            padding: 8px;
+                            border-bottom: 1px solid var(--vscode-panel-border);
+                        }
+                        .header-content {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                        .stack-info {
+                            display: inline-flex;
+                            gap: 6px;
+                            align-items: center;
+                        }
+                        ${consoleLinkStyles} .event-count {
+                            font-size: 11px;
+                            color: var(--vscode-descriptionForeground);
+                        }
+                        .pagination {
+                            display: flex;
+                            gap: 8px;
+                            align-items: center;
+                        }
+                        button {
+                            background: var(--vscode-button-background);
+                            color: var(--vscode-button-foreground);
+                            border: none;
+                            padding: 4px 12px;
+                            cursor: pointer;
+                            border-radius: 2px;
+                        }
+                        button:hover {
+                            background: var(--vscode-button-hoverBackground);
+                        }
+                        button:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                        }
+                        .content {
+                            padding: 8px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th,
+                        td {
+                            padding: 8px;
+                            text-align: left;
+                            border-bottom: 1px solid var(--vscode-panel-border);
+                        }
+                        th {
+                            background: var(--vscode-sideBar-background);
+                            font-weight: 600;
+                            position: sticky;
+                            top: 56px;
+                            z-index: 5;
+                        }
+                        .parent-row {
+                            cursor: pointer;
+                            font-weight: 500;
+                            background: var(--vscode-sideBarSectionHeader-background);
+                        }
+                        .parent-row:hover {
+                            background: var(--vscode-list-hoverBackground);
+                        }
+                        .parent-row td {
+                            border-bottom: 2px solid var(--vscode-panel-border);
+                        }
+                        .child-row {
+                            display: none;
+                        }
+                        .child-row.visible {
+                            display: table-row;
+                        }
+                        .child-row:hover {
+                            background: var(--vscode-list-hoverBackground);
+                        }
+                        .chevron {
+                            display: inline-block;
+                            width: 12px;
+                            transition: transform 0.15s;
+                        }
+                        .chevron.expanded {
+                            transform: rotate(90deg);
+                        }
+                        .status-complete {
+                            color: #3fb950;
+                        }
+                        .status-failed {
+                            color: #f85149;
+                        }
+                        .status-progress {
+                            color: #d29922;
+                        }
+                        .notification {
+                            background: var(--vscode-inputValidation-warningBackground);
+                            border: 1px solid var(--vscode-inputValidation-warningBorder);
+                            color: var(--vscode-inputValidation-warningForeground);
+                            padding: 8px 12px;
+                            margin: 8px;
+                            border-radius: 3px;
+                        }
+                        .dim {
+                            color: var(--vscode-descriptionForeground);
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="header-content">
+                            <div class="stack-info">
+                                ${this.stackName ?? ''}
+                                ${this.stackArn
+                                    ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'events')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>`
+                                    : ''}
+                                <span class="event-count">(${totalEvents} events${hasMore ? ' loaded' : ''})</span>
+                            </div>
+                            <div class="pagination">
+                                <span>Page ${currentPage} of ${totalPages || 1}</span>
+                                <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                                <button onclick="nextPage()" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>
+                                    ${currentPage >= totalPages && hasMore ? 'Load More' : 'Next'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    ${notification ? `<div class="notification">${notification}</div>` : ''}
+                    <div class="content">
+                        ${emptyMessage ||
+                        `<table>
 <thead><tr>
 <th>Operation ID</th>
 <th>Timestamp</th>
@@ -372,16 +469,22 @@ ${
 <tbody>
 ${events.map((e) => this.renderEventRow(e)).join('')}
 </tbody>
-</table>`
-}
-</div>
-<script>
-const vscode=acquireVsCodeApi();
-function nextPage(){vscode.postMessage({command:'nextPage'});}
-function prevPage(){vscode.postMessage({command:'prevPage'});}
-function toggle(id){vscode.postMessage({command:'toggle',groupId:id});}
-</script>
-</body></html>`
+</table>`}
+                    </div>
+                    <script>
+                        const vscode = acquireVsCodeApi()
+                        function nextPage() {
+                            vscode.postMessage({ command: 'nextPage' })
+                        }
+                        function prevPage() {
+                            vscode.postMessage({ command: 'prevPage' })
+                        }
+                        function toggle(id) {
+                            vscode.postMessage({ command: 'toggle', groupId: id })
+                        }
+                    </script>
+                </body>
+            </html>`
     }
 
     private renderEventRow(event: GroupedEvent): string {
