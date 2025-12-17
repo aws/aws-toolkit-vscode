@@ -145,7 +145,6 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                         collect: true,
                         rejectOnErrorCode: false,
                         onStdout: (text: string) => {
-                            logger.info('AWS CLI stdout: %s', text)
                             // Enhance the UX by showing AWS Sign-in service (signin.aws.amazon.com) URL in VS Code when we detect it.
                             const urlMatch = text.match(/(https:\/\/[^\s]+signin\.aws\.amazon\.com[^\s]+)/i)
                             if (urlMatch && !urlShown) {
