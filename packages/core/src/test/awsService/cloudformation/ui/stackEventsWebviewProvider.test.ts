@@ -229,4 +229,32 @@ describe('StackEventsWebviewProvider', () => {
         assert.ok(html.includes('(50 events)'))
         assert.ok(!html.includes('(50 events loaded)'))
     })
+
+    it('should not hyperlink operation ID when stackArn is malformed', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    OperationId: 'op-123',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+
+        await coordinatorCallback({
+            stackName: 'test-stack',
+            stackArn: 'not-a-valid-arn',
+            isChangeSetMode: false,
+        })
+
+        const html = view.webview.html
+        assert.ok(html.includes('op-123'))
+        assert.ok(!html.includes('href="https://') || !html.includes('operationId=op-123'))
+    })
 })

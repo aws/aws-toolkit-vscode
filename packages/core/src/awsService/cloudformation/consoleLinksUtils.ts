@@ -14,9 +14,13 @@ export function arnToConsoleTabUrl(arn: string, tab: 'resources' | 'events' | 'o
     return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/${tab}?stackId=${encodeURIComponent(arn)}`
 }
 
-export function operationIdToConsoleUrl(arn: string, operationId: string): string {
-    const region = parse(arn).region
-    return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/operations/info?stackId=${encodeURIComponent(arn)}&operationId=${operationId}`
+export function operationIdToConsoleUrl(arn: string, operationId: string): string | undefined {
+    try {
+        const region = parse(arn).region
+        return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/operations/info?stackId=${encodeURIComponent(arn)}&operationId=${operationId}`
+    } catch {
+        return undefined
+    }
 }
 
 // Reference link - https://cloudscape.design/foundation/visual-foundation/iconography/ - icon name: external

@@ -63,9 +63,14 @@ describe('consoleLinksUtils', () => {
             const euArn = 'arn:aws:cloudformation:eu-west-1:123456789012:stack/test-stack/abc-123'
             const operationId = 'op-456'
             const url = operationIdToConsoleUrl(euArn, operationId)
-            assert.ok(url.includes('eu-west-1.console.aws.amazon.com'))
-            assert.ok(url.includes('region=eu-west-1'))
-            assert.ok(url.includes('operationId=op-456'))
+            assert.ok(url?.includes('eu-west-1.console.aws.amazon.com'))
+            assert.ok(url?.includes('region=eu-west-1'))
+            assert.ok(url?.includes('operationId=op-456'))
+        })
+
+        it('should return undefined for malformed ARN', () => {
+            const url = operationIdToConsoleUrl('not-a-valid-arn', 'op-123')
+            assert.strictEqual(url, undefined)
         })
     })
 })

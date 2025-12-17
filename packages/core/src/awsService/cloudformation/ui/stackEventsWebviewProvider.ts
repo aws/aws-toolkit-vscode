@@ -491,10 +491,8 @@ ${events.map((e) => this.renderEventRow(e)).join('')}
         if (event.isParent) {
             const expanded = this.expandedGroups.has(event.groupId)
             const chevron = event.OperationId ? `<span class="chevron ${expanded ? 'expanded' : ''}">▶</span>` : ''
-            const opIdDisplay =
-                event.OperationId && this.stackArn
-                    ? `<a href="${operationIdToConsoleUrl(this.stackArn, event.OperationId)}">${event.OperationId}</a>`
-                    : (event.OperationId ?? '-')
+            const opUrl = event.OperationId && this.stackArn ? operationIdToConsoleUrl(this.stackArn, event.OperationId) : undefined
+            const opIdDisplay = opUrl ? `<a href="${opUrl}">${event.OperationId}</a>` : (event.OperationId ?? '-')
 
             return `<tr class="parent-row" ${event.OperationId ? `onclick="toggle('${event.groupId}')"` : ''}>
 <td>${chevron} ${opIdDisplay}</td>
@@ -505,10 +503,8 @@ ${events.map((e) => this.renderEventRow(e)).join('')}
 </tr>`
         }
 
-        const opIdDisplay =
-            event.OperationId && this.stackArn
-                ? `<a href="${operationIdToConsoleUrl(this.stackArn, event.OperationId)}">${event.OperationId}</a>`
-                : (event.OperationId ?? '-')
+        const opUrl = event.OperationId && this.stackArn ? operationIdToConsoleUrl(this.stackArn, event.OperationId) : undefined
+        const opIdDisplay = opUrl ? `<a href="${opUrl}">${event.OperationId}</a>` : (event.OperationId ?? '-')
 
         return `<tr class="child-row ${this.expandedGroups.has(event.groupParentId!) ? 'visible' : ''} child-${event.groupParentId}">
 <td>${opIdDisplay}</td>
