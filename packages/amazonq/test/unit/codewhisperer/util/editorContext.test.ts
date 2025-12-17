@@ -378,15 +378,21 @@ describe('editorContext', function () {
 
     describe('buildListRecommendationRequest', function () {
         it('Should return expected fields for optOut, nextToken and reference config', async function () {
+            console.log('[FLAKY-DEBUG] Test START:', Date.now())
             const nextToken = 'testToken'
             const optOutPreference = false
+            console.log('[FLAKY-DEBUG] Before setTelemetryEnabled:', Date.now())
             await globals.telemetry.setTelemetryEnabled(false)
+            console.log('[FLAKY-DEBUG] After setTelemetryEnabled:', Date.now())
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
+            console.log('[FLAKY-DEBUG] Before buildListRecommendationRequest:', Date.now())
             const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
+            console.log('[FLAKY-DEBUG] After buildListRecommendationRequest:', Date.now())
 
             assert.strictEqual(actual.request.nextToken, nextToken)
             assert.strictEqual((actual.request as GenerateCompletionsRequest).optOutPreference, 'OPTOUT')
             assert.strictEqual(actual.request.referenceTrackerConfiguration?.recommendationsWithReferences, 'BLOCK')
+            console.log('[FLAKY-DEBUG] Test END:', Date.now())
         })
     })
 })

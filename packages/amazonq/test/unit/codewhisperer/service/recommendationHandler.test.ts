@@ -104,6 +104,7 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
+            console.log('[FLAKY-DEBUG] Test START:', Date.now())
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -115,8 +116,11 @@ describe('recommendationHandler', function () {
                     },
                 },
             }
+            console.log('[FLAKY-DEBUG] mockServerResult created:', Date.now())
             const handler = new RecommendationHandler()
+            console.log('[FLAKY-DEBUG] handler created:', Date.now())
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            console.log('[FLAKY-DEBUG] getServerResponse stubbed:', Date.now())
             sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
                 isUtg: false,
                 isProcessTimeout: false,
@@ -125,10 +129,13 @@ describe('recommendationHandler', function () {
                 latency: 0,
                 strategy: 'empty',
             })
+            console.log('[FLAKY-DEBUG] fetchSupplementalContext stubbed:', Date.now())
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)
             session.startCursorOffset = 2
+            console.log('[FLAKY-DEBUG] Before getRecommendations:', Date.now())
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            console.log('[FLAKY-DEBUG] After getRecommendations:', Date.now())
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
