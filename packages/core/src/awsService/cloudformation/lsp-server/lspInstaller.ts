@@ -73,7 +73,8 @@ export class CfnLspInstaller extends BaseLspInstaller {
                         throw error
                     }
                 },
-            } as any
+            } as any,
+            'sha256'
         )
     }
 
