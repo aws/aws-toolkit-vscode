@@ -400,10 +400,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const baseProvider = fromLoginCredentials({
             profile: this.profileName,
             clientConfig: {
-                region: this.getDefaultRegion() ?? 'us-east-1',
+                region: defaultRegion,
             },
         })
-
         return async () => {
             try {
                 return await baseProvider()
@@ -434,6 +433,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                             cancelled: true,
                         })
                     }
+
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
                     // Execute the console login command with the existing profile and region
                     try {
@@ -454,6 +454,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                         'Authentication completed for profile %s, refreshing credentials...',
                         this.profileName
                     )
+
                     // Use the same provider instance but get fresh credentials
                     return await baseProvider()
                 }
