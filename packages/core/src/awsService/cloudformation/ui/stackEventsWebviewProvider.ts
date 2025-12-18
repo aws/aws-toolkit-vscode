@@ -255,7 +255,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
     }
 
     private renderError(message: string): void {
-        if (!this.view || this.view.visible === false) {
+        if (!this.view || !this.view.visible) {
             return
         }
         this.view.webview.html = `<!DOCTYPE html>
@@ -283,6 +283,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         }
 
         const groupedEvents = this.groupEvents(this.allEvents)
+        const hasHooks = this.allEvents.some((e) => e.HookType)
         const start = this.currentPage * EventsPerPage
         const end = start + EventsPerPage
         const pageEvents = groupedEvents.slice(start, end)
@@ -295,6 +296,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
             totalPages,
             hasMore,
             this.allEvents.length,
+            hasHooks,
             notification
         )
     }
@@ -305,6 +307,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
         totalPages: number,
         hasMore: boolean,
         totalEvents: number,
+        hasHooks: boolean,
         notification?: string
     ): string {
         const emptyMessage =
@@ -465,9 +468,10 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
 <th>Logical ID</th>
 <th>Status</th>
 <th>Status Reason</th>
+${hasHooks ? '<th>Hook Invocation</th>' : ''}
 </tr></thead>
 <tbody>
-${events.map((e) => this.renderEventRow(e)).join('')}
+${events.map((e) => this.renderEventRow(e, hasHooks)).join('')}
 </tbody>
 </table>`}
                     </div>
@@ -487,7 +491,11 @@ ${events.map((e) => this.renderEventRow(e)).join('')}
             </html>`
     }
 
-    private renderEventRow(event: GroupedEvent): string {
+    private renderEventRow(event: GroupedEvent, hasHooks: boolean): string {
+        const hookCell = hasHooks
+            ? `<td>${event.HookType ? `${event.HookType} (${event.HookStatus ?? '-'})` : '-'}</td>`
+            : ''
+
         if (event.isParent) {
             const expanded = this.expandedGroups.has(event.groupId)
             const chevron = event.OperationId ? `<span class="chevron ${expanded ? 'expanded' : ''}">▶</span>` : ''
@@ -503,6 +511,7 @@ ${events.map((e) => this.renderEventRow(e)).join('')}
 <td>${event.LogicalResourceId ?? '-'}</td>
 <td class="${getStackStatusClass(event.ResourceStatus)}">${event.ResourceStatus ?? '-'}</td>
 <td>${event.ResourceStatusReason ?? '-'}</td>
+${hookCell}
 </tr>`
         }
 
@@ -516,6 +525,7 @@ ${events.map((e) => this.renderEventRow(e)).join('')}
 <td>${event.LogicalResourceId ?? '-'}</td>
 <td class="${getStackStatusClass(event.ResourceStatus)}">${event.ResourceStatus ?? '-'}</td>
 <td>${event.ResourceStatusReason ?? '-'}</td>
+${hookCell}
 </tr>`
     }
 }
