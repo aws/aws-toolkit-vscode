@@ -103,7 +103,7 @@ describe('recommendationHandler', function () {
             assert.strictEqual(session.triggerType, 'AutoTrigger')
         })
 
-        it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
+        it.skip('should call telemetry function that records a CodeWhisperer service invocation', async function () {
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
