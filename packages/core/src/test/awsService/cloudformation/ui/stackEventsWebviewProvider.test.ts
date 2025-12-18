@@ -234,6 +234,80 @@ describe('StackEventsWebviewProvider', () => {
         assert.ok(!html.includes('(50 events loaded)'))
     })
 
+    it('should show Hook Invocation column when events have hooks', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    HookType: 'AWS::CloudFormation::Hook',
+                    HookStatus: 'HOOK_COMPLETE_SUCCEEDED',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('Hook Invocation'))
+        assert.ok(html.includes('AWS::CloudFormation::Hook'))
+        assert.ok(html.includes('HOOK_COMPLETE_SUCCEEDED'))
+    })
+
+    it('should not show Hook Invocation column when no hooks present', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackEvents('test-stack')
+
+        const html = view.webview.html
+        assert.ok(!html.includes('Hook Invocation'))
+    })
+
+    it('should include operation ID link in events', async () => {
+        mockClient.sendRequest.resolves({
+            events: [
+                {
+                    EventId: 'event-1',
+                    StackName: 'test-stack',
+                    Timestamp: new Date(),
+                    ResourceStatus: 'CREATE_COMPLETE',
+                    OperationId: 'op-123',
+                },
+            ],
+            nextToken: undefined,
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+
+        await coordinatorCallback({
+            stackName: 'test-stack',
+            stackArn: 'arn:aws:cloudformation:us-west-2:123456789012:stack/test-stack/xyz-456',
+            isChangeSetMode: false,
+        })
+
+        const html = view.webview.html
+        assert.ok(html.includes('/stacks/operations/info'))
+        assert.ok(html.includes('operationId=op-123'))
+    })
+
     it('should not hyperlink operation ID when stackArn is malformed', async () => {
         mockSingleEventWithOperationId()
 
