@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel."
+}

@@ -242,10 +242,6 @@ void (async () => {
             serviceName: 'CodeWhispererUserClient',
         },
         {
-            serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/gluecatalogapi.json',
-            serviceName: 'GlueCatalogApi',
-        },
-        {
             serviceJsonPath: 'src/sagemakerunifiedstudio/shared/client/sqlworkbench.json',
             serviceName: 'SQLWorkbench',
         },

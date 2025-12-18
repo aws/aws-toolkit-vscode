@@ -8,6 +8,7 @@ import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import * as nls from 'vscode-nls'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import type { SamAppLocation } from './explorer/samProject'
+import { isFunctionResource } from './explorer/samProject'
 import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
 import { OpenTemplateParams, OpenTemplateWizard } from './explorer/openTemplate'
@@ -552,27 +553,33 @@ export async function runOpenTemplate(arg?: TreeNode) {
  */
 export async function runOpenHandler(arg: ResourceNode): Promise<void> {
     const folderUri = path.dirname(arg.resource.location.fsPath)
-    if (!arg.resource.resource.CodeUri) {
+    const resource = arg.resource.resource
+
+    if (!isFunctionResource(resource)) {
+        throw new ToolkitError('Resource is not a Lambda function', { code: 'NotAFunction' })
+    }
+
+    if (!resource.CodeUri) {
         throw new ToolkitError('No CodeUri provided in template, cannot open handler', { code: 'NoCodeUriProvided' })
     }
 
-    if (!arg.resource.resource.Handler) {
+    if (!resource.Handler) {
         throw new ToolkitError('No Handler provided in template, cannot open handler', { code: 'NoHandlerProvided' })
     }
 
-    if (!arg.resource.resource.Runtime) {
+    if (!resource.Runtime) {
         throw new ToolkitError('No Runtime provided in template, cannot open handler', { code: 'NoRuntimeProvided' })
     }
 
     const handlerFile = await getLambdaHandlerFile(
         vscode.Uri.file(folderUri),
-        arg.resource.resource.CodeUri,
-        arg.resource.resource.Handler,
-        arg.resource.resource.Runtime
+        resource.CodeUri,
+        resource.Handler,
+        resource.Runtime as Runtime
     )
     if (!handlerFile) {
         throw new ToolkitError(
-            `No handler file found with name "${arg.resource.resource.Handler}". Ensure the file exists in the expected location."`,
+            `No handler file found with name "${resource.Handler}". Ensure the file exists in the expected location."`,
             {
                 code: 'NoHandlerFound',
             }
