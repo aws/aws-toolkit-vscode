@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Lambda deploy always creates new version"
-}
