@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "CloudFormation: Show hook invocations in stack events on failure"
-}
