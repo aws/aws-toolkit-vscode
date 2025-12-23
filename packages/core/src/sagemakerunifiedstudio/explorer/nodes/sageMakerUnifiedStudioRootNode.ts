@@ -394,6 +394,9 @@ export const smusSignOutCommand = Commands.declare(
                     await SmusAuthenticationPreferencesManager.clearConnectionPreferences(context)
                 }
 
+                // Dispose smusAuthProvider
+                authProvider.dispose()
+
                 // Show success message
                 void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')
 
