@@ -52,6 +52,18 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
 
+        const createMockServerResult = () => ({
+            recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
+            $response: {
+                requestId: 'test_request',
+                httpResponse: {
+                    headers: {
+                        'x-amzn-sessionid': 'test_request',
+                    },
+                },
+            },
+        })
+
         // it('should assign correct recommendations given input', async function () {
         //     assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
         //     assert.strictEqual(
@@ -83,17 +95,7 @@ describe('recommendationHandler', function () {
         // })
 
         it('should assign request id correctly', async function () {
-            const mockServerResult = {
-                recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                $response: {
-                    requestId: 'test_request',
-                    httpResponse: {
-                        headers: {
-                            'x-amzn-sessionid': 'test_request',
-                        },
-                    },
-                },
-            }
+            const mockServerResult = createMockServerResult()
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(handler, 'isCancellationRequested').returns(false)
@@ -108,17 +110,7 @@ describe('recommendationHandler', function () {
             const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves({ workspaces: [] })
 
             try {
-                const mockServerResult = {
-                    recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                    $response: {
-                        requestId: 'test_request',
-                        httpResponse: {
-                            headers: {
-                                'x-amzn-sessionid': 'test_request',
-                            },
-                        },
-                    },
-                }
+                const mockServerResult = createMockServerResult()
                 const handler = new RecommendationHandler()
                 sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
                 sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
