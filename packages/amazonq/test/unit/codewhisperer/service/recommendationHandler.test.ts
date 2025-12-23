@@ -104,56 +104,56 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            console.log('[FLAKY-DEBUG] Test START:', Date.now())
-            const mockServerResult = {
-                recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                $response: {
-                    requestId: 'test_request',
-                    httpResponse: {
-                        headers: {
-                            'x-amzn-sessionid': 'test_request',
+            // Mock vscode.commands.executeCommand to prevent hang on 'aws.amazonq.getWorkspaceId'
+            const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves({ workspaces: [] })
+
+            try {
+                const mockServerResult = {
+                    recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
+                    $response: {
+                        requestId: 'test_request',
+                        httpResponse: {
+                            headers: {
+                                'x-amzn-sessionid': 'test_request',
+                            },
                         },
                     },
-                },
+                }
+                const handler = new RecommendationHandler()
+                sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+                sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
+                    isUtg: false,
+                    isProcessTimeout: false,
+                    supplementalContextItems: [],
+                    contentsLength: 100,
+                    latency: 0,
+                    strategy: 'empty',
+                })
+                sinon.stub(performance, 'now').returns(0.0)
+                session.startPos = new vscode.Position(1, 0)
+                session.startCursorOffset = 2
+                await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+                const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
+                assertTelemetry({
+                    codewhispererRequestId: 'test_request',
+                    codewhispererSessionId: 'test_request',
+                    codewhispererLastSuggestionIndex: 1,
+                    codewhispererTriggerType: 'AutoTrigger',
+                    codewhispererAutomatedTriggerType: 'Enter',
+                    codewhispererImportRecommendationEnabled: true,
+                    result: 'Succeeded',
+                    codewhispererLineNumber: 1,
+                    codewhispererCursorOffset: 38,
+                    codewhispererLanguage: 'python',
+                    credentialStartUrl: testStartUrl,
+                    codewhispererSupplementalContextIsUtg: false,
+                    codewhispererSupplementalContextTimeout: false,
+                    codewhispererSupplementalContextLatency: 0,
+                    codewhispererSupplementalContextLength: 100,
+                })
+            } finally {
+                executeCommandStub.restore()
             }
-            console.log('[FLAKY-DEBUG] mockServerResult created:', Date.now())
-            const handler = new RecommendationHandler()
-            console.log('[FLAKY-DEBUG] handler created:', Date.now())
-            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
-            console.log('[FLAKY-DEBUG] getServerResponse stubbed:', Date.now())
-            sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
-                isUtg: false,
-                isProcessTimeout: false,
-                supplementalContextItems: [],
-                contentsLength: 100,
-                latency: 0,
-                strategy: 'empty',
-            })
-            console.log('[FLAKY-DEBUG] fetchSupplementalContext stubbed:', Date.now())
-            sinon.stub(performance, 'now').returns(0.0)
-            session.startPos = new vscode.Position(1, 0)
-            session.startCursorOffset = 2
-            console.log('[FLAKY-DEBUG] Before getRecommendations:', Date.now())
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
-            console.log('[FLAKY-DEBUG] After getRecommendations:', Date.now())
-            const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
-            assertTelemetry({
-                codewhispererRequestId: 'test_request',
-                codewhispererSessionId: 'test_request',
-                codewhispererLastSuggestionIndex: 1,
-                codewhispererTriggerType: 'AutoTrigger',
-                codewhispererAutomatedTriggerType: 'Enter',
-                codewhispererImportRecommendationEnabled: true,
-                result: 'Succeeded',
-                codewhispererLineNumber: 1,
-                codewhispererCursorOffset: 38,
-                codewhispererLanguage: 'python',
-                credentialStartUrl: testStartUrl,
-                codewhispererSupplementalContextIsUtg: false,
-                codewhispererSupplementalContextTimeout: false,
-                codewhispererSupplementalContextLatency: 0,
-                codewhispererSupplementalContextLength: 100,
-            })
         })
     })
 
