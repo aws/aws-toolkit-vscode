@@ -260,12 +260,7 @@ export class RecommendationService {
                             await commands.executeCommand('editor.action.inlineSuggest.hide')
                             await commands.executeCommand('editor.action.inlineSuggest.trigger')
 
-                            let logstr = 'Done pagination;'
-                            if (flag) {
-                                logstr += ` ShouldUpdate=true; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
-                            } else {
-                                logstr += ` ShouldUpdate=false; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
-                            }
+                            const logstr = `Done pagination; shouldUpdate=${flag}; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
                             this.logger.info(logstr)
                         })
                         .catch((error) => {
