@@ -250,10 +250,10 @@ export class RecommendationService {
 
             // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
-                let logstr = `found non null next token; `
+                let logstr = `Found non null next token; `
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    logstr += 'Start pagination'
+                    logstr += 'start pagination'
                     this.processRemainingRequests(languageClient, request, result, token)
                         .then(async (flag) => {
                             // Force vscode to reload suggestions
@@ -275,7 +275,7 @@ export class RecommendationService {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
                     // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                    logstr += 'Skip pagination as Edit doesnt support'
+                    logstr += 'skip pagination as Edit doesnt support pagination'
                     this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
 
