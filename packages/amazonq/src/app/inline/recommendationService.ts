@@ -35,7 +35,7 @@ export interface GetAllRecommendationsOptions {
 }
 
 export class RecommendationService {
-    private logger = getLogger()
+    private logger = getLogger('inline')
 
     constructor(
         private readonly sessionManager: SessionManager,
@@ -176,7 +176,7 @@ export class RecommendationService {
                 }
             }
 
-            this.logger.info('Received inline completion response from LSP: %O', {
+            this.logger.info('Received inline completion response (page 0) from LSP: %O', {
                 sessionId: result.sessionId,
                 latency: Date.now() - t0,
                 itemCount: result.items?.length || 0,
@@ -188,6 +188,7 @@ export class RecommendationService {
                             50
                         ) + '...',
                 })),
+                nextToken: result.partialResultToken,
             })
 
             if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
@@ -252,15 +253,29 @@ export class RecommendationService {
                 let logstr = `found non null next token; `
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    logstr += 'Suggestion type is COMPLETIONS. Start pulling more items'
-                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
-                        languageClient.warn(`Error when getting suggestions: ${error}`)
-                    })
+                    logstr += 'Start pagination'
+                    this.processRemainingRequests(languageClient, request, result, token)
+                        .then(async (flag) => {
+                            // Force vscode to reload suggestions
+                            await commands.executeCommand('editor.action.inlineSuggest.hide')
+                            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+
+                            let logstr = 'Done pagination;'
+                            if (flag) {
+                                logstr += ` ShouldUpdate=true; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
+                            } else {
+                                logstr += ` ShouldUpdate=false; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
+                            }
+                            this.logger.info(logstr)
+                        })
+                        .catch((error) => {
+                            languageClient.warn(`Error when getting suggestions: ${error}`)
+                        })
                 } else {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
                     // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                    logstr += 'Suggestion type is EDITS. Skip pulling more items'
+                    logstr += 'Skip pagination as Edit doesnt support'
                     this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
 
@@ -294,26 +309,39 @@ export class RecommendationService {
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,
         token: CancellationToken
-    ): Promise<void> {
+    ): Promise<boolean> {
+        let page = 1
+        let logstr = `Pagination call is complete\n\tpage 0 has ${this.sessionManager.getActiveRecommendation().length} suggestions\n`
         let nextToken = firstResult.partialResultToken
+        let shouldUpdateUi: boolean = false
         while (nextToken) {
             const request = { ...initialRequest, partialResultToken: nextToken }
 
             const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
+
+            logstr += `\tpage ${page} has ${result.items.length} suggestions\n`
+
             // when pagination is in progress, but user has already accepted or rejected an inline completion
             // then stop pagination
             if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
                 break
             }
             this.sessionManager.updateSessionSuggestions(result.items)
+            if (result.items.length > 0) {
+                shouldUpdateUi = true
+            }
             nextToken = result.partialResultToken
+            page++
         }
 
+        this.logger.info(logstr)
         this.sessionManager.closeSession()
 
         // refresh inline completion items to render paginated responses
         // All pagination requests completed
         TelemetryHelper.instance.setAllPaginationEndTime()
         TelemetryHelper.instance.tryRecordClientComponentLatency()
+
+        return shouldUpdateUi
     }
 }
