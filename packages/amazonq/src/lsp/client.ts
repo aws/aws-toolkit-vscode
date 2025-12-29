@@ -24,6 +24,7 @@ import {
     CodeWhispererSettings,
     FeatureConfigProvider,
     getSelectedCustomization,
+    KeyStrokeHandler,
     TelemetryHelper,
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
@@ -371,6 +372,21 @@ async function onLanguageServerReady(
             }),
             vscode.workspace.onDidCloseTextDocument(async () => {
                 await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            }),
+            vscode.workspace.onDidChangeTextDocument(async (e) => {
+                const editor = vscode.window.activeTextEditor
+                if (!editor) {
+                    return
+                }
+                if (e.document !== editor.document) {
+                    return
+                }
+
+                if (editor.document.languageId === 'Log') {
+                    return
+                }
+
+                await KeyStrokeHandler.instance.processKeyStroke(e, editor, undefined, undefined)
             })
         )
     }

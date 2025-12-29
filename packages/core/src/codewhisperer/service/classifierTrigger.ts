@@ -9,6 +9,7 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ProgrammingLanguage } from '../client/codewhispereruserclient'
+import { getLogger } from '../../shared/logger'
 
 interface normalizedCoefficients {
     readonly lineNum: number
@@ -488,7 +489,7 @@ export class ClassifierTrigger {
 
         const threshold = this.getThreshold()
 
-        const shouldTrigger = classifierResult > threshold
+        const shouldTrigger = false
         if (shouldRecordResult) {
             TelemetryHelper.instance.setClassifierResult(classifierResult)
             TelemetryHelper.instance.setClassifierThreshold(threshold)
@@ -572,6 +573,42 @@ export class ClassifierTrigger {
             previousDecisionCoefficient +
             languageCoefficient +
             leftContextLengthCoefficient
+
+        getLogger().info(`@@autotrigger@@
+version: Preflare
+Classifier Result: ${sigmoid(result)}
+Trigger Character: ${char}
+
+Coefficient Contributions:
+    lengthOfRight:        ${this.lengthOfRightCoefficient * ((lengthOfRight - this.minn.lenRight) / (this.maxx.lenRight - this.minn.lenRight))}
+    lengthOfLeftCurrent:  ${this.lengthOfLeftCurrentCoefficient * ((lengthOfLeftCurrent - this.minn.lenLeftCur) / (this.maxx.lenLeftCur - this.minn.lenLeftCur))}
+    lengthOfLeftPrev:     ${this.lengthOfLeftPrevCoefficient * ((lengthOfLeftPrev - this.minn.lenLeftPrev) / (this.maxx.lenLeftPrev - this.minn.lenLeftPrev))}
+    lineNum:              ${this.lineNumCoefficient * ((lineNum - this.minn.lineNum) / (this.maxx.lineNum - this.minn.lineNum))}
+    osCoefficient:        ${osCoefficient}
+    triggerType:          ${triggerTypeCoefficient}
+    char:                 ${charCoefficient}
+    keyWord:              ${keyWordCoefficient}
+    ide:                  ${ideCoefficient}
+    intercept:            ${this.intercept}
+    previousDecision:     ${previousDecisionCoefficient}
+    language:             ${languageCoefficient}
+    leftContextLength:    ${leftContextLengthCoefficient}
+    ------------------------------------------------------------------
+    lengthOfRight = ${this.lengthOfRightCoefficient} * ${(lengthOfRight - this.minn.lenRight) / (this.maxx.lenRight - this.minn.lenRight)};
+    lengthOfLeftCurrent = ${this.lengthOfLeftCurrentCoefficient} * ${(lengthOfLeftCurrent - this.minn.lenLeftCur) / (this.maxx.lenLeftCur - this.minn.lenLeftCur)};
+    lengthOfLeftPrev = ${this.lengthOfLeftPrevCoefficient} * ${(lengthOfLeftPrev - this.minn.lenLeftPrev) / (this.maxx.lenLeftPrev - this.minn.lenLeftPrev)}
+`)
+
+        getLogger().info(`
+right context (length=${rightContext.length})
+${rightContext}
+***************************************
+left current context (length=${leftContextLines[leftContextLines.length - 1].length})
+${leftContextLines[leftContextLines.length - 1]}
+***************************************
+left prev context (length=${leftContextLines[leftContextLines.length - 2].length})
+${leftContextLines[leftContextLines.length - 2]}
+***************************************`)
 
         return sigmoid(result)
     }
