@@ -11,6 +11,9 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
+import { storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
+import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,6 +61,33 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         }
         const response = await kubectlClient.createWorkspaceConnection(node.devSpace)
         getLogger().debug(`HyperPod connection response: &O`, response)
+
+        // Store connection info after successful connection
+        try {
+            // Get EKS cluster details from kubectl client
+            const eksCluster = kubectlClient.getEksCluster()
+            await storeHyperpodConnection(
+                node.devSpace.name,
+                node.devSpace.namespace,
+                node.hpCluster.clusterArn,
+                node.hpCluster.clusterName,
+                node.devSpace.cluster,
+                eksCluster?.endpoint,
+                eksCluster?.certificateAuthority?.data
+            )
+            getLogger().info(`Stored HyperPod connection info for space: ${node.devSpace.name}`)
+
+            // Schedule automatic reconnection
+            const reconnectionManager = HyperpodReconnectionManager.getInstance()
+            await reconnectionManager.scheduleReconnection(node.devSpace.name)
+
+            // Start connection monitoring for network drops
+            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
+            connectionMonitor.startMonitoring(node.devSpace.name)
+        } catch (error) {
+            getLogger().warn(`Failed to store HyperPod connection info: ${error}`)
+        }
+
         await vscode.env.openExternal(vscode.Uri.parse(response.url))
         void vscode.window.showInformationMessage(`Started connection to HyperPod dev space: ${node.devSpace.name}`)
     } catch (error) {
