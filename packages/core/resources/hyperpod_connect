@@ -6,25 +6,15 @@
 # HyperPod is AWS's managed service for distributed machine learning training at scale.
 #
 # OVERVIEW:
-# The script acts as a wrapper around the AWS SSM CLI to create a secure session tunnel to a HyperPod 
-# compute instance. It validates required parameters, logs the connection attempt, and executes the 
-# SSM StartSession command with HyperPod-specific connection details.
-#
-# REQUIRED ENVIRONMENT VARIABLES:
-#   AWS_REGION          - AWS region where the HyperPod cluster is located (e.g., us-west-2)
-#   AWS_SSM_CLI         - Path to the AWS SSM CLI executable
-#   STREAM_URL          - WebSocket stream URL for the HyperPod session connection
-#   TOKEN               - Authentication token for the HyperPod session
-#   SESSION_ID          - Unique identifier for the HyperPod session
+# The script always gets fresh credentials from the reconnection manager and uses them to establish
+# a secure session tunnel to a HyperPod compute instance.
 #
 # OPTIONAL ENVIRONMENT VARIABLES:
 #   LOG_FILE_LOCATION   - Path to log file (default: /tmp/hyperpod_connect.log)
 #   DEBUG_LOG           - Enable debug logging (default: 0)
 #
 # USAGE:
-#   AWS_REGION=us-west-2 AWS_SSM_CLI=/usr/local/bin/session-manager-plugin \
-#   STREAM_URL=wss://... TOKEN=abc123... SESSION_ID=session-xyz \
-#   ./hyperpod_connect
+#   ./hyperpod_connect hp_demo1
 #
 # SECURITY NOTE:
 # This script handles sensitive authentication tokens. Ensure proper file permissions
@@ -68,19 +58,71 @@ _hyperpod() {
     exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
 }
 
+_get_fresh_credentials() {
+    local DEVSPACE_NAME=$1
+    
+    _log "Getting fresh credentials for $DEVSPACE_NAME"
+    
+    # Read server info to get port
+    local SERVER_INFO_FILE="$HOME/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json"
+    if [ ! -f "$SERVER_INFO_FILE" ]; then
+        _log "Error: Server info file not found: $SERVER_INFO_FILE"
+        exit 1
+    fi
+    
+    local PORT=$(cat "$SERVER_INFO_FILE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['port'])" 2>/dev/null)
+    if [ -z "$PORT" ]; then
+        _log "Error: Could not extract port from server info file"
+        exit 1
+    fi
+    
+    # Call API to get fresh credentials
+    local API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$DEVSPACE_NAME"
+    API_RESPONSE=$(curl -s "$API_URL")
+    
+    if [ $? -ne 0 ] || [ -z "$API_RESPONSE" ]; then
+        _log "Error: Failed to get credentials from API"
+        exit 1
+    fi
+    
+    _log "Fresh credentials obtained from API"
+}
+
 _main() {
     # Set defaults for missing environment variables
     DEBUG_LOG=${DEBUG_LOG:-0}
     LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
 
+    if [ $# -ne 1 ]; then
+        _log "Usage: $0 hp_<devspace_name>"
+        exit 1
+    fi
+
+    DEVSPACE_NAME=$(echo "$1" | sed 's/hp_//')
+    
     _log "=============================================================================="
-    _require AWS_REGION "${AWS_REGION:-}"
-    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
-    _require SESSION_ID "${SESSION_ID:-}"
-    _require_nolog STREAM_URL "${STREAM_URL:-}"
-    _require_nolog TOKEN "${TOKEN:-}"
+    _log "Connecting to HyperPod devspace: $DEVSPACE_NAME"
+    
+    # Always get fresh credentials
+    _get_fresh_credentials "$DEVSPACE_NAME"
+    
+    # Parse credentials directly from API response JSON - handle URL encoding properly
+    SESSION_ID=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); print(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['sessionId'][0])" 2>/dev/null)
+    TOKEN=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); token=urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['sessionToken'][0]; print(token.replace(' ', '+'))" 2>/dev/null)
+    STREAM_URL=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); parsed=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); stream_url=urllib.parse.unquote(parsed['streamUrl'][0]); cell_number=parsed.get('cell-number', [''])[0]; final_url=stream_url + ('&cell-number=' + urllib.parse.unquote(cell_number) if cell_number else ''); print(final_url.replace(' ', '+'))" 2>/dev/null)
+    
+    # Extract region from stream URL
+    AWS_REGION=$(echo "$STREAM_URL" | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
+    AWS_SSM_CLI="${AWS_SSM_CLI:-session-manager-plugin}"
+    
+    # Validate all required parameters
+    _require AWS_REGION "${AWS_REGION}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI}"
+    _require SESSION_ID "${SESSION_ID}"
+    _require_nolog STREAM_URL "${STREAM_URL}"
+    _require_nolog TOKEN "${TOKEN}"
 
     _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
 }
 
-_main
+_main "$@"
