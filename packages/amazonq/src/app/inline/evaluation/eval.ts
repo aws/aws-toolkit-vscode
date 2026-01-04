@@ -3,12 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-// import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { SessionManager } from '../sessionManager'
 import { getLogger } from 'aws-core-vscode/shared'
+import { InlineCompletionManager } from '../completion'
+import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 
 type InputEntry = {
-    fileToTriggerInline: string
+    filename: string
+    filepath: string
     line: number
     column: number
 }
@@ -16,40 +19,43 @@ type InputEntry = {
 export class EvaluationProcess {
     private rawInput: string = ''
     private inputEntries: InputEntry[]
+    private tokenSrc: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
     constructor(
         inputpath: string,
-        readonly sessionManager: SessionManager | undefined
+        readonly sessionManager: SessionManager | undefined,
+        readonly inlineMananger: InlineCompletionManager
     ) {
-        // this.rawInput = nodefs.readFileSync(inputpath, 'utf-8')
-        // this.inputEntries = this.processRawinput(this.rawInput)
-        this.inputEntries = [
-            {
-                fileToTriggerInline: 'MathUtil.java',
-                line: 11,
-                column: 0,
-            },
-        ]
+        this.rawInput = nodefs.readFileSync(inputpath, 'utf-8')
+        this.inputEntries = this.processRawinput(this.rawInput)
     }
 
     /**
      * @param rawInput JSONL file
      * @returns InputEntry[]
      */
-    processRawinput(rawInput: string): InputEntry[] {
-        const lines = rawInput.split('\n')
+    private processRawinput(rawInput: string): InputEntry[] {
+        const lines = rawInput.trim().split('\n')
         const inputEntries: InputEntry[] = []
 
-        for (const line of lines) {
-            // TODO: try...catch
-            const obj = JSON.parse(line)
-            // TODO: implement the actual parsing logic
-            const inputEntry: InputEntry = {
-                fileToTriggerInline: obj.fileToTriggerInline,
-                line: obj.line,
-                column: obj.column,
+        try {
+            for (const line of lines) {
+                if (!line.length) {
+                    continue
+                }
+                const obj = JSON.parse(line)
+                // TODO: implement the actual parsing logic
+                const inputEntry: InputEntry = {
+                    filename: obj.file_name,
+                    filepath: obj.file_path,
+                    line: obj.method_body_start_point[0],
+                    column: obj.method_body_start_point[1],
+                }
+                inputEntries.push(inputEntry)
             }
-            inputEntries.push(inputEntry)
+        } catch (e) {
+            getLogger().error(`Error parsing input: ${e}`)
+            throw e
         }
 
         return inputEntries
@@ -65,8 +71,8 @@ export class EvaluationProcess {
         return
     }
 
-    async triggerInlineOnce(inputEntry: InputEntry) {
-        const { fileToTriggerInline, line, column } = inputEntry
+    private async triggerInlineOnce(inputEntry: InputEntry) {
+        const { filename: fileToTriggerInline, line, column } = inputEntry
         const uri = await this.searchFile(fileToTriggerInline)
         if (!uri) {
             return
@@ -79,10 +85,19 @@ export class EvaluationProcess {
         editor.selection = new vscode.Selection(line, column, line, column)
 
         // or 'aws.amazonq.invokeInlineCompletion'
-        await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+        // await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+        await this.inlineMananger.getInlineCompletionProvider().provideInlineCompletionItems(
+            document,
+            editor.selection.active,
+            {
+                triggerKind: InlineCompletionTriggerKind.Automatic,
+                selectedCompletionInfo: undefined,
+            },
+            this.tokenSrc.token
+        )
     }
 
-    async searchFile(filename: string): Promise<vscode.Uri | undefined> {
+    private async searchFile(filename: string): Promise<vscode.Uri | undefined> {
         const files = await vscode.workspace.findFiles(`**/${filename}`)
         if (files.length === 0) {
             getLogger().error(`file ${filename} not found`)
