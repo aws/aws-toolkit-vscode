@@ -7,7 +7,7 @@ import {
     InlineCompletionWithReferencesParams,
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
-    editCompletionRequestType,
+    // editCompletionRequestType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
@@ -17,7 +17,7 @@ import {
     AuthUtil,
     CodeWhispererConstants,
     CodeWhispererStatusBarManager,
-    vsCodeState,
+    // vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
@@ -152,12 +152,12 @@ export class RecommendationService {
             /**
              * Though Edit request is sent on keystrokes everytime, the language server will execute the request in a debounced manner so that it won't be immediately executed.
              */
-            const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
-                editCompletionRequestType.method,
-                request,
-                token
-            )
-            ps.push(editPromise)
+            // const editPromise: Promise<InlineCompletionListWithReferences> = languageClient.sendRequest(
+            //     editCompletionRequestType.method,
+            //     request,
+            //     token
+            // )
+            // ps.push(editPromise)
 
             /**
              * First come first serve, ideally we should simply return the first response returned. However there are some caviar here because either
@@ -295,25 +295,22 @@ export class RecommendationService {
         firstResult: InlineCompletionListWithReferences,
         token: CancellationToken
     ): Promise<void> {
-        let nextToken = firstResult.partialResultToken
-        while (nextToken) {
-            const request = { ...initialRequest, partialResultToken: nextToken }
-
-            const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
-            // when pagination is in progress, but user has already accepted or rejected an inline completion
-            // then stop pagination
-            if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
-                break
-            }
-            this.sessionManager.updateSessionSuggestions(result.items)
-            nextToken = result.partialResultToken
-        }
-
-        this.sessionManager.closeSession()
-
-        // refresh inline completion items to render paginated responses
-        // All pagination requests completed
-        TelemetryHelper.instance.setAllPaginationEndTime()
-        TelemetryHelper.instance.tryRecordClientComponentLatency()
+        // let nextToken = firstResult.partialResultToken
+        // while (nextToken) {
+        //     const request = { ...initialRequest, partialResultToken: nextToken }
+        //     const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
+        //     // when pagination is in progress, but user has already accepted or rejected an inline completion
+        //     // then stop pagination
+        //     if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
+        //         break
+        //     }
+        //     this.sessionManager.updateSessionSuggestions(result.items)
+        //     nextToken = result.partialResultToken
+        // }
+        // this.sessionManager.closeSession()
+        // // refresh inline completion items to render paginated responses
+        // // All pagination requests completed
+        // TelemetryHelper.instance.setAllPaginationEndTime()
+        // TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }

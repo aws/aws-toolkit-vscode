@@ -5,13 +5,15 @@
 import * as vscode from 'vscode'
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { SessionManager } from '../sessionManager'
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger, waitUntil } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { InlineCompletionTriggerKind } from 'vscode-languageclient'
+// import { get } from 'http'
 
 type InputEntry = {
     filename: string
     filepath: string
+    groundTruth: string
     line: number
     column: number
 }
@@ -48,6 +50,7 @@ export class EvaluationProcess {
                 const inputEntry: InputEntry = {
                     filename: obj.file_name,
                     filepath: obj.file_path,
+                    groundTruth: obj.ground_truth_method_body,
                     line: obj.method_body_start_point[0],
                     column: obj.method_body_start_point[1],
                 }
@@ -63,10 +66,14 @@ export class EvaluationProcess {
 
     async run(): Promise<void> {
         for (const inputEntry of this.inputEntries) {
-            await this.triggerInlineOnce(inputEntry)
-            const suggetions = this.sessionManager?.getActiveSession()?.suggestions
-            // TODO: write to a file
-            getLogger().info(`recieved ${suggetions?.length ?? 0} suggestions`)
+            try {
+                await this.triggerInlineOnce(inputEntry)
+                const suggetions = this.sessionManager?.getActiveSession()?.suggestions
+                // TODO: write to a file
+                getLogger().info(`recieved ${suggetions?.length ?? 0} suggestions`)
+            } catch (e) {
+                getLogger().error(`Error triggering inline: ${e}`)
+            }
         }
         return
     }
@@ -86,15 +93,32 @@ export class EvaluationProcess {
 
         // or 'aws.amazonq.invokeInlineCompletion'
         // await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-        await this.inlineMananger.getInlineCompletionProvider().provideInlineCompletionItems(
-            document,
-            editor.selection.active,
-            {
-                triggerKind: InlineCompletionTriggerKind.Automatic,
-                selectedCompletionInfo: undefined,
+        const f = await waitUntil(
+            async () => {
+                const e = vscode.window.activeTextEditor
+                return (
+                    e &&
+                    e.document.uri.fsPath === uri.fsPath &&
+                    e.selection.anchor.line === line &&
+                    e.selection.anchor.character === column
+                )
             },
-            this.tokenSrc.token
+            { retryOnFail: true, timeout: 10000, interval: 1000 }
         )
+
+        if (f) {
+            await this.inlineMananger.runEvalFlow(
+                document,
+                editor.selection.active,
+                {
+                    triggerKind: InlineCompletionTriggerKind.Automatic,
+                    selectedCompletionInfo: undefined,
+                },
+                this.tokenSrc.token
+            )
+        } else {
+            getLogger().error(`failed to move cursor to ${line}, ${column}`)
+        }
     }
 
     private async searchFile(filename: string): Promise<vscode.Uri | undefined> {
