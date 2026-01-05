@@ -370,7 +370,7 @@ async function onLanguageServerReady(
                 vsCodeState.lastManualTriggerTime = performance.now()
                 await new EvaluationProcess(
                     '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_10.jsonl',
-                    undefined,
+                    sessionManager,
                     inlineManager
                 ).run()
 
