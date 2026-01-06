@@ -13,7 +13,6 @@ import { KubectlClient, HyperpodDevSpace, HyperpodCluster } from '../kubectlClie
 export async function handleGetHyperpodSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
     const devspaceName = parsedUrl.query.devspace_name
-    const forceRefresh = parsedUrl.query.force_refresh === 'true'
 
     try {
         if (!devspaceName) {
