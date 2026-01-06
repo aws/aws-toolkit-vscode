@@ -9,11 +9,15 @@ import { getLogger, waitUntil } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 import Fuzz from 'fuzzball'
+import { extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
+import assert from 'assert'
 // import { get } from 'http'
 
 type InputEntry = {
     filename: string
     filepath: string
+    leftContext: string
+    rightContext: string
     groundTruth: string
     line: number
     column: number
@@ -51,6 +55,8 @@ export class EvaluationProcess {
                 const inputEntry: InputEntry = {
                     filename: obj.file_name,
                     filepath: obj.file_path,
+                    leftContext: obj.left_context,
+                    rightContext: obj.right_context,
                     groundTruth: obj.ground_truth_method_body,
                     line: obj.method_body_start_point[0],
                     column: obj.method_body_start_point[1],
@@ -109,6 +115,17 @@ export class EvaluationProcess {
             { retryOnFail: true, timeout: 10000, interval: 1000 }
         )
 
+        // assertion to confirm file & cursor etc are correct
+        try {
+            const ctx = extractContextForCodeWhisperer(editor)
+            assert.strictEqual(ctx.leftFileContent, inputEntry.leftContext)
+            // TODO: it seems right context field is kinda weird
+            // assert.strictEqual(ctx.rightFileContent, inputEntry.rightContext)
+            // assert.strictEqual(ctx.filename, inputEntry.filename)
+        } catch (e) {
+            getLogger().error('!!!!!!!!!')
+        }
+
         if (f) {
             // call inline api to get suggestions in states
             await this.inlineMananger.runEvalFlow(
@@ -128,6 +145,7 @@ export class EvaluationProcess {
                 const groundTruth = [inputEntry.groundTruth]
                 const compareResult = computeEditDistances(actualSuggestions, groundTruth)
                 const logstr = `@@response analysis@@
+actual filename: ${inputEntry.filename}
 actual suggestion: ${actualSuggestions}
 ground truth: ${groundTruth}
 editSimAvg: ${compareResult.editSimAvg}
@@ -136,6 +154,7 @@ emRatio: ${compareResult.emRatio}`
                 getLogger().info(logstr)
             } catch (e) {
                 const logstr = `@@response analysis@@
+actual filename: ${inputEntry.filename}
 length doesnt match
 actual suggestion is empty: ${this.sessionManager?.getActiveRecommendation().length}
 ground truth: ${inputEntry.groundTruth}`
