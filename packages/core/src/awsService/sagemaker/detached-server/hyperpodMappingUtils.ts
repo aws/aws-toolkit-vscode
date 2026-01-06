@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { readFile, writeFile, rename } from '../../shared/fs/fs'
+import { promises as fs } from 'fs'
 import os from 'os'
 import { join } from 'path'
 
@@ -31,7 +31,7 @@ const writeQueue: Array<() => Promise<void>> = []
  */
 export async function readHyperpodMapping(): Promise<HyperpodMappings> {
     try {
-        const content = await readFile(hyperpodMappingFilePath, 'utf-8')
+        const content = await fs.readFile(hyperpodMappingFilePath, 'utf-8')
         return JSON.parse(content)
     } catch (err: any) {
         if (err.code === 'ENOENT') {
@@ -50,8 +50,8 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
             try {
                 const uniqueTempPath = `${tempFilePath}.${process.pid}.${Date.now()}`
                 const json = JSON.stringify(mapping, undefined, 2)
-                await writeFile(uniqueTempPath, json)
-                await rename(uniqueTempPath, hyperpodMappingFilePath)
+                await fs.writeFile(uniqueTempPath, json)
+                await fs.rename(uniqueTempPath, hyperpodMappingFilePath)
                 resolve()
             } catch (err: any) {
                 reject(new Error(`Failed to write HyperPod mapping file: ${err.message}`))

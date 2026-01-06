@@ -13,6 +13,7 @@ interface ConnectionState {
     process?: ChildProcess
     lastHealthCheck: number
     reconnectAttempts: number
+    retryTimer?: NodeJS.Timeout
 }
 
 export class HyperpodConnectionMonitor {
@@ -51,7 +52,12 @@ export class HyperpodConnectionMonitor {
     stopMonitoring(devspaceName: string): void {
         const state = this.connections.get(devspaceName)
         if (state?.process) {
-            state.process.removeAllListeners()
+            // Use the stop method from our ChildProcess wrapper
+            state.process.stop()
+        }
+
+        if (state?.retryTimer) {
+            clearTimeout(state.retryTimer)
         }
 
         this.connections.delete(devspaceName)
@@ -62,17 +68,22 @@ export class HyperpodConnectionMonitor {
     }
 
     private monitorProcess(devspaceName: string, process: ChildProcess): void {
-        process.on('exit', (code, signal) => {
+        const nodeProcess = process.proc()
+        if (!nodeProcess) {
+            return
+        }
+
+        nodeProcess.on('exit', (code: number | null, signal: NodeJS.Signals | null) => {
             getLogger().warn(`HyperPod process for ${devspaceName} exited with code ${code}, signal ${signal}`)
             void this.handleDisconnection(devspaceName, 'process_exit')
         })
 
-        process.on('error', (error) => {
+        nodeProcess.on('error', (error: Error) => {
             getLogger().error(`HyperPod process error for ${devspaceName}: ${error}`)
             void this.handleDisconnection(devspaceName, 'process_error')
         })
 
-        process.on('disconnect', () => {
+        nodeProcess.on('disconnect', () => {
             getLogger().warn(`HyperPod process disconnected for ${devspaceName}`)
             void this.handleDisconnection(devspaceName, 'process_disconnect')
         })
@@ -121,19 +132,22 @@ export class HyperpodConnectionMonitor {
             const ps = new ChildProcess('pgrep', ['-f', 'ssh.*hp_'])
             let output = ''
 
-            ps.stdout?.on('data', (data) => {
-                output += data.toString()
+            ps.run({
+                onStdout: (data) => {
+                    output += data
+                },
+                onStderr: () => {
+                    // Ignore stderr
+                },
             })
-
-            ps.on('close', () => {
-                const pids = output
-                    .trim()
-                    .split('\n')
-                    .filter((pid) => pid.length > 0)
-                resolve(pids)
-            })
-
-            ps.on('error', () => resolve([]))
+                .then(() => {
+                    const pids = output
+                        .trim()
+                        .split('\n')
+                        .filter((pid) => pid.length > 0)
+                    resolve(pids)
+                })
+                .catch(() => resolve([]))
         })
     }
 
@@ -142,19 +156,22 @@ export class HyperpodConnectionMonitor {
             const ps = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])
             let output = ''
 
-            ps.stdout?.on('data', (data) => {
-                output += data.toString()
+            ps.run({
+                onStdout: (data) => {
+                    output += data
+                },
+                onStderr: () => {
+                    // Ignore stderr
+                },
             })
-
-            ps.on('close', () => {
-                const pids = output
-                    .trim()
-                    .split('\n')
-                    .filter((pid) => pid.length > 0)
-                resolve(pids)
-            })
-
-            ps.on('error', () => resolve([]))
+                .then(() => {
+                    const pids = output
+                        .trim()
+                        .split('\n')
+                        .filter((pid) => pid.length > 0)
+                    resolve(pids)
+                })
+                .catch(() => resolve([]))
         })
     }
 
@@ -200,16 +217,19 @@ export class HyperpodConnectionMonitor {
                 // Simple network check - try to resolve AWS endpoint
                 const ping = new ChildProcess('ping', ['-c', '1', '-W', '2000', 'ssmmessages.us-east-2.amazonaws.com'])
 
-                let networkUp = false
-                ping.on('close', (code: number) => {
-                    networkUp = code === 0
-                    if (networkUp) {
-                        // Network is back up, check all connections immediately
-                        for (const [devspaceName, state] of this.connections) {
-                            void this.performHealthCheck(devspaceName, state)
+                ping.run()
+                    .then((result) => {
+                        const networkUp = result.exitCode === 0
+                        if (networkUp) {
+                            // Network is back up, check all connections immediately
+                            for (const [devspaceName, state] of this.connections) {
+                                void this.performHealthCheck(devspaceName, state)
+                            }
                         }
-                    }
-                })
+                    })
+                    .catch(() => {
+                        // Ignore network check errors
+                    })
             } catch (error) {
                 // Ignore network check errors
             }
@@ -238,6 +258,12 @@ export class HyperpodConnectionMonitor {
             return
         }
 
+        // Clear any existing retry timer
+        if (state.retryTimer) {
+            clearTimeout(state.retryTimer)
+            state.retryTimer = undefined
+        }
+
         state.reconnectAttempts++
         getLogger().warn(`Connection lost for ${devspaceName} (reason: ${reason}, attempt: ${state.reconnectAttempts})`)
 
@@ -264,7 +290,8 @@ export class HyperpodConnectionMonitor {
         const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts - 1), 10000)
         getLogger().info(`Retrying credential refresh for ${devspaceName} in ${delay}ms`)
 
-        setTimeout(async () => {
+        state.retryTimer = setTimeout(async () => {
+            state.retryTimer = undefined
             await this.handleDisconnection(devspaceName, 'retry')
         }, delay)
     }
@@ -282,6 +309,12 @@ export class HyperpodConnectionMonitor {
     }
 
     dispose(): void {
+        // Clear all retry timers before disposing
+        for (const state of this.connections.values()) {
+            if (state.retryTimer) {
+                clearTimeout(state.retryTimer)
+            }
+        }
         this.connections.clear()
         this.cleanup()
     }
