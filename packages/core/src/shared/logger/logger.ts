@@ -25,6 +25,7 @@ export type LogTopic =
     | 'proxyUtil'
     | 'sagemaker'
     | 'smus'
+    | 'inline'
 
 class ErrorLog {
     constructor(

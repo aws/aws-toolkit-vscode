@@ -61,7 +61,7 @@ export class KeyStrokeHandler {
                 return
             }
 
-            this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
+            this.invokeAutomatedTrigger()
                 .catch((e) => {
                     getLogger().error('invokeAutomatedTrigger failed: %s', (e as Error).message)
                 })
@@ -84,14 +84,10 @@ export class KeyStrokeHandler {
     async processKeyStroke(
         event: vscode.TextDocumentChangeEvent,
         editor: vscode.TextEditor,
-        client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry
+        client: DefaultCodeWhispererClient | undefined,
+        config: ConfigurationEntry | undefined
     ): Promise<void> {
         try {
-            if (!config.isAutomatedTriggerEnabled) {
-                return
-            }
-
             // Skip when output channel gains focus and invoke
             if (editor.document.languageId === 'Log') {
                 return
@@ -108,7 +104,8 @@ export class KeyStrokeHandler {
                 rightContextAtCurrentLine.trim() !== '}' &&
                 rightContextAtCurrentLine.trim() !== ')'
             ) {
-                return
+                // getLogger().warn(`Preflare will not trigger inline due to immediate right context on the same line`)
+                // return
             }
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
@@ -135,32 +132,15 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                await this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
+                await this.invokeAutomatedTrigger()
             }
         } catch (error) {
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
         }
     }
 
-    async invokeAutomatedTrigger(
-        autoTriggerType: CodewhispererAutomatedTriggerType,
-        editor: vscode.TextEditor,
-        client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry,
-        event: vscode.TextDocumentChangeEvent
-    ): Promise<void> {
-        if (!editor) {
-            return
-        }
-
-        // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-        await RecommendationService.instance.generateRecommendation(
-            client,
-            editor,
-            'AutoTrigger',
-            config,
-            autoTriggerType
-        )
+    async invokeAutomatedTrigger(): Promise<void> {
+        return
     }
 }
 
