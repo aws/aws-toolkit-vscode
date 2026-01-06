@@ -65,25 +65,22 @@ export function createMockUnauthenticatedAuthProvider(): any {
  Creates a mock space node for SageMaker Unified Studio tests
  */
 export function createMockSpaceNode(): any {
+    const mockParent = {
+        getAuthProvider: sinon.stub().returns({
+            activeConnection: { domainId: 'test-domain' },
+            getDomainAccountId: sinon.stub().resolves('123456789012'),
+            getDomainId: sinon.stub().returns('test-domain'),
+        }),
+        getProjectId: sinon.stub().returns('test-project'),
+    }
+
     return {
         resource: {
             sageMakerClient: {},
             DomainSpaceKey: 'test-space-key',
             regionCode: 'us-east-1',
-            getParent: sinon.stub().returns({
-                getAuthProvider: sinon.stub().returns({
-                    activeConnection: { domainId: 'test-domain' },
-                    getDomainAccountId: sinon.stub().resolves('123456789012'),
-                }),
-                getProjectId: sinon.stub().returns('test-project'),
-            }),
+            getParent: sinon.stub().returns(mockParent),
         },
-        getParent: sinon.stub().returns({
-            getAuthProvider: sinon.stub().returns({
-                activeConnection: { domainId: 'test-domain' },
-                getDomainAccountId: sinon.stub().resolves('123456789012'),
-            }),
-            getProjectId: sinon.stub().returns('test-project'),
-        }),
+        getParent: sinon.stub().returns(mockParent),
     }
 }
