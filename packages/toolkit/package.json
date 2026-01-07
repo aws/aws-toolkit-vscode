@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.91.0-SNAPSHOT",
+    "version": "3.92.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -3135,6 +3135,12 @@
                 "command": "aws.toolkit.auth.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.toolkit.auth.consoleLogin",
+                "title": "%AWS.command.auth.consoleLogin%",
+                "category": "%AWS.title%",
+                "when": "!aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.manageConnections",
