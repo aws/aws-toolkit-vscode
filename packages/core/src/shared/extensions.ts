@@ -32,7 +32,9 @@ export const VSCODE_EXTENSION_ID = {
     javadebug: 'vscjava.vscode-java-debug',
     dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
-    remotessh: getRemoteSshExtension(),
+    get remotessh() {
+        return getRemoteSshExtension()
+    },
 } as const
 
 /** @deprecated Use `extensionGlobals.ts:globals` instead. */
