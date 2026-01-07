@@ -7,14 +7,14 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { UriHandler } from '../../../shared/vscode/uriHandler'
-import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../../shared/extensionIds'
 import { register } from '../../../awsService/sagemaker/uriHandlers'
 
 function createConnectUri(params: { [key: string]: string }): vscode.Uri {
     const query = Object.entries(params)
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
         .join('&')
-    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/sagemaker?${query}`)
+    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit}/connect/sagemaker?${query}`)
 }
 
 describe('SageMaker URI handler', function () {

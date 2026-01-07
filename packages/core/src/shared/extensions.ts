@@ -10,32 +10,30 @@ import { TelemetryService } from './telemetry/telemetryService'
 import { CredentialsStore } from '../auth/credentials/store'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
+import { VSCODE_EXTENSION_ID_CONSTANTS, VSCODE_REMOTE_SSH_EXTENSION } from './extensionIds'
 
 // Determine the remote SSH extension based on the editor
 const getRemoteSshExtension = () => {
-    const isCursor = vscode?.env?.appName?.toLowerCase().includes('cursor')
-    return isCursor
-        ? { id: 'anysphere.remote-ssh', minVersion: '1.0.2' }
-        : { id: 'ms-vscode-remote.remote-ssh', minVersion: '0.74.0' }
+    const appName = vscode?.env?.appName?.toLowerCase()
+
+    if (appName?.includes('cursor')) {
+        return VSCODE_REMOTE_SSH_EXTENSION.cursor
+    }
+
+    return VSCODE_REMOTE_SSH_EXTENSION.vscode
 }
 
+// For actual use in IDE, not test environment
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
-    awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
-    amazonq: 'amazonwebservices.amazon-q-vscode',
-    python: 'ms-python.python',
-    // python depends on jupyter plugin
-    jupyter: 'ms-toolsai.jupyter',
-    yaml: 'redhat.vscode-yaml',
-    go: 'golang.go',
-    java: 'redhat.java',
-    javadebug: 'vscjava.vscode-java-debug',
-    dotnet: 'ms-dotnettools.csdevkit',
-    git: 'vscode.git',
+    ...VSCODE_EXTENSION_ID_CONSTANTS,
     get remotessh() {
         return getRemoteSshExtension()
     },
 } as const
+
+// Re-export for backward compatibility
+export { VSCODE_REMOTE_SSH_EXTENSION }
 
 /** @deprecated Use `extensionGlobals.ts:globals` instead. */
 export interface ExtContext {
