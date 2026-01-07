@@ -564,6 +564,28 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boo
     }
 }
 
+/**
+ * @throws {@link CancellationError} if the install times out or the user cancels
+ */
+export async function updateAwsCli(): Promise<string> {
+    const selection = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.cli.updateCliPrompt',
+            'Using console credentials requires updating the AWS CLI to the latest version.'
+        ),
+        { modal: true },
+        'Update'
+    )
+
+    if (selection !== 'Update') {
+        throw new CancellationError('user')
+    }
+
+    const result = await installCli('aws-cli', false)
+    void vscode.window.showInformationMessage(localize('AWS.cli.updateSuccess', 'AWS CLI was successfully updated.'))
+    return result
+}
+
 export async function showCliFoundPopup(cli: string, path: string) {
     void vscode.window.showInformationMessage(
         localize('AWS.cli.cliFoundPrompt', '{0} is already installed (location: {1})', cli, path)
