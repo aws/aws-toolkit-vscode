@@ -13,7 +13,7 @@ import { UriHandler } from './vscode/uriHandler'
 
 // Determine the remote SSH extension based on the editor
 const getRemoteSshExtension = () => {
-    const isCursor = vscode.env.appName?.toLowerCase().includes('cursor')
+    const isCursor = vscode?.env?.appName?.toLowerCase().includes('cursor')
     return isCursor
         ? { id: 'anysphere.remote-ssh', minVersion: '1.0.2' }
         : { id: 'ms-vscode-remote.remote-ssh', minVersion: '0.74.0' }
