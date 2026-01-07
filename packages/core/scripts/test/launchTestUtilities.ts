@@ -8,7 +8,7 @@ import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
-import { VSCODE_EXTENSION_ID_CONSTANTS, VSCODE_REMOTE_SSH_EXTENSION } from '../../src/shared/extensionIds'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../src/shared/extensionIds'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
@@ -86,7 +86,7 @@ async function getVSCodeCliArgs(params: {
                 VSCODE_EXTENSION_ID_CONSTANTS.java,
                 VSCODE_EXTENSION_ID_CONSTANTS.javadebug,
                 VSCODE_EXTENSION_ID_CONSTANTS.git,
-                VSCODE_REMOTE_SSH_EXTENSION.vscode.id,
+                VSCODE_EXTENSION_ID_CONSTANTS.remotessh.id,
             ],
         })
         disableWorkspaceTrustArg = [disableWorkspaceTrust]

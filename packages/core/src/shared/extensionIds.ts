@@ -32,5 +32,6 @@ export const VSCODE_EXTENSION_ID_CONSTANTS = {
     javadebug: 'vscjava.vscode-java-debug',
     dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
+    // default to VSCode in test environment
     remotessh: VSCODE_REMOTE_SSH_EXTENSION.vscode,
 } as const
