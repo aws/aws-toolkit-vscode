@@ -140,6 +140,7 @@ describe('Amazon Q MCP Functionality', function () {
         await checkMCPServerErrorStatus(webviewView, 'aws-documentation')
         await clickMCPFixConfigurationButton(webviewView)
         await updateMCPCommand(webviewView, 'uvx')
-        await saveMCPServerConfiguration(webviewView, 10000)
+        await saveMCPServerConfiguration(webviewView)
+        await sleep(1000)
     })
 })

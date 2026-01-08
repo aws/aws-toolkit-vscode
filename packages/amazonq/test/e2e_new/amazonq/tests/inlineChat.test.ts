@@ -16,7 +16,7 @@ import {
     writeToChat,
 } from '../utils/generalUtils'
 import { closeAllTabs } from '../utils/cleanupUtils'
-import { setupFactorialFunction, validateTestFileGeneration, clickInlineAction } from '../helpers/inlineHelper'
+import { setupFactorialFunction, clickInlineAction, validateTestFileGeneration } from '../helpers/inlineHelper'
 import assert from 'assert'
 
 describe('Amazon Q Inline Chat Functionality', function () {

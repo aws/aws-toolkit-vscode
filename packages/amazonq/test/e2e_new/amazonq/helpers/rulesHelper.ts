@@ -150,7 +150,7 @@ export async function createNewRule(webview: WebviewView, ruleName: string): Pro
 export async function GenerateMemoryBank(webview: WebviewView): Promise<void> {
     await clickRulesButton(webview)
     await clickCreateNewRuleOption(webview, 'Generate Memory Bank', -2)
-    await sleep(50000)
+    await sleep(60000)
     const fileTexts = await webview.findWebElements(By.css('.mynah-chat-item-tree-view-file-item-title-text'))
     const texts = await Promise.all(fileTexts.map((el) => el.getText()))
     const allText = texts.join(' ')

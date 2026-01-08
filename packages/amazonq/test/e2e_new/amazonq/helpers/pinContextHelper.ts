@@ -20,7 +20,6 @@ export async function clickPinContextButton(webview: WebviewView): Promise<void>
         for (const button of buttons) {
             const label = await button.findElement(By.css('.mynah-button-label'))
             const labelText = await label.getText()
-            console.log('THE BUTTON TEXT LABEL IS:', labelText)
             if (labelText === '@Pin Context') {
                 await button.click()
                 return
@@ -195,5 +194,14 @@ export async function validateFileInContext(webviewView: WebviewView, fileName: 
     const textValue = await text.getText()
     if (textValue !== fileName) {
         throw new Error(`${fileName} is not added as context`)
+    }
+}
+
+export async function removePinnedContextPill(webview: WebviewView): Promise<void> {
+    try {
+        const pill = await waitForElement(webview, By.xpath(`//span[contains(@class, 'label') and text()='factorial']`))
+        await pill.click()
+    } catch (e) {
+        throw new Error(`Failed to click factorial pill`)
     }
 }

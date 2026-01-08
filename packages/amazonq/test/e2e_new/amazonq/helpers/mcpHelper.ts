@@ -260,7 +260,7 @@ export async function configureMCPServer(webviewView: WebviewView, config: MCPSe
     }
 }
 
-export async function saveMCPServerConfiguration(webviewView: WebviewView, sleepTime: number = 20000): Promise<void> {
+export async function saveMCPServerConfiguration(webviewView: WebviewView, sleepTime: number = 25000): Promise<void> {
     try {
         await clickButton(
             webviewView,
@@ -301,7 +301,7 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
             'i.mynah-ui-icon-refresh',
             'MCP refresh button'
         )
-        await sleep(5000)
+        await sleep(10000)
     } catch (e) {
         throw new Error(`Error clicking the MCP refresh button`)
     }

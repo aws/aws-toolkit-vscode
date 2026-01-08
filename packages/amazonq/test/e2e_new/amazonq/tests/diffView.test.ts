@@ -28,15 +28,14 @@ describe('Amazon Q Inline Chat Functionality', function () {
     })
 
     afterEach(async function () {
+        await closeAllTabs(webviewView)
+        await webviewView.switchBack()
         await editorView.closeAllEditors()
         textEditor = await openTestFile(editorView)
         await textEditor.clearText()
         await textEditor.save()
         await editorView.closeAllEditors()
-        await workbench.executeCommand('Amazon Q: Open Chat')
-        await sleep(1000)
         await webviewView.switchToFrame()
-        await closeAllTabs(webviewView)
     })
 
     it('Test diff view feature', async () => {
@@ -50,6 +49,5 @@ describe('Amazon Q Inline Chat Functionality', function () {
         await sleep(6000)
         const fileTreeFile = await webviewView.findWebElement({ css: '[data-testid="chat-item-file-tree-file"]' })
         await fileTreeFile.click()
-        await webviewView.switchBack()
     })
 })

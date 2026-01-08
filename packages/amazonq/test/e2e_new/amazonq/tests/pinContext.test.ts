@@ -15,6 +15,7 @@ import {
     clickPinContextMenuItem,
     clickSubMenuItem,
     enterChatInput,
+    removePinnedContextPill,
     validateFileInContext,
 } from '../helpers/pinContextHelper'
 import { openTestFile, sleep, validateAmazonQResponse, writeToChat } from '../utils/generalUtils'
@@ -39,6 +40,7 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add File as Context', async () => {
+        await sleep(2000)
         await webviewView.switchBack()
         textEditor = await openTestFile(editorView)
         await setupFactorialFunction(textEditor)
@@ -51,6 +53,10 @@ describe('Amazon Q Pin Context Functionality', function () {
         await writeToChat('Explain', webviewView)
         await sleep(7000)
         await validateAmazonQResponse(webviewView)
+        await webviewView.switchBack()
+        await textEditor.save()
+        await editorView.closeAllEditors()
+        await webviewView.switchToFrame()
     })
 
     // it('Allows User to Add Workspace as Context', async () => {
@@ -62,23 +68,30 @@ describe('Amazon Q Pin Context Functionality', function () {
     // })
 
     it('Allows User to Add Folder as Context', async () => {
+        await sleep(2000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Folders')
+        await sleep(2000)
         await clickSubMenuItem(webviewView, 'Factorial')
+        await sleep(2000)
         await writeToChat('Explain', webviewView)
         await sleep(7000)
         // todo: Check whether factorial folder is added as context in response
     })
 
     it('Allows User to Add Sage as Context', async () => {
+        await sleep(2000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, '@sage')
     })
 
     it('Allows User to Add Code as Context', async () => {
+        await sleep(1000)
+        await writeToChat('Add Factorial program in testFile.py', webviewView)
+        await sleep(10000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Code')
-        await clickSubMenuItem(webviewView, 'TestFactorial')
+        await clickSubMenuItem(webviewView, 'factorial')
         await writeToChat('Explain', webviewView)
         await sleep(7000)
         await clickContextButton(webviewView)
@@ -87,6 +100,9 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add Image as Context', async () => {
+        await sleep(2000)
+        await removePinnedContextPill(webviewView)
+        await sleep(2000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Image')
         await webviewView.switchBack()
@@ -100,6 +116,9 @@ describe('Amazon Q Pin Context Functionality', function () {
     })
 
     it('Allows User to Add Prompt as Context', async () => {
+        await sleep(2000)
+        await removePinnedContextPill(webviewView)
+        await sleep(2000)
         await clickPinContextButton(webviewView)
         await clickPinContextMenuItem(webviewView, 'Prompts')
         await clickAddPromptButton(webviewView)

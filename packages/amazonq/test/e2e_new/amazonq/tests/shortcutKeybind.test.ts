@@ -78,23 +78,14 @@ describe('Amazon Q Shortcut Keybind Functionality Tests', function () {
     it('Verifies Reject Button Tooltip Shows Correct Shortcut', async () => {
         await dismissOverlayIfPresent(webviewView)
         await sleep(3000)
-        try {
-            await webviewView.findWebElement({ css: '[action-id="reject-shell-command"]' })
-            await hoverButtonAndValidateTooltip(webviewView, '[action-id="reject-shell-command"]', 'Reject: ⇧ ⌘ R')
-        } catch {
-            // Skip test if button not available
-        }
+        await hoverButtonAndValidateTooltip(webviewView, '[action-id="reject-shell-command"]', 'Reject: ⇧ ⌘ R')
     })
 
     it('Verifies Run Button Tooltip Shows Correct Shortcut', async () => {
         await dismissOverlayIfPresent(webviewView)
+        await waitForLoadingComplete(webviewView)
         await sleep(3000)
-        try {
-            await webviewView.findWebElement({ css: '[action-id="run-shell-command"]' })
-            await hoverButtonAndValidateTooltip(webviewView, '[action-id="run-shell-command"]', 'Run: ⇧ ⌘ ↵')
-        } catch {
-            // Skip test if button not available
-        }
+        await hoverButtonAndValidateTooltip(webviewView, '[action-id="run-shell-command"]', 'Run: ⇧ ⌘ ↵')
     })
 
     it('Allows User to stop Using Keybind', async () => {

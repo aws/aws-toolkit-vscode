@@ -30,7 +30,6 @@ describe('Amazon Q Chat Basic Functionality', function () {
     })
 
     it('Allows User to Add Multiple Chat Tabs', async () => {
-        console.log('Starting Multiple Chat Test')
         for (let i = 0; i < 9; i++) {
             await addNewChatTab(webviewView)
         }

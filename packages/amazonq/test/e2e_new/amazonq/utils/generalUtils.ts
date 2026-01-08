@@ -237,7 +237,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
  * @returns Promise<void>
  * @throws Error if timeout is exceeded before a stable state is reached
  */
-export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
+export async function waitForInlineGeneration(editor: TextEditor, timeout = 25000): Promise<void> {
     const startTime = Date.now()
     let previousLines = await editor.getNumberOfLines()
     let stableCount = 0

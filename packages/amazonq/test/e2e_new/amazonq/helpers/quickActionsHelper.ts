@@ -154,3 +154,36 @@ export async function clickOpenJobHistory(webviewView: WebviewView): Promise<voi
         'Open Job History'
     )
 }
+
+/**
+ * Clicks on the AWS Responsible AI Policy link
+ * @param webview The WebviewView instance
+ */
+export async function clickAWSResponsibleAIPolicy(webview: WebviewView): Promise<void> {
+    try {
+        const policyLink = await webview.findWebElement(
+            By.css(`a.mynah-ui-clickable-item:contains("AWS Responsible AI Policy")`)
+        )
+        await policyLink.click()
+    } catch (error) {
+        throw new Error(`Failed to click AWS Responsible AI Policy`)
+    }
+}
+
+/**
+ * Clicks on View job history link and checks terminal message
+ * @param webviewView The WebviewView instance
+ */
+export async function clickViewJobHistoryAndCheckTerminal(webviewView: WebviewView): Promise<void> {
+    try {
+        await webviewView.switchBack()
+        await sleep(2000)
+        const driver = webviewView.getDriver()
+        const viewJobHistoryLink = await driver.findElement(By.linkText('View job history'))
+        await viewJobHistoryLink.click()
+        await sleep(3000)
+        await webviewView.switchToFrame()
+    } catch (error) {
+        throw new Error(`Failed to click View job history: ${error}`)
+    }
+}

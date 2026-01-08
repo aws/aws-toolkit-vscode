@@ -13,9 +13,10 @@ import {
     testTransformCommand,
     testClearCommand,
     clickOpenJobHistory,
+    clickViewJobHistoryAndCheckTerminal,
+    clickAWSResponsibleAIPolicy,
 } from '../helpers/quickActionsHelper'
-import { clearChatInput, validateAmazonQResponse, closeTerminal, sleep } from '../utils/generalUtils'
-import { clickAWSResponsibleAIPolicy } from '../helpers/agenticCodingHelper'
+import { validateAmazonQResponse, closeTerminal, sleep, clearChatInput } from '../utils/generalUtils'
 
 describe('Amazon Q Chat Quick Actions Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -27,12 +28,12 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
     })
 
     afterEach(async () => {
-        await clearChatInput(webviewView)
         await closeAllTabs(webviewView)
     })
 
     it('Quick Actions Test', async () => {
         await getQuickActionsCommands(webviewView)
+        await clearChatInput(webviewView)
     })
 
     it('/help Test', async () => {
@@ -57,6 +58,7 @@ describe('Amazon Q Chat Quick Actions Functionality', function () {
         await sleep(3000)
         await dismissOverlayIfPresent(webviewView)
         await clickOpenJobHistory(webviewView)
+        await clickViewJobHistoryAndCheckTerminal(webviewView)
         await closeTerminal(webviewView)
     })
 

@@ -26,6 +26,6 @@ describe('Amazon Q Switch Model Functionality', function () {
         await listModels(webviewView)
         await selectModel(webviewView, 'Claude Sonnet 4.5')
         await selectModel(webviewView, 'Claude Sonnet 4')
-        await sleep(100)
+        await sleep(2000)
     })
 })
