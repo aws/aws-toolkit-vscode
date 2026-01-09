@@ -41,7 +41,7 @@ export class HyperpodConnectionMonitor {
 
         if (!this.healthCheckInterval) {
             this.healthCheckInterval = setInterval(() => {
-                this.performHealthChecks()
+                void this.performHealthChecks()
             }, 30000)
         }
     }
