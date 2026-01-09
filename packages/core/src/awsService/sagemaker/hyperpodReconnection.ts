@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { promises as fs } from 'fs'
+import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import { join } from 'path'
 import os from 'os'
 import { clearSSHHostKey } from './hyperpodUtils'

@@ -275,7 +275,7 @@ export async function prepareDevEnvConnection(
             connectionMonitor.startMonitoring(connectionKey)
 
             const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            await reconnectionManager.scheduleReconnection(connectionKey)
+            reconnectionManager.scheduleReconnection(connectionKey)
 
             getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
         } catch (error) {

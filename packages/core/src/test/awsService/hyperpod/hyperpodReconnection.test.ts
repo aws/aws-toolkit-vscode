@@ -9,8 +9,8 @@ import { promises as fsPromises } from 'fs' // eslint-disable-line no-restricted
 import { HyperpodReconnectionManager } from '../../../awsService/sagemaker/hyperpodReconnection'
 
 describe('HyperpodReconnectionManager', function () {
-    const DEVSPACE_NAME = 'test-space'
-    const SERVER_INFO = JSON.stringify({ port: 8080 })
+    const devspaceName = 'test-space'
+    const serverInfo = JSON.stringify({ port: 8080 })
 
     const createSuccessResponse = () => ({
         ok: true,
@@ -31,12 +31,12 @@ describe('HyperpodReconnectionManager', function () {
         manager = HyperpodReconnectionManager.getInstance()
         fetchStub = sandbox.stub(globalThis as any, 'fetch')
         readStub = sandbox.stub(fsPromises, 'readFile')
-        manager.clearReconnection(DEVSPACE_NAME)
+        manager.clearReconnection(devspaceName)
     })
 
     afterEach(function () {
         sandbox.restore()
-        manager.clearReconnection(DEVSPACE_NAME)
+        manager.clearReconnection(devspaceName)
     })
 
     it('returns singleton instance', function () {
@@ -49,21 +49,21 @@ describe('HyperpodReconnectionManager', function () {
 
     describe('scheduleReconnection', function () {
         beforeEach(function () {
-            readStub.resolves(SERVER_INFO)
+            readStub.resolves(serverInfo)
             fetchStub.resolves(createSuccessResponse())
         })
 
         it('schedules with default 15-minute interval', async function () {
             const intervalSpy = sandbox.spy(clock, 'setInterval')
 
-            await manager.scheduleReconnection(DEVSPACE_NAME)
+            manager.scheduleReconnection(devspaceName)
 
             sinon.assert.calledOnce(intervalSpy)
             assert.strictEqual(intervalSpy.firstCall.args[1], 15 * 60 * 1000)
         })
 
         it('schedules with custom interval', async function () {
-            await manager.scheduleReconnection(DEVSPACE_NAME, 0.01)
+            manager.scheduleReconnection(devspaceName, 0.01)
 
             await clock.tickAsync(600)
 
@@ -73,8 +73,8 @@ describe('HyperpodReconnectionManager', function () {
         it('clears existing timer before scheduling new one', async function () {
             const clearIntervalSpy = sandbox.spy(clock, 'clearInterval')
 
-            await manager.scheduleReconnection(DEVSPACE_NAME, 0.02)
-            await manager.scheduleReconnection(DEVSPACE_NAME, 0.01)
+            manager.scheduleReconnection(devspaceName, 0.02)
+            manager.scheduleReconnection(devspaceName, 0.01)
 
             sinon.assert.calledOnce(clearIntervalSpy)
 
@@ -85,11 +85,11 @@ describe('HyperpodReconnectionManager', function () {
 
     describe('clearReconnection', function () {
         it('prevents scheduled calls', async function () {
-            readStub.resolves(SERVER_INFO)
+            readStub.resolves(serverInfo)
             fetchStub.resolves(createSuccessResponse())
 
-            await manager.scheduleReconnection(DEVSPACE_NAME, 0.005)
-            manager.clearReconnection(DEVSPACE_NAME)
+            manager.scheduleReconnection(devspaceName, 0.005)
+            manager.clearReconnection(devspaceName)
 
             await clock.tickAsync(1000)
 
@@ -103,10 +103,10 @@ describe('HyperpodReconnectionManager', function () {
 
     describe('refreshCredentials', function () {
         it('successfully refreshes credentials', async function () {
-            readStub.resolves(SERVER_INFO)
+            readStub.resolves(serverInfo)
             fetchStub.resolves(createSuccessResponse())
 
-            await manager.refreshCredentials(DEVSPACE_NAME)
+            await manager.refreshCredentials(devspaceName)
 
             sinon.assert.calledOnce(readStub)
             sinon.assert.calledOnceWithExactly(
@@ -118,18 +118,18 @@ describe('HyperpodReconnectionManager', function () {
         it('throws on file read error', async function () {
             readStub.rejects(new Error('File not found'))
 
-            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /File not found/)
+            await assert.rejects(manager.refreshCredentials(devspaceName), /File not found/)
         })
 
         it('throws on API failure', async function () {
-            readStub.resolves(SERVER_INFO)
+            readStub.resolves(serverInfo)
             fetchStub.resolves({ ok: false, status: 500, statusText: 'Server Error' } as any)
 
-            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /API call failed: 500/)
+            await assert.rejects(manager.refreshCredentials(devspaceName), /API call failed: 500/)
         })
 
         it('throws on API error response', async function () {
-            readStub.resolves(SERVER_INFO)
+            readStub.resolves(serverInfo)
             fetchStub.resolves({
                 ok: true,
                 status: 200,
@@ -137,13 +137,13 @@ describe('HyperpodReconnectionManager', function () {
                 json: async () => ({ status: 'error', message: 'Auth failed' }),
             } as any)
 
-            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /Auth failed/)
+            await assert.rejects(manager.refreshCredentials(devspaceName), /Auth failed/)
         })
 
         it('throws on malformed JSON', async function () {
             readStub.resolves('invalid json')
 
-            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /Unexpected token/)
+            await assert.rejects(manager.refreshCredentials(devspaceName), /Unexpected token/)
         })
     })
 })
