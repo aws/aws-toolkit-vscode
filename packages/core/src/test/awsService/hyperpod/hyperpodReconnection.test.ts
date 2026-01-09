@@ -101,31 +101,31 @@ describe('HyperpodReconnectionManager', function () {
         })
     })
 
-    describe('reconnectToHyperpod', function () {
+    describe('refreshCredentials', function () {
         it('successfully refreshes credentials', async function () {
             readStub.resolves(SERVER_INFO)
             fetchStub.resolves(createSuccessResponse())
 
-            await manager.reconnectToHyperpod(DEVSPACE_NAME)
+            await manager.refreshCredentials(DEVSPACE_NAME)
 
             sinon.assert.calledOnce(readStub)
             sinon.assert.calledOnceWithExactly(
                 fetchStub,
-                'http://localhost:8080/get_hyperpod_session?devspace_name=test-space'
+                'http://localhost:8080/get_hyperpod_session?connection_key=test-space'
             )
         })
 
         it('throws on file read error', async function () {
             readStub.rejects(new Error('File not found'))
 
-            await assert.rejects(manager.reconnectToHyperpod(DEVSPACE_NAME), /File not found/)
+            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /File not found/)
         })
 
         it('throws on API failure', async function () {
             readStub.resolves(SERVER_INFO)
             fetchStub.resolves({ ok: false, status: 500, statusText: 'Server Error' } as any)
 
-            await assert.rejects(manager.reconnectToHyperpod(DEVSPACE_NAME), /API call failed: 500 Server Error/)
+            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /API call failed: 500/)
         })
 
         it('throws on API error response', async function () {
@@ -137,13 +137,13 @@ describe('HyperpodReconnectionManager', function () {
                 json: async () => ({ status: 'error', message: 'Auth failed' }),
             } as any)
 
-            await assert.rejects(manager.reconnectToHyperpod(DEVSPACE_NAME), /API returned error: Auth failed/)
+            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /Auth failed/)
         })
 
         it('throws on malformed JSON', async function () {
             readStub.resolves('invalid json')
 
-            await assert.rejects(manager.reconnectToHyperpod(DEVSPACE_NAME), /Unexpected token/)
+            await assert.rejects(manager.refreshCredentials(DEVSPACE_NAME), /Unexpected token/)
         })
     })
 })

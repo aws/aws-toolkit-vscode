@@ -11,9 +11,13 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
-import { storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
+import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 import { HyperpodReconnectionManager } from './hyperpodReconnection'
 import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
+import { startLocalServer, prepareDevEnvConnection } from './model'
+import { startVscodeRemote } from '../../shared/extensions/ssh'
+import { ChildProcess } from '../../shared/utilities/processUtils'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -59,12 +63,16 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             logger.error(`No kubectlClient available for cluster: ${node.hpCluster.clusterName}`)
             return
         }
-        const response = await kubectlClient.createWorkspaceConnection(node.devSpace)
-        getLogger().debug(`HyperPod connection response: &O`, response)
 
-        // Store connection info after successful connection
+        const connectionKey = createConnectionKey(
+            node.devSpace.name,
+            node.devSpace.namespace,
+            node.hpCluster.clusterName
+        )
+
         try {
-            // Get EKS cluster details from kubectl client
+            await startLocalServer(globals.context)
+
             const eksCluster = kubectlClient.getEksCluster()
             await storeHyperpodConnection(
                 node.devSpace.name,
@@ -75,21 +83,45 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
                 eksCluster?.endpoint,
                 eksCluster?.certificateAuthority?.data
             )
-            getLogger().info(`Stored HyperPod connection info for space: ${node.devSpace.name}`)
 
-            // Schedule automatic reconnection
             const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            await reconnectionManager.scheduleReconnection(node.devSpace.name)
+            await reconnectionManager.scheduleReconnection(connectionKey)
 
-            // Start connection monitoring for network drops
             const connectionMonitor = HyperpodConnectionMonitor.getInstance()
-            connectionMonitor.startMonitoring(node.devSpace.name)
+            connectionMonitor.startMonitoring(connectionKey)
         } catch (error) {
             getLogger().warn(`Failed to store HyperPod connection info: ${error}`)
         }
 
-        await vscode.env.openExternal(vscode.Uri.parse(response.url))
-        void vscode.window.showInformationMessage(`Started connection to HyperPod dev space: ${node.devSpace.name}`)
+        await clearSSHHostKey(connectionKey)
+
+        const remoteEnv = await prepareDevEnvConnection(
+            '',
+            globals.context,
+            'sm_hp',
+            false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            node.devSpace.name,
+            node.hpCluster.clusterName,
+            node.devSpace.namespace
+        )
+
+        await startVscodeRemote(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            '/home/sagemaker-user',
+            remoteEnv.vscPath,
+            'sagemaker-user'
+        )
+
+        void vscode.window.showInformationMessage(
+            `Connected to HyperPod dev space: ${node.devSpace.name} (${node.devSpace.namespace})`
+        )
     } catch (error) {
         logger.error(`Failed to connect to HyperPod dev space: ${error}`)
         void vscode.window.showErrorMessage(
@@ -208,5 +240,20 @@ export async function filterDevSpacesByNamespaceCluster(hpNode: SagemakerHyperpo
     if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
         hpNode.saveSelectedClusterNamespaces(newSelection)
         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', hpNode)
+    }
+}
+
+async function clearSSHHostKey(connectionKey: string): Promise<void> {
+    try {
+        const keyParts = connectionKey.split(':')
+        const hostKey =
+            keyParts.length === 3
+                ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
+                : `hp_${connectionKey.replace(/:/g, '_')}`
+
+        const sshKeygen = new ChildProcess('ssh-keygen', ['-R', hostKey])
+        await sshKeygen.run()
+    } catch (error) {
+        // SSH host key cleanup is non-critical
     }
 }

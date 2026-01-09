@@ -59,9 +59,9 @@ _hyperpod() {
 }
 
 _get_fresh_credentials() {
-    local DEVSPACE_NAME=$1
+    local CONNECTION_KEY=$1
     
-    _log "Getting fresh credentials for $DEVSPACE_NAME"
+    _log "Getting fresh credentials for connection key: $CONNECTION_KEY"
     
     # Read server info to get port
     local SERVER_INFO_FILE="$HOME/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json"
@@ -76,8 +76,18 @@ _get_fresh_credentials() {
         exit 1
     fi
     
-    # Call API to get fresh credentials
-    local API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$DEVSPACE_NAME"
+    # Call API to get fresh credentials using the determined connection key
+    local API_URL
+    if [[ "$CONNECTION_KEY" =~ ^[^:]+:[^:]+:[^:]+$ ]]; then
+        # Use full connection key for precise lookup (preferred)
+        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$CONNECTION_KEY"
+    elif [ -n "$CLUSTER_NAME" ] && [ -n "$NAMESPACE" ]; then
+        # Use individual parameters if available
+        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$DEVSPACE_NAME&namespace=$NAMESPACE&cluster_name=$CLUSTER_NAME"
+    else
+        # Fallback for legacy format
+        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$CONNECTION_KEY"
+    fi
     API_RESPONSE=$(curl -s "$API_URL")
     
     if [ $? -ne 0 ] || [ -z "$API_RESPONSE" ]; then
@@ -98,13 +108,71 @@ _main() {
         exit 1
     fi
 
-    DEVSPACE_NAME=$(echo "$1" | sed 's/hp_//')
+    # Extract devspace name, cluster name, and namespace from hostname
+    # New format: hp_{cluster}__{namespace}__{devspace}
+    # Old format: hp_{devspace} (for backward compatibility)
+    if [[ "$1" =~ ^hp_(.+)__(.+)__(.+)$ ]]; then
+        # New format with cluster__namespace__devspace
+        CLUSTER_NAME="${BASH_REMATCH[1]}"
+        NAMESPACE="${BASH_REMATCH[2]}"
+        DEVSPACE_NAME="${BASH_REMATCH[3]}"
+        # Construct the expected connection key
+        CONNECTION_KEY="${CLUSTER_NAME}:${NAMESPACE}:${DEVSPACE_NAME}"
+    else
+        # Old format or fallback - extract devspace name only
+        DEVSPACE_NAME=$(echo "$1" | sed 's/hp_//')
+        CLUSTER_NAME=""
+        NAMESPACE=""
+        CONNECTION_KEY=""
+    fi
+    
+    # For new format, we already have the connection key constructed from hostname
+    # For old format, look up the connection key from the hyperpod profiles file
+    if [ -z "$CONNECTION_KEY" ]; then
+        PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
+        if [ -f "$PROFILES_FILE" ]; then
+            # For legacy format, try to find exact match
+            CONNECTION_KEY=$(python3 -c "
+import json, sys
+try:
+    with open('$PROFILES_FILE', 'r') as f:
+        profiles = json.load(f)
+    
+    devspace_name = '$DEVSPACE_NAME'
+    
+    # First try exact devspace name match
+    if devspace_name in profiles:
+        print(devspace_name)
+        sys.exit(0)
+    
+    # Find keys ending with devspace name
+    matches = [k for k in profiles.keys() if k.endswith(f':{devspace_name}')]
+    
+    if len(matches) == 1:
+        print(matches[0])
+    elif len(matches) > 1:
+        print(f'ERROR: Multiple workspaces found with name {devspace_name}. Use full hostname format.', file=sys.stderr)
+        sys.exit(1)
+    else:
+        print(devspace_name)
+except:
+    print('$DEVSPACE_NAME')
+" 2>/dev/null)
+        else
+            CONNECTION_KEY="$DEVSPACE_NAME"
+        fi
+    fi
+    
+    if [ -z "$CONNECTION_KEY" ]; then
+        _log "Error: Could not determine connection key for devspace: $DEVSPACE_NAME"
+        exit 1
+    fi
     
     _log "=============================================================================="
-    _log "Connecting to HyperPod devspace: $DEVSPACE_NAME"
+    _log "Connecting to HyperPod devspace: $DEVSPACE_NAME (connection key: $CONNECTION_KEY)"
     
     # Always get fresh credentials
-    _get_fresh_credentials "$DEVSPACE_NAME"
+    _get_fresh_credentials "$CONNECTION_KEY"
     
     # Parse credentials directly from API response JSON - handle URL encoding properly
     SESSION_ID=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); print(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['sessionId'][0])" 2>/dev/null)

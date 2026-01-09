@@ -27,6 +27,7 @@ import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
 import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
 import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -104,7 +105,9 @@ export async function prepareDevEnvConnection(
     token?: string,
     domain?: string,
     appType?: string,
-    devspaceName?: string
+    devspaceName?: string,
+    clusterName?: string,
+    namespace?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -122,7 +125,12 @@ export async function prepareDevEnvConnection(
     const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = `hp_${devspaceName || session}`
+        // Create unique hostname using cluster, namespace, and devspace name
+        // Use double underscores as separators to avoid conflicts with single underscores in names
+        const clusterPart = clusterName || 'unknown'
+        const namespacePart = namespace || 'default'
+        const devspacePart = devspaceName || session || 'unknown'
+        hostname = `hp_${clusterPart}__${namespacePart}__${devspacePart}`
     } else {
         hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
@@ -260,15 +268,16 @@ export async function prepareDevEnvConnection(
     })
 
     // Start connection monitoring for HyperPod connections
-    if (connectionType === 'sm_hp' && devspaceName) {
+    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
         try {
+            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
             const connectionMonitor = HyperpodConnectionMonitor.getInstance()
-            connectionMonitor.startMonitoring(devspaceName)
+            connectionMonitor.startMonitoring(connectionKey)
 
             const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            await reconnectionManager.scheduleReconnection(devspaceName)
+            await reconnectionManager.scheduleReconnection(connectionKey)
 
-            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${devspaceName}`)
+            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
         } catch (error) {
             getLogger().warn(`Failed to start HyperPod monitoring: ${error}`)
         }

@@ -3,24 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { getLogger } from '../../shared/logger/logger'
 import { HyperpodReconnectionManager } from './hyperpodReconnection'
 
 interface ConnectionState {
-    devspaceName: string
-    process?: ChildProcess
+    connectionKey: string
     lastHealthCheck: number
     reconnectAttempts: number
-    retryTimer?: NodeJS.Timeout
 }
 
 export class HyperpodConnectionMonitor {
     private static instance: HyperpodConnectionMonitor
     private connections = new Map<string, ConnectionState>()
     private healthCheckInterval?: NodeJS.Timeout
-    private disposables: vscode.Disposable[] = []
 
     static getInstance(): HyperpodConnectionMonitor {
         if (!HyperpodConnectionMonitor.instance) {
@@ -29,293 +25,104 @@ export class HyperpodConnectionMonitor {
         return HyperpodConnectionMonitor.instance
     }
 
-    startMonitoring(devspaceName: string, process?: ChildProcess): void {
-        const state: ConnectionState = {
-            devspaceName,
-            process,
+    startMonitoring(connectionKey: string): void {
+        const keyParts = connectionKey.split(':')
+        if (keyParts.length !== 3) {
+            getLogger().warn(
+                `Connection key ${connectionKey} does not follow expected format (cluster:namespace:devspace). Monitoring may be unreliable.`
+            )
+        }
+
+        this.connections.set(connectionKey, {
+            connectionKey,
             lastHealthCheck: Date.now(),
             reconnectAttempts: 0,
-        }
-
-        this.connections.set(devspaceName, state)
-
-        if (process) {
-            this.monitorProcess(devspaceName, process)
-        }
-
-        this.startHealthChecks()
-        this.setupEventListeners()
-
-        getLogger().info(`Started comprehensive monitoring for ${devspaceName}`)
-    }
-
-    stopMonitoring(devspaceName: string): void {
-        const state = this.connections.get(devspaceName)
-        if (state?.process) {
-            // Use the stop method from our ChildProcess wrapper
-            state.process.stop()
-        }
-
-        if (state?.retryTimer) {
-            clearTimeout(state.retryTimer)
-        }
-
-        this.connections.delete(devspaceName)
-
-        if (this.connections.size === 0) {
-            this.cleanup()
-        }
-    }
-
-    private monitorProcess(devspaceName: string, process: ChildProcess): void {
-        const nodeProcess = process.proc()
-        if (!nodeProcess) {
-            return
-        }
-
-        nodeProcess.on('exit', (code: number | null, signal: NodeJS.Signals | null) => {
-            getLogger().warn(`HyperPod process for ${devspaceName} exited with code ${code}, signal ${signal}`)
-            void this.handleDisconnection(devspaceName, 'process_exit')
         })
 
-        nodeProcess.on('error', (error: Error) => {
-            getLogger().error(`HyperPod process error for ${devspaceName}: ${error}`)
-            void this.handleDisconnection(devspaceName, 'process_error')
-        })
-
-        nodeProcess.on('disconnect', () => {
-            getLogger().warn(`HyperPod process disconnected for ${devspaceName}`)
-            void this.handleDisconnection(devspaceName, 'process_disconnect')
-        })
-    }
-
-    private startHealthChecks(): void {
-        if (this.healthCheckInterval) {
-            return
-        }
-
-        // Aggressive health checks every 10 seconds
-        this.healthCheckInterval = setInterval(async () => {
-            for (const [devspaceName, state] of this.connections) {
-                await this.performHealthCheck(devspaceName, state)
-            }
-        }, 10000) // Check every 10 seconds for immediate detection
-    }
-
-    private async performHealthCheck(devspaceName: string, state: ConnectionState): Promise<void> {
-        try {
-            // Check if SSH processes are still running
-            const sshProcesses = await this.findSSHProcesses()
-            const hasActiveSSH = sshProcesses.length > 0
-
-            // Check if session-manager-plugin is running
-            const sessionProcesses = await this.findSessionManagerProcesses()
-            const hasActiveSession = sessionProcesses.length > 0
-
-            if (!hasActiveSSH && !hasActiveSession) {
-                getLogger().warn(`No active SSH/session processes found for ${devspaceName}`)
-                void this.handleDisconnection(devspaceName, 'health_check_failed')
-                return
-            }
-
-            state.lastHealthCheck = Date.now()
-            state.reconnectAttempts = 0 // Reset on successful check
-        } catch (error) {
-            getLogger().error(`Health check failed for ${devspaceName}: ${error}`)
-            void this.handleDisconnection(devspaceName, 'health_check_error')
+        if (!this.healthCheckInterval) {
+            this.healthCheckInterval = setInterval(() => {
+                this.performHealthChecks()
+            }, 30000)
         }
     }
 
-    private async findSSHProcesses(): Promise<string[]> {
-        return new Promise((resolve) => {
-            // Look for SSH processes connecting to hp_ hosts
-            const ps = new ChildProcess('pgrep', ['-f', 'ssh.*hp_'])
-            let output = ''
+    stopMonitoring(connectionKey: string): void {
+        this.connections.delete(connectionKey)
 
-            ps.run({
-                onStdout: (data) => {
-                    output += data
-                },
-                onStderr: () => {
-                    // Ignore stderr
-                },
-            })
-                .then(() => {
-                    const pids = output
-                        .trim()
-                        .split('\n')
-                        .filter((pid) => pid.length > 0)
-                    resolve(pids)
-                })
-                .catch(() => resolve([]))
-        })
-    }
-
-    private async findSessionManagerProcesses(): Promise<string[]> {
-        return new Promise((resolve) => {
-            const ps = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])
-            let output = ''
-
-            ps.run({
-                onStdout: (data) => {
-                    output += data
-                },
-                onStderr: () => {
-                    // Ignore stderr
-                },
-            })
-                .then(() => {
-                    const pids = output
-                        .trim()
-                        .split('\n')
-                        .filter((pid) => pid.length > 0)
-                    resolve(pids)
-                })
-                .catch(() => resolve([]))
-        })
-    }
-
-    private setupEventListeners(): void {
-        if (this.disposables.length > 0) {
-            return
-        }
-
-        // Monitor window state changes
-        this.disposables.push(
-            vscode.window.onDidChangeWindowState(async (state) => {
-                if (state.focused) {
-                    await this.handleWindowFocus()
-                }
-            })
-        )
-
-        // Monitor workspace changes
-        this.disposables.push(
-            vscode.workspace.onDidChangeWorkspaceFolders(() => {
-                this.handleWorkspaceChange()
-            })
-        )
-
-        // Monitor remote connection changes
-        this.disposables.push(
-            vscode.workspace.onDidChangeConfiguration((e) => {
-                if (e.affectsConfiguration('remote')) {
-                    getLogger().info('Remote configuration changed, checking connections')
-                    this.handleWorkspaceChange()
-                }
-            })
-        )
-
-        // Monitor network connectivity
-        this.startNetworkMonitoring()
-    }
-
-    private startNetworkMonitoring(): void {
-        // Check network connectivity every 5 seconds
-        const networkCheck = setInterval(async () => {
-            try {
-                // Simple network check - try to resolve AWS endpoint
-                const ping = new ChildProcess('ping', ['-c', '1', '-W', '2000', 'ssmmessages.us-east-2.amazonaws.com'])
-
-                ping.run()
-                    .then((result) => {
-                        const networkUp = result.exitCode === 0
-                        if (networkUp) {
-                            // Network is back up, check all connections immediately
-                            for (const [devspaceName, state] of this.connections) {
-                                void this.performHealthCheck(devspaceName, state)
-                            }
-                        }
-                    })
-                    .catch(() => {
-                        // Ignore network check errors
-                    })
-            } catch (error) {
-                // Ignore network check errors
-            }
-        }, 5000)
-
-        this.disposables.push({ dispose: () => clearInterval(networkCheck) })
-    }
-
-    private async handleWindowFocus(): Promise<void> {
-        for (const devspaceName of this.connections.keys()) {
-            const state = this.connections.get(devspaceName)!
-            await this.performHealthCheck(devspaceName, state)
-        }
-    }
-
-    private handleWorkspaceChange(): void {
-        // Trigger health checks when workspace changes
-        for (const [devspaceName, state] of this.connections) {
-            void this.performHealthCheck(devspaceName, state)
-        }
-    }
-
-    private async handleDisconnection(devspaceName: string, reason: string): Promise<void> {
-        const state = this.connections.get(devspaceName)
-        if (!state) {
-            return
-        }
-
-        // Clear any existing retry timer
-        if (state.retryTimer) {
-            clearTimeout(state.retryTimer)
-            state.retryTimer = undefined
-        }
-
-        state.reconnectAttempts++
-        getLogger().warn(`Connection lost for ${devspaceName} (reason: ${reason}, attempt: ${state.reconnectAttempts})`)
-
-        // Immediately refresh credentials when connection is lost
-        try {
-            getLogger().info(`Immediately refreshing credentials for ${devspaceName} after connection loss`)
-            const manager = HyperpodReconnectionManager.getInstance()
-            await manager.reconnectToHyperpod(devspaceName)
-
-            // Reset attempts on successful credential refresh
-            state.reconnectAttempts = 0
-            getLogger().info(`Fresh credentials ready for ${devspaceName} - connection will use them on next attempt`)
-            return
-        } catch (error) {
-            getLogger().error(`Failed to refresh credentials for ${devspaceName}: ${error}`)
-        }
-
-        // Retry with exponential backoff for repeated failures
-        if (state.reconnectAttempts > 3) {
-            getLogger().error(`Max reconnection attempts reached for ${devspaceName}`)
-            return
-        }
-
-        const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts - 1), 10000)
-        getLogger().info(`Retrying credential refresh for ${devspaceName} in ${delay}ms`)
-
-        state.retryTimer = setTimeout(async () => {
-            state.retryTimer = undefined
-            await this.handleDisconnection(devspaceName, 'retry')
-        }, delay)
-    }
-
-    private cleanup(): void {
-        if (this.healthCheckInterval) {
+        if (this.connections.size === 0 && this.healthCheckInterval) {
             clearInterval(this.healthCheckInterval)
             this.healthCheckInterval = undefined
         }
+    }
 
-        for (const d of this.disposables) {
-            d.dispose()
+    private async performHealthChecks(): Promise<void> {
+        for (const [connectionKey, state] of this.connections) {
+            try {
+                const hasActiveProcesses = await this.checkActiveProcesses(connectionKey)
+                if (hasActiveProcesses) {
+                    state.lastHealthCheck = Date.now()
+                    state.reconnectAttempts = 0
+                } else {
+                    await this.handleDisconnection(connectionKey, state)
+                }
+            } catch (error) {
+                await this.handleDisconnection(connectionKey, state)
+            }
         }
-        this.disposables = []
+    }
+
+    private async checkActiveProcesses(connectionKey: string): Promise<boolean> {
+        try {
+            const keyParts = connectionKey.split(':')
+            const hostPattern =
+                keyParts.length === 3
+                    ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
+                    : `hp_${connectionKey.replace(/:/g, '_')}`
+
+            const sshCheck = new ChildProcess('pgrep', ['-f', `ssh.*${hostPattern}`])
+            const ssmCheck = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])
+
+            const [sshResult, ssmResult] = await Promise.allSettled([sshCheck.run(), ssmCheck.run()])
+
+            const hasSsh = sshResult.status === 'fulfilled' && sshResult.value.exitCode === 0
+            const hasSSM = ssmResult.status === 'fulfilled' && ssmResult.value.exitCode === 0
+
+            return hasSsh || hasSSM
+        } catch {
+            return false
+        }
+    }
+
+    private async handleDisconnection(connectionKey: string, state: ConnectionState): Promise<void> {
+        if (state.reconnectAttempts >= 3) {
+            getLogger().error(`Max reconnection attempts reached for ${connectionKey}. Stopping monitoring.`)
+            this.stopMonitoring(connectionKey)
+            return
+        }
+
+        state.reconnectAttempts++
+        getLogger().warn(
+            `Connection lost for ${connectionKey}, refreshing credentials (attempt ${state.reconnectAttempts})`
+        )
+
+        try {
+            await HyperpodReconnectionManager.getInstance().refreshCredentials(connectionKey)
+            state.reconnectAttempts = 0
+            state.lastHealthCheck = Date.now()
+        } catch (error) {
+            getLogger().error(`Failed to refresh credentials for ${connectionKey}: ${error}`)
+
+            if (error instanceof Error && error.message?.includes('Connection mapping not found')) {
+                getLogger().error(`Connection mapping missing for ${connectionKey}. Stopping monitoring.`)
+                this.stopMonitoring(connectionKey)
+            }
+        }
     }
 
     dispose(): void {
-        // Clear all retry timers before disposing
-        for (const state of this.connections.values()) {
-            if (state.retryTimer) {
-                clearTimeout(state.retryTimer)
-            }
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval)
         }
         this.connections.clear()
-        this.cleanup()
     }
 }
