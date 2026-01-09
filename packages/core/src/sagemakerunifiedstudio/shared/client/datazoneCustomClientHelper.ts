@@ -4,12 +4,21 @@
  */
 
 import { getLogger } from '../../../shared/logger/logger'
-import apiConfig = require('./datazonecustomclient.json')
-import globals from '../../../shared/extensionGlobals'
-import { Service } from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import * as DataZoneCustomClient from './datazonecustomclient'
-import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
+import {
+    DataZone,
+    DataZoneClientConfig,
+    ListDomainsCommand,
+    GetDomainCommand,
+    SearchGroupProfilesCommand,
+    SearchUserProfilesCommand,
+    DomainSummary,
+    DomainStatus,
+    GetDomainOutput,
+    GroupProfileSummary,
+    UserProfileSummary,
+    GroupSearchType,
+    UserSearchType,
+} from '@amzn/datazone-custom-client'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { ToolkitError } from '../../../shared/errors'
 import { SmusUtils, isIamDomain } from '../smusUtils'
@@ -30,7 +39,7 @@ export const DataZoneErrorCode = {
  * Helper client for interacting with AWS DataZone Custom API
  */
 export class DataZoneCustomClientHelper {
-    private datazoneCustomClient: DataZoneCustomClient | undefined
+    private datazoneCustomClient: DataZone | undefined
     private static instances = new Map<string, DataZoneCustomClientHelper>()
     private readonly logger = getLogger('smus')
 
@@ -91,33 +100,38 @@ export class DataZoneCustomClientHelper {
     /**
      * Gets the DataZone client, initializing it if necessary
      */
-    private async getDataZoneCustomClient(): Promise<DataZoneCustomClient> {
+    private async getDataZoneCustomClient(): Promise<DataZone> {
         if (!this.datazoneCustomClient) {
             try {
                 this.logger.info('DataZoneCustomClientHelper: Creating authenticated DataZone client')
 
-                // Use user setting for endpoint if provided, otherwise use default
+                // Create credential provider function for auto-refresh
+                const awsCredentialProvider = async () => {
+                    const credentials = await this.credentialProvider.getCredentials()
+                    return {
+                        accessKeyId: credentials.accessKeyId,
+                        secretAccessKey: credentials.secretAccessKey,
+                        sessionToken: credentials.sessionToken,
+                        expiration: credentials.expiration,
+                    }
+                }
+
+                // Use user setting for endpoint if provided, otherwise use default api.aws endpoint
+                // Note: The SDK v3 ruleset incorrectly uses amazonaws.com suffix, but DataZone uses api.aws
                 const devSettings = DevSettings.instance
                 const customEndpoint = devSettings.get('endpoints', {})['datazone']
                 const endpoint = customEndpoint || `https://datazone.${this.region}.api.aws`
+                this.logger.info(
+                    `DataZoneCustomClientHelper: Using DataZone endpoint: ${endpoint}${customEndpoint ? ' (custom)' : ' (default)'}`
+                )
 
-                if (customEndpoint) {
-                    this.logger.debug(
-                        `DataZoneCustomClientHelper: Using custom DataZone endpoint from settings: ${endpoint}`
-                    )
+                const clientConfig: DataZoneClientConfig = {
+                    region: this.region,
+                    credentials: awsCredentialProvider,
+                    endpoint: endpoint,
                 }
 
-                this.datazoneCustomClient = (await globals.sdkClientBuilder.createAwsService(
-                    Service,
-                    {
-                        apiConfig: apiConfig,
-                        endpoint: endpoint,
-                        region: this.region,
-                        credentialProvider: adaptConnectionCredentialsProvider(this.credentialProvider),
-                    } as ServiceConfigurationOptions,
-                    undefined,
-                    false
-                )) as DataZoneCustomClient
+                this.datazoneCustomClient = new DataZone(clientConfig)
 
                 this.logger.info('DataZoneCustomClientHelper: Successfully created authenticated DataZone client')
             } catch (err) {
@@ -137,20 +151,19 @@ export class DataZoneCustomClientHelper {
         maxResults?: number
         status?: string
         nextToken?: string
-    }): Promise<{ domains: DataZoneCustomClient.Types.DomainSummary[]; nextToken?: string }> {
+    }): Promise<{ domains: DomainSummary[]; nextToken?: string }> {
         try {
             this.logger.info(`DataZoneCustomClientHelper: Listing domains in region ${this.region}`)
 
             const datazoneCustomClient = await this.getDataZoneCustomClient()
 
             // Call DataZone API to list domains with pagination
-            const response = await datazoneCustomClient
-                .listDomains({
-                    maxResults: options?.maxResults,
-                    status: options?.status,
-                    nextToken: options?.nextToken,
-                })
-                .promise()
+            const command = new ListDomainsCommand({
+                maxResults: options?.maxResults,
+                status: options?.status as DomainStatus,
+                nextToken: options?.nextToken,
+            })
+            const response = await datazoneCustomClient.send(command)
 
             const domains = response.items || []
 
@@ -172,9 +185,9 @@ export class DataZoneCustomClientHelper {
      * @param options Options for listing domains (excluding nextToken which is handled internally)
      * @returns Promise resolving to an array of all DataZone domains
      */
-    public async fetchAllDomains(options?: { status?: string }): Promise<DataZoneCustomClient.Types.DomainSummary[]> {
+    public async fetchAllDomains(options?: { status?: string }): Promise<DomainSummary[]> {
         try {
-            let allDomains: DataZoneCustomClient.Types.DomainSummary[] = []
+            let allDomains: DomainSummary[] = []
             let nextToken: string | undefined
             do {
                 const maxResultsPerPage = 25
@@ -199,7 +212,7 @@ export class DataZoneCustomClientHelper {
      * Gets the domain with IAM authentication mode using pagination with early termination
      * @returns Promise resolving to the DataZone domain or undefined if not found
      */
-    public async getIamDomain(): Promise<DataZoneCustomClient.Types.DomainSummary | undefined> {
+    public async getIamDomain(): Promise<DomainSummary | undefined> {
         const logger = getLogger('smus')
 
         try {
@@ -259,17 +272,16 @@ export class DataZoneCustomClientHelper {
      * @param domainId The ID of the domain to retrieve
      * @returns Promise resolving to the GetDomainOutput
      */
-    public async getDomain(domainId: string): Promise<DataZoneCustomClient.Types.GetDomainOutput> {
+    public async getDomain(domainId: string): Promise<GetDomainOutput> {
         try {
             this.logger.debug(`DataZoneCustomClientHelper: Getting domain with ID: ${domainId}`)
 
             const datazoneCustomClient = await this.getDataZoneCustomClient()
 
-            const response = await datazoneCustomClient
-                .getDomain({
-                    identifier: domainId,
-                })
-                .promise()
+            const command = new GetDomainCommand({
+                identifier: domainId,
+            })
+            const response = await datazoneCustomClient.send(command)
 
             this.logger.debug(`DataZoneCustomClientHelper: Successfully retrieved domain: ${domainId}`)
             return response
@@ -293,7 +305,7 @@ export class DataZoneCustomClientHelper {
             maxResults?: number
             nextToken?: string
         }
-    ): Promise<{ items: DataZoneCustomClient.Types.GroupProfileSummary[]; nextToken?: string }> {
+    ): Promise<{ items: GroupProfileSummary[]; nextToken?: string }> {
         try {
             this.logger.debug(
                 `DataZoneCustomClientHelper: Searching group profiles in domain ${domainIdentifier} with groupType: ${options?.groupType}, searchText: ${options?.searchText}`
@@ -301,17 +313,15 @@ export class DataZoneCustomClientHelper {
 
             const datazoneCustomClient = await this.getDataZoneCustomClient()
 
-            // Build the request parameters
-            const params: DataZoneCustomClient.Types.SearchGroupProfilesInput = {
+            // Call DataZone API to search group profiles
+            const command = new SearchGroupProfilesCommand({
                 domainIdentifier,
-                groupType: options?.groupType as DataZoneCustomClient.Types.GroupSearchType,
+                groupType: options?.groupType as GroupSearchType,
                 searchText: options?.searchText,
                 maxResults: options?.maxResults,
                 nextToken: options?.nextToken,
-            }
-
-            // Call DataZone API to search group profiles
-            const response = await datazoneCustomClient.searchGroupProfiles(params).promise()
+            })
+            const response = await datazoneCustomClient.send(command)
 
             const items = response.items || []
 
@@ -342,7 +352,7 @@ export class DataZoneCustomClientHelper {
             maxResults?: number
             nextToken?: string
         }
-    ): Promise<{ items: DataZoneCustomClient.Types.UserProfileSummary[]; nextToken?: string }> {
+    ): Promise<{ items: UserProfileSummary[]; nextToken?: string }> {
         try {
             this.logger.debug(
                 `DataZoneCustomClientHelper: Searching user profiles in domain ${domainIdentifier} with userType: ${options.userType}, searchText: ${options.searchText}`
@@ -350,17 +360,15 @@ export class DataZoneCustomClientHelper {
 
             const datazoneCustomClient = await this.getDataZoneCustomClient()
 
-            // Build the request parameters
-            const params: DataZoneCustomClient.Types.SearchUserProfilesInput = {
+            // Call DataZone API to search user profiles
+            const command = new SearchUserProfilesCommand({
                 domainIdentifier,
-                userType: options.userType as DataZoneCustomClient.Types.UserSearchType,
+                userType: options.userType as UserSearchType,
                 searchText: options.searchText,
                 maxResults: options.maxResults,
                 nextToken: options.nextToken,
-            }
-
-            // Call DataZone API to search user profiles
-            const response = await datazoneCustomClient.searchUserProfiles(params).promise()
+            })
+            const response = await datazoneCustomClient.send(command)
 
             const items = response.items || []
 
