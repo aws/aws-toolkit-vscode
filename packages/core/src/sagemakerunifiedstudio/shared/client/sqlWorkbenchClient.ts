@@ -3,40 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Service } from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger/logger'
-import * as SQLWorkbench from './sqlworkbench'
-import apiConfig = require('./sqlworkbench.json')
+import {
+    SQLWorkbench,
+    GetResourcesCommand,
+    ExecuteQueryCommand,
+    GetResourcesRequest,
+    GetResourcesResponse,
+    ExecuteQueryRequest,
+    DatabaseConnectionConfiguration,
+    ParentResource,
+    DatabaseIntegrationConnectionAuthenticationTypes,
+} from '@amzn/sql-workbench-client'
 import { v4 as uuidv4 } from 'uuid'
 import { getRedshiftTypeFromHost } from '../../explorer/nodes/utils'
-import { DatabaseIntegrationConnectionAuthenticationTypes, RedshiftType } from '../../explorer/nodes/types'
+import { RedshiftType } from '../../explorer/nodes/types'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
-import { adaptConnectionCredentialsProvider } from './credentialsAdapter'
 
 /**
  * Connection configuration for SQL Workbench
+ * This is an alias for the SDK's DatabaseConnectionConfiguration type
  */
-export interface ConnectionConfig {
-    id: string
-    type: string
-    databaseType: string
-    connectableResourceIdentifier: string
-    connectableResourceType: string
-    database: string
-    auth?: {
-        secretArn?: string
-    }
-}
-
-/**
- * Resource parent information
- */
-export interface ParentResource {
-    parentId: string
-    parentType: string
-}
+export type ConnectionConfig = DatabaseConnectionConfiguration
 
 /**
  * Gets a SQL Workbench ARN
@@ -89,7 +77,7 @@ export async function createRedshiftConnectionConfig(
     }
 
     // Determine auth type based on the provided parameters
-    let authType: string
+    let authType: DatabaseIntegrationConnectionAuthenticationTypes
 
     if (secretArn) {
         authType = DatabaseIntegrationConnectionAuthenticationTypes.SECRET
@@ -118,11 +106,7 @@ export async function createRedshiftConnectionConfig(
     }
 
     // Add auth object for SECRET authentication type
-    if (
-        (authType as DatabaseIntegrationConnectionAuthenticationTypes) ===
-            DatabaseIntegrationConnectionAuthenticationTypes.SECRET &&
-        secretArn
-    ) {
+    if (authType === DatabaseIntegrationConnectionAuthenticationTypes.SECRET && secretArn) {
         connectionConfig.auth = { secretArn }
     }
 
@@ -177,7 +161,7 @@ export class SQLWorkbenchClient {
     /**
      * Gets resources from SQL Workbench
      * @param params Request parameters
-     * @returns Raw response from getResources API
+     * @returns Response containing resources and optional next token
      */
     public async getResources(params: {
         connection: ConnectionConfig
@@ -187,13 +171,13 @@ export class SQLWorkbenchClient {
         parents?: ParentResource[]
         pageToken?: string
         forceRefresh?: boolean
-    }): Promise<SQLWorkbench.GetResourcesResponse> {
+    }): Promise<GetResourcesResponse> {
         try {
             this.logger.info(`SQLWorkbenchClient: Getting resources in region ${this.region}`)
 
             const sqlClient = await this.getSQLClient()
 
-            const requestParams = {
+            const requestParams: GetResourcesRequest = {
                 connection: params.connection,
                 type: params.resourceType,
                 maxItems: params.maxItems || 100,
@@ -203,13 +187,9 @@ export class SQLWorkbenchClient {
                 accountSettings: {},
             }
 
-            // Call the GetResources API
-            const response = await sqlClient.getResources(requestParams).promise()
-
-            return {
-                resources: response.resources || [],
-                nextToken: response.nextToken,
-            }
+            // Call the GetResources API using SDK v3 Command pattern
+            const command = new GetResourcesCommand(requestParams)
+            return await sqlClient.send(command)
         } catch (err) {
             this.logger.error('SQLWorkbenchClient: Failed to get resources: %s', err as Error)
             throw err
@@ -228,26 +208,27 @@ export class SQLWorkbenchClient {
 
             const sqlClient = await this.getSQLClient()
 
-            // Call the ExecuteQuery API
-            const response = await sqlClient
-                .executeQuery({
-                    connection: connectionConfig as any,
-                    databaseType: 'REDSHIFT',
-                    accountSettings: {},
-                    executionContext: [
-                        {
-                            parentType: 'DATABASE',
-                            parentId: connectionConfig.database || '',
-                        },
-                    ],
-                    query,
-                    queryExecutionType: 'NO_SESSION',
-                    queryResponseDeliveryType: 'ASYNC',
-                    maxItems: 100,
-                    ignoreHistory: true,
-                    tabId: 'data_explorer',
-                })
-                .promise()
+            const requestParams: ExecuteQueryRequest = {
+                connection: connectionConfig,
+                databaseType: 'REDSHIFT',
+                accountSettings: {},
+                executionContext: [
+                    {
+                        parentType: 'DATABASE',
+                        parentId: connectionConfig.database || '',
+                    },
+                ],
+                query,
+                queryExecutionType: 'NO_SESSION',
+                queryResponseDeliveryType: 'ASYNC',
+                maxItems: 100,
+                ignoreHistory: true,
+                tabId: 'data_explorer',
+            }
+
+            // Call the ExecuteQuery API using SDK v3 Command pattern
+            const command = new ExecuteQueryCommand(requestParams)
+            const response = await sqlClient.send(command)
 
             // Log the response
             this.logger.info(
@@ -262,9 +243,6 @@ export class SQLWorkbenchClient {
     }
 
     /**
-     * Gets the SQL client, initializing it if necessary
-     */
-    /**
      * Gets the SQL Workbench endpoint URL for the given region
      * @param region AWS region
      * @returns SQL Workbench endpoint URL
@@ -273,6 +251,9 @@ export class SQLWorkbenchClient {
         return `https://api-v2.sqlworkbench.${region}.amazonaws.com`
     }
 
+    /**
+     * Gets the SQL client, initializing it if necessary
+     */
     private async getSQLClient(): Promise<SQLWorkbench> {
         if (!this.sqlClient) {
             try {
@@ -281,30 +262,27 @@ export class SQLWorkbenchClient {
                 this.logger.info(`Using SQL Workbench endpoint: ${endpoint}`)
 
                 if (this.connectionCredentialsProvider) {
-                    // Create client with provided credentials
-                    this.sqlClient = (await globals.sdkClientBuilder.createAwsService(
-                        Service,
-                        {
-                            apiConfig: apiConfig,
-                            region: this.region,
-                            endpoint: endpoint,
-                            credentialProvider: adaptConnectionCredentialsProvider(this.connectionCredentialsProvider),
-                        } as ServiceConfigurationOptions,
-                        undefined,
-                        false
-                    )) as SQLWorkbench
+                    // Create client with credential provider function for auto-refresh
+                    const awsCredentialProvider = async () => {
+                        const credentials = await this.connectionCredentialsProvider!.getCredentials()
+                        return {
+                            accessKeyId: credentials.accessKeyId,
+                            secretAccessKey: credentials.secretAccessKey,
+                            sessionToken: credentials.sessionToken,
+                            expiration: credentials.expiration,
+                        }
+                    }
+                    this.sqlClient = new SQLWorkbench({
+                        region: this.region,
+                        endpoint: endpoint,
+                        credentials: awsCredentialProvider,
+                    })
                 } else {
-                    // Use the SDK client builder for default credentials
-                    this.sqlClient = (await globals.sdkClientBuilder.createAwsService(
-                        Service,
-                        {
-                            apiConfig: apiConfig,
-                            region: this.region,
-                            endpoint: endpoint,
-                        } as ServiceConfigurationOptions,
-                        undefined,
-                        false
-                    )) as SQLWorkbench
+                    // Use default credentials
+                    this.sqlClient = new SQLWorkbench({
+                        region: this.region,
+                        endpoint: endpoint,
+                    })
                 }
 
                 this.logger.debug('SQLWorkbenchClient: Successfully created SQL client')

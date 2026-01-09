@@ -441,9 +441,15 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
 
                 // Get schema objects
                 // Make sure we're using the correct database in the connection config
+                const databaseName = parent.data.path?.database || connectionConfig.database
+                if (!databaseName) {
+                    logger.error('Database name is required but was not found in path or connection config')
+                    return [createErrorItem('Database name is missing', 'schema-contents', node.id) as RedshiftNode]
+                }
+
                 const schemaConnectionConfig = {
                     ...connectionConfig,
-                    database: parent.data.path?.database || connectionConfig.database,
+                    database: databaseName,
                 }
 
                 // Create request params object for logging
@@ -458,7 +464,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                             parentType: ResourceType.SCHEMA,
                         },
                         {
-                            parentId: schemaConnectionConfig.database,
+                            parentId: databaseName,
                             parentType: ResourceType.DATABASE,
                         },
                     ],
