@@ -85,7 +85,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             )
 
             const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            await reconnectionManager.scheduleReconnection(connectionKey)
+            reconnectionManager.scheduleReconnection(connectionKey)
 
             const connectionMonitor = HyperpodConnectionMonitor.getInstance()
             connectionMonitor.startMonitoring(connectionKey)
