@@ -4,10 +4,14 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
+import { ChildProcess } from '../../shared/utilities/processUtils'
+import { promises as fs } from 'fs'
+import { join } from 'path'
+import os from 'os'
 
 export class HyperpodReconnectionManager {
     private static instance: HyperpodReconnectionManager
-    private reconnectionTimers = new Map<string, NodeJS.Timeout>()
+    private timers = new Map<string, NodeJS.Timeout>()
 
     static getInstance(): HyperpodReconnectionManager {
         if (!HyperpodReconnectionManager.instance) {
@@ -16,66 +20,88 @@ export class HyperpodReconnectionManager {
         return HyperpodReconnectionManager.instance
     }
 
-    async scheduleReconnection(devspaceName: string, intervalMinutes: number = 15): Promise<void> {
-        // Clear existing timer if any
-        this.clearReconnection(devspaceName)
+    scheduleReconnection(connectionKey: string, intervalMinutes: number = 12): void {
+        this.clearReconnection(connectionKey)
 
-        // Proactively refresh credentials BEFORE they expire
         const timer = setInterval(
-            async () => {
-                try {
-                    getLogger().info(`Proactively refreshing credentials for ${devspaceName} before expiry`)
-                    await this.refreshCredentialsOnly(devspaceName)
-                } catch (error) {
-                    getLogger().error(`Failed to refresh credentials for ${devspaceName}: ${error}`)
-                }
+            () => {
+                this.refreshCredentials(connectionKey).catch((error) => {
+                    getLogger().error(`Credential refresh failed for ${connectionKey}: ${error}`)
+                    if (error.message?.includes('Connection mapping not found')) {
+                        this.clearReconnection(connectionKey)
+                    }
+                })
             },
             intervalMinutes * 60 * 1000
         )
 
-        this.reconnectionTimers.set(devspaceName, timer)
-        getLogger().info(`Scheduled proactive credential refresh for ${devspaceName} every ${intervalMinutes} minutes`)
+        this.timers.set(connectionKey, timer)
     }
 
-    clearReconnection(devspaceName: string): void {
-        const timer = this.reconnectionTimers.get(devspaceName)
+    clearReconnection(connectionKey: string): void {
+        const timer = this.timers.get(connectionKey)
         if (timer) {
             clearInterval(timer)
-            this.reconnectionTimers.delete(devspaceName)
+            this.timers.delete(connectionKey)
         }
     }
 
-    private async refreshCredentialsOnly(devspaceName: string): Promise<void> {
-        getLogger().info(`Refreshing credentials for ${devspaceName}`)
-
+    async refreshCredentials(connectionKey: string): Promise<void> {
         try {
-            // Read the dynamic port from the server info file
-            const serverInfoPath = `${process.env.HOME}/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json`
-            const serverInfo = JSON.parse(await require('fs').promises.readFile(serverInfoPath, 'utf8'))
-            const port = serverInfo.port
+            await this.clearSSHHostKey(connectionKey)
 
-            // Call the get_hyperpod_session API with force_refresh=true
-            const response = await fetch(`http://localhost:${port}/get_hyperpod_session?devspace_name=${devspaceName}`)
+            const serverInfoPath = join(
+                os.homedir(),
+                'Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json'
+            )
+
+            const serverInfoContent = await fs.readFile(serverInfoPath, 'utf8')
+            const serverInfo = JSON.parse(serverInfoContent)
+
+            const keyParts = connectionKey.split(':')
+            if (keyParts.length !== 3) {
+                getLogger().warn(
+                    `Using legacy connection key format: ${connectionKey}. This may cause issues with multiple namespaces.`
+                )
+            }
+
+            const port = parseInt(serverInfo.port, 10)
+            if (isNaN(port) || port < 1 || port > 65535) {
+                throw new Error('Invalid port number in server info')
+            }
+
+            const apiUrl = `http://localhost:${port}/get_hyperpod_session?connection_key=${encodeURIComponent(connectionKey)}`
+            const response = await fetch(apiUrl)
 
             if (!response.ok) {
-                throw new Error(`API call failed: ${response.status} ${response.statusText}`)
+                if (response.status === 404) {
+                    throw new Error(`Connection mapping not found for ${connectionKey}. Please reconnect manually.`)
+                }
+                throw new Error(`API call failed: ${response.status} - ${response.statusText}`)
             }
 
             const data = await response.json()
-
             if (data.status !== 'success') {
-                throw new Error(`API returned error: ${data.message}`)
+                throw new Error(data.message || 'Unknown API error')
             }
-
-            getLogger().info(`Proactively refreshed credentials for ${devspaceName}`)
         } catch (error) {
-            getLogger().error(`Failed to call get_hyperpod_session API: ${error}`)
+            getLogger().error(`Failed to refresh credentials for ${connectionKey}: ${error}`)
             throw error
         }
     }
 
-    async reconnectToHyperpod(devspaceName: string): Promise<void> {
-        getLogger().info(`Reconnection triggered for ${devspaceName} - refreshing credentials`)
-        await this.refreshCredentialsOnly(devspaceName)
+    private async clearSSHHostKey(connectionKey: string): Promise<void> {
+        try {
+            const keyParts = connectionKey.split(':')
+            const hostKey =
+                keyParts.length === 3
+                    ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
+                    : `hp_${connectionKey.replace(/:/g, '_')}`
+
+            const sshKeygen = new ChildProcess('ssh-keygen', ['-R', hostKey])
+            await sshKeygen.run()
+        } catch (error) {
+            // SSH host key cleanup is non-critical
+        }
     }
 }

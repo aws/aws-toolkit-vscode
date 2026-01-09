@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Disabled: detached server files cannot import vscode.
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
@@ -12,24 +11,41 @@ import { KubectlClient, HyperpodDevSpace, HyperpodCluster } from '../kubectlClie
 
 export async function handleGetHyperpodSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
+    const connectionKey = parsedUrl.query.connection_key
     const devspaceName = parsedUrl.query.devspace_name
+    const namespace = parsedUrl.query.namespace
+    const clusterName = parsedUrl.query.cluster_name
 
     try {
-        if (!devspaceName) {
+        let lookupKey: string
+
+        if (connectionKey) {
+            lookupKey = Array.isArray(connectionKey) ? connectionKey[0] : connectionKey
+        } else if (devspaceName && namespace && clusterName) {
+            const devspaceStr = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
+            const namespaceStr = Array.isArray(namespace) ? namespace[0] : namespace
+            const clusterStr = Array.isArray(clusterName) ? clusterName[0] : clusterName
+            lookupKey = `${clusterStr}:${namespaceStr}:${devspaceStr}`
+        } else if (devspaceName) {
+            lookupKey = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
+        } else {
             res.writeHead(400, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ status: 'error', message: 'devspace_name required' }))
+            res.end(
+                JSON.stringify({
+                    status: 'error',
+                    message: 'connection_key or (devspace_name + namespace + cluster_name) required',
+                })
+            )
             return
         }
 
-        // Get stored connection info
-        const connectionInfo = await getHyperpodConnection(devspaceName as string)
+        const connectionInfo = await getHyperpodConnection(lookupKey)
         if (!connectionInfo) {
             res.writeHead(404, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ status: 'error', message: 'Connection info not found' }))
             return
         }
 
-        // Use stored EKS cluster info to avoid AWS SDK dependency
         const region = extractRegionFromArn(connectionInfo.clusterArn)
         const hyperpodCluster: HyperpodCluster = {
             clusterName: connectionInfo.clusterName,
@@ -38,7 +54,6 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             regionCode: region,
         }
 
-        // Create minimal EKS cluster object from stored data
         const eksCluster = {
             name: connectionInfo.eksClusterName,
             arn: connectionInfo.clusterArn,
@@ -50,8 +65,11 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
 
         const kubectlClient = new KubectlClient(eksCluster, hyperpodCluster)
 
+        const keyParts = lookupKey.split(':')
+        const actualDevspaceName = keyParts.length === 3 ? keyParts[2] : String(devspaceName || lookupKey)
+
         const devSpace: HyperpodDevSpace = {
-            name: devspaceName as string,
+            name: actualDevspaceName,
             namespace: connectionInfo.namespace,
             cluster: connectionInfo.clusterName,
             group: 'workspace.jupyter.org',
@@ -63,7 +81,6 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             accessType: '',
         }
 
-        // Always get fresh presigned URL and connection details
         const workspaceConnection = await kubectlClient.createWorkspaceConnection(devSpace)
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -71,7 +88,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             JSON.stringify({
                 status: 'success',
                 connection: workspaceConnection,
-                devspace: devspaceName,
+                devspace: actualDevspaceName,
                 timestamp: Date.now(),
             })
         )
