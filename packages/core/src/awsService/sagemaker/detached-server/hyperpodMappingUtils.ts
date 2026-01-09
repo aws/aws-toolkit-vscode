@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { promises as fs } from 'fs'
+import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import os from 'os'
 import { join } from 'path'
 
