@@ -28,12 +28,9 @@ export interface HyperpodCluster {
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
     private k8sApi: k8s.CustomObjectsApi
-    // @ts-ignore - Used in loadKubeConfig
-    private _hyperpodCluster: HyperpodCluster
     private eksCluster: any
 
     constructor(eksCluster: any, hyperpodCluster: HyperpodCluster) {
-        this._hyperpodCluster = hyperpodCluster
         this.eksCluster = eksCluster
         this.kubeConfig = new k8s.KubeConfig()
         this.loadKubeConfig(eksCluster, hyperpodCluster)
@@ -46,8 +43,6 @@ export class KubectlClient {
 
     private loadKubeConfig(eksCluster: any, hyperpodCluster: HyperpodCluster): void {
         if (eksCluster.name && eksCluster.endpoint) {
-            // Store hyperpod cluster info for potential future use
-            this._hyperpodCluster = hyperpodCluster
             this.kubeConfig.loadFromOptions({
                 clusters: [
                     {

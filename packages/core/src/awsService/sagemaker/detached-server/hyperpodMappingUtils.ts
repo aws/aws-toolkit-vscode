@@ -17,7 +17,7 @@ export interface HyperpodSpaceMapping {
 }
 
 export interface HyperpodMappings {
-    [devspaceName: string]: HyperpodSpaceMapping
+    [connectionKey: string]: HyperpodSpaceMapping
 }
 
 export const hyperpodMappingFilePath = join(os.homedir(), '.aws', '.hyperpod-space-profiles')
@@ -26,24 +26,18 @@ const tempFilePath = `${hyperpodMappingFilePath}.tmp`
 let isWriting = false
 const writeQueue: Array<() => Promise<void>> = []
 
-/**
- * Reads the HyperPod mapping file
- */
 export async function readHyperpodMapping(): Promise<HyperpodMappings> {
     try {
         const content = await fs.readFile(hyperpodMappingFilePath, 'utf-8')
         return JSON.parse(content)
     } catch (err: any) {
         if (err.code === 'ENOENT') {
-            return {} // Return empty mapping if file doesn't exist
+            return {}
         }
         throw new Error(`Failed to read HyperPod mapping file: ${err.message}`)
     }
 }
 
-/**
- * Writes the HyperPod mapping to file atomically
- */
 export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         const writeOperation = async () => {
@@ -63,9 +57,13 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
     })
 }
 
-/**
- * Stores HyperPod space connection info
- */
+export function createConnectionKey(devspaceName: string, namespace: string, clusterName: string): string {
+    if (devspaceName.includes(':') || namespace.includes(':') || clusterName.includes(':')) {
+        throw new Error('Connection key parameters cannot contain colon characters')
+    }
+    return `${clusterName}:${namespace}:${devspaceName}`
+}
+
 export async function storeHyperpodConnection(
     devspaceName: string,
     namespace: string,
@@ -76,7 +74,8 @@ export async function storeHyperpodConnection(
     certificateAuthorityData?: string
 ): Promise<void> {
     const mapping = await readHyperpodMapping()
-    mapping[devspaceName] = {
+    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    mapping[connectionKey] = {
         namespace,
         clusterArn,
         clusterName,
@@ -87,19 +86,22 @@ export async function storeHyperpodConnection(
     await writeHyperpodMapping(mapping)
 }
 
-/**
- * Gets all stored HyperPod connections
- */
 export async function getStoredConnections(): Promise<HyperpodMappings> {
     return await readHyperpodMapping()
 }
 
-/**
- * Gets HyperPod space connection info
- */
-export async function getHyperpodConnection(devspaceName: string): Promise<HyperpodSpaceMapping | undefined> {
+export async function getHyperpodConnection(connectionKey: string): Promise<HyperpodSpaceMapping | undefined> {
     const mapping = await readHyperpodMapping()
-    return mapping[devspaceName]
+    return mapping[connectionKey]
+}
+
+export async function getHyperpodConnectionByDetails(
+    devspaceName: string,
+    namespace: string,
+    clusterName: string
+): Promise<HyperpodSpaceMapping | undefined> {
+    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    return getHyperpodConnection(connectionKey)
 }
 
 async function processWriteQueue() {
