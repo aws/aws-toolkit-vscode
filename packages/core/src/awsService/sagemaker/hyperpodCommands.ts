@@ -16,8 +16,8 @@ import { HyperpodReconnectionManager } from './hyperpodReconnection'
 import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
 import { startLocalServer, prepareDevEnvConnection } from './model'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
-import { ChildProcess } from '../../shared/utilities/processUtils'
 import globals from '../../shared/extensionGlobals'
+import { clearSSHHostKey } from './hyperpodUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -240,20 +240,5 @@ export async function filterDevSpacesByNamespaceCluster(hpNode: SagemakerHyperpo
     if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
         hpNode.saveSelectedClusterNamespaces(newSelection)
         await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', hpNode)
-    }
-}
-
-async function clearSSHHostKey(connectionKey: string): Promise<void> {
-    try {
-        const keyParts = connectionKey.split(':')
-        const hostKey =
-            keyParts.length === 3
-                ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
-                : `hp_${connectionKey.replace(/:/g, '_')}`
-
-        const sshKeygen = new ChildProcess('ssh-keygen', ['-R', hostKey])
-        await sshKeygen.run()
-    } catch (error) {
-        // SSH host key cleanup is non-critical
     }
 }

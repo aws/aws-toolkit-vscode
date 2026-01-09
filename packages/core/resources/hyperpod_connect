@@ -140,21 +140,18 @@ try:
     
     devspace_name = '$DEVSPACE_NAME'
     
-    # First try exact devspace name match
-    if devspace_name in profiles:
-        print(devspace_name)
-        sys.exit(0)
+    # Find keys ending with devspace name and sort them
+    matches = sorted([k for k in profiles.keys() if k.endswith(f':{devspace_name}')])
     
-    # Find keys ending with devspace name
-    matches = [k for k in profiles.keys() if k.endswith(f':{devspace_name}')]
-    
-    if len(matches) == 1:
+    if len(matches) >= 1:
+        # Return the first alphabetically sorted match for consistency
         print(matches[0])
-    elif len(matches) > 1:
-        print(f'ERROR: Multiple workspaces found with name {devspace_name}. Use full hostname format.', file=sys.stderr)
-        sys.exit(1)
     else:
-        print(devspace_name)
+        # Try exact devspace name match as fallback
+        if devspace_name in profiles:
+            print(devspace_name)
+        else:
+            print(devspace_name)
 except:
     print('$DEVSPACE_NAME')
 " 2>/dev/null)
