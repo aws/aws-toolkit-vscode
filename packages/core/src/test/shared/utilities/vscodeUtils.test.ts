@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../../shared/extensionIds'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import { getExcludePattern } from '../../../shared/fs/watchedFiles'
@@ -18,8 +18,8 @@ describe('vscodeUtils', async function () {
 
         assert.deepStrictEqual(vscodeUtil.isExtensionActive('invalid.extension'), false)
 
-        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
-        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
+        await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit, false)
+        assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit), true)
     })
 
     it('globDirPatterns()', async function () {

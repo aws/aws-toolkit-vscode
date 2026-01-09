@@ -8,7 +8,7 @@ import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
-import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../src/shared/extensionIds'
 import { TestOptions } from '@vscode/test-electron/out/runTest'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
@@ -79,14 +79,14 @@ async function getVSCodeCliArgs(params: {
     if (params.suite === 'integration' || params.suite === 'e2e') {
         disableExtensionsArgs = await getCliArgsToDisableExtensions(params.vsCodeExecutablePath, {
             except: [
-                VSCODE_EXTENSION_ID.python,
-                VSCODE_EXTENSION_ID.yaml,
-                VSCODE_EXTENSION_ID.jupyter,
-                VSCODE_EXTENSION_ID.go,
-                VSCODE_EXTENSION_ID.java,
-                VSCODE_EXTENSION_ID.javadebug,
-                VSCODE_EXTENSION_ID.git,
-                VSCODE_EXTENSION_ID.remotessh,
+                VSCODE_EXTENSION_ID_CONSTANTS.python,
+                VSCODE_EXTENSION_ID_CONSTANTS.yaml,
+                VSCODE_EXTENSION_ID_CONSTANTS.jupyter,
+                VSCODE_EXTENSION_ID_CONSTANTS.go,
+                VSCODE_EXTENSION_ID_CONSTANTS.java,
+                VSCODE_EXTENSION_ID_CONSTANTS.javadebug,
+                VSCODE_EXTENSION_ID_CONSTANTS.git,
+                VSCODE_EXTENSION_ID_CONSTANTS.remotessh.id,
             ],
         })
         disableWorkspaceTrustArg = [disableWorkspaceTrust]
@@ -160,11 +160,11 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
 
     // Only certain test suites require specific vscode extensions to be installed
     if (suite === 'e2e' || suite === 'integration') {
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID_CONSTANTS.python)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID_CONSTANTS.yaml)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID_CONSTANTS.go)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID_CONSTANTS.java)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID_CONSTANTS.javadebug)
     }
 
     console.log('VS Code Test instance has been set up')
