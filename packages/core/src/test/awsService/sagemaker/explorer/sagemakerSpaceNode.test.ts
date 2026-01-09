@@ -113,12 +113,12 @@ describe('SagemakerSpaceNode', function () {
         const describeSpaceStub = sinon.stub(SagemakerClient.prototype, 'describeSpace')
         describeSpaceStub.resolves({ SpaceName: 'TestSpace', Status: 'InService', $metadata: {} })
 
-        const listAppForSpaceStub = sinon.stub(SagemakerClient.prototype, 'listAppForSpace')
-        listAppForSpaceStub.resolves({ AppName: 'TestApp', Status: 'InService' })
+        const listAppsMatchSpaceStub = sinon.stub(SagemakerClient.prototype, 'listAppsForDomainMatchSpaceIgnoreCase')
+        listAppsMatchSpaceStub.resolves({ AppName: 'TestApp', Status: 'InService' })
 
         await testSpaceAppNode.updateSpaceAppStatus()
 
         sinon.assert.calledOnce(describeSpaceStub)
-        sinon.assert.calledOnce(listAppForSpaceStub)
+        sinon.assert.calledOnce(listAppsMatchSpaceStub)
     })
 })
