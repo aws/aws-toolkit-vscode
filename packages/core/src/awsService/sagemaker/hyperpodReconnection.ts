@@ -4,10 +4,10 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { ChildProcess } from '../../shared/utilities/processUtils'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 import os from 'os'
+import { clearSSHHostKey } from './hyperpodUtils'
 
 export class HyperpodReconnectionManager {
     private static instance: HyperpodReconnectionManager
@@ -48,7 +48,7 @@ export class HyperpodReconnectionManager {
 
     async refreshCredentials(connectionKey: string): Promise<void> {
         try {
-            await this.clearSSHHostKey(connectionKey)
+            await clearSSHHostKey(connectionKey)
 
             const serverInfoPath = join(
                 os.homedir(),
@@ -87,21 +87,6 @@ export class HyperpodReconnectionManager {
         } catch (error) {
             getLogger().error(`Failed to refresh credentials for ${connectionKey}: ${error}`)
             throw error
-        }
-    }
-
-    private async clearSSHHostKey(connectionKey: string): Promise<void> {
-        try {
-            const keyParts = connectionKey.split(':')
-            const hostKey =
-                keyParts.length === 3
-                    ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
-                    : `hp_${connectionKey.replace(/:/g, '_')}`
-
-            const sshKeygen = new ChildProcess('ssh-keygen', ['-R', hostKey])
-            await sshKeygen.run()
-        } catch (error) {
-            // SSH host key cleanup is non-critical
         }
     }
 }
