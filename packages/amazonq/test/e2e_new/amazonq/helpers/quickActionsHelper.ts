@@ -11,7 +11,6 @@ import {
     findMynahCardsBody,
     findItemByText,
     clickMoreContentIndicator,
-    clickButton,
 } from '../utils/generalUtils'
 import { sleep } from '../utils/generalUtils'
 
@@ -147,12 +146,12 @@ export async function testClearCommand(webviewView: WebviewView): Promise<void> 
  * @param webviewView The WebviewView instance
  */
 export async function clickOpenJobHistory(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="chat-item-buttons-wrapper"]',
-        '[action-id="gumbyViewJobHistory"]',
-        'Open Job History'
-    )
+    try {
+        const button = await waitForElement(webviewView, By.css('[action-id="gumbyViewJobHistory"]'))
+        await button.click()
+    } catch (error) {
+        throw new Error(`Failed to click Open Job History button`)
+    }
 }
 
 /**
@@ -186,4 +185,26 @@ export async function clickViewJobHistoryAndCheckTerminal(webviewView: WebviewVi
     } catch (error) {
         throw new Error(`Failed to click View job history: ${error}`)
     }
+}
+
+/**
+ * Gets all chat item action buttons
+ * @param webview The WebviewView instance
+ * @returns Promise<WebElement[]> Array of action button elements
+ */
+export async function getChatItemActionButtons(webview: WebviewView): Promise<WebElement[]> {
+    return await webview.findWebElements(By.css('[data-testid="chat-item-action-button"]'))
+}
+
+/**
+ * Clicks a specific chat item action button by index
+ * @param webview The WebviewView instance
+ * @param index The index of the button to click (0-based)
+ */
+export async function clickChatItemActionButton(webview: WebviewView, index: number): Promise<void> {
+    const buttons = await getChatItemActionButtons(webview)
+    if (index >= buttons.length) {
+        throw new Error(`Button index ${index} out of range. Found ${buttons.length} buttons.`)
+    }
+    await buttons[index].click()
 }
