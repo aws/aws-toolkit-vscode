@@ -8,7 +8,7 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
-type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
+type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId' | 'smus'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
 
 export type JsonSchemasKey = 'devfileSchemaVersion' | 'samAndCfnSchemaVersion'
@@ -48,6 +48,7 @@ export type globalKey =
     | 'aws.toolkit.lsp.versions'
     | 'aws.toolkit.lsp.manifest'
     | 'aws.amazonq.customization.overrideV2'
+    | 'aws.smus.authenticationPreferences'
     | 'aws.amazonq.regionProfiles'
     | 'aws.amazonq.regionProfiles.cache'
     // Deprecated/legacy names. New keys should start with "aws.".
@@ -83,6 +84,13 @@ export type globalKey =
     | 'aws.lambda.remoteDebugSnapshot'
     // List of Domain-Users to show/hide Sagemaker SpaceApps in AWS Explorer.
     | 'aws.sagemaker.selectedDomainUsers'
+    // List of Cluster-Namespaces to show/hide Hyperpod Spaces in AWS Explorer
+    | 'aws.hyperpod.selectedClusterNamespaces'
+    // Name of the connection if it's not to the AWS cloud. Current supported value only 'localstack'
+    | 'aws.toolkit.externalConnection'
+    | 'aws.cloudformation.region'
+    | 'aws.cloudformation.selectedResourceTypes'
+    | 'aws.cloudformation.lsp.manifest'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE

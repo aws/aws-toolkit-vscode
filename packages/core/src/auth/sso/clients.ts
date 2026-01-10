@@ -30,13 +30,14 @@ import { getLogger } from '../../shared/logger/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
-import { SdkError } from '@aws-sdk/types'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
 import { oneSecond } from '../../shared/datetime'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { getTelemetryReason, getTelemetryReasonDesc, getHttpStatusCode } from '../../shared/errors'
 
 export class OidcClient {
     public constructor(
@@ -87,14 +88,39 @@ export class OidcClient {
     }
 
     public async createToken(request: CreateTokenRequest) {
+        const startTime = this.clock.Date.now()
+        const grantType = request.grantType
+
         let response
         try {
             response = await this.client.createToken(request as CreateTokenRequest)
         } catch (err) {
+            const statusCode = getHttpStatusCode(err)
+            telemetry.auth_ssoTokenOperation.emit({
+                result: 'Failed',
+                grantType: grantType ?? 'unknown',
+                duration: this.clock.Date.now() - startTime,
+                reason: getTelemetryReason(err),
+                reasonDesc: getTelemetryReasonDesc(err),
+                ...(statusCode !== undefined ? { httpStatusCode: String(statusCode) } : {}),
+            })
+
+            getLogger().error(`sso-oidc: createToken failed (grantType=${grantType}): ${err}`)
+
             const newError = AwsClientResponseError.instanceIf(err)
             throw newError
         }
         assertHasProps(response, 'accessToken', 'expiresIn')
+
+        telemetry.auth_ssoTokenOperation.emit({
+            result: 'Succeeded',
+            grantType: grantType ?? 'unknown',
+            duration: this.clock.Date.now() - startTime,
+        })
+
+        getLogger().debug(
+            `sso-oidc: createToken succeeded (grantType=${grantType}, requestId=${response.$metadata.requestId})`
+        )
 
         return {
             ...selectFrom(response, 'accessToken', 'refreshToken', 'tokenType'),
@@ -104,22 +130,12 @@ export class OidcClient {
     }
 
     public static create(region: string) {
-        const updatedRetryDecider = (err: SdkError) => {
-            if (defaultRetryDecider(err)) {
-                return true
-            }
-
-            // As part of SIM IDE-10703, there was an assumption that retrying on InvalidGrantException
-            // may be useful. This may not be the case anymore and if more research is done, this may not be needed.
-            // TODO: setup some telemetry to see if there are any successes on a subsequent retry for this case.
-            return err.name === 'InvalidGrantException'
-        }
         const client = new SSOOIDC({
             region,
             endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
             retryStrategy: new StandardRetryStrategy(
                 () => Promise.resolve(3), // Maximum number of retries
-                { retryDecider: updatedRetryDecider }
+                { retryDecider: defaultRetryDecider }
             ),
             customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             requestHandler: {

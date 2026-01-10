@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
+import { fromLoginCredentials } from '@aws-sdk/credential-providers'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@smithy/types'
 import { chain } from '@aws-sdk/property-provider'
@@ -87,6 +89,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public getTelemetryType(): CredentialType {
         if (hasProps(this.profile, SharedCredentialsKeys.SSO_START_URL)) {
             return 'ssoProfile'
+        } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
+            return 'consoleSessionProfile'
         } else if (this.isCredentialSource(credentialSources.EC2_INSTANCE_METADATA)) {
             return 'ec2Metadata'
         } else if (this.isCredentialSource(credentialSources.ECS_CONTAINER)) {
@@ -103,6 +107,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public getDefaultRegion(): string | undefined {
         return this.profile[SharedCredentialsKeys.REGION]
+    }
+
+    public getEndpointUrl(): string | undefined {
+        return this.profile[SharedCredentialsKeys.ENDPOINT_URL]?.trim()
     }
 
     public async canAutoConnect(): Promise<boolean> {
@@ -194,6 +202,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 SharedCredentialsKeys.AWS_SECRET_ACCESS_KEY
             )
         } else if (isSsoProfile(this.profile)) {
+            return undefined
+        } else if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
             return undefined
         } else {
             return 'not supported by the Toolkit'
@@ -345,6 +355,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSsoCredentaislProvider()
         }
 
+        if (hasProps(this.profile, SharedCredentialsKeys.CONSOLE_SESSION)) {
+            logger.verbose(
+                `Profile ${this.profileName} contains ${SharedCredentialsKeys.CONSOLE_SESSION} - treating as Console Credentials`
+            )
+
+            return this.makeConsoleSessionCredentialsProvider()
+        }
+
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
@@ -374,6 +392,76 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 accountId: data[SharedCredentialsKeys.SSO_ACCOUNT_ID],
                 roleName: data[SharedCredentialsKeys.SSO_ROLE_NAME],
             })
+        }
+    }
+
+    private makeConsoleSessionCredentialsProvider() {
+        const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
+        const baseProvider = fromLoginCredentials({
+            profile: this.profileName,
+            clientConfig: {
+                region: defaultRegion,
+            },
+        })
+        return async () => {
+            try {
+                return await baseProvider()
+            } catch (error) {
+                getLogger().error(
+                    'Console login authentication failed for profile %s in region %s: %O',
+                    this.profileName,
+                    defaultRegion,
+                    error
+                )
+
+                if (
+                    error instanceof Error &&
+                    (error.message.includes('Your session has expired') ||
+                        error.message.includes('Failed to load a token for session') ||
+                        error.message.includes('Failed to load token from'))
+                ) {
+                    // Ask for user confirmation before refreshing
+                    const response = await vscode.window.showInformationMessage(
+                        `Unable to use your console credentials for profile "${this.profileName}". Would you like to refresh it?`,
+                        'Refresh',
+                        'Cancel'
+                    )
+
+                    if (response !== 'Refresh') {
+                        throw ToolkitError.chain(error, 'User cancelled console credentials token refresh.', {
+                            code: 'LoginSessionRefreshCancelled',
+                            cancelled: true,
+                        })
+                    }
+
+                    getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
+                    // Execute the console login command with the existing profile and region
+                    try {
+                        await vscode.commands.executeCommand(
+                            'aws.toolkit.auth.consoleLogin',
+                            this.profileName,
+                            defaultRegion
+                        )
+                    } catch (reAuthError) {
+                        throw ToolkitError.chain(
+                            reAuthError,
+                            `Failed to refresh credentials for profile ${this.profileName}. Run 'aws login --profile ${this.profileName}' to authenticate.`,
+                            { code: 'LoginSessionReAuthError' }
+                        )
+                    }
+
+                    getLogger().info(
+                        'Authentication completed for profile %s, refreshing credentials...',
+                        this.profileName
+                    )
+
+                    // Use the same provider instance but get fresh credentials
+                    return await baseProvider()
+                }
+                throw ToolkitError.chain(error, `Failed to get console credentials`, {
+                    code: 'FromLoginCredentialProviderError',
+                })
+            }
         }
     }
 

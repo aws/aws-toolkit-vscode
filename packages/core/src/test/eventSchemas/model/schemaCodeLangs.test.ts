@@ -10,6 +10,7 @@ import {
     schemaCodeLangs,
 } from '../../../eventSchemas/models/schemaCodeLangs'
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 describe('getLanguageDetails', function () {
     it('should successfully return details for supported languages', function () {
@@ -32,7 +33,8 @@ describe('getApiValueForSchemasDownload', function () {
                 case 'python3.9':
                 case 'python3.11':
                 case 'python3.12':
-                case 'python3.13':
+                case 'python3.13' as Runtime:
+                case 'python3.14' as Runtime:
                 case 'python3.10': {
                     const result = getApiValueForSchemasDownload(runtime)
                     assert.strictEqual(result, 'Python36', 'Api value used by schemas api')

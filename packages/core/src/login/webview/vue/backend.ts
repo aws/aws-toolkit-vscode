@@ -171,6 +171,8 @@ export abstract class CommonAuthWebview extends VueWebview {
         return Auth.instance.authenticateData(data)
     }
 
+    abstract startConsoleCredentialSetup(profileName: string, region: string): Promise<AuthError | undefined>
+
     abstract startIamCredentialSetup(
         profileName: string,
         accessKey: string,

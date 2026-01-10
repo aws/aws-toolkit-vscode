@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
@@ -15,11 +14,12 @@ import { getLogger } from '../../../shared/logger/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { sampleRequestPath } from '../../constants'
 import { LambdaFunctionNode } from '../../explorer/lambdaFunctionNode'
-import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
+import { getSampleLambdaPayloads, SampleRequest, isHotReloadingFunction } from '../../utils'
 
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { telemetry, Result, Runtime } from '../../../shared/telemetry/telemetry'
+import { telemetry, Runtime as TelemetryRuntime } from '../../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import {
     runSamCliRemoteTestEvents,
     SamCliRemoteTestEventsParameters,
@@ -29,13 +29,16 @@ import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { ToolkitError } from '../../../shared/errors'
 import { basename } from 'path'
 import { decodeBase64 } from '../../../shared/utilities/textUtilities'
-import { DebugConfig, RemoteDebugController, revertExistingConfig } from '../../remoteDebugging/ldkController'
+import { RemoteDebugController, revertExistingConfig } from '../../remoteDebugging/ldkController'
+import type { DebugConfig } from '../../remoteDebugging/lambdaDebugger'
 import { getCachedLocalPath, openLambdaFile, runDownloadLambda } from '../../commands/downloadLambda'
 import { getLambdaHandlerFile } from '../../../awsService/appBuilder/utils'
 import { runUploadDirectory } from '../../commands/uploadLambda'
 import fs from '../../../shared/fs/fs'
 import { showConfirmationMessage, showMessage } from '../../../shared/utilities/messages'
-import { getLambdaClientWithAgent } from '../../remoteDebugging/utils'
+import { getLambdaClientWithAgent, getLambdaDebugUserAgentPairs } from '../../remoteDebugging/utils'
+import { isLocalStackConnection } from '../../../auth/utils'
+import { getRemoteDebugLayer } from '../../remoteDebugging/remoteLambdaDebugger'
 
 const localize = nls.loadMessageBundle()
 
@@ -55,17 +58,18 @@ export interface InitialData {
     Source?: string
     StackName?: string
     LogicalId?: string
-    Runtime?: string
+    Runtime?: Runtime
     LocalRootPath?: string
     LambdaFunctionNode?: LambdaFunctionNode
     supportCodeDownload?: boolean
     runtimeSupportsRemoteDebug?: boolean
     remoteDebugLayer?: string | undefined
+    isLambdaRemote?: boolean
 }
 
 // Debug configuration sub-interface
 export interface DebugConfiguration {
-    debugPort: number
+    debugPort: number | undefined
     localRootPath: string
     remoteRootPath: string
     shouldPublishVersion: boolean
@@ -98,18 +102,12 @@ export interface RuntimeDebugSettings {
 // UI state sub-interface
 export interface UIState {
     isCollapsed: boolean
-    showNameInput: boolean
-    payload: string
+    extraRegionInfo: string
 }
 
 // Payload/Event handling sub-interface
 export interface PayloadData {
-    selectedSampleRequest: string
     sampleText: string
-    selectedFile: string
-    selectedFilePath: string
-    selectedTestEvent: string
-    newTestEventName: string
 }
 
 export interface RemoteInvokeData {
@@ -149,6 +147,7 @@ export class RemoteInvokeWebview extends VueWebview {
     public constructor(
         private readonly channel: vscode.OutputChannel,
         private readonly client: LambdaClient,
+        private readonly clientDebug: LambdaClient,
         private readonly data: InitialData
     ) {
         super(RemoteInvokeWebview.sourcePath)
@@ -266,12 +265,18 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async invokeLambda(input: string, source?: string, remoteDebugEnabled: boolean = false): Promise<void> {
-        let result: Result = 'Succeeded'
         let qualifier: string | undefined = undefined
         // if debugging, focus on the first editor
         if (remoteDebugEnabled && RemoteDebugController.instance.isDebugging) {
             await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
             qualifier = RemoteDebugController.instance.qualifier
+        }
+
+        const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
+        const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
+        if (isDurable && !qualifier) {
+            // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
+            qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
         }
 
         this.isInvoking = true
@@ -283,43 +288,59 @@ export class RemoteInvokeWebview extends VueWebview {
 
         this.channel.show()
         this.channel.appendLine('Loading response...')
+        await telemetry.lambda_invokeRemote.run(async (span) => {
+            try {
+                let funcResponse
 
-        try {
-            const funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier)
-            const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
-            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+                if (remoteDebugEnabled) {
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                } else if (isLMI) {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                } else {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
+                }
 
-            this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
-            this.channel.appendLine('Logs:')
-            this.channel.appendLine(logs)
-            this.channel.appendLine('')
-            this.channel.appendLine('Payload:')
-            this.channel.appendLine(String(payload))
-            this.channel.appendLine('')
-        } catch (e) {
-            const error = e as Error
-            this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
-            this.channel.appendLine(error.toString())
-            this.channel.appendLine('')
-            result = 'Failed'
-        } finally {
-            telemetry.lambda_invokeRemote.emit({
-                result,
-                passive: false,
-                source: source,
-                runtimeString: this.data.Runtime,
-                action: remoteDebugEnabled ? 'debug' : 'invoke',
-            })
+                const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
+                const decodedPayload = funcResponse.Payload ? new TextDecoder().decode(funcResponse.Payload) : ''
+                const payload = decodedPayload || JSON.stringify({})
 
-            // Update the session state to indicate we've finished invoking
-            this.isInvoking = false
+                this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
+                if (!isLMI) {
+                    this.channel.appendLine('Logs:')
+                    this.channel.appendLine(logs)
+                    this.channel.appendLine('')
+                }
+                this.channel.appendLine('Payload:')
+                this.channel.appendLine(String(payload))
+                this.channel.appendLine('')
+            } catch (e) {
+                const error = e as Error
+                this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
+                this.channel.appendLine(error.toString())
+                this.channel.appendLine('')
+            } finally {
+                let action = remoteDebugEnabled ? 'debug' : 'invoke'
+                action = `${action}${isDurable ? '-durable' : ''}${isLMI ? '-lmi' : ''}`
+                if (!this.data.isLambdaRemote) {
+                    action = `${action}LocalStack`
+                }
+                span.record({
+                    passive: false,
+                    source: source,
+                    runtimeString: this.data.Runtime,
+                    action: action,
+                })
 
-            // If debugging is active, restart the timer
-            if (RemoteDebugController.instance.isDebugging) {
-                this.startDebugTimer()
+                // Update the session state to indicate we've finished invoking
+                this.isInvoking = false
+
+                // If debugging is active, restart the timer
+                if (RemoteDebugController.instance.isDebugging) {
+                    this.startDebugTimer()
+                }
+                this.channel.show()
             }
-            this.channel.show()
-        }
+        })
     }
 
     public async promptFile() {
@@ -367,13 +388,17 @@ export class RemoteInvokeWebview extends VueWebview {
                 this.data.LambdaFunctionNode?.configuration.Handler
             )
             getLogger().warn(warning)
-            void vscode.window.showWarningMessage(warning)
+            void showMessage('warn', warning)
         }
         return fileLocations[0].fsPath
     }
 
     public async tryOpenHandlerFile(path?: string, watchForUpdates: boolean = true): Promise<boolean> {
         this.handlerFile = undefined
+        if (this.data.LocalRootPath) {
+            // don't watch in appbuilder
+            watchForUpdates = false
+        }
         if (path) {
             // path is provided, override init path
             this.data.LocalRootPath = path
@@ -383,18 +408,20 @@ export class RemoteInvokeWebview extends VueWebview {
             return false
         }
 
-        const handlerFile = await getLambdaHandlerFile(
-            vscode.Uri.file(this.data.LocalRootPath),
-            '',
-            this.data.LambdaFunctionNode?.configuration.Handler ?? '',
-            this.data.Runtime ?? 'unknown'
-        )
+        const handlerFile = this.data.Runtime
+            ? await getLambdaHandlerFile(
+                  vscode.Uri.file(this.data.LocalRootPath),
+                  '',
+                  this.data.LambdaFunctionNode?.configuration.Handler ?? '',
+                  this.data.Runtime
+              )
+            : undefined
         if (!handlerFile || !(await fs.exists(handlerFile))) {
             this.handlerFileAvailable = false
             return false
         }
         this.handlerFileAvailable = true
-        if (watchForUpdates) {
+        if (watchForUpdates && !isHotReloadingFunction(this.data.LambdaFunctionNode?.configuration.CodeSha256)) {
             this.setupFileWatcher()
         }
         await openLambdaFile(handlerFile.fsPath)
@@ -433,22 +460,166 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async listRemoteTestEvents(functionArn: string, region: string): Promise<string[]> {
-        const params: SamCliRemoteTestEventsParameters = {
-            functionArn: functionArn,
-            operation: TestEventsOperation.List,
-            region: region,
+        try {
+            const params: SamCliRemoteTestEventsParameters = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.List,
+                region: region,
+            }
+            const result = await this.remoteTestEvents(params)
+            return result.split('\n').filter((event) => event.trim() !== '')
+        } catch (error) {
+            // Suppress "lambda-testevent-schemas registry not found" error - this is normal when no test events exist
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            if (
+                errorMessage.includes('lambda-testevent-schemas registry not found') ||
+                errorMessage.includes('There are no saved events')
+            ) {
+                getLogger().debug('No remote test events found for function: %s', functionArn)
+                return []
+            }
+            // Re-throw other errors
+            throw error
         }
-        const result = await this.remoteTestEvents(params)
-        return result.split('\n')
     }
 
-    public async createRemoteTestEvents(putEvent: Event) {
+    public async selectRemoteTestEvent(functionArn: string, region: string): Promise<string | undefined> {
+        let events: string[] = []
+
+        try {
+            events = await this.listRemoteTestEvents(functionArn, region)
+        } catch (error) {
+            getLogger().error('Failed to list remote test events: %O', error)
+            void showMessage(
+                'error',
+                localize('AWS.lambda.remoteInvoke.failedToListEvents', 'Failed to list remote test events')
+            )
+            return undefined
+        }
+
+        if (events.length === 0) {
+            void showMessage(
+                'info',
+                localize(
+                    'AWS.lambda.remoteInvoke.noRemoteEvents',
+                    'No remote test events found. You can create one using "Save as remote event".'
+                )
+            )
+            return undefined
+        }
+
+        const selected = await vscode.window.showQuickPick(events, {
+            placeHolder: localize('AWS.lambda.remoteInvoke.selectRemoteEvent', 'Select a remote test event'),
+            title: localize('AWS.lambda.remoteInvoke.loadRemoteEvent', 'Load Remote Test Event'),
+        })
+
+        if (selected) {
+            const eventData = {
+                name: selected,
+                region: region,
+                arn: functionArn,
+            }
+            const resp = await this.getRemoteTestEvents(eventData)
+            return resp
+        }
+
+        return undefined
+    }
+
+    public async saveRemoteTestEvent(
+        functionArn: string,
+        region: string,
+        eventContent: string
+    ): Promise<string | undefined> {
+        let events: string[] = []
+
+        try {
+            events = await this.listRemoteTestEvents(functionArn, region)
+        } catch (error) {
+            // Log error but continue - user can still create new events
+            getLogger().debug('Failed to list existing remote test events (may not exist yet): %O', error)
+        }
+
+        // Create options for quickpick
+        const createNewOption = '$(add) Create new test event'
+        const options = events.length > 0 ? [createNewOption, ...events] : [createNewOption]
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: localize(
+                'AWS.lambda.remoteInvoke.saveEventChoice',
+                'Create new or overwrite existing test event'
+            ),
+            title: localize('AWS.lambda.remoteInvoke.saveRemoteEvent', 'Save as Remote Event'),
+        })
+
+        if (!selected) {
+            return undefined
+        }
+
+        let eventName: string | undefined
+
+        if (selected === createNewOption) {
+            // Prompt for new event name
+            eventName = await vscode.window.showInputBox({
+                prompt: localize('AWS.lambda.remoteInvoke.enterEventName', 'Enter a name for the test event'),
+                placeHolder: localize('AWS.lambda.remoteInvoke.eventNamePlaceholder', 'MyTestEvent'),
+                validateInput: (value) => {
+                    if (!value || value.trim() === '') {
+                        return localize('AWS.lambda.remoteInvoke.eventNameRequired', 'Event name is required')
+                    }
+                    if (events.includes(value)) {
+                        return localize(
+                            'AWS.lambda.remoteInvoke.eventNameExists',
+                            'An event with this name already exists'
+                        )
+                    }
+                    return undefined
+                },
+            })
+        } else {
+            // Use selected existing event name
+            const confirm = await showConfirmationMessage({
+                prompt: localize(
+                    'AWS.lambda.remoteInvoke.overwriteEvent',
+                    'Overwrite existing test event "{0}"?',
+                    selected
+                ),
+                confirm: localize('AWS.lambda.remoteInvoke.overwrite', 'Overwrite'),
+                cancel: 'Cancel',
+                type: 'warning',
+            })
+
+            if (confirm) {
+                eventName = selected
+            }
+        }
+
+        if (eventName) {
+            // Use force flag when overwriting existing events
+            const isOverwriting = selected !== createNewOption
+            const params: SamCliRemoteTestEventsParameters = {
+                functionArn: functionArn,
+                operation: TestEventsOperation.Put,
+                name: eventName,
+                eventSample: eventContent,
+                region: region,
+                force: isOverwriting,
+            }
+            await this.remoteTestEvents(params)
+            return eventName
+        }
+
+        return undefined
+    }
+
+    public async createRemoteTestEvents(putEvent: Event, force: boolean = false) {
         const params: SamCliRemoteTestEventsParameters = {
             functionArn: putEvent.arn,
             operation: TestEventsOperation.Put,
             name: putEvent.name,
             eventSample: putEvent.event,
             region: putEvent.region,
+            force: force,
         }
         return await this.remoteTestEvents(params)
     }
@@ -507,7 +678,7 @@ export class RemoteInvokeWebview extends VueWebview {
     // Download lambda code and update the local root path
     public async downloadRemoteCode(): Promise<string | undefined> {
         return await telemetry.lambda_import.run(async (span) => {
-            span.record({ runtime: this.data.Runtime as Runtime | undefined, source: 'RemoteDebug' })
+            span.record({ runtime: this.data.Runtime as TelemetryRuntime | undefined, source: 'RemoteDebug' })
             try {
                 if (this.data.LambdaFunctionNode) {
                     const output = await runDownloadLambda(this.data.LambdaFunctionNode, true)
@@ -539,7 +710,8 @@ export class RemoteInvokeWebview extends VueWebview {
     // this serves as a lock for invoke
     public checkReadyToInvoke(): boolean {
         if (this.isInvoking) {
-            void vscode.window.showWarningMessage(
+            void showMessage(
+                'warn',
                 localize(
                     'AWS.lambda.remoteInvoke.invokeInProgress',
                     'A remote invoke is already in progress, please wait for previous invoke, or remove debug setup'
@@ -548,12 +720,14 @@ export class RemoteInvokeWebview extends VueWebview {
             return false
         }
         if (this.isStartingDebug) {
-            void vscode.window.showWarningMessage(
+            void showMessage(
+                'warn',
                 localize(
                     'AWS.lambda.remoteInvoke.debugSetupInProgress',
                     'A debugger setup is already in progress, please wait for previous setup to complete, or remove debug setup'
                 )
             )
+            return false
         }
         return true
     }
@@ -617,6 +791,8 @@ export class RemoteInvokeWebview extends VueWebview {
             await RemoteDebugController.instance.startDebugging(this.data.FunctionArn, this.data.Runtime ?? 'unknown', {
                 ...config,
                 handlerFile: this.handlerFile,
+                samFunctionLogicalId: this.data.LambdaFunctionNode.logicalId,
+                samProjectRoot: this.data.LambdaFunctionNode.projectRoot,
             })
         } catch (e) {
             throw ToolkitError.chain(
@@ -668,7 +844,10 @@ export class RemoteInvokeWebview extends VueWebview {
     // prestatus check run at checkbox click
     public async debugPreCheck(): Promise<boolean> {
         return await telemetry.lambda_remoteDebugPrecheck.run(async (span) => {
-            span.record({ runtimeString: this.data.Runtime, source: 'webview' })
+            span.record({
+                runtimeString: this.data.Runtime,
+                source: this.data.isLambdaRemote ? 'webview' : 'webviewLocalStack',
+            })
             if (!this.debugging && RemoteDebugController.instance.isDebugging) {
                 // another debug session in progress
                 const result = await showConfirmationMessage({
@@ -744,20 +923,21 @@ export async function invokeRemoteLambda(
     const resource: LambdaFunctionNode = params.functionNode
     const source: string = params.source || 'AwsExplorerRemoteInvoke'
     const client = getLambdaClientWithAgent(resource.regionCode)
+    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgentPairs())
 
     const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 
     // Initialize support and debugging capabilities
-    const runtime = resource.configuration.Runtime ?? 'unknown'
+    const runtime = resource.configuration.Runtime
     const region = resource.regionCode
-    const supportCodeDownload = RemoteDebugController.instance.supportCodeDownload(runtime)
-    const runtimeSupportsRemoteDebug = RemoteDebugController.instance.supportRuntimeRemoteDebug(runtime)
-    const remoteDebugLayer = RemoteDebugController.instance.getRemoteDebugLayer(
-        region,
-        resource.configuration.Architectures
+    const supportCodeDownload = RemoteDebugController.instance.supportCodeDownload(
+        runtime,
+        resource.configuration.CodeSha256
     )
+    const runtimeSupportsRemoteDebug = RemoteDebugController.instance.supportRuntimeRemoteDebug(runtime)
+    const remoteDebugLayer = getRemoteDebugLayer(region, resource.configuration.Architectures)
 
-    const wv = new Panel(context.extensionContext, context.outputChannel, client, {
+    const wv = new Panel(context.extensionContext, context.outputChannel, client, clientDebug, {
         FunctionName: resource.configuration.FunctionName ?? '',
         FunctionArn: resource.configuration.FunctionArn ?? '',
         FunctionRegion: resource.regionCode,
@@ -770,6 +950,7 @@ export async function invokeRemoteLambda(
         supportCodeDownload: supportCodeDownload,
         runtimeSupportsRemoteDebug: runtimeSupportsRemoteDebug,
         remoteDebugLayer: remoteDebugLayer,
+        isLambdaRemote: !isLocalStackConnection(),
     })
     // focus on first group so wv will show up in the side
     await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')

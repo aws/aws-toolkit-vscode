@@ -71,6 +71,18 @@ export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection 
 export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
+export const areCredentialsEqual = (creds1: any, creds2: any): boolean => {
+    if (!creds1 || !creds2) {
+        return creds1 === creds2
+    }
+
+    return (
+        creds1.accessKeyId === creds2.accessKeyId &&
+        creds1.secretAccessKey === creds2.secretAccessKey &&
+        creds1.sessionToken === creds2.sessionToken
+    )
+}
+
 export function hasScopes(target: SsoConnection | SsoProfile | string[], scopes: string[]): boolean {
     return scopes?.every((s) => (Array.isArray(target) ? target : target.scopes)?.includes(s))
 }
@@ -111,6 +123,7 @@ export function createSsoProfile(
 export interface SsoConnection extends SsoProfile {
     readonly id: string
     readonly label: string
+    readonly endpointUrl?: string | undefined
 
     /**
      * Retrieves a bearer token, refreshing or re-authenticating as-needed.
@@ -129,6 +142,7 @@ export interface IamConnection {
     // This may change in the future after refactoring legacy implementations
     readonly id: string
     readonly label: string
+    readonly endpointUrl: string | undefined
     getCredentials(): Promise<Credentials>
 }
 

@@ -19,7 +19,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import os from 'os'
 import path from 'path'
 import { LAMBDA_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
-import { ResourcesToImport } from 'aws-sdk/clients/cloudformation'
+import { ResourceToImport } from '@aws-sdk/client-cloudformation'
 
 describe('lambda2samCoreLogic', function () {
     let sandbox: sinon.SinonSandbox
@@ -416,27 +416,13 @@ describe('lambda2samCoreLogic', function () {
 
     describe('deployCfnTemplate', function () {
         it('deploys a CloudFormation template and returns stack info', async function () {
-            // Setup CloudFormation template - using 'as any' to bypass strict typing for tests
-            const template: cloudFormation.Template = {
-                AWSTemplateFormatVersion: '2010-09-09',
-                Resources: {
-                    TestFunc: {
-                        Type: cloudFormation.LAMBDA_FUNCTION_TYPE,
-                        Properties: {
-                            FunctionName: 'test-function',
-                            PackageType: 'Zip',
-                        },
-                    },
-                },
-            } as any
+            // Setup CloudFormation template
+            const template: cloudFormation.Template = mockCloudFormationTemplate()
 
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
-            const resourceToImport: ResourcesToImport = [
+            const resourceToImport: ResourceToImport[] = [
                 {
                     ResourceType: LAMBDA_FUNCTION_TYPE,
                     LogicalResourceId: 'TestFunc',
@@ -475,30 +461,16 @@ describe('lambda2samCoreLogic', function () {
         })
 
         it('throws an error when change set creation fails', async function () {
-            // Setup CloudFormation template - using 'as any' to bypass strict typing for tests
-            const template: cloudFormation.Template = {
-                AWSTemplateFormatVersion: '2010-09-09',
-                Resources: {
-                    TestFunc: {
-                        Type: cloudFormation.LAMBDA_FUNCTION_TYPE,
-                        Properties: {
-                            FunctionName: 'test-function',
-                            PackageType: 'Zip',
-                        },
-                    },
-                },
-            } as any
+            // Setup CloudFormation template
+            const template: cloudFormation.Template = mockCloudFormationTemplate()
 
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
             // Make createChangeSet fail
             cfnClientStub.createChangeSet.resolves({}) // No Id
 
-            const resourceToImport: ResourcesToImport = [
+            const resourceToImport: ResourceToImport[] = [
                 {
                     ResourceType: LAMBDA_FUNCTION_TYPE,
                     LogicalResourceId: 'TestFunc',
@@ -522,32 +494,14 @@ describe('lambda2samCoreLogic', function () {
     describe('callExternalApiForCfnTemplate', function () {
         it('extracts function name from ARN in ResourceIdentifier', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
-            const mockFetch = sandbox.stub(global, 'fetch').resolves({
-                ok: true,
-                json: sandbox.stub().resolves({
-                    cloudFormationTemplateId: 'test-template-id',
-                }),
-            } as any)
+            const mockFetch = mockFetchResponse(sandbox)
 
             // Setup CloudFormation client to return ARN in ResourceIdentifier
             cfnClientStub.describeGeneratedTemplate.resolves({
@@ -580,32 +534,14 @@ describe('lambda2samCoreLogic', function () {
 
         it('preserves function name when not an ARN', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
-            sandbox.stub(global, 'fetch').resolves({
-                ok: true,
-                json: sandbox.stub().resolves({
-                    cloudFormationTemplateId: 'test-template-id',
-                }),
-            } as any)
+            mockFetchResponse(sandbox)
 
             // Setup CloudFormation client to return plain function name
             cfnClientStub.describeGeneratedTemplate.resolves({
@@ -631,32 +567,14 @@ describe('lambda2samCoreLogic', function () {
 
         it('handles non-Lambda resources without modification', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-east-2',
-                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode(true)
 
             // Mock IAM connection
-            const mockConnection = {
-                type: 'iam' as const,
-                id: 'test-connection',
-                label: 'Test Connection',
-                state: 'valid' as const,
-                getCredentials: sandbox.stub().resolves({
-                    accessKeyId: 'test-key',
-                    secretAccessKey: 'test-secret',
-                }),
-            }
+            const mockConnection = mockIamConnection()
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 
             // Mock fetch response
-            sandbox.stub(global, 'fetch').resolves({
-                ok: true,
-                json: sandbox.stub().resolves({
-                    cloudFormationTemplateId: 'test-template-id',
-                }),
-            } as any)
+            mockFetchResponse(sandbox)
 
             // Setup CloudFormation client to return mixed resource types
             cfnClientStub.describeGeneratedTemplate.resolves({
@@ -696,10 +614,7 @@ describe('lambda2samCoreLogic', function () {
     describe('lambdaToSam', function () {
         it('converts a Lambda function to a SAM project', async function () {
             // Setup Lambda node
-            const lambdaNode = {
-                name: 'test-function',
-                regionCode: 'us-west-2',
-            } as LambdaFunctionNode
+            const lambdaNode = mockLambdaNode()
 
             // Setup AWS Lambda client responses
             lambdaClientStub.getFunction.resolves({
@@ -781,4 +696,59 @@ describe('lambda2samCoreLogic', function () {
             )
         })
     })
+
+    function mockLambdaNode(withArn: boolean = false) {
+        if (withArn) {
+            return {
+                name: 'test-function',
+                regionCode: 'us-east-2',
+                arn: 'arn:aws:lambda:us-east-2:123456789012:function:test-function',
+            } as LambdaFunctionNode
+        } else {
+            return {
+                name: 'test-function',
+                regionCode: 'us-east-2',
+            } as LambdaFunctionNode
+        }
+    }
+
+    function mockIamConnection() {
+        return {
+            type: 'iam' as const,
+            id: 'test-connection',
+            label: 'Test Connection',
+            state: 'valid' as const,
+            getCredentials: sandbox.stub().resolves({
+                accessKeyId: 'test-key',
+                secretAccessKey: 'test-secret',
+            }),
+            endpointUrl: undefined,
+        }
+    }
+
+    function mockCloudFormationTemplate(): cloudFormation.Template {
+        return {
+            AWSTemplateFormatVersion: '2010-09-09',
+            Resources: {
+                TestFunc: {
+                    Type: cloudFormation.LAMBDA_FUNCTION_TYPE,
+                    Properties: {
+                        FunctionName: 'test-function',
+                        PackageType: 'Zip',
+                        Handler: 'index.handler',
+                        CodeUri: 's3://test-bucket/test-key',
+                    },
+                },
+            },
+        }
+    }
+
+    function mockFetchResponse(sandbox: sinon.SinonSandbox) {
+        return sandbox.stub(global, 'fetch').resolves({
+            ok: true,
+            json: sandbox.stub().resolves({
+                cloudFormationTemplateId: 'test-template-id',
+            }),
+        } as any)
+    }
 })

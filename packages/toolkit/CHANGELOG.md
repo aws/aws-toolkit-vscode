@@ -1,3 +1,104 @@
+## 3.92.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
+## 3.91.0 2025-12-18
+
+- **Bug Fix** CloudFormation: render stack detail views on stack change
+- **Bug Fix** Lambda deploy always creates new version
+- **Feature** CloudFormation: Show hook invocations in stack events on failure
+- **Feature** AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel.
+- **Feature** Lambda Remote Invoke panel now supports invoking Lambda durable functions
+- **Feature** CloudFormation: group stack events by operation id and display in stack events view
+
+## 3.90.0 2025-12-09
+
+- **Bug Fix** SageMaker: SSH configuration errors now display line numbers and include an "Open SSH Config" button
+- **Bug Fix** SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty
+- **Bug Fix** CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes
+- **Feature** CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first
+- **Feature** feat(lambda): add support for lmi function resource node
+
+## 3.89.0 2025-11-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.88.0 2025-11-22
+
+- **Bug Fix** CloudFormation: refresh stacks after change set deletion
+- **Bug Fix** CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered
+- **Bug Fix** CloudFormation: prevent eager loading of CloudFormation stacks
+- **Feature** Remote debugging now supports nodejs24.x, python3.14, java25
+
+## 3.87.0 2025-11-21
+
+- **Feature** Support IAM based domains for SageMaker Unified Studio
+
+## 3.86.0 2025-11-21
+
+- **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
+
+## 3.85.0 2025-11-19
+
+- **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working
+- **Feature** CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support
+
+## 3.84.0 2025-11-15
+
+- **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
+- **Feature** Deeplink support for SageMaker Unified Studio
+
+## 3.83.0 2025-11-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.82.0 2025-10-30
+
+- **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
+
+## 3.81.0 2025-10-22
+
+- Miscellaneous non-user-facing changes
+
+## 3.80.0 2025-10-16
+
+- **Bug Fix** The space is updated upon creation of a new app with the requested settings
+
+## 3.79.0 2025-10-10
+
+- Miscellaneous non-user-facing changes
+
+## 3.78.0 2025-10-02
+
+- **Feature** Refactor and optimize Lambda Remote Invoke UI with enhanced payload management
+- **Feature** Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug.
+
+## 3.77.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 3.76.0 2025-09-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.75.0 2025-09-19
+
+- Miscellaneous non-user-facing changes
+
+## 3.74.0 2025-09-10
+
+- **Feature** Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE
+- **Feature** AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile
+- **Feature** Lambda AppBuilder: Now you can install LocalStack VS Code extension from the AppBuilder walkthrough
+
+## 3.73.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 3.72.0 2025-08-22
+
+- Miscellaneous non-user-facing changes
+
 ## 3.71.0 2025-08-06
 
 - Miscellaneous non-user-facing changes

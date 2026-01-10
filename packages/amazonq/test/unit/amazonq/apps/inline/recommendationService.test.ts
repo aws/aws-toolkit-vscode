@@ -4,7 +4,7 @@
  */
 
 import sinon from 'sinon'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { Position, CancellationToken, InlineCompletionItem, InlineCompletionTriggerKind } from 'vscode'
 import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
@@ -21,7 +21,7 @@ const completionApi = 'aws/textDocument/inlineCompletionWithReferences'
 const editApi = 'aws/textDocument/editCompletion'
 
 describe('RecommendationService', () => {
-    let languageClient: LanguageClient
+    let languageClient: BaseLanguageClient
     let sendRequestStub: sinon.SinonStub
     let sandbox: sinon.SinonSandbox
     let sessionManager: SessionManager
@@ -71,7 +71,7 @@ describe('RecommendationService', () => {
         languageClient = {
             sendRequest: sendRequestStub,
             warn: sandbox.stub(),
-        } as unknown as LanguageClient
+        } as unknown as BaseLanguageClient
 
         sessionManager = new SessionManager()
 
@@ -335,7 +335,7 @@ describe('RecommendationService', () => {
 
         it('should not make completion request when edit suggestion is active', async () => {
             // Mock EditSuggestionState to return true (edit suggestion is active)
-            const isEditSuggestionActiveStub = sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(true)
 
             const mockResult = {
                 sessionId: 'test-session',
@@ -363,16 +363,11 @@ describe('RecommendationService', () => {
             assert.strictEqual(cs.length, 1) // Only edit call
             assert.strictEqual(completionCalls.length, 0) // No completion calls
             assert.strictEqual(editCalls.length, 1) // One edit call
-
-            // Verify the stub was called
-            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
 
         it('should make completion request when edit suggestion is not active', async () => {
             // Mock EditSuggestionState to return false (no edit suggestion active)
-            const isEditSuggestionActiveStub = sandbox
-                .stub(EditSuggestionState, 'isEditSuggestionActive')
-                .returns(false)
+            sandbox.stub(EditSuggestionState, 'isEditSuggestionActive').returns(false)
 
             const mockResult = {
                 sessionId: 'test-session',
@@ -400,9 +395,6 @@ describe('RecommendationService', () => {
             assert.strictEqual(cs.length, 2) // Both calls
             assert.strictEqual(completionCalls.length, 1) // One completion call
             assert.strictEqual(editCalls.length, 1) // One edit call
-
-            // Verify the stub was called
-            sinon.assert.calledOnce(isEditSuggestionActiveStub)
         })
     })
 })

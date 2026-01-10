@@ -12,7 +12,7 @@ import {
     TokenIdentity,
     TokenIdentityProvider,
 } from '@smithy/types'
-import { getUserAgent } from './telemetry/util'
+import { getUserAgentPairs } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
     BuildHandler,
@@ -31,17 +31,18 @@ import {
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
+import { S3Client } from '@aws-sdk/client-s3'
 import { FetchHttpHandler } from '@smithy/fetch-http-handler'
 import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry/telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
-import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
+import { isLocalStackConnection } from '../auth/utils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand<CommandInput, object>> = new (
@@ -70,7 +71,7 @@ export interface AwsCommand<InputType extends object, OutputType extends object>
 export interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
-    userAgent: UserAgent
+    customUserAgent: UserAgent
     requestHandler: {
         metadata?: RequestHandlerMetadata
         handle: (req: any, options?: any) => Promise<RequestHandlerOutput<any>>
@@ -81,6 +82,8 @@ export interface AwsClientOptions {
     retryStrategy: RetryStrategy | RetryStrategyV2
     logger: Logger
     token: TokenIdentity | TokenIdentityProvider
+    forcePathStyle: boolean
+    hostPrefixEnabled: boolean
 }
 
 interface AwsServiceOptions<C extends AwsClient> {
@@ -125,6 +128,7 @@ export class AWSClientBuilderV3 {
             JSON.stringify(serviceOptions.clientOptions),
             serviceOptions.region,
             serviceOptions.userAgent ? '1' : '0',
+            this.context.getCredentialEndpointUrl(), // It gets the valid endpoint at the moment of creation
             serviceOptions.settings ? JSON.stringify(serviceOptions.settings.get('endpoints', {})) : '',
         ].join(':')
     }
@@ -150,8 +154,8 @@ export class AWSClientBuilderV3 {
             opt.region = serviceOptions.region
         }
 
-        if (!opt.userAgent && userAgent) {
-            opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
+        if (!opt.customUserAgent && userAgent) {
+            opt.customUserAgent = getUserAgentPairs({ includePlatform: true, includeClientId: true })
         }
 
         if (!opt.retryStrategy) {
@@ -173,9 +177,25 @@ export class AWSClientBuilderV3 {
                 return creds
             }
         }
-
+        // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
+        const endpointUrl = this.context.getCredentialEndpointUrl()
+        if (!('endpoint' in opt) && endpointUrl !== undefined) {
+            // Because we check that 'endpoint' doesn't exist in `opt`, TS complains when we actually add it
+            // @ts-expect-error TS2339
+            opt.endpoint = endpointUrl
+        }
+        if (isLocalStackConnection()) {
+            // Disable host prefixes for LocalStack
+            opt.hostPrefixEnabled = false
+            // serviceClient name gets minified, but it's always consistent
+            if (serviceOptions.serviceClient.name === S3Client.name) {
+                // Use path-style S3 URLs for LocalStack
+                opt.forcePathStyle = true
+            }
+        }
         const service = new serviceOptions.serviceClient(opt)
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
+        service.middlewareStack.add(captureHeadersMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
         service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
 
@@ -233,6 +253,26 @@ function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): Bu
 
 const keepAliveMiddleware: BuildMiddleware<any, any> = (next: BuildHandler<any, any>) => async (args: any) =>
     addKeepAliveHeader(next, args)
+
+/**
+ * Middleware that captures HTTP response headers and attaches them to the output object.
+ * This makes headers accessible via `response.$httpHeaders` for all AWS SDK v3 operations.
+ * Useful for detecting custom headers from services like LocalStack.
+ */
+const captureHeadersMiddleware: DeserializeMiddleware<any, any> =
+    (next: DeserializeHandler<any, any>) => async (args: any) => {
+        const result = await next(args)
+
+        // Extract headers from HTTP response and attach to output for easy access
+        if (HttpResponse.isInstance(result.response)) {
+            const headers = result.response.headers
+            if (headers && result.output) {
+                result.output.$httpHeaders = headers
+            }
+        }
+
+        return result
+    }
 
 export async function emitOnRequest(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
     if (!HttpResponse.isInstance(args.request)) {

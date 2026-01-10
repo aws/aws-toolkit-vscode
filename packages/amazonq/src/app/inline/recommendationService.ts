@@ -8,9 +8,10 @@ import {
     inlineCompletionWithReferencesRequestType,
     TextDocumentContentChangeEvent,
     editCompletionRequestType,
+    LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
-import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { CancellationToken, InlineCompletionContext, Position, TextDocument, commands } from 'vscode'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import {
     AuthUtil,
@@ -24,6 +25,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { DocumentEventListener } from './documentEventListener'
 import { getOpenFilesInWindow } from 'aws-core-vscode/utils'
 import { asyncCallWithTimeout } from '../../util/timeoutUtil'
+import { extractFileContextInNotebooks } from './notebookUtil'
 import { EditSuggestionState } from './editSuggestionState'
 
 export interface GetAllRecommendationsOptions {
@@ -33,6 +35,8 @@ export interface GetAllRecommendationsOptions {
 }
 
 export class RecommendationService {
+    private logger = getLogger('inline')
+
     constructor(
         private readonly sessionManager: SessionManager,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
@@ -45,7 +49,7 @@ export class RecommendationService {
     }
 
     async getRecommendationsWithTimeout(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         request: InlineCompletionWithReferencesParams,
         token: CancellationToken
     ) {
@@ -62,7 +66,7 @@ export class RecommendationService {
     }
 
     async getAllRecommendations(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
@@ -97,7 +101,10 @@ export class RecommendationService {
         if (options.editsStreakToken) {
             request = { ...request, partialResultToken: options.editsStreakToken }
         }
-        const requestStartTime = performance.now()
+        if (document.uri.scheme === 'vscode-notebook-cell') {
+            request.fileContextOverride = extractFileContextInNotebooks(document, position)
+        }
+        const requestStartTime = Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
 
         // Only track telemetry if enabled
@@ -112,7 +119,7 @@ export class RecommendationService {
             }
 
             // Handle first request
-            getLogger().info('Sending inline completion request: %O', {
+            this.logger.info('Sending inline completion request: %O', {
                 method: inlineCompletionWithReferencesRequestType.method,
                 request: {
                     textDocument: request.textDocument,
@@ -121,7 +128,7 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
-            const t0 = performance.now()
+            const t0 = Date.now()
 
             // Best effort estimate of deletion
             const isTriggerByDeletion = documentEventListener.isLastEventDeletion(document.uri.fsPath)
@@ -169,9 +176,9 @@ export class RecommendationService {
                 }
             }
 
-            getLogger().info('Received inline completion response from LSP: %O', {
+            this.logger.info('Received inline completion response (page 0) from LSP: %O', {
                 sessionId: result.sessionId,
-                latency: performance.now() - t0,
+                latency: Date.now() - t0,
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -181,7 +188,46 @@ export class RecommendationService {
                             50
                         ) + '...',
                 })),
+                nextToken: result.partialResultToken,
             })
+
+            if (result.items.length > 0 && result.items[0].isInlineEdit === false) {
+                if (isTriggerByDeletion) {
+                    this.logger.info(`Suggestions were discarded; reason: triggerByDeletion`)
+                    return []
+                }
+                // Completion will not be rendered if an edit suggestion has been active for longer than 1 second
+                if (EditSuggestionState.isEditSuggestionDisplayingOverOneSecond()) {
+                    const session = this.sessionManager.getActiveSession()
+                    if (!session) {
+                        this.logger.error(`Suggestions were discarded; reason: undefined conflicting session`)
+                        return []
+                    }
+                    const params: LogInlineCompletionSessionResultsParams = {
+                        sessionId: session.sessionId,
+                        completionSessionResult: Object.fromEntries(
+                            result.items.map((item) => [
+                                item.itemId,
+                                {
+                                    seen: false,
+                                    accepted: false,
+                                    discarded: true,
+                                },
+                            ])
+                        ),
+                    }
+                    void languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+                    this.sessionManager.clear()
+                    this.logger.info(
+                        'Suggetions were discarded; reason: active edit suggestion displayed longer than 1 second'
+                    )
+                    return []
+                } else if (EditSuggestionState.isEditSuggestionActive()) {
+                    // discard the current edit suggestion if its display time is less than 1 sec
+                    await commands.executeCommand('aws.amazonq.inline.rejectEdit', true)
+                    this.logger.info('Discarding active edit suggestion displaying less than 1 second')
+                }
+            }
 
             TelemetryHelper.instance.setSdkApiCallEndTime()
             TelemetryHelper.instance.setSessionId(result.sessionId)
@@ -190,12 +236,13 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = performance.now() - requestStartTime
+            const firstCompletionDisplayLatency = Date.now() - requestStartTime
             this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
                 requestStartTime,
                 position,
+                document,
                 firstCompletionDisplayLatency
             )
 
@@ -203,24 +250,34 @@ export class RecommendationService {
 
             // TODO: question, is it possible that the first request returns empty suggestion but has non-empty next token?
             if (result.partialResultToken) {
+                let logstr = `Found non null next token; `
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
-                    getLogger().info(
-                        'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
-                    )
-                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
-                        languageClient.warn(`Error when getting suggestions: ${error}`)
-                    })
+                    logstr += 'start pagination'
+                    this.processRemainingRequests(languageClient, request, result, token)
+                        .then(async (flag) => {
+                            // Force vscode to reload suggestions
+                            await commands.executeCommand('editor.action.inlineSuggest.hide')
+                            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+
+                            const logstr = `Done pagination; shouldUpdate=${flag}; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
+                            this.logger.info(logstr)
+                        })
+                        .catch((error) => {
+                            languageClient.warn(`Error when getting suggestions: ${error}`)
+                        })
                 } else {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
                     // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                    getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                    logstr += 'skip pagination as Edit doesnt support pagination'
                     this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
                 }
+
+                this.logger.info(logstr)
             }
         } catch (error: any) {
-            getLogger().error('Error getting recommendations: %O', error)
+            this.logger.error('Error getting recommendations: %O', error)
             // bearer token expired
             if (error.data && error.data.awsErrorCode === 'E_AMAZON_Q_CONNECTION_EXPIRED') {
                 // ref: https://github.com/aws/aws-toolkit-vscode/blob/amazonq/v1.74.0/packages/core/src/codewhisperer/service/inlineCompletionService.ts#L104
@@ -243,30 +300,43 @@ export class RecommendationService {
     }
 
     private async processRemainingRequests(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,
         token: CancellationToken
-    ): Promise<void> {
+    ): Promise<boolean> {
+        let page = 1
+        let logstr = `Pagination call is complete\n\tpage 0 has ${this.sessionManager.getActiveRecommendation().length} suggestions\n`
         let nextToken = firstResult.partialResultToken
+        let shouldUpdateUi: boolean = false
         while (nextToken) {
             const request = { ...initialRequest, partialResultToken: nextToken }
 
             const result = await this.getRecommendationsWithTimeout(languageClient, request, token)
+
+            logstr += `\tpage ${page} has ${result.items.length} suggestions\n`
+
             // when pagination is in progress, but user has already accepted or rejected an inline completion
             // then stop pagination
             if (this.sessionManager.getActiveSession() === undefined || vsCodeState.isCodeWhispererEditing) {
                 break
             }
             this.sessionManager.updateSessionSuggestions(result.items)
+            if (result.items.length > 0) {
+                shouldUpdateUi = true
+            }
             nextToken = result.partialResultToken
+            page++
         }
 
+        this.logger.info(logstr)
         this.sessionManager.closeSession()
 
         // refresh inline completion items to render paginated responses
         // All pagination requests completed
         TelemetryHelper.instance.setAllPaginationEndTime()
         TelemetryHelper.instance.tryRecordClientComponentLatency()
+
+        return shouldUpdateUi
     }
 }

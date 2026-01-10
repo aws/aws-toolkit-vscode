@@ -1,11 +1,11 @@
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+/*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import {
     AppDetails,
+    AppType,
     CreateAppCommand,
     CreateAppCommandInput,
     CreateAppCommandOutput,
@@ -32,6 +32,12 @@ import {
     UpdateSpaceCommandOutput,
     paginateListApps,
     paginateListSpaces,
+    ListClustersCommandInput,
+    DescribeClusterCommand,
+    DescribeClusterCommandInput,
+    DescribeClusterCommandOutput,
+    ClusterSummary,
+    paginateListClusters,
 } from '@amzn/sagemaker-client'
 import { isEmpty } from 'lodash'
 import { sleep } from '../utilities/timeoutUtils'
@@ -43,19 +49,66 @@ import {
     InstanceTypeInsufficientMemory,
     InstanceTypeInsufficientMemoryMessage,
     InstanceTypeNotSelectedMessage,
+    RemoteAccess,
 } from '../../awsService/sagemaker/constants'
 import { getDomainSpaceKey } from '../../awsService/sagemaker/utils'
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
-import { yes, no, continueText, cancel } from '../localizedText'
+import { continueText, cancel } from '../localizedText'
+import { showConfirmationMessage } from '../utilities/messages'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
+import globals from '../extensionGlobals'
+import { HyperpodCluster } from './kubectlClient'
+import { EKSClient } from '@aws-sdk/client-eks'
+import { DevSettings } from '../settings'
+
+const appTypeSettingsMap: Record<string, string> = {
+    [AppType.JupyterLab as string]: 'JupyterLabAppSettings',
+    [AppType.CodeEditor as string]: 'CodeEditorAppSettings',
+} as const
+
+export const waitForAppConfig = {
+    softTimeoutRetries: 12,
+    hardTimeoutRetries: 120,
+    intervalMs: 5000,
+}
 
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
     DomainSpaceKey: string
 }
+
 export class SagemakerClient extends ClientWrapper<SageMakerClient> {
-    public constructor(public override readonly regionCode: string) {
-        super(regionCode, SageMakerClient, true)
+    public constructor(
+        public override readonly regionCode: string,
+        private readonly credentialsProvider?: () => Promise<AwsCredentialIdentity>
+    ) {
+        super(regionCode, SageMakerClient)
+    }
+
+    protected override getClient(ignoreCache: boolean = false) {
+        if (!this.client || ignoreCache) {
+            const devSettings = DevSettings.instance
+            const customEndpoint = devSettings.get('endpoints', {})['sagemaker']
+            const endpoint = customEndpoint || `https://sagemaker.${this.regionCode}.amazonaws.com`
+            const args = {
+                serviceClient: SageMakerClient,
+                region: this.regionCode,
+                clientOptions: {
+                    endpoint: endpoint,
+                    region: this.regionCode,
+                    ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
+                },
+            }
+            this.client = globals.sdkClientBuilderV3.createAwsService(args)
+        }
+        return this.client
+    }
+
+    public override dispose() {
+        getLogger().debug('SagemakerClient: Disposing client %O', this.client)
+        this.client?.destroy()
+        this.client = undefined
     }
 
     public listSpaces(request: ListSpacesCommandInput = {}): AsyncCollection<SpaceDetails[]> {
@@ -92,7 +145,14 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         return this.makeRequest(DeleteAppCommand, request)
     }
 
-    public async startSpace(spaceName: string, domainId: string) {
+    public async listAppForSpace(domainId: string, spaceName: string): Promise<AppDetails | undefined> {
+        const appsList = await this.listApps({ DomainIdEquals: domainId, SpaceNameEquals: spaceName })
+            .flatten()
+            .promise()
+        return appsList[0] // At most one App for one SagemakerSpace
+    }
+
+    public async startSpace(spaceName: string, domainId: string, skipInstanceTypePrompts: boolean = false) {
         let spaceDetails: DescribeSpaceCommandOutput
 
         // Get existing space details
@@ -107,13 +167,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
         // Get app type
         const appType = spaceDetails.SpaceSettings?.AppType
-        if (appType !== 'JupyterLab' && appType !== 'CodeEditor') {
+        if (!appType || !(appType in appTypeSettingsMap)) {
             throw new ToolkitError(`Unsupported AppType "${appType}" for space "${spaceName}"`)
         }
 
         // Get app resource spec
         const requestedResourceSpec =
-            appType === 'JupyterLab'
+            appType === AppType.JupyterLab
                 ? spaceDetails.SpaceSettings?.JupyterLabAppSettings?.DefaultResourceSpec
                 : spaceDetails.SpaceSettings?.CodeEditorAppSettings?.DefaultResourceSpec
 
@@ -121,47 +181,74 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
         // Is InstanceType defined and has enough memory?
         if (instanceType && instanceType in InstanceTypeInsufficientMemory) {
-            // Prompt user to select one with sufficient memory (1 level up from their chosen one)
-            const response = await vscode.window.showErrorMessage(
-                InstanceTypeInsufficientMemoryMessage(
-                    spaceDetails.SpaceName || '',
-                    instanceType,
-                    InstanceTypeInsufficientMemory[instanceType]
-                ),
-                yes,
-                no
-            )
+            if (skipInstanceTypePrompts) {
+                // User already consented, upgrade automatically
+                instanceType = InstanceTypeInsufficientMemory[instanceType]
+            } else {
+                // Prompt user to select one with sufficient memory (1 level up from their chosen one)
+                const confirmed = await showConfirmationMessage({
+                    prompt: InstanceTypeInsufficientMemoryMessage(
+                        spaceDetails.SpaceName || '',
+                        instanceType,
+                        InstanceTypeInsufficientMemory[instanceType]
+                    ),
+                    confirm: 'Restart Space and Connect',
+                    cancel: 'Cancel',
+                    type: 'warning',
+                })
 
-            if (response === no) {
-                throw new ToolkitError('InstanceType has insufficient memory.', { code: InstanceTypeError })
+                if (!confirmed) {
+                    throw new ToolkitError('InstanceType has insufficient memory.', { code: InstanceTypeError })
+                }
+
+                instanceType = InstanceTypeInsufficientMemory[instanceType]
             }
-
-            instanceType = InstanceTypeInsufficientMemory[instanceType]
         } else if (!instanceType) {
-            // Prompt user to select the minimum supported instance type
-            const response = await vscode.window.showErrorMessage(
-                InstanceTypeNotSelectedMessage(spaceDetails.SpaceName || ''),
-                continueText,
-                cancel
-            )
+            if (skipInstanceTypePrompts) {
+                // User already consented, use minimum
+                instanceType = InstanceTypeMinimum
+            } else {
+                // Prompt user to select the minimum supported instance type
+                const confirmed = await showConfirmationMessage({
+                    prompt: InstanceTypeNotSelectedMessage(spaceDetails.SpaceName || ''),
+                    confirm: continueText,
+                    cancel: cancel,
+                    type: 'warning',
+                })
 
-            if (response === cancel) {
-                throw new ToolkitError('InstanceType not defined.', { code: InstanceTypeError })
+                if (!confirmed) {
+                    throw new ToolkitError('InstanceType not defined.', { code: InstanceTypeError })
+                }
+
+                instanceType = InstanceTypeMinimum
             }
-
-            instanceType = InstanceTypeMinimum
         }
 
-        // Get remote access flag
-        if (!spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED') {
+        // First, update the space if needed
+        const needsRemoteAccess =
+            !spaceDetails.SpaceSettings?.RemoteAccess ||
+            spaceDetails.SpaceSettings?.RemoteAccess === RemoteAccess.DISABLED
+        const instanceTypeChanged = requestedResourceSpec?.InstanceType !== instanceType
+
+        if (needsRemoteAccess || instanceTypeChanged) {
+            const updateSpaceRequest: UpdateSpaceCommandInput = {
+                DomainId: domainId,
+                SpaceName: spaceName,
+                SpaceSettings: {
+                    ...(needsRemoteAccess && { RemoteAccess: RemoteAccess.ENABLED }),
+                    ...(instanceTypeChanged && {
+                        [appTypeSettingsMap[appType]]: {
+                            DefaultResourceSpec: {
+                                InstanceType: instanceType,
+                            },
+                        },
+                    }),
+                },
+            }
+
             try {
-                await this.updateSpace({
-                    DomainId: domainId,
-                    SpaceName: spaceName,
-                    SpaceSettings: {
-                        RemoteAccess: 'ENABLED',
-                    },
-                })
+                getLogger().debug('SagemakerClient: Updating space: domainId=%s, spaceName=%s', domainId, spaceName)
+                await this.updateSpace(updateSpaceRequest)
                 await this.waitForSpaceInService(spaceName, domainId)
             } catch (err) {
                 throw this.handleStartSpaceError(err)
@@ -185,6 +272,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 ? { ...resourceSpec, EnvironmentArn: undefined, EnvironmentVersionArn: undefined }
                 : resourceSpec
 
+        // Second, create the App
         const createAppRequest: CreateAppCommandInput = {
             DomainId: domainId,
             SpaceName: spaceName,
@@ -194,33 +282,44 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         }
 
         try {
+            getLogger().debug('SagemakerClient: Creating app: domainId=%s, spaceName=%s', domainId, spaceName)
             await this.createApp(createAppRequest)
         } catch (err) {
             throw this.handleStartSpaceError(err)
         }
     }
 
-    public async fetchSpaceAppsAndDomains(): Promise<
-        [Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]
-    > {
+    public async listSpaceApps(domainId?: string): Promise<Map<string, SagemakerSpaceApp>> {
+        // Create options object conditionally if domainId is provided
+        const options = domainId ? { DomainIdEquals: domainId } : undefined
+
+        const appMap: Map<string, AppDetails> = await this.listApps(options)
+            .flatten()
+            .filter((app) => !!app.DomainId && !!app.SpaceName)
+            .filter((app) => app.AppType === AppType.JupyterLab || app.AppType === AppType.CodeEditor)
+            .toMap((app) => getDomainSpaceKey(app.DomainId || '', app.SpaceName || ''))
+
+        const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces(options)
+            .flatten()
+            .filter((space) => !!space.DomainId && !!space.SpaceName)
+            .map((space) => {
+                const key = getDomainSpaceKey(space.DomainId || '', space.SpaceName || '')
+                return { ...space, App: appMap.get(key), DomainSpaceKey: key }
+            })
+            .toMap((space) => getDomainSpaceKey(space.DomainId || '', space.SpaceName || ''))
+        return spaceApps
+    }
+
+    public async fetchSpaceAppsAndDomains(
+        domainId?: string,
+        filterSmusDomains: boolean = true
+    ): Promise<[Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]> {
         try {
-            const appMap: Map<string, AppDetails> = await this.listApps()
-                .flatten()
-                .filter((app) => !!app.DomainId && !!app.SpaceName)
-                .filter((app) => app.AppType === 'JupyterLab' || app.AppType === 'CodeEditor')
-                .toMap((app) => getDomainSpaceKey(app.DomainId || '', app.SpaceName || ''))
-
-            const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces()
-                .flatten()
-                .filter((space) => !!space.DomainId && !!space.SpaceName)
-                .map((space) => {
-                    const key = getDomainSpaceKey(space.DomainId || '', space.SpaceName || '')
-                    return { ...space, App: appMap.get(key), DomainSpaceKey: key }
-                })
-                .toMap((space) => getDomainSpaceKey(space.DomainId || '', space.SpaceName || ''))
-
+            const spaceApps = await this.listSpaceApps(domainId)
             // Get de-duped list of domain IDs for all of the spaces
-            const domainIds: string[] = [...new Set([...spaceApps].map(([_, spaceApp]) => spaceApp.DomainId || ''))]
+            const domainIds: string[] = domainId
+                ? [domainId]
+                : [...new Set([...spaceApps].map(([_, spaceApp]) => spaceApp.DomainId || ''))]
 
             // Get details for each domain
             const domains: [string, DescribeDomainResponse][] = await Promise.all(
@@ -235,9 +334,11 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
             const filteredSpaceApps = new Map(
                 [...spaceApps]
-                    // Filter out SageMaker Unified Studio domains
-                    .filter(([_, spaceApp]) =>
-                        isEmpty(domainsMap.get(spaceApp.DomainId || '')?.DomainSettings?.UnifiedStudioSettings)
+                    // Filter out SageMaker Unified Studio domains only if filterSmusDomains is true
+                    .filter(
+                        ([_, spaceApp]) =>
+                            !filterSmusDomains ||
+                            isEmpty(domainsMap.get(spaceApp.DomainId || '')?.DomainSettings?.UnifiedStudioSettings)
                     )
             )
 
@@ -280,10 +381,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         domainId: string,
         spaceName: string,
         appType: string,
-        maxRetries = 30,
-        intervalMs = 5000
+        progress?: vscode.Progress<{ message?: string; increment?: number }>
     ): Promise<void> {
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
+        for (let attempt = 0; attempt < waitForAppConfig.hardTimeoutRetries; attempt++) {
             const { Status } = await this.describeApp({
                 DomainId: domainId,
                 SpaceName: spaceName,
@@ -299,7 +399,13 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
                 throw new ToolkitError(`App failed to start. Status: ${Status}`)
             }
 
-            await sleep(intervalMs)
+            if (attempt === waitForAppConfig.softTimeoutRetries) {
+                progress?.report({
+                    message: `Starting the space is taking longer than usual. The space will connect when ready`,
+                })
+            }
+
+            await sleep(waitForAppConfig.intervalMs)
         }
 
         throw new ToolkitError(`Timed out waiting for app "${spaceName}" to reach "InService" status.`)
@@ -314,5 +420,62 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         } else {
             throw err
         }
+    }
+
+    public listClusters(request: ListClustersCommandInput = {}): AsyncCollection<ClusterSummary[]> {
+        // @ts-ignore: Suppressing type mismatch on paginator return type
+        return this.makePaginatedRequest(paginateListClusters, request, (page) => page.ClusterSummaries)
+    }
+
+    public describeCluster(request: DescribeClusterCommandInput): Promise<DescribeClusterCommandOutput> {
+        return this.makeRequest(DescribeClusterCommand, request)
+    }
+
+    public async listHyperpodClusters(): Promise<HyperpodCluster[]> {
+        const clusterSummaries = await this.listClusters().flatten().promise()
+        const clusters: HyperpodCluster[] = []
+
+        for (const summary of clusterSummaries) {
+            clusters.push(await this.getHyperpodCluster(summary.ClusterName!))
+        }
+        return clusters
+    }
+
+    async getHyperpodCluster(clusterName: string): Promise<HyperpodCluster> {
+        const response = await this.describeCluster({ ClusterName: clusterName })
+
+        if (!response.ClusterArn) {
+            throw new Error(`Cluster ${clusterName} not found`)
+        }
+
+        const orchestrator = response.Orchestrator
+        let eksClusterName: string | undefined
+        let eksClusterArn: string | undefined
+
+        if (orchestrator?.Eks) {
+            eksClusterName = orchestrator.Eks.ClusterArn?.split('/').pop()
+            eksClusterArn = orchestrator.Eks.ClusterArn
+        }
+
+        return {
+            clusterName: response.ClusterName!,
+            clusterArn: response.ClusterArn,
+            status: response.ClusterStatus!,
+            eksClusterName,
+            eksClusterArn,
+            regionCode: this.regionCode,
+        }
+    }
+
+    public getEKSClient(ignoreCache: boolean = false) {
+        const args = {
+            serviceClient: EKSClient as any,
+            region: this.regionCode,
+            clientOptions: {
+                region: this.regionCode,
+                ...(this.credentialsProvider && { credentials: this.credentialsProvider }),
+            },
+        }
+        return globals.sdkClientBuilderV3.createAwsService(args) as EKSClient
     }
 }

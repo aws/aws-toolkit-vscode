@@ -59,6 +59,30 @@ describe('SageMaker Model', () => {
 
             assert.ok(existsStub.callCount >= 3, 'should have retried for file existence')
         })
+
+        it('throws ToolkitError when info file never appears', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            sandbox.stub(require('fs'), 'openSync').returns(42)
+            sandbox.replace(
+                require('../../../awsService/sagemaker/model'),
+                'stopLocalServer',
+                sandbox.stub().resolves()
+            )
+            sandbox.replace(
+                require('../../../awsService/sagemaker/utils'),
+                'spawnDetachedServer',
+                sandbox.stub().returns({ unref: sandbox.stub() })
+            )
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+
+            try {
+                await startLocalServer(ctx)
+                assert.ok(false, 'Expected error not thrown')
+            } catch (err) {
+                assert.ok(err instanceof ToolkitError)
+                assert.ok(err.message.includes('Timed out waiting for local server info file'))
+            }
+        })
     })
 
     describe('stopLocalServer', function () {
@@ -106,6 +130,17 @@ describe('SageMaker Model', () => {
             }
         })
 
+        it('logs warning when process not found (ESRCH)', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(validJson)
+            sandbox.stub(fs, 'delete').resolves()
+            sandbox.stub(process, 'kill').throws({ code: 'ESRCH', message: 'no such process' })
+
+            await stopLocalServer(ctx)
+
+            assertLogsContain(`no process found with PID ${validPid}. It may have already exited.`, false, 'warn')
+        })
+
         it('throws ToolkitError when killing process fails for another reason', async function () {
             sandbox.stub(fs, 'existsFile').resolves(true)
             sandbox.stub(fs, 'readFileText').resolves(validJson)
@@ -119,6 +154,27 @@ describe('SageMaker Model', () => {
                 assert.ok(err instanceof ToolkitError)
                 assert.strictEqual(err.message, 'failed to stop local server')
             }
+        })
+
+        it('logs warning when PID is invalid', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(JSON.stringify({ pid: 'invalid' }))
+            sandbox.stub(fs, 'delete').resolves()
+
+            await stopLocalServer(ctx)
+
+            assertLogsContain('no valid PID found in info file.', false, 'warn')
+        })
+
+        it('logs warning when file deletion fails', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(validJson)
+            sandbox.stub(process, 'kill').returns(true)
+            sandbox.stub(fs, 'delete').rejects(new Error('delete failed'))
+
+            await stopLocalServer(ctx)
+
+            assertLogsContain('could not delete info file: delete failed', false, 'warn')
         })
     })
 
@@ -152,6 +208,60 @@ describe('SageMaker Model', () => {
                 sinon.match((value: string) => value.trim() === expectedOutput),
                 { atomic: true }
             )
+            assertLogsContain(`Removed '${hostname}' from known_hosts`, false, 'debug')
+        })
+
+        it('removes case-sensitive hostname when entry in known_hosts is lowercase', async function () {
+            const mixedCaseHostname = 'Test.Host.Com'
+
+            sandbox.stub(fs, 'existsFile').resolves(true)
+
+            const inputContent = `test.host.com ssh-rsa AAAA\nsome.other.com ssh-rsa BBBB`
+            const expectedOutput = `some.other.com ssh-rsa BBBB`
+
+            sandbox.stub(fs, 'readFileText').resolves(inputContent)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await removeKnownHost(mixedCaseHostname)
+
+            sinon.assert.calledWith(
+                writeStub,
+                path.join(os.homedir(), '.ssh', 'known_hosts'),
+                sinon.match((value: string) => value.trim() === expectedOutput),
+                { atomic: true }
+            )
+            assertLogsContain(`Removed '${mixedCaseHostname}' from known_hosts`, false, 'debug')
+        })
+
+        it('handles hostname in comma-separated list', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+
+            const inputContent = `host1,${hostname},host2 ssh-rsa AAAA\nother.host ssh-rsa BBBB`
+            const expectedOutput = `other.host ssh-rsa BBBB`
+
+            sandbox.stub(fs, 'readFileText').resolves(inputContent)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await removeKnownHost(hostname)
+
+            sinon.assert.calledWith(
+                writeStub,
+                knownHostsPath,
+                sinon.match((value: string) => value.trim() === expectedOutput),
+                { atomic: true }
+            )
+        })
+
+        it('does not write file when hostname not found', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+
+            const inputContent = `other.host ssh-rsa AAAA\nsome.other.com ssh-rsa BBBB`
+            sandbox.stub(fs, 'readFileText').resolves(inputContent)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await removeKnownHost(hostname)
+
+            sinon.assert.notCalled(writeStub)
         })
 
         it('logs warning when known_hosts does not exist', async function () {

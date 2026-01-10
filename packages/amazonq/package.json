@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI–powered assistant for software development.",
-    "version": "1.98.0-g115ab4e",
+    "version": "1.108.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -219,6 +219,11 @@
                     "markdownDescription": "%AWS.configuration.description.amazonq.proxy.certificateAuthority%",
                     "default": null,
                     "scope": "application"
+                },
+                "amazonQ.proxy.enableProxyAndCertificateAutoDiscovery": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.enableProxyAndCertificateAutoDiscovery%",
+                    "default": true
                 }
             }
         },
@@ -410,7 +415,7 @@
                 },
                 {
                     "command": "aws.amazonq.showLogs",
-                    "when": "!aws.isSageMakerUnifiedStudio",
+                    "when": "(view =~ /^aws\\.amazonq/) && !aws.isSageMakerUnifiedStudio",
                     "group": "1_amazonQ@5"
                 },
                 {
@@ -587,12 +592,6 @@
                 "title": "%AWS.command.amazonq.explainCode%",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
-            },
-            {
-                "command": "aws.amazonq.security.scan-statusbar",
-                "title": "%AWS.command.amazonq.security.scan%",
-                "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected && !aws.isSageMaker"
             },
             {
                 "command": "aws.amazonq.refactorCode",
@@ -920,7 +919,7 @@
             },
             {
                 "command": "aws.amazonq.fixCode",
-                "win": "win+alt+y",
+                "win": "win+alt+h",
                 "mac": "cmd+alt+y",
                 "linux": "meta+alt+y"
             },
@@ -938,7 +937,7 @@
             },
             {
                 "command": "aws.amazonq.generateUnitTests",
-                "key": "win+alt+t",
+                "key": "win+alt+n",
                 "mac": "cmd+alt+t",
                 "linux": "meta+alt+t"
             },
@@ -1290,123 +1289,172 @@
                     "fontCharacter": "\\f1d2"
                 }
             },
-            "aws-lambda-function": {
+            "aws-lambda-deployed-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d3"
                 }
             },
-            "aws-mynah-MynahIconBlack": {
+            "aws-lambda-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d4"
                 }
             },
-            "aws-mynah-MynahIconWhite": {
+            "aws-lambda-invoke-remotely": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d5"
                 }
             },
-            "aws-mynah-logo": {
+            "aws-mynah-MynahIconBlack": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d6"
                 }
             },
-            "aws-redshift-cluster": {
+            "aws-mynah-MynahIconWhite": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d7"
                 }
             },
-            "aws-redshift-cluster-connected": {
+            "aws-mynah-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d8"
                 }
             },
-            "aws-redshift-database": {
+            "aws-redshift-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d9"
                 }
             },
-            "aws-redshift-redshift-cluster-connected": {
+            "aws-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1da"
                 }
             },
-            "aws-redshift-schema": {
+            "aws-redshift-database": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1db"
                 }
             },
-            "aws-redshift-table": {
+            "aws-redshift-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1dc"
                 }
             },
-            "aws-s3-bucket": {
+            "aws-redshift-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1dd"
                 }
             },
-            "aws-s3-create-bucket": {
+            "aws-redshift-table": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-sagemaker-code-editor": {
+            "aws-s3-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
                 }
             },
-            "aws-sagemaker-jupyter-lab": {
+            "aws-s3-create-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e2"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-sagemakerunifiedstudio-catalog": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e3"
+                }
+            },
+            "aws-sagemakerunifiedstudio-spaces": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e4"
+                }
+            },
+            "aws-sagemakerunifiedstudio-spaces-dark": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e5"
+                }
+            },
+            "aws-sagemakerunifiedstudio-symbol-int": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e6"
+                }
+            },
+            "aws-sagemakerunifiedstudio-table": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e7"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e8"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e9"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ea"
                 }
             }
         },
@@ -1435,17 +1483,6 @@
                             "markdown": "./resources/walkthrough/amazonq/chat.md"
                         },
                         "completionEvents": []
-                    },
-                    {
-                        "id": "aws.amazonq.walkthrough.securityScan",
-                        "title": "Check for security vulnerabilities",
-                        "description": "Amazon Q scans your code to identify security vulnerabilities and suggests fixes.\n\nStart a scan from the status bar menu.\n\n[Scan your current project](command:_aws.amazonq.walkthrough.securityScanExample)\n\nIdentifies vulnerabilities in Python, Typescript, Ruby, AWS CDK, and [more](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-language-ide-support.html#security-scans-language-support)",
-                        "media": {
-                            "markdown": "./resources/walkthrough/amazonq/scans.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:_aws.amazonq.walkthrough.securityScanExample"
-                        ]
                     },
                     {
                         "id": "aws.amazonq.walkthrough.settings",

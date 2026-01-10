@@ -85,7 +85,20 @@ export class SshConfig {
     protected async matchSshSection() {
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
-            return Result.err(result.error ?? new Error(`ssh check against host failed: ${result.exitCode}`))
+            // Format stderr error message for display to user
+            let errorMessage = result.stderr?.trim() || `ssh check against host failed: ${result.exitCode}`
+            const sshConfigPath = getSshConfigPath()
+            // Remove the SSH config file path prefix from error messages to make them more readable
+            // SSH errors often include the full path like "/Users/name/.ssh/config: line 5: Bad configuration option"
+            errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
+
+            if (result.error) {
+                // System level error
+                return Result.err(ToolkitError.chain(result.error, errorMessage))
+            }
+
+            // SSH ran but returned error exit code
+            return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
         return Result.ok(matches?.[0])
@@ -208,7 +221,7 @@ Host ${this.configHostName}
 
     protected createSSHConfigSection(proxyCommand: string): string {
         if (this.scriptPrefix === 'sagemaker_connect') {
-            return `${this.getSageMakerSSHConfig(proxyCommand)}User '%r'\n`
+            return `${this.getSageMakerSSHConfig(proxyCommand)}`
         } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }

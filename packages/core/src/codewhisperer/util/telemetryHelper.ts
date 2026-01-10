@@ -141,7 +141,7 @@ export class TelemetryHelper {
                 ? this.timeSinceLastModification
                 : undefined,
             codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
-                ? performance.now() - this.lastTriggerDecisionTime
+                ? Date.now() - this.lastTriggerDecisionTime
                 : undefined,
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerType: session.triggerType,
@@ -355,7 +355,7 @@ export class TelemetryHelper {
                 ? this.timeSinceLastModification
                 : undefined,
             codewhispererTimeSinceLastUserDecision: this.lastTriggerDecisionTime
-                ? performance.now() - this.lastTriggerDecisionTime
+                ? Date.now() - this.lastTriggerDecisionTime
                 : undefined,
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerCharacter: autoTriggerType === 'SpecialCharacters' ? this.triggerChar : undefined,
@@ -366,7 +366,7 @@ export class TelemetryHelper {
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
-        this.lastTriggerDecisionTime = performance.now()
+        this.lastTriggerDecisionTime = Date.now()
 
         // When we send a userTriggerDecision for neither Accept nor Reject, service side should not use this value
         // and client side will set this value to 0.0.
@@ -392,6 +392,7 @@ export class TelemetryHelper {
             generatedLine: generatedLines,
             numberOfRecommendations: suggestionCount,
             acceptedCharacterCount: acceptedRecommendationContent.length,
+            suggestionType: 'COMPLETIONS',
         }
         this.resetUserTriggerDecisionTelemetry()
 
@@ -428,7 +429,7 @@ export class TelemetryHelper {
     }
 
     public getLastTriggerDecisionForClassifier() {
-        if (this.lastTriggerDecisionTime && performance.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
+        if (this.lastTriggerDecisionTime && Date.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
             return this.prevTriggerDecision
         }
     }
@@ -556,30 +557,30 @@ export class TelemetryHelper {
         if (session.preprocessEndTime !== 0) {
             getLogger().warn(`inline completion preprocessEndTime has been set and not reset correctly`)
         }
-        session.preprocessEndTime = performance.now()
+        session.preprocessEndTime = Date.now()
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
         this.resetClientComponentLatencyTime()
-        session.invokeSuggestionStartTime = performance.now()
+        session.invokeSuggestionStartTime = Date.now()
     }
 
     public setSdkApiCallEndTime() {
         if (this._sdkApiCallEndTime === 0 && session.sdkApiCallStartTime !== 0) {
-            this._sdkApiCallEndTime = performance.now()
+            this._sdkApiCallEndTime = Date.now()
         }
     }
 
     public setAllPaginationEndTime() {
         if (this._allPaginationEndTime === 0 && this._sdkApiCallEndTime !== 0) {
-            this._allPaginationEndTime = performance.now()
+            this._allPaginationEndTime = Date.now()
         }
     }
 
     public setFirstSuggestionShowTime() {
         if (session.firstSuggestionShowTime === 0 && this._sdkApiCallEndTime !== 0) {
-            session.firstSuggestionShowTime = performance.now()
+            session.firstSuggestionShowTime = Date.now()
         }
     }
 

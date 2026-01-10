@@ -28,6 +28,7 @@ import globals from '../../../../shared/extensionGlobals'
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
+    public override supportsLoadTelemetry: boolean = true
     private isCodeCatalystLogin = false
 
     override onActiveConnectionModified: vscode.EventEmitter<void> = new vscode.EventEmitter()
@@ -83,6 +84,36 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
+    }
+
+    async startConsoleCredentialSetup(profileName: string, region: string): Promise<AuthError | undefined> {
+        getLogger().debug(`called startConsoleCredentialSetup()`)
+        const runAuth = async () => {
+            try {
+                // Execute AWS CLI login command
+                await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+
+                // Hide auth view and show resource explorer
+                await setContext('aws.explorer.showAuthView', false)
+                await this.showResourceExplorer()
+
+                return undefined // Success case returns undefined
+            } catch (err) {
+                getLogger().error('Failed setting up authentication with console credentials : %O', err)
+                return {
+                    id: this.id,
+                    text: err instanceof Error ? err.message : String(err),
+                }
+            }
+        }
+        const result = await runAuth()
+        this.storeMetricMetadata({
+            credentialSourceId: 'consoleCredentials',
+            authEnabledFeatures: 'awsExplorer',
+            ...this.getResultForMetrics(result),
+        })
+        this.emitAuthMetric()
+        return result
     }
 
     async startIamCredentialSetup(

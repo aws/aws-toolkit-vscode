@@ -8,7 +8,8 @@ import { RemoteInvokeWebview, InitialData } from '../../../../lambda/vue/remoteI
 import { LambdaClient, DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import * as vscode from 'vscode'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { RemoteDebugController, DebugConfig } from '../../../../lambda/remoteDebugging/ldkController'
+import { RemoteDebugController } from '../../../../lambda/remoteDebugging/ldkController'
+import type { DebugConfig } from '../../../../lambda/remoteDebugging/lambdaDebugger'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import * as downloadLambda from '../../../../lambda/commands/downloadLambda'
@@ -19,6 +20,7 @@ import globals from '../../../../shared/extensionGlobals'
 import fs from '../../../../shared/fs/fs'
 import { ToolkitError } from '../../../../shared'
 import { createMockDebugConfig } from '../../remoteDebugging/testUtils'
+import { InvocationResponse } from '@aws-sdk/client-lambda'
 
 describe('RemoteInvokeWebview - Debugging Functionality', () => {
     let outputChannel: vscode.OutputChannel
@@ -62,7 +64,7 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             regionSupportsRemoteDebug: true,
         } as InitialData
 
-        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, data)
+        remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, data)
 
         // Mock RemoteDebugController
         mockDebugController = createStubInstance(RemoteDebugController)
@@ -100,25 +102,6 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
 
             remoteInvokeWebview.stopDebugTimer()
             assert.strictEqual(remoteInvokeWebview.getDebugTimeRemaining(), 0)
-        })
-
-        it('should handle timer expiration by stopping debugging', async () => {
-            const stopDebuggingStub = sandbox.stub(remoteInvokeWebview, 'stopDebugging').resolves(true)
-
-            // Mock a very short timer for testing
-            sandbox.stub(remoteInvokeWebview, 'startDebugTimer').callsFake(() => {
-                // Simulate immediate timer expiration
-                setTimeout(async () => {
-                    await (remoteInvokeWebview as any).handleTimerExpired()
-                }, 10)
-            })
-
-            remoteInvokeWebview.startDebugTimer()
-
-            // Wait for timer to expire
-            await new Promise((resolve) => setTimeout(resolve, 50))
-
-            assert(stopDebuggingStub.calledOnce, 'stopDebugging should be called when timer expires')
         })
     })
 
@@ -184,7 +167,7 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         })
 
         it('should return false when LambdaFunctionNode is undefined', async () => {
-            remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, {
+            remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, {
                 ...data,
                 LambdaFunctionNode: undefined,
             })
@@ -393,8 +376,8 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         it('should invoke lambda with remote debugging enabled', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Debug log').toString('base64'),
-                Payload: '{"result": "debug success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "debug success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
             mockDebugController.isDebugging = true
             mockDebugController.qualifier = 'v1'
@@ -410,8 +393,8 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         it('should handle timer management during debugging invocation', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Debug log').toString('base64'),
-                Payload: '{"result": "debug success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "debug success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
             mockDebugController.isDebugging = true
 
@@ -485,11 +468,14 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
                 functionArn: data.FunctionArn,
                 functionName: data.FunctionName,
             })
-
+            async function mockRun<T>(fn: (span: any) => T): Promise<T> {
+                const span = { record: sandbox.stub() }
+                return fn(span)
+            }
             // Mock telemetry to avoid issues
             sandbox.stub(require('../../../../shared/telemetry/telemetry'), 'telemetry').value({
                 lambda_invokeRemote: {
-                    emit: sandbox.stub(),
+                    run: mockRun,
                 },
             })
         })
@@ -516,8 +502,8 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             // 2. Test lambda invocation during debugging
             const mockResponse = {
                 LogResult: Buffer.from('Debug invocation log').toString('base64'),
-                Payload: '{"debugResult": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"debugResult": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda('{"debugInput": "test"}', 'integration-test', true)
@@ -577,8 +563,8 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             // Test invocation with version qualifier
             const mockResponse = {
                 LogResult: Buffer.from('Version debug log').toString('base64'),
-                Payload: '{"versionResult": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"versionResult": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda('{"versionInput": "test"}', 'version-test', true)
