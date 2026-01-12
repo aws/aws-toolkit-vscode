@@ -27,6 +27,7 @@ export class EvaluationProcess {
     private rawInput: string = ''
     private inputEntries: InputEntry[]
     private tokenSrc: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
+    private log = getLogger('inline')
 
     constructor(
         inputpath: string,
@@ -64,7 +65,7 @@ export class EvaluationProcess {
                 inputEntries.push(inputEntry)
             }
         } catch (e) {
-            getLogger().error(`Error parsing input: ${e}`)
+            this.log.error(`Error parsing input: ${e}`)
             throw e
         }
 
@@ -79,9 +80,9 @@ export class EvaluationProcess {
                 // use edit distance to compare inputEntry.groundTruth vs. suggestions[0]
 
                 // TODO: write to a file
-                getLogger().info(`recieved ${suggetions?.length ?? 0} suggestions`)
+                this.log.info(`recieved ${suggetions?.length ?? 0} suggestions`)
             } catch (e) {
-                getLogger().error(`Error triggering inline: ${e}`)
+                this.log.error(`Error triggering inline: ${e}`)
             }
         }
         return
@@ -123,7 +124,7 @@ export class EvaluationProcess {
             // assert.strictEqual(ctx.rightFileContent, inputEntry.rightContext)
             // assert.strictEqual(ctx.filename, inputEntry.filename)
         } catch (e) {
-            getLogger().error('!!!!!!!!!')
+            this.log.error('!!!!!!!!!')
         }
 
         if (f) {
@@ -151,18 +152,18 @@ ground truth: ${groundTruth}
 editSimAvg: ${compareResult.editSimAvg}
 emRatio: ${compareResult.emRatio}`
 
-                getLogger().info(logstr)
+                this.log.info(logstr)
             } catch (e) {
                 const logstr = `@@response analysis@@
 actual filename: ${inputEntry.filename}
 length doesnt match
 actual suggestion is empty: ${this.sessionManager?.getActiveRecommendation().length}
 ground truth: ${inputEntry.groundTruth}`
-                getLogger().error((e as Error).message)
-                getLogger().info(logstr)
+                this.log.error((e as Error).message)
+                this.log.info(logstr)
             }
         } else {
-            getLogger().error(`failed to move cursor to ${line}, ${column}`)
+            this.log.error(`failed to move cursor to ${line}, ${column}`)
         }
 
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
@@ -171,7 +172,7 @@ ground truth: ${inputEntry.groundTruth}`
     private async searchFile(filename: string): Promise<vscode.Uri | undefined> {
         const files = await vscode.workspace.findFiles(`**/${filename}`)
         if (files.length === 0) {
-            getLogger().error(`file ${filename} not found`)
+            this.log.error(`file ${filename} not found`)
             return undefined
         }
 
