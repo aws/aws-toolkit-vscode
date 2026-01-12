@@ -164,6 +164,8 @@ ground truth: ${inputEntry.groundTruth}`
         } else {
             getLogger().error(`failed to move cursor to ${line}, ${column}`)
         }
+
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
     private async searchFile(filename: string): Promise<vscode.Uri | undefined> {

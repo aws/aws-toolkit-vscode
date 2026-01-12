@@ -369,7 +369,7 @@ async function onLanguageServerReady(
             Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
                 vsCodeState.lastManualTriggerTime = performance.now()
                 await new EvaluationProcess(
-                    '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_10.jsonl',
+                    '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl',
                     sessionManager,
                     inlineManager
                 ).run()
