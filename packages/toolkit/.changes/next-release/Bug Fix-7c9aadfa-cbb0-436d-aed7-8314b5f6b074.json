@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CloudFormation: render stack detail views on stack change"
-}
