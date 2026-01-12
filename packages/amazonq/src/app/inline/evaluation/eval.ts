@@ -14,6 +14,7 @@ import assert from 'assert'
 // import { get } from 'http'
 
 type InputEntry = {
+    packageName: string
     filename: string
     filepath: string
     leftContext: string
@@ -30,9 +31,9 @@ export class EvaluationProcess {
     private log = getLogger('inline')
 
     constructor(
-        inputpath: string,
         readonly sessionManager: SessionManager | undefined,
-        readonly inlineMananger: InlineCompletionManager
+        readonly inlineMananger: InlineCompletionManager,
+        inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_10.jsonl'
     ) {
         this.rawInput = nodefs.readFileSync(inputpath, 'utf-8')
         this.inputEntries = this.processRawinput(this.rawInput)
@@ -52,8 +53,8 @@ export class EvaluationProcess {
                     continue
                 }
                 const obj = JSON.parse(line)
-                // TODO: implement the actual parsing logic
                 const inputEntry: InputEntry = {
+                    packageName: obj.package_name,
                     filename: obj.file_name,
                     filepath: obj.file_path,
                     leftContext: obj.left_context,
@@ -69,28 +70,31 @@ export class EvaluationProcess {
             throw e
         }
 
+        this.log.info(`Found ${lines.length} input entries for simulation`)
         return inputEntries
     }
 
     async run(): Promise<void> {
-        for (const inputEntry of this.inputEntries) {
+        for (let i = 0; i < this.inputEntries.length; i++) {
+            const inputEntry = this.inputEntries[i]
             try {
                 await this.triggerInlineOnce(inputEntry)
                 const suggetions = this.sessionManager?.getActiveSession()?.suggestions
                 // use edit distance to compare inputEntry.groundTruth vs. suggestions[0]
 
                 // TODO: write to a file
-                this.log.info(`recieved ${suggetions?.length ?? 0} suggestions`)
+                this.log.info(`Finished running ${i}th and recieved ${suggetions?.length ?? 0} suggestions`)
             } catch (e) {
-                this.log.error(`Error triggering inline: ${e}`)
+                this.log.error(`Error triggering inline ${i}th: ${e}`)
             }
         }
         return
     }
 
     private async triggerInlineOnce(inputEntry: InputEntry) {
-        const { filename: fileToTriggerInline, line, column } = inputEntry
-        const uri = await this.searchFile(fileToTriggerInline)
+        // const { filename: fileToTriggerInline, line, column } = inputEntry
+
+        const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
             return
         }
@@ -99,33 +103,27 @@ export class EvaluationProcess {
         const document = await vscode.workspace.openTextDocument(uri)
         const editor = await vscode.window.showTextDocument(document)
         // move the cursor to line and column
-        editor.selection = new vscode.Selection(line, column, line, column)
+        editor.selection = new vscode.Selection(inputEntry.line, inputEntry.column, inputEntry.line, inputEntry.column)
 
-        // or 'aws.amazonq.invokeInlineCompletion'
-        // await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         const f = await waitUntil(
             async () => {
                 const e = vscode.window.activeTextEditor
                 return (
                     e &&
                     e.document.uri.fsPath === uri.fsPath &&
-                    e.selection.anchor.line === line &&
-                    e.selection.anchor.character === column
+                    e.selection.anchor.line === inputEntry.line &&
+                    e.selection.anchor.character === inputEntry.column
                 )
             },
             { retryOnFail: true, timeout: 10000, interval: 1000 }
         )
 
         // assertion to confirm file & cursor etc are correct
-        try {
-            const ctx = extractContextForCodeWhisperer(editor)
-            assert.strictEqual(ctx.leftFileContent, inputEntry.leftContext)
-            // TODO: it seems right context field is kinda weird
-            // assert.strictEqual(ctx.rightFileContent, inputEntry.rightContext)
-            // assert.strictEqual(ctx.filename, inputEntry.filename)
-        } catch (e) {
-            this.log.error('!!!!!!!!!')
-        }
+        const ctx = extractContextForCodeWhisperer(editor)
+        assert.strictEqual(ctx.leftFileContent, inputEntry.leftContext)
+        // TODO: it seems right context field is kinda weird
+        // assert.strictEqual(ctx.rightFileContent, inputEntry.rightContext)
+        // assert.strictEqual(ctx.filename, inputEntry.filename)
 
         if (f) {
             // call inline api to get suggestions in states
@@ -161,22 +159,25 @@ actual suggestion is empty: ${this.sessionManager?.getActiveRecommendation().len
 ground truth: ${inputEntry.groundTruth}`
                 this.log.error((e as Error).message)
                 this.log.info(logstr)
+
+                throw e
             }
         } else {
-            this.log.error(`failed to move cursor to ${line}, ${column}`)
+            this.log.error(`failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`)
         }
 
+        // close the editor
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
-    private async searchFile(filename: string): Promise<vscode.Uri | undefined> {
+    private async searchFile(filename: string, packageName: string): Promise<vscode.Uri | undefined> {
         const files = await vscode.workspace.findFiles(`**/${filename}`)
         if (files.length === 0) {
             this.log.error(`file ${filename} not found`)
             return undefined
         }
 
-        return files[0]
+        return files.find((f) => f.fsPath.includes(packageName))
     }
 }
 

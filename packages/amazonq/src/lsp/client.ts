@@ -368,11 +368,7 @@ async function onLanguageServerReady(
             }),
             Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
                 vsCodeState.lastManualTriggerTime = performance.now()
-                await new EvaluationProcess(
-                    '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl',
-                    sessionManager,
-                    inlineManager
-                ).run()
+                await new EvaluationProcess(sessionManager, inlineManager).run()
 
                 // await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }),
