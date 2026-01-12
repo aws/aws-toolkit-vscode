@@ -19,7 +19,6 @@ If you must define a new key (is it _really_ necessary?), follow these guideline
 
 -   Choose a prefix as follows (as [recommended](https://code.visualstudio.com/api/extension-guides/command#using-a-custom-when-clause-context)):
     -   `packages/core/` should use `aws.` prefix
-    -   `packages/toolkit/` should use `aws.toolkit.` prefix
     -   `packages/amazonq/` should use `amazonq.` prefix
 -   Use brevity. Less is more.
 -   Document it in the list below.
@@ -29,7 +28,7 @@ If you must define a new key (is it _really_ necessary?), follow these guideline
 #### setContext keys owned by packages/core/
 
 These keys are currently set by the core/ package, but many of them may eventually be migrated to
-toolkit/ or amazonq/ if appropriate.
+amazonq/ if appropriate.
 
 -   `aws.codecatalyst.connected`: CodeCatalyst connection is active.
 -   `aws.codewhisperer.connected`: CodeWhisperer connection is active.
@@ -40,10 +39,6 @@ toolkit/ or amazonq/ if appropriate.
     -   Compare to `isWeb`, which vscode defines when the _UI_ is web, but says nothing about the
         _extension host_.
 -   `aws.isSageMaker`: AWS Toolkit is running in the SageMaker Code Editor.
-
-#### setContext keys owned by packages/toolkit/
-
--   TODO
 
 #### setContext keys owned by packages/amazonq/
 
