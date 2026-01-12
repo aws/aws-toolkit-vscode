@@ -451,12 +451,31 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     }
 
                     getLogger().info(
-                        'Authentication completed for profile %s, refreshing credentials...',
+                        'Authentication completed for profile %s, reloading window to sync with updated credentials cache...',
                         this.profileName
                     )
 
-                    // Use the same provider instance but get fresh credentials
-                    return await baseProvider()
+                    // Notify user that credentials are refreshed and prompt to reload
+                    const reloadResponse = await vscode.window.showInformationMessage(
+                        `Credentials for profile "${this.profileName}" refreshed. Reload window to to re-authenticate?`,
+                        'Reload',
+                        'Later'
+                    )
+
+                    if (reloadResponse === 'Reload') {
+                        // Toolkit watches ~/.aws/sso/cache/*.json for SSO token changes but there is no file watcher for console login cache or config files.
+                        // Force the toolkit to re-sync profiles from VS Code's globalState (persisted extension state) and re-reads AWS CLI login cache.
+                        await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                    } else {
+                        getLogger().info(
+                            'Unable to re-sync credentials for profile %s. User cancelled reload window.',
+                            this.profileName
+                        )
+                        throw ToolkitError.emit(error, 'Credentials refreshed but user cancelled reload window.', {
+                            code: 'LoginSessionReloadCancelled',
+                            cancelled: true,
+                        })
+                    }
                 }
                 throw ToolkitError.chain(error, `Failed to get console credentials`, {
                     code: 'FromLoginCredentialProviderError',
