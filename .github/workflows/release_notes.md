@@ -16,4 +16,3 @@ ${AMAZON_Q_CHANGES}
 ## Previous changes
 
 -   [AWS Toolkit changelog](/packages/toolkit/CHANGELOG.md)
--   [Amazon Q changelog](/packages/amazonq/CHANGELOG.md)

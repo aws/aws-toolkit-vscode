@@ -45,8 +45,6 @@ packages/*/LICENSE
 packages/*/NOTICE
 packages/toolkit/package.nls.json
 packages/toolkit/resources
-packages/amazonq/package.nls.json
-packages/amazonq/resources
 
 # Icons
 packages/*/resources/fonts/aws-toolkit-icons.woff
