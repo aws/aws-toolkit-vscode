@@ -254,18 +254,18 @@ export class RecommendationService {
                 if (!isInlineEdit) {
                     // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
                     logstr += 'start pagination'
-                    this.processRemainingRequests(languageClient, request, result, token)
-                        .then(async (flag) => {
-                            // Force vscode to reload suggestions
-                            await commands.executeCommand('editor.action.inlineSuggest.hide')
-                            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+                    // this.processRemainingRequests(languageClient, request, result, token)
+                    //     .then(async (flag) => {
+                    //         // Force vscode to reload suggestions
+                    //         await commands.executeCommand('editor.action.inlineSuggest.hide')
+                    //         await commands.executeCommand('editor.action.inlineSuggest.trigger')
 
-                            const logstr = `Done pagination; shouldUpdate=${flag}; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
-                            this.logger.info(logstr)
-                        })
-                        .catch((error) => {
-                            languageClient.warn(`Error when getting suggestions: ${error}`)
-                        })
+                    //         const logstr = `Done pagination; shouldUpdate=${flag}; updatedSuggestionCount=${this.sessionManager.getActiveRecommendation().length}`
+                    //         this.logger.info(logstr)
+                    //     })
+                    //     .catch((error) => {
+                    //         languageClient.warn(`Error when getting suggestions: ${error}`)
+                    //     })
                 } else {
                     // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                     // suggestions when the user start to accept a suggesion.
@@ -299,7 +299,7 @@ export class RecommendationService {
         }
     }
 
-    private async processRemainingRequests(
+    async processRemainingRequests(
         languageClient: BaseLanguageClient,
         initialRequest: InlineCompletionWithReferencesParams,
         firstResult: InlineCompletionListWithReferences,
