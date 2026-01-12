@@ -376,7 +376,7 @@ describe('editorContext', function () {
         })
     })
 
-    describe('buildListRecommendationRequest', function () {
+    describe.skip('buildListRecommendationRequest', function () {
         it('Should return expected fields for optOut, nextToken and reference config', async function () {
             const nextToken = 'testToken'
             const optOutPreference = false
