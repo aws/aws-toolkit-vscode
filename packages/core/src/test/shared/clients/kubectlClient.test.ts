@@ -9,6 +9,7 @@ import * as k8s from '@kubernetes/client-node'
 import { KubectlClient, HyperpodDevSpace, HyperpodCluster } from '../../../shared/clients/kubectlClient'
 import { SagemakerDevSpaceNode } from '../../../awsService/sagemaker/explorer/sagemakerDevSpaceNode'
 import { Cluster } from '@aws-sdk/client-eks'
+import { createMockK8sSetup, setupMockDevSpaceNode } from './kubectlTestHelpers'
 import { IncomingMessage } from 'http'
 
 describe('KubectlClient', function () {
@@ -20,25 +21,11 @@ describe('KubectlClient', function () {
     let mockEksCluster: Cluster
 
     beforeEach(function () {
-        mockK8sApi = sinon.createStubInstance(k8s.CustomObjectsApi)
-        mockDevSpace = {
-            name: 'test-space',
-            namespace: 'test-namespace',
-            cluster: 'test-cluster',
-            group: 'sagemaker.aws.amazon.com',
-            version: 'v1',
-            plural: 'devspaces',
-            status: 'Stopped',
-            appType: 'jupyterlab',
-            creator: 'test-user',
-            accessType: 'Public',
-        }
-        mockHyperpodCluster = {
-            clusterName: 'test-cluster',
-            clusterArn: 'arn:aws:sagemaker:us-east-1:123456789012:cluster/test-cluster',
-            status: 'InService',
-            regionCode: 'us-east-1',
-        }
+        const mockSetup = createMockK8sSetup()
+        mockK8sApi = mockSetup.mockK8sApi
+        mockDevSpace = mockSetup.mockDevSpace
+        mockHyperpodCluster = mockSetup.mockHyperpodCluster
+
         mockEksCluster = {
             name: 'test-cluster',
             endpoint: 'https://test-endpoint.com',
@@ -252,9 +239,7 @@ describe('KubectlClient', function () {
 
     describe('startHyperpodDevSpace', function () {
         it('should patch status to Running and track pending node', async function () {
-            const mockParent = { trackPendingNode: sinon.stub() }
-            mockDevSpaceNode.getParent.returns(mockParent as any)
-            mockDevSpaceNode.getDevSpaceKey.returns('test-key')
+            const mockParent = setupMockDevSpaceNode(mockDevSpaceNode)
             mockK8sApi.patchNamespacedCustomObject.resolves({} as any)
             mockK8sApi.getNamespacedCustomObject.resolves({
                 response: {} as IncomingMessage,
@@ -278,9 +263,7 @@ describe('KubectlClient', function () {
 
     describe('stopHyperpodDevSpace', function () {
         it('should patch status to Stopped and track pending node', async function () {
-            const mockParent = { trackPendingNode: sinon.stub() }
-            mockDevSpaceNode.getParent.returns(mockParent as any)
-            mockDevSpaceNode.getDevSpaceKey.returns('test-key')
+            const mockParent = setupMockDevSpaceNode(mockDevSpaceNode)
             mockK8sApi.patchNamespacedCustomObject.resolves({} as any)
             mockK8sApi.getNamespacedCustomObject.resolves({
                 response: {} as IncomingMessage,

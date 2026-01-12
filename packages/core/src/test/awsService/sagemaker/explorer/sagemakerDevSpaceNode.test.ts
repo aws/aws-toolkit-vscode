@@ -9,6 +9,7 @@ import { SagemakerDevSpaceNode } from '../../../../awsService/sagemaker/explorer
 import { SagemakerHyperpodNode } from '../../../../awsService/sagemaker/explorer/sagemakerHyperpodNode'
 import { HyperpodDevSpace, HyperpodCluster, KubectlClient } from '../../../../shared/clients/kubectlClient'
 import { SagemakerClient } from '../../../../shared/clients/sagemaker'
+import { createMockK8sSetup } from '../../../shared/clients/kubectlTestHelpers'
 
 describe('SagemakerDevSpaceNode', function () {
     let testNode: SagemakerDevSpaceNode
@@ -23,24 +24,10 @@ describe('SagemakerDevSpaceNode', function () {
         mockSagemakerClient = sinon.createStubInstance(SagemakerClient)
         mockParent = new SagemakerHyperpodNode(testRegion, mockSagemakerClient as any)
         mockKubectlClient = sinon.createStubInstance(KubectlClient)
-        mockDevSpace = {
-            name: 'test-space',
-            namespace: 'test-namespace',
-            cluster: 'test-cluster',
-            group: 'sagemaker.aws.amazon.com',
-            version: 'v1',
-            plural: 'devspaces',
-            status: 'Stopped',
-            appType: 'jupyterlab',
-            creator: 'test-user',
-            accessType: 'Public',
-        }
-        mockHyperpodCluster = {
-            clusterName: 'test-cluster',
-            clusterArn: 'arn:aws:sagemaker:us-east-1:123456789012:cluster/test-cluster',
-            status: 'InService',
-            regionCode: testRegion,
-        }
+
+        const mockSetup = createMockK8sSetup()
+        mockDevSpace = mockSetup.mockDevSpace as HyperpodDevSpace
+        mockHyperpodCluster = mockSetup.mockHyperpodCluster
 
         sinon.stub(mockParent, 'getKubectlClient').returns(mockKubectlClient as any)
         sinon.stub(mockParent, 'trackPendingNode').returns()
