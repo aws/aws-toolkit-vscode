@@ -74,14 +74,17 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             await startLocalServer(globals.context)
 
             const eksCluster = kubectlClient.getEksCluster()
+            if (!eksCluster?.endpoint || !eksCluster?.certificateAuthority?.data) {
+                throw new Error('EKS cluster information is required but not available')
+            }
             await storeHyperpodConnection(
                 node.devSpace.name,
                 node.devSpace.namespace,
                 node.hpCluster.clusterArn,
                 node.hpCluster.clusterName,
                 node.devSpace.cluster,
-                eksCluster?.endpoint,
-                eksCluster?.certificateAuthority?.data
+                eksCluster.endpoint,
+                eksCluster.certificateAuthority.data
             )
 
             const reconnectionManager = HyperpodReconnectionManager.getInstance()

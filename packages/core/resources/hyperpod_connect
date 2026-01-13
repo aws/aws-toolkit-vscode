@@ -147,11 +147,8 @@ try:
         # Return the first alphabetically sorted match for consistency
         print(matches[0])
     else:
-        # Try exact devspace name match as fallback
-        if devspace_name in profiles:
-            print(devspace_name)
-        else:
-            print(devspace_name)
+        # Fallback to devspace name
+        print(devspace_name)
 except:
     print('$DEVSPACE_NAME')
 " 2>/dev/null)
