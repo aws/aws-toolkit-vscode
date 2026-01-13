@@ -6,6 +6,7 @@
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
+import { parse } from '@aws-sdk/util-arn-parser'
 import { getHyperpodConnection } from '../hyperpodMappingUtils'
 import { KubectlClient, HyperpodDevSpace, HyperpodCluster } from '../kubectlClientStub'
 
@@ -46,7 +47,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             return
         }
 
-        const region = extractRegionFromArn(connectionInfo.clusterArn)
+        const region = parse(connectionInfo.clusterArn).region
         const hyperpodCluster: HyperpodCluster = {
             clusterName: connectionInfo.clusterName,
             clusterArn: connectionInfo.clusterArn,
@@ -96,12 +97,4 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         res.writeHead(500, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ status: 'error', message: error.message }))
     }
-}
-
-function extractRegionFromArn(arn: string): string {
-    const parts = arn.split(':')
-    if (parts.length >= 4) {
-        return parts[3]
-    }
-    throw new Error(`Invalid ARN format: ${arn}`)
 }
