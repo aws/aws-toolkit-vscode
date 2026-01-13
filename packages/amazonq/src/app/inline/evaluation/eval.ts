@@ -75,6 +75,7 @@ export class EvaluationProcess {
     }
 
     async run(): Promise<void> {
+        let reportString = 'REPORT\n'
         for (let i = 0; i < this.inputEntries.length; i++) {
             const inputEntry = this.inputEntries[i]
             try {
@@ -84,10 +85,14 @@ export class EvaluationProcess {
 
                 // TODO: write to a file
                 this.log.info(`Finished running ${i}th and recieved ${suggetions?.length ?? 0} suggestions`)
+                reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; suggestionCnt=${suggetions?.length ?? 0}\n`
             } catch (e) {
                 this.log.error(`Error triggering inline ${i}th: ${e}`)
+                reportString += `\t${i}th faled: filename=${inputEntry.filename}; error=${e}\n`
             }
         }
+
+        this.log.info(reportString)
         return
     }
 
