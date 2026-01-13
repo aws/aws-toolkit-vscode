@@ -136,8 +136,8 @@ export async function deeplinkConnect(
             const { accountId, region, clusterName } = parseEKSClusterArn(eksClusterArn)
             connectionType = 'sm_hp'
             session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
-            if (!isValidK8sLabel(session)) {
-                session = createValidK8sSession(workspaceName, namespace, clusterName, region, accountId)
+            if (!isValidSshHostname(session)) {
+                session = createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
             }
         }
         const remoteEnv = await prepareDevEnvConnection(
@@ -196,9 +196,9 @@ function parseEKSClusterArn(eksClusterArn: string): { accountId: string; region:
 }
 
 /**
- * Validates and sanitizes session names for Kubernetes DNS label compliance
+ * Validates and sanitizes session names for SSH hostname compliance
  */
-function createValidK8sSession(
+function createValidSshSession(
     workspaceName: string,
     namespace: string,
     clusterName: string,
@@ -207,10 +207,9 @@ function createValidK8sSession(
 ): string {
     const sanitize = (str: string): string =>
         str
-            .toLowerCase()
-            .replace(/[^a-z0-9-]/g, '-')
+            .replace(/[^a-zA-Z0-9.-]/g, '-')
             .replace(/^-+|-+$/g, '')
-            .substring(0, 15)
+            .substring(0, 50)
 
     const components = [workspaceName, namespace, clusterName, region, accountId]
         .map(sanitize)
@@ -218,16 +217,16 @@ function createValidK8sSession(
 
     const session = components
         .join('_')
-        .substring(0, 63)
+        .substring(0, 253)
         .replace(/^-+|-+$/g, '')
     return session
 }
 
 /**
- * Validates if a string meets K8s DNS label requirements
+ * Validates if a string meets SSH hostname naming convention
  */
-function isValidK8sLabel(label: string): boolean {
-    return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
+function isValidSshHostname(label: string): boolean {
+    return /^[a-zA-Z0-9]([a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
