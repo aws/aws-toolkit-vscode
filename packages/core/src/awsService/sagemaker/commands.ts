@@ -31,6 +31,7 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
+import { parse } from '@aws-sdk/util-arn-parser'
 
 const localize = nls.loadMessageBundle()
 
@@ -133,7 +134,7 @@ export async function deeplinkConnect(
     try {
         let connectionType = 'sm_dl'
         if (!domain && eksClusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseEKSClusterArn(eksClusterArn)
+            const { accountId, region, clusterName } = parseArn(eksClusterArn)
             connectionType = 'sm_hp'
             session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             if (!isValidSshHostname(session)) {
@@ -184,15 +185,25 @@ export async function deeplinkConnect(
     }
 }
 
-function parseEKSClusterArn(eksClusterArn: string): { accountId: string; region: string; clusterName: string } {
-    const parts = eksClusterArn.split(':')
-    if (parts.length !== 6) {
-        throw new Error(`Invalid EKS cluster ARN: ${eksClusterArn}`)
+function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
+    try {
+        const parsed = parse(arn)
+        if (parsed.service !== 'eks') {
+            throw new Error('Invalid EKS cluster ARN')
+        }
+        // EKS cluster ARN format: arn:aws:eks:region:account:cluster/cluster-name
+        const clusterName = parsed.resource.split('/')[1]
+        if (!clusterName) {
+            throw new Error('Invalid EKS cluster ARN')
+        }
+        return {
+            accountId: parsed.accountId,
+            clusterName,
+            region: parsed.region,
+        }
+    } catch (error) {
+        throw new Error('Invalid EKS cluster ARN')
     }
-    const accountId = parts[4]
-    const region = parts[3]
-    const clusterName = parts[5].split('/')[1]
-    return { accountId, region, clusterName }
 }
 
 /**
