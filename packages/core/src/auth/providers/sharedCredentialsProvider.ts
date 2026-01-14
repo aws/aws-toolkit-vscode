@@ -395,17 +395,18 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private makeConsoleSessionCredentialsProvider() {
+    private makeConsoleSessionCredentialsProvider(): AWS.CredentialProvider {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
-        const baseProvider = fromLoginCredentials({
-            profile: this.profileName,
-            clientConfig: {
-                region: defaultRegion,
-            },
-        })
+
         return async () => {
             try {
-                return await baseProvider()
+                const provider = fromLoginCredentials({
+                    profile: this.profileName,
+                    clientConfig: {
+                        region: defaultRegion,
+                    },
+                })
+                return await provider()
             } catch (error) {
                 getLogger().error(
                     'Console login authentication failed for profile %s in region %s: %O',
@@ -435,12 +436,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     }
 
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
-                    // Execute the console login command with the existing profile and region
                     try {
                         await vscode.commands.executeCommand(
                             'aws.toolkit.auth.consoleLogin',
                             this.profileName,
-                            defaultRegion
+                            defaultRegion,
+                            true
                         )
                     } catch (reAuthError) {
                         throw ToolkitError.chain(
@@ -449,34 +450,24 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                             { code: 'LoginSessionReAuthError' }
                         )
                     }
+                }
 
-                    getLogger().info(
-                        'Authentication completed for profile %s, reloading window to sync with updated credentials cache...',
-                        this.profileName
-                    )
-
-                    // Notify user that credentials are refreshed and prompt to reload
+                if (error instanceof Error && error.message.includes('does not contain login_session.')) {
                     const reloadResponse = await vscode.window.showInformationMessage(
-                        `Credentials for profile "${this.profileName}" refreshed. Reload window to to re-authenticate?`,
+                        `Profile "${this.profileName}" credentials need a VS Code reload to take effect. Reload now?`,
                         'Reload',
                         'Later'
                     )
-
                     if (reloadResponse === 'Reload') {
-                        // Toolkit watches ~/.aws/sso/cache/*.json for SSO token changes but there is no file watcher for console login cache or config files.
-                        // Force the toolkit to re-sync profiles from VS Code's globalState (persisted extension state) and re-reads AWS CLI login cache.
                         await vscode.commands.executeCommand('workbench.action.reloadWindow')
                     } else {
-                        getLogger().info(
-                            'Unable to re-sync credentials for profile %s. User cancelled reload window.',
-                            this.profileName
-                        )
-                        throw ToolkitError.emit(error, 'Credentials refreshed but user cancelled reload window.', {
-                            code: 'LoginSessionReloadCancelled',
+                        // User clicked 'Later' or dismissed the dialog
+                        throw new ToolkitError('User declined reload profile, missing login_session in cache', {
                             cancelled: true,
                         })
                     }
                 }
+
                 throw ToolkitError.chain(error, `Failed to get console credentials`, {
                     code: 'FromLoginCredentialProviderError',
                 })

@@ -17,6 +17,7 @@ import {
     isSsoConnection,
 } from '../../../../auth/connection'
 import { Auth } from '../../../../auth/auth'
+import { CredentialsId, asString } from '../../../../auth/providers/credentials'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState } from '../types'
 import { setContext } from '../../../../shared/vscode/setContext'
@@ -93,6 +94,13 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                 // Execute AWS CLI login command
                 await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
 
+                const credentialsId: CredentialsId = {
+                    credentialSource: 'profile',
+                    credentialTypeId: profileName,
+                }
+                const connectionId = asString(credentialsId)
+                getLogger().info(`Use authenticated console session connection with ID: ${connectionId}`)
+                await Auth.instance.useConnection({ id: connectionId })
                 // Hide auth view and show resource explorer
                 await setContext('aws.explorer.showAuthView', false)
                 await this.showResourceExplorer()
