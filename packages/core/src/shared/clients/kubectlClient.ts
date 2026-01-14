@@ -258,10 +258,14 @@ export class KubectlClient {
             const presignedUrl = body.status?.workspaceConnectionUrl
             const connectionType = body.status?.workspaceConnectionType
 
+            if (!presignedUrl) {
+                throw new Error('No workspace connection URL returned')
+            }
+
             const url = new URL(presignedUrl)
 
             // If eksClusterArn exists, remove it and add clusterArn instead
-            if (url.searchParams.has('eksClusterArn')) {
+            if (url.searchParams.has('eksClusterArn') && this.hyperpodCluster.clusterArn) {
                 url.searchParams.delete('eksClusterArn')
                 url.searchParams.set('clusterArn', this.hyperpodCluster.clusterArn)
             }

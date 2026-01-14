@@ -135,10 +135,10 @@ export async function deeplinkConnect(
         if (!domain && clusterArn && workspaceName && namespace) {
             const { accountId, region, clusterName } = parseArn(clusterArn)
             connectionType = 'sm_hp'
-            session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
-            if (!isValidSshHostname(session)) {
-                session = createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
-            }
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            session = isValidSshHostname(proposedSession)
+                ? proposedSession
+                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
