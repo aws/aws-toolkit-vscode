@@ -9,7 +9,7 @@ import { getLogger, waitUntil } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 import Fuzz from 'fuzzball'
-import { extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererConstants, extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
@@ -33,7 +33,7 @@ export class EvaluationProcess {
     constructor(
         readonly sessionManager: SessionManager | undefined,
         readonly inlineMananger: InlineCompletionManager,
-        inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_10.jsonl'
+        inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl'
     ) {
         this.rawInput = nodefs.readFileSync(inputpath, 'utf-8')
         this.inputEntries = this.processRawinput(this.rawInput)
@@ -104,7 +104,7 @@ export class EvaluationProcess {
 
         const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
-            return
+            throw new Error(`File ${inputEntry.filename} not found`)
         }
 
         // open the file in vscode editor
@@ -128,10 +128,26 @@ export class EvaluationProcess {
 
         // assertion to confirm file & cursor etc are correct
         const ctx = extractContextForCodeWhisperer(editor)
-        assert.strictEqual(ctx.leftFileContent, inputEntry.leftContext)
-        // TODO: it seems right context field is kinda weird
-        // assert.strictEqual(ctx.rightFileContent, inputEntry.rightContext)
-        // assert.strictEqual(ctx.filename, inputEntry.filename)
+
+        /**
+         * let caretLeftFileContext = editor.document.getText(
+        new vscode.Range(
+            document.positionAt(offset - CodeWhispererConstants.charactersLimit),
+            document.positionAt(offset)
+        )
+    )
+         */
+        let expectedLeftContext = inputEntry.leftContext
+        if (inputEntry.leftContext.length > CodeWhispererConstants.charactersLimit) {
+            expectedLeftContext = editor.document.getText(
+                new vscode.Range(
+                    document.positionAt(ctx.leftFileContent.length - CodeWhispererConstants.charactersLimit),
+                    document.positionAt(ctx.leftFileContent.length)
+                )
+            )
+        }
+        // assert to make sure cursor position is correct
+        assert.strictEqual(ctx.leftFileContent, expectedLeftContext)
 
         if (f) {
             // call inline api to get suggestions in states
