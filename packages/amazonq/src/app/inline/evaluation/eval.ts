@@ -29,6 +29,13 @@ export class EvaluationProcess {
     private inputEntries: InputEntry[]
     private tokenSrc: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
     private log = getLogger('inline')
+    get length() {
+        return this.inputEntries.length
+    }
+    private _activeIndex = 0
+    get activeIndex() {
+        return this._activeIndex
+    }
 
     constructor(
         readonly sessionManager: SessionManager | undefined,
@@ -78,6 +85,7 @@ export class EvaluationProcess {
         const startTime = Date.now()
         let reportString = 'REPORT\n'
         for (let i = 0; i < this.inputEntries.length; i++) {
+            this._activeIndex = i
             const inputEntry = this.inputEntries[i]
             try {
                 await this.triggerInlineOnce(inputEntry)
