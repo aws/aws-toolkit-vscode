@@ -569,10 +569,7 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boo
  */
 export async function updateAwsCli(): Promise<string> {
     const selection = await vscode.window.showInformationMessage(
-        localize(
-            'AWS.cli.updateCliPrompt',
-            'Using console credentials requires updating the AWS CLI to the latest version.'
-        ),
+        localize('AWS.cli.updateCliPrompt', 'Console credentials require AWS CLI version 2.32.0 or newer. Update now?'),
         { modal: true },
         'Update'
     )
@@ -582,7 +579,6 @@ export async function updateAwsCli(): Promise<string> {
     }
 
     const result = await installCli('aws-cli', false)
-    void vscode.window.showInformationMessage(localize('AWS.cli.updateSuccess', 'AWS CLI was successfully updated.'))
     return result
 }
 
