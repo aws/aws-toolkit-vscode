@@ -580,8 +580,8 @@
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
-        "@amzn/sagemaker-client": "file:../../src.gen/@amzn/sagemaker-client/1.0.0.tgz",
         "@amzn/glue-catalog-client": "file:../../src.gen/@amzn/glue-catalog-client/0.0.1.tgz",
+        "@amzn/sagemaker-client": "file:../../src.gen/@amzn/sagemaker-client/1.0.0.tgz",
         "@aws-sdk/client-accessanalyzer": "^3.888.0",
         "@aws-sdk/client-api-gateway": "<3.731.0",
         "@aws-sdk/client-apprunner": "<3.731.0",
@@ -648,6 +648,7 @@
         "cross-spawn": "^7.0.5",
         "diff": "^5.1.0",
         "fast-json-patch": "^3.1.1",
+        "fuzzball": "^2.2.3",
         "glob": "^10.3.10",
         "got": "^11.8.5",
         "highlight.js": "^11.9.0",

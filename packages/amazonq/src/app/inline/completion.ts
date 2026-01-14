@@ -53,7 +53,7 @@ export class InlineCompletionManager implements Disposable {
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
     private languageClient: BaseLanguageClient
     private sessionManager: SessionManager
-    private recommendationService: RecommendationService
+    recommendationService: RecommendationService
     private lineTracker: LineTracker
 
     private inlineTutorialAnnotation: InlineTutorialAnnotation
@@ -86,6 +86,24 @@ export class InlineCompletionManager implements Disposable {
             this.inlineCompletionProvider
         )
         this.lineTracker.ready()
+    }
+
+    // For test purpose, do not use in PROD
+    async runEvalFlow(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        context: vscode.InlineCompletionContext,
+        token: vscode.CancellationToken
+    ) {
+        await this.recommendationService.getAllRecommendations(
+            this.languageClient,
+            document,
+            position,
+            context,
+            token,
+            false,
+            this.documentEventListener
+        )
     }
 
     public getInlineCompletionProvider(): AmazonQInlineCompletionItemProvider {
