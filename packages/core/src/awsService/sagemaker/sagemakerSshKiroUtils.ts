@@ -18,7 +18,7 @@ const logger = getLogger('sagemaker')
 
 const pluginTechnicalName = 'sagemaker-ssh-kiro'
 const pluginDisplayName = 'Amazon SageMaker SSH Plugin for Kiro'
-const minKiroVersion = '0.3.0'
+const minKiroVersion = '0.8.0'
 
 let updatedExtensionToVersion: string
 let vscodeProductJson: any

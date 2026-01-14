@@ -38,7 +38,7 @@ describe('SageMaker SSH Kiro Utils', () => {
 
         // Mock product.json reading
         readFileTextStub = sandbox.stub(fs, 'readFileText')
-        readFileTextStub.resolves(JSON.stringify({ version: '0.3.0' }))
+        readFileTextStub.resolves(JSON.stringify({ version: '0.8.0' }))
 
         // Mock vscode.env.appRoot
         sandbox.stub(vscode.env, 'appRoot').value('/mock/vscode/app')
@@ -105,16 +105,16 @@ describe('SageMaker SSH Kiro Utils', () => {
 
     describe('getKiroVersion', () => {
         it('reads version from product.json', async () => {
-            readFileTextStub.resolves(JSON.stringify({ version: '0.4.0' }))
+            readFileTextStub.resolves(JSON.stringify({ version: '0.8.1' }))
 
             const version = await getKiroVersion()
 
-            assert.strictEqual(version, '0.4.0')
+            assert.strictEqual(version, '0.8.1')
             sinon.assert.calledWith(readFileTextStub, path.join('/mock', 'vscode', 'app', 'product.json'))
         })
 
         it('caches product.json after first read', async () => {
-            readFileTextStub.resolves(JSON.stringify({ version: '0.4.0' }))
+            readFileTextStub.resolves(JSON.stringify({ version: '0.8.1' }))
 
             await getKiroVersion()
             await getKiroVersion()
@@ -136,16 +136,16 @@ describe('SageMaker SSH Kiro Utils', () => {
         })
 
         it('throws error when Kiro version is too old', async () => {
-            readFileTextStub.resolves(JSON.stringify({ version: '0.2.9' }))
+            readFileTextStub.resolves(JSON.stringify({ version: '0.7.9' }))
 
             await assert.rejects(
                 () => ensureSageMakerSshKiroExtension(mockContext),
-                /requires.+version 0\.3\.0 or higher \(current: 0\.2\.9\)/i
+                /requires.+version 0\.8\.0 or higher \(current: 0\.7\.9\)/i
             )
         })
 
         it('succeeds when Kiro version meets minimum requirement', async () => {
-            readFileTextStub.resolves(JSON.stringify({ version: '0.3.0' }))
+            readFileTextStub.resolves(JSON.stringify({ version: '0.8.0' }))
             getExtensionStub
                 .withArgs(VSCODE_EXTENSION_ID.sagemakerSshKiro)
                 .returns({ packageJSON: { version: '0.1.0' } })
@@ -156,7 +156,7 @@ describe('SageMaker SSH Kiro Utils', () => {
         })
 
         it('succeeds when Kiro version exceeds minimum requirement', async () => {
-            readFileTextStub.resolves(JSON.stringify({ version: '0.4.0' }))
+            readFileTextStub.resolves(JSON.stringify({ version: '0.9.0' }))
             getExtensionStub
                 .withArgs(VSCODE_EXTENSION_ID.sagemakerSshKiro)
                 .returns({ packageJSON: { version: '0.1.0' } })
