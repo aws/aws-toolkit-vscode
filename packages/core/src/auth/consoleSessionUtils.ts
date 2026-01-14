@@ -322,10 +322,6 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
             // Don't call useConnection() - let credentials be fetched naturally when needed
             await Auth.instance.updateConnectionState(connectionId, 'valid')
         } catch (error: any) {
-            if (error.name === 'Canceled') {
-                // VSCode will throw Canceled error when reloading window
-                return
-            }
             logger.error('Failed to activate profile: %O', error)
             void vscode.window.showErrorMessage(
                 localize(
