@@ -12,7 +12,6 @@ import Fuzz from 'fuzzball'
 import { extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
-// import { get } from 'http'
 
 type InputEntry = {
     packageName: string
@@ -76,6 +75,7 @@ export class EvaluationProcess {
     }
 
     async run(): Promise<void> {
+        const startTime = Date.now()
         let reportString = 'REPORT\n'
         for (let i = 0; i < this.inputEntries.length; i++) {
             const inputEntry = this.inputEntries[i]
@@ -86,13 +86,15 @@ export class EvaluationProcess {
 
                 // TODO: write to a file
                 this.log.info(`Finished running ${i}th and recieved ${suggetions?.length ?? 0} suggestions`)
-                reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; suggestionCnt=${suggetions?.length ?? 0}\n`
+                reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; suggestionCnt=${suggetions?.length ?? 0}\n`
             } catch (e) {
                 this.log.error(`Error triggering inline ${i}th: ${e}`)
-                reportString += `\t${i}th faled: filename=${inputEntry.filename}; error=${e}\n`
+                reportString += `\t${i}th faled: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; error=${e}\n`
             }
         }
 
+        const endTime = Date.now()
+        this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds}`)
         this.log.info(reportString)
         return
     }
