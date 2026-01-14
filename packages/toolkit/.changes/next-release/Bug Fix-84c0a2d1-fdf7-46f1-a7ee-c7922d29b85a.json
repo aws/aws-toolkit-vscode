@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Console session credentials are not recognized after token refresh or profile overwrite until VS Code is reloaded. A reload prompt now appears after credential updates to ensure the Toolkit properly syncs with the updated AWS CLI login cache."
+}
