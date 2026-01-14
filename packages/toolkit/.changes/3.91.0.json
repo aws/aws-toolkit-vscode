@@ -1,0 +1,30 @@
+{
+	"date": "2025-12-18",
+	"version": "3.91.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CloudFormation: render stack detail views on stack change"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Lambda deploy always creates new version"
+		},
+		{
+			"type": "Feature",
+			"description": "CloudFormation: Show hook invocations in stack events on failure"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel."
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda Remote Invoke panel now supports invoking Lambda durable functions"
+		},
+		{
+			"type": "Feature",
+			"description": "CloudFormation: group stack events by operation id and display in stack events view"
+		}
+	]
+}

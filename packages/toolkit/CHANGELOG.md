@@ -1,3 +1,24 @@
+## 3.92.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
+## 3.91.0 2025-12-18
+
+- **Bug Fix** CloudFormation: render stack detail views on stack change
+- **Bug Fix** Lambda deploy always creates new version
+- **Feature** CloudFormation: Show hook invocations in stack events on failure
+- **Feature** AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel.
+- **Feature** Lambda Remote Invoke panel now supports invoking Lambda durable functions
+- **Feature** CloudFormation: group stack events by operation id and display in stack events view
+
+## 3.90.0 2025-12-09
+
+- **Bug Fix** SageMaker: SSH configuration errors now display line numbers and include an "Open SSH Config" button
+- **Bug Fix** SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty
+- **Bug Fix** CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes
+- **Feature** CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first
+- **Feature** feat(lambda): add support for lmi function resource node
+
 ## 3.89.0 2025-11-25
 
 - Miscellaneous non-user-facing changes

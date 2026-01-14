@@ -17,12 +17,11 @@ import { prepareDevEnvConnection, tryRemoteConnection } from './model'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { AccessDeniedException } from '@amzn/sagemaker-client'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { RemoteSessionError } from '../../shared/remoteSession'
 import {
     ConnectFromRemoteWorkspaceMessage,
-    InstanceTypeError,
     InstanceTypeInsufficientMemory,
     InstanceTypeInsufficientMemoryMessage,
     RemoteAccess,
@@ -304,19 +303,29 @@ export async function openRemoteConnect(
         return
     }
 
-    const spaceName = node.spaceApp.SpaceName!
-    await tryRefreshNode(node)
+    try {
+        const spaceName = node.spaceApp.SpaceName!
+        await tryRefreshNode(node)
 
-    const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
-    const nodeStatus = node.getStatus()
+        const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
+        const nodeStatus = node.getStatus()
 
-    // Route to appropriate handler based on space state
-    if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
-        return handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
-    } else if (nodeStatus === SpaceStatus.STOPPED) {
-        return handleStoppedSpace(node, ctx, spaceName, sageMakerClient)
-    } else if (nodeStatus === SpaceStatus.RUNNING) {
-        return handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
+        // Route to appropriate handler based on space state
+        if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
+            return await handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
+        } else if (nodeStatus === SpaceStatus.STOPPED) {
+            return await handleStoppedSpace(node, ctx, spaceName, sageMakerClient)
+        } else if (nodeStatus === SpaceStatus.RUNNING) {
+            return await handleRunningSpaceWithEnabledAccess(node, ctx, spaceName)
+        }
+    } catch (err: any) {
+        // Suppress errors that don't need additional error messages:
+        // - User cancellations (checked by isUserCancelledError)
+        // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+        if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
+            return
+        }
+        throw err
     }
 }
 
@@ -440,8 +449,10 @@ async function handleRunningSpaceWithDisabledAccess(
                 )
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
-                // Handle user declining instance type upgrade
-                if (err.code === InstanceTypeError) {
+                // Suppress errors that don't need additional error messages:
+                // - User cancellations (checked by isUserCancelledError)
+                // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+                if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
                     return
                 }
                 throw new ToolkitError(`Remote connection failed: ${err.message}`, {
@@ -487,8 +498,10 @@ async function handleStoppedSpace(
             }
         )
     } catch (err: any) {
-        // Handle user declining instance type upgrade
-        if (err.code === InstanceTypeError) {
+        // Suppress errors that don't need additional error messages:
+        // - User cancellations (checked by isUserCancelledError)
+        // - SSH config errors (already shown via modal in prepareDevEnvConnection)
+        if (isUserCancelledError(err) || (err instanceof ToolkitError && err.code === 'SshConfigError')) {
             return
         }
         throw new ToolkitError(`Remote connection failed: ${(err as Error).message}`, {

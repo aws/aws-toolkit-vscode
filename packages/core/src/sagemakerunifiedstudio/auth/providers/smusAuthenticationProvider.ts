@@ -20,6 +20,7 @@ import {
     SmusErrorCodes,
     extractAccountIdFromResourceMetadata,
     convertToToolkitCredentialProvider,
+    isIamDomain,
 } from '../../shared/smusUtils'
 import {
     createSmusProfile,
@@ -212,10 +213,15 @@ export class SmusAuthenticationProvider {
 
                 const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
 
-                // Get DataZoneCustomClientHelper instance and check if domain is IAM mode
+                // Get DataZoneCustomClientHelper instance and fetch domain details to check if it's IAM mode
                 const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(credentialsProvider, region)
-                const isIamMode = await datazoneCustomClientHelper.isIamDomain(domainId)
-                this.logger.debug(`is in IAM mode ${isIamMode}`)
+                const domain = await datazoneCustomClientHelper.getDomain(domainId)
+                const isIamMode = isIamDomain({
+                    domainVersion: domain.domainVersion,
+                    iamSignIns: domain.iamSignIns,
+                    domainId: domainId,
+                })
+                this.logger.debug(`Domain ${domainId} is in IAM mode: ${isIamMode}`)
                 await setSmusIamModeContext(isIamMode)
             }
         } catch (error) {

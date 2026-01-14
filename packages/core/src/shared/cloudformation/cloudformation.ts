@@ -19,6 +19,8 @@ export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-li
 export const LAMBDA_LAYER_TYPE = 'AWS::Lambda::LayerVersion' // eslint-disable-line @typescript-eslint/naming-convention
 export const LAMBDA_URL_TYPE = 'AWS::Lambda::Url' // eslint-disable-line @typescript-eslint/naming-convention
 export const SERVERLESS_LAYER_TYPE = 'AWS::Serverless::LayerVersion' // eslint-disable-line @typescript-eslint/naming-convention
+export const SERVERLESS_CAPACITY_PROVIDER_TYPE = 'AWS::Serverless::CapacityProvider' // eslint-disable-line @typescript-eslint/naming-convention
+export const LAMBDA_CAPACITY_PROVIDER_TYPE = 'AWS::Lambda::CapacityProvider' // eslint-disable-line @typescript-eslint/naming-convention
 
 export const serverlessTableType = 'AWS::Serverless::SimpleTable'
 export const s3BucketType = 'AWS::S3::Bucket'

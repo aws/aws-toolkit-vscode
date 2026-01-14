@@ -3,29 +3,48 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LspVersion, Target } from '../../../shared/lsp/types'
+import { LspVersion, Target, Manifest } from '../../../shared/lsp/types'
+import * as semver from 'semver'
+import { CLibCheck } from './CLibCheck'
+import { toString } from '../utils'
+import { getLogger } from '../../../shared/logger/logger'
 
-export function addWindows(targets: Target[]): Target[] {
+export interface CfnTarget extends Target {
+    nodejs?: string
+}
+export interface CfnLspVersion extends LspVersion {
+    targets: CfnTarget[]
+}
+export interface CfnManifest extends Manifest {
+    versions: CfnLspVersion[]
+}
+
+export function addWindows(targets: CfnTarget[]): CfnTarget[] {
     const win32Targets = targets.filter((target) => {
         return target.platform === 'win32'
     })
 
-    if (win32Targets.length < 1) {
+    const windowsTargets = targets.filter((target) => {
+        return target.platform === 'windows'
+    })
+
+    if (win32Targets.length < 1 || windowsTargets.length > 0) {
         return targets
     }
 
-    const windowsTargets: Target[] = win32Targets.map((target) => {
-        return {
-            ...target,
-            platform: 'windows',
-        }
-    })
-
-    return [...targets, ...windowsTargets]
+    return [
+        ...targets,
+        ...win32Targets.map((target) => {
+            return {
+                ...target,
+                platform: 'windows',
+            }
+        }),
+    ]
 }
 
-export function dedupeAndGetLatestVersions(versions: LspVersion[]): LspVersion[] {
-    const grouped: Record<string, LspVersion[]> = {}
+export function dedupeAndGetLatestVersions(versions: CfnLspVersion[]): CfnLspVersion[] {
+    const grouped: Record<string, CfnLspVersion[]> = {}
 
     // Group by normalized version
     for (const version of versions) {
@@ -36,7 +55,7 @@ export function dedupeAndGetLatestVersions(versions: LspVersion[]): LspVersion[]
         grouped[normalizedV].push(version)
     }
 
-    const groupedAndSorted: Record<string, LspVersion[]> = Object.fromEntries(
+    const groupedAndSorted: Record<string, CfnLspVersion[]> = Object.fromEntries(
         Object.entries(grouped).sort(([v1], [v2]) => {
             return compareVersionsDesc(v1, v2)
         })
@@ -80,4 +99,77 @@ function convertVersionToNumbers(version: string): number[] {
 
 function getMajorMinorPatchVersion(version: string): string {
     return removeWordsFromVersion(version).split('-')[0]
+}
+
+export function extractPlatformAndArch(filename: string): { platform: string; arch: string; nodejs?: string } {
+    const match = filename.match(/^cloudformation-languageserver-(.*)-(.*)-(x64|arm64)(?:-node(\d+))?\.zip$/)
+    if (match === null) {
+        throw new Error(`Could not extract platform from ${filename}`)
+    }
+
+    const platform = match[2]
+    const arch = match[3]
+    const nodejs = match[4]
+
+    if (!platform || !arch) {
+        throw new Error(`Unknown arch and platform ${arch} ${platform}`)
+    }
+
+    return { arch, platform, nodejs }
+}
+
+export function useOldLinuxVersion(): boolean {
+    if (process.platform !== 'linux') {
+        return false
+    }
+
+    if (process.env.SNAP !== undefined) {
+        return true
+    }
+
+    const glibcxx = CLibCheck.getGLibCXXVersions()
+    const maxAvailGLibCXX = glibcxx.maxFound
+    if (!maxAvailGLibCXX) {
+        return false
+    }
+
+    getLogger('awsCfnLsp').info(`Found GLIBCXX ${toString(glibcxx)}`)
+    return semver.lt(maxAvailGLibCXX, '3.4.29')
+}
+
+const LegacyLinuxGLibPlatform = 'linuxglib2.28'
+
+export function mapLegacyLinux(versions: CfnLspVersion[]): CfnLspVersion[] {
+    const remappedVersions: CfnLspVersion[] = []
+
+    for (const version of versions) {
+        const hasLegacyLinux = version.targets.some((t) => t.platform === LegacyLinuxGLibPlatform)
+
+        if (!hasLegacyLinux) {
+            getLogger('awsCfnLsp').warn(`Found no compatible legacy linux builds for ${version.serverVersion}`)
+            remappedVersions.push(version)
+        } else {
+            const newTargets = version.targets
+                .filter((target) => {
+                    return target.platform !== 'linux'
+                })
+                .map((target) => {
+                    if (target.platform !== LegacyLinuxGLibPlatform) {
+                        return target
+                    }
+
+                    return {
+                        ...target,
+                        platform: 'linux',
+                    }
+                })
+
+            remappedVersions.push({
+                ...version,
+                targets: newTargets,
+            })
+        }
+    }
+
+    return remappedVersions
 }

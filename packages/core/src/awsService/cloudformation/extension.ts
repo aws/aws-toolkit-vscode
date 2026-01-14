@@ -83,6 +83,7 @@ import { CfnInitUiInterface } from './cfn-init/cfnInitUiInterface'
 import { CfnInitCliCaller } from './cfn-init/cfnInitCliCaller'
 import { CfnEnvironmentFileSelector } from './ui/cfnEnvironmentFileSelector'
 import { fs } from '../../shared/fs/fs'
+import { ToolkitError } from '../../shared/errors'
 
 let client: LanguageClient
 let clientDisposables: Disposable[] = []
@@ -105,7 +106,7 @@ async function startClient(context: ExtensionContext) {
     if (!(await fs.existsFile(serverFile))) {
         throw new Error(`CloudFormation LSP ${serverFile} not found`)
     }
-    getLogger().info(`Found CloudFormation LSP executable: ${serverFile}`)
+    getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverFile}`)
     const serverRootDir = await serverProvider.serverRootDir()
 
     const envOptions = {
@@ -167,11 +168,10 @@ async function startClient(context: ExtensionContext) {
         },
         errorHandler: {
             error: (error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult => {
-                void window.showErrorMessage(formatMessage(`Error count = ${count}): ${toString(message)}`))
+                void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
                 return { action: ErrorAction.Continue }
             },
             closed: (): CloseHandlerResult => {
-                void window.showWarningMessage(formatMessage(`Server connection closed`))
                 return { action: CloseAction.DoNotRestart }
             },
         },
@@ -331,8 +331,8 @@ export async function activate(context: ExtensionContext) {
 
     try {
         await startClient(context)
-    } catch (err: any) {
-        getLogger().error(`CloudFormation language server failed to start: ${toString(err)}`)
+    } catch (err) {
+        getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'CloudFormation language server failed to start'))
     }
 }
 

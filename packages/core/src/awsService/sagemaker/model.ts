@@ -6,7 +6,7 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable no-restricted-imports */
 import * as vscode from 'vscode'
-import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
+import { getSshConfigPath, sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { SshConfig } from '../../shared/sshConfig'
 import { Result } from '../../shared/utilities/result'
@@ -23,6 +23,7 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
 
 const logger = getLogger('sagemaker')
@@ -162,6 +163,28 @@ export async function prepareDevEnvConnection(
     const config = await sshConfig.ensureValid()
     if (config.isErr()) {
         const err = config.err()
+        logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
+
+        if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
+            const sshConfigPath = getSshConfigPath()
+            const openConfigButton = 'Open SSH Config'
+            const resp = await vscode.window.showErrorMessage(
+                SshConfigErrorMessage(),
+                { modal: true, detail: err.message },
+                openConfigButton
+            )
+
+            if (resp === openConfigButton) {
+                void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+            }
+
+            // Throw error to stop the connection flow
+            // User is already notified via modal above, downstream handlers check the error code
+            throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
+                code: SshConfigError,
+            })
+        }
+
         const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
         logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
         throw err
