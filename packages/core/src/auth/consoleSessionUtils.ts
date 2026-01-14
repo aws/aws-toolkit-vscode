@@ -107,191 +107,176 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
         }
 
         // Execute login with console credentials command
-        try {
-            // At this point, profileName and region are guaranteed to be defined
-            if (!profileName || !region) {
-                throw new ToolkitError('Profile name and region are required')
-            }
+        // At this point, profileName and region are guaranteed to be defined
+        if (!profileName || !region) {
+            throw new ToolkitError('Profile name and region are required')
+        }
 
-            logger.info(
-                `Executing login with console credentials command for profile: ${profileName}, region: ${region}`
-            )
+        logger.info(`Executing login with console credentials command for profile: ${profileName}, region: ${region}`)
 
-            const commandArgs = ['login', '--profile', profileName, '--region', region]
+        const commandArgs = ['login', '--profile', profileName, '--region', region]
 
-            // Track if we've shown the URL dialog and if user cancelled
-            let urlShown = false
-            let loginUrl: string | undefined
-            let userCancelled = false
+        // Track if we've shown the URL dialog and if user cancelled
+        let urlShown = false
+        let loginUrl: string | undefined
+        let userCancelled = false
 
-            let loginProcess: ChildProcess | undefined
+        let loginProcess: ChildProcess | undefined
 
-            // Start the process and handle output with cancellation support
-            const result = await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: localize('AWS.message.progress.consoleLogin', 'Login with console credentials'),
-                    cancellable: true,
-                },
-                async (progress, token) => {
-                    progress.report({
-                        message: localize(
-                            'AWS.message.progress.waitingForBrowser',
-                            'Waiting for browser authentication...'
-                        ),
-                    })
+        // Start the process and handle output with cancellation support
+        const result = await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: localize('AWS.message.progress.consoleLogin', 'Login with console credentials'),
+                cancellable: true,
+            },
+            async (progress, token) => {
+                progress.report({
+                    message: localize(
+                        'AWS.message.progress.waitingForBrowser',
+                        'Waiting for browser authentication...'
+                    ),
+                })
 
-                    loginProcess = new ChildProcess(awsCliPath, commandArgs, {
-                        collect: true,
-                        rejectOnErrorCode: false,
-                        onStdout: (text: string) => {
-                            // Enhance the UX by showing AWS Sign-in service (signin.aws.amazon.com) URL in VS Code when we detect it.
-                            const urlMatch = text.match(/(https:\/\/[^\s]+signin\.aws\.amazon\.com[^\s]+)/i)
-                            if (urlMatch && !urlShown) {
-                                loginUrl = urlMatch[1]
-                                urlShown = true
+                loginProcess = new ChildProcess(awsCliPath, commandArgs, {
+                    collect: true,
+                    rejectOnErrorCode: false,
+                    onStdout: (text: string) => {
+                        // Enhance the UX by showing AWS Sign-in service (signin.aws.amazon.com) URL in VS Code when we detect it.
+                        const urlMatch = text.match(/(https:\/\/[^\s]+signin\.aws\.amazon\.com[^\s]+)/i)
+                        if (urlMatch && !urlShown) {
+                            loginUrl = urlMatch[1]
+                            urlShown = true
 
-                                // Show URL with Copy button (non-blocking)
-                                const copyUrl = localize('AWS.button.copyUrl', 'Copy URL')
-                                void vscode.window
-                                    .showInformationMessage(
-                                        localize(
-                                            'AWS.message.info.consoleLogin.browserAuth',
-                                            'Attempting to open your default browser.\nIf the browser does not open, copy the URL:\n\n{0}',
-                                            loginUrl
-                                        ),
-                                        copyUrl
-                                    )
-                                    .then(async (selection) => {
-                                        if (selection === copyUrl && loginUrl) {
-                                            await vscode.env.clipboard.writeText(loginUrl)
-                                            void vscode.window.showInformationMessage(
-                                                localize(
-                                                    'AWS.message.info.urlCopied',
-                                                    'AWS Sign-in URL copied to clipboard.'
-                                                )
+                            // Show URL with Copy button (non-blocking)
+                            const copyUrl = localize('AWS.button.copyUrl', 'Copy URL')
+                            void vscode.window
+                                .showInformationMessage(
+                                    localize(
+                                        'AWS.message.info.consoleLogin.browserAuth',
+                                        'Attempting to open your default browser.\nIf the browser does not open, copy the URL:\n\n{0}',
+                                        loginUrl
+                                    ),
+                                    copyUrl
+                                )
+                                .then(async (selection) => {
+                                    if (selection === copyUrl && loginUrl) {
+                                        await vscode.env.clipboard.writeText(loginUrl)
+                                        void vscode.window.showInformationMessage(
+                                            localize(
+                                                'AWS.message.info.urlCopied',
+                                                'AWS Sign-in URL copied to clipboard.'
                                             )
-                                        }
-                                    })
-                            }
-                            // Check if profile is already configured with a session
-                            const overwriteMatch = text.match(
-                                /Profile .+ is already configured to use session .+\. Do you want to overwrite it to use .+ instead\?/s
-                            )
-                            if (overwriteMatch) {
-                                const cliMessage = overwriteMatch[0].trim() // Extract the matched string
-                                const overwriteBtn = localize('AWS.generic.overwrite', 'Overwrite')
-                                const cancelBtn = localize('AWS.generic.cancel', 'Cancel')
-                                void vscode.window
-                                    .showInformationMessage(cliMessage, overwriteBtn, cancelBtn)
-                                    .then(async (selection) => {
-                                        if (selection === overwriteBtn && loginProcess) {
-                                            // Send "y" to stdin to proceed with overwrite
-                                            await loginProcess.send('y\n')
-                                        } else if (loginProcess) {
-                                            // User cancelled, stop the process
-                                            await loginProcess.send('n\n')
-                                            userCancelled = true
-                                        }
-                                    })
-                            }
-                        },
-                    })
+                                        )
+                                    }
+                                })
+                        }
+                        // Check if profile is already configured with a session
+                        const overwriteMatch = text.match(
+                            /Profile .+ is already configured to use session .+\. Do you want to overwrite it to use .+ instead\?/s
+                        )
+                        if (overwriteMatch) {
+                            const cliMessage = overwriteMatch[0].trim() // Extract the matched string
+                            const overwriteBtn = localize('AWS.generic.overwrite', 'Overwrite')
+                            const cancelBtn = localize('AWS.generic.cancel', 'Cancel')
+                            void vscode.window
+                                .showInformationMessage(cliMessage, overwriteBtn, cancelBtn)
+                                .then(async (selection) => {
+                                    if (selection === overwriteBtn && loginProcess) {
+                                        // Send "y" to stdin to proceed with overwrite
+                                        await loginProcess.send('y\n')
+                                    } else if (loginProcess) {
+                                        // User cancelled, stop the process
+                                        await loginProcess.send('n\n')
+                                        userCancelled = true
+                                    }
+                                })
+                        }
+                    },
+                })
 
-                    // Handle cancellation
-                    token.onCancellationRequested(() => {
-                        userCancelled = true
-                        loginProcess?.stop()
-                    })
+                // Handle cancellation
+                token.onCancellationRequested(() => {
+                    userCancelled = true
+                    loginProcess?.stop()
+                })
 
-                    return await loginProcess.run()
-                }
+                return await loginProcess.run()
+            }
+        )
+
+        // Check if user cancelled
+        if (userCancelled) {
+            void vscode.window.showInformationMessage(
+                localize('AWS.message.info.consoleLogin.cancelled', 'Login with console credentials was cancelled.')
             )
+            throw new ToolkitError('User cancelled login with console credentials', {
+                cancelled: true,
+            })
+        }
 
-            // Check if user cancelled
-            if (userCancelled) {
-                void vscode.window.showInformationMessage(
-                    localize('AWS.message.info.consoleLogin.cancelled', 'Login with console credentials was cancelled.')
+        if (result.exitCode === 0) {
+            telemetry.aws_consoleLoginCLISuccess.emit({ result: 'Succeeded' })
+            // Show generic success message
+            void vscode.window.showInformationMessage(
+                localize(
+                    'AWS.message.success.consoleLogin',
+                    'Login with console credentials command completed. Profile "{0}" is now available.',
+                    profileName
                 )
-                throw new ToolkitError('User cancelled login with console credentials', {
-                    cancelled: true,
-                })
-            }
-
-            if (result.exitCode === 0) {
-                telemetry.aws_consoleLoginCLISuccess.emit({ result: 'Succeeded' })
-                // Show generic success message
-                void vscode.window.showInformationMessage(
-                    localize(
-                        'AWS.message.success.consoleLogin',
-                        'Login with console credentials command completed. Profile "{0}" is now available.',
-                        profileName
-                    )
-                )
-                logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
-            } else if (result.exitCode === 254) {
-                logger.error(
-                    'AWS Sign-in service returned an error. Exit code %d: %s',
-                    result.exitCode,
-                    result.stdout || result.stderr
-                )
-                void vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.message.error.consoleLogin.signinServiceError',
-                        'Unable to sign in with console credentials in "{0}". Please try another region.',
-                        region
-                    )
-                )
-                throw new ToolkitError('AWS Sign-in service returned an error', {
-                    code: 'SigninServiceError',
-                    details: {
-                        exitCode: result.exitCode,
-                    },
-                })
-            } else if (result.exitCode === 252) {
-                // AWS CLI is outdated, attempt to update
-                try {
-                    await updateAwsCli()
-                    // Retry the login command after successful update
-                    return await authenticateWithConsoleLogin(profileName, region)
-                } catch (err) {
-                    if (CancellationError.isUserCancelled(err)) {
-                        throw new ToolkitError('User cancelled updating AWS CLI', {
-                            cancelled: true,
-                        })
-                    }
-                    logger.error('Failed to update AWS CLI: %O', err)
-                    throw ToolkitError.chain(err, 'AWS CLI update failed')
-                }
-            } else {
-                // Show generic error message
-                void vscode.window.showErrorMessage(
-                    localize('AWS.message.error.consoleLogin.commandFailed', 'Login with console credentials failed.')
-                )
-                logger.error(
-                    'Login with console credentials command failed with exit code %d: %s',
-                    result.exitCode,
-                    result.stdout || result.stderr
-                )
-                throw new ToolkitError('Login with console credentials command failed with exit code', {
-                    code: 'CommandFailed',
-                    details: {
-                        exitCode: result.exitCode,
-                    },
-                })
-            }
-        } catch (error) {
-            logger.error('Error executing login with console credentials command: %O', error)
+            )
+            logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
+        } else if (result.exitCode === 254) {
+            logger.error(
+                'AWS Sign-in service returned an error. Exit code %d: %s',
+                result.exitCode,
+                result.stdout || result.stderr
+            )
             void vscode.window.showErrorMessage(
                 localize(
-                    'AWS.message.error.consoleLogin.executionFailed',
-                    'Failed to execute login with console credentials command: {0}',
-                    error instanceof Error ? error.message : String(error)
+                    'AWS.message.error.consoleLogin.signinServiceError',
+                    'Unable to sign in with console credentials in "{0}". Please try another region.',
+                    region
                 )
             )
-            throw new ToolkitError('Failed to execute login with console credentials command', {
-                code: 'ExecutionFailed',
-                cause: error as Error,
+            throw new ToolkitError('AWS Sign-in service returned an error', {
+                code: 'SigninServiceError',
+                details: {
+                    exitCode: result.exitCode,
+                },
+            })
+        } else if (result.exitCode === 252) {
+            // AWS CLI is outdated, attempt to update
+            try {
+                await updateAwsCli()
+            } catch (err) {
+                if (CancellationError.isUserCancelled(err)) {
+                    throw new ToolkitError('User cancelled updating AWS CLI', {
+                        cancelled: true,
+                    })
+                }
+                logger.error('Failed to update AWS CLI: %O', err)
+                throw ToolkitError.chain(err, 'AWS CLI update failed')
+            }
+            // If we reach here, update attempt completed
+            const message = 'AWS CLI installer has started. After installation completes, try logging in again.'
+            void vscode.window.showWarningMessage(message)
+            throw new ToolkitError(message, { cancelled: true })
+        } else {
+            // Show generic error message
+            void vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.error.consoleLogin.commandFailed',
+                    `Login using console credentials with 'aws login' command failed with exit code ${result.exitCode}`
+                )
+            )
+            logger.error(
+                'Login with console credentials command failed with exit code %d: %s',
+                result.exitCode,
+                result.stdout || result.stderr
+            )
+            throw new ToolkitError(`Login with console credentials command failed with exit code ${result.exitCode}`, {
+                code: 'CommandFailed',
             })
         }
 
@@ -333,9 +318,10 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                     code: 'MissingConnection',
                 })
             }
+
             // Don't call useConnection() - let credentials be fetched naturally when needed
             await Auth.instance.updateConnectionState(connectionId, 'valid')
-        } catch (error) {
+        } catch (error: any) {
             logger.error('Failed to activate profile: %O', error)
             void vscode.window.showErrorMessage(
                 localize(
