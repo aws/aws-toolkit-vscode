@@ -11,6 +11,7 @@ import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 import Fuzz from 'fuzzball'
 import { extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
+import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 // import { get } from 'http'
 
 type InputEntry = {
@@ -144,17 +145,17 @@ export class EvaluationProcess {
 
             // compare with ground truth
             try {
-                const firstSuggestion = this.sessionManager?.getActiveRecommendation()[0]
-                const actualSuggestions = firstSuggestion ? ([firstSuggestion.insertText] as string[]) : []
-                const groundTruth = [inputEntry.groundTruth]
-                const compareResult = computeEditDistances(actualSuggestions, groundTruth)
+                const suggestions = this.sessionManager?.getActiveRecommendation() ?? []
+                const compareResult = computeEditDistances(
+                    suggestions.map((s) => s.insertText as string),
+                    inputEntry.groundTruth
+                )
                 const logstr = `@@response analysis@@
 actual filename: ${inputEntry.filename}
-actual suggestion: ${actualSuggestions}
-ground truth: ${groundTruth}
 editSimAvg: ${compareResult.editSimAvg}
-emRatio: ${compareResult.emRatio}`
-
+emRatio: ${compareResult.emRatio}
+ground truth: ${inputEntry.groundTruth}
+actual suggestion: ${this.formatSuggestionsLog(suggestions)}`
                 this.log.info(logstr)
             } catch (e) {
                 const logstr = `@@response analysis@@
@@ -184,6 +185,18 @@ ground truth: ${inputEntry.groundTruth}`
 
         return files.find((f) => f.fsPath.includes(packageName))
     }
+
+    private formatSuggestionsLog(suggestions: InlineCompletionItemWithReferences[]): string {
+        let s = ''
+
+        for (let i = 0; i < suggestions.length; i++) {
+            const suggestion = suggestions[i].insertText as string
+            s += `---suggestion ${i}---\n`
+            s += `${suggestion}\n`
+        }
+
+        return s
+    }
 }
 
 // TODO: not yet verify calculation aligns with science implementation
@@ -191,8 +204,8 @@ interface DetailedResult {
     taskId: number
     pred: string
     target: string
-    em: number
-    es: number
+    editSimilarity: number
+    exactMatch: boolean
 }
 
 interface ComputeResult {
@@ -201,17 +214,14 @@ interface ComputeResult {
     detailedResults: DetailedResult[]
 }
 
-function calEditSim(references: string[], hypotheses: string[]): number {
-    const total = references.length
+function calEditSim(target: string, truth: string): number {
     let editSim = 0.0
 
-    for (let i = 0; i < references.length; i++) {
-        const pred = hypotheses[i].trim()
-        const gt = references[i].trim()
-        editSim += Fuzz.ratio(pred, gt)
-    }
+    const pred = truth.trim()
+    const gt = target.trim()
+    editSim += Fuzz.ratio(pred, gt)
 
-    return editSim / total
+    return editSim
 }
 
 function tokenizeCode(code: string): string[] {
@@ -230,51 +240,42 @@ function tokenizeCode(code: string): string[] {
     return tokens
 }
 
-function calExactMatch(references: string[], hypotheses: string[]): number {
-    const emScores: number[] = []
-
-    for (let i = 0; i < references.length; i++) {
-        const predTokens = tokenizeCode(hypotheses[i])
-        const goldTokens = tokenizeCode(references[i])
-
-        const isMatch = JSON.stringify(predTokens) === JSON.stringify(goldTokens)
-        emScores.push(isMatch ? 1 : 0)
+function computeEditDistances(suggestions: string[], truth: string): ComputeResult {
+    if (suggestions.length === 0) {
+        throw new Error('empty suggestion')
     }
 
-    return emScores.reduce((a, b) => a + b, 0) / emScores.length
-}
-
-function computeEditDistances(targets: string[], predictions: string[]): ComputeResult {
-    if (targets.length !== predictions.length) {
-        throw new Error('Targets and predictions must have the same length')
+    if (!truth.length) {
+        throw new Error('empty ground truth')
     }
 
     const detailedResults: DetailedResult[] = []
-    let exactMatch = 0
     let editSim = 0
+    let exactMatchCnt = 0
 
-    for (let idx = 0; idx < targets.length; idx++) {
-        const target = targets[idx]
-        const prediction = predictions[idx]
+    for (let idx = 0; idx < suggestions.length; idx++) {
+        const target = suggestions[idx]
 
-        const es = calEditSim([target], [prediction])
-        const em = calExactMatch([target], [prediction])
+        const es = calEditSim(target, truth)
+        const em = target === truth
+        if (em) {
+            exactMatchCnt++
+        }
 
         editSim += es
-        exactMatch += em
 
         detailedResults.push({
             taskId: idx,
-            pred: prediction,
-            target: target,
-            em: em,
-            es: es,
+            pred: target,
+            target: truth,
+            editSimilarity: es,
+            exactMatch: em,
         })
     }
 
-    const totalSamples = targets.length
-    const emRatio = totalSamples > 0 ? Math.round((exactMatch / totalSamples) * 100 * 100) / 100 : -1
+    const totalSamples = suggestions.length
     const editSimAvg = totalSamples > 0 ? Math.round((editSim / totalSamples) * 100) / 100 : -1
+    const emRatio = exactMatchCnt / totalSamples
 
     return {
         emRatio,
