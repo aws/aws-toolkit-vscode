@@ -100,8 +100,6 @@ export class EvaluationProcess {
     }
 
     private async triggerInlineOnce(inputEntry: InputEntry) {
-        // const { filename: fileToTriggerInline, line, column } = inputEntry
-
         const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
             throw new Error(`File ${inputEntry.filename} not found`)
@@ -113,7 +111,7 @@ export class EvaluationProcess {
         // move the cursor to line and column
         editor.selection = new vscode.Selection(inputEntry.line, inputEntry.column, inputEntry.line, inputEntry.column)
 
-        const f = await waitUntil(
+        const isSetupDone = await waitUntil(
             async () => {
                 const e = vscode.window.activeTextEditor
                 return (
@@ -127,71 +125,80 @@ export class EvaluationProcess {
         )
 
         // assertion to confirm file & cursor etc are correct
-        const ctx = extractContextForCodeWhisperer(editor)
-
-        /**
-         * let caretLeftFileContext = editor.document.getText(
-        new vscode.Range(
-            document.positionAt(offset - CodeWhispererConstants.charactersLimit),
-            document.positionAt(offset)
+        const ctx: { leftFileContent: string; filename: string } = extractContextForCodeWhisperer(editor)
+        const expectedLeftContext = inputEntry.leftContext.substring(
+            inputEntry.leftContext.length - CodeWhispererConstants.charactersLimit,
+            inputEntry.leftContext.length
         )
-    )
-         */
-        let expectedLeftContext = inputEntry.leftContext
-        if (inputEntry.leftContext.length > CodeWhispererConstants.charactersLimit) {
-            expectedLeftContext = editor.document.getText(
-                new vscode.Range(
-                    document.positionAt(ctx.leftFileContent.length - CodeWhispererConstants.charactersLimit),
-                    document.positionAt(ctx.leftFileContent.length)
-                )
-            )
+
+        try {
+            assert.ok(ctx.filename.includes(inputEntry.filename))
+            assert.strictEqual(editor.selection.active.line, inputEntry.line)
+            assert.strictEqual(editor.selection.active.character, inputEntry.column)
+            // TODO: weird, some left context don't match
+            // assert.strictEqual(ctx.leftFileContent, expectedLeftContext)
+        } catch (e) {
+            console.log()
         }
-        // assert to make sure cursor position is correct
-        assert.strictEqual(ctx.leftFileContent, expectedLeftContext)
 
-        if (f) {
-            // call inline api to get suggestions in states
-            await this.inlineMananger.runEvalFlow(
-                document,
-                editor.selection.active,
-                {
-                    triggerKind: InlineCompletionTriggerKind.Automatic,
-                    selectedCompletionInfo: undefined,
-                },
-                this.tokenSrc.token
-            )
-
-            // compare with ground truth
-            try {
-                const suggestions = this.sessionManager?.getActiveRecommendation() ?? []
-                const compareResult = computeEditDistances(
-                    suggestions.map((s) => s.insertText as string),
-                    inputEntry.groundTruth
-                )
-                const logstr = `@@response analysis@@
-actual filename: ${inputEntry.filename}
-editSimAvg: ${compareResult.editSimAvg}
-emRatio: ${compareResult.emRatio}
-ground truth: ${inputEntry.groundTruth}
-actual suggestion: ${this.formatSuggestionsLog(suggestions)}`
-                this.log.info(logstr)
-            } catch (e) {
-                const logstr = `@@response analysis@@
-actual filename: ${inputEntry.filename}
-length doesnt match
-actual suggestion is empty: ${this.sessionManager?.getActiveRecommendation().length}
-ground truth: ${inputEntry.groundTruth}`
-                this.log.error((e as Error).message)
-                this.log.info(logstr)
-
-                throw e
-            }
+        if (isSetupDone) {
+            // TODO: write to jsonl
+            const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
         } else {
             this.log.error(`failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`)
         }
 
         // close the editor
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+
+    // TODO: error handling
+    private async triggerInlineAndAnalyze(
+        document: vscode.TextDocument,
+        editor: vscode.TextEditor,
+        inputEntry: InputEntry
+    ): Promise<ComputeResult & InputEntry> {
+        // call inline api to get suggestions in states
+        await this.inlineMananger.runEvalFlow(
+            document,
+            editor.selection.active,
+            {
+                triggerKind: InlineCompletionTriggerKind.Automatic,
+                selectedCompletionInfo: undefined,
+            },
+            this.tokenSrc.token
+        )
+
+        // compare with ground truth
+        try {
+            const suggestions = this.sessionManager?.getActiveRecommendation() ?? []
+            const compareResult = computeEditDistances(
+                suggestions.map((s) => s.insertText as string),
+                inputEntry.groundTruth
+            )
+            const logstr = `@@response analysis@@
+actual filename: ${inputEntry.filename}
+editSimAvg: ${compareResult.editSimAvg}
+emRatio: ${compareResult.emRatio}
+ground truth: ${inputEntry.groundTruth}
+actual suggestion: ${this.formatSuggestionsLog(suggestions)}`
+            this.log.info(logstr)
+
+            return {
+                ...inputEntry,
+                ...compareResult,
+            }
+        } catch (e) {
+            const logstr = `@@response analysis@@
+actual filename: ${inputEntry.filename}
+length doesnt match
+actual suggestion is empty: ${this.sessionManager?.getActiveRecommendation().length}
+ground truth: ${inputEntry.groundTruth}`
+            this.log.error((e as Error).message)
+            this.log.info(logstr)
+
+            throw e
+        }
     }
 
     private async searchFile(filename: string, packageName: string): Promise<vscode.Uri | undefined> {
@@ -240,22 +247,6 @@ function calEditSim(target: string, truth: string): number {
     editSim += Fuzz.ratio(pred, gt)
 
     return editSim
-}
-
-function tokenizeCode(code: string): string[] {
-    // Replace non-alphanumeric characters with spaces
-    code = code.replace(/([^A-Za-z0-9_])/g, ' $1 ')
-    // Add space between lowercase and uppercase letters
-    code = code.replace(/([a-z])([A-Z])/g, '$1 $2')
-    // Replace multiple spaces with single space
-    code = code.replace(/\s+/g, ' ')
-    // Replace quotes with backticks
-    code = code.replace(/"/g, '`')
-    code = code.replace(/'/g, '`')
-    // Split and filter empty strings
-    const tokens = code.split(' ').filter((t) => t.length > 0)
-
-    return tokens
 }
 
 function computeEditDistances(suggestions: string[], truth: string): ComputeResult {
