@@ -101,7 +101,7 @@ export async function deeplinkConnect(
     appType?: string,
     workspaceName?: string,
     namespace?: string,
-    eksClusterArn?: string,
+    clusterArn?: string,
     isSMUS: boolean = false
 ) {
     getLogger().debug(
@@ -119,11 +119,11 @@ export async function deeplinkConnect(
         appType: ${appType}, 
         workspaceName: ${workspaceName}, 
         namespace: ${namespace}, 
-        eksClusterArn: ${eksClusterArn}`
+        clusterArn: ${clusterArn}`
     )
 
     getLogger().info(
-        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, eksClusterArn: ${eksClusterArn}`
+        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, clusterArn: ${clusterArn}`
     )
 
     if (isRemoteWorkspace()) {
@@ -133,8 +133,8 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (!domain && eksClusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseArn(eksClusterArn)
+        if (!domain && clusterArn && workspaceName && namespace) {
+            const { accountId, region, clusterName } = parseArn(clusterArn)
             connectionType = 'sm_hp'
             session = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             if (!isValidSshHostname(session)) {
@@ -188,13 +188,12 @@ export async function deeplinkConnect(
 function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
     try {
         const parsed = parse(arn)
-        if (parsed.service !== 'eks') {
-            throw new Error('Invalid EKS cluster ARN')
+        if (!parsed.service) {
+            throw new Error('Invalid service')
         }
-        // EKS cluster ARN format: arn:aws:eks:region:account:cluster/cluster-name
         const clusterName = parsed.resource.split('/')[1]
         if (!clusterName) {
-            throw new Error('Invalid EKS cluster ARN')
+            throw new Error('Invalid cluster name')
         }
         return {
             accountId: parsed.accountId,
@@ -202,7 +201,7 @@ function parseArn(arn: string): { accountId: string; region: string; clusterName
             region: parsed.region,
         }
     } catch (error) {
-        throw new Error('Invalid EKS cluster ARN')
+        throw new Error('Invalid cluster ARN')
     }
 }
 
@@ -216,20 +215,23 @@ function createValidSshSession(
     region: string,
     accountId: string
 ): string {
-    const sanitize = (str: string): string =>
+    const sanitize = (str: string, maxLength: number): string =>
         str
-            .replace(/[^a-zA-Z0-9.-]/g, '-')
+            .toLowerCase()
+            .replace(/[^a-z0-9.-]/g, '')
             .replace(/^-+|-+$/g, '')
-            .substring(0, 50)
+            .substring(0, maxLength)
 
-    const components = [workspaceName, namespace, clusterName, region, accountId]
-        .map(sanitize)
-        .filter((c) => c.length > 0)
+    const components = [
+        sanitize(workspaceName, 63), // K8s limit
+        sanitize(namespace, 63), // K8s limit
+        sanitize(clusterName, 63), // HP cluster limit
+        sanitize(region, 16), // Longest AWS region limit
+        sanitize(accountId, 12), // Fixed
+    ].filter((c) => c.length > 0)
+    // Total: 63 + 63 + 63 + 16 + 12 + 4 separators + 3 chars for hostname header = 224 < 253 (max limit)
 
-    const session = components
-        .join('_')
-        .substring(0, 253)
-        .replace(/^-+|-+$/g, '')
+    const session = components.join('_').substring(0, 224)
     return session
 }
 
@@ -237,7 +239,7 @@ function createValidSshSession(
  * Validates if a string meets SSH hostname naming convention
  */
 function isValidSshHostname(label: string): boolean {
-    return /^[a-zA-Z0-9]([a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$/.test(label)
+    return /^[a-z0-9]([a-z0-9.-_]{0,222}[a-z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
