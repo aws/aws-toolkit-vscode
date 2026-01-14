@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "AWS CLI update process could enter an infinite retry loop when outdated CLI is detected during console login. The Toolkit now attempts the update once and prompts users to manually reload and retry, preventing continuous failed authentication attempts."
+}
