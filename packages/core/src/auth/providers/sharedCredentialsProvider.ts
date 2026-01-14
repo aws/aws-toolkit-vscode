@@ -395,18 +395,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private makeConsoleSessionCredentialsProvider(): AWS.CredentialProvider {
+    private makeConsoleSessionCredentialsProvider() {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
-
+        const baseProvider = fromLoginCredentials({
+            profile: this.profileName,
+            clientConfig: {
+                region: defaultRegion,
+            },
+        })
         return async () => {
             try {
-                const provider = fromLoginCredentials({
-                    profile: this.profileName,
-                    clientConfig: {
-                        region: defaultRegion,
-                    },
-                })
-                return await provider()
+                return await baseProvider()
             } catch (error) {
                 getLogger().error(
                     'Console login authentication failed for profile %s in region %s: %O',
@@ -436,12 +435,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     }
 
                     getLogger().info('Re-authenticating using console credentials for profile %s', this.profileName)
+                    // Execute the console login command with the existing profile and region
                     try {
                         await vscode.commands.executeCommand(
                             'aws.toolkit.auth.consoleLogin',
                             this.profileName,
-                            defaultRegion,
-                            true
+                            defaultRegion
                         )
                     } catch (reAuthError) {
                         throw ToolkitError.chain(
@@ -450,24 +449,15 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                             { code: 'LoginSessionReAuthError' }
                         )
                     }
-                }
 
-                if (error instanceof Error && error.message.includes('does not contain login_session.')) {
-                    const reloadResponse = await vscode.window.showInformationMessage(
-                        `Profile "${this.profileName}" credentials need a VS Code reload to take effect. Reload now?`,
-                        'Reload',
-                        'Later'
+                    getLogger().info(
+                        'Authentication completed for profile %s, refreshing credentials...',
+                        this.profileName
                     )
-                    if (reloadResponse === 'Reload') {
-                        await vscode.commands.executeCommand('workbench.action.reloadWindow')
-                    } else {
-                        // User clicked 'Later' or dismissed the dialog
-                        throw new ToolkitError('User declined reload profile, missing login_session in cache', {
-                            cancelled: true,
-                        })
-                    }
-                }
 
+                    // Use the same provider instance but get fresh credentials
+                    return await baseProvider()
+                }
                 throw ToolkitError.chain(error, `Failed to get console credentials`, {
                     code: 'FromLoginCredentialProviderError',
                 })

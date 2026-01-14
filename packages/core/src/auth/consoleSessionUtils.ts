@@ -26,13 +26,8 @@ import { createRegionPrompter } from '../shared/ui/common/region'
  * @param profileName Optional profile name. If not provided, user will be prompted.
  * @param region Optional AWS region. If not provided, user will be prompted.
  */
-export async function authenticateWithConsoleLogin(
-    profileName?: string,
-    region?: string,
-    isRefreshToken = false
-): Promise<void> {
+export async function authenticateWithConsoleLogin(profileName?: string, region?: string): Promise<void> {
     const logger = getLogger()
-    logger.info(`authenticateWithConsoleLogin called with isRefreshToken: ${isRefreshToken}`)
 
     // Prompt for profile name if not provided
     if (!profileName) {
@@ -111,7 +106,6 @@ export async function authenticateWithConsoleLogin(
             })
         }
 
-        let isProfileOverwritten = false
         // Execute login with console credentials command
         // At this point, profileName and region are guaranteed to be defined
         if (!profileName || !region) {
@@ -190,7 +184,6 @@ export async function authenticateWithConsoleLogin(
                                 .then(async (selection) => {
                                     if (selection === overwriteBtn && loginProcess) {
                                         // Send "y" to stdin to proceed with overwrite
-                                        isProfileOverwritten = true
                                         await loginProcess.send('y\n')
                                     } else if (loginProcess) {
                                         // User cancelled, stop the process
@@ -265,8 +258,8 @@ export async function authenticateWithConsoleLogin(
                 logger.error('Failed to update AWS CLI: %O', err)
                 throw ToolkitError.chain(err, 'AWS CLI update failed')
             }
-            // If we reach here, update attempt completed (but may need restart)
-            const message = 'AWS CLI update attempted. Please restart VS Code and retry your login.'
+            // If we reach here, update attempt completed
+            const message = 'AWS CLI installer has started. After installation completes, try logging in again.'
             void vscode.window.showWarningMessage(message)
             throw new ToolkitError(message, { cancelled: true })
         } else {
@@ -328,34 +321,6 @@ export async function authenticateWithConsoleLogin(
 
             // Don't call useConnection() - let credentials be fetched naturally when needed
             await Auth.instance.updateConnectionState(connectionId, 'valid')
-
-            // After re-authenticating a console session profile, a window reload is necessary
-            // because AWS Toolkit doesn't have file watchers for console login cache files (~/.aws/login/cache/*.json)
-            // or config files. The reload forces the Toolkit to re-sync profiles from VS Code's persisted extension state
-            // and re-read the AWS CLI login cache, ensuring the newly refreshed credentials are properly recognized
-            // and loaded into the active session.
-            if (connectionId && (isProfileOverwritten || isRefreshToken)) {
-                logger.info(
-                    `Reloading window to sync with updated credentials cache using connection with ID: ${connectionId}`
-                )
-                const reloadResponse = await vscode.window.showInformationMessage(
-                    `Credentials for profile "${profileName}" updated. Reload window to re-authenticate?`,
-                    'Reload',
-                    'Later'
-                )
-                if (reloadResponse === 'Reload') {
-                    await vscode.commands.executeCommand('workbench.action.reloadWindow')
-                } else {
-                    logger.info(
-                        'Unable to re-sync credentials for profile %s. User cancelled reload window.',
-                        profileName
-                    )
-                    throw new ToolkitError('Credentials re-authenticated but user cancelled reload window.', {
-                        code: 'LoginSessionReloadCancelled',
-                        cancelled: true,
-                    })
-                }
-            }
         } catch (error: any) {
             if (error.name === 'Canceled') {
                 // VSCode will throw Canceled error when reloading window

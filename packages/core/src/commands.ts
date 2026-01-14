@@ -146,14 +146,11 @@ export function registerCommands(context: vscode.ExtensionContext) {
 
     if (!isWeb()) {
         context.subscriptions.push(
-            Commands.register(
-                'aws.toolkit.auth.consoleLogin',
-                async (profileName?: string, region?: string, isRefreshToken = false) => {
-                    // Dynamically import prevent the Node.js modules from being included in the web extension bundle
-                    const { authenticateWithConsoleLogin } = await import('./auth/consoleSessionUtils.js')
-                    return await authenticateWithConsoleLogin(profileName, region, isRefreshToken)
-                }
-            )
+            Commands.register('aws.toolkit.auth.consoleLogin', async (profileName?: string, region?: string) => {
+                // Dynamically import prevent the Node.js modules from being included in the web extension bundle
+                const { authenticateWithConsoleLogin } = await import('./auth/consoleSessionUtils.js')
+                return await authenticateWithConsoleLogin(profileName, region)
+            })
         )
     }
 
