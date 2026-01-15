@@ -47,7 +47,20 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             return
         }
 
-        const region = parse(connectionInfo.clusterArn).region
+        // Parse region from ARN - handle both standard and cluster ARN formats
+        let region: string
+        try {
+            region = parse(connectionInfo.clusterArn).region
+        } catch (error) {
+            // Fallback: extract region from ARN string directly
+            // ARN format: arn:aws:sagemaker:region:account:cluster/cluster-id
+            const arnParts = connectionInfo.clusterArn.split(':')
+            if (arnParts.length >= 4) {
+                region = arnParts[3]
+            } else {
+                throw new Error(`Invalid SageMaker ARN format: "${connectionInfo.clusterArn}"`)
+            }
+        }
         const hyperpodCluster: HyperpodCluster = {
             clusterName: connectionInfo.clusterName,
             clusterArn: connectionInfo.clusterArn,
