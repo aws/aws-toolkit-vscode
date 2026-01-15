@@ -79,6 +79,37 @@ export class EvaluationProcess {
         this.inputEntries = this.processRawinput(this.rawInput)
     }
 
+    async run(): Promise<void> {
+        const startTime = Date.now()
+        let reportString = 'REPORT\n'
+        const simulationResult: (ComputeResultSuccess | ComupteResultFailure)[] = []
+
+        // iterate through all specified trigger point and invoke inline api
+        for (let i = 0; i < this.inputEntries.length; i++) {
+            this.activeIndex = i
+            const inputEntry = this.inputEntries[i]
+            try {
+                const r = await this.triggerInlineOnce(inputEntry)
+                simulationResult.push(r)
+                const suggetions = this.sessionManager?.getActiveSession()?.suggestions
+                reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; suggestionCnt=${suggetions?.length ?? 0}\n`
+            } catch (e) {
+                reportString += `\t${i}th faled: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; error=${e}\n`
+            }
+        }
+
+        assert.strictEqual(simulationResult.length, this.length)
+
+        const endTime = Date.now()
+        this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds} for ${this.length} inputs}`)
+        this.log.info(reportString)
+
+        // for ui purpose only (statubar should be reset as simulation task is done)
+        this.activeIndex = undefined
+        await this.statusBar.refreshStatusBar()
+        return
+    }
+
     /**
      * @param rawInput JSONL file
      * @returns InputEntry[]
@@ -112,37 +143,6 @@ export class EvaluationProcess {
 
         this.log.info(`Found ${lines.length} input entries for simulation`)
         return inputEntries
-    }
-
-    async run(): Promise<void> {
-        const startTime = Date.now()
-        let reportString = 'REPORT\n'
-        const simulationResult: (ComputeResultSuccess | ComupteResultFailure)[] = []
-
-        // iterate through all specified trigger point and invoke inline api
-        for (let i = 0; i < this.inputEntries.length; i++) {
-            this.activeIndex = i
-            const inputEntry = this.inputEntries[i]
-            try {
-                const r = await this.triggerInlineOnce(inputEntry)
-                simulationResult.push(r)
-                const suggetions = this.sessionManager?.getActiveSession()?.suggestions
-                reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; suggestionCnt=${suggetions?.length ?? 0}\n`
-            } catch (e) {
-                reportString += `\t${i}th faled: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; error=${e}\n`
-            }
-        }
-
-        assert.strictEqual(simulationResult.length, this.length)
-
-        const endTime = Date.now()
-        this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds} for ${this.length} inputs}`)
-        this.log.info(reportString)
-
-        // for ui purpose only (statubar should be reset as simulation task is done)
-        this.activeIndex = undefined
-        await this.statusBar.refreshStatusBar()
-        return
     }
 
     private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResultSuccess | ComupteResultFailure> {
