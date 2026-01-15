@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as os from 'os'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { SessionManager } from '../sessionManager'
@@ -45,6 +47,9 @@ type InputEntry = {
     line: number
     column: number
 }
+
+const homeDir = os.homedir()
+const simulationOutputFolderPath = path.join(homeDir, 'desktop')
 
 export class EvaluationProcess {
     private rawInput: string = ''
@@ -100,6 +105,9 @@ export class EvaluationProcess {
 
         assert.strictEqual(simulationResult.length, this.length)
 
+        // write into a file
+        this.processFinalResult(simulationResult)
+
         const endTime = Date.now()
         this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds} for ${this.length} inputs}`)
         this.log.info(reportString)
@@ -108,6 +116,30 @@ export class EvaluationProcess {
         this.activeIndex = undefined
         await this.statusBar.refreshStatusBar()
         return
+    }
+
+    private processFinalResult(result: (ComputeResultSuccess | ComupteResultFailure)[]) {
+        let sucessCnt = 0
+        let failedCnt = 0
+        for (const entry of result) {
+            if ('failureReason' in entry) {
+                failedCnt++
+                continue
+            }
+            sucessCnt++
+        }
+
+        // write into a file in jsonl format
+        try {
+            const output = path.join(simulationOutputFolderPath, `simulation_result_${this.length}.jsonl`)
+            const fd = nodefs.openSync(output, 'w')
+            for (const entry of result) {
+                nodefs.writeSync(fd, JSON.stringify(entry) + '\n')
+            }
+            nodefs.closeSync(fd)
+        } catch (e) {
+            this.log.error(`Error writing to file: ${e}`)
+        }
     }
 
     /**
