@@ -22,11 +22,10 @@ import { InlineCompletionItemWithReferences } from '@aws/language-server-runtime
 type ComputeResultSuccess = EditDistanceResult & InputEntry
 type ComupteResultFailure = { failureReason: string } & InputEntry
 
-// TODO: not yet verify calculation aligns with science implementation
 interface DetailedResult {
-    taskId: number
-    pred: string
-    target: string
+    suggestionIndex: number
+    suggestion: string
+    groundTruth: string
     editSimilarity: number
     exactMatch: boolean
 }
@@ -180,9 +179,10 @@ export class EvaluationProcess {
     private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResultSuccess | ComupteResultFailure> {
         const uri = await this.findFileInWorkspace(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
-            throw new Error(`File ${inputEntry.filename} not found`)
+            return { failureReason: `File ${inputEntry.filename} not found`, ...inputEntry }
         }
 
+        // setup
         // open the file in vscode editor
         const document = await vscode.workspace.openTextDocument(uri)
         const editor = await vscode.window.showTextDocument(document)
@@ -219,11 +219,12 @@ export class EvaluationProcess {
             return { failureReason: (e as Error).message, ...inputEntry }
         }
 
+        // once setup is done, trigger inline
         if (isSetupDone) {
             try {
                 // TODO: should need a jitter for throttling?
                 const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
-                // close the editor, we only close it here because we want files which failed keep opening
+                // close the editor, we only close it here because we want files which failed open so that we can manually examine
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
                 return res
             } catch (e) {
@@ -331,10 +332,10 @@ function computeEditDistances(suggestions: string[], truth: string): EditDistanc
     let exactMatchCnt = 0
 
     for (let idx = 0; idx < suggestions.length; idx++) {
-        const target = suggestions[idx]
+        const suggestion = suggestions[idx]
 
-        const es = calEditSim(target, truth)
-        const em = target === truth
+        const es = calEditSim(suggestion, truth)
+        const em = suggestion === truth
         if (em) {
             exactMatchCnt++
         }
@@ -342,9 +343,9 @@ function computeEditDistances(suggestions: string[], truth: string): EditDistanc
         editSim += es
 
         detailedResults.push({
-            taskId: idx,
-            pred: target,
-            target: truth,
+            suggestionIndex: idx,
+            suggestion: suggestion,
+            groundTruth: truth,
             editSimilarity: es,
             exactMatch: em,
         })
