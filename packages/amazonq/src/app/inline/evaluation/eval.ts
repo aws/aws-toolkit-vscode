@@ -178,7 +178,7 @@ export class EvaluationProcess {
     }
 
     private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResultSuccess | ComupteResultFailure> {
-        const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
+        const uri = await this.findFileInWorkspace(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
             throw new Error(`File ${inputEntry.filename} not found`)
         }
@@ -284,7 +284,7 @@ ground truth: ${inputEntry.groundTruth}`
         }
     }
 
-    private async searchFile(filename: string, packageName: string): Promise<vscode.Uri | undefined> {
+    private async findFileInWorkspace(filename: string, packageName: string): Promise<vscode.Uri | undefined> {
         const files = await vscode.workspace.findFiles(`**/${filename}`)
         if (files.length === 0) {
             this.log.error(`file ${filename} not found`)
