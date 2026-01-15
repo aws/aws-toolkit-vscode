@@ -14,6 +14,8 @@ export interface HyperpodSpaceMapping {
     eksClusterName: string
     endpoint?: string
     certificateAuthorityData?: string
+    region?: string
+    accountId?: string
 }
 
 export interface HyperpodMappings {
@@ -71,10 +73,12 @@ export async function storeHyperpodConnection(
     clusterName: string,
     eksClusterName: string,
     endpoint?: string,
-    certificateAuthorityData?: string
+    certificateAuthorityData?: string,
+    region?: string
 ): Promise<void> {
     const mapping = await readHyperpodMapping()
     const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    const accountId = clusterArn.split(':')[4]
     mapping[connectionKey] = {
         namespace,
         clusterArn,
@@ -82,6 +86,8 @@ export async function storeHyperpodConnection(
         eksClusterName,
         endpoint,
         certificateAuthorityData,
+        region,
+        accountId,
     }
     await writeHyperpodMapping(mapping)
 }

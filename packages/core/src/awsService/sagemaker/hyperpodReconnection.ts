@@ -8,6 +8,7 @@ import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import { join } from 'path'
 import os from 'os'
 import { clearSSHHostKey } from './hyperpodUtils'
+import { getHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 export class HyperpodReconnectionManager {
     private static instance: HyperpodReconnectionManager
@@ -48,7 +49,8 @@ export class HyperpodReconnectionManager {
 
     async refreshCredentials(connectionKey: string): Promise<void> {
         try {
-            await clearSSHHostKey(connectionKey)
+            const connectionMapping = await getHyperpodConnection(connectionKey)
+            await clearSSHHostKey(connectionKey, connectionMapping?.region, connectionMapping?.accountId)
 
             const serverInfoPath = join(
                 os.homedir(),

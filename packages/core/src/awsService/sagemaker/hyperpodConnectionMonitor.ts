@@ -6,6 +6,7 @@
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { getLogger } from '../../shared/logger/logger'
 import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { getHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 interface ConnectionState {
     connectionKey: string
@@ -74,10 +75,15 @@ export class HyperpodConnectionMonitor {
     private async checkActiveProcesses(connectionKey: string): Promise<boolean> {
         try {
             const keyParts = connectionKey.split(':')
-            const hostPattern =
-                keyParts.length === 3
-                    ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
-                    : `hp_${connectionKey.replace(/:/g, '_')}`
+            const connectionMapping = await getHyperpodConnection(connectionKey)
+
+            let hostPattern: string
+            if (keyParts.length === 3 && connectionMapping?.region && connectionMapping?.accountId) {
+                // New format: hp_<cluster_name>_<namespace>_<space_name>_<region>_<account_id>
+                hostPattern = `hp_${keyParts[0]}_${keyParts[1]}_${keyParts[2]}_${connectionMapping.region}_${connectionMapping.accountId}`
+            } else {
+                hostPattern = `hp_${connectionKey.replace(/:/g, '_')}`
+            }
 
             const sshCheck = new ChildProcess('pgrep', ['-f', `ssh.*${hostPattern}`])
             const ssmCheck = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])

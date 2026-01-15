@@ -109,14 +109,14 @@ _main() {
     fi
 
     # Extract devspace name, cluster name, and namespace from hostname
-    # New format: hp_{cluster}__{namespace}__{devspace}
+    # New format: hp_{cluster_name}_{namespace}_{space_name}_{region}_{account_id}
     # Old format: hp_{devspace} (for backward compatibility)
-    if [[ "$1" =~ ^hp_(.+)__(.+)__(.+)$ ]]; then
-        # New format with cluster__namespace__devspace
+    if [[ "$1" =~ ^hp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+        # New format: cluster_namespace_space_region_account
         CLUSTER_NAME="${BASH_REMATCH[1]}"
         NAMESPACE="${BASH_REMATCH[2]}"
         DEVSPACE_NAME="${BASH_REMATCH[3]}"
-        # Construct the expected connection key
+        # Construct the expected connection key (cluster:namespace:devspace)
         CONNECTION_KEY="${CLUSTER_NAME}:${NAMESPACE}:${DEVSPACE_NAME}"
     else
         # Old format or fallback - extract devspace name only

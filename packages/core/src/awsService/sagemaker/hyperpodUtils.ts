@@ -6,13 +6,16 @@
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { getLogger } from '../../shared/logger/logger'
 
-export async function clearSSHHostKey(connectionKey: string): Promise<void> {
+export async function clearSSHHostKey(connectionKey: string, region?: string, accountId?: string): Promise<void> {
     try {
         const keyParts = connectionKey.split(':')
-        const hostKey =
-            keyParts.length === 3
-                ? `hp_${keyParts[0]}__${keyParts[1]}__${keyParts[2]}`
-                : `hp_${connectionKey.replace(/:/g, '_')}`
+        let hostKey: string
+        if (keyParts.length === 3 && region && accountId) {
+            // New format: hp_<cluster_name>_<namespace>_<space_name>_<region>_<account_id>
+            hostKey = `hp_${keyParts[0]}_${keyParts[1]}_${keyParts[2]}_${region}_${accountId}`
+        } else {
+            hostKey = `hp_${connectionKey.replace(/:/g, '_')}`
+        }
 
         const sshKeygen = new ChildProcess('ssh-keygen', ['-R', hostKey])
         await sshKeygen.run()
