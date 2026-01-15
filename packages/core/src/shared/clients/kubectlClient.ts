@@ -36,12 +36,18 @@ export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
     private k8sApi: k8s.CustomObjectsApi
     private hyperpodCluster: HyperpodCluster
+    private eksCluster: Cluster
 
     public constructor(eksCluster: Cluster, hyperpodCluster: HyperpodCluster) {
+        this.eksCluster = eksCluster
         this.kubeConfig = new k8s.KubeConfig()
         this.hyperpodCluster = hyperpodCluster
         this.loadKubeConfig(eksCluster, hyperpodCluster)
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
+    }
+
+    getEksCluster(): Cluster {
+        return this.eksCluster
     }
 
     async getSpacesForCluster(eksCluster: Cluster): Promise<HyperpodDevSpace[]> {
