@@ -30,6 +30,7 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
+import { parse } from '@aws-sdk/util-arn-parser'
 
 const localize = nls.loadMessageBundle()
 
@@ -99,7 +100,7 @@ export async function deeplinkConnect(
     appType?: string,
     workspaceName?: string,
     namespace?: string,
-    eksClusterArn?: string,
+    clusterArn?: string,
     isSMUS: boolean = false
 ) {
     getLogger().debug(
@@ -117,11 +118,11 @@ export async function deeplinkConnect(
         appType: ${appType}, 
         workspaceName: ${workspaceName}, 
         namespace: ${namespace}, 
-        eksClusterArn: ${eksClusterArn}`
+        clusterArn: ${clusterArn}`
     )
 
     getLogger().info(
-        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, eksClusterArn: ${eksClusterArn}`
+        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, clusterArn: ${clusterArn}`
     )
 
     if (isRemoteWorkspace()) {
@@ -131,8 +132,13 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (domain === '') {
+        if (!domain && clusterArn && workspaceName && namespace) {
+            const { accountId, region, clusterName } = parseArn(clusterArn)
             connectionType = 'sm_hp'
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            session = isValidSshHostname(proposedSession)
+                ? proposedSession
+                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
@@ -176,6 +182,63 @@ export async function deeplinkConnect(
             throw err
         }
     }
+}
+
+function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
+    try {
+        const parsed = parse(arn)
+        if (!parsed.service) {
+            throw new Error('Invalid service')
+        }
+        const clusterName = parsed.resource.split('/')[1]
+        if (!clusterName) {
+            throw new Error('Invalid cluster name')
+        }
+        return {
+            accountId: parsed.accountId,
+            clusterName,
+            region: parsed.region,
+        }
+    } catch (error) {
+        throw new Error('Invalid cluster ARN')
+    }
+}
+
+/**
+ * Validates and sanitizes session names for SSH hostname compliance
+ */
+function createValidSshSession(
+    workspaceName: string,
+    namespace: string,
+    clusterName: string,
+    region: string,
+    accountId: string
+): string {
+    const sanitize = (str: string, maxLength: number): string =>
+        str
+            .toLowerCase()
+            .replace(/[^a-z0-9.-]/g, '')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, maxLength)
+
+    const components = [
+        sanitize(workspaceName, 63), // K8s limit
+        sanitize(namespace, 63), // K8s limit
+        sanitize(clusterName, 63), // HP cluster limit
+        sanitize(region, 16), // Longest AWS region limit
+        sanitize(accountId, 12), // Fixed
+    ].filter((c) => c.length > 0)
+    // Total: 63 + 63 + 63 + 16 + 12 + 4 separators + 3 chars for hostname header = 224 < 253 (max limit)
+
+    const session = components.join('_').substring(0, 224)
+    return session
+}
+
+/**
+ * Validates if a string meets SSH hostname naming convention
+ */
+function isValidSshHostname(label: string): boolean {
+    return /^[a-z0-9]([a-z0-9.-_]{0,222}[a-z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
