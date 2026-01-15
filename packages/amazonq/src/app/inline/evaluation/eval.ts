@@ -17,6 +17,23 @@ import {
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
+type ComputeResult = EditDistanceResult & InputEntry
+
+// TODO: not yet verify calculation aligns with science implementation
+interface DetailedResult {
+    taskId: number
+    pred: string
+    target: string
+    editSimilarity: number
+    exactMatch: boolean
+}
+
+interface EditDistanceResult {
+    emRatio: number
+    editSimAvg: number
+    detailedResults: DetailedResult[]
+}
+
 type InputEntry = {
     packageName: string
     filename: string
@@ -99,11 +116,13 @@ export class EvaluationProcess {
     async run(): Promise<void> {
         const startTime = Date.now()
         let reportString = 'REPORT\n'
+        const simulationResult: (ComputeResult | undefined)[] = []
         for (let i = 0; i < this.inputEntries.length; i++) {
             this.activeIndex = i
             const inputEntry = this.inputEntries[i]
             try {
-                await this.triggerInlineOnce(inputEntry)
+                const r = await this.triggerInlineOnce(inputEntry)
+                simulationResult.push(r)
                 const suggetions = this.sessionManager?.getActiveSession()?.suggestions
                 // use edit distance to compare inputEntry.groundTruth vs. suggestions[0]
 
@@ -116,6 +135,12 @@ export class EvaluationProcess {
             }
         }
 
+        try {
+            assert.strictEqual(simulationResult.length, this.length)
+        } catch (e) {
+            console.log()
+        }
+
         const endTime = Date.now()
         this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds}`)
         this.log.info(reportString)
@@ -124,7 +149,7 @@ export class EvaluationProcess {
         return
     }
 
-    private async triggerInlineOnce(inputEntry: InputEntry) {
+    private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResult | undefined> {
         const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
             throw new Error(`File ${inputEntry.filename} not found`)
@@ -167,14 +192,19 @@ export class EvaluationProcess {
         }
 
         if (isSetupDone) {
-            // TODO: write to jsonl
-            const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
+            try {
+                // TODO: write to jsonl
+                const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
+                // close the editor, we only close it here because we want files which failed keep opening
+                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                return res
+            } catch (e) {
+                return undefined
+            }
         } else {
             this.log.error(`failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`)
+            return undefined
         }
-
-        // close the editor
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
     // TODO: error handling
@@ -182,7 +212,7 @@ export class EvaluationProcess {
         document: vscode.TextDocument,
         editor: vscode.TextEditor,
         inputEntry: InputEntry
-    ): Promise<EditDistanceResult & InputEntry> {
+    ): Promise<ComputeResult> {
         // call inline api to get suggestions in states
         await this.inlineMananger.runEvalFlow(
             document,
@@ -247,21 +277,6 @@ ground truth: ${inputEntry.groundTruth}`
 
         return s
     }
-}
-
-// TODO: not yet verify calculation aligns with science implementation
-interface DetailedResult {
-    taskId: number
-    pred: string
-    target: string
-    editSimilarity: number
-    exactMatch: boolean
-}
-
-interface EditDistanceResult {
-    emRatio: number
-    editSimAvg: number
-    detailedResults: DetailedResult[]
 }
 
 function calEditSim(target: string, truth: string): number {
