@@ -11,20 +11,24 @@ import { sleep } from './generalUtils'
  * @throws Error if tabs could not be closed
  */
 export async function closeAllTabs(webview: WebviewView): Promise<void> {
-    const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
+    try {
+        const closeButtons = await webview.findWebElements(By.css('.mynah-tabs-close-button'))
 
-    for (const button of closeButtons) {
-        await button.click()
-        await sleep(500)
-    }
+        for (const button of closeButtons) {
+            await button.click()
+            await sleep(500)
+        }
 
-    const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
-    const allClosed =
-        tabsContainer.length === 1 ||
-        (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0
+        const tabsContainer = await webview.findWebElements(By.css('.mynah-tabs-container'))
+        const allClosed =
+            tabsContainer.length === 1 ||
+            (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0
 
-    if (!allClosed) {
-        throw new Error('Failed to close all tabs')
+        if (!allClosed) {
+            throw new Error('Failed to close all tabs')
+        }
+    } catch (e) {
+        throw new Error(`Failed to close all tabs: ${e}`)
     }
 }
 
@@ -34,15 +38,19 @@ export async function closeAllTabs(webview: WebviewView): Promise<void> {
  * @throws Error if overlay dismissal failed
  */
 export async function dismissOverlayIfPresent(webview: WebviewView): Promise<void> {
-    const overlays = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
-    if (overlays.length > 0) {
-        const driver = webview.getDriver()
-        await driver.executeScript('document.body.click()')
+    try {
+        const overlays = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
+        if (overlays.length > 0) {
+            const driver = webview.getDriver()
+            await driver.executeScript('document.body.click()')
 
-        await sleep(1000)
-        const overlaysAfter = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
-        if (overlaysAfter.length > 0) {
-            throw new Error('Failed to dismiss overlay')
+            await sleep(1000)
+            const overlaysAfter = await webview.findWebElements(By.css('.mynah-overlay.mynah-overlay-open'))
+            if (overlaysAfter.length > 0) {
+                throw new Error('Failed to dismiss overlay')
+            }
         }
+    } catch (e) {
+        throw new Error(`Failed to dismiss overlay: ${e}`)
     }
 }
