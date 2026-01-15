@@ -17,7 +17,8 @@ import {
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
-type ComputeResult = EditDistanceResult & InputEntry
+type ComputeResultSuccess = EditDistanceResult & InputEntry
+type ComupteResultFailure = { failureReason: string } & InputEntry
 
 // TODO: not yet verify calculation aligns with science implementation
 interface DetailedResult {
@@ -116,7 +117,9 @@ export class EvaluationProcess {
     async run(): Promise<void> {
         const startTime = Date.now()
         let reportString = 'REPORT\n'
-        const simulationResult: (ComputeResult | undefined)[] = []
+        const simulationResult: (ComputeResultSuccess | ComupteResultFailure)[] = []
+
+        // iterate through all specified trigger point and invoke inline api
         for (let i = 0; i < this.inputEntries.length; i++) {
             this.activeIndex = i
             const inputEntry = this.inputEntries[i]
@@ -124,32 +127,25 @@ export class EvaluationProcess {
                 const r = await this.triggerInlineOnce(inputEntry)
                 simulationResult.push(r)
                 const suggetions = this.sessionManager?.getActiveSession()?.suggestions
-                // use edit distance to compare inputEntry.groundTruth vs. suggestions[0]
-
-                // TODO: write to a file
-                this.log.info(`Finished running ${i}th and recieved ${suggetions?.length ?? 0} suggestions`)
                 reportString += `\t${i}th succeeded: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; suggestionCnt=${suggetions?.length ?? 0}\n`
             } catch (e) {
-                this.log.error(`Error triggering inline ${i}th: ${e}`)
                 reportString += `\t${i}th faled: filename=${inputEntry.filename}; packagename=${inputEntry.packageName}; error=${e}\n`
             }
         }
 
-        try {
-            assert.strictEqual(simulationResult.length, this.length)
-        } catch (e) {
-            console.log()
-        }
+        assert.strictEqual(simulationResult.length, this.length)
 
         const endTime = Date.now()
-        this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds}`)
+        this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds} for ${this.length} inputs}`)
         this.log.info(reportString)
+
+        // for ui purpose only (statubar should be reset as simulation task is done)
         this.activeIndex = undefined
         await this.statusBar.refreshStatusBar()
         return
     }
 
-    private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResult | undefined> {
+    private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResultSuccess | ComupteResultFailure> {
         const uri = await this.searchFile(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
             throw new Error(`File ${inputEntry.filename} not found`)
@@ -188,31 +184,31 @@ export class EvaluationProcess {
             // TODO: weird, some left context don't match
             // assert.strictEqual(ctx.leftFileContent, expectedLeftContext)
         } catch (e) {
-            console.log()
+            return { failureReason: (e as Error).message, ...inputEntry }
         }
 
         if (isSetupDone) {
             try {
-                // TODO: write to jsonl
+                // TODO: should need a jitter for throttling?
                 const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
                 // close the editor, we only close it here because we want files which failed keep opening
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
                 return res
             } catch (e) {
-                return undefined
+                return { failureReason: (e as Error).message, ...inputEntry }
             }
         } else {
-            this.log.error(`failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`)
-            return undefined
+            const msg = `failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`
+            this.log.error(msg)
+            return { failureReason: msg, ...inputEntry }
         }
     }
 
-    // TODO: error handling
     private async triggerInlineAndAnalyze(
         document: vscode.TextDocument,
         editor: vscode.TextEditor,
         inputEntry: InputEntry
-    ): Promise<ComputeResult> {
+    ): Promise<ComputeResultSuccess> {
         // call inline api to get suggestions in states
         await this.inlineMananger.runEvalFlow(
             document,
