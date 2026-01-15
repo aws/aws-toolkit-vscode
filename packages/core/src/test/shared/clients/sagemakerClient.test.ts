@@ -209,6 +209,92 @@ describe('SagemakerClient.listAppForSpace', function () {
     })
 })
 
+describe('SagemakerClient.listAppsForDomainMatchSpaceIgnoreCase', function () {
+    const region = 'test-region'
+    let client: SagemakerClient
+    let listAppForSpaceStub: sinon.SinonStub
+    let listAppsForDomainStub: sinon.SinonStub
+
+    beforeEach(function () {
+        client = new SagemakerClient(region)
+        listAppForSpaceStub = sinon.stub(client, 'listAppForSpace')
+        listAppsForDomainStub = sinon.stub(client, 'listAppsForDomain')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('uses efficient listAppForSpace when space name is all lowercase', async function () {
+        const expectedApp: AppDetails = { AppName: 'app1', DomainId: 'domain1', SpaceName: 'myspace' }
+        listAppForSpaceStub.resolves(expectedApp)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'myspace')
+
+        assert.strictEqual(result, expectedApp)
+        sinon.assert.calledOnceWithExactly(listAppForSpaceStub, 'domain1', 'myspace')
+        sinon.assert.notCalled(listAppsForDomainStub)
+    })
+
+    it('fetches all apps and does case-insensitive match when space name has uppercase', async function () {
+        const apps: AppDetails[] = [
+            { AppName: 'app1', DomainId: 'domain1', SpaceName: 'MySpace' },
+            { AppName: 'app2', DomainId: 'domain1', SpaceName: 'OtherSpace' },
+        ]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result?.AppName, 'app1')
+        sinon.assert.calledOnceWithExactly(listAppsForDomainStub, 'domain1')
+        sinon.assert.notCalled(listAppForSpaceStub)
+    })
+
+    it('matches space name case-insensitively (lowercase query, uppercase in API)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'MYSPACE' }]
+        listAppsForDomainStub.resolves(apps)
+
+        // Query with mixed case triggers case-insensitive path
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result?.AppName, 'app1')
+    })
+
+    it('matches space name case-insensitively (uppercase query, lowercase in API)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'myspace' }]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MYSPACE')
+
+        assert.strictEqual(result?.AppName, 'app1')
+    })
+
+    it('returns undefined when no matching app found (case-insensitive path)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'OtherSpace' }]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('returns undefined when domain has no apps (case-insensitive path)', async function () {
+        listAppsForDomainStub.resolves([])
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('returns undefined when listAppForSpace returns undefined (lowercase path)', async function () {
+        listAppForSpaceStub.resolves(undefined)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'myspace')
+
+        assert.strictEqual(result, undefined)
+    })
+})
+
 describe('SagemakerClient.waitForAppInService', function () {
     const region = 'test-region'
     let client: SagemakerClient
