@@ -182,7 +182,7 @@ export class EvaluationProcess {
         document: vscode.TextDocument,
         editor: vscode.TextEditor,
         inputEntry: InputEntry
-    ): Promise<ComputeResult & InputEntry> {
+    ): Promise<EditDistanceResult & InputEntry> {
         // call inline api to get suggestions in states
         await this.inlineMananger.runEvalFlow(
             document,
@@ -258,7 +258,7 @@ interface DetailedResult {
     exactMatch: boolean
 }
 
-interface ComputeResult {
+interface EditDistanceResult {
     emRatio: number
     editSimAvg: number
     detailedResults: DetailedResult[]
@@ -274,7 +274,7 @@ function calEditSim(target: string, truth: string): number {
     return editSim
 }
 
-function computeEditDistances(suggestions: string[], truth: string): ComputeResult {
+function computeEditDistances(suggestions: string[], truth: string): EditDistanceResult {
     if (suggestions.length === 0) {
         throw new Error('empty suggestion')
     }
