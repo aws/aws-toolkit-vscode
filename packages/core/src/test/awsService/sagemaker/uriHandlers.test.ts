@@ -76,4 +76,69 @@ describe('SageMaker URI handler', function () {
         assert.ok(deeplinkConnectStub.calledOnce)
         assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[6], undefined)
     })
+
+    describe('HyperPod workspace connection', function () {
+        function createHyperPodUri(params: { [key: string]: string }): vscode.Uri {
+            const query = Object.entries(params)
+                .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+                .join('&')
+            return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/workspace?${query}`)
+        }
+
+        it('calls deeplinkConnect with clusterArn for HyperPod connections', async function () {
+            const params = {
+                sessionId: 'session-123',
+                streamUrl: 'wss://example.com/stream',
+                sessionToken: 'token-xyz',
+                'cell-number': '5',
+                workspaceName: 'my-workspace',
+                namespace: 'default',
+                clusterArn: 'arn:aws:sagemaker:us-east-2:123456789012:cluster/my-cluster',
+            }
+
+            const uri = createHyperPodUri(params)
+            await handler.handleUri(uri)
+
+            assert.ok(deeplinkConnectStub.calledOnce)
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[1], '')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[2], 'session-123')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[3], 'wss://example.com/stream&cell-number=5')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[4], 'token-xyz')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[5], '')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[6], undefined)
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[7], 'my-workspace')
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[8], 'default')
+            assert.deepStrictEqual(
+                deeplinkConnectStub.firstCall.args[9],
+                'arn:aws:sagemaker:us-east-2:123456789012:cluster/my-cluster'
+            )
+        })
+
+        it('calls deeplinkConnect with undefined optional params when not provided', async function () {
+            const params = {
+                sessionId: 'session-123',
+                streamUrl: 'wss://example.com/stream',
+                sessionToken: 'token-xyz',
+                'cell-number': '5',
+            }
+
+            const uri = createHyperPodUri(params)
+            await handler.handleUri(uri)
+
+            assert.ok(deeplinkConnectStub.calledOnce)
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[7], undefined)
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[8], undefined)
+            assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[9], undefined)
+        })
+
+        it('throws error when required params are missing', async function () {
+            const params = {
+                sessionId: 'session-123',
+                // Missing streamUrl, sessionToken, cell-number
+            }
+
+            const uri = createHyperPodUri(params)
+            await assert.rejects(handler.handleUri(uri))
+        })
+    })
 })
