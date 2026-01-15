@@ -84,7 +84,8 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
                 node.hpCluster.clusterName,
                 node.devSpace.cluster,
                 eksCluster.endpoint,
-                eksCluster.certificateAuthority.data
+                eksCluster.certificateAuthority.data,
+                node.regionCode
             )
 
             const reconnectionManager = HyperpodReconnectionManager.getInstance()
@@ -96,7 +97,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             getLogger().warn(`Failed to store HyperPod connection info: ${error}`)
         }
 
-        await clearSSHHostKey(connectionKey)
+        await clearSSHHostKey(connectionKey, node.regionCode, node.hpCluster.clusterArn.split(':')[4])
 
         const remoteEnv = await prepareDevEnvConnection(
             '',
@@ -111,7 +112,9 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             undefined,
             node.devSpace.name,
             node.hpCluster.clusterName,
-            node.devSpace.namespace
+            node.devSpace.namespace,
+            node.regionCode,
+            node.hpCluster.clusterArn
         )
 
         await startVscodeRemote(

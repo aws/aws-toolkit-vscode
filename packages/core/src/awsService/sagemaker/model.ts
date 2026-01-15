@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
 import { getSmSsmEnv, spawnDetachedServer } from './utils'
+import { parseArn } from './detached-server/utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
@@ -107,7 +108,9 @@ export async function prepareDevEnvConnection(
     appType?: string,
     devspaceName?: string,
     clusterName?: string,
-    namespace?: string
+    namespace?: string,
+    region?: string,
+    clusterArn?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -125,12 +128,13 @@ export async function prepareDevEnvConnection(
     const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        // Create unique hostname using cluster, namespace, and devspace name
-        // Use double underscores as separators to avoid conflicts with single underscores in names
         const clusterPart = clusterName || 'unknown'
         const namespacePart = namespace || 'default'
         const devspacePart = devspaceName || session || 'unknown'
-        hostname = `hp_${clusterPart}__${namespacePart}__${devspacePart}`
+        const regionPart =
+            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
+        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
+        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
     } else {
         hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
