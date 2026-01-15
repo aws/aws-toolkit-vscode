@@ -9,7 +9,11 @@ import { getLogger, waitUntil } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 import Fuzz from 'fuzzball'
-import { CodeWhispererConstants, extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererConstants,
+    CodeWhispererStatusBarManager,
+    extractContextForCodeWhisperer,
+} from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
@@ -32,10 +36,21 @@ export class EvaluationProcess {
     get length() {
         return this.inputEntries.length
     }
-    private _activeIndex = 0
+    private _activeIndex: number | undefined = undefined
+    set activeIndex(idx: number | undefined) {
+        this._activeIndex = idx
+        this.statusBar.simulationIndex = idx
+            ? {
+                  current: idx + 1,
+                  total: this.inputEntries.length,
+              }
+            : undefined
+    }
     get activeIndex() {
         return this._activeIndex
     }
+
+    private statusBar = CodeWhispererStatusBarManager.instance
 
     constructor(
         readonly sessionManager: SessionManager | undefined,
@@ -85,7 +100,7 @@ export class EvaluationProcess {
         const startTime = Date.now()
         let reportString = 'REPORT\n'
         for (let i = 0; i < this.inputEntries.length; i++) {
-            this._activeIndex = i
+            this.activeIndex = i
             const inputEntry = this.inputEntries[i]
             try {
                 await this.triggerInlineOnce(inputEntry)
@@ -104,6 +119,8 @@ export class EvaluationProcess {
         const endTime = Date.now()
         this.log.info(`simulation is done; it took ${(endTime - startTime) / 1000} seconds}`)
         this.log.info(reportString)
+        this.activeIndex = undefined
+        await this.statusBar.refreshStatusBar()
         return
     }
 

@@ -12,6 +12,9 @@ import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
 export class CodeWhispererStatusBarManager {
     private statusBar: CodeWhispererStatusBar
+    set simulationIndex(v: { current: number; total: number } | undefined) {
+        this.statusBar.simulationIndex = v
+    }
 
     constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
         this.statusBar = statusBar
@@ -89,6 +92,10 @@ const states = {
 
 class CodeWhispererStatusBar {
     protected statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
+    private _simulationIndex: { current: number; total: number } | undefined = undefined
+    set simulationIndex(v: { current: number; total: number } | undefined) {
+        this._simulationIndex = v
+    }
 
     static #instance: CodeWhispererStatusBar
     static get instance() {
@@ -104,7 +111,10 @@ class CodeWhispererStatusBar {
         statusBar.command = listCodeWhispererCommandsId
         statusBar.backgroundColor = undefined
 
-        const title = 'Amazon Q'
+        const simulationProgress = this._simulationIndex
+            ? `(${this._simulationIndex.current}/${this._simulationIndex.total})`
+            : ''
+        const title = 'Amazon Q' + simulationProgress
         switch (status) {
             case 'loading': {
                 const selectedCustomization = getSelectedCustomization()
