@@ -38,7 +38,7 @@ export function register(ctx: ExtContext) {
                 undefined,
                 params.workspaceName,
                 params.namespace,
-                params.eksClusterArn
+                params.clusterArn
             )
         })
     }
@@ -51,7 +51,7 @@ export function register(ctx: ExtContext) {
 
 export function parseHyperpodConnectParams(query: SearchParams) {
     const requiredParams = query.getFromKeysOrThrow('sessionId', 'streamUrl', 'sessionToken', 'cell-number')
-    const optionalParams = query.getFromKeys('workspaceName', 'namespace', 'eksClusterArn')
+    const optionalParams = query.getFromKeys('workspaceName', 'namespace', 'clusterArn')
     return { ...requiredParams, ...optionalParams }
 }
 export function parseConnectParams(query: SearchParams) {
