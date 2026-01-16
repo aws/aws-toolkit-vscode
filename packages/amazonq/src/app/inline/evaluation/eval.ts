@@ -2,8 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as os from 'os'
-import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { SessionManager } from '../sessionManager'
@@ -43,9 +41,6 @@ type InputEntry = {
     column: number
 }
 
-const homeDir = os.homedir()
-const simulationOutputFolderPath = path.join(homeDir, 'desktop')
-
 export class EvaluationProcess {
     private rawInput: string = ''
     private inputEntries: InputEntry[]
@@ -73,7 +68,8 @@ export class EvaluationProcess {
     constructor(
         readonly sessionManager: SessionManager,
         readonly inlineMananger: InlineCompletionManager,
-        inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl'
+        readonly inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl',
+        readonly outputPath: string
     ) {
         this.rawInput = nodefs.readFileSync(inputpath, 'utf-8')
         this.inputEntries = this.processRawinput(this.rawInput)
@@ -126,8 +122,7 @@ export class EvaluationProcess {
 
         // write into a file in jsonl format
         try {
-            const output = path.join(simulationOutputFolderPath, `simulation_result_${this.length}.jsonl`)
-            const fd = nodefs.openSync(output, 'w')
+            const fd = nodefs.openSync(this.outputPath, 'w')
             for (const entry of result) {
                 nodefs.writeSync(fd, JSON.stringify(entry) + '\n')
             }
