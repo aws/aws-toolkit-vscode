@@ -784,6 +784,7 @@ const devSettings = {
     webAuth: Boolean,
     notificationsPollInterval: Number,
     datazoneScope: String,
+    inlineSimulation: Record(String, String),
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
@@ -795,6 +796,7 @@ interface ServiceTypeMap {
     amazonqWorkspaceLsp: object // type is provided inside of amazon q
     codewhispererService: CodeWhispererConfig
     cloudformationLsp: object // type is provided inside of cloudformation lsp
+    inlineSimulation: object
 }
 
 /**

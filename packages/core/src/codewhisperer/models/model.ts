@@ -61,8 +61,6 @@ export const vsCodeState: VsCodeState = {
 export interface CodeWhispererConfig {
     readonly region: string
     readonly endpoint: string
-    readonly simulationInput: string
-    readonly simulationOutput: string
 }
 
 export interface RegionProfile {

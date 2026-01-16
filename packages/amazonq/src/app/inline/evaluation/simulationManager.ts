@@ -10,7 +10,6 @@ import { DevSettings, getLogger } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { SessionManager } from '../sessionManager'
 import { EvaluationProcess } from './eval'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 
 const homeDir = os.homedir()
 const simulationOutputFolderPath = path.join(homeDir, 'desktop')
@@ -29,8 +28,7 @@ export class SimulationManager {
 
     async runSimulation(sessionManager: SessionManager, inlineManager: InlineCompletionManager) {
         try {
-            const defaultConfig = AuthUtil.instance.regionProfileManager.clientConfig
-            const config = DevSettings.instance.getServiceConfig('codewhispererService', defaultConfig)
+            const config = DevSettings.instance.getServiceConfig('inlineSimulation', {}) as any
             this.log.info(config.simulationInput)
 
             const inputPath = config.simulationInput
