@@ -100,7 +100,7 @@ export async function deeplinkConnect(
     appType?: string,
     workspaceName?: string,
     namespace?: string,
-    clusterArn?: string,
+    eksClusterArn?: string,
     isSMUS: boolean = false
 ) {
     getLogger().debug(
@@ -118,11 +118,7 @@ export async function deeplinkConnect(
         appType: ${appType}, 
         workspaceName: ${workspaceName}, 
         namespace: ${namespace}, 
-        clusterArn: ${clusterArn}`
-    )
-
-    getLogger().info(
-        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, clusterArn: ${clusterArn}`
+        eksClusterArn: ${eksClusterArn}`
     )
 
     if (isRemoteWorkspace()) {
@@ -132,8 +128,8 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (!domain && clusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseArn(clusterArn)
+        if (!domain && eksClusterArn && workspaceName && namespace) {
+            const { accountId, region, clusterName } = parseArn(eksClusterArn)
             connectionType = 'sm_hp'
             const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             session = isValidSshHostname(proposedSession)
@@ -224,11 +220,11 @@ function createValidSshSession(
     const components = [
         sanitize(workspaceName, 63), // K8s limit
         sanitize(namespace, 63), // K8s limit
-        sanitize(clusterName, 63), // HP cluster limit
+        sanitize(clusterName, 100), // EKS limit
         sanitize(region, 16), // Longest AWS region limit
-        sanitize(accountId, 12), // Fixed
+        sanitize(accountId, 4), // Truncated to allow max limit for other attrs
     ].filter((c) => c.length > 0)
-    // Total: 63 + 63 + 63 + 16 + 12 + 4 separators + 3 chars for hostname header = 224 < 253 (max limit)
+    // Total: 63 + 63 + 100 + 16 + 4 + 4 separators + 3 chars for hostname header = 253 (max limit)
 
     const session = components.join('_').substring(0, 224)
     return session
