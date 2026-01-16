@@ -100,7 +100,7 @@ export async function deeplinkConnect(
     appType?: string,
     workspaceName?: string,
     namespace?: string,
-    clusterArn?: string,
+    eksClusterArn?: string,
     isSMUS: boolean = false
 ) {
     getLogger().debug(
@@ -118,11 +118,7 @@ export async function deeplinkConnect(
         appType: ${appType}, 
         workspaceName: ${workspaceName}, 
         namespace: ${namespace}, 
-        clusterArn: ${clusterArn}`
-    )
-
-    getLogger().info(
-        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, clusterArn: ${clusterArn}`
+        eksClusterArn: ${eksClusterArn}`
     )
 
     if (isRemoteWorkspace()) {
@@ -132,8 +128,8 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (!domain && clusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseArn(clusterArn)
+        if (!domain && eksClusterArn && workspaceName && namespace) {
+            const { accountId, region, clusterName } = parseArn(eksClusterArn)
             connectionType = 'sm_hp'
             const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             session = isValidSshHostname(proposedSession)
@@ -224,13 +220,14 @@ function createValidSshSession(
     const components = [
         sanitize(workspaceName, 63), // K8s limit
         sanitize(namespace, 63), // K8s limit
-        sanitize(clusterName, 63), // HP cluster limit
+        sanitize(clusterName, 100), // EKS limit
         sanitize(region, 16), // Longest AWS region limit
         sanitize(accountId, 12), // Fixed
     ].filter((c) => c.length > 0)
-    // Total: 63 + 63 + 63 + 16 + 12 + 4 separators + 3 chars for hostname header = 224 < 253 (max limit)
+    // Total: 63 + 63 + 100 + 16 + 12 + 4 separators + 3 chars for hostname header = 261 > 253 (max limit)
+    // If all attributes max out char limit, then accountId will be truncated to the first 4 char.
 
-    const session = components.join('_').substring(0, 224)
+    const session = components.join('_').substring(0, 253)
     return session
 }
 
@@ -238,7 +235,7 @@ function createValidSshSession(
  * Validates if a string meets SSH hostname naming convention
  */
 function isValidSshHostname(label: string): boolean {
-    return /^[a-z0-9]([a-z0-9.-_]{0,222}[a-z0-9])?$/.test(label)
+    return /^[a-z0-9]([a-z0-9.-_]{0,251}[a-z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
