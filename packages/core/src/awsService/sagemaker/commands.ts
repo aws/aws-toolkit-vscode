@@ -19,12 +19,12 @@ import {
     tryRemoteConnection,
     useSageMakerSshKiroExtension,
 } from './model'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { AccessDeniedException } from '@amzn/sagemaker-client'
-import { ToolkitError } from '../../shared/errors'
+import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { RemoteSessionError } from '../../shared/remoteSession'
 import {
     ConnectFromRemoteWorkspaceMessage,
     InstanceTypeError,
@@ -118,11 +118,11 @@ export async function deeplinkConnect(
     )
 
     getLogger().info(
-        `sm:deeplinkConnect: 
-        domain: ${domain}, 
-        appType: ${appType}, 
-        workspaceName: ${workspaceName}, 
-        namespace: ${namespace}, 
+        `sm:deeplinkConnect:
+        domain: ${domain},
+        appType: ${appType},
+        workspaceName: ${workspaceName},
+        namespace: ${namespace},
         eksClusterArn: ${eksClusterArn}`
     )
 
@@ -158,6 +158,7 @@ export async function deeplinkConnect(
             const username = 'sagemaker-user'
 
             if (useSageMakerSshKiroExtension()) {
+                await ensureSageMakerSshKiroExtension(ctx.extensionContext)
                 await startRemoteViaSageMakerSshKiro(
                     remoteEnv.SessionProcess,
                     remoteEnv.hostname,
@@ -182,9 +183,9 @@ export async function deeplinkConnect(
             isSMUS
         )
 
-        if (![RemoteSessionError.MissingExtension, RemoteSessionError.ExtensionVersionTooLow].includes(err.code)) {
+        if (!isUserCancelledError(err)) {
             void vscode.window.showErrorMessage(
-                `Remote connection failed: ${err.message || 'Unknown error'}. Check Output > Log (Window) for details.`
+                `Remote connection failed: ${err?.message || 'Unknown error'}. Check Output > Log (Window) for details.`
             )
             throw err
         }
