@@ -62,6 +62,18 @@ export const toolkitSettings = {
     "aws.cloudformation.diagnostics.cfnLint.lintOnChange": {},
     "aws.cloudformation.diagnostics.cfnLint.delayMs": {},
     "aws.cloudformation.diagnostics.cfnLint.path": {},
+    "aws.cloudformation.diagnostics.cfnLint.customization": {
+        "ignoreChecks": {},
+        "includeChecks": {},
+        "mandatoryChecks": {},
+        "includeExperimental": {},
+        "configureRules": {},
+        "regions": {},
+        "customRules": {},
+        "appendRules": {},
+        "overrideSpec": {},
+        "registrySchemas": {}
+    },
     "aws.cloudformation.diagnostics.cfnGuard.enabled": {},
     "aws.cloudformation.diagnostics.cfnGuard.validateOnChange": {},
     "aws.cloudformation.diagnostics.cfnGuard.enabledRulePacks": {},
