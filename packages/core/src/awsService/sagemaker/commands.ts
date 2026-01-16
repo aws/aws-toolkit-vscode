@@ -222,11 +222,12 @@ function createValidSshSession(
         sanitize(namespace, 63), // K8s limit
         sanitize(clusterName, 100), // EKS limit
         sanitize(region, 16), // Longest AWS region limit
-        sanitize(accountId, 4), // Truncated to allow max limit for other attrs
+        sanitize(accountId, 12), // Fixed
     ].filter((c) => c.length > 0)
-    // Total: 63 + 63 + 100 + 16 + 4 + 4 separators + 3 chars for hostname header = 253 (max limit)
+    // Total: 63 + 63 + 100 + 16 + 12 + 4 separators + 3 chars for hostname header = 261 > 253 (max limit)
+    // If all attributes max out char limit, then accountId will be truncated to the first 4 char.
 
-    const session = components.join('_').substring(0, 224)
+    const session = components.join('_').substring(0, 253)
     return session
 }
 
@@ -234,7 +235,7 @@ function createValidSshSession(
  * Validates if a string meets SSH hostname naming convention
  */
 function isValidSshHostname(label: string): boolean {
-    return /^[a-z0-9]([a-z0-9.-_]{0,222}[a-z0-9])?$/.test(label)
+    return /^[a-z0-9]([a-z0-9.-_]{0,251}[a-z0-9])?$/.test(label)
 }
 
 export async function stopSpace(
