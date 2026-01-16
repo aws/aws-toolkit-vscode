@@ -22,9 +22,9 @@ export function createMockK8sSetup() {
     }
     const mockHyperpodCluster = {
         clusterName: 'test-cluster',
-        clusterArn: 'arn:aws:sagemaker:us-east-1:123456789012:cluster/test-cluster',
+        clusterArn: 'arn:aws:sagemaker:us-east-2:123456789012:cluster/test-cluster',
         status: 'InService',
-        regionCode: 'us-east-1',
+        regionCode: 'us-east-2',
     }
 
     return { mockK8sApi, mockDevSpace, mockHyperpodCluster }
