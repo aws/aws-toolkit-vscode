@@ -57,7 +57,7 @@ import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { codeReviewInChat } from '../app/amazonqScan/models/constants'
-import { EvaluationProcess } from '../app/inline/evaluation/eval'
+import { SimulationManager } from '../app/inline/evaluation/simulationManager'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -368,9 +368,11 @@ async function onLanguageServerReady(
             }),
             Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
                 vsCodeState.lastManualTriggerTime = performance.now()
-                await new EvaluationProcess(sessionManager, inlineManager).run()
-
-                // await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            }),
+            // TODO: register one command to trigger inline simulation
+            Commands.register({ id: 'aws.amazonq.invokeInlineSimulation', autoconnect: true }, async () => {
+                await SimulationManager.getInstance().runSimulation(sessionManager, inlineManager)
             }),
             vscode.workspace.onDidCloseTextDocument(async () => {
                 await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')

@@ -948,6 +948,12 @@
                 "when": "editorTextFocus && aws.codewhisperer.connected"
             },
             {
+                "command": "aws.amazonq.invokeInlineSimulation",
+                "key": "alt+s",
+                "mac": "alt+s",
+                "when": "aws.codewhisperer.connected"
+            },
+            {
                 "command": "aws.amazonq.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",

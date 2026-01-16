@@ -11,11 +11,7 @@ import { getLogger, waitUntil } from 'aws-core-vscode/shared'
 import { InlineCompletionManager } from '../completion'
 import { InlineCompletionTriggerKind } from 'vscode-languageclient'
 import Fuzz from 'fuzzball'
-import {
-    CodeWhispererConstants,
-    CodeWhispererStatusBarManager,
-    extractContextForCodeWhisperer,
-} from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererStatusBarManager, extractContextForCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
@@ -75,7 +71,7 @@ export class EvaluationProcess {
     private statusBar = CodeWhispererStatusBarManager.instance
 
     constructor(
-        readonly sessionManager: SessionManager | undefined,
+        readonly sessionManager: SessionManager,
         readonly inlineMananger: InlineCompletionManager,
         inputpath: string = '/Users/xshaohua/workplace/ide/dev-scripts/inline_investigation_scripts/apex_sample_200.jsonl'
     ) {
@@ -203,11 +199,11 @@ export class EvaluationProcess {
         )
 
         // assertion to confirm file & cursor etc are correct
-        const ctx: { leftFileContent: string; filename: string } = extractContextForCodeWhisperer(editor)
-        const expectedLeftContext = inputEntry.leftContext.substring(
-            inputEntry.leftContext.length - CodeWhispererConstants.charactersLimit,
-            inputEntry.leftContext.length
-        )
+        const ctx: { leftFileContent: string; filename: string } = extractContextForCodeWhisperer(editor) as any
+        // const expectedLeftContext = inputEntry.leftContext.substring(
+        //     inputEntry.leftContext.length - CodeWhispererConstants.charactersLimit,
+        //     inputEntry.leftContext.length
+        // )
 
         try {
             assert.ok(ctx.filename.includes(inputEntry.filename))
