@@ -209,7 +209,7 @@ export async function prepareDevEnvConnection(
 
                   const hyperPodEnv: NodeJS.ProcessEnv = {
                       AWS_REGION: region,
-                      SESSION_ID: session || '',
+                      SESSION_ID: hostname || '',
                       STREAM_URL: decodedWsUrl,
                       TOKEN: decodedToken,
                       AWS_SSM_CLI: ssm,

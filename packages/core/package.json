@@ -582,6 +582,8 @@
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@amzn/sagemaker-client": "file:../../src.gen/@amzn/sagemaker-client/1.0.0.tgz",
         "@amzn/glue-catalog-client": "file:../../src.gen/@amzn/glue-catalog-client/0.0.1.tgz",
+        "@amzn/datazone-custom-client": "file:../../src.gen/@amzn/datazone-custom-client/3.0.0.tgz",
+        "@amzn/sql-workbench-client": "file:../../src.gen/@amzn/sql-workbench-client/3.0.0.tgz",
         "@aws-sdk/client-accessanalyzer": "^3.888.0",
         "@aws-sdk/client-api-gateway": "<3.731.0",
         "@aws-sdk/client-apprunner": "<3.731.0",
