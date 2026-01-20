@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
 import { getSmSsmEnv, spawnDetachedServer } from './utils'
+import { parseArn } from './detached-server/utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
@@ -25,6 +26,9 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
+import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
+import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -101,7 +105,12 @@ export async function prepareDevEnvConnection(
     wsUrl?: string,
     token?: string,
     domain?: string,
-    appType?: string
+    appType?: string,
+    devspaceName?: string,
+    clusterName?: string,
+    namespace?: string,
+    region?: string,
+    clusterArn?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -119,7 +128,13 @@ export async function prepareDevEnvConnection(
     const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = `hp_${session}`
+        const clusterPart = clusterName || 'unknown'
+        const namespacePart = namespace || 'default'
+        const devspacePart = devspaceName || session || 'unknown'
+        const regionPart =
+            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
+        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
+        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
     } else {
         hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
@@ -134,10 +149,7 @@ export async function prepareDevEnvConnection(
         await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
     }
 
-    // HyperPod doesn't need the local server (only for SageMaker Studio)
-    if (connectionType !== 'sm_hp') {
-        await startLocalServer(ctx)
-    }
+    await startLocalServer(ctx)
     await removeKnownHost(hostname)
 
     const hyperpodConnectPath = path.join(ctx.globalStorageUri.fsPath, 'hyperpod_connect')
@@ -258,6 +270,22 @@ export async function prepareDevEnvConnection(
         },
         rejectOnErrorCode: true,
     })
+
+    // Start connection monitoring for HyperPod connections
+    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
+        try {
+            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
+            connectionMonitor.startMonitoring(connectionKey)
+
+            const reconnectionManager = HyperpodReconnectionManager.getInstance()
+            reconnectionManager.scheduleReconnection(connectionKey)
+
+            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
+        } catch (error) {
+            getLogger().warn(`Failed to start HyperPod monitoring: ${error}`)
+        }
+    }
 
     return {
         hostname,
