@@ -260,8 +260,8 @@ actual suggestion: ${this.formatSuggestionsLog(suggestions)}`
             this.log.info(logstr)
 
             return {
-                ...inputEntry,
                 ...compareResult,
+                ...inputEntry,
             }
         } catch (e) {
             const logstr = `@@response analysis@@
