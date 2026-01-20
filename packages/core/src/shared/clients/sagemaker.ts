@@ -347,8 +347,14 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             const domains: [string, DescribeDomainResponse][] = await Promise.all(
                 domainIds.map(async (domainId, index) => {
                     await sleep(index * 100)
-                    const response = await this.describeDomain({ DomainId: domainId })
-                    return [domainId, response]
+                    try {
+                        const response = await this.describeDomain({ DomainId: domainId })
+                        return [domainId, response]
+                    } catch {
+                        // Return empty response for domain IDs that error'ed out
+                        const emptyResponse: DescribeDomainResponse = {} as DescribeDomainResponse
+                        return [domainId, emptyResponse]
+                    }
                 })
             )
 
