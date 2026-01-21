@@ -587,7 +587,7 @@ export async function updateAwsCli(): Promise<string> {
         const cliPath = whichResult.stdout.trim().split('\n')[0]
         getLogger().info(`Show the installed CLI path: ${cliPath}`)
         void vscode.window.showInformationMessage(
-            localize('AWS.cli.updateSuccess', 'AWS CLI updated successfullyto "{0}"', cliPath)
+            localize('AWS.cli.updateSuccess', 'AWS CLI updated successfully at "{0}"', cliPath)
         )
     }
 
