@@ -13,6 +13,7 @@ import { SeverityLevel } from '../vscode/message'
 import { assertTelemetryCurried } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { fs } from '../../../shared'
+import { getOpenExternalStub } from '../../globalSetup.test'
 
 describe('cliUtils', async function () {
     let sandbox: sinon.SinonSandbox
@@ -83,6 +84,10 @@ describe('cliUtils', async function () {
                 messageCount++
                 if (messageCount === 1 && m.items.some((i) => i.title === 'Update')) {
                     m.selectItem('Update')
+                } else if (m.message.includes('not supported')) {
+                    // Toolkit shows "Auto install of AWS CLI is not supported on your platform"
+                    // with "Install manually..." button. We close this message to simulate the user dismissing it.
+                    m.close()
                 }
             })
             sandbox.stub(ChildProcess.prototype, 'run').resolves({
@@ -91,11 +96,52 @@ describe('cliUtils', async function () {
                 stderr: '',
             } as any)
 
-            const result = await updateAwsCli()
+            if (process.platform === 'linux') {
+                await assert.rejects(() => updateAwsCli(), /cancelled/)
+            } else {
+                const result = await updateAwsCli()
+                assert.ok(result)
+                const messages = getTestWindow().shownMessages
+                assert.ok(messages.some((m) => m.message.includes('/usr/local/bin/aws')))
+            }
+        })
 
-            assert.ok(result)
-            const messages = getTestWindow().shownMessages
-            assert.ok(messages.some((m) => m.message.includes('/usr/local/bin/aws')))
+        it('opens manual install link when user selects "Install manually" on Linux', async function () {
+            let messageCount = 0
+            const openExternalStub = getOpenExternalStub().resolves(true)
+
+            getTestWindow().onDidShowMessage((m) => {
+                messageCount++
+                if (messageCount === 1 && m.items.some((i) => i.title === 'Update')) {
+                    m.selectItem('Update')
+                } else if (m.message.includes('not supported')) {
+                    // Linux: no installer source defined, so auto-install shows "not supported" message.
+                    // Simulate user clicking "Install manually..." button
+                    const manualInstallButton = m.items.find((i) => i.title === 'Install manually...')
+                    if (manualInstallButton) {
+                        m.selectItem(manualInstallButton.title)
+                    }
+                }
+            })
+
+            if (process.platform === 'linux') {
+                await assert.rejects(() => updateAwsCli(), /cancelled/)
+
+                // Verify the manual install link was opened
+                assert.ok(openExternalStub.calledOnce)
+                const openedUrl = openExternalStub.firstCall.args.toString()
+                assert.ok(openedUrl.includes('getting-started-install.html'))
+            } else {
+                // Non-Linux platforms should succeed (existing behavior)
+                sandbox.stub(ChildProcess.prototype, 'run').resolves({
+                    exitCode: 0,
+                    stdout: '/usr/local/bin/aws',
+                    stderr: '',
+                } as any)
+
+                const result = await updateAwsCli()
+                assert.ok(result)
+            }
         })
     })
 })
