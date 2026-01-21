@@ -579,6 +579,18 @@ export async function updateAwsCli(): Promise<string> {
     }
 
     const result = await installCli('aws-cli', false)
+
+    // Show the installed CLI path
+    const whichCmd = process.platform === 'win32' ? 'where' : 'which'
+    const whichResult = await new ChildProcess(whichCmd, ['aws']).run()
+    if (whichResult.exitCode === 0 && whichResult.stdout) {
+        const cliPath = whichResult.stdout.trim().split('\n')[0]
+        getLogger().info(`Show the installed CLI path: ${cliPath}`)
+        void vscode.window.showInformationMessage(
+            localize('AWS.cli.updateSuccess', 'AWS CLI updated successfullyto "{0}"', cliPath)
+        )
+    }
+
     return result
 }
 
