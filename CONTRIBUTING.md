@@ -9,7 +9,7 @@ codebase and sending pull requests.
 ## Getting Started
 
 This project is set up as a typescript monorepo. The documentation throughout this project
-is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
+is referring to the subprojects [`packages/amazonq/`](./packages/amazonq/) and [`packages/core/`](./packages/core/).
 See [arch_develop.md](./docs/arch_develop.md#monorepo-structure) to understand the
 structure of this package before contributing.
 
