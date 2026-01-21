@@ -113,7 +113,7 @@ export async function handleInvalidConsoleCredentials(
             `Reloading window to sync with updated credentials cache using connection for profile: ${profileName}`
         )
         const reloadResponse = await vscode.window.showInformationMessage(
-            `Credentials for "${profileName}" have been updated. Reload window to apply?`,
+            `Credentials for "${profileName}" were updated. A window reload is required to apply them. Save your work before continuing. Reload now?`,
             localizedText.yes,
             localizedText.no
         )
@@ -142,7 +142,7 @@ export async function handleInvalidConsoleCredentials(
         }
     }
 
-    throw ToolkitError.chain(error, `Failed to get console credentials`, {
+    throw ToolkitError.chain(error, 'Failed to get console credentials', {
         code: 'FromLoginCredentialProviderError',
     })
 }
