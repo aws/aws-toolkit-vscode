@@ -501,8 +501,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             } catch (error) {
                 if (error instanceof Error) {
                     await handleInvalidConsoleCredentials(error, this.profileName, defaultRegion)
+                } else {
+                    throw ToolkitError.chain(error, 'Unknown error when getting console credentials', {
+                        code: 'FromLoginCredentialProviderError',
+                    })
                 }
-                throw error
             }
         }
     }
