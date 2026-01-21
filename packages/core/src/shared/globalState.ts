@@ -51,6 +51,7 @@ export type globalKey =
     | 'aws.smus.authenticationPreferences'
     | 'aws.amazonq.regionProfiles'
     | 'aws.amazonq.regionProfiles.cache'
+    | 'aws.forceDeviceCodeFlow' // Toggle to force device code flow for authentication
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
