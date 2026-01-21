@@ -97,6 +97,17 @@
                         </div>
                     </div>
                 </div>
+                <div class="config-item" v-if="resourceData?.hasTenancyConfig">
+                    <label for="tenant-id">Tenant ID</label>
+                    <input
+                        name="tenant-id"
+                        id="tenant-id"
+                        type="text"
+                        v-model="launchConfig.lambda.tenantId"
+                        style="width: 100%"
+                    />
+                    <span class="data-view">Tenant ID from data: {{ launchConfig.lambda.tenantId }}</span>
+                </div>
                 <div class="config-item">
                     <label for="target-type-selector">Invoke target type</label>
                     <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">

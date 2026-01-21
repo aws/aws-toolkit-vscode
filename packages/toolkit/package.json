@@ -701,6 +701,10 @@
                                         "description": "%AWS.configuration.description.awssam.debug.timeout%",
                                         "type": "number"
                                     },
+                                    "tenantId": {
+                                        "description": "Tenant ID for multi-tenant Lambda functions",
+                                        "type": "string"
+                                    },
                                     "pathMappings": {
                                         "type:": "array",
                                         "items": {
