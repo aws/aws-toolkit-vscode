@@ -5,6 +5,7 @@
 
 import assert from 'assert'
 import * as path from 'path'
+import sinon from 'sinon'
 import { installCli, updateAwsCli } from '../../../shared/utilities/cliUtils'
 import globals from '../../../shared/extensionGlobals'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
@@ -12,7 +13,6 @@ import { SeverityLevel } from '../vscode/message'
 import { assertTelemetryCurried } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { fs } from '../../../shared'
-import sinon from 'sinon'
 
 describe('cliUtils', async function () {
     let sandbox: sinon.SinonSandbox
