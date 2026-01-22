@@ -20,7 +20,6 @@
     "AWS.configuration.description.suppressPrompts": "Prompts which ask for confirmation. Checking an item suppresses the prompt.",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source code and template.yaml files",
     "AWS.configuration.description.resources.enabledResources": "AWS resources to display in the 'Resources' portion of the explorer.",
-    "AWS.configuration.description.featureDevelopment.allowRunningCodeAndTests": "Allow /dev to run code and test commands",
     "AWS.configuration.description.experiments": "Try experimental features and give feedback. Note that experimental features may be removed at any time.\n * `jsonResourceModification` - Enables basic create, update, and delete support for cloud resources via the JSON Resources explorer component.",
     "AWS.stepFunctions.publishStateMachine.error.invalidYAML": "Cannot publish invalid YAML file",
     "AWS.stepFunctions.publishStateMachine.info.creating": "Creating state machine '{0}' in {1}...",
