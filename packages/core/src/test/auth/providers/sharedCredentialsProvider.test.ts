@@ -4,13 +4,20 @@
  */
 
 import assert from 'assert'
-import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
+import {
+    SharedCredentialsProvider,
+    handleInvalidConsoleCredentials,
+} from '../../../auth/providers/sharedCredentialsProvider'
 import { createTestSections } from '../../credentials/testUtil'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { oneDay } from '../../../shared/datetime'
 import sinon from 'sinon'
 import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { SsoClient } from '../../../auth/sso/clients'
+import * as vscode from 'vscode'
+import * as localizedText from '../../../shared/localizedText'
+import { ToolkitError } from '../../../shared/errors'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('SharedCredentialsProvider - Role Chaining with SSO', function () {
     let sandbox: sinon.SinonSandbox
@@ -211,5 +218,118 @@ describe('SharedCredentialsProvider - Console Session', function () {
 
         assert.notStrictEqual(provider.validate(), undefined)
         assert.strictEqual(await provider.isAvailable(), false)
+    })
+
+    describe('SharedCredentialsProvider - Console Session - handleInvalidConsoleCredentials', function () {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('throws error with expired session message and user cancels retry', async function () {
+            const error = new Error('Your session has expired')
+            getTestWindow().onDidShowMessage((m) => m.selectItem(localizedText.cancel))
+
+            await assert.rejects(
+                () => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'),
+                (err: ToolkitError) => {
+                    assert.strictEqual(err.code, 'LoginSessionRefreshCancelled')
+                    assert.strictEqual(err.cancelled, true)
+                    return true
+                }
+            )
+        })
+
+        it('executes console login and prompts reload when user retries expired session', async function () {
+            const error = new Error('Your session has expired')
+            let messageCount = 0
+            getTestWindow().onDidShowMessage((m) => {
+                messageCount++
+                m.selectItem(messageCount === 1 ? localizedText.retry : localizedText.yes)
+            })
+            const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand')
+
+            await assert.rejects(() => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'))
+
+            assert.ok(executeCommandStub.calledWith('aws.toolkit.auth.consoleLogin', 'test-profile', 'us-east-1'))
+            assert.ok(executeCommandStub.calledWith('workbench.action.reloadWindow'))
+        })
+
+        it('handles failed token load error and prompts reload', async function () {
+            const error = new Error('Failed to load a token for session')
+            let messageCount = 0
+            getTestWindow().onDidShowMessage((m) => {
+                messageCount++
+                m.selectItem(messageCount === 1 ? localizedText.retry : localizedText.no)
+            })
+            sandbox.stub(vscode.commands, 'executeCommand')
+
+            await assert.rejects(
+                () => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'),
+                (err: ToolkitError) => {
+                    assert.strictEqual(err.code, 'FromLoginCredentialProviderError')
+                    return true
+                }
+            )
+        })
+
+        it('handles missing login_session error and prompts reload', async function () {
+            const error = new Error('does not contain login_session')
+            getTestWindow().onDidShowMessage((m) => m.selectItem(localizedText.yes))
+            const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand')
+
+            await assert.rejects(() => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'))
+
+            assert.ok(executeCommandStub.calledWith('workbench.action.reloadWindow'))
+        })
+
+        it('shows error message when console login command fails', async function () {
+            const error = new Error('Your session has expired')
+            getTestWindow().onDidShowMessage((m) => {
+                if (m.items.length > 0) {
+                    m.selectItem(m.message.includes('retry') ? localizedText.retry : localizedText.yes)
+                }
+            })
+            const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand')
+            executeCommandStub.withArgs('aws.toolkit.auth.consoleLogin').rejects(new Error('Login failed'))
+
+            await assert.rejects(() => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'))
+
+            const errorMessage = getTestWindow().shownMessages.find((m) => m.message.includes('aws login --profile'))
+            assert.ok(errorMessage)
+        })
+
+        it('does not prompt reload for non-session errors', async function () {
+            const error = new Error('Some other error')
+
+            await assert.rejects(
+                () => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'),
+                (err: ToolkitError) => {
+                    assert.strictEqual(err.code, 'FromLoginCredentialProviderError')
+                    return true
+                }
+            )
+
+            assert.strictEqual(getTestWindow().shownMessages.length, 0)
+        })
+
+        it('handles Failed to load token from error message', async function () {
+            const error = new Error('Failed to load token from cache')
+            let messageCount = 0
+            getTestWindow().onDidShowMessage((m) => {
+                messageCount++
+                m.selectItem(messageCount === 1 ? localizedText.retry : localizedText.no)
+            })
+            sandbox.stub(vscode.commands, 'executeCommand')
+
+            await assert.rejects(() => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'))
+
+            assert.strictEqual(messageCount, 2)
+        })
     })
 })

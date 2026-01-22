@@ -35,11 +35,9 @@ export interface HyperpodCluster {
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
     private k8sApi: k8s.CustomObjectsApi
-    private hyperpodCluster: HyperpodCluster
 
     public constructor(eksCluster: Cluster, hyperpodCluster: HyperpodCluster) {
         this.kubeConfig = new k8s.KubeConfig()
-        this.hyperpodCluster = hyperpodCluster
         this.loadKubeConfig(eksCluster, hyperpodCluster)
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
     }
@@ -262,18 +260,9 @@ export class KubectlClient {
                 throw new Error('No workspace connection URL returned')
             }
 
-            const url = new URL(presignedUrl)
-
-            // If eksClusterArn exists, remove it and add clusterArn instead
-            if (url.searchParams.has('eksClusterArn') && this.hyperpodCluster.clusterArn) {
-                url.searchParams.delete('eksClusterArn')
-                url.searchParams.set('clusterArn', this.hyperpodCluster.clusterArn)
-            }
-
-            const modifiedUrl = url.toString()
             getLogger().info(`Connection Type: ${connectionType}`)
-            getLogger().info(`Modified Presigned URL: ${modifiedUrl}`)
-            return { type: connectionType || 'vscode-remote', url: modifiedUrl }
+            getLogger().info(`Presigned URL: ${presignedUrl}`)
+            return { type: connectionType || 'vscode-remote', url: presignedUrl }
         } catch (error) {
             getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)
             throw new Error(
