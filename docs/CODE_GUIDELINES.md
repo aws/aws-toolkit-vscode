@@ -154,6 +154,71 @@ _See also [arch_develop.md](./arch_develop.md#exceptions)._
         real values.
     -   Both examples result in faster, more-readable, more-useful tests, and more
         test-coverage of real codepaths.
+
+-   Use real filesystem operations instead of stubbing:
+    -   Use `TestFolder` for dynamic test files (create in `beforeEach`, delete in `afterEach`)
+    -   Use `testFixtures/workspaceFolder` for static test data shared across tests
+    -   Reference: [TestFixture Path](https://github.com/aws/aws-toolkit-vscode/tree/master/packages/core/src/testFixtures/workspaceFolder)
+    ```ts
+    // ❌ AVOID
+    sinon.stub(fs, 'readFileText').resolves('mock content')
+    
+    // ✅ PREFER
+    const testFolder = await TestFolder.create()
+    const filePath = await testFolder.write('config.json', '{"key": "value"}')
+
+    // ✅ PREFER: testFixtures for static test data
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    const templatePath = path.join(workspaceFolders![0].uri.fsPath, 'python3.9-plain-sam-app', 'template.yaml')
+    ```
+
+-   Import modules at top level instead of dynamic `require()`:
+    ```ts
+    // ❌ AVOID
+    sandbox.stub(require('../ldkController'), 'revertConfig').resolves(true)
+    
+    // ✅ PREFER
+    import * as ldkController from '../ldkController'
+    sandbox.stub(ldkController, 'revertConfig').resolves(true)
+    ```
+
+-   Use minimum mocks - only mock external dependencies:
+    | Mock | Don't Mock |
+    |------|------------|
+    | AWS service calls | Filesystem operations |
+    | Network requests | Internal utilities |
+    | System/CLI operations | Data transformations |
+
+-   Design for testability with dependency injection:
+    -   Accept dependencies as parameters (context objects or interfaces) instead of hardcoding
+    -   Reference: [parameterUtils.test.ts](https://github.com/aws/aws-toolkit-vscode/blob/master/packages/core/src/test/lambda/utilities/parameterUtils.test.ts)
+    ```ts
+    // ✅ PREFER: Accept dependencies via context object
+    export interface GetParametersContext {
+        loadTemplate: (uri: vscode.Uri) => Promise<Template>
+    }
+    async function getParameters(uri: vscode.Uri, context: GetParametersContext) { ... }
+
+    // In tests - clean, no stubbing needed:
+    const context: GetParametersContext = {
+        loadTemplate: async () => ({
+            Parameters: {
+                MyParam: { Type: 'String', Default: 'value' }
+            }
+        })
+    }
+    const result = await getParameters(vscode.Uri.file(''), context)
+    ```
+
+-   Use `vscode.Uri.file()` for filesystem paths (not `Uri.parse()`):
+    ```ts
+    // ❌ AVOID
+    const uri = vscode.Uri.parse('/path/to/file.txt')
+    
+    // ✅ PREFER
+    const uri = vscode.Uri.file('/path/to/file.txt')
+    ```
+
 -   Use `createQuickPickTester` to test quick picks via `QuickPickPrompter` implementations.
 
     -   Tests are constructed as a series of 'actions' to simulate user interaction
@@ -180,8 +245,28 @@ _See also [arch_develop.md](./arch_develop.md#exceptions)._
 
     -   [Testing Refresh Button](https://github.com/aws/aws-toolkit-vscode/blob/b34c8f7650c862c388992781844695b014b5d974/src/test/shared/ui/prompters/rolePrompter.test.ts#L58-L65)
 
+-   Use `PrompterTester` for wizard flows with QuickPicks and InputBoxes:
+    -   Reference: [PrompterTester Source](https://github.com/aws/aws-toolkit-vscode/blob/master/packages/core/src/test/shared/wizards/prompterTester.ts) | [Example](https://github.com/aws/aws-toolkit-vscode/blob/master/packages/core/src/test/awsService/appBuilder/wizards/deployTypeWizard.test.ts)
+    ```ts
+    const prompterTester = PrompterTester.init()
+        .handleQuickPick('Select command', async (picker) => {
+            await picker.untilReady()  // Required: wait for items
+            picker.acceptItem(picker.items[0])
+        })
+        .handleInputBox('Enter name', (inputBox) => {
+            inputBox.acceptValue('my-name')
+        })
+        .build()  // Required: activates handlers
+    
+    const result = await myWizard.run()
+    prompterTester.assertCallAll()  // Verify all handlers called
+    ```
+
 -   Use [`testCommand`](../packages/core/src/test/shared/vscode/testUtils.ts) for testing commands created by `Commands.declare`
     -   Prefer executing the real command directly when possible
+
+-   Verify API parameters with mocked server when APIs silently ignore missing parameters:
+    -   Reference: [PR #8380](https://github.com/aws/aws-toolkit-vscode/pull/8380/files)
 
 ## Code guidelines
 
