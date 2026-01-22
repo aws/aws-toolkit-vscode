@@ -141,10 +141,6 @@ export async function handleInvalidConsoleCredentials(
             await vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
     }
-
-    throw ToolkitError.chain(error, 'Failed to get console credentials', {
-        code: 'FromLoginCredentialProviderError',
-    })
 }
 
 /**
@@ -501,11 +497,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             } catch (error) {
                 if (error instanceof Error) {
                     await handleInvalidConsoleCredentials(error, this.profileName, defaultRegion)
-                } else {
-                    throw ToolkitError.chain(error, 'Unknown error when getting console credentials', {
-                        code: 'FromLoginCredentialProviderError',
-                    })
                 }
+                throw ToolkitError.chain(error, 'Unknown error when getting console credentials', {
+                    code: 'FromLoginCredentialProviderError',
+                })
             }
         }
     }
