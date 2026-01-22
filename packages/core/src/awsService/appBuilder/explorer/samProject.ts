@@ -41,7 +41,7 @@ export interface FunctionResourceEntity extends BaseResourceEntity {
     }
     CapacityProviderConfig?: string
     Architectures?: string
-    TenancyConfig?: CloudFormation.TenancyConfig
+    TenancyConfig?: string
 }
 
 export interface CapacityProviderResourceEntity extends BaseResourceEntity {

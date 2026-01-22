@@ -78,10 +78,6 @@ export function validateZipLambdaProperties({
     }
 }
 
-export interface TenancyConfig {
-    TenantIsolationMode: string
-}
-
 export interface LambdaResourceProperties {
     MemorySize?: number | Ref
     Timeout?: number | Ref
@@ -89,7 +85,6 @@ export interface LambdaResourceProperties {
     Events?: Events
     PackageType?: 'Image' | 'Zip'
     Architectures?: ('x86_64' | 'arm64')[]
-    TenancyConfig?: TenancyConfig
     [key: string]: any
 }
 
