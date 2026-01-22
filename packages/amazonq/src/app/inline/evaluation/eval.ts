@@ -215,11 +215,12 @@ export class EvaluationProcess {
             try {
                 // TODO: should need a jitter for throttling?
                 const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
-                // close the editor, we only close it here because we want files which failed open so that we can manually examine
-                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
                 return res
             } catch (e) {
                 return { failureReason: (e as Error).message, ...inputEntry }
+            } finally {
+                // close the editor, ensuring open tabs from different packages will not impact the LLM response
+                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
             }
         } else {
             const msg = `failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`
