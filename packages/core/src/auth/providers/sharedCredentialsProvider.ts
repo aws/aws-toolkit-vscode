@@ -64,7 +64,7 @@ export async function handleInvalidConsoleCredentials(
     error: Error,
     profileName: string,
     region: string
-): Promise<void> {
+): Promise<never> {
     getLogger().error('Console login authentication failed for profile %s in region %s: %O', profileName, region, error)
 
     // Indicates that a VS Code window reload is required to reinitialize credential providers
@@ -140,7 +140,14 @@ export async function handleInvalidConsoleCredentials(
             // credential providers and ensure the updated console session credentials are used.
             await vscode.commands.executeCommand('workbench.action.reloadWindow')
         }
+        throw ToolkitError.chain(error, 'Console credentials require window reload', {
+            code: 'FromLoginCredentialProviderError',
+        })
     }
+
+    throw ToolkitError.chain(error, 'Console credentials error', {
+        code: 'FromLoginCredentialProviderError',
+    })
 }
 
 /**
@@ -498,9 +505,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 if (error instanceof Error) {
                     await handleInvalidConsoleCredentials(error, this.profileName, defaultRegion)
                 }
-                throw ToolkitError.chain(error, 'Unknown error when getting console credentials', {
-                    code: 'FromLoginCredentialProviderError',
-                })
+                throw error
             }
         }
     }
