@@ -21,6 +21,7 @@ import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/aut
 import { AuthError, AuthFlowState } from '../types'
 import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { CredentialsId, asString } from '../../../../auth/providers/credentials'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 import globals from '../../../../shared/extensionGlobals'
@@ -92,6 +93,14 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             try {
                 // Execute AWS CLI login command
                 await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+
+                // Use profile as active connection
+                const credentialsId: CredentialsId = {
+                    credentialSource: 'profile',
+                    credentialTypeId: profileName,
+                }
+                const connectionId = asString(credentialsId)
+                await Auth.instance.useConnection({ id: connectionId })
 
                 // Hide auth view and show resource explorer
                 await setContext('aws.explorer.showAuthView', false)
