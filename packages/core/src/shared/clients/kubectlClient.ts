@@ -256,9 +256,12 @@ export class KubectlClient {
             const presignedUrl = body.status?.workspaceConnectionUrl
             const connectionType = body.status?.workspaceConnectionType
 
+            if (!presignedUrl) {
+                throw new Error('No workspace connection URL returned')
+            }
+
             getLogger().info(`Connection Type: ${connectionType}`)
             getLogger().info(`Presigned URL: ${presignedUrl}`)
-
             return { type: connectionType || 'vscode-remote', url: presignedUrl }
         } catch (error) {
             getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)

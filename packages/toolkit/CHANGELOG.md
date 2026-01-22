@@ -1,3 +1,11 @@
+## 3.93.0 2026-01-15
+
+- **Bug Fix** AWS CLI update process could enter an infinite retry loop when outdated CLI is detected during console login. The Toolkit now attempts the update once and prompts users to manually reload and retry, preventing continuous failed authentication attempts.
+
+## 3.92.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
 ## 3.91.0 2025-12-18
 
 - **Bug Fix** CloudFormation: render stack detail views on stack change
