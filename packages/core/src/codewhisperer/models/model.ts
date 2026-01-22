@@ -57,7 +57,6 @@ export const vsCodeState: VsCodeState = {
     lastManualTriggerTime: 0,
 }
 
-// TODO: figure out a way to make some fields optional so users only specify whatevery they need
 export interface CodeWhispererConfig {
     readonly region: string
     readonly endpoint: string

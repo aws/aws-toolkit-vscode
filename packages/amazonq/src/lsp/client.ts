@@ -370,7 +370,6 @@ async function onLanguageServerReady(
                 vsCodeState.lastManualTriggerTime = performance.now()
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }),
-            // TODO: register one command to trigger inline simulation
             Commands.register({ id: 'aws.amazonq.invokeInlineSimulation', autoconnect: true }, async () => {
                 await SimulationManager.getInstance().runSimulation(sessionManager, inlineManager)
             }),

@@ -13,6 +13,9 @@ import { CodeWhispererStatusBarManager, extractContextForCodeWhisperer } from 'a
 import assert from 'assert'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
+const baseDelay = 200 // milliseconds
+const maxJitter = 200 // maximum jitter in milliseconds
+
 type ComputeResultSuccess = EditDistanceResult & InputEntry
 type ComupteResultFailure = { failureReason: string } & InputEntry
 
@@ -85,6 +88,10 @@ export class EvaluationProcess {
             this.activeIndex = i
             const inputEntry = this.inputEntries[i]
             try {
+                // dd random jitter before each run
+                const jitter = Math.random() * maxJitter
+                await new Promise((resolve) => setTimeout(resolve, baseDelay + jitter))
+
                 const r = await this.triggerInlineOnce(inputEntry)
                 simulationResult.push(r)
                 const suggetions = this.sessionManager?.getActiveSession()?.suggestions
