@@ -24,7 +24,7 @@
         "@aws-sdk/middleware-host-header": "3.731.0",
         "@aws-sdk/middleware-logger": "3.731.0",
         "@aws-sdk/middleware-recursion-detection": "3.731.0",
-        "@aws-sdk/middleware-user-agent": "3.731.0",
+        "@aws-sdk/middleware-user-agent": "3.957.0",
         "@aws-sdk/region-config-resolver": "3.731.0",
         "@aws-sdk/token-providers": "3.731.1",
         "@aws-sdk/types": "3.731.0",
