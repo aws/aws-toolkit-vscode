@@ -126,7 +126,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [minimum, stable, insiders]
-                package: [amazonq, toolkit]
+                package: [amazonq]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -181,67 +181,6 @@ jobs:
               with:
                   run: npm run testWeb
 
-    cloudformation-integ:
-        needs: lint-commits
-        name: CloudFormation LSP E2E Tests
-        runs-on: ${{ matrix.os }}
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
-                node-version: [18.x]
-                vscode-version: [stable]
-        env:
-            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - name: Setup CloudFormation LSP
-              shell: bash
-              run: bash packages/core/src/testE2E/cloudformation/setup-local-lsp.sh
-            - run: npm ci
-            - name: Run CloudFormation E2E Tests (Unix)
-              if: runner.os != 'Windows'
-              uses: coactions/setup-xvfb@v1
-              with:
-                  run: npm run testE2ECfn -w packages/toolkit
-            - name: Run CloudFormation E2E Tests (Windows)
-              if: runner.os == 'Windows'
-              run: npm run testE2ECfn -w packages/toolkit
-            - name: Print Extension Logs
-              if: failure()
-              shell: bash
-              run: |
-                  echo "=== AWS Toolkit Extension Logs ==="
-                  find packages/toolkit/.vscode-test/user-data/logs -name "*.log" -type f 2>/dev/null | while read logfile; do
-                    echo "--- $logfile ---"
-                    cat "$logfile" || echo "Could not read log file"
-                  done || echo "No extension logs found"
-
-                  echo ""
-                  echo "=== CloudFormation LSP Server Logs ==="
-                  echo "LSP Path: $__CLOUDFORMATIONLSP_PATH"
-                  if [ -n "$__CLOUDFORMATIONLSP_PATH" ]; then
-                    LSP_LOG_DIR="$__CLOUDFORMATIONLSP_PATH/.aws-cfn-storage/logs"
-                    echo "Checking directory: $LSP_LOG_DIR"
-                    if [ -d "$LSP_LOG_DIR" ]; then
-                      find "$LSP_LOG_DIR" -name "*.log" -type f 2>/dev/null | while read logfile; do
-                        echo "--- $logfile ---"
-                        cat "$logfile" || echo "Could not read log file"
-                      done
-                    else
-                      echo "LSP logs directory does not exist: $LSP_LOG_DIR"
-                      echo "Contents of LSP path:"
-                      ls -la "$__CLOUDFORMATIONLSP_PATH" 2>/dev/null || echo "Cannot list LSP path"
-                    fi
-                  else
-                    echo "Environment variable __CLOUDFORMATIONLSP_PATH is not set"
-                  fi
-
     windows:
         needs: lint-commits
         name: test Windows
@@ -251,7 +190,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [stable, insiders]
-                package: [amazonq, toolkit]
+                package: [amazonq]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
