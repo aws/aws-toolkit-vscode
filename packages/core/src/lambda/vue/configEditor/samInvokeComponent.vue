@@ -97,7 +97,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="config-item" v-if="resourceData?.hasTenancyConfig">
+                <div
+                    class="config-item"
+                    v-if="resourceData?.hasTenancyConfig && launchConfig.invokeTarget.target !== 'api'"
+                >
                     <label for="tenant-id">Tenant ID</label>
                     <input
                         name="tenant-id"
