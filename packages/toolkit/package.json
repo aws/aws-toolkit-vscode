@@ -702,7 +702,7 @@
                                         "type": "number"
                                     },
                                     "tenantId": {
-                                        "description": "Tenant ID for multi-tenant Lambda functions",
+                                        "description": "%AWS.configuration.description.awssam.debug.tenantId%",
                                         "type": "string"
                                     },
                                     "pathMappings": {
