@@ -1,3 +1,7 @@
+## 1.108.0 2026-01-23
+
+- Miscellaneous non-user-facing changes
+
 ## 1.107.0 2026-01-08
 
 - Miscellaneous non-user-facing changes
