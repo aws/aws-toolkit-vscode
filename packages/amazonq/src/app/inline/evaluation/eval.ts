@@ -16,8 +16,15 @@ import { InlineCompletionItemWithReferences } from '@aws/language-server-runtime
 const baseDelay = 200 // milliseconds
 const maxJitter = 200 // maximum jitter in milliseconds
 
-type ComputeResultSuccess = EditDistanceResult & InputEntry
-type ComupteResultFailure = { failureReason: string } & InputEntry
+type ComputeResultSuccess = {
+    editDistanceResult: EditDistanceResult
+    metadata: any
+    inputEntry: InputEntry
+}
+type ComupteResultFailure = {
+    failureReason: string
+    inputEntry: InputEntry
+}
 
 interface DetailedResult {
     suggestionIndex: number
@@ -177,7 +184,7 @@ export class EvaluationProcess {
     private async triggerInlineOnce(inputEntry: InputEntry): Promise<ComputeResultSuccess | ComupteResultFailure> {
         const uri = await this.findFileInWorkspace(inputEntry.filename, inputEntry.packageName)
         if (!uri) {
-            return { failureReason: `File ${inputEntry.filename} not found`, ...inputEntry }
+            return { failureReason: `File ${inputEntry.filename} not found`, inputEntry: { ...inputEntry } }
         }
 
         // setup
@@ -214,7 +221,7 @@ export class EvaluationProcess {
             // TODO: weird, some left context don't match
             // assert.strictEqual(ctx.leftFileContent, expectedLeftContext)
         } catch (e) {
-            return { failureReason: (e as Error).message, ...inputEntry }
+            return { failureReason: (e as Error).message, inputEntry: { ...inputEntry } }
         }
 
         // once setup is done, trigger inline
@@ -224,7 +231,7 @@ export class EvaluationProcess {
                 const res = await this.triggerInlineAndAnalyze(document, editor, inputEntry)
                 return res
             } catch (e) {
-                return { failureReason: (e as Error).message, ...inputEntry }
+                return { failureReason: (e as Error).message, inputEntry: { ...inputEntry } }
             } finally {
                 // close the editor, ensuring open tabs from different packages will not impact the LLM response
                 await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
@@ -232,7 +239,7 @@ export class EvaluationProcess {
         } else {
             const msg = `failed to move cursor to ${inputEntry.line}, ${inputEntry.column}`
             this.log.error(msg)
-            return { failureReason: msg, ...inputEntry }
+            return { failureReason: msg, inputEntry: { ...inputEntry } }
         }
     }
 
@@ -254,6 +261,8 @@ export class EvaluationProcess {
 
         // compare with ground truth
         try {
+            const session = this.sessionManager.getActiveSession()
+            const metadata = session?.metadata ?? {}
             const suggestions = this.sessionManager?.getActiveRecommendation() ?? []
             const compareResult = computeEditDistances(
                 suggestions.map((s) => s.insertText as string),
@@ -268,8 +277,15 @@ actual suggestion: ${this.formatSuggestionsLog(suggestions)}`
             this.log.info(logstr)
 
             return {
-                ...compareResult,
-                ...inputEntry,
+                editDistanceResult: {
+                    ...compareResult,
+                },
+                metadata: {
+                    ...metadata,
+                },
+                inputEntry: {
+                    ...inputEntry,
+                },
             }
         } catch (e) {
             const logstr = `@@response analysis@@
@@ -319,7 +335,11 @@ function calEditSim(target: string, truth: string): number {
 
 function computeEditDistances(suggestions: string[], truth: string): EditDistanceResult {
     if (suggestions.length === 0) {
-        throw new Error('empty suggestion')
+        return {
+            emRatio: 0,
+            editSimAvg: 0,
+            detailedResults: [],
+        }
     }
 
     if (!truth.length) {

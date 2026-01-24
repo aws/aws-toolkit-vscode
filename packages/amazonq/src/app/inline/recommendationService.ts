@@ -89,6 +89,10 @@ export class RecommendationService {
               }
             : undefined
         const openTabs = await getOpenFilesInWindow()
+        // TODO: debug remove
+        if (openTabs.length > 1) {
+            console.log()
+        }
         let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -176,6 +180,14 @@ export class RecommendationService {
                 }
             }
 
+            // TODO: debug remove
+            if (result.metadata.request.supplementalContexts) {
+                const arr = result.metadata.request.supplementalContexts as Array<any>
+                if (arr.length > 1) {
+                    console.log()
+                }
+            }
+
             this.logger.info('Received inline completion response (page 0) from LSP: %O', {
                 sessionId: result.sessionId,
                 latency: Date.now() - t0,
@@ -237,7 +249,7 @@ export class RecommendationService {
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
             const firstCompletionDisplayLatency = Date.now() - requestStartTime
-            this.sessionManager.startSession(
+            const s = this.sessionManager.startSession(
                 result.sessionId,
                 result.items,
                 requestStartTime,
@@ -245,6 +257,7 @@ export class RecommendationService {
                 document,
                 firstCompletionDisplayLatency
             )
+            s.metadata = result.metadata
 
             const isInlineEdit = result.items.some((item) => item.isInlineEdit)
 

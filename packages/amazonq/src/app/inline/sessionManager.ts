@@ -29,6 +29,8 @@ export interface CodeWhispererSession {
     // timestamp when the suggestion was last visible
     lastVisibleTime: number
     fileContent: string
+
+    metadata?: any
 }
 
 export class SessionManager {
@@ -45,9 +47,9 @@ export class SessionManager {
         startPosition: vscode.Position,
         document: vscode.TextDocument,
         firstCompletionDisplayLatency?: number
-    ) {
+    ): CodeWhispererSession {
         const diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
-        this.activeSession = {
+        const s = {
             sessionId,
             suggestions,
             isRequestInProgress: true,
@@ -59,7 +61,10 @@ export class SessionManager {
             lastVisibleTime: 0,
             fileContent: document.getText(),
         }
+        this.activeSession = s
         this._currentSuggestionIndex = 0
+
+        return s
     }
 
     public closeSession() {
