@@ -85,15 +85,23 @@ export class HyperpodConnectionMonitor {
                 hostPattern = `hp_${connectionKey.replace(/:/g, '_')}`
             }
 
-            const sshCheck = new ChildProcess('pgrep', ['-f', `ssh.*${hostPattern}`])
-            const ssmCheck = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])
+            const isWindows = process.platform === 'win32'
 
-            const [sshResult, ssmResult] = await Promise.allSettled([sshCheck.run(), ssmCheck.run()])
+            if (isWindows) {
+                const tasklistCheck = new ChildProcess('tasklist', ['/FI', 'IMAGENAME eq ssh.exe', '/FO', 'CSV', '/NH'])
+                const result = await tasklistCheck.run()
+                return result.exitCode === 0 && result.stdout.includes('ssh.exe')
+            } else {
+                const sshCheck = new ChildProcess('pgrep', ['-f', `ssh.*${hostPattern}`])
+                const ssmCheck = new ChildProcess('pgrep', ['-f', 'session-manager-plugin'])
 
-            const hasSsh = sshResult.status === 'fulfilled' && sshResult.value.exitCode === 0
-            const hasSSM = ssmResult.status === 'fulfilled' && ssmResult.value.exitCode === 0
+                const [sshResult, ssmResult] = await Promise.allSettled([sshCheck.run(), ssmCheck.run()])
 
-            return hasSsh || hasSSM
+                const hasSsh = sshResult.status === 'fulfilled' && sshResult.value.exitCode === 0
+                const hasSSM = ssmResult.status === 'fulfilled' && ssmResult.value.exitCode === 0
+
+                return hasSsh || hasSSM
+            }
         } catch {
             return false
         }

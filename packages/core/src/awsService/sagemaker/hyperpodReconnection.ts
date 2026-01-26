@@ -5,8 +5,8 @@
 
 import { getLogger } from '../../shared/logger/logger'
 import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
-import { join } from 'path'
-import os from 'os'
+import * as vscode from 'vscode'
+import globals from '../../shared/extensionGlobals'
 import { clearSSHHostKey } from './hyperpodUtils'
 import { getHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
@@ -52,10 +52,10 @@ export class HyperpodReconnectionManager {
             const connectionMapping = await getHyperpodConnection(connectionKey)
             await clearSSHHostKey(connectionKey, connectionMapping?.region, connectionMapping?.accountId)
 
-            const serverInfoPath = join(
-                os.homedir(),
-                'Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json'
-            )
+            const serverInfoPath = vscode.Uri.joinPath(
+                globals.context.globalStorageUri,
+                'sagemaker-local-server-info.json'
+            ).fsPath
 
             const serverInfoContent = await fs.readFile(serverInfoPath, 'utf8')
             const serverInfo = JSON.parse(serverInfoContent)

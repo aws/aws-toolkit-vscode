@@ -41,19 +41,32 @@ class HyperPodSshConfig extends SshConfig {
     }
 
     protected override createSSHConfigSection(proxyCommand: string): string {
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCmd = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         return `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host hp_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
-    ProxyCommand '${this.hyperpodConnectPath}' '%h'
+    ProxyCommand ${proxyCmd}
     IdentitiesOnly yes
 `
     }
 
     public override async ensureValid() {
-        const proxyCommand = `'${this.hyperpodConnectPath}' '%h'`
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCommand = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         const verifyHost = await this.verifySSHHost(proxyCommand)
         if (verifyHost.isErr()) {
             return verifyHost
@@ -152,15 +165,22 @@ export async function prepareDevEnvConnection(
     await startLocalServer(ctx)
     await removeKnownHost(hostname)
 
-    const hyperpodConnectPath = path.join(ctx.globalStorageUri.fsPath, 'hyperpod_connect')
+    const hyperpodConnectPath = path.join(
+        ctx.globalStorageUri.fsPath,
+        process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
+    )
 
     // Copy hyperpod_connect script if needed
     if (connectionType === 'sm_hp') {
-        const sourceScriptPath = ctx.asAbsolutePath('resources/hyperpod_connect')
+        const sourceScriptPath = ctx.asAbsolutePath(
+            process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
+        )
         if (!(await fs.existsFile(hyperpodConnectPath))) {
             try {
                 await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                await fs.chmod(hyperpodConnectPath, 0o755)
+                if (process.platform !== 'win32') {
+                    await fs.chmod(hyperpodConnectPath, 0o755)
+                }
                 logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
             } catch (err) {
                 logger.error(`Failed to copy hyperpod_connect script: ${err}`)
