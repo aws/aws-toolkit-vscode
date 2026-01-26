@@ -55,7 +55,10 @@ interface Cli {
     exec?: string
 }
 
-export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch'>
+export type AwsClis = Extract<
+    ToolId,
+    'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch' | 'path-resolver'
+>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
@@ -184,6 +187,15 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         name: 'Finch',
         manualInstallLink: 'https://runfinch.com/docs/getting-started/installation/',
         exec: 'finch',
+    },
+    'path-resolver': {
+        command: {
+            windows: ['where'],
+            unix: ['which'],
+        },
+        source: {}, // OS utilities used to locate files and executables
+        name: 'Path resolver',
+        manualInstallLink: '',
     },
 }
 
@@ -579,6 +591,24 @@ export async function updateAwsCli(): Promise<string> {
     }
 
     const result = await installCli('aws-cli', false)
+
+    // Get the which/ where command, run it to find the AWS CLI path, and display it to the user
+    const whichCommands = getOsCommands(awsClis['path-resolver'])
+    if (whichCommands && whichCommands.length > 0) {
+        const whichCmd = whichCommands[0]
+        const cliExec = awsClis['aws-cli'].exec
+        if (cliExec) {
+            getLogger().info(`Running "${whichCmd} ${cliExec}" to find AWS CLI path`)
+            const whichResult = await new ChildProcess(whichCmd, [cliExec]).run()
+            if (whichResult.exitCode === 0 && whichResult.stdout) {
+                const cliPath = whichResult.stdout.trim().split('\n')[0]
+                const cliInUseMessage = `Toolkit is using AWS CLI at "${cliPath}".`
+                getLogger().info(cliInUseMessage)
+                void vscode.window.showInformationMessage(cliInUseMessage)
+            }
+        }
+    }
+
     return result
 }
 
