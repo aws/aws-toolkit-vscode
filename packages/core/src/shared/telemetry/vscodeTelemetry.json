@@ -11,7 +11,8 @@
                 "aws-cli",
                 "sam-cli",
                 "docker",
-                "finch"
+                "finch",
+                "path-resolver"
             ]
         },
         {
