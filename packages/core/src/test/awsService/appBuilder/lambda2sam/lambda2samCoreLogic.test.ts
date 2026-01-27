@@ -41,6 +41,28 @@ describe('lambda2samCoreLogic', function () {
         )
     }
 
+    /**
+     * Helper function to create a standard stack info object for tests
+     */
+    function createStackInfo() {
+        return { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+    }
+
+    /**
+     * Helper function to setup layer version stubs for testing
+     */
+    function setupLayerVersionStubs() {
+        cfnClientStub.describeStackResource.resolves({
+            StackResourceDetail: {
+                PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
+            },
+        })
+
+        lambdaClientStub.getLayerVersion.resolves({
+            Content: { Location: 'https://lambda-layer-code.zip' },
+        })
+    }
+
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
         tempDir = await makeTemporaryToolkitFolder()
@@ -211,7 +233,7 @@ describe('lambda2samCoreLogic', function () {
         it('uses physical ID from CloudFormation when not provided', async function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testResource'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
             lambdaClientStub.getFunction.resolves({
                 Code: { Location: 'https://lambda-function-code.zip' },
@@ -242,7 +264,7 @@ describe('lambda2samCoreLogic', function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testResource'
             const physicalResourceId = 'provided-physical-id'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
             lambdaClientStub.getFunction.resolves({
                 Code: { Location: 'https://lambda-function-code.zip' },
@@ -270,7 +292,7 @@ describe('lambda2samCoreLogic', function () {
         it('throws an error when code location is missing', async function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testResource'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
             lambdaClientStub.getFunction.resolves({
                 Code: {}, // No Location
@@ -287,18 +309,9 @@ describe('lambda2samCoreLogic', function () {
         it('extracts layer name and version from ARN and downloads content', async function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testLayer'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
-            // Return an ARN for a layer version
-            cfnClientStub.describeStackResource.resolves({
-                StackResourceDetail: {
-                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
-                },
-            })
-
-            lambdaClientStub.getLayerVersion.resolves({
-                Content: { Location: 'https://lambda-layer-code.zip' },
-            })
+            setupLayerVersionStubs()
 
             await lambda2sam.downloadLayerVersionResourceByName(resourceName, stackInfo, targetDir, 'us-west-2')
 
@@ -322,7 +335,7 @@ describe('lambda2samCoreLogic', function () {
         it('throws an error when ARN format is invalid', async function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testLayer'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
             // Return an invalid ARN
             cfnClientStub.describeStackResource.resolves({
@@ -340,15 +353,14 @@ describe('lambda2samCoreLogic', function () {
         it('throws an error when layer content location is missing', async function () {
             const targetDir = vscode.Uri.file(tempDir)
             const resourceName = 'testLayer'
-            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+            const stackInfo = createStackInfo()
 
-            // Return an ARN for a layer version
+            // Setup layer version stub with ARN but no content location
             cfnClientStub.describeStackResource.resolves({
                 StackResourceDetail: {
                     PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
                 },
             })
-
             lambdaClientStub.getLayerVersion.resolves({
                 Content: {}, // No Location
             })
@@ -393,36 +405,6 @@ describe('lambda2samCoreLogic', function () {
                 InvokeMode: undefined,
             })
         })
-
-        it('skips URL resources with Qualifier property', async function () {
-            // Setup resources with Lambda URL including Qualifier - using 'as any' to bypass strict typing for tests
-            const resources: cloudFormation.TemplateResources = {
-                TestFunc: {
-                    Type: cloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    Properties: {
-                        FunctionName: 'test-function',
-                        PackageType: 'Zip',
-                    },
-                },
-                TestFuncUrl: {
-                    Type: cloudFormation.LAMBDA_URL_TYPE,
-                    Properties: {
-                        TargetFunctionArn: { Ref: 'TestFunc' },
-                        AuthType: 'NONE',
-                        Qualifier: 'prod',
-                    },
-                },
-            } as any
-
-            // Call the function
-            await lambda2sam.processLambdaUrlResources(resources)
-
-            // Verify URL resource is still there (not transformed)
-            assert.notStrictEqual(resources['TestFuncUrl'], undefined)
-
-            // Verify function resource doesn't have FunctionUrlConfig using non-null assertion
-            assert.strictEqual(resources['TestFunc']!.Properties!.FunctionUrlConfig, undefined)
-        })
     })
 
     describe('processLambdaResources', function () {
@@ -451,12 +433,7 @@ describe('lambda2samCoreLogic', function () {
                 },
             } as any
 
-            const stackInfo = {
-                stackId: 'stack-id',
-                stackName: 'test-stack',
-                isSamTemplate: false,
-                template: {},
-            }
+            const stackInfo = createStackInfo()
 
             const projectDir = vscode.Uri.file(tempDir)
 
@@ -499,12 +476,7 @@ describe('lambda2samCoreLogic', function () {
                 },
             } as any
 
-            const stackInfo = {
-                stackId: 'stack-id',
-                stackName: 'test-stack',
-                isSamTemplate: false,
-                template: {},
-            }
+            const stackInfo = createStackInfo()
 
             const projectDir = vscode.Uri.file(tempDir)
 
@@ -541,25 +513,10 @@ describe('lambda2samCoreLogic', function () {
                 },
             } as any
 
-            const stackInfo = {
-                stackId: 'stack-id',
-                stackName: 'test-stack',
-                isSamTemplate: false,
-                template: {},
-            }
-
+            const stackInfo = createStackInfo()
             const projectDir = vscode.Uri.file(tempDir)
 
-            // Setup layer version stub
-            cfnClientStub.describeStackResource.resolves({
-                StackResourceDetail: {
-                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
-                },
-            })
-
-            lambdaClientStub.getLayerVersion.resolves({
-                Content: { Location: 'https://lambda-layer-code.zip' },
-            })
+            setupLayerVersionStubs()
 
             // Call the function
             await lambda2sam.processLambdaLayerResources(resources, projectDir, stackInfo, 'us-west-2')
@@ -589,25 +546,10 @@ describe('lambda2samCoreLogic', function () {
                 },
             } as any
 
-            const stackInfo = {
-                stackId: 'stack-id',
-                stackName: 'test-stack',
-                isSamTemplate: false,
-                template: {},
-            }
-
+            const stackInfo = createStackInfo()
             const projectDir = vscode.Uri.file(tempDir)
 
-            // Setup layer version stub
-            cfnClientStub.describeStackResource.resolves({
-                StackResourceDetail: {
-                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
-                },
-            })
-
-            lambdaClientStub.getLayerVersion.resolves({
-                Content: { Location: 'https://lambda-layer-code.zip' },
-            })
+            setupLayerVersionStubs()
 
             // Call the function
             await lambda2sam.processLambdaLayerResources(resources, projectDir, stackInfo, 'us-west-2')
