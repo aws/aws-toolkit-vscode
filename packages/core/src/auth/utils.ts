@@ -15,7 +15,7 @@ import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { formatError, ToolkitError } from '../shared/errors'
-import { asString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
@@ -898,4 +898,59 @@ export function isLocalStackConnection(): boolean {
     return (
         globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
     )
+}
+
+/**
+ * Creates and activates a connection using console credentials.
+ * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ *
+ * @param name - Profile name (typically Lambda function name)
+ * @param region - AWS region
+ * @returns Connection created from console credentials
+ * @throws ToolkitError if connection creation fails
+ */
+export async function createAndUseConsoleConnection(profileName: string, region: string): Promise<Connection> {
+    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+
+    const credentialsId: CredentialsId = {
+        credentialSource: 'profile',
+        credentialTypeId: profileName,
+    }
+    const connectionId = asString(credentialsId)
+    const connection = await Auth.instance.getConnection({ id: connectionId })
+
+    // Console login did not create a connection.
+    if (!connection) {
+        throw new ToolkitError('Console login failed to create connection', {
+            code: 'NoConsoleConnection',
+        })
+    }
+
+    await Auth.instance.useConnection({ id: connectionId })
+    return connection
+}
+
+/**
+ * Gets an active IAM connection or falls back to console credentials.
+ *
+ * @param name - Lambda function name (used as profile name for console credentials)
+ * @param region - AWS region
+ * @returns Active IAM connection or newly created console connection
+ * @throws ToolkitError if console login fails
+ */
+export async function getIAMConnectionOrFallbackToConsole(name: string, region: string): Promise<Connection> {
+    const tryActiveConnection = await getIAMConnection({ prompt: false })
+
+    if (tryActiveConnection && isIamConnection(tryActiveConnection)) {
+        try {
+            // Checks if credentials can be retrieved and returns if valid
+            await tryActiveConnection.getCredentials()
+            return tryActiveConnection
+        } catch (error) {
+            // Fall back to console credentials for any credential retrieval error
+        }
+    }
+
+    // Fallback to console
+    return await createAndUseConsoleConnection(name, region)
 }

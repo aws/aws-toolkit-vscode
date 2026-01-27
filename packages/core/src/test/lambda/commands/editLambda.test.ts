@@ -14,6 +14,7 @@ import {
     getReadme,
     deleteFilesInFolder,
     overwriteChangesForEdit,
+    getFunctionWithFallback,
 } from '../../../lambda/commands/editLambda'
 import { LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import * as downloadLambda from '../../../lambda/commands/downloadLambda'
@@ -25,6 +26,8 @@ import { LambdaFunctionNodeDecorationProvider } from '../../../lambda/explorer/l
 import path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import { lambdaTempPath } from '../../../lambda/utils'
+import * as lambdaClient from '../../../shared/clients/lambdaClient'
+import * as authUtils from '../../../auth/utils'
 
 describe('editLambda', function () {
     let mockLambda: LambdaFunction
@@ -303,5 +306,85 @@ describe('editLambda', function () {
 
             assert.strictEqual(copyStub.callCount, 3)
         })
+    })
+})
+
+describe('getFunctionWithFallback', function () {
+    let getFunctionWithCredentialsStub: sinon.SinonStub
+    let createAndUseConsoleConnectionStub: sinon.SinonStub
+    let showViewLogsMessageStub: sinon.SinonStub
+    let getIAMConnectionOrFallbackToConsoleStub: sinon.SinonStub
+    const mockFunction = { Configuration: { FunctionName: 'test' } }
+    const mockConnection = {
+        type: 'iam' as const,
+        id: 'profile:test',
+        label: 'profile:test',
+        endpointUrl: undefined,
+        getCredentials: sinon.stub().resolves({}),
+    }
+
+    beforeEach(function () {
+        getFunctionWithCredentialsStub = sinon.stub(lambdaClient, 'getFunctionWithCredentials')
+        getIAMConnectionOrFallbackToConsoleStub = sinon.stub(authUtils, 'getIAMConnectionOrFallbackToConsole')
+        createAndUseConsoleConnectionStub = sinon.stub(authUtils, 'createAndUseConsoleConnection')
+        showViewLogsMessageStub = sinon.stub(messages, 'showViewLogsMessage')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('returns function when credentials are valid', async function () {
+        getFunctionWithCredentialsStub.resolves(mockFunction)
+        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(createAndUseConsoleConnectionStub.notCalled)
+    })
+
+    it('retries with console credentials on ResourceNotFoundException', async function () {
+        const error = new Error('Function not found')
+        error.name = 'ResourceNotFoundException'
+        getFunctionWithCredentialsStub.onFirstCall().rejects(error)
+        getFunctionWithCredentialsStub.onSecondCall().resolves(mockFunction)
+        const mockConnection = {
+            type: 'iam' as const,
+            id: 'profile:test',
+            label: 'profile:test',
+            endpointUrl: undefined,
+            getCredentials: sinon.stub().resolves({ accountId: '123456789' }),
+        }
+        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(createAndUseConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
+        assert(showViewLogsMessageStub.called)
+        assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('123456789'))
+    })
+
+    it('retries with console credentials on AccessDeniedException', async function () {
+        const error = new Error('User not authorized to perform: lambda:GetFunction on resource')
+        error.name = 'AccessDeniedException'
+        getFunctionWithCredentialsStub.onFirstCall().rejects(error)
+        getFunctionWithCredentialsStub.onSecondCall().resolves(mockFunction)
+        const mockConnection = {
+            type: 'iam' as const,
+            id: 'profile:test',
+            label: 'profile:test',
+            endpointUrl: undefined,
+            getCredentials: sinon.stub().resolves({ accountId: '987654321' }),
+        }
+        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-2')
+
+        assert.strictEqual(result, mockFunction)
+        assert(createAndUseConsoleConnectionStub.calledWith('test-function', 'us-east-2'))
+        assert(showViewLogsMessageStub.called)
+        assert.ok(!showViewLogsMessageStub.firstCall.args[0].includes('987654321'))
     })
 })

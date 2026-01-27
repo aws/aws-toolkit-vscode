@@ -24,6 +24,8 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { getFunctionWithCredentials } from '../../shared/clients/lambdaClient'
 import { getLogger } from '../../shared/logger/logger'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { createAndUseConsoleConnection, getIAMConnectionOrFallbackToConsole } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -118,8 +120,9 @@ export async function deployFromTemp(lambda: LambdaFunction, projectUri: vscode.
             await vscode.workspace.saveAll()
             try {
                 await runUploadDirectory(lambda, 'zip', projectUri)
-            } catch {
-                throw new ToolkitError('Failed to deploy Lambda function', { code: 'deployFailure' })
+            } catch (error) {
+                // Chain error to preserve root cause for troubleshooting deployment failures
+                throw ToolkitError.chain(error, 'Failed to deploy Lambda function', { code: 'deployFailure' })
             }
             await setFunctionInfo(lambda, {
                 lastDeployed: globals.clock.Date.now(),
@@ -225,14 +228,61 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
     })
 }
 
+/**
+ * Retrieves Lambda function configuration with automatic fallback to console credentials.
+ * Handles credential mismatches (ResourceNotFoundException, AccessDeniedException).
+ *
+ * @param name - Lambda function name
+ * @param region - AWS region
+ * @returns Lambda function configuration
+ */
+export async function getFunctionWithFallback(name: string, region: string) {
+    // Get active IAM connection or prompt for console credentials.
+    // Provides connection details for error messages if credential mismatch occurs.
+    // If this fails, error propagates to URI handler for metrics.
+    const connection = await getIAMConnectionOrFallbackToConsole(name, region)
+
+    try {
+        return await getFunctionWithCredentials(region, name)
+    } catch (error: any) {
+        // Detect credential mismatches (ResourceNotFoundException, AccessDeniedException)
+        // so that user gets appropriate error messages (function doesn't exist, permissions issue, etc.)
+        let message: string | undefined
+        if (error.name === 'ResourceNotFoundException') {
+            const credentials = connection.type === 'iam' ? await connection.getCredentials() : undefined
+            const accountId = credentials ? (credentials as any).accountId : undefined
+            message = localize(
+                'AWS.lambda.open.functionNotFound',
+                'Function not found{0}. Retrying with console credentials.',
+                accountId ? ` in account ${accountId}` : ''
+            )
+        } else if (error.name === 'AccessDeniedException') {
+            message = localize(
+                'AWS.lambda.open.accessDenied',
+                'Local credentials lack permission to access function. Retrying with console credentials.'
+            )
+        }
+
+        if (message) {
+            void showViewLogsMessage(message, 'warn')
+            getLogger().warn(message)
+        }
+        // Retry once with console credentials after credential mismatch. If second attempt fails, throw the error up.
+        await createAndUseConsoleConnection(name, region)
+        return await getFunctionWithCredentials(region, name)
+    }
+}
+
+/**
+ * Opens a Lambda function for editing in VS Code.
+ * Retrieves IAM credentials (with console fallback), downloads function code, and opens it in a new workspace.
+ * Note: IAM credentials are required to interact with AWS resources, even for SSO users.
+ */
 export async function openLambdaFolderForEdit(name: string, region: string) {
     const downloadLocation = getTempLocation(name, region)
 
-    // Do all authentication work before opening workspace to avoid race condition
-    const getFunctionOutput = await getFunctionWithCredentials(region, name)
+    const getFunctionOutput = await getFunctionWithFallback(name, region)
     const configuration = getFunctionOutput.Configuration
-
-    // Download and set up Lambda code before opening workspace
     await editLambda(
         {
             name,
