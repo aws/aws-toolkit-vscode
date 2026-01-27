@@ -92,15 +92,9 @@ describe('env', function () {
     it('isBeta', async () => {
         // HACK: read each package.json because env.ts thinks version is "testPluginVersion" during testing.
         const toolkitPath = path.join(__dirname, '../../../../../../toolkit/package.json')
-        const amazonqPath = path.join(__dirname, '../../../../../../amazonq/package.json')
         const toolkit = JSON.parse(await fs.readFileText(toolkitPath))
-        const amazonq = JSON.parse(await fs.readFileText(amazonqPath))
         const toolkitVer = toolkit.version as string
-        const amazonqVer = amazonq.version as string
         const toolkitBeta = toolkitVer.startsWith('99.')
-        const amazonqBeta = amazonqVer.startsWith('99.')
-
-        assert(toolkitBeta === amazonqBeta)
         const expected = toolkitBeta
         assert.strictEqual(isBeta(), expected)
     })

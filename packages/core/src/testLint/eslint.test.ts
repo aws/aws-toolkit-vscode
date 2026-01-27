@@ -31,7 +31,6 @@ describe('eslint', function () {
                 '**/src/testFixtures/**',
                 '--ext',
                 '.ts',
-                '../amazonq',
                 '../core',
                 '../toolkit',
                 // TODO: fix lint issues in scripts/
