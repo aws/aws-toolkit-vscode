@@ -408,6 +408,17 @@ describe('lambda2samCoreLogic', function () {
     })
 
     describe('processLambdaResources', function () {
+        const stackInfo = createStackInfo()
+        let projectDir: vscode.Uri
+
+        beforeEach(async function () {
+            // Add necessary stub for getFunction
+            lambdaClientStub.getFunction.resolves({
+                Code: { Location: 'https://lambda-function-code.zip' },
+            })
+            projectDir = vscode.Uri.file(tempDir)
+        })
+
         it('transforms AWS::Lambda::Function to AWS::Serverless::Function', async function () {
             // Setup resources with Lambda function - using 'as any' to bypass strict typing for tests
             const resources: cloudFormation.TemplateResources = {
@@ -433,15 +444,6 @@ describe('lambda2samCoreLogic', function () {
                 },
             } as any
 
-            const stackInfo = createStackInfo()
-
-            const projectDir = vscode.Uri.file(tempDir)
-
-            // Add necessary stub for getFunction
-            lambdaClientStub.getFunction.resolves({
-                Code: { Location: 'https://lambda-function-code.zip' },
-            })
-
             // Call the function
             await lambda2sam.processLambdaResources(resources, projectDir, stackInfo, 'us-west-2')
 
@@ -457,6 +459,7 @@ describe('lambda2samCoreLogic', function () {
                 'test-key': 'test-value',
             })
 
+            assert.strictEqual(resources['TestFunc']!.Properties!.CodeUri, 'TestFunc')
             // Verify downloadLambdaFunctionCode was called
             assert.strictEqual(downloadUnzipStub.calledOnce, true)
         })
@@ -475,15 +478,6 @@ describe('lambda2samCoreLogic', function () {
                     },
                 },
             } as any
-
-            const stackInfo = createStackInfo()
-
-            const projectDir = vscode.Uri.file(tempDir)
-
-            // Add necessary stub for getFunction
-            lambdaClientStub.getFunction.resolves({
-                Code: { Location: 'https://lambda-function-code.zip' },
-            })
 
             // Call the function
             await lambda2sam.processLambdaResources(resources, projectDir, stackInfo, 'us-west-2')
