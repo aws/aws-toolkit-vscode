@@ -10,9 +10,8 @@ import * as lambda2sam from '../../../../awsService/appBuilder/lambda2sam/lambda
 import * as utils from '../../../../awsService/appBuilder/utils'
 import { fs } from '../../../../shared'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
-import os from 'os'
-import path from 'path'
 import { LAMBDA_FUNCTION_TYPE, LAMBDA_LAYER_TYPE } from '../../../../shared/cloudformation/cloudformation'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 
 describe('lambda2samDownload', function () {
     let sandbox: sinon.SinonSandbox
@@ -23,12 +22,7 @@ describe('lambda2samDownload', function () {
 
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
-        tempDir = path.join(os.tmpdir(), `aws-toolkit-test-${Date.now()}`)
-
-        // Create temp directory for tests - actually create it, don't stub
-        if (!(await fs.exists(vscode.Uri.file(tempDir)))) {
-            await fs.mkdir(vscode.Uri.file(tempDir))
-        }
+        tempDir = await makeTemporaryToolkitFolder()
 
         // Create Lambda client stub with necessary properties
         lambdaClientStub = sandbox.createStubInstance(DefaultLambdaClient)

@@ -2,15 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
+import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { MetadataManager } from '../../../../awsService/appBuilder/serverlessLand/metadataManager'
 import * as main from '../../../../awsService/appBuilder/serverlessLand/main'
 import {
@@ -202,33 +199,67 @@ describe('openReadmeFile', () => {
 })
 
 describe('getProjectUri', () => {
-    const sandbox = sinon.createSandbox()
-    beforeEach(() => {
-        sandbox.restore()
+    let tempFolder: string
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(async () => {
+        sandbox = sinon.createSandbox()
+        // Create a real temp folder for testing
+        tempFolder = await makeTemporaryToolkitFolder()
     })
-    afterEach(() => {
+
+    afterEach(async () => {
         sandbox.restore()
+        // Clean up temp folder
+        await fs.delete(tempFolder, { recursive: true, force: true })
     })
-    const mockConfig = {
-        name: 'test-project',
-        location: vscode.Uri.file('/test'),
-        pattern: 'test-project-sam-python',
-        runtime: 'python',
-        iac: 'sam',
-        assetName: 'test-project-sam-python',
-    }
+
     it('returns Uri when file exists', async () => {
         const testFile = 'README.md'
-        const expectedPath = path.resolve('/test', 'test-project', testFile)
-        const uriFileStub = sandbox.stub(vscode.Uri, 'file').returns({
-            fsPath: expectedPath,
-        } as vscode.Uri)
+        const projectName = 'test-project'
+
+        // Create the project directory and file
+        const projectDir = path.join(tempFolder, projectName)
+        await fs.mkdir(projectDir)
+        await fs.writeFile(path.join(projectDir, testFile), '# Test README')
+
+        const mockConfig = {
+            name: projectName,
+            location: vscode.Uri.file(tempFolder),
+        }
 
         const result = await getProjectUri(mockConfig, testFile)
-        sandbox.assert.calledWith(uriFileStub, expectedPath)
+
+        // Verify the result has the expected path
+        const expectedPath = path.resolve(tempFolder, projectName, testFile)
         assert.strictEqual(result?.fsPath, expectedPath)
     })
+
+    it('returns undefined when file does not exist', async () => {
+        const testFile = 'README.md'
+        const projectName = 'test-project'
+
+        // Create the project directory but NOT the file
+        const projectDir = path.join(tempFolder, projectName)
+        await fs.mkdir(projectDir)
+
+        const mockConfig = {
+            name: projectName,
+            location: vscode.Uri.file(tempFolder),
+        }
+
+        const result = await getProjectUri(mockConfig, testFile)
+
+        // Verify the result is undefined when file doesn't exist
+        assert.strictEqual(result, undefined)
+    })
+
     it('handles missing project directory', async () => {
+        const mockConfig = {
+            name: 'test-project',
+            location: vscode.Uri.file(tempFolder),
+        }
+
         await assert.rejects(
             async () => await getProjectUri(mockConfig, ''),
             /expected "file" parameter to have at least one item/

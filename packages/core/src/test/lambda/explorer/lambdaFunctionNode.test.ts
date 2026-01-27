@@ -15,6 +15,7 @@ import {
 } from '../../../lambda/explorer/lambdaFunctionNode'
 import sinon from 'sinon'
 import * as editLambdaModule from '../../../lambda/commands/editLambda'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('LambdaFunctionNode', function () {
     const parentNode = new TestAWSTreeNode('test node')
@@ -26,15 +27,17 @@ describe('LambdaFunctionNode', function () {
         FunctionArn: 'testFunctionARN',
     }
 
-    const regionPath = path.join('/tmp/aws-toolkit-vscode/lambda', fakeRegion)
-    const functionPath = path.join(regionPath, fakeFunctionConfig.FunctionName)
-    const filePath = path.join(functionPath, fakeFilename)
-
+    let tempFolder: string
+    let functionPath: string
+    let filePath: string
     let testNode: LambdaFunctionNode
-
     let editLambdaStub: sinon.SinonStub
 
-    before(async function () {
+    beforeEach(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        functionPath = path.join(tempFolder, fakeFunctionConfig.FunctionName)
+        filePath = path.join(functionPath, fakeFilename)
+
         await fs.mkdir(functionPath)
         await fs.writeFile(filePath, 'fakefilecontent')
 
@@ -49,8 +52,8 @@ describe('LambdaFunctionNode', function () {
         )
     })
 
-    after(async function () {
-        await fs.delete(regionPath, { recursive: true })
+    afterEach(async function () {
+        await fs.delete(tempFolder, { recursive: true })
         editLambdaStub.restore()
     })
 

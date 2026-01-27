@@ -9,8 +9,9 @@ import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import path from 'path'
 import { LambdaFunctionFolderNode } from '../../../lambda/explorer/lambdaFunctionFolderNode'
 import { fs } from '../../../shared/fs/fs'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-describe('LambdaFunctionFileNode', function () {
+describe('LambdaFunctionFolderNode', function () {
     const fakeFunctionConfig = {
         FunctionName: 'testFunctionName',
         FunctionArn: 'testFunctionARN',
@@ -18,23 +19,25 @@ describe('LambdaFunctionFileNode', function () {
     const fakeRegion = 'fakeRegion'
     const fakeSubFolder = 'fakeSubFolder'
     const fakeFile = 'fakeFilename'
-    const functionNode = new LambdaFunctionNode(new TestAWSTreeNode('test node'), fakeRegion, fakeFunctionConfig)
 
-    const regionPath = path.join('/tmp/aws-toolkit-vscode/lambda', fakeRegion)
-    const functionPath = path.join(regionPath, fakeFunctionConfig.FunctionName)
-    const subFolderPath = path.join(functionPath, fakeSubFolder)
-
+    let tempFolder: string
+    let subFolderPath: string
+    let functionNode: LambdaFunctionNode
     let testNode: LambdaFunctionFolderNode
 
-    before(async function () {
+    beforeEach(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        subFolderPath = path.join(tempFolder, fakeSubFolder)
+
         await fs.mkdir(subFolderPath)
         await fs.writeFile(path.join(subFolderPath, fakeFile), 'fakefilecontent')
 
+        functionNode = new LambdaFunctionNode(new TestAWSTreeNode('test node'), fakeRegion, fakeFunctionConfig)
         testNode = new LambdaFunctionFolderNode(functionNode, fakeSubFolder, subFolderPath)
     })
 
-    after(async function () {
-        await fs.delete(regionPath, { recursive: true })
+    afterEach(async function () {
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('instantiates without issue', function () {
