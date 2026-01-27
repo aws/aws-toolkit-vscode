@@ -40,15 +40,15 @@ describe('LambdaFunctionFolderNode', function () {
         await fs.delete(tempFolder, { recursive: true })
     })
 
-    it('instantiates without issue', function () {
+    it('FolderNode instantiates without issue', function () {
         assert.ok(testNode)
     })
 
-    it('initializes the parent node', function () {
+    it('FolderNode initializes the parent node', function () {
         assert.equal(testNode.parent, functionNode, 'unexpected parent node')
     })
 
-    it('initializes the label', function () {
+    it('FolderNode initializes the label', function () {
         assert.equal(testNode.label, fakeSubFolder)
     })
 

@@ -181,18 +181,6 @@ describe('editLambda', function () {
             assert(createFileSystemWatcherStub.calledOnce)
             const pattern = createFileSystemWatcherStub.firstCall.args[0]
             assert(pattern instanceof vscode.RelativePattern)
-        })
-
-        it('sets up change, create, and delete handlers', function () {
-            const watcher = {
-                onDidChange: sandbox.stub(),
-                onDidCreate: sandbox.stub(),
-                onDidDelete: sandbox.stub(),
-            }
-            createFileSystemWatcherStub.returns(watcher)
-
-            watchForUpdates(mockLambda, vscode.Uri.file(downloadLocation))
-
             assert(watcher.onDidChange.calledOnce)
             assert(watcher.onDidCreate.calledOnce)
             assert(watcher.onDidDelete.calledOnce)

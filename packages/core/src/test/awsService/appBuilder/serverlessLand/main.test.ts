@@ -230,9 +230,9 @@ describe('getProjectUri', () => {
 
         const result = await getProjectUri(mockConfig, testFile)
 
-        // Verify the result has the expected path
+        // Verify the result has the expected path (use vscode.Uri.file for consistent path normalization)
         const expectedPath = path.resolve(tempFolder, projectName, testFile)
-        assert.strictEqual(result?.fsPath, expectedPath)
+        assert.strictEqual(result?.fsPath, vscode.Uri.file(expectedPath).fsPath)
     })
 
     it('returns undefined when file does not exist', async () => {

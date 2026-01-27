@@ -16,7 +16,7 @@ import { fs } from '../../../../shared'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
 import { ToolkitError } from '../../../../shared/errors'
-import { LAMBDA_FUNCTION_TYPE } from '../../../../shared/cloudformation/cloudformation'
+import { LAMBDA_FUNCTION_TYPE, LAMBDA_LAYER_TYPE } from '../../../../shared/cloudformation/cloudformation'
 import { ResourceToImport } from '@aws-sdk/client-cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 
@@ -143,6 +143,216 @@ describe('lambda2samCoreLogic', function () {
         if (await fs.exists(vscode.Uri.file(tempDir))) {
             await fs.delete(vscode.Uri.file(tempDir), { recursive: true, force: true })
         }
+    })
+
+    describe('getPhysicalIdfromCFNResourceName', function () {
+        it('returns the physical ID when an exact match is found', async function () {
+            const result = await lambda2sam.getPhysicalIdfromCFNResourceName(
+                'testResource',
+                'us-west-2',
+                'stack-id',
+                LAMBDA_FUNCTION_TYPE
+            )
+
+            assert.strictEqual(cfnClientStub.describeStackResource.calledOnce, true)
+            assert.strictEqual(cfnClientStub.describeStackResource.firstCall.args[0].StackName, 'stack-id')
+            assert.strictEqual(cfnClientStub.describeStackResource.firstCall.args[0].LogicalResourceId, 'testResource')
+            assert.strictEqual(result, 'test-physical-id')
+        })
+
+        it('returns a prefix match when exact match fails', async function () {
+            // Make exact match fail
+            cfnClientStub.describeStackResource.rejects(new Error('Resource not found'))
+
+            const result = await lambda2sam.getPhysicalIdfromCFNResourceName(
+                'prefix',
+                'us-west-2',
+                'stack-id',
+                LAMBDA_LAYER_TYPE
+            )
+
+            assert.strictEqual(cfnClientStub.describeStackResources.calledOnce, true)
+            assert.strictEqual(cfnClientStub.describeStackResources.firstCall.args[0].StackName, 'stack-id')
+            assert.strictEqual(result, 'prefix-test-physical-id')
+        })
+
+        it('returns undefined when no match is found', async function () {
+            // Make exact match fail
+            cfnClientStub.describeStackResource.rejects(new Error('Resource not found'))
+
+            // Return empty resources
+            cfnClientStub.describeStackResources.resolves({ StackResources: [] })
+
+            const result = await lambda2sam.getPhysicalIdfromCFNResourceName(
+                'nonexistent',
+                'us-west-2',
+                'stack-id',
+                LAMBDA_LAYER_TYPE
+            )
+            assert.strictEqual(result, undefined)
+        })
+    })
+
+    describe('downloadLambdaFunctionCode', function () {
+        it('uses physical ID from CloudFormation when not provided', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testResource'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            lambdaClientStub.getFunction.resolves({
+                Code: { Location: 'https://lambda-function-code.zip' },
+            })
+
+            await lambda2sam.downloadLambdaFunctionCode(resourceName, stackInfo, targetDir, 'us-west-2')
+
+            // Verify CloudFormation was called to get physical ID
+            assert.strictEqual(cfnClientStub.describeStackResource.calledOnce, true)
+
+            // Verify Lambda client was called with correct physical ID
+            assert.strictEqual(lambdaClientStub.getFunction.calledOnce, true)
+            assert.strictEqual(lambdaClientStub.getFunction.firstCall.args[0], 'test-physical-id')
+
+            // Verify downloadUnzip was called with correct parameters
+            assert.strictEqual(downloadUnzipStub.calledOnce, true)
+            assert.strictEqual(downloadUnzipStub.firstCall.args[0], 'https://lambda-function-code.zip')
+            assert.strictEqual(
+                downloadUnzipStub.firstCall.args[1].fsPath,
+                vscode.Uri.joinPath(targetDir, resourceName).fsPath
+            )
+
+            // Verify files were actually created in the temp directory
+            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
+            assert.strictEqual(await fs.exists(outputDir), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+        })
+
+        it('uses provided physical ID when available', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testResource'
+            const physicalResourceId = 'provided-physical-id'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            lambdaClientStub.getFunction.resolves({
+                Code: { Location: 'https://lambda-function-code.zip' },
+            })
+
+            await lambda2sam.downloadLambdaFunctionCode(
+                resourceName,
+                stackInfo,
+                targetDir,
+                'us-west-2',
+                physicalResourceId
+            )
+
+            // Verify CloudFormation was NOT called to get physical ID
+            assert.strictEqual(cfnClientStub.describeStackResource.called, false)
+
+            // Verify Lambda client was called with provided physical ID
+            assert.strictEqual(lambdaClientStub.getFunction.calledOnce, true)
+            assert.strictEqual(lambdaClientStub.getFunction.firstCall.args[0], physicalResourceId)
+
+            // Verify files were actually created in the temp directory
+            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
+            assert.strictEqual(await fs.exists(outputDir), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+        })
+
+        it('throws an error when code location is missing', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testResource'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            lambdaClientStub.getFunction.resolves({
+                Code: {}, // No Location
+            })
+
+            await assert.rejects(
+                lambda2sam.downloadLambdaFunctionCode(resourceName, stackInfo, targetDir, 'us-west-2'),
+                /Could not determine code location/
+            )
+        })
+    })
+
+    describe('downloadLayerVersionResourceByName', function () {
+        it('extracts layer name and version from ARN and downloads content', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testLayer'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            // Return an ARN for a layer version
+            cfnClientStub.describeStackResource.resolves({
+                StackResourceDetail: {
+                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
+                },
+            })
+
+            lambdaClientStub.getLayerVersion.resolves({
+                Content: { Location: 'https://lambda-layer-code.zip' },
+            })
+
+            await lambda2sam.downloadLayerVersionResourceByName(resourceName, stackInfo, targetDir, 'us-west-2')
+
+            // Verify Lambda client was called with correct layer name and version
+            assert.strictEqual(lambdaClientStub.getLayerVersion.calledOnce, true)
+            assert.strictEqual(lambdaClientStub.getLayerVersion.firstCall.args[0], 'my-layer')
+            assert.strictEqual(lambdaClientStub.getLayerVersion.firstCall.args[1], 1)
+
+            // Verify downloadUnzip was called with correct parameters
+            assert.strictEqual(downloadUnzipStub.calledOnce, true)
+            assert.strictEqual(downloadUnzipStub.firstCall.args[0], 'https://lambda-layer-code.zip')
+            assert.strictEqual(
+                downloadUnzipStub.firstCall.args[1].fsPath,
+                vscode.Uri.joinPath(targetDir, resourceName).fsPath
+            )
+
+            // Verify files were actually created in the temp directory
+            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
+            assert.strictEqual(await fs.exists(outputDir), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
+            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+        })
+
+        it('throws an error when ARN format is invalid', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testLayer'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            // Return an invalid ARN
+            cfnClientStub.describeStackResource.resolves({
+                StackResourceDetail: {
+                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer', // Missing version
+                },
+            })
+
+            await assert.rejects(
+                lambda2sam.downloadLayerVersionResourceByName(resourceName, stackInfo, targetDir, 'us-west-2'),
+                /Invalid layer ARN format/
+            )
+        })
+
+        it('throws an error when layer content location is missing', async function () {
+            const targetDir = vscode.Uri.file(tempDir)
+            const resourceName = 'testLayer'
+            const stackInfo = { stackId: 'stack-id', stackName: 'test-stack', isSamTemplate: false, template: {} }
+
+            // Return an ARN for a layer version
+            cfnClientStub.describeStackResource.resolves({
+                StackResourceDetail: {
+                    PhysicalResourceId: 'arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1',
+                },
+            })
+
+            lambdaClientStub.getLayerVersion.resolves({
+                Content: {}, // No Location
+            })
+
+            await assert.rejects(
+                lambda2sam.downloadLayerVersionResourceByName(resourceName, stackInfo, targetDir, 'us-west-2'),
+                /Could not determine code location for layer/
+            )
+        })
     })
 
     describe('processLambdaUrlResources', function () {
