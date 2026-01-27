@@ -27,6 +27,20 @@ describe('lambda2samCoreLogic', function () {
     let cfnClientStub: any
     let downloadUnzipStub: sinon.SinonStub
 
+    /**
+     * Helper function to verify that files were created in the output directory
+     */
+    async function verifyFilesCreated(targetDir: vscode.Uri, resourceName: string) {
+        const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
+        assert.strictEqual(await fs.exists(outputDir), true, `Output directory ${resourceName} should exist`)
+        assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true, 'index.js should exist')
+        assert.strictEqual(
+            await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')),
+            true,
+            'package.json should exist'
+        )
+    }
+
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
         tempDir = await makeTemporaryToolkitFolder()
@@ -221,10 +235,7 @@ describe('lambda2samCoreLogic', function () {
             )
 
             // Verify files were actually created in the temp directory
-            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
-            assert.strictEqual(await fs.exists(outputDir), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+            await verifyFilesCreated(targetDir, resourceName)
         })
 
         it('uses provided physical ID when available', async function () {
@@ -253,10 +264,7 @@ describe('lambda2samCoreLogic', function () {
             assert.strictEqual(lambdaClientStub.getFunction.firstCall.args[0], physicalResourceId)
 
             // Verify files were actually created in the temp directory
-            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
-            assert.strictEqual(await fs.exists(outputDir), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+            await verifyFilesCreated(targetDir, resourceName)
         })
 
         it('throws an error when code location is missing', async function () {
@@ -308,10 +316,7 @@ describe('lambda2samCoreLogic', function () {
             )
 
             // Verify files were actually created in the temp directory
-            const outputDir = vscode.Uri.joinPath(targetDir, resourceName)
-            assert.strictEqual(await fs.exists(outputDir), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'index.js')), true)
-            assert.strictEqual(await fs.exists(vscode.Uri.joinPath(outputDir, 'package.json')), true)
+            await verifyFilesCreated(targetDir, resourceName)
         })
 
         it('throws an error when ARN format is invalid', async function () {
