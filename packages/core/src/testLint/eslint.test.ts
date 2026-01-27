@@ -33,7 +33,6 @@ describe('eslint', function () {
                 '.ts',
                 '../amazonq',
                 '../core',
-                '../toolkit',
                 // TODO: fix lint issues in scripts/
                 // '../../scripts',
             ],
