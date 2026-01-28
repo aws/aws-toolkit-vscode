@@ -24,9 +24,7 @@ jobs:
         outputs:
             feature: ${{ steps.build.outputs.feature }}
             tagname: ${{ steps.build.outputs.tagname }}
-            toolkit_version: ${{ steps.build.outputs.toolkit_version }}
             amazonq_version: ${{ steps.build.outputs.amazonq_version }}
-            toolkit_changes: ${{ steps.build.outputs.toolkit_changes }}
             amazonq_changes: ${{ steps.build.outputs.amazonq_changes }}
         steps:
             - uses: actions/checkout@v4
@@ -57,8 +55,7 @@ jobs:
             - run: npm ci
             - name: vsix
               run: |
-                  npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
-                  npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
+                  npm run createRelease -w packages/amazonq  # Generate CHANGELOG.md
                   npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
@@ -79,7 +76,6 @@ jobs:
                   }
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
-                  write_package_info toolkit
                   write_package_info amazonq
 
     publish:
@@ -93,13 +89,11 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
-            AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.toolkit_version }}
             AMAZON_Q_VERSION: ${{ needs.package.outputs.amazonq_version }}
             #
             # Used in release_notes.md
             #
             BRANCH: ${{ github.ref_name }}
-            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.toolkit_changes }}
             AMAZON_Q_CHANGES: ${{ needs.package.outputs.amazonq_changes }}
         permissions:
             contents: write
@@ -121,6 +115,6 @@ jobs:
                   # git push origin :"$TAG_NAME" || true
             - name: Publish Prerelease
               run: |
-                  # AWS_TOOLKIT_CHANGES="$(head -14 CHANGELOG.md)"
+                  # AMAZON_Q_CHANGES="$(head -14 CHANGELOG.md)"
                   envsubst < "$GITHUB_WORKSPACE/.github/workflows/release_notes.md" > "$RUNNER_TEMP/release_notes.md"
                   gh release create $TAG_NAME --prerelease --notes-file "$RUNNER_TEMP/release_notes.md" --title "$SUBJECT" --target $GITHUB_SHA artifacts/*
