@@ -25,9 +25,7 @@ jobs:
             feature: ${{ steps.build.outputs.feature }}
             tagname: ${{ steps.build.outputs.tagname }}
             toolkit_version: ${{ steps.build.outputs.toolkit_version }}
-            amazonq_version: ${{ steps.build.outputs.amazonq_version }}
             toolkit_changes: ${{ steps.build.outputs.toolkit_changes }}
-            amazonq_changes: ${{ steps.build.outputs.amazonq_changes }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -57,9 +55,8 @@ jobs:
             - run: npm ci
             - name: vsix
               run: |
-                  npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
+                  npm run createRelease -w packages/toolkit # Generate CHANGELOG.md
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
-                  npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
@@ -80,7 +77,6 @@ jobs:
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
                   write_package_info toolkit
-                  write_package_info amazonq
 
     publish:
         needs: [package]
@@ -94,13 +90,11 @@ jobs:
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
             AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.toolkit_version }}
-            AMAZON_Q_VERSION: ${{ needs.package.outputs.amazonq_version }}
             #
             # Used in release_notes.md
             #
             BRANCH: ${{ github.ref_name }}
             AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.toolkit_changes }}
-            AMAZON_Q_CHANGES: ${{ needs.package.outputs.amazonq_changes }}
         permissions:
             contents: write
         steps:
