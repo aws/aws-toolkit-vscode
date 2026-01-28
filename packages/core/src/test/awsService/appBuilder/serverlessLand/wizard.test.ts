@@ -9,7 +9,6 @@ import path from 'path'
 import { PrompterTester } from '../../../../test/shared/wizards/prompterTester'
 import { describe } from 'mocha'
 import { ProjectMetadata } from '../../../../awsService/appBuilder/serverlessLand/metadataManager'
-import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import fs from '../../../../shared/fs/fs'
 import globals from '../../../../shared/extensionGlobals'
 import { AppBuilderRootNode } from '../../../../awsService/appBuilder/explorer/nodes/rootNode'
@@ -19,13 +18,17 @@ import { ResourceNode } from '../../../../awsService/appBuilder/explorer/nodes/r
 import { getTestWindow } from '../../../../test/shared/vscode/window'
 
 describe('CreateWizard', async () => {
-    const metadataPath = globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
-    const metadataContent = nodefs.readFileSync(metadataPath, { encoding: 'utf-8' })
-    const parseMetadata = JSON.parse(metadataContent) as ProjectMetadata
     const workspaceFolder = vscode.workspace.workspaceFolders![0]
     const projectFolder = 'my-project-from-Serverless-Land'
+    let parseMetadata: ProjectMetadata
     let rootNode: sinon.SinonSpiedInstance<AppBuilderRootNode>
     let sandbox: sinon.SinonSandbox
+
+    before(async () => {
+        const metadataPath = globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
+        const metadataContent = await fs.readFileText(metadataPath)
+        parseMetadata = JSON.parse(metadataContent) as ProjectMetadata
+    })
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()

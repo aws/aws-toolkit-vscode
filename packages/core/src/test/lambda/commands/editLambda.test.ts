@@ -24,14 +24,15 @@ import fs from '../../../shared/fs/fs'
 import { LambdaFunctionNodeDecorationProvider } from '../../../lambda/explorer/lambdaFunctionNodeDecorationProvider'
 import path from 'path'
 import globals from '../../../shared/extensionGlobals'
-import { lambdaTempPath } from '../../../lambda/utils'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('editLambda', function () {
+    let sandbox: sinon.SinonSandbox
     let mockLambda: LambdaFunction
-    let mockTemp: string
-    let mockUri: vscode.Uri
+    let tempFolder: string
+    let downloadLocation: string
 
-    // Stub variables
+    // Stub variables for external dependencies (not filesystem)
     let getFunctionInfoStub: sinon.SinonStub
     let setFunctionInfoStub: sinon.SinonStub
     let compareCodeShaStub: sinon.SinonStub
@@ -40,17 +41,13 @@ describe('editLambda', function () {
     let runUploadDirectoryStub: sinon.SinonStub
     let showConfirmationMessageStub: sinon.SinonStub
     let createFileSystemWatcherStub: sinon.SinonStub
-    let existsDirStub: sinon.SinonStub
-    let mkdirStub: sinon.SinonStub
     let promptDeployStub: sinon.SinonStub
-    let readdirStub: sinon.SinonStub
-    let readFileTextStub: sinon.SinonStub
-    let writeFileStub: sinon.SinonStub
-    let copyStub: sinon.SinonStub
-    let asAbsolutePathStub: sinon.SinonStub
-    let deleteStub: sinon.SinonStub
 
-    beforeEach(function () {
+    beforeEach(async function () {
+        sandbox = sinon.createSandbox()
+        tempFolder = await makeTemporaryToolkitFolder()
+        downloadLocation = path.join(tempFolder, 'test-function')
+
         mockLambda = {
             name: 'test-function',
             region: 'us-east-1',
@@ -60,66 +57,77 @@ describe('editLambda', function () {
                 Runtime: 'nodejs18.x',
             },
         }
-        mockTemp = utils.getTempLocation(mockLambda.name, mockLambda.region)
-        mockUri = vscode.Uri.file(mockTemp)
 
-        // Create stubs
-        getFunctionInfoStub = sinon.stub(utils, 'getFunctionInfo').resolves(undefined)
-        setFunctionInfoStub = sinon.stub(utils, 'setFunctionInfo').resolves()
-        compareCodeShaStub = sinon.stub(utils, 'compareCodeSha').resolves(true)
-        downloadLambdaStub = sinon.stub(downloadLambda, 'downloadLambdaInLocation').resolves()
-        openLambdaFileStub = sinon.stub(downloadLambda, 'openLambdaFile').resolves()
-        runUploadDirectoryStub = sinon.stub(uploadLambda, 'runUploadDirectory').resolves()
-        showConfirmationMessageStub = sinon.stub(messages, 'showConfirmationMessage').resolves(true)
-        createFileSystemWatcherStub = sinon.stub(vscode.workspace, 'createFileSystemWatcher').returns({
-            onDidChange: sinon.stub(),
-            onDidCreate: sinon.stub(),
-            onDidDelete: sinon.stub(),
-            dispose: sinon.stub(),
+        // Stub getTempLocation to return our test folder
+        sandbox.stub(utils, 'getTempLocation').returns(downloadLocation)
+
+        // Create stubs for external dependencies (not filesystem)
+        getFunctionInfoStub = sandbox.stub(utils, 'getFunctionInfo').resolves(undefined)
+        setFunctionInfoStub = sandbox.stub(utils, 'setFunctionInfo').resolves()
+        compareCodeShaStub = sandbox.stub(utils, 'compareCodeSha').resolves(true)
+        downloadLambdaStub = sandbox.stub(downloadLambda, 'downloadLambdaInLocation').resolves()
+        openLambdaFileStub = sandbox.stub(downloadLambda, 'openLambdaFile').resolves()
+        runUploadDirectoryStub = sandbox.stub(uploadLambda, 'runUploadDirectory').resolves()
+        showConfirmationMessageStub = sandbox.stub(messages, 'showConfirmationMessage').resolves(true)
+        createFileSystemWatcherStub = sandbox.stub(vscode.workspace, 'createFileSystemWatcher').returns({
+            onDidChange: sandbox.stub(),
+            onDidCreate: sandbox.stub(),
+            onDidDelete: sandbox.stub(),
+            dispose: sandbox.stub(),
         } as any)
-        existsDirStub = sinon.stub(fs, 'existsDir').resolves(true)
-        mkdirStub = sinon.stub(fs, 'mkdir').resolves()
-        readdirStub = sinon.stub(fs, 'readdir').resolves([['file', vscode.FileType.File]])
-        promptDeployStub = sinon.stub().resolves(true)
-        sinon.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
-        readFileTextStub = sinon.stub(fs, 'readFileText').resolves('# Lambda Edit README')
-        writeFileStub = sinon.stub(fs, 'writeFile').resolves()
-        copyStub = sinon.stub(fs, 'copy').resolves()
-        asAbsolutePathStub = sinon.stub(globals.context, 'asAbsolutePath').callsFake((p) => `/absolute/${p}`)
-        deleteStub = sinon.stub(fs, 'delete').resolves()
+        promptDeployStub = sandbox.stub().resolves(true)
+        sandbox.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
 
-        // Other stubs
-        sinon.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
-        sinon.stub(fs, 'stat').resolves({ ctime: Date.now() } as any)
-        sinon.stub(vscode.workspace, 'saveAll').resolves(true)
-        sinon.stub(LambdaFunctionNodeDecorationProvider.prototype, 'addBadge').resolves()
-        sinon.stub(LambdaFunctionNodeDecorationProvider.prototype, 'removeBadge').resolves()
-        sinon.stub(LambdaFunctionNodeDecorationProvider, 'getInstance').returns({
-            addBadge: sinon.stub().resolves(),
-            removeBadge: sinon.stub().resolves(),
+        // Other stubs for external dependencies
+        sandbox.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
+        sandbox.stub(vscode.workspace, 'saveAll').resolves(true)
+        sandbox.stub(LambdaFunctionNodeDecorationProvider.prototype, 'addBadge').resolves()
+        sandbox.stub(LambdaFunctionNodeDecorationProvider.prototype, 'removeBadge').resolves()
+        sandbox.stub(LambdaFunctionNodeDecorationProvider, 'getInstance').returns({
+            addBadge: sandbox.stub().resolves(),
+            removeBadge: sandbox.stub().resolves(),
         } as any)
     })
 
-    afterEach(function () {
-        sinon.restore()
+    afterEach(async function () {
+        sandbox.restore()
+        // Clean up temp folder
+        await fs.delete(tempFolder, { recursive: true, force: true })
     })
 
     describe('editLambda', function () {
         it('returns early if folder already exists in workspace', async function () {
-            sinon.stub(vscode.workspace, 'workspaceFolders').value([{ uri: vscode.Uri.file(mockTemp) }])
+            sandbox.stub(vscode.workspace, 'workspaceFolders').value([{ uri: vscode.Uri.file(downloadLocation) }])
 
             const result = await editLambda(mockLambda)
 
-            assert.strictEqual(result, mockTemp)
+            assert.strictEqual(result, downloadLocation)
         })
 
-        it('downloads lambda when no local code exists', async function () {
+        it('downloads lambda when no local code exists (directory does not exist)', async function () {
+            // Directory doesn't exist - real filesystem state
             await editLambda(mockLambda)
 
             assert(downloadLambdaStub.calledOnce)
         })
 
+        it('downloads lambda when directory exists but is empty', async function () {
+            // Create empty directory - real filesystem state
+            await fs.mkdir(downloadLocation)
+
+            getFunctionInfoStub.resolves('old-sha')
+
+            await editLambda(mockLambda)
+
+            assert(downloadLambdaStub.calledOnce)
+            assert(showConfirmationMessageStub.notCalled)
+        })
+
         it('prompts for overwrite when local code differs from remote', async function () {
+            // Create directory with files - real filesystem state
+            await fs.mkdir(downloadLocation)
+            await fs.writeFile(path.join(downloadLocation, 'index.js'), 'exports.handler = () => {}')
+
             getFunctionInfoStub.resolves('old-sha')
             compareCodeShaStub.resolves(false)
 
@@ -129,6 +137,10 @@ describe('editLambda', function () {
         })
 
         it('opens existing file when user declines overwrite', async function () {
+            // Create directory with files - real filesystem state
+            await fs.mkdir(downloadLocation)
+            await fs.writeFile(path.join(downloadLocation, 'index.js'), 'exports.handler = () => {}')
+
             getFunctionInfoStub.resolves('old-sha')
             compareCodeShaStub.resolves(false)
             showConfirmationMessageStub.resolves(false)
@@ -139,31 +151,11 @@ describe('editLambda', function () {
             assert(openLambdaFileStub.calledOnce)
         })
 
-        it('downloads lambda when directory exists but is empty', async function () {
-            getFunctionInfoStub.resolves('old-sha')
-            readdirStub.resolves([])
-
-            await editLambda(mockLambda)
-
-            assert(downloadLambdaStub.calledOnce)
-            assert(showConfirmationMessageStub.notCalled)
-        })
-
-        it('downloads lambda when directory does not exist', async function () {
-            getFunctionInfoStub.resolves('old-sha')
-            existsDirStub.resolves(false)
-
-            await editLambda(mockLambda)
-
-            assert(downloadLambdaStub.calledOnce)
-            assert(showConfirmationMessageStub.notCalled)
-        })
-
         it('sets up file watcher after download', async function () {
             const watcherStub = {
-                onDidChange: sinon.stub(),
-                onDidCreate: sinon.stub(),
-                onDidDelete: sinon.stub(),
+                onDidChange: sandbox.stub(),
+                onDidCreate: sandbox.stub(),
+                onDidDelete: sandbox.stub(),
             }
             createFileSystemWatcherStub.returns(watcherStub)
 
@@ -178,29 +170,17 @@ describe('editLambda', function () {
     describe('watchForUpdates', function () {
         it('creates file system watcher with correct pattern', function () {
             const watcher = {
-                onDidChange: sinon.stub(),
-                onDidCreate: sinon.stub(),
-                onDidDelete: sinon.stub(),
+                onDidChange: sandbox.stub(),
+                onDidCreate: sandbox.stub(),
+                onDidDelete: sandbox.stub(),
             }
             createFileSystemWatcherStub.returns(watcher)
 
-            watchForUpdates(mockLambda, mockUri)
+            watchForUpdates(mockLambda, vscode.Uri.file(downloadLocation))
 
             assert(createFileSystemWatcherStub.calledOnce)
             const pattern = createFileSystemWatcherStub.firstCall.args[0]
             assert(pattern instanceof vscode.RelativePattern)
-        })
-
-        it('sets up change, create, and delete handlers', function () {
-            const watcher = {
-                onDidChange: sinon.stub(),
-                onDidCreate: sinon.stub(),
-                onDidDelete: sinon.stub(),
-            }
-            createFileSystemWatcherStub.returns(watcher)
-
-            watchForUpdates(mockLambda, mockUri)
-
             assert(watcher.onDidChange.calledOnce)
             assert(watcher.onDidCreate.calledOnce)
             assert(watcher.onDidDelete.calledOnce)
@@ -209,9 +189,10 @@ describe('editLambda', function () {
 
     describe('promptForSync', function () {
         it('returns early if directory does not exist', async function () {
-            existsDirStub.resolves(false)
+            // Use real filesystem - directory doesn't exist
+            const nonExistentUri = vscode.Uri.file(path.join(tempFolder, 'non-existent'))
 
-            await promptForSync(mockLambda, mockUri, vscode.Uri.file('/test/file.js'))
+            await promptForSync(mockLambda, nonExistentUri, vscode.Uri.file('/test/file.js'))
 
             assert(setFunctionInfoStub.notCalled)
         })
@@ -219,7 +200,7 @@ describe('editLambda', function () {
 
     describe('deployFromTemp', function () {
         it('uploads without confirmation when code is up to date', async function () {
-            await deployFromTemp(mockLambda, mockUri)
+            await deployFromTemp(mockLambda, vscode.Uri.file(downloadLocation))
 
             assert(showConfirmationMessageStub.notCalled)
             assert(runUploadDirectoryStub.calledOnce)
@@ -228,7 +209,7 @@ describe('editLambda', function () {
         it('prompts for confirmation when code is outdated', async function () {
             compareCodeShaStub.resolves(false)
 
-            await deployFromTemp(mockLambda, mockUri)
+            await deployFromTemp(mockLambda, vscode.Uri.file(downloadLocation))
 
             assert(showConfirmationMessageStub.calledOnce)
         })
@@ -237,13 +218,13 @@ describe('editLambda', function () {
             compareCodeShaStub.resolves(false)
             showConfirmationMessageStub.resolves(false)
 
-            await deployFromTemp(mockLambda, mockUri)
+            await deployFromTemp(mockLambda, vscode.Uri.file(downloadLocation))
 
             assert(runUploadDirectoryStub.notCalled)
         })
 
         it('updates function info after successful upload', async function () {
-            await deployFromTemp(mockLambda, mockUri)
+            await deployFromTemp(mockLambda, vscode.Uri.file(downloadLocation))
 
             assert(runUploadDirectoryStub.calledOnce)
             assert(
@@ -257,51 +238,118 @@ describe('editLambda', function () {
 
     describe('deleteFilesInFolder', function () {
         it('deletes all files in the specified folder', async function () {
-            readdirStub.resolves([
-                ['file1.js', vscode.FileType.File],
-                ['file2.js', vscode.FileType.File],
-            ])
+            // Create real test files
+            const testDir = path.join(tempFolder, 'test-delete')
+            await fs.mkdir(testDir)
+            await fs.writeFile(path.join(testDir, 'file1.js'), 'content1')
+            await fs.writeFile(path.join(testDir, 'file2.js'), 'content2')
 
-            await deleteFilesInFolder(path.join('test', 'folder'))
+            // Verify files exist
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file1.js')), true)
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file2.js')), true)
 
-            assert(deleteStub.calledTwice)
-            assert(deleteStub.calledWith(path.join('test', 'folder', 'file1.js'), { recursive: true, force: true }))
-            assert(deleteStub.calledWith(path.join('test', 'folder', 'file2.js'), { recursive: true, force: true }))
+            await deleteFilesInFolder(testDir)
+
+            // Verify files are deleted
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file1.js')), false)
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file2.js')), false)
+        })
+
+        it('deletes nested directories recursively', async function () {
+            // Create nested directory structure
+            const testDir = path.join(tempFolder, 'test-nested')
+            const nestedDir = path.join(testDir, 'nested')
+            await fs.mkdir(testDir)
+            await fs.mkdir(nestedDir)
+            await fs.writeFile(path.join(testDir, 'file1.js'), 'content1')
+            await fs.writeFile(path.join(nestedDir, 'file2.js'), 'content2')
+
+            // Verify files exist
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file1.js')), true)
+            assert.strictEqual(await fs.exists(path.join(nestedDir, 'file2.js')), true)
+
+            await deleteFilesInFolder(testDir)
+
+            // Verify all contents are deleted
+            assert.strictEqual(await fs.exists(path.join(testDir, 'file1.js')), false)
+            assert.strictEqual(await fs.exists(nestedDir), false)
         })
     })
 
     describe('overwriteChangesForEdit', function () {
-        it('clears directory and downloads lambda code', async function () {
-            await overwriteChangesForEdit(mockLambda, mockTemp)
+        it('clears directory and downloads lambda code when directory exists', async function () {
+            // Create directory with existing files - real filesystem state
+            await fs.mkdir(downloadLocation)
+            await fs.writeFile(path.join(downloadLocation, 'old-file.js'), 'old content')
 
-            assert(readdirStub.calledWith(mockTemp))
-            assert(downloadLambdaStub.calledWith(mockLambda, 'local', mockTemp))
+            await overwriteChangesForEdit(mockLambda, downloadLocation)
+
+            // Verify old file was deleted
+            assert.strictEqual(await fs.exists(path.join(downloadLocation, 'old-file.js')), false)
+            // Verify download was called
+            assert(downloadLambdaStub.calledWith(mockLambda, 'local', downloadLocation))
             assert(setFunctionInfoStub.calledWith(mockLambda, sinon.match.object))
         })
 
         it('creates directory if it does not exist', async function () {
-            existsDirStub.resolves(false)
+            // Directory doesn't exist - real filesystem state
+            assert.strictEqual(await fs.existsDir(downloadLocation), false)
 
-            await overwriteChangesForEdit(mockLambda, mockTemp)
+            await overwriteChangesForEdit(mockLambda, downloadLocation)
 
-            assert(mkdirStub.calledWith(mockTemp))
+            // Verify directory was created
+            assert.strictEqual(await fs.existsDir(downloadLocation), true)
+            // Verify download was called
+            assert(downloadLambdaStub.calledWith(mockLambda, 'local', downloadLocation))
         })
     })
 
     describe('getReadme', function () {
+        beforeEach(async function () {
+            // Create a temp directory for lambdaTempPath
+            const readmeTempDir = path.join(tempFolder, 'lambda-temp')
+            await fs.mkdir(readmeTempDir)
+
+            // Create mock source files
+            const resourcesDir = path.join(tempFolder, 'resources')
+            const markdownDir = path.join(resourcesDir, 'markdown')
+            const iconsDir = path.join(resourcesDir, 'icons', 'aws', 'lambda')
+            const vscodeIconsDir = path.join(resourcesDir, 'icons', 'vscode', 'light')
+
+            await fs.mkdir(markdownDir)
+            await fs.mkdir(iconsDir)
+            await fs.mkdir(vscodeIconsDir)
+
+            await fs.writeFile(path.join(markdownDir, 'lambdaEdit.md'), '# Lambda Edit README')
+            await fs.writeFile(path.join(iconsDir, 'create-stack-light.svg'), '<svg></svg>')
+            await fs.writeFile(path.join(vscodeIconsDir, 'run.svg'), '<svg></svg>')
+            await fs.writeFile(path.join(vscodeIconsDir, 'cloud-upload.svg'), '<svg></svg>')
+
+            sandbox.stub(globals.context, 'asAbsolutePath').callsFake((p) => path.join(tempFolder, p))
+
+            // Stub lambdaTempPath to use our test directory
+            sandbox.stub(utils, 'lambdaTempPath').value(readmeTempDir)
+        })
+
         it('reads markdown file and writes README.md to temp path', async function () {
+            const readmeTempDir = path.join(tempFolder, 'lambda-temp')
             const result = await getReadme()
 
-            assert(readFileTextStub.calledOnce)
-            assert(asAbsolutePathStub.calledWith(path.join('resources', 'markdown', 'lambdaEdit.md')))
-            assert(writeFileStub.calledWith(path.join(lambdaTempPath, 'README.md'), '# Lambda Edit README'))
-            assert.strictEqual(result, path.join(lambdaTempPath, 'README.md'))
+            // Verify README was written
+            assert.strictEqual(await fs.exists(path.join(readmeTempDir, 'README.md')), true)
+            const content = await fs.readFileText(path.join(readmeTempDir, 'README.md'))
+            assert.strictEqual(content, '# Lambda Edit README')
+            assert.strictEqual(result, path.join(readmeTempDir, 'README.md'))
         })
 
         it('copies all required icon files', async function () {
+            const readmeTempDir = path.join(tempFolder, 'lambda-temp')
             await getReadme()
 
-            assert.strictEqual(copyStub.callCount, 3)
+            // Verify icons were copied
+            assert.strictEqual(await fs.exists(path.join(readmeTempDir, 'create-stack.svg')), true)
+            assert.strictEqual(await fs.exists(path.join(readmeTempDir, 'invoke.svg')), true)
+            assert.strictEqual(await fs.exists(path.join(readmeTempDir, 'deploy.svg')), true)
         })
     })
 })
