@@ -67,7 +67,7 @@ describe('getIAMConnectionOrFallbackToConsole', function () {
     })
 
     it('falls back to console credentials when no active connection', async function () {
-        sandbox.stub(authUtils, 'getIAMConnection').resolves(undefined)
+        sandbox.stub(Auth.instance, 'activeConnection').value(undefined)
         const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves()
         const mockConnection = {
             id: 'profile:test-function',
@@ -89,11 +89,11 @@ describe('getIAMConnectionOrFallbackToConsole', function () {
         const mockConnection = {
             id: 'profile:stale',
             type: 'iam',
-            state: 'invalid',
+            state: 'valid',
             label: 'profile:stale',
             getCredentials: sandbox.stub().rejects(new Error('Credentials provider "profile:stale" not found')),
         }
-        sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection as any)
+        sandbox.stub(Auth.instance, 'activeConnection').value(mockConnection as any)
         // Fall through to console credentials
         sandbox.stub(vscode.commands, 'executeCommand').resolves()
         const newConnection = {
