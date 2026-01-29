@@ -356,15 +356,16 @@ describe('getFunctionWithFallback', function () {
     })
 
     it('does not retry when console connection was just created and fails', async function () {
-        const error = new Error('Function not found')
-        error.name = 'ResourceNotFoundException'
+        const error = new Error('Console creds not working')
+        error.name = 'Error'
         getFunctionWithCredentialsStub.rejects(error)
         getIAMConnectionStub.resolves(undefined)
         setupConsoleConnectionStub.resolves()
 
         await assert.rejects(
             () => getFunctionWithFallback('test-function', 'us-east-1'),
-            (err: Error) => err.message.includes('Failed to get Lambda function with console credentials')
+            (err: Error) =>
+                err.message.includes('Failed to get Lambda function with console credentials. Retry skipped.')
         )
 
         assert(setupConsoleConnectionStub.calledOnce)
@@ -390,7 +391,7 @@ describe('getFunctionWithFallback', function () {
         assert(setupConsoleConnectionStub.calledOnce)
         assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
         assert(showViewLogsMessageStub.called)
-        assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('123456789'))
+        assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('Function not found'))
     })
 
     it('retries with console credentials on AccessDeniedException with existing connection', async function () {
@@ -412,7 +413,6 @@ describe('getFunctionWithFallback', function () {
         assert(setupConsoleConnectionStub.calledOnce)
         assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-2'))
         assert(showViewLogsMessageStub.called)
-        assert.ok(!showViewLogsMessageStub.firstCall.args[0].includes('987654321'))
         assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('Local credentials lack permission'))
     })
 

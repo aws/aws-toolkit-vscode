@@ -243,12 +243,12 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
  * @returns Lambda function information with a link to download the deployment package
  */
 export async function getFunctionWithFallback(name: string, region: string): Promise<GetFunctionCommandOutput> {
-    const connection = await getIAMConnection({ prompt: false })
+    const activeConnection = await getIAMConnection({ prompt: false })
     // Tracks if we've already attempted console credentials
     let calledConsoleLogin = false
 
     // If no connection, create console connection before first attempt
-    if (!connection) {
+    if (!activeConnection) {
         await setupConsoleConnection(name, region)
         calledConsoleLogin = true
     }
@@ -258,14 +258,8 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
     } catch (error: any) {
         // Detect credential mismatches (ResourceNotFoundException, AccessDeniedException)
         let message: string | undefined
-        if (error.name === 'ResourceNotFoundException' && connection?.type === 'iam') {
-            const credentials = await connection.getCredentials()
-            const accountId = (credentials as any).accountId
-            message = localize(
-                'AWS.lambda.open.functionNotFound',
-                'Function not found{0}.',
-                accountId ? ` in account ${accountId}` : ''
-            )
+        if (error.name === 'ResourceNotFoundException') {
+            message = localize('AWS.lambda.open.functionNotFound', 'Function not found in current account.')
         } else if (error.name === 'AccessDeniedException') {
             message = localize('AWS.lambda.open.accessDenied', 'Local credentials lack permission to access function.')
         }
