@@ -324,7 +324,7 @@ export class DefaultLambdaClient {
 
     private async createSdkClient(): Promise<LambdaSdkClient> {
         return globals.sdkClientBuilderV3.createAwsService({
-            serviceClient: LambdaSdkClient,
+            serviceClient: LambdaSdkClient as any,
             userAgent: !this.userAgent,
             clientOptions: {
                 customUserAgent: this.userAgent,
@@ -333,7 +333,7 @@ export class DefaultLambdaClient {
                     requestTimeout: this.defaultTimeoutInMs,
                 }),
             },
-        })
+        }) as LambdaSdkClient
     }
 }
 
@@ -349,6 +349,7 @@ export async function getFunctionWithCredentials(region: string, name: string): 
 
     const credentials =
         connection.type === 'iam' ? await connection.getCredentials() : fromSSO({ profile: connection.id })
+
     const client = new LambdaSdkClient({ region, credentials })
 
     const command = new GetFunctionCommand({ FunctionName: name })
