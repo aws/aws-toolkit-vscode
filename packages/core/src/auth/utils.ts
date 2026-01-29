@@ -15,7 +15,7 @@ import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { formatError, ToolkitError } from '../shared/errors'
-import { asString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
@@ -898,4 +898,33 @@ export function isLocalStackConnection(): boolean {
     return (
         globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
     )
+}
+
+/**
+ * Constructs a credentials ID from a profile name.
+ *
+ * @param profileName - Profile name
+ * @returns Credentials ID string
+ */
+export function getConnectionIdFromProfile(profileName: string): string {
+    const credentialsId: CredentialsId = {
+        credentialSource: 'profile',
+        credentialTypeId: profileName,
+    }
+    return asString(credentialsId)
+}
+
+/**
+ * Sets up and activates a console connection via browser login.
+ * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ *
+ * @param profileName - Profile name (typically Lambda function name)
+ * @param region - AWS region
+ * @throws Error if console login fails or user cancels
+ */
+export async function setupConsoleConnection(profileName: string, region: string): Promise<void> {
+    getLogger().info('Auth: Sets up a connection via browser login for profile: %s, region: %s', profileName, region)
+    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+    const connectionId = getConnectionIdFromProfile(profileName)
+    await Auth.instance.useConnection({ id: connectionId })
 }

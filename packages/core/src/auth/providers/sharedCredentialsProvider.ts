@@ -113,7 +113,7 @@ export async function handleInvalidConsoleCredentials(
             `Reloading window to sync with updated credentials cache using connection for profile: ${profileName}`
         )
         const reloadResponse = await vscode.window.showInformationMessage(
-            `Credentials for "${profileName}" were updated. A window reload is required to apply them. Save your work before continuing. Reload now?`,
+            `Credentials for profile "${profileName}" were updated. A window reload is required to apply them. Save your work before continuing. Reload now?`,
             localizedText.yes,
             localizedText.no
         )

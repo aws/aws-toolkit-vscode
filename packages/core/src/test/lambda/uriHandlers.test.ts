@@ -5,8 +5,10 @@
 
 import assert from 'assert'
 import { SearchParams } from '../../shared/vscode/uriHandler'
-import { parseOpenParams } from '../../lambda/uriHandlers'
+import { handleLambdaUriError, parseOpenParams } from '../../lambda/uriHandlers'
 import { globals } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
+import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
 describe('Lambda URI Handler', function () {
     describe('load-function', function () {
@@ -31,6 +33,40 @@ describe('Lambda URI Handler', function () {
             }
             query = new SearchParams(valid)
             assert.deepEqual(parseOpenParams(query), valid)
+        })
+    })
+
+    describe('handleLambdaUriError', function () {
+        it('throws cancelled error for CancellationError', function () {
+            const error = new CancellationError('user')
+            assert.throws(
+                () => handleLambdaUriError(error, 'test-fn', 'us-east-1'),
+                (e: ToolkitError) => e.cancelled === true
+            )
+        })
+
+        it('throws cancelled error for "canceled" message', function () {
+            const error = new Error('Canceled') // vscode reload window
+            assert.throws(
+                () => handleLambdaUriError(error, 'test-fn', 'us-east-1'),
+                (e: ToolkitError) => e.cancelled === true
+            )
+        })
+
+        it('throws cancelled error for "cancelled" message', function () {
+            const error = new Error('Timeout token cancelled')
+            assert.throws(
+                () => handleLambdaUriError(error, 'test-fn', 'us-east-1'),
+                (e: ToolkitError) => e.cancelled === true
+            )
+        })
+
+        it('throws non-cancelled error for other errors', function () {
+            const error = new Error('Unable to get function')
+            assert.throws(
+                () => handleLambdaUriError(error, 'test-fn', 'us-east-1'),
+                (e: ToolkitError) => e.cancelled !== true
+            )
         })
     })
 })
