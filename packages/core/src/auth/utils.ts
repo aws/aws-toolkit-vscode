@@ -929,28 +929,3 @@ export async function createAndUseConsoleConnection(profileName: string, region:
     await Auth.instance.useConnection({ id: connectionId })
     return connection
 }
-
-/**
- * Gets an active IAM connection or falls back to console credentials.
- *
- * @param name - Lambda function name (used as profile name for console credentials)
- * @param region - AWS region
- * @returns Active IAM connection or newly created console connection
- * @throws ToolkitError if console login fails
- */
-export async function getIAMConnectionOrFallbackToConsole(name: string, region: string): Promise<Connection> {
-    const tryActiveConnection = await getIAMConnection({ prompt: false })
-
-    if (tryActiveConnection && isIamConnection(tryActiveConnection)) {
-        try {
-            // Checks if credentials can be retrieved and returns if valid
-            await tryActiveConnection.getCredentials()
-            return tryActiveConnection
-        } catch (error) {
-            // Fall back to console credentials for any credential retrieval error
-        }
-    }
-
-    // Fallback to console
-    return await createAndUseConsoleConnection(name, region)
-}

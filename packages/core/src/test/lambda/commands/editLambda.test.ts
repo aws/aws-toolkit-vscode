@@ -313,19 +313,18 @@ describe('getFunctionWithFallback', function () {
     let getFunctionWithCredentialsStub: sinon.SinonStub
     let createAndUseConsoleConnectionStub: sinon.SinonStub
     let showViewLogsMessageStub: sinon.SinonStub
-    let getIAMConnectionOrFallbackToConsoleStub: sinon.SinonStub
+    let getIAMConnectionStub: sinon.SinonStub
     const mockFunction = { Configuration: { FunctionName: 'test' } }
     const mockConnection = {
         type: 'iam' as const,
         id: 'profile:test',
         label: 'profile:test',
-        endpointUrl: undefined,
         getCredentials: sinon.stub().resolves({}),
     }
 
     beforeEach(function () {
         getFunctionWithCredentialsStub = sinon.stub(lambdaClient, 'getFunctionWithCredentials')
-        getIAMConnectionOrFallbackToConsoleStub = sinon.stub(authUtils, 'getIAMConnectionOrFallbackToConsole')
+        getIAMConnectionStub = sinon.stub(authUtils, 'getIAMConnection')
         createAndUseConsoleConnectionStub = sinon.stub(authUtils, 'createAndUseConsoleConnection')
         showViewLogsMessageStub = sinon.stub(messages, 'showViewLogsMessage')
     })
@@ -336,7 +335,7 @@ describe('getFunctionWithFallback', function () {
 
     it('returns function when credentials are valid', async function () {
         getFunctionWithCredentialsStub.resolves(mockFunction)
-        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+        getIAMConnectionStub.resolves(mockConnection)
 
         const result = await getFunctionWithFallback('test-function', 'us-east-1')
 
@@ -353,10 +352,9 @@ describe('getFunctionWithFallback', function () {
             type: 'iam' as const,
             id: 'profile:test',
             label: 'profile:test',
-            endpointUrl: undefined,
             getCredentials: sinon.stub().resolves({ accountId: '123456789' }),
         }
-        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+        getIAMConnectionStub.resolves(mockConnection)
 
         const result = await getFunctionWithFallback('test-function', 'us-east-1')
 
@@ -375,10 +373,9 @@ describe('getFunctionWithFallback', function () {
             type: 'iam' as const,
             id: 'profile:test',
             label: 'profile:test',
-            endpointUrl: undefined,
             getCredentials: sinon.stub().resolves({ accountId: '987654321' }),
         }
-        getIAMConnectionOrFallbackToConsoleStub.resolves(mockConnection)
+        getIAMConnectionStub.resolves(mockConnection)
 
         const result = await getFunctionWithFallback('test-function', 'us-east-2')
 

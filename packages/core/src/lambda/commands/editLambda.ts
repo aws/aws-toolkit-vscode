@@ -25,7 +25,7 @@ import { ToolkitError } from '../../shared/errors'
 import { getFunctionWithCredentials } from '../../shared/clients/lambdaClient'
 import { getLogger } from '../../shared/logger/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { createAndUseConsoleConnection, getIAMConnectionOrFallbackToConsole } from '../../auth/utils'
+import { createAndUseConsoleConnection, getIAMConnection } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -237,20 +237,21 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
  * @returns Lambda function configuration
  */
 export async function getFunctionWithFallback(name: string, region: string) {
-    // Get active IAM connection or prompt for console credentials.
-    // Provides connection details for error messages if credential mismatch occurs.
-    // If this fails, error propagates to URI handler for metrics.
-    const connection = await getIAMConnectionOrFallbackToConsole(name, region)
+    const connection = await getIAMConnection({ prompt: false })
+
+    // If no connection, create console connection before first attempt
+    if (!connection) {
+        await createAndUseConsoleConnection(name, region)
+    }
 
     try {
         return await getFunctionWithCredentials(region, name)
     } catch (error: any) {
         // Detect credential mismatches (ResourceNotFoundException, AccessDeniedException)
-        // so that user gets appropriate error messages (function doesn't exist, permissions issue, etc.)
         let message: string | undefined
-        if (error.name === 'ResourceNotFoundException') {
-            const credentials = connection.type === 'iam' ? await connection.getCredentials() : undefined
-            const accountId = credentials ? (credentials as any).accountId : undefined
+        if (error.name === 'ResourceNotFoundException' && connection?.type === 'iam') {
+            const credentials = await connection.getCredentials()
+            const accountId = (credentials as any).accountId
             message = localize(
                 'AWS.lambda.open.functionNotFound',
                 'Function not found{0}. Retrying with console credentials.',
@@ -267,7 +268,7 @@ export async function getFunctionWithFallback(name: string, region: string) {
             void showViewLogsMessage(message, 'warn')
             getLogger().warn(message)
         }
-        // Retry once with console credentials after credential mismatch. If second attempt fails, throw the error up.
+        // Retry once with console credentials after credential mismatch
         await createAndUseConsoleConnection(name, region)
         return await getFunctionWithCredentials(region, name)
     }
