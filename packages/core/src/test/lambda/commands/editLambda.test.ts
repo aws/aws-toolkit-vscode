@@ -14,6 +14,7 @@ import {
     getReadme,
     deleteFilesInFolder,
     overwriteChangesForEdit,
+    getFunctionWithFallback,
 } from '../../../lambda/commands/editLambda'
 import { LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import * as downloadLambda from '../../../lambda/commands/downloadLambda'
@@ -25,6 +26,8 @@ import { LambdaFunctionNodeDecorationProvider } from '../../../lambda/explorer/l
 import path from 'path'
 import globals from '../../../shared/extensionGlobals'
 import { lambdaTempPath } from '../../../lambda/utils'
+import * as lambdaClient from '../../../shared/clients/lambdaClient'
+import * as authUtils from '../../../auth/utils'
 
 describe('editLambda', function () {
     let mockLambda: LambdaFunction
@@ -303,5 +306,129 @@ describe('editLambda', function () {
 
             assert.strictEqual(copyStub.callCount, 3)
         })
+    })
+})
+
+describe('getFunctionWithFallback', function () {
+    let getFunctionWithCredentialsStub: sinon.SinonStub
+    let setupConsoleConnectionStub: sinon.SinonStub
+    let showViewLogsMessageStub: sinon.SinonStub
+    let getIAMConnectionStub: sinon.SinonStub
+    const mockFunction = { Configuration: { FunctionName: 'test' } }
+    const mockConnection = {
+        type: 'iam' as const,
+        id: 'profile:test',
+        label: 'profile:test',
+        getCredentials: sinon.stub().resolves({}),
+    }
+
+    beforeEach(function () {
+        getFunctionWithCredentialsStub = sinon.stub(lambdaClient, 'getFunctionWithCredentials')
+        getIAMConnectionStub = sinon.stub(authUtils, 'getIAMConnection')
+        setupConsoleConnectionStub = sinon.stub(authUtils, 'setupConsoleConnection')
+        showViewLogsMessageStub = sinon.stub(messages, 'showViewLogsMessage')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('returns function when active connection exists and is valid', async function () {
+        getFunctionWithCredentialsStub.resolves(mockFunction)
+        getIAMConnectionStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.notCalled)
+    })
+
+    it('creates console connection when no active connection exists', async function () {
+        getFunctionWithCredentialsStub.resolves(mockFunction)
+        getIAMConnectionStub.resolves(undefined)
+        setupConsoleConnectionStub.resolves()
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.calledOnce)
+        assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
+    })
+
+    it('does not retry when console connection was just created and fails', async function () {
+        const error = new Error('Console creds not working')
+        error.name = 'Error'
+        getFunctionWithCredentialsStub.rejects(error)
+        getIAMConnectionStub.resolves(undefined)
+        setupConsoleConnectionStub.resolves()
+
+        await assert.rejects(
+            () => getFunctionWithFallback('test-function', 'us-east-1'),
+            (err: Error) =>
+                err.message.includes('Failed to get Lambda function with console credentials. Retry skipped.')
+        )
+
+        assert(setupConsoleConnectionStub.calledOnce)
+        assert(showViewLogsMessageStub.notCalled)
+    })
+
+    it('retries with console credentials on ResourceNotFoundException with existing connection', async function () {
+        const error = new Error('Function not found')
+        error.name = 'ResourceNotFoundException'
+        getFunctionWithCredentialsStub.onFirstCall().rejects(error)
+        getFunctionWithCredentialsStub.onSecondCall().resolves(mockFunction)
+        const mockConnection = {
+            type: 'iam' as const,
+            id: 'profile:test',
+            label: 'profile:test',
+            getCredentials: sinon.stub().resolves({ accountId: '123456789' }),
+        }
+        getIAMConnectionStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.calledOnce)
+        assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
+        assert(showViewLogsMessageStub.called)
+        assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('Function not found'))
+    })
+
+    it('retries with console credentials on AccessDeniedException with existing connection', async function () {
+        const error = new Error('User not authorized to perform: lambda:GetFunction on resource')
+        error.name = 'AccessDeniedException'
+        getFunctionWithCredentialsStub.onFirstCall().rejects(error)
+        getFunctionWithCredentialsStub.onSecondCall().resolves(mockFunction)
+        const mockConnection = {
+            type: 'iam' as const,
+            id: 'profile:test',
+            label: 'profile:test',
+            getCredentials: sinon.stub().resolves({ accountId: '987654321' }),
+        }
+        getIAMConnectionStub.resolves(mockConnection)
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-2')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.calledOnce)
+        assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-2'))
+        assert(showViewLogsMessageStub.called)
+        assert.ok(showViewLogsMessageStub.firstCall.args[0].includes('Local credentials lack permission'))
+    })
+
+    it('throws error when setupConsoleConnection fails', async function () {
+        const setupError = new Error('Console setup failed')
+        getIAMConnectionStub.resolves(undefined)
+        setupConsoleConnectionStub.rejects(setupError)
+
+        await assert.rejects(
+            () => getFunctionWithFallback('test-function', 'us-east-1'),
+            (err: Error) => err.message.includes('Console setup failed')
+        )
+
+        // Verify setupConsoleConnection was called only once (in the initial setup)
+        assert(setupConsoleConnectionStub.calledOnce)
+        // Verify getFunctionWithCredentials was never called since setup failed
+        assert(getFunctionWithCredentialsStub.notCalled)
     })
 })
