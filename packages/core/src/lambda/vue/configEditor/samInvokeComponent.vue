@@ -107,6 +107,7 @@
                         id="tenant-id"
                         type="text"
                         v-model="launchConfig.lambda.tenantId"
+                        placeholder="Enter tenant ID (required for invocation)"
                         style="width: 100%"
                     />
                     <span class="data-view">Tenant ID from data: {{ launchConfig.lambda.tenantId }}</span>
