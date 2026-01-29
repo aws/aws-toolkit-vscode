@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { GetFunctionCommandOutput } from '@aws-sdk/client-lambda'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { downloadLambdaInLocation, openLambdaFile } from './downloadLambda'
 import { LambdaFunction, runUploadDirectory } from './uploadLambda'
@@ -24,6 +25,8 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { getFunctionWithCredentials } from '../../shared/clients/lambdaClient'
 import { getLogger } from '../../shared/logger/logger'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { setupConsoleConnection, getIAMConnection } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -118,8 +121,9 @@ export async function deployFromTemp(lambda: LambdaFunction, projectUri: vscode.
             await vscode.workspace.saveAll()
             try {
                 await runUploadDirectory(lambda, 'zip', projectUri)
-            } catch {
-                throw new ToolkitError('Failed to deploy Lambda function', { code: 'deployFailure' })
+            } catch (error) {
+                // Chain error to preserve root cause for troubleshooting deployment failures
+                throw ToolkitError.chain(error, 'Failed to deploy Lambda function', { code: 'deployFailure' })
             }
             await setFunctionInfo(lambda, {
                 lastDeployed: globals.clock.Date.now(),
@@ -225,14 +229,67 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
     })
 }
 
+/**
+ * Retrieves Lambda function configuration with automatic fallback to console credentials.
+ * Handles credential mismatches (ResourceNotFoundException, AccessDeniedException).
+ *
+ * Three scenarios:
+ * 1. No connection exists → Set up console first, try once, if it fails don't retry (because we already used console)
+ * 2. Connection exists → Try it first, if it fails with credential error, fall back to console
+ * 3. Connection exists and fails → Retry with console, if that fails, throw (no second retry)
+ *
+ * @param name - Lambda function name
+ * @param region - AWS region
+ * @returns Lambda function information with a link to download the deployment package
+ */
+export async function getFunctionWithFallback(name: string, region: string): Promise<GetFunctionCommandOutput> {
+    const activeConnection = await getIAMConnection({ prompt: false })
+    // Tracks if we've already attempted console credentials
+    let calledConsoleLogin = false
+
+    // If no connection, create console connection before first attempt
+    if (!activeConnection) {
+        await setupConsoleConnection(name, region)
+        calledConsoleLogin = true
+    }
+
+    try {
+        return await getFunctionWithCredentials(region, name)
+    } catch (error: any) {
+        // Detect credential mismatches (ResourceNotFoundException, AccessDeniedException)
+        let message: string | undefined
+        if (error.name === 'ResourceNotFoundException') {
+            message = localize('AWS.lambda.open.functionNotFound', 'Function not found in current account.')
+        } else if (error.name === 'AccessDeniedException') {
+            message = localize('AWS.lambda.open.accessDenied', 'Local credentials lack permission to access function.')
+        }
+
+        if (message) {
+            void showViewLogsMessage(message, 'warn')
+            getLogger().warn(message)
+        }
+
+        if (calledConsoleLogin) {
+            // Skip retry if we just created console connection - error is not due to credential mismatch
+            throw ToolkitError.chain(error, 'Failed to get Lambda function with console credentials. Retry skipped.')
+        } else {
+            // Retry once with console credentials
+            await setupConsoleConnection(name, region)
+            return await getFunctionWithCredentials(region, name)
+        }
+    }
+}
+
+/**
+ * Opens a Lambda function for editing in VS Code.
+ * Retrieves IAM credentials (with console fallback), downloads function code, and opens it in a new workspace.
+ * Note: IAM credentials are required to interact with AWS resources, even for SSO users.
+ */
 export async function openLambdaFolderForEdit(name: string, region: string) {
     const downloadLocation = getTempLocation(name, region)
 
-    // Do all authentication work before opening workspace to avoid race condition
-    const getFunctionOutput = await getFunctionWithCredentials(region, name)
+    const getFunctionOutput = await getFunctionWithFallback(name, region)
     const configuration = getFunctionOutput.Configuration
-
-    // Download and set up Lambda code before opening workspace
     await editLambda(
         {
             name,
