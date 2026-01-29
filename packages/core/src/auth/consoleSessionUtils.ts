@@ -16,8 +16,8 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Auth } from './auth'
-import { CredentialsId, asString } from './providers/credentials'
 import { createRegionPrompter } from '../shared/ui/common/region'
+import { getConnectionIdFromProfile } from './utils'
 
 /**
  * @description Authenticates with AWS using browser-based login via AWS CLI.
@@ -289,14 +289,13 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
         )
 
         logger.info(`Activating profile: ${profileName}`)
-        const credentialsId: CredentialsId = {
-            credentialSource: 'profile',
-            credentialTypeId: profileName,
-        }
-        const connectionId = asString(credentialsId)
+        const connectionId = getConnectionIdFromProfile(profileName)
         // Invalidate cached credentials to force fresh fetch
         getLogger().info(`Invalidated cached credentials for ${connectionId}`)
-        globals.loginManager.store.invalidateCredentials(credentialsId)
+        globals.loginManager.store.invalidateCredentials({
+            credentialSource: 'profile',
+            credentialTypeId: profileName,
+        })
         logger.info(`Looking for connection with ID: ${connectionId}`)
 
         // Make sure that connection exists before letting other part use connection
