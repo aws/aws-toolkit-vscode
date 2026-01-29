@@ -40,12 +40,14 @@ describe('RemoteInvokeWebview', function () {
         name: string
         data: any
         expectedQualifier: string | undefined
+        expectedTenantId: string | undefined
         expectedLogType: 'Tail' | 'None'
     }[] = [
         {
             name: 'should invoke with a simple payload',
             data: mockData,
             expectedQualifier: undefined,
+            expectedTenantId: undefined,
             expectedLogType: 'Tail',
         },
         {
@@ -61,6 +63,7 @@ describe('RemoteInvokeWebview', function () {
                 },
             },
             expectedQualifier: undefined,
+            expectedTenantId: undefined,
             expectedLogType: 'None',
         },
         {
@@ -76,6 +79,7 @@ describe('RemoteInvokeWebview', function () {
                 },
             },
             expectedQualifier: '$LATEST',
+            expectedTenantId: undefined,
             expectedLogType: 'Tail',
         },
         {
@@ -94,6 +98,7 @@ describe('RemoteInvokeWebview', function () {
                 },
             },
             expectedQualifier: '$LATEST.PUBLISHED',
+            expectedTenantId: undefined,
             expectedLogType: 'None',
         },
     ]
@@ -109,10 +114,32 @@ describe('RemoteInvokeWebview', function () {
                 scenario.data.FunctionArn,
                 input,
                 scenario.expectedQualifier,
+                scenario.expectedTenantId,
                 scenario.expectedLogType
             )
         })
     }
+
+    it('should invoke multi-tenant function with tenant ID', async function () {
+        const tenantId = 'test-tenant-123'
+        const multiTenantData = {
+            FunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:my-function',
+            LambdaFunctionNode: {
+                configuration: {
+                    TenancyConfig: {
+                        TenantIsolationMode: 'PER_TENANT',
+                    },
+                },
+            },
+        } as any
+
+        const remoteInvokeWebview = new RemoteInvokeWebview(outputChannel, client, client, multiTenantData)
+        client.invoke.resolves(mockResponse)
+        await remoteInvokeWebview.invokeLambda(input, undefined, false, tenantId)
+
+        sinon.assert.calledOnce(client.invoke)
+        sinon.assert.calledWith(client.invoke, multiTenantData.FunctionArn, input, undefined, tenantId, 'Tail')
+    })
 
     const mockEvent = {
         name: 'TestEvent',
