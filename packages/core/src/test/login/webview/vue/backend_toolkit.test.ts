@@ -122,7 +122,7 @@ describe('Toolkit Login', function () {
     })
 
     it('signs in with console credentials and emits telemetry', async function () {
-        const stub = sandbox.stub(authUtils, 'createAndUseConsoleConnection').resolves()
+        const stub = sandbox.stub(authUtils, 'setupConsoleConnection').resolves()
         await backend.startConsoleCredentialSetup(profileName, region)
 
         assert.ok(stub.calledOnceWith(profileName, region))
@@ -135,7 +135,7 @@ describe('Toolkit Login', function () {
 
     it('returns error when console credential setup fails', async function () {
         const error = new Error('Console login failed')
-        sandbox.stub(authUtils, 'createAndUseConsoleConnection').rejects(error)
+        sandbox.stub(authUtils, 'setupConsoleConnection').rejects(error)
 
         const result = await backend.startConsoleCredentialSetup(profileName, region)
 

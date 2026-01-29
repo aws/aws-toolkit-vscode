@@ -901,31 +901,30 @@ export function isLocalStackConnection(): boolean {
 }
 
 /**
- * Creates and activates a connection using console credentials.
- * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ * Constructs a credentials ID from a profile name.
  *
- * @param name - Profile name (typically Lambda function name)
- * @param region - AWS region
- * @returns Connection created from console credentials
- * @throws ToolkitError if connection creation fails
+ * @param profileName - Profile name
+ * @returns Credentials ID string
  */
-export async function createAndUseConsoleConnection(profileName: string, region: string): Promise<Connection> {
-    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
-
+export function getConnectionIdFromProfile(profileName: string): string {
     const credentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: profileName,
     }
-    const connectionId = asString(credentialsId)
-    const connection = await Auth.instance.getConnection({ id: connectionId })
+    return asString(credentialsId)
+}
 
-    // Console login did not create a connection.
-    if (!connection) {
-        throw new ToolkitError('Console login failed to create connection', {
-            code: 'NoConsoleConnection',
-        })
-    }
-
+/**
+ * Sets up and activates a console connection via browser login.
+ * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ *
+ * @param profileName - Profile name (typically Lambda function name)
+ * @param region - AWS region
+ * @throws Error if console login fails or user cancels
+ */
+export async function setupConsoleConnection(profileName: string, region: string): Promise<void> {
+    getLogger().info('Auth: Sets up a connection via browser login for profile: %s, region: %s', profileName, region)
+    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+    const connectionId = getConnectionIdFromProfile(profileName)
     await Auth.instance.useConnection({ id: connectionId })
-    return connection
 }

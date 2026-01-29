@@ -10,7 +10,19 @@ import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import * as authUtils from '../../auth/utils'
 
-describe('createAndUseConsoleConnection', function () {
+describe('getConnectionIdFromProfile', function () {
+    it('constructs connection ID from profile name', function () {
+        const result = authUtils.getConnectionIdFromProfile('my-profile')
+        assert.strictEqual(result, 'profile:my-profile')
+    })
+
+    it('handles profile names with special characters', function () {
+        const result = authUtils.getConnectionIdFromProfile('my-profile-123')
+        assert.strictEqual(result, 'profile:my-profile-123')
+    })
+})
+
+describe('setupConsoleConnection', function () {
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
@@ -23,34 +35,26 @@ describe('createAndUseConsoleConnection', function () {
 
     it('creates connection after successful console login', async function () {
         const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves()
-        const mockConnection = {
-            id: 'profile:test-profile',
-            type: 'iam',
-            state: 'valid',
-            label: 'profile:test-profile',
-            getCredentials: sandbox.stub().resolves({}),
-        }
-        sandbox.stub(Auth.instance, 'getConnection').resolves(mockConnection as any)
         const useConnectionStub = sandbox.stub(Auth.instance, 'useConnection').resolves()
 
-        const result = await authUtils.createAndUseConsoleConnection('test-profile', 'us-east-1')
+        await authUtils.setupConsoleConnection('test-profile', 'us-east-1')
 
-        assert.ok(executeCommandStub.calledWith('aws.toolkit.auth.consoleLogin', 'test-profile', 'us-east-1'))
-        assert.ok(useConnectionStub.calledWith({ id: 'profile:test-profile' }))
-        assert.strictEqual(result, mockConnection)
+        assert.ok(executeCommandStub.calledOnceWith('aws.toolkit.auth.consoleLogin', 'test-profile', 'us-east-1'))
+        assert.ok(useConnectionStub.calledOnceWith({ id: 'profile:test-profile' }))
     })
 
-    it('throws ToolkitError when connection not found after console login', async function () {
+    it('throws error when useConnection fails', async function () {
         sandbox.stub(vscode.commands, 'executeCommand').resolves()
-        sandbox.stub(Auth.instance, 'getConnection').resolves(undefined)
+        const error = new Error('useConnection failed')
+        sandbox.stub(Auth.instance, 'useConnection').rejects(error)
 
-        await assert.rejects(
-            () => authUtils.createAndUseConsoleConnection('test-profile', 'us-east-1'),
-            (err: Error) => {
-                assert.ok(err instanceof ToolkitError)
-                assert.strictEqual(err.code, 'NoConsoleConnection')
-                return true
-            }
-        )
+        await assert.rejects(() => authUtils.setupConsoleConnection('test-profile', 'us-east-1'), error)
+    })
+
+    it('throws error when console login command fails', async function () {
+        const error = new ToolkitError('Console login failed')
+        sandbox.stub(vscode.commands, 'executeCommand').rejects(error)
+
+        await assert.rejects(() => authUtils.setupConsoleConnection('test-profile', 'us-east-1'), error)
     })
 })

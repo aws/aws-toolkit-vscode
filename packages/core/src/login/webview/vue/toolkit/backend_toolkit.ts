@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { createAndUseConsoleConnection, tryAddCredentials } from '../../../../auth/utils'
+import { setupConsoleConnection, tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
@@ -90,7 +90,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         getLogger().debug(`called startConsoleCredentialSetup()`)
         const runAuth = async () => {
             try {
-                await createAndUseConsoleConnection(profileName, region)
+                await setupConsoleConnection(profileName, region)
 
                 // Hide auth view and show resource explorer
                 await setContext('aws.explorer.showAuthView', false)
