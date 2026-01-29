@@ -38,10 +38,10 @@ export class AutoDebugCommands implements vscode.Disposable {
             Commands.register(
                 {
                     id: 'amazonq.02.fixAllWithQ',
-                    name: 'Amazon Q: Fix All Errors',
+                    name: 'Amazon Q: Fix All Issues',
                 },
-                async () => {
-                    await this.fixAllWithAmazonQ()
+                async (includeWarnings?: boolean) => {
+                    await this.fixAllWithAmazonQ(includeWarnings)
                 }
             ),
 
@@ -124,9 +124,10 @@ export class AutoDebugCommands implements vscode.Disposable {
     }
 
     /**
-     * Fix All with Amazon Q - processes all errors in the current file
+     * Fix All with Amazon Q - processes issues in the current file
+     * @param includeWarnings - if true, fix errors and warnings; if false, fix only errors
      */
-    private async fixAllWithAmazonQ(): Promise<void> {
+    private async fixAllWithAmazonQ(includeWarnings: boolean = false): Promise<void> {
         autoDebugTelemetry.recordCommandInvocation('fixAllWithQ')
 
         await this.executeWithErrorHandling(
@@ -139,7 +140,7 @@ export class AutoDebugCommands implements vscode.Disposable {
                 if (!saved) {
                     throw new Error('Failed to save document')
                 }
-                const problemCount = await this.controller.fixAllProblemsInFile(10) // 10 errors per batch
+                const problemCount = await this.controller.fixAllProblemsInFile(includeWarnings)
                 autoDebugTelemetry.recordCommandSuccess('fixAllWithQ', problemCount)
             },
             'Fix All with Amazon Q',
