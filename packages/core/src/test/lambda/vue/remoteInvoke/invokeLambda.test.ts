@@ -928,5 +928,34 @@ describe('RemoteInvokeWebview', () => {
             // opens in side panel
             assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: vscode.ViewColumn.Beside })
         })
+
+        it('should set hasTenancyConfig to true when function has TenancyConfig', async () => {
+            const functionNodeWithTenancy = {
+                ...mockFunctionNode,
+                configuration: {
+                    ...mockFunctionNode.configuration,
+                    TenancyConfig: { TenantIsolationMode: 'PER_TENANT' },
+                },
+            }
+
+            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, {
+                ...data,
+                LambdaFunctionNode: functionNodeWithTenancy as any,
+                hasTenancyConfig: !!(functionNodeWithTenancy.configuration as any).TenancyConfig,
+            })
+
+            const initialData = webview.init()
+            assert.strictEqual(initialData.hasTenancyConfig, true)
+        })
+
+        it('should set hasTenancyConfig to false when function has no TenancyConfig', async () => {
+            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, {
+                ...data,
+                hasTenancyConfig: !!(mockFunctionNode.configuration as any).TenancyConfig,
+            })
+
+            const initialData = webview.init()
+            assert.strictEqual(initialData.hasTenancyConfig, false)
+        })
     })
 })

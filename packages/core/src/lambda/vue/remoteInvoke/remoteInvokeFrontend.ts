@@ -62,6 +62,7 @@ export default defineComponent({
             payloadData: {
                 sampleText: '{}',
             },
+            tenantId: undefined,
         }
     },
 
@@ -291,7 +292,8 @@ export default defineComponent({
             await client.invokeLambda(
                 this.payloadData.sampleText,
                 this.initialData.Source,
-                this.debugState.remoteDebuggingEnabled
+                this.debugState.remoteDebuggingEnabled,
+                this.tenantId
             )
             await this.syncStateFromWorkspace()
         },

@@ -65,6 +65,7 @@ export interface InitialData {
     runtimeSupportsRemoteDebug?: boolean
     remoteDebugLayer?: string | undefined
     isLambdaRemote?: boolean
+    hasTenancyConfig?: boolean
 }
 
 // Debug configuration sub-interface
@@ -117,6 +118,7 @@ export interface RemoteInvokeData {
     runtimeSettings: RuntimeDebugSettings
     uiState: UIState
     payloadData: PayloadData
+    tenantId: string | undefined
 }
 
 // Event types for communicating state between backend and frontend
@@ -264,7 +266,12 @@ export class RemoteInvokeWebview extends VueWebview {
         await this.stopDebugging()
     }
 
-    public async invokeLambda(input: string, source?: string, remoteDebugEnabled: boolean = false): Promise<void> {
+    public async invokeLambda(
+        input: string,
+        source?: string,
+        remoteDebugEnabled: boolean = false,
+        tenantId?: string
+    ): Promise<void> {
         let qualifier: string | undefined = undefined
         // if debugging, focus on the first editor
         if (remoteDebugEnabled && RemoteDebugController.instance.isDebugging) {
@@ -293,11 +300,11 @@ export class RemoteInvokeWebview extends VueWebview {
                 let funcResponse
 
                 if (remoteDebugEnabled) {
-                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier, tenantId)
                 } else if (isLMI) {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, tenantId, 'None')
                 } else {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, tenantId, 'Tail')
                 }
 
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
@@ -951,6 +958,7 @@ export async function invokeRemoteLambda(
         runtimeSupportsRemoteDebug: runtimeSupportsRemoteDebug,
         remoteDebugLayer: remoteDebugLayer,
         isLambdaRemote: !isLocalStackConnection(),
+        hasTenancyConfig: !!resource.configuration.TenancyConfig,
     })
     // focus on first group so wv will show up in the side
     await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')

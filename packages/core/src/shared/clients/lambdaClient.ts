@@ -70,6 +70,7 @@ export class DefaultLambdaClient {
         name: string,
         payload?: BlobPayloadInputTypes,
         version?: string,
+        tenantId?: string,
         logtype: 'Tail' | 'None' = 'Tail'
     ): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
@@ -80,6 +81,7 @@ export class DefaultLambdaClient {
                 LogType: logtype,
                 Payload: payload,
                 Qualifier: version,
+                TenantId: tenantId,
             })
         )
 

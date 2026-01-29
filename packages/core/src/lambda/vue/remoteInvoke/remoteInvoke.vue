@@ -350,5 +350,13 @@
                 placeholder='{"key": "value"}'
             ></textarea>
         </div>
+
+        <!-- Tenant ID Section -->
+        <div class="vscode-setting-item" v-if="initialData.hasTenancyConfig">
+            <div class="setting-header">
+                <label class="setting-title">Tenant ID</label>
+            </div>
+            <input type="text" v-model="tenantId" style="width: 100%; margin-top: 8px" />
+        </div>
     </div>
 </template>
