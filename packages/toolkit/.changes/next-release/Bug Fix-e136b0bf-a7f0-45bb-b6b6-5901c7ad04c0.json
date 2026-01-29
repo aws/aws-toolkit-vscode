@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Opening Lambda functions from AWS Console now works with missing or mismatched local credentials"
+}
