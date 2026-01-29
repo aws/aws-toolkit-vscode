@@ -75,11 +75,14 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     /**
-     * Filter diagnostics to only errors and apply source filtering
+     * Filter diagnostics by severity and apply source filtering
      */
-    private filterErrorDiagnostics(diagnostics: vscode.Diagnostic[]): vscode.Diagnostic[] {
+    private filterDiagnostics(diagnostics: vscode.Diagnostic[], includeWarnings: boolean = false): vscode.Diagnostic[] {
         return diagnostics.filter((d) => {
-            if (d.severity !== vscode.DiagnosticSeverity.Error) {
+            // Filter by severity: errors always, warnings only if includeWarnings
+            const isError = d.severity === vscode.DiagnosticSeverity.Error
+            const isWarning = d.severity === vscode.DiagnosticSeverity.Warning
+            if (!isError && !(includeWarnings && isWarning)) {
                 return false
             }
             // Apply source filtering
@@ -108,9 +111,11 @@ export class AutoDebugController implements vscode.Disposable {
     }
 
     /**
-     * Fix with Amazon Q - sends up to 15 error messages one time when user clicks the button
+     * Fix with Amazon Q - sends up to maxProblems issues when user clicks the button
+     * @param includeWarnings - if true, fix both errors and warnings; if false, fix only errors
+     * @param maxProblems - maximum number of problems to fix (default 10)
      */
-    public async fixAllProblemsInFile(maxProblems: number = 15): Promise<number> {
+    public async fixAllProblemsInFile(includeWarnings: boolean = false, maxProblems: number = 10): Promise<number> {
         try {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
@@ -120,13 +125,13 @@ export class AutoDebugController implements vscode.Disposable {
 
             // Get all diagnostics for the current file
             const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
-            const errorDiagnostics = this.filterErrorDiagnostics(allDiagnostics)
-            if (errorDiagnostics.length === 0) {
+            const filteredDiagnostics = this.filterDiagnostics(allDiagnostics, includeWarnings)
+            if (filteredDiagnostics.length === 0) {
                 return 0
             }
 
-            // Take up to maxProblems errors (15 by default)
-            const diagnosticsToFix = errorDiagnostics.slice(0, maxProblems)
+            // Take up to maxProblems
+            const diagnosticsToFix = filteredDiagnostics.slice(0, maxProblems)
             const result = await this.getProblemsFromDiagnostics(undefined, diagnosticsToFix)
             if (!result) {
                 return 0
