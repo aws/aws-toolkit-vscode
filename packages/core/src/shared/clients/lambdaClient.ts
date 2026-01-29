@@ -349,6 +349,7 @@ export async function getFunctionWithCredentials(region: string, name: string): 
 
     const credentials =
         connection.type === 'iam' ? await connection.getCredentials() : fromSSO({ profile: connection.id })
+
     const client = new LambdaSdkClient({ region, credentials })
 
     const command = new GetFunctionCommand({ FunctionName: name })
