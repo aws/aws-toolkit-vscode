@@ -69,18 +69,24 @@ describe('RemoteInvokeWebview', () => {
         })
     })
     describe('invokeLambda', () => {
-        it('invokes Lambda function successfully', async () => {
-            const input = '{"key": "value"}'
-            const mockResponse = {
+        let mockResponse: InvocationResponse
+        let appendedLines: string[]
+
+        beforeEach(() => {
+            mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
                 Payload: new TextEncoder().encode('{"result": "success"}'),
             } satisfies InvocationResponse
-            client.invoke.resolves(mockResponse)
 
-            const appendedLines: string[] = []
+            appendedLines = []
             outputChannel.appendLine = (line: string) => {
                 appendedLines.push(line)
             }
+        })
+
+        it('invokes Lambda function successfully', async () => {
+            const input = '{"key": "value"}'
+            client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda(input)
             assert(client.invoke.calledOnce)
@@ -97,16 +103,12 @@ describe('RemoteInvokeWebview', () => {
             ])
         })
         it('handles Lambda invocation with no payload', async () => {
-            const mockResponse = {
+            mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
                 Payload: new TextEncoder().encode(''),
             } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
-            const appendedLines: string[] = []
-            outputChannel.appendLine = (line: string) => {
-                appendedLines.push(line)
-            }
 
             await remoteInvokeWebview.invokeLambda('')
 
@@ -122,16 +124,11 @@ describe('RemoteInvokeWebview', () => {
             ])
         })
         it('handles Lambda invocation with undefined LogResult', async () => {
-            const mockResponse = {
+            mockResponse = {
                 Payload: new TextEncoder().encode('{"result": "success"}'),
             } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
-
-            const appendedLines: string[] = []
-            outputChannel.appendLine = (line: string) => {
-                appendedLines.push(line)
-            }
 
             await remoteInvokeWebview.invokeLambda('{}')
 
