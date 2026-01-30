@@ -59,6 +59,7 @@
     "AWS.configuration.description.awssam.debug.memoryMb": "The amount of memory (in Mb) the Lambda function has access to.",
     "AWS.configuration.description.awssam.debug.runtime": "The Lambda Function's runtime",
     "AWS.configuration.description.awssam.debug.timeout": "The amount of time (in seconds) that Lambda allows a function to run before stopping it.",
+    "AWS.configuration.description.awssam.debug.tenantId": "Tenant ID for multi-tenant Lambda functions",
     "AWS.configuration.description.awssam.debug.aws": "AWS connection details",
     "AWS.configuration.description.awssam.debug.credentials": "The AWS credentials provider and name to use during the invocation. Example: credential profile \"default\" would be entered as `profile:default`.",
     "AWS.configuration.description.awssam.debug.credentials.cn": "The Amazon credentials provider and name to use during the invocation. Example: credential profile \"default\" would be entered as `profile:default`.",
