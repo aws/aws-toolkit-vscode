@@ -17,6 +17,8 @@ import {
     samconfigInvalidData,
     validTemplateData,
     capacityProviderTemplateData,
+    functionLevelTenancyConfigTemplateData,
+    globalTenancyConfigTemplateData,
 } from '../../../shared/sam/samTestUtils'
 import { assertLogsContain } from '../../../globalSetup.test'
 import { getTestWindow } from '../../../shared/vscode/window'
@@ -185,6 +187,28 @@ describe('samProject', () => {
             assert.strictEqual(typeof config.Arn, 'object')
             assert('Fn::GetAtt' in config.Arn)
             assert.deepStrictEqual(config.Arn['Fn::GetAtt'], ['MyCapacityProvider', 'Arn'])
+        })
+
+        it('detects TenancyConfig from function-level properties', async () => {
+            await testFolder.write('template.yaml', functionLevelTenancyConfigTemplateData)
+            const { resourceTree } = await getApp(mockSamAppLocation)
+
+            assert.strictEqual(resourceTree.length, 1)
+            const functionNode = resourceTree[0]
+            assert.strictEqual(functionNode.Type, 'AWS::Serverless::Function')
+            assert('TenancyConfig' in functionNode)
+            assert.deepStrictEqual(functionNode.TenancyConfig, { TenantIsolationMode: 'PER_TENANT' })
+        })
+
+        it('detects TenancyConfig from Globals section', async () => {
+            await testFolder.write('template.yaml', globalTenancyConfigTemplateData)
+            const { resourceTree } = await getApp(mockSamAppLocation)
+
+            assert.strictEqual(resourceTree.length, 1)
+            const functionNode = resourceTree[0]
+            assert.strictEqual(functionNode.Type, 'AWS::Serverless::Function')
+            assert('TenancyConfig' in functionNode)
+            assert.deepStrictEqual(functionNode.TenancyConfig, { TenantIsolationMode: 'PER_TENANT' })
         })
     })
 })
