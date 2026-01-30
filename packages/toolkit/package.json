@@ -702,6 +702,10 @@
                                         "description": "%AWS.configuration.description.awssam.debug.timeout%",
                                         "type": "number"
                                     },
+                                    "tenantId": {
+                                        "description": "%AWS.configuration.description.awssam.debug.tenantId%",
+                                        "type": "string"
+                                    },
                                     "pathMappings": {
                                         "type:": "array",
                                         "items": {
