@@ -136,3 +136,34 @@ Resources:
       CapacityProviderConfig:
         Arn: !GetAtt MyCapacityProvider.Arn
 `
+
+export const functionLevelTenancyConfigTemplateData = `
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
+`
+
+export const globalTenancyConfigTemplateData = `
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    TenancyConfig:
+      TenantIsolationMode: PER_TENANT
+
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.12
+`
