@@ -41,6 +41,7 @@ export interface FunctionResourceEntity extends BaseResourceEntity {
     }
     CapacityProviderConfig?: string
     Architectures?: string
+    TenancyConfig?: string
 }
 
 export interface CapacityProviderResourceEntity extends BaseResourceEntity {
@@ -123,6 +124,7 @@ function createResourceEntity(logicalId: string, resource: any, template: any): 
             CapacityProviderConfig:
                 resource.Properties?.CapacityProviderConfig ?? template?.Globals?.Function?.CapacityProviderConfig,
             Architectures: resource.Properties?.Architectures?.[0] ?? template?.Globals?.Function?.Architectures?.[0],
+            TenancyConfig: resource.Properties?.TenancyConfig ?? template?.Globals?.Function?.TenancyConfig,
         }
         return functionEntity
     }
