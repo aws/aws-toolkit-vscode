@@ -138,6 +138,10 @@ export interface LambdaProperties {
    * The amount of time (in seconds) that Lambda allows a function to run before stopping it.
    */
   timeoutSec?: number;
+  /**
+   * Tenant ID for multi-tenant Lambda functions
+   */
+  tenantId?: string;
   pathMappings?: PathMapping[];
 }
 export interface PathMapping {
