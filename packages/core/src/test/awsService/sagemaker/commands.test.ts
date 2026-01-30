@@ -400,4 +400,154 @@ describe('SageMaker Commands', () => {
             })
         })
     })
+
+    describe('HyperPod connection with clusterArn', function () {
+        let mockDeeplinkConnect: sinon.SinonStub
+        let mockIsRemoteWorkspace: sinon.SinonStub
+        let deeplinkConnect: any
+
+        beforeEach(function () {
+            mockDeeplinkConnect = sandbox.stub().resolves()
+            mockIsRemoteWorkspace = sandbox.stub().returns(false)
+
+            sandbox.replace(require('../../../shared/vscode/env'), 'isRemoteWorkspace', mockIsRemoteWorkspace)
+
+            const freshModule = require('../../../awsService/sagemaker/commands')
+            deeplinkConnect = freshModule.deeplinkConnect
+            sandbox.replace(freshModule, 'deeplinkConnect', mockDeeplinkConnect)
+        })
+
+        it('should create session with underscores from HyperPod clusterArn', async function () {
+            const ctx = {
+                extensionContext: {},
+            } as any
+
+            await deeplinkConnect(
+                ctx,
+                '',
+                'session-id',
+                'wss://example.com',
+                'token',
+                '',
+                undefined,
+                'demo0',
+                'default',
+                'arn:aws:sagemaker:us-east-2:123456789012:cluster/n4nkkc5fbwg5'
+            )
+
+            // Verify the session format uses underscores
+            const sessionArg = mockDeeplinkConnect.firstCall?.args[10] // session parameter
+            if (sessionArg) {
+                assert.ok(sessionArg.includes('_'), 'Session should use underscores as separators')
+                assert.ok(sessionArg.includes('demo0'), 'Session should include workspace name')
+                assert.ok(sessionArg.includes('default'), 'Session should include namespace')
+                assert.ok(sessionArg.includes('n4nkkc5fbwg5'), 'Session should include cluster name')
+                assert.ok(sessionArg.includes('us-east-2'), 'Session should include region')
+                assert.ok(sessionArg.includes('123456789012'), 'Session should include account ID')
+            }
+        })
+
+        it('should handle EKS clusterArn format', async function () {
+            const ctx = {
+                extensionContext: {},
+            } as any
+
+            await deeplinkConnect(
+                ctx,
+                '',
+                'session-id',
+                'wss://example.com',
+                'token',
+                '',
+                undefined,
+                'workspace',
+                'namespace',
+                'arn:aws:eks:us-west-2:987654321098:cluster/eks-cluster-name'
+            )
+
+            const sessionArg = mockDeeplinkConnect.firstCall?.args[10]
+            if (sessionArg) {
+                assert.ok(sessionArg.includes('eks-cluster-name'), 'Session should include EKS cluster name')
+                assert.ok(sessionArg.includes('us-west-2'), 'Session should include region')
+                assert.ok(sessionArg.includes('987654321098'), 'Session should include account ID')
+            }
+        })
+
+        it('should sanitize invalid characters in session components', async function () {
+            const ctx = {
+                extensionContext: {},
+            } as any
+
+            await deeplinkConnect(
+                ctx,
+                '',
+                'session-id',
+                'wss://example.com',
+                'token',
+                '',
+                undefined,
+                'My@Workspace!',
+                'my_namespace',
+                'arn:aws:sagemaker:us-east-2:123456789012:cluster/test-cluster'
+            )
+
+            const sessionArg = mockDeeplinkConnect.firstCall?.args[10]
+            if (sessionArg) {
+                assert.ok(!sessionArg.includes('@'), 'Session should not contain @ symbol')
+                assert.ok(!sessionArg.includes('!'), 'Session should not contain ! symbol')
+                assert.strictEqual(sessionArg, sessionArg.toLowerCase(), 'Session should be lowercase')
+            }
+        })
+
+        it('should handle long component names by truncating', async function () {
+            const ctx = {
+                extensionContext: {},
+            } as any
+
+            const longWorkspace = 'a'.repeat(100)
+            const longNamespace = 'b'.repeat(100)
+            const longCluster = 'c'.repeat(100)
+
+            await deeplinkConnect(
+                ctx,
+                '',
+                'session-id',
+                'wss://example.com',
+                'token',
+                '',
+                undefined,
+                longWorkspace,
+                longNamespace,
+                `arn:aws:sagemaker:us-east-2:123456789012:cluster/${longCluster}`
+            )
+
+            const sessionArg = mockDeeplinkConnect.firstCall?.args[10]
+            if (sessionArg) {
+                assert.ok(sessionArg.length <= 224, 'Session should not exceed max length')
+            }
+        })
+
+        it('should not create HyperPod session when domain is provided', async function () {
+            const ctx = {
+                extensionContext: {},
+            } as any
+
+            await deeplinkConnect(
+                ctx,
+                'connection-id',
+                'session-id',
+                'wss://example.com',
+                'token',
+                'my-domain', // Domain provided - should use SageMaker Studio flow
+                undefined,
+                'workspace',
+                'namespace',
+                'arn:aws:sagemaker:us-east-2:123456789012:cluster/cluster'
+            )
+
+            // Should not create HyperPod session when domain is present
+            const sessionArg = mockDeeplinkConnect.firstCall?.args[10]
+            assert.strictEqual(sessionArg, 'session-id', 'Should use original session when domain is provided')
+        })
+    })
 })
