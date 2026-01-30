@@ -129,9 +129,31 @@ function copy(task: CopyTask): void {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }
 }
+
+function copySageMakerSshKiroExtension(): void {
+    const searchDir = path.resolve(projectRoot, '../../')
+    const destinationDir = path.resolve(outRoot, '../resources')
+
+    fs.mkdirSync(destinationDir, { recursive: true })
+
+    const files = fs
+        .readdirSync(searchDir)
+        .filter((file) => file.startsWith('sagemaker-ssh-kiro') && file.endsWith('.vsix'))
+
+    if (files.length !== 1) {
+        throw new Error(`Expected 1 sagemaker-ssh-kiro VSIX file but found ${files.length}`)
+    }
+
+    const sourceFile = path.join(searchDir, files[0])
+    const destinationFile = path.join(destinationDir, files[0])
+
+    fs.copyFileSync(sourceFile, destinationFile)
+}
+
 function main() {
     try {
         tasks.map(copy)
+        copySageMakerSshKiroExtension()
     } catch (error) {
         console.error('`copyFiles.ts` failed')
         console.error(error)

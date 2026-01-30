@@ -25,6 +25,7 @@ export const VSCODE_EXTENSION_ID = {
     dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
     remotessh: 'ms-vscode-remote.remote-ssh',
+    sagemakerSshKiro: 'amazonwebservices.sagemaker-ssh-kiro',
 } as const
 
 export const vscodeExtensionMinVersion = {

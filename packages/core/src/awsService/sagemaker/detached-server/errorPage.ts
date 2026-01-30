@@ -79,12 +79,12 @@ export const ErrorText = {
                 'Your session has expired. Update the credentials associated with the IAM profile or use a valid IAM profile, then try again.',
         },
         [ExceptionType.INTERNAL_FAILURE]: {
-            Title: 'Failed to connect remotely to VSCode',
-            Text: 'Unable to establish remote connection to VSCode. This could be due to several factors. Please try again by clicking the VSCode button. If the problem persists, please contact your admin.',
+            Title: 'Failed to connect remotely to the Space',
+            Text: 'Unable to establish remote connection to the Space. This could be due to several factors. Please try again by clicking the connect button. If the problem persists, please contact your admin.',
         },
         [ExceptionType.RESOURCE_LIMIT_EXCEEDED]: {
             Title: 'Connection limit reached',
-            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one.',
+            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one. If the problem persists, try restarting the Space.',
         },
         [ExceptionType.THROTTLING]: {
             Title: 'Too many connection attempts',

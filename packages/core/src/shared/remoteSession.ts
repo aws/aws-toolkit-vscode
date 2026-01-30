@@ -92,11 +92,16 @@ export interface VscodeRemoteConnection {
     readonly SessionProcess: typeof ChildProcess
 }
 
-export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    try {
-        await ensureRemoteSshInstalled()
-    } catch (e) {
-        return Result.err(e as Error)
+export async function ensureDependencies(options?: {
+    skipRemoteSshCheck?: boolean
+}): Promise<Result<DependencyPaths, CancellationError | Error>> {
+    // Skip Remote SSH extension check if explicitly requested (e.g., for SageMaker in Kiro)
+    if (!options?.skipRemoteSshCheck) {
+        try {
+            await ensureRemoteSshInstalled()
+        } catch (e) {
+            return Result.err(e as Error)
+        }
     }
 
     const tools = await ensureTools()
