@@ -222,6 +222,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     region?: string
     /** Overrides the template-specified runtime. */
     runtime?: Runtime
+    /** Tenant ID for multi-tenant Lambda functions */
+    tenantId?: string
 }
 
 /**
@@ -262,6 +264,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
         pushIf(invokeArgs, !!this.args.region, '--region', this.args.region)
+        pushIf(invokeArgs, !!this.args.tenantId, '--tenant-id', this.args.tenantId!)
 
         pushIf(
             invokeArgs,

@@ -48,6 +48,7 @@ export interface ResourceData {
     runtime: string
     stackName: string
     source: string
+    hasTenancyConfig?: boolean
     environment?: {
         Variables: Record<string, any>
     }
@@ -456,6 +457,7 @@ export async function registerSamDebugInvokeVueCommand(
         stackName: resource.stackName ?? '',
         environment: resource.resource.Environment,
         source: source,
+        hasTenancyConfig: !!resource.resource.TenancyConfig,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {
         telemetry.record({ source: 'AppBuilderDebugger' }),

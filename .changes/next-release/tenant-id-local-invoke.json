@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Add conditional Tenant ID field to Local Invoke panel for multi-tenant Lambda functions. The field appears when SAM template contains TenancyConfig and passes the value to SAM CLI as --tenant-id argument."
+}
