@@ -926,7 +926,7 @@ describe('RemoteInvokeWebview', () => {
             assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: vscode.ViewColumn.Beside })
         })
 
-        it('should set hasTenancyConfig to true when function has TenancyConfig', async () => {
+        it('should check TenancyConfig when function has it', async () => {
             const functionNodeWithTenancy = {
                 ...mockFunctionNode,
                 configuration: {
@@ -938,21 +938,17 @@ describe('RemoteInvokeWebview', () => {
             const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, {
                 ...data,
                 LambdaFunctionNode: functionNodeWithTenancy as any,
-                hasTenancyConfig: !!(functionNodeWithTenancy.configuration as any).TenancyConfig,
             })
 
             const initialData = webview.init()
-            assert.strictEqual(initialData.hasTenancyConfig, true)
+            assert.ok(initialData.LambdaFunctionNode?.configuration?.TenancyConfig)
         })
 
-        it('should set hasTenancyConfig to false when function has no TenancyConfig', async () => {
-            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, {
-                ...data,
-                hasTenancyConfig: !!(mockFunctionNode.configuration as any).TenancyConfig,
-            })
+        it('should check TenancyConfig when function does not have it', async () => {
+            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, data)
 
             const initialData = webview.init()
-            assert.strictEqual(initialData.hasTenancyConfig, false)
+            assert.strictEqual(initialData.LambdaFunctionNode?.configuration?.TenancyConfig, undefined)
         })
     })
 })

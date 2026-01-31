@@ -352,7 +352,7 @@
         </div>
 
         <!-- Tenant ID Section -->
-        <div class="vscode-setting-item" v-if="initialData.hasTenancyConfig">
+        <div class="vscode-setting-item" v-if="initialData.LambdaFunctionNode?.configuration?.TenancyConfig">
             <div class="setting-header">
                 <label class="setting-title">Tenant ID</label>
             </div>

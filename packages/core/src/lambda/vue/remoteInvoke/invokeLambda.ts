@@ -65,7 +65,6 @@ export interface InitialData {
     runtimeSupportsRemoteDebug?: boolean
     remoteDebugLayer?: string | undefined
     isLambdaRemote?: boolean
-    hasTenancyConfig?: boolean
 }
 
 // Debug configuration sub-interface
@@ -272,6 +271,18 @@ export class RemoteInvokeWebview extends VueWebview {
         remoteDebugEnabled: boolean = false,
         tenantId?: string
     ): Promise<void> {
+        // Validate tenant ID for multi-tenant functions
+        const hasTenancyConfig = !!(this.data.LambdaFunctionNode?.configuration as any)?.TenancyConfig
+        if (hasTenancyConfig && !tenantId) {
+            this.channel.show()
+            this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
+            this.channel.appendLine(
+                'The invoked function is enabled with tenancy configuration. Add a valid tenant ID in your request and try again.'
+            )
+            this.channel.appendLine('')
+            return
+        }
+
         let qualifier: string | undefined = undefined
         // if debugging, focus on the first editor
         if (remoteDebugEnabled && RemoteDebugController.instance.isDebugging) {
@@ -300,7 +311,13 @@ export class RemoteInvokeWebview extends VueWebview {
                 let funcResponse
 
                 if (remoteDebugEnabled) {
-                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier, tenantId)
+                    funcResponse = await this.clientDebug.invoke(
+                        this.data.FunctionArn,
+                        input,
+                        qualifier,
+                        tenantId,
+                        'Tail'
+                    )
                 } else if (isLMI) {
                     funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, tenantId, 'None')
                 } else {
@@ -958,7 +975,6 @@ export async function invokeRemoteLambda(
         runtimeSupportsRemoteDebug: runtimeSupportsRemoteDebug,
         remoteDebugLayer: remoteDebugLayer,
         isLambdaRemote: !isLocalStackConnection(),
-        hasTenancyConfig: !!resource.configuration.TenancyConfig,
     })
     // focus on first group so wv will show up in the side
     await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
