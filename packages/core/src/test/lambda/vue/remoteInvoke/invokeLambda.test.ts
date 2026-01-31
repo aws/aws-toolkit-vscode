@@ -90,7 +90,17 @@ describe('RemoteInvokeWebview', () => {
 
             await remoteInvokeWebview.invokeLambda(input)
             assert(client.invoke.calledOnce)
-            assert(client.invoke.calledWith(data.FunctionArn, input, sinon.match.any, sinon.match.any, 'Tail'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: input,
+                        version: sinon.match.any,
+                        tenantId: sinon.match.any,
+                        logtype: 'Tail',
+                    })
+                )
+            )
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',

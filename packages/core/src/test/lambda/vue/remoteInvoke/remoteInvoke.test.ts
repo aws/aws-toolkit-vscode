@@ -111,11 +111,13 @@ describe('RemoteInvokeWebview', function () {
             sinon.assert.calledOnce(client.invoke)
             sinon.assert.calledWith(
                 client.invoke,
-                scenario.data.FunctionArn,
-                input,
-                scenario.expectedQualifier,
-                scenario.expectedTenantId,
-                scenario.expectedLogType
+                sinon.match({
+                    name: scenario.data.FunctionArn,
+                    payload: input,
+                    version: scenario.expectedQualifier,
+                    tenantId: scenario.expectedTenantId,
+                    logtype: scenario.expectedLogType,
+                })
             )
         })
     }

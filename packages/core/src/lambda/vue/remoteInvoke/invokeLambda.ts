@@ -311,17 +311,29 @@ export class RemoteInvokeWebview extends VueWebview {
                 let funcResponse
 
                 if (remoteDebugEnabled) {
-                    funcResponse = await this.clientDebug.invoke(
-                        this.data.FunctionArn,
-                        input,
-                        qualifier,
-                        tenantId,
-                        'Tail'
-                    )
+                    funcResponse = await this.clientDebug.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'Tail',
+                    })
                 } else if (isLMI) {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, tenantId, 'None')
+                    funcResponse = await this.client.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'None',
+                    })
                 } else {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, tenantId, 'Tail')
+                    funcResponse = await this.client.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'Tail',
+                    })
                 }
 
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
