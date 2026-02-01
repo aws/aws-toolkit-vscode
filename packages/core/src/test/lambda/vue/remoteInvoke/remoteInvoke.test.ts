@@ -140,7 +140,16 @@ describe('RemoteInvokeWebview', function () {
         await remoteInvokeWebview.invokeLambda(input, undefined, false, tenantId)
 
         sinon.assert.calledOnce(client.invoke)
-        sinon.assert.calledWith(client.invoke, multiTenantData.FunctionArn, input, undefined, tenantId, 'Tail')
+        sinon.assert.calledWith(
+            client.invoke,
+            sinon.match({
+                name: multiTenantData.FunctionArn,
+                payload: input,
+                version: undefined,
+                tenantId: tenantId,
+                logtype: 'Tail',
+            })
+        )
     })
 
     const mockEvent = {
