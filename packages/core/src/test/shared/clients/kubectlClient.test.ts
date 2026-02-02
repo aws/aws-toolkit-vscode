@@ -164,6 +164,24 @@ describe('KubectlClient', function () {
             assert.strictEqual(result.url, 'https://test-url.com')
         })
 
+        it('should return presigned URL unmodified', async function () {
+            const presignedUrl = 'https://test-url.com?eksClusterArn=arn:aws:eks:us-east-1:123:cluster/test'
+            const mockResponse = {
+                response: {} as IncomingMessage,
+                body: {
+                    status: {
+                        workspaceConnectionUrl: presignedUrl,
+                        workspaceConnectionType: 'vscode-remote',
+                    },
+                },
+            }
+            mockK8sApi.createNamespacedCustomObject.resolves(mockResponse)
+
+            const result = await client.createWorkspaceConnection(mockDevSpace)
+
+            assert.strictEqual(result.url, presignedUrl, 'Presigned URL should be returned unmodified')
+        })
+
         it('should throw error when presignedUrl is undefined', async function () {
             const mockResponse = {
                 response: {} as IncomingMessage,
@@ -185,36 +203,6 @@ describe('KubectlClient', function () {
                 client.createWorkspaceConnection(mockDevSpace),
                 /Failed to create workspace connection/
             )
-        })
-
-        it('should not modify URL when hyperpodCluster.clusterArn is undefined', async function () {
-            const originalUrl =
-                'vscode://test/connect?sessionId=123&eksClusterArn=arn:aws:eks:us-east-2:123456789012:cluster/eks-cluster'
-            const mockResponse = {
-                response: {} as IncomingMessage,
-                body: {
-                    status: {
-                        workspaceConnectionUrl: originalUrl,
-                        workspaceConnectionType: 'vscode-remote',
-                    },
-                },
-            }
-            mockK8sApi.createNamespacedCustomObject.resolves(mockResponse)
-
-            // Create a client with undefined clusterArn
-            const mockHyperpodClusterNoArn = {
-                clusterName: 'test-cluster',
-                clusterArn: undefined as any,
-                status: 'InService',
-                regionCode: 'us-east-2',
-            }
-            const clientNoArn = new KubectlClient(mockEksCluster, mockHyperpodClusterNoArn)
-            ;(clientNoArn as any).k8sApi = mockK8sApi
-
-            const result = await clientNoArn.createWorkspaceConnection(mockDevSpace)
-
-            // URL should remain unchanged when clusterArn is undefined
-            assert.strictEqual(result.url, originalUrl)
         })
     })
 

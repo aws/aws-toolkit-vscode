@@ -401,7 +401,7 @@ describe('SageMaker Commands', () => {
         })
     })
 
-    describe('HyperPod connection with clusterArn', function () {
+    describe('HyperPod connection with eksClusterArn', function () {
         let mockDeeplinkConnect: sinon.SinonStub
         let mockIsRemoteWorkspace: sinon.SinonStub
         let deeplinkConnect: any
@@ -417,7 +417,7 @@ describe('SageMaker Commands', () => {
             sandbox.replace(freshModule, 'deeplinkConnect', mockDeeplinkConnect)
         })
 
-        it('should create session with underscores from HyperPod clusterArn', async function () {
+        it('should create session with underscores from HyperPod eksClusterArn', async function () {
             const ctx = {
                 extensionContext: {},
             } as any
@@ -447,7 +447,7 @@ describe('SageMaker Commands', () => {
             }
         })
 
-        it('should handle EKS clusterArn format', async function () {
+        it('should handle EKS eksClusterArn format', async function () {
             const ctx = {
                 extensionContext: {},
             } as any
@@ -499,7 +499,7 @@ describe('SageMaker Commands', () => {
             }
         })
 
-        it('should handle long component names by truncating', async function () {
+        it('should handle long component names by truncating to 253 chars', async function () {
             const ctx = {
                 extensionContext: {},
             } as any
@@ -523,7 +523,7 @@ describe('SageMaker Commands', () => {
 
             const sessionArg = mockDeeplinkConnect.firstCall?.args[10]
             if (sessionArg) {
-                assert.ok(sessionArg.length <= 224, 'Session should not exceed max length')
+                assert.ok(sessionArg.length <= 253, 'Session should not exceed 253 char max length')
             }
         })
 

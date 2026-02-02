@@ -85,7 +85,7 @@ describe('SageMaker URI handler', function () {
             return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/workspace?${query}`)
         }
 
-        it('calls deeplinkConnect with clusterArn for HyperPod connections', async function () {
+        it('calls deeplinkConnect with eksClusterArn for HyperPod connections', async function () {
             const params = {
                 sessionId: 'session-123',
                 streamUrl: 'wss://example.com/stream',
@@ -93,7 +93,7 @@ describe('SageMaker URI handler', function () {
                 'cell-number': '5',
                 workspaceName: 'my-workspace',
                 namespace: 'default',
-                clusterArn: 'arn:aws:sagemaker:us-east-2:123456789012:cluster/my-cluster',
+                eksClusterArn: 'arn:aws:eks:us-east-2:123456789012:cluster/eks-cluster',
             }
 
             const uri = createHyperPodUri(params)
@@ -110,7 +110,7 @@ describe('SageMaker URI handler', function () {
             assert.deepStrictEqual(deeplinkConnectStub.firstCall.args[8], 'default')
             assert.deepStrictEqual(
                 deeplinkConnectStub.firstCall.args[9],
-                'arn:aws:sagemaker:us-east-2:123456789012:cluster/my-cluster'
+                'arn:aws:eks:us-east-2:123456789012:cluster/eks-cluster'
             )
         })
 
