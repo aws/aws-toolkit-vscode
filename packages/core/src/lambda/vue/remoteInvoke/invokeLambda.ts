@@ -272,7 +272,7 @@ export class RemoteInvokeWebview extends VueWebview {
         tenantId?: string
     ): Promise<void> {
         // Validate tenant ID for multi-tenant functions
-        const hasTenancyConfig = !!(this.data.LambdaFunctionNode?.configuration as any)?.TenancyConfig
+        const hasTenancyConfig = !!this.data.LambdaFunctionNode?.configuration?.TenancyConfig
         if (hasTenancyConfig && !tenantId) {
             this.channel.show()
             this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
@@ -290,8 +290,8 @@ export class RemoteInvokeWebview extends VueWebview {
             qualifier = RemoteDebugController.instance.qualifier
         }
 
-        const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
-        const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
+        const isLMI = this.data.LambdaFunctionNode?.configuration?.CapacityProviderConfig
+        const isDurable = this.data.LambdaFunctionNode?.configuration?.DurableConfig
         if (isDurable && !qualifier) {
             // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
             qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
