@@ -17,7 +17,7 @@ import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { LocalProxy } from './localProxy'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
-import { getIoTSTClientWithAgent, getLambdaClientWithAgent } from './utils'
+import { getIoTSTClientWithAgent, getLambdaClientWithAgent, getLambdaDebugUserAgentPairs } from './utils'
 import { ToolkitError } from '../../shared/errors'
 import * as nls from 'vscode-nls'
 
@@ -99,7 +99,7 @@ export class LdkClient {
      */
     private getLambdaClient(region: string): DefaultLambdaClient {
         if (!this.lambdaClientCache.has(region)) {
-            this.lambdaClientCache.set(region, getLambdaClientWithAgent(region))
+            this.lambdaClientCache.set(region, getLambdaClientWithAgent(region, getLambdaDebugUserAgentPairs()))
         }
         return this.lambdaClientCache.get(region)!
     }

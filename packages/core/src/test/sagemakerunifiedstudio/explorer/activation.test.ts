@@ -11,7 +11,6 @@ import {
     SmusAuthenticationProvider,
     setSmusConnectedContext,
 } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
-import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { ResourceTreeDataProvider } from '../../../shared/treeview/resourceTreeDataProvider'
 import { SageMakerUnifiedStudioRootNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioRootNode'
 import { getLogger } from '../../../shared/logger/logger'
@@ -19,6 +18,8 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
 import { createMockSpaceNode } from '../testUtils'
+import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
+import * as model from '../../../sagemakerunifiedstudio/auth/model'
 
 describe('SMUS Explorer Activation', function () {
     let mockExtensionContext: vscode.ExtensionContext
@@ -26,8 +27,10 @@ describe('SMUS Explorer Activation', function () {
     let mockTreeView: sinon.SinonStubbedInstance<vscode.TreeView<any>>
     let mockTreeDataProvider: sinon.SinonStubbedInstance<ResourceTreeDataProvider>
     let mockSmusRootNode: sinon.SinonStubbedInstance<SageMakerUnifiedStudioRootNode>
+    let mockProjectNode: any
     let createTreeViewStub: sinon.SinonStub
     let registerCommandStub: sinon.SinonStub
+    let executeCommandSpy: sinon.SinonSpy
     let dataZoneDisposeStub: sinon.SinonStub
     let setupUserActivityMonitoringStub: sinon.SinonStub
 
@@ -41,6 +44,7 @@ describe('SMUS Explorer Activation', function () {
             isConnected: sinon.stub().returns(true),
             reauthenticate: sinon.stub().resolves(),
             onDidChange: sinon.stub().callsFake((_listener: () => void) => ({ dispose: sinon.stub() })),
+            onDidChangeActiveConnection: sinon.stub().callsFake((_listener: () => void) => ({ dispose: sinon.stub() })),
             activeConnection: {
                 id: 'test-connection',
                 domainId: 'test-domain',
@@ -57,19 +61,25 @@ describe('SMUS Explorer Activation', function () {
             refresh: sinon.stub(),
         } as any
 
+        mockProjectNode = {
+            getProject: sinon.stub().returns({ id: 'test-project', name: 'Test Project' }),
+            refreshNode: sinon.stub().resolves(),
+        }
+
         mockSmusRootNode = {
             getChildren: sinon.stub().resolves([]),
-            getProjectSelectNode: sinon.stub().returns({ refreshNode: sinon.stub().resolves() }),
+            getProjectSelectNode: sinon.stub().returns(mockProjectNode),
         } as any
 
         // Stub vscode APIs
         createTreeViewStub = sinon.stub(vscode.window, 'createTreeView').returns(mockTreeView as any)
         registerCommandStub = sinon.stub(vscode.commands, 'registerCommand').returns({ dispose: sinon.stub() } as any)
+        executeCommandSpy = sinon.spy(vscode.commands, 'executeCommand')
 
         // Stub SmusAuthenticationProvider
         sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockSmusAuthProvider as any)
 
-        // Stub DataZoneClient
+        // Stub DataZoneClient.dispose
         dataZoneDisposeStub = sinon.stub(DataZoneClient, 'dispose')
 
         // Stub SageMakerUnifiedStudioRootNode constructor
@@ -151,7 +161,7 @@ describe('SMUS Explorer Activation', function () {
         it('should register DataZone client disposal', async function () {
             await activate(mockExtensionContext)
 
-            // Find the DataZone dispose subscription - it should be the last one added
+            // Find the DataZone dispose subscription
             const subscriptions = mockExtensionContext.subscriptions
             assert.ok(subscriptions.length > 0)
 
@@ -212,6 +222,9 @@ describe('SMUS Explorer Activation', function () {
                 await reauthCommand.args[1](mockConnection)
 
                 assert.ok(mockSmusAuthProvider.reauthenticate.calledWith(mockConnection))
+                assert.ok(mockSmusRootNode.getProjectSelectNode.called)
+                assert.ok((mockProjectNode.getProject as sinon.SinonStub).called)
+                assert.ok(executeCommandSpy.neverCalledWith('aws.smus.switchProject'))
                 assert.ok(mockTreeDataProvider.refresh.called)
 
                 // Check that an information message was shown
@@ -261,7 +274,124 @@ describe('SMUS Explorer Activation', function () {
                 // Check that an error message was shown
                 const errorMessages = testWindow.shownMessages.filter((msg) => msg.severity === SeverityLevel.Error)
                 assert.ok(errorMessages.length > 0, 'Should show error message')
-                assert.ok(errorMessages.some((msg) => msg.message.includes('Failed to reauthenticate')))
+                assert.ok(errorMessages.some((msg) => msg.message.includes('Reauthentication failed')))
+            })
+
+            it('should extract detailed error message from ToolkitError cause chain', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                const mockConnection = {
+                    id: 'test-connection',
+                    type: 'sso',
+                    startUrl: 'https://identitycenter.amazonaws.com/ssoins-testInstanceId',
+                    ssoRegion: 'us-east-1',
+                    scopes: ['datazone:domain:access'],
+                    label: 'Test Connection',
+                } as any
+
+                // Create a ToolkitError with a cause chain
+                const detailedError = new Error('Invalid profile - The security token is expired')
+                const wrapperError = new Error('Unable to reauthenticate SageMaker Unified Studio connection.')
+                ;(wrapperError as any).cause = detailedError
+                mockSmusAuthProvider.reauthenticate.rejects(wrapperError)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler
+                await reauthCommand.args[1](mockConnection)
+
+                // Check that the detailed error message from the cause was shown
+                const errorMessages = testWindow.shownMessages.filter((msg) => msg.severity === SeverityLevel.Error)
+                assert.ok(errorMessages.length > 0, 'Should show error message')
+                const hasDetailedError = errorMessages.some((msg) =>
+                    msg.message.includes('Invalid profile - The security token is expired')
+                )
+                assert.ok(hasDetailedError, 'Should show detailed error from cause chain')
+            })
+
+            it('should not show success message for IAM connection reauthentication', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                // Create an IAM connection
+                const mockIamConnection = {
+                    id: 'test-iam-connection',
+                    type: 'iam',
+                    profileName: 'test-profile',
+                    region: 'us-east-1',
+                    label: 'Test IAM Connection',
+                } as any
+
+                // Stub isSmusIamConnection to return true for IAM connection
+                sinon.stub(model, 'isSmusIamConnection').returns(true)
+
+                // Mock the return value to return the connection (IAM connection handled its own message)
+                mockSmusAuthProvider.reauthenticate.resolves(mockIamConnection)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler
+                await reauthCommand.args[1](mockIamConnection)
+
+                assert.ok(mockSmusAuthProvider.reauthenticate.calledWith(mockIamConnection))
+                assert.ok(mockTreeDataProvider.refresh.called)
+
+                // Check that NO information message was shown (IAM handles its own)
+                const infoMessages = testWindow.shownMessages.filter(
+                    (msg) => msg.severity === SeverityLevel.Information
+                )
+                assert.ok(
+                    !infoMessages.some((msg) => msg.message.includes('Successfully reauthenticated')),
+                    'Should not show success message for IAM connection'
+                )
+            })
+
+            it('should show success message for SSO connection reauthentication', async function () {
+                const reauthCommand = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.smus.reauthenticate')
+
+                assert.ok(reauthCommand)
+
+                const mockSsoConnection = {
+                    id: 'test-sso-connection',
+                    type: 'sso',
+                    startUrl: 'https://identitycenter.amazonaws.com/ssoins-testInstanceId',
+                    ssoRegion: 'us-east-1',
+                    scopes: ['datazone:domain:access'],
+                    label: 'Test SSO Connection',
+                } as any
+
+                // Stub isSmusIamConnection to return false for SSO connection
+                sinon.stub(model, 'isSmusIamConnection').returns(false)
+
+                // Mock the return value to indicate SSO connection (returns connection object)
+                mockSmusAuthProvider.reauthenticate.resolves(mockSsoConnection)
+
+                const testWindow = getTestWindow()
+
+                // Execute the command handler
+                await reauthCommand.args[1](mockSsoConnection)
+
+                assert.ok(mockSmusAuthProvider.reauthenticate.calledWith(mockSsoConnection))
+                assert.ok(mockTreeDataProvider.refresh.called)
+
+                // Check that an information message was shown for SSO
+                const infoMessages = testWindow.shownMessages.filter(
+                    (msg) => msg.severity === SeverityLevel.Information
+                )
+                assert.ok(infoMessages.length > 0, 'Should show information message for SSO')
+                assert.ok(
+                    infoMessages.some((msg) => msg.message.includes('Successfully reauthenticated')),
+                    'Should show success message for SSO connection'
+                )
             })
 
             it('should handle aws.smus.refreshProject command', async function () {

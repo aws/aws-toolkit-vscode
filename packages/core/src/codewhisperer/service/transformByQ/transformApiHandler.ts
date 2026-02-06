@@ -68,12 +68,29 @@ export function throwIfCancelled() {
 }
 
 export function updateJobHistory() {
-    if (transformByQState.getJobId() !== '') {
+    if (transformByQState.getJobId() !== '' && transformByQState.getSourceJDKVersion() !== undefined) {
         sessionJobHistory[transformByQState.getJobId()] = {
             startTime: transformByQState.getStartTime(),
             projectName: transformByQState.getProjectName(),
             status: transformByQState.getPolledJobStatus(),
             duration: convertToTimeString(calculateTotalLatency(CodeTransformTelemetryState.instance.getStartTime())),
+            transformationType: transformByQState.getTransformationType() ?? 'N/A',
+            sourceJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getSourceJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            targetJDKVersion:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? (transformByQState.getTargetJDKVersion() ?? 'N/A')
+                    : 'N/A',
+            customDependencyVersionsFilePath:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomDependencyVersionFilePath() || 'N/A'
+                    : 'N/A',
+            customBuildCommand:
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                    ? transformByQState.getCustomBuildCommand() || 'N/A'
+                    : 'N/A',
         }
     }
     return sessionJobHistory
@@ -902,17 +919,24 @@ export async function runClientSideBuild(projectCopyDir: string, clientInstructi
             throw err
         }
     } finally {
-        await fs.delete(projectCopyDir, { recursive: true })
-        await fs.delete(uploadZipDir, { recursive: true })
-        await fs.delete(uploadZipPath, { force: true })
-        const exportZipDir = path.join(
-            os.tmpdir(),
-            `downloadClientInstructions_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
-        )
-        await fs.delete(exportZipDir, { recursive: true })
-        getLogger().info(
-            `CodeTransformation: deleted projectCopy, clientInstructionsResult, and downloadClientInstructions directories/files`
-        )
+        try {
+            await fs.delete(projectCopyDir, { recursive: true })
+            await fs.delete(uploadZipDir, { recursive: true })
+            await fs.delete(uploadZipPath, { force: true })
+            const exportZipDir = path.join(
+                os.tmpdir(),
+                `downloadClientInstructions_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
+            )
+            await fs.delete(exportZipDir, { recursive: true })
+            getLogger().info(
+                `CodeTransformation: deleted projectCopy, clientInstructionsResult, and downloadClientInstructions directories/files`
+            )
+        } catch (e) {
+            getLogger().info(
+                'CodeTransformation: error deleting temporary files after client-side build, continuing anyway: %O',
+                e
+            )
+        }
     }
 }
 

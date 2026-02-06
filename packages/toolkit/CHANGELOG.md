@@ -1,3 +1,74 @@
+## 3.95.0 2026-01-29
+
+- **Bug Fix** AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials.
+- **Bug Fix** Opening Lambda functions from AWS Console now works with missing or mismatched local credentials
+
+## 3.94.0 2026-01-23
+
+- **Bug Fix** Console session credentials now prompt for window reload when stale, eliminating manual VS Code restarts after token refresh or profile updates (#8488)
+
+## 3.93.0 2026-01-15
+
+- **Bug Fix** AWS CLI update process could enter an infinite retry loop when outdated CLI is detected during console login. The Toolkit now attempts the update once and prompts users to manually reload and retry, preventing continuous failed authentication attempts.
+
+## 3.92.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
+## 3.91.0 2025-12-18
+
+- **Bug Fix** CloudFormation: render stack detail views on stack change
+- **Bug Fix** Lambda deploy always creates new version
+- **Feature** CloudFormation: Show hook invocations in stack events on failure
+- **Feature** AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel.
+- **Feature** Lambda Remote Invoke panel now supports invoking Lambda durable functions
+- **Feature** CloudFormation: group stack events by operation id and display in stack events view
+
+## 3.90.0 2025-12-09
+
+- **Bug Fix** SageMaker: SSH configuration errors now display line numbers and include an "Open SSH Config" button
+- **Bug Fix** SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty
+- **Bug Fix** CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes
+- **Feature** CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first
+- **Feature** feat(lambda): add support for lmi function resource node
+
+## 3.89.0 2025-11-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.88.0 2025-11-22
+
+- **Bug Fix** CloudFormation: refresh stacks after change set deletion
+- **Bug Fix** CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered
+- **Bug Fix** CloudFormation: prevent eager loading of CloudFormation stacks
+- **Feature** Remote debugging now supports nodejs24.x, python3.14, java25
+
+## 3.87.0 2025-11-21
+
+- **Feature** Support IAM based domains for SageMaker Unified Studio
+
+## 3.86.0 2025-11-21
+
+- **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
+
+## 3.85.0 2025-11-19
+
+- **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working
+- **Feature** CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support
+
+## 3.84.0 2025-11-15
+
+- **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
+- **Feature** Deeplink support for SageMaker Unified Studio
+
+## 3.83.0 2025-11-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.82.0 2025-10-30
+
+- **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
+
 ## 3.81.0 2025-10-22
 
 - Miscellaneous non-user-facing changes

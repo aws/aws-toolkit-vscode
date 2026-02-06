@@ -18,7 +18,7 @@ import {
     InlineCompletionTriggerKind,
     Range,
 } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 import {
     InlineCompletionItemWithReferences,
     LogInlineCompletionSessionResultsParams,
@@ -37,20 +37,21 @@ import {
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
     handleExtraBrackets,
+    InlineCompletionLoggingReason,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
+import { Experiments, getContext, getLogger, sleep } from 'aws-core-vscode/shared'
 import { messageUtils } from 'aws-core-vscode/utils'
-import { showEdits } from './EditRendering/imageRenderer'
+import { EditsSuggestionSvg } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { DocumentEventListener } from './documentEventListener'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
-    private languageClient: LanguageClient
+    private languageClient: BaseLanguageClient
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
@@ -60,7 +61,7 @@ export class InlineCompletionManager implements Disposable {
     private documentEventListener: DocumentEventListener
 
     constructor(
-        languageClient: LanguageClient,
+        languageClient: BaseLanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
         inlineTutorialAnnotation: InlineTutorialAnnotation,
@@ -140,7 +141,7 @@ export class InlineCompletionManager implements Disposable {
                     addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
                     removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.disposable.dispose()
                 this.disposable = languages.registerInlineCompletionItemProvider(
                     CodeWhispererConstants.platformLanguageIds,
@@ -200,7 +201,7 @@ export class InlineCompletionManager implements Disposable {
                     firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: totalSessionDisplayTime,
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 // clear session manager states once rejected
                 this.sessionManager.clear()
             } finally {
@@ -214,9 +215,10 @@ export class InlineCompletionManager implements Disposable {
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     private logger = getLogger()
     private pendingRequest: Promise<InlineCompletionItem[]> | undefined
+    private lastEdit: EditsSuggestionSvg | undefined
 
     constructor(
-        private readonly languageClient: LanguageClient,
+        private readonly languageClient: BaseLanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
@@ -282,7 +284,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
             }
-            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+            void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
         }
     }
 
@@ -349,6 +351,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         }
 
+        // Make edit suggestion blocking
+        if (getContext('aws.amazonq.editSuggestionActive') === true) {
+            return []
+        }
+
         // there is a bug in VS Code, when hitting Enter, the context.triggerKind is Invoke (0)
         // when hitting other keystrokes, the context.triggerKind is Automatic (1)
         // we only mark option + C as manual trigger
@@ -362,7 +369,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // yield event loop to let the document listen catch updates
         await sleep(1)
 
-        let logstr = `GenerateCompletion activity:\\n`
+        let logstr = `GenerateCompletion activity:\n`
         try {
             const t0 = Date.now()
             vsCodeState.isRecommendationsActive = true
@@ -424,10 +431,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                             discarded: !prevSession.displayed,
                         },
                     },
+                    reason: InlineCompletionLoggingReason.IMPLICIT_REJECT,
                     firstCompletionDisplayLatency: prevSession.firstCompletionDisplayLatency,
                     totalSessionDisplayTime: Date.now() - prevSession.requestStartTime,
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
                 // Do not make auto trigger if user rejects a suggestion
                 // by typing characters that does not match
@@ -499,7 +507,7 @@ ${itemLog}
                             },
                         },
                     }
-                    this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                    void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                     this.sessionManager.clear()
                     logstr += `- cursor moved behind trigger position. Discarding completion suggestion...`
                     return []
@@ -529,7 +537,12 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.get('amazonqLSPNEP', true)) {
-                        await showEdits(item, editor, session, this.languageClient, this)
+                        if (this.lastEdit) {
+                            await this.lastEdit.dispose()
+                        }
+                        const e = new EditsSuggestionSvg(item, editor, this.languageClient, session, this)
+                        await e.show()
+                        this.lastEdit = e
                         logstr += `- duration between trigger to edits suggestion is displayed: ${Date.now() - t0}ms`
                     }
                     return []
@@ -566,7 +579,7 @@ ${itemLog}
                         },
                     },
                 }
-                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                void this.languageClient.sendNotification(this.logSessionResultMessageName, params)
                 this.sessionManager.clear()
                 logstr += `- suggestion does not match user typeahead from insertion position. Discarding suggestion...`
                 return []

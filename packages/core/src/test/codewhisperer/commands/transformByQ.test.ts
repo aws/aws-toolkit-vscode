@@ -6,7 +6,7 @@
 import assert, { fail } from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import { DB, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
+import { DB, JDKVersion, transformByQState, TransformByQStoppedError } from '../../../codewhisperer/models/model'
 import { stopTransformByQ, finalizeTransformationJob } from '../../../codewhisperer/commands/startTransformByQ'
 import { HttpResponse } from 'aws-sdk'
 import * as codeWhisperer from '../../../codewhisperer/client/codewhisperer'
@@ -283,6 +283,8 @@ dependencyManagement:
 
     it(`WHEN update job history called THEN returns details of last run job`, async function () {
         transformByQState.setJobId('abc-123')
+        transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+        transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
         transformByQState.setProjectName('test-project')
         transformByQState.setPolledJobStatus('COMPLETED')
         transformByQState.setStartTime('05/03/24, 11:35 AM')

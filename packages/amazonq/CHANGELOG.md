@@ -1,3 +1,35 @@
+## 1.109.0 2026-01-29
+
+- **Bug Fix** Amazon Q: "Fix All Issues" now includes warnings when triggered from a warning diagnostic
+
+## 1.108.0 2026-01-23
+
+- Miscellaneous non-user-facing changes
+
+## 1.107.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
+## 1.106.0 2025-11-21
+
+- Miscellaneous non-user-facing changes
+
+## 1.105.0 2025-11-19
+
+- **Bug Fix** Remove show logs menu item for non Q views
+
+## 1.104.0 2025-11-15
+
+- Miscellaneous non-user-facing changes
+
+## 1.103.0 2025-11-06
+
+- **Feature** Q CodeTransformation: add more job metadata to history table
+
+## 1.102.0 2025-10-30
+
+- Miscellaneous non-user-facing changes
+
 ## 1.101.0 2025-10-22
 
 - Miscellaneous non-user-facing changes

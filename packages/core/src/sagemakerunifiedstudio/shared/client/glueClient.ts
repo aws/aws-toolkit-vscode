@@ -22,7 +22,7 @@ import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCr
  */
 export class GlueClient {
     private glueClient: Glue | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         private readonly region: string,

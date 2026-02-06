@@ -36,7 +36,7 @@ import { getLambdaHandlerFile } from '../../../awsService/appBuilder/utils'
 import { runUploadDirectory } from '../../commands/uploadLambda'
 import fs from '../../../shared/fs/fs'
 import { showConfirmationMessage, showMessage } from '../../../shared/utilities/messages'
-import { getLambdaClientWithAgent, getLambdaDebugUserAgent } from '../../remoteDebugging/utils'
+import { getLambdaClientWithAgent, getLambdaDebugUserAgentPairs } from '../../remoteDebugging/utils'
 import { isLocalStackConnection } from '../../../auth/utils'
 import { getRemoteDebugLayer } from '../../remoteDebugging/remoteLambdaDebugger'
 
@@ -272,6 +272,13 @@ export class RemoteInvokeWebview extends VueWebview {
             qualifier = RemoteDebugController.instance.qualifier
         }
 
+        const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
+        const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
+        if (isDurable && !qualifier) {
+            // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
+            qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
+        }
+
         this.isInvoking = true
 
         // If debugging is active, reset the timer during invoke
@@ -283,17 +290,26 @@ export class RemoteInvokeWebview extends VueWebview {
         this.channel.appendLine('Loading response...')
         await telemetry.lambda_invokeRemote.run(async (span) => {
             try {
-                const funcResponse = remoteDebugEnabled
-                    ? await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
-                    : await this.client.invoke(this.data.FunctionArn, input, qualifier)
+                let funcResponse
+
+                if (remoteDebugEnabled) {
+                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                } else if (isLMI) {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                } else {
+                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
+                }
+
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
                 const decodedPayload = funcResponse.Payload ? new TextDecoder().decode(funcResponse.Payload) : ''
                 const payload = decodedPayload || JSON.stringify({})
 
                 this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
-                this.channel.appendLine('Logs:')
-                this.channel.appendLine(logs)
-                this.channel.appendLine('')
+                if (!isLMI) {
+                    this.channel.appendLine('Logs:')
+                    this.channel.appendLine(logs)
+                    this.channel.appendLine('')
+                }
                 this.channel.appendLine('Payload:')
                 this.channel.appendLine(String(payload))
                 this.channel.appendLine('')
@@ -304,6 +320,7 @@ export class RemoteInvokeWebview extends VueWebview {
                 this.channel.appendLine('')
             } finally {
                 let action = remoteDebugEnabled ? 'debug' : 'invoke'
+                action = `${action}${isDurable ? '-durable' : ''}${isLMI ? '-lmi' : ''}`
                 if (!this.data.isLambdaRemote) {
                     action = `${action}LocalStack`
                 }
@@ -906,7 +923,7 @@ export async function invokeRemoteLambda(
     const resource: LambdaFunctionNode = params.functionNode
     const source: string = params.source || 'AwsExplorerRemoteInvoke'
     const client = getLambdaClientWithAgent(resource.regionCode)
-    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgent())
+    const clientDebug = getLambdaClientWithAgent(resource.regionCode, getLambdaDebugUserAgentPairs())
 
     const Panel = VueWebview.compilePanel(RemoteInvokeWebview)
 

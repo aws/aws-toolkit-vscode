@@ -34,7 +34,7 @@ export class LanguageServerResolver {
          * Custom message to show user when downloading, if undefined it will use the default.
          */
         downloadMessage?: string,
-        private readonly _defaultDownloadFolder?: string
+        private readonly hashAlgorithm: string = 'sha384'
     ) {
         this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
     }
@@ -282,16 +282,24 @@ export class LanguageServerResolver {
             }
         })
         const fetchResults = await Promise.all(fetchTasks)
+
         const verifyTasks = fetchResults
             .filter((fetchResult) => fetchResult.res && fetchResult.res.ok && fetchResult.res.body)
             .flatMap(async (fetchResult) => {
                 const arrBuffer = await fetchResult.res!.arrayBuffer()
                 const data = Buffer.from(arrBuffer)
 
-                const hash = createHash('sha384', data)
+                // Skip hash verification if no hash is provided
+                if (!fetchResult.hash) {
+                    return [{ filename: fetchResult.filename, data }]
+                }
+
+                const hash = createHash(this.hashAlgorithm, data)
                 if (hash === fetchResult.hash) {
                     return [{ filename: fetchResult.filename, data }]
                 }
+
+                logger.error('Invalid hash')
                 return []
             })
         if (verifyTasks.length !== contents.length) {
@@ -493,7 +501,6 @@ export class LanguageServerResolver {
     }
 
     private getDownloadDirectory(version: string) {
-        const directory = this._defaultDownloadFolder ?? this.defaultDownloadFolder()
-        return `${directory}/${version}`
+        return `${this.defaultDownloadFolder()}/${version}`
     }
 }
