@@ -9,10 +9,28 @@ import { deeplinkConnect } from './commands'
 import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
+const amzHeaders = [
+    'X-Amz-Security-Token',
+    'X-Amz-Algorithm',
+    'X-Amz-Date',
+    'X-Amz-SignedHeaders',
+    'X-Amz-Credential',
+    'X-Amz-Expires',
+    'X-Amz-Signature',
+] as const
+
 export function register(ctx: ExtContext) {
     async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
         await telemetry.sagemaker_deeplinkConnect.run(async () => {
-            const wsUrl = `${params.ws_url}&cell-number=${params['cell-number']}`
+            let wsUrl = `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`
+
+            for (const header of amzHeaders) {
+                const value = params[header]
+                if (value) {
+                    wsUrl += `&${header}=${encodeURIComponent(value)}`
+                }
+            }
+
             await deeplinkConnect(
                 ctx,
                 params.connection_identifier,
@@ -54,6 +72,7 @@ export function parseHyperpodConnectParams(query: SearchParams) {
     const optionalParams = query.getFromKeys('workspaceName', 'namespace', 'eksClusterArn')
     return { ...requiredParams, ...optionalParams }
 }
+
 export function parseConnectParams(query: SearchParams) {
     const requiredParams = query.getFromKeysOrThrow(
         'connection_identifier',
@@ -66,5 +85,6 @@ export function parseConnectParams(query: SearchParams) {
     )
     const optionalParams = query.getFromKeys('app_type')
 
-    return { ...requiredParams, ...optionalParams }
+    const amzHeaderParams = query.getFromKeys(...amzHeaders)
+    return { ...requiredParams, ...optionalParams, ...amzHeaderParams }
 }
