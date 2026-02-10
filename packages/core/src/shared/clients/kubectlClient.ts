@@ -35,14 +35,12 @@ export interface HyperpodCluster {
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
     private k8sApi: k8s.CustomObjectsApi
-    private hyperpodCluster: HyperpodCluster
     private eksCluster: Cluster
 
-    public constructor(eksCluster: Cluster, hyperpodCluster: HyperpodCluster) {
+    public constructor(eksCluster: Cluster, _hyperpodCluster: HyperpodCluster) {
         this.eksCluster = eksCluster
-        this.hyperpodCluster = hyperpodCluster
         this.kubeConfig = new k8s.KubeConfig()
-        this.loadKubeConfig(eksCluster, hyperpodCluster)
+        this.loadKubeConfig(eksCluster, _hyperpodCluster)
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
     }
 
