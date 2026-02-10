@@ -21,6 +21,7 @@ import {
     stopHyperPodSpaceCommand,
 } from './hyperpodCommands'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
+import { getLogger } from '../../shared/logger/logger'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
 
@@ -78,26 +79,35 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     // If running in SageMaker AI Space, track user activity for autoshutdown feature
     if (isSageMaker('SMAI')) {
-        // Use /tmp/ directory so the file is cleared on each reboot to prevent stale timestamps.
-        const tmpDirectory = '/tmp/'
-        const idleFilePath = path.join(tmpDirectory, '.sagemaker-last-active-timestamp')
+        getLogger().info('SMAI environment detected - starting user activity monitoring')
 
-        const userActivity = new UserActivity(ActivityCheckInterval)
-        userActivity.onUserActivity(() => updateIdleFile(idleFilePath))
+        try {
+            // Use /tmp/ directory so the file is cleared on each reboot to prevent stale timestamps.
+            const tmpDirectory = '/tmp/'
+            const idleFilePath = path.join(tmpDirectory, '.sagemaker-last-active-timestamp')
 
-        terminalActivityInterval = startMonitoringTerminalActivity(idleFilePath)
+            const userActivity = new UserActivity(ActivityCheckInterval)
+            userActivity.onUserActivity(() => updateIdleFile(idleFilePath))
 
-        // Write initial timestamp
-        await updateIdleFile(idleFilePath)
+            terminalActivityInterval = startMonitoringTerminalActivity(idleFilePath)
 
-        ctx.extensionContext.subscriptions.push(userActivity, {
-            dispose: () => {
-                if (terminalActivityInterval) {
-                    clearInterval(terminalActivityInterval)
-                    terminalActivityInterval = undefined
-                }
-            },
-        })
+            // Write initial timestamp
+            await updateIdleFile(idleFilePath)
+
+            ctx.extensionContext.subscriptions.push(userActivity, {
+                dispose: () => {
+                    if (terminalActivityInterval) {
+                        clearInterval(terminalActivityInterval)
+                        terminalActivityInterval = undefined
+                    }
+                },
+            })
+        } catch (error) {
+            getLogger().error(`Error in MonitoringTerminalActivity: ${error}`)
+            throw error
+        }
+    } else {
+        getLogger().info('Not in SMAI environment, skipping user activity monitoring')
     }
 }
 

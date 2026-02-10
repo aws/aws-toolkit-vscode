@@ -198,7 +198,7 @@ export function isSageMaker(appName: 'SMAI' | 'SMUS' | 'SMUS-SPACE-REMOTE-ACCESS
 
     switch (appName) {
         case 'SMAI':
-            return vscode.env.appName === sageMakerAppname && hasSMEnvVars
+            return (vscode.env.appName === sageMakerAppname || vscode.env.appName === vscodeAppname) && hasSMEnvVars
         case 'SMUS':
             return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
         case 'SMUS-SPACE-REMOTE-ACCESS':
