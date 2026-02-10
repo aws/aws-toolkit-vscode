@@ -117,6 +117,7 @@ export interface RemoteInvokeData {
     runtimeSettings: RuntimeDebugSettings
     uiState: UIState
     payloadData: PayloadData
+    tenantId: string | undefined
 }
 
 // Event types for communicating state between backend and frontend
@@ -264,7 +265,24 @@ export class RemoteInvokeWebview extends VueWebview {
         await this.stopDebugging()
     }
 
-    public async invokeLambda(input: string, source?: string, remoteDebugEnabled: boolean = false): Promise<void> {
+    public async invokeLambda(
+        input: string,
+        source?: string,
+        remoteDebugEnabled: boolean = false,
+        tenantId?: string
+    ): Promise<void> {
+        // Validate tenant ID for multi-tenant functions
+        const hasTenancyConfig = !!this.data.LambdaFunctionNode?.configuration?.TenancyConfig
+        if (hasTenancyConfig && !tenantId) {
+            this.channel.show()
+            this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
+            this.channel.appendLine(
+                'The invoked function is enabled with tenancy configuration. Add a valid tenant ID in your request and try again.'
+            )
+            this.channel.appendLine('')
+            return
+        }
+
         let qualifier: string | undefined = undefined
         // if debugging, focus on the first editor
         if (remoteDebugEnabled && RemoteDebugController.instance.isDebugging) {
@@ -272,8 +290,8 @@ export class RemoteInvokeWebview extends VueWebview {
             qualifier = RemoteDebugController.instance.qualifier
         }
 
-        const isLMI = (this.data.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
-        const isDurable = (this.data.LambdaFunctionNode?.configuration as any)?.DurableConfig
+        const isLMI = this.data.LambdaFunctionNode?.configuration?.CapacityProviderConfig
+        const isDurable = this.data.LambdaFunctionNode?.configuration?.DurableConfig
         if (isDurable && !qualifier) {
             // Make sure to invoke with qualifier for Durable Function, invoking unqualified will fail
             qualifier = isLMI ? '$LATEST.PUBLISHED' : '$LATEST'
@@ -293,11 +311,29 @@ export class RemoteInvokeWebview extends VueWebview {
                 let funcResponse
 
                 if (remoteDebugEnabled) {
-                    funcResponse = await this.clientDebug.invoke(this.data.FunctionArn, input, qualifier)
+                    funcResponse = await this.clientDebug.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'Tail',
+                    })
                 } else if (isLMI) {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'None')
+                    funcResponse = await this.client.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'None',
+                    })
                 } else {
-                    funcResponse = await this.client.invoke(this.data.FunctionArn, input, qualifier, 'Tail')
+                    funcResponse = await this.client.invoke({
+                        name: this.data.FunctionArn,
+                        payload: input,
+                        version: qualifier,
+                        tenantId: tenantId,
+                        logtype: 'Tail',
+                    })
                 }
 
                 const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''

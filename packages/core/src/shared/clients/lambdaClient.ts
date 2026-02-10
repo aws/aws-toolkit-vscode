@@ -66,20 +66,22 @@ export class DefaultLambdaClient {
         )
     }
 
-    public async invoke(
-        name: string,
-        payload?: BlobPayloadInputTypes,
-        version?: string,
-        logtype: 'Tail' | 'None' = 'Tail'
-    ): Promise<InvocationResponse> {
+    public async invoke(params: {
+        name: string
+        payload?: BlobPayloadInputTypes
+        version?: string
+        tenantId?: string
+        logtype?: 'Tail' | 'None'
+    }): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
         const response = await sdkClient.send(
             new InvokeCommand({
-                FunctionName: name,
-                LogType: logtype,
-                Payload: payload,
-                Qualifier: version,
+                FunctionName: params.name,
+                LogType: params.logtype ?? 'Tail',
+                Payload: params.payload,
+                Qualifier: params.version,
+                TenantId: params.tenantId,
             })
         )
 

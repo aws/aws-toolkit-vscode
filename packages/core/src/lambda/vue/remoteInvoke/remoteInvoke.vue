@@ -57,7 +57,7 @@
                         :disabled="
                             !initialData.runtimeSupportsRemoteDebug ||
                             !initialData.remoteDebugLayer ||
-                            (initialData.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig
+                            initialData.LambdaFunctionNode?.configuration?.CapacityProviderConfig
                         "
                         class="remote-debug-checkbox"
                     />
@@ -94,7 +94,7 @@
                             Region {{ initialData.FunctionRegion }} doesn't support remote debugging yet
                         </info>
                         <info
-                            v-else-if="(initialData.LambdaFunctionNode?.configuration as any)?.CapacityProviderConfig"
+                            v-else-if="initialData.LambdaFunctionNode?.configuration?.CapacityProviderConfig"
                             style="color: var(--vscode-errorForeground)"
                         >
                             Lambda Managed Instances Function doesn't support remote debugging yet
@@ -349,6 +349,19 @@
                 v-model="payloadData.sampleText"
                 placeholder='{"key": "value"}'
             ></textarea>
+        </div>
+
+        <!-- Tenant ID Section -->
+        <div class="vscode-setting-item" v-if="initialData.LambdaFunctionNode?.configuration?.TenancyConfig">
+            <div class="setting-header">
+                <label class="setting-title">Tenant ID</label>
+            </div>
+            <input
+                type="text"
+                v-model="tenantId"
+                placeholder="Enter tenant ID (required for invocation)"
+                style="width: 100%; margin-top: 8px"
+            />
         </div>
     </div>
 </template>

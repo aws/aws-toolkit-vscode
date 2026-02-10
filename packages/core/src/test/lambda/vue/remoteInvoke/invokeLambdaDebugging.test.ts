@@ -386,7 +386,15 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
 
             await remoteInvokeWebview.invokeLambda('{"test": "input"}', 'test', true)
 
-            assert(client.invoke.calledWith(data.FunctionArn, '{"test": "input"}', 'v1'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"test": "input"}',
+                        version: 'v1',
+                    })
+                )
+            )
             assert(focusStub.calledWith('workbench.action.focusFirstEditorGroup'))
         })
 
@@ -509,7 +517,15 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             await remoteInvokeWebview.invokeLambda('{"debugInput": "test"}', 'integration-test', true)
 
             // Verify invocation was called with correct parameters
-            assert(client.invoke.calledWith(data.FunctionArn, '{"debugInput": "test"}', '$LATEST'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"debugInput": "test"}',
+                        version: '$LATEST',
+                    })
+                )
+            )
 
             // 3. Stop debugging
             await remoteInvokeWebview.stopDebugging()
@@ -570,7 +586,15 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             await remoteInvokeWebview.invokeLambda('{"versionInput": "test"}', 'version-test', true)
 
             // Should invoke with version qualifier
-            assert(client.invoke.calledWith(data.FunctionArn, '{"versionInput": "test"}', 'v1'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"versionInput": "test"}',
+                        version: 'v1',
+                    })
+                )
+            )
 
             // Stop debugging
             await remoteInvokeWebview.stopDebugging()
