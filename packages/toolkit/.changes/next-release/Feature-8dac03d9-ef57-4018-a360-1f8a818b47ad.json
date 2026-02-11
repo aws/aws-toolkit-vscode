@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "We can connect to hyperpod spaces through toolkit but now user will be able to save their work in case of connection disruption as we now support reconnection."
+}
