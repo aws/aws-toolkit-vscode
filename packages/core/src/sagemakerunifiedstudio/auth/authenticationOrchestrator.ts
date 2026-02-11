@@ -8,6 +8,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { SmusErrorCodes } from '../shared/smusUtils'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
+import { CredentialsProvider } from '../../auth/providers/credentials'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
 import {
@@ -16,9 +17,10 @@ import {
     IamProfileEditingInProgress,
     IamProfileBackNavigation,
 } from './ui/iamProfileSelection'
-import { SmusAuthenticationPreferencesManager } from './preferences/authenticationPreferences'
+import { SmusAuthenticationPreferencesManager } from './utils/authenticationPreferences'
 import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClientHelper'
 import { recordAuthTelemetry } from '../shared/telemetry'
+import { updateRecentDomains, removeDomainFromCache } from './utils/domainCache'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
 
@@ -49,14 +51,12 @@ export class SmusAuthenticationOrchestrator {
         existingProfileName?: string,
         existingRegion?: string
     ): Promise<SmusAuthenticationResult> {
-        const logger = this.logger
-
         try {
             let profileSelection: IamProfileSelection | IamProfileEditingInProgress | IamProfileBackNavigation
 
             // If profile and region are provided, skip profile selection (re-authentication case)
             if (existingProfileName && existingRegion) {
-                logger.debug(
+                this.logger.debug(
                     `Auth: Re-authenticating with existing profile: ${existingProfileName}, region: ${existingRegion}`
                 )
                 profileSelection = {
@@ -71,29 +71,29 @@ export class SmusAuthenticationOrchestrator {
             // Handle different result types
             if ('isBack' in profileSelection) {
                 // User chose to go back to authentication method selection
-                logger.debug('User chose to go back to authentication method selection')
+                this.logger.debug('User chose to go back to authentication method selection')
                 return { status: 'BACK' }
             }
 
             if ('isEditing' in profileSelection) {
                 // User chose to edit credentials or is in editing mode
-                logger.debug('User is editing credentials')
+                this.logger.debug('User is editing credentials')
                 return { status: 'EDITING' }
             }
 
             // At this point, we have a profile selected
-            logger.debug(`Selected profile: ${profileSelection.profileName}, region: ${profileSelection.region}`)
+            this.logger.debug(`Selected profile: ${profileSelection.profileName}, region: ${profileSelection.region}`)
 
             // Validate the selected profile
             const validation = await authProvider.validateIamProfile(profileSelection.profileName)
             if (!validation.isValid) {
-                logger.debug(`Profile validation failed: ${validation.error}`)
+                this.logger.debug(`Profile validation failed: ${validation.error}`)
                 return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
             }
 
             // Discover IAM-based domain using IAM credential. If IAM-based domain is not present, we should throw an appropriate error
             // and exit
-            logger.debug('Discovering IAM-based domain using IAM credentials')
+            this.logger.debug('Discovering IAM-based domain using IAM credentials')
 
             const domainUrl = await this.findSmusIamDomain(
                 authProvider,
@@ -121,7 +121,7 @@ export class SmusAuthenticationOrchestrator {
                 })
             }
 
-            logger.info(
+            this.logger.info(
                 `Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to IAM-based domain`
             )
 
@@ -129,22 +129,22 @@ export class SmusAuthenticationOrchestrator {
             const domainId = connection.domainId
             const region = authProvider.getDomainRegion()
 
-            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+            this.logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
             await this.recordAuthTelemetry(span, authProvider, domainId, region)
 
             // Refresh the tree view to show authenticated state
             try {
                 await vscode.commands.executeCommand('aws.smus.rootView.refresh')
             } catch (refreshErr) {
-                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+                this.logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
             }
 
             // After successful IAM authentication (IAM mode), automatically open project picker
-            logger.debug('IAM authentication successful, opening project picker')
+            this.logger.debug('IAM authentication successful, opening project picker')
             try {
                 await vscode.commands.executeCommand('aws.smus.switchProject')
             } catch (pickerErr) {
-                logger.debug(`Failed to open project picker: ${(pickerErr as Error).message}`)
+                this.logger.debug(`Failed to open project picker: ${(pickerErr as Error).message}`)
             }
 
             // Ask to remember authentication method preference (non-blocking)
@@ -158,11 +158,11 @@ export class SmusAuthenticationOrchestrator {
                 error instanceof ToolkitError &&
                 (error.code === SmusErrorCodes.UserCancelled || error.code === SmusErrorCodes.IamDomainNotFound)
             ) {
-                logger.debug('IAM authentication cancelled by user or failed due to customer error')
+                this.logger.debug('IAM authentication cancelled by user or failed due to customer error')
                 throw error // Re-throw to be handled by the main loop
             } else {
                 // Log the error for actual failures
-                logger.error('IAM authentication failed: %s', (error as Error).message)
+                this.logger.error('IAM authentication failed: %s', (error as Error).message)
                 throw error
             }
         }
@@ -176,23 +176,22 @@ export class SmusAuthenticationOrchestrator {
         span: any,
         context: vscode.ExtensionContext
     ): Promise<SmusAuthenticationResult> {
-        const logger = this.logger
-        logger.debug('Starting SSO authentication flow')
+        this.logger.debug('Starting SSO authentication flow')
 
         // Show domain URL input dialog with back button support
         const domainUrl = await SmusSsoAuthenticationUI.showDomainUrlInput()
 
-        logger.debug(`Domain URL input result: ${domainUrl ? 'provided' : 'cancelled or back'}`)
+        this.logger.debug(`Domain URL input result: ${domainUrl ? 'provided' : 'cancelled or back'}`)
 
         if (domainUrl === 'BACK') {
             // User wants to go back to authentication method selection
-            logger.debug('User chose to go back from domain URL input')
+            this.logger.debug('User chose to go back from domain URL input')
             return { status: 'BACK' }
         }
 
         if (!domainUrl) {
             // User cancelled
-            logger.debug('User cancelled domain URL input')
+            this.logger.debug('User cancelled domain URL input')
             throw new ToolkitError('User cancelled domain URL input', {
                 cancelled: true,
                 code: SmusErrorCodes.UserCancelled,
@@ -213,8 +212,39 @@ export class SmusAuthenticationOrchestrator {
             const domainId = connection.domainId
             const region = authProvider.getDomainRegion() // Use the auth provider method that handles both connection types
 
-            logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
+            this.logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
             await this.recordAuthTelemetry(span, authProvider, domainId, region)
+
+            // Update domain cache after successful authentication with domain name
+            try {
+                // Try to fetch domain name from DataZone
+                let domainName: string | undefined
+                try {
+                    this.logger.debug(`Fetching domain name for domain ID: ${domainId} in region: ${region}`)
+
+                    // Get DataZone client helper instance
+                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
+                        (await authProvider.getDerCredentialsProvider()) as CredentialsProvider,
+                        region
+                    )
+
+                    // Fetch domain information
+                    const domainInfo = await datazoneHelper.getDomain(domainId)
+                    domainName = domainInfo.name
+
+                    this.logger.debug(`Successfully fetched domain name: ${domainName}`)
+                } catch (fetchErr) {
+                    // If we can't fetch the domain name, that's okay - we'll cache without it
+                    this.logger.warn(`Failed to fetch domain name from DataZone: ${(fetchErr as Error).message}`)
+                }
+
+                // Update cache with domain URL and optional name
+                await updateRecentDomains(domainUrl, domainName)
+                this.logger.debug(`Updated domain cache with: ${domainUrl}${domainName ? ` (${domainName})` : ''}`)
+            } catch (cacheErr) {
+                // Cache failures should not block authentication flow
+                this.logger.warn(`Failed to update domain cache: ${(cacheErr as Error).message}`)
+            }
 
             // Ask to remember authentication method preference
             await this.askToRememberAuthMethod(context, 'sso')
@@ -223,20 +253,49 @@ export class SmusAuthenticationOrchestrator {
             try {
                 await vscode.commands.executeCommand('aws.smus.rootView.refresh')
             } catch (refreshErr) {
-                logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
+                this.logger.debug(`Failed to refresh views after login: ${(refreshErr as Error).message}`)
             }
 
             return { status: 'SUCCESS' }
         } catch (connectionErr) {
+            // Handle authentication errors and update cache accordingly
+            await this.handleAuthenticationError(domainUrl, connectionErr as Error)
+
             // Clear the status bar message
             vscode.window.setStatusBarMessage('Connection to SageMaker Unified Studio Failed')
 
             // Log the error and re-throw to be handled by the outer catch block
-            logger.error('Connection failed: %s', (connectionErr as Error).message)
+            this.logger.error('Connection failed: %s', (connectionErr as Error).message)
             throw new ToolkitError('Connection failed.', {
                 cause: connectionErr as Error,
                 code: (connectionErr as Error).name,
             })
+        }
+    }
+
+    /**
+     * Handles authentication errors and updates domain cache accordingly
+     * @param domainUrl The domain URL that failed authentication
+     * @param error The error that occurred during authentication
+     */
+    private static async handleAuthenticationError(domainUrl: string, error: Error): Promise<void> {
+        const errorCode = (error as any).code
+
+        // Check if failure is due to invalid URL format
+        if (errorCode === SmusErrorCodes.InvalidDomainUrl) {
+            // Validation error - remove from cache
+            try {
+                await removeDomainFromCache(domainUrl)
+                this.logger.info(`Removed invalid domain from cache: ${domainUrl}`)
+            } catch (cacheErr) {
+                this.logger.warn(`Failed to remove domain from cache: ${(cacheErr as Error).message}`)
+            }
+        } else if (errorCode === SmusErrorCodes.ApiTimeout || errorCode === SmusErrorCodes.FailedToConnect) {
+            // Network error - keep in cache for retry
+            this.logger.warn(`Network error for domain ${domainUrl}, keeping in cache for retry`)
+        } else {
+            // Authentication error or other errors - keep in cache
+            this.logger.warn(`Authentication failed for domain ${domainUrl}, keeping in cache`)
         }
     }
 
@@ -247,8 +306,6 @@ export class SmusAuthenticationOrchestrator {
         context: vscode.ExtensionContext,
         method: SmusAuthenticationMethod
     ): Promise<void> {
-        const logger = this.logger
-
         try {
             const methodName = method === 'sso' ? 'SSO Authentication' : 'IAM Credential Profile'
 
@@ -259,13 +316,13 @@ export class SmusAuthenticationOrchestrator {
             )
 
             if (result === 'Yes') {
-                logger.debug(`Saving user preference: ${method}`)
+                this.logger.debug(`Saving user preference: ${method}`)
                 await SmusAuthenticationPreferencesManager.setPreferredMethod(context, method, true)
-                logger.debug(`Preference saved successfully`)
+                this.logger.debug(`Preference saved successfully`)
             }
         } catch (error) {
             // Not a hard failure, so not throwing error
-            logger.warn('Error asking to remember auth method: %s', error)
+            this.logger.warn('Error asking to remember auth method: %s', error)
         }
     }
 
@@ -281,10 +338,8 @@ export class SmusAuthenticationOrchestrator {
         profileName: string,
         region: string
     ): Promise<string | undefined> {
-        const logger = this.logger
-
         try {
-            logger.debug(`Finding IAM-based domain in region ${region} using profile ${profileName}`)
+            this.logger.debug(`Finding IAM-based domain in region ${region} using profile ${profileName}`)
 
             // Get DataZoneCustomClientHelper instance
             const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
@@ -296,19 +351,19 @@ export class SmusAuthenticationOrchestrator {
             const iamDomain = await datazoneCustomClientHelper.getIamDomain()
 
             if (!iamDomain) {
-                logger.warn(`No IAM-based domain found in region ${region}`)
+                this.logger.warn(`No IAM-based domain found in region ${region}`)
                 return undefined
             }
 
-            logger.debug(`Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
+            this.logger.debug(`Found IAM-based domain: ${iamDomain.name} (${iamDomain.id})`)
 
             // Construct domain URL from the IAM-based domain
             const domainUrl = iamDomain.portalUrl || `https://${iamDomain.id}.sagemaker.${region}.on.aws/`
-            logger.info(`Discovered IAM-based domain URL: ${domainUrl}`)
+            this.logger.info(`Discovered IAM-based domain URL: ${domainUrl}`)
 
             return domainUrl
         } catch (error) {
-            logger.error(`Failed to find IAM-based domain: %s`, error)
+            this.logger.error(`Failed to find IAM-based domain: %s`, error)
             throw new ToolkitError(`Failed to find IAM-based domain: ${(error as Error).message}`, {
                 code: SmusErrorCodes.ApiTimeout,
                 cause: error instanceof Error ? error : undefined,

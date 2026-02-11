@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { SmusUtils } from '../../shared/smusUtils'
+import { getRecentDomains, removeDomainFromCache, formatTimestamp } from '../utils/domainCache'
 
 /**
  * SSO authentication UI components for SMUS
@@ -17,7 +18,7 @@ export class SmusSsoAuthenticationUI {
         return new Promise((resolve) => {
             const quickPick = vscode.window.createQuickPick()
             quickPick.title = 'SageMaker Unified Studio Authentication'
-            quickPick.placeholder = 'Enter your SageMaker Unified Studio Domain URL'
+            quickPick.placeholder = 'Select a recent domain or enter a new domain URL'
             quickPick.canSelectMany = false
             quickPick.ignoreFocusOut = true
 
@@ -25,14 +26,43 @@ export class SmusSsoAuthenticationUI {
             const backButton = vscode.QuickInputButtons.Back
             quickPick.buttons = [backButton]
 
-            // Start with placeholder item
-            quickPick.items = [
-                {
-                    label: '$(globe) Enter Domain URL',
-                    description: 'e.g., https://dzd_xxxxxxxxx.sagemaker.region.on.aws',
-                    detail: 'Type your SageMaker Unified Studio domain URL above',
-                },
-            ]
+            // Create delete button for items
+            const deleteButton: vscode.QuickInputButton = {
+                iconPath: new vscode.ThemeIcon('trash'),
+                tooltip: 'Delete this domain',
+            }
+
+            // Function to build items list
+            const buildItemsList = () => {
+                const cachedDomains = getRecentDomains()
+                const items: vscode.QuickPickItem[] = []
+
+                // Add cached domains as clickable items with delete button
+                for (const domain of cachedDomains) {
+                    // Use domain name if available, otherwise use domain ID
+                    const displayName = domain.domainName || domain.domainId
+
+                    items.push({
+                        label: `$(globe) ${displayName} (${domain.region})`,
+                        description: domain.domainId,
+                        detail: `Last used: ${formatTimestamp(domain.lastUsedTimestamp)}`,
+                        alwaysShow: true,
+                        buttons: [deleteButton],
+                    })
+                }
+
+                return { items, cachedDomains }
+            }
+
+            // Initial load
+            let cachedDomains: ReturnType<typeof getRecentDomains>
+            const refreshItems = () => {
+                const result = buildItemsList()
+                cachedDomains = result.cachedDomains
+                quickPick.items = result.items
+            }
+
+            refreshItems()
 
             let isCompleted = false
 
@@ -44,15 +74,42 @@ export class SmusSsoAuthenticationUI {
                 }
             })
 
+            quickPick.onDidTriggerItemButton(async (event) => {
+                if (event.button === deleteButton) {
+                    // Find the domain to delete
+                    const itemToDelete = event.item
+                    const domainToDelete = cachedDomains.find((d) => itemToDelete.description === d.domainId)
+
+                    if (domainToDelete) {
+                        // Remove from cache
+                        await removeDomainFromCache(domainToDelete.domainUrl)
+
+                        // Refresh the list
+                        refreshItems()
+                    }
+                }
+            })
+
+            quickPick.onDidChangeSelection((items) => {
+                if (items.length > 0) {
+                    const selected = items[0]
+
+                    // Check if user selected a cached domain (match by domain ID in description)
+                    const cachedDomain = cachedDomains.find((d) => selected.description === d.domainId)
+
+                    if (cachedDomain) {
+                        // User clicked a cached domain - use it immediately
+                        isCompleted = true
+                        quickPick.dispose()
+                        resolve(cachedDomain.domainUrl)
+                    }
+                }
+            })
+
             quickPick.onDidChangeValue((value) => {
                 if (!value) {
-                    quickPick.items = [
-                        {
-                            label: '$(globe) Enter Domain URL',
-                            description: 'e.g., https://dzd_xxxxxxxxx.sagemaker.region.on.aws',
-                            detail: 'Type your SageMaker Unified Studio domain URL above',
-                        },
-                    ]
+                    // Reset to initial items when input is cleared
+                    refreshItems()
                     return
                 }
 
