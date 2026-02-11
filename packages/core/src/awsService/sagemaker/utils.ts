@@ -134,6 +134,9 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 const stats = await fs.stat(filePath)
                 const mtime = new Date(stats.mtime).getTime()
                 if (now - mtime < ActivityCheckInterval) {
+                    getLogger().info(
+                        `[Terminal Activity] Detected in ${fileName}, mtime: ${new Date(mtime).toISOString()}`
+                    )
                     await updateIdleFile(idleFilePath)
                     return
                 }
