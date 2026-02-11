@@ -4,7 +4,10 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { SmusAuthenticationOrchestrator } from '../../../sagemakerunifiedstudio/auth/authenticationOrchestrator'
+import * as domainCache from '../../../sagemakerunifiedstudio/auth/utils/domainCache'
+import { SmusErrorCodes } from '../../../sagemakerunifiedstudio/shared/smusUtils'
 
 describe('SmusAuthenticationOrchestrator', function () {
     // Note: Due to AWS Toolkit test framework restrictions on mocking vscode.window,
@@ -38,6 +41,82 @@ describe('SmusAuthenticationOrchestrator', function () {
             assert.doesNotThrow(() => {
                 assert.ok('handleSsoAuthentication' in SmusAuthenticationOrchestrator)
             })
+        })
+    })
+
+    describe('handleAuthenticationErrorForCache', function () {
+        let removeDomainStub: sinon.SinonStub
+
+        beforeEach(function () {
+            removeDomainStub = sinon.stub(domainCache, 'removeDomainFromCache').resolves()
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should remove domain from cache for InvalidDomainUrl error', async function () {
+            const testDomainUrl = 'https://dzd_test123.sagemaker.us-east-1.on.aws'
+            const error = new Error('Invalid domain URL') as any
+            error.code = SmusErrorCodes.InvalidDomainUrl
+
+            // Access the private method via reflection for testing
+            await (SmusAuthenticationOrchestrator as any).handleAuthenticationError(testDomainUrl, error)
+
+            assert.ok(removeDomainStub.calledOnce, 'removeDomainFromCache should be called once')
+            assert.ok(
+                removeDomainStub.calledWith(testDomainUrl),
+                'removeDomainFromCache should be called with correct domain URL'
+            )
+        })
+
+        it('should NOT remove domain from cache for ApiTimeout error', async function () {
+            const testDomainUrl = 'https://dzd_test123.sagemaker.us-east-1.on.aws'
+            const error = new Error('API timeout') as any
+            error.code = SmusErrorCodes.ApiTimeout
+
+            // Access the private method via reflection for testing
+            await (SmusAuthenticationOrchestrator as any).handleAuthenticationError(testDomainUrl, error)
+
+            assert.ok(removeDomainStub.notCalled, 'removeDomainFromCache should NOT be called for ApiTimeout')
+        })
+
+        it('should NOT remove domain from cache for FailedToConnect error', async function () {
+            const testDomainUrl = 'https://dzd_test123.sagemaker.us-east-1.on.aws'
+            const error = new Error('Failed to connect') as any
+            error.code = SmusErrorCodes.FailedToConnect
+
+            // Access the private method via reflection for testing
+            await (SmusAuthenticationOrchestrator as any).handleAuthenticationError(testDomainUrl, error)
+
+            assert.ok(removeDomainStub.notCalled, 'removeDomainFromCache should NOT be called for FailedToConnect')
+        })
+
+        it('should NOT remove domain from cache for other authentication errors', async function () {
+            const testDomainUrl = 'https://dzd_test123.sagemaker.us-east-1.on.aws'
+            const error = new Error('Authentication failed') as any
+            error.code = SmusErrorCodes.SmusLoginFailed
+
+            // Access the private method via reflection for testing
+            await (SmusAuthenticationOrchestrator as any).handleAuthenticationError(testDomainUrl, error)
+
+            assert.ok(
+                removeDomainStub.notCalled,
+                'removeDomainFromCache should NOT be called for other authentication errors'
+            )
+        })
+
+        it('should NOT remove domain from cache for errors without error code', async function () {
+            const testDomainUrl = 'https://dzd_test123.sagemaker.us-east-1.on.aws'
+            const error = new Error('Generic error')
+
+            // Access the private method via reflection for testing
+            await (SmusAuthenticationOrchestrator as any).handleAuthenticationError(testDomainUrl, error)
+
+            assert.ok(
+                removeDomainStub.notCalled,
+                'removeDomainFromCache should NOT be called for errors without error code'
+            )
         })
     })
 
