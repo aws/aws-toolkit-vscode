@@ -247,6 +247,10 @@ export async function prepareDevEnvConnection(
                       AWS_SSM_CLI: ssm,
                       DEBUG_LOG: '1',
                       LOG_FILE_LOCATION: logFileLocation,
+                      SAGEMAKER_LOCAL_SERVER_FILE_PATH: path.join(
+                          ctx.globalStorageUri.fsPath,
+                          'sagemaker-local-server-info.json'
+                      ),
                   }
 
                   // Add AWS credentials

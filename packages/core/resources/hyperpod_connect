@@ -47,6 +47,28 @@ _require() {
     _log "$1=$2"
 }
 
+_url_encode() {
+    python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$1"
+}
+
+_resolve_connection_key() {
+    local DEVSPACE_NAME=$1
+    local PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
+    
+    [ ! -f "$PROFILES_FILE" ] && echo "$DEVSPACE_NAME" && return
+    
+    python3 -c "
+import json
+try:
+    with open('$PROFILES_FILE', 'r') as f:
+        profiles = json.load(f)
+    matches = sorted([k for k in profiles.keys() if k.endswith(':$DEVSPACE_NAME')])
+    print(matches[0] if matches else '$DEVSPACE_NAME')
+except:
+    print('$DEVSPACE_NAME')
+" 2>/dev/null
+}
+
 _hyperpod() {
     # Function inputs
     local AWS_SSM_CLI=$1
@@ -64,15 +86,19 @@ _get_fresh_credentials() {
     _log "Getting fresh credentials for connection key: $CONNECTION_KEY"
     
     # Read server info to get port
-    local SERVER_INFO_FILE="$HOME/Library/Application Support/Code/User/globalStorage/amazonwebservices.aws-toolkit-vscode/sagemaker-local-server-info.json"
-    if [ ! -f "$SERVER_INFO_FILE" ]; then
-        _log "Error: Server info file not found: $SERVER_INFO_FILE"
+    if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+        _log "Error: SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set"
         exit 1
     fi
     
-    local PORT=$(cat "$SERVER_INFO_FILE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['port'])" 2>/dev/null)
-    if [ -z "$PORT" ]; then
-        _log "Error: Could not extract port from server info file"
+    if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+        _log "Error: Server info file not found: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+        exit 1
+    fi
+    
+    local PORT=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+    if [ -z "$PORT" ] || [ "$PORT" == "null" ]; then
+        _log "Error: 'port' field is missing or invalid in $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
         exit 1
     fi
     
@@ -80,18 +106,28 @@ _get_fresh_credentials() {
     local API_URL
     if [[ "$CONNECTION_KEY" =~ ^[^:]+:[^:]+:[^:]+$ ]]; then
         # Use full connection key for precise lookup (preferred)
-        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$CONNECTION_KEY"
+        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
     elif [ -n "$CLUSTER_NAME" ] && [ -n "$NAMESPACE" ]; then
         # Use individual parameters if available
-        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$DEVSPACE_NAME&namespace=$NAMESPACE&cluster_name=$CLUSTER_NAME"
+        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$(_url_encode "$DEVSPACE_NAME")&namespace=$(_url_encode "$NAMESPACE")&cluster_name=$(_url_encode "$CLUSTER_NAME")"
     else
         # Fallback for legacy format
-        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$CONNECTION_KEY"
+        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
     fi
     API_RESPONSE=$(curl -s "$API_URL")
     
     if [ $? -ne 0 ] || [ -z "$API_RESPONSE" ]; then
         _log "Error: Failed to get credentials from API"
+        exit 1
+    fi
+    
+    # Parse JSON once and check for error response
+    read -r STATUS ERROR_MSG CONNECTION_URL < <(echo "$API_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('status', 'success'), data.get('message', ''), data.get('connection', {}).get('url', ''))" 2>/dev/null) || {
+        _log "Error: Failed to parse API response JSON"
+        exit 1
+    }
+    if [ "$STATUS" = "error" ]; then
+        _log "Error from API: ${ERROR_MSG:-Unknown error}"
         exit 1
     fi
     
@@ -128,34 +164,7 @@ _main() {
     
     # For new format, we already have the connection key constructed from hostname
     # For old format, look up the connection key from the hyperpod profiles file
-    if [ -z "$CONNECTION_KEY" ]; then
-        PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
-        if [ -f "$PROFILES_FILE" ]; then
-            # For legacy format, try to find exact match
-            CONNECTION_KEY=$(python3 -c "
-import json, sys
-try:
-    with open('$PROFILES_FILE', 'r') as f:
-        profiles = json.load(f)
-    
-    devspace_name = '$DEVSPACE_NAME'
-    
-    # Find keys ending with devspace name and sort them
-    matches = sorted([k for k in profiles.keys() if k.endswith(f':{devspace_name}')])
-    
-    if len(matches) >= 1:
-        # Return the first alphabetically sorted match for consistency
-        print(matches[0])
-    else:
-        # Fallback to devspace name
-        print(devspace_name)
-except:
-    print('$DEVSPACE_NAME')
-" 2>/dev/null)
-        else
-            CONNECTION_KEY="$DEVSPACE_NAME"
-        fi
-    fi
+    [ -z "$CONNECTION_KEY" ] && CONNECTION_KEY=$(_resolve_connection_key "$DEVSPACE_NAME")
     
     if [ -z "$CONNECTION_KEY" ]; then
         _log "Error: Could not determine connection key for devspace: $DEVSPACE_NAME"
@@ -165,24 +174,33 @@ except:
     _log "=============================================================================="
     _log "Connecting to HyperPod devspace: $DEVSPACE_NAME (connection key: $CONNECTION_KEY)"
     
-    # Always get fresh credentials
+    # Always get fresh credentials (CONNECTION_URL is set by _get_fresh_credentials)
     _get_fresh_credentials "$CONNECTION_KEY"
     
-    # Parse credentials directly from API response JSON - handle URL encoding properly
-    SESSION_ID=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); print(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['sessionId'][0])" 2>/dev/null)
-    TOKEN=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); token=urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['sessionToken'][0]; print(token.replace(' ', '+'))" 2>/dev/null)
-    STREAM_URL=$(echo "$API_RESPONSE" | python3 -c "import sys, json, urllib.parse, html; data=json.load(sys.stdin); url=html.unescape(data['connection']['url']); parsed=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); stream_url=urllib.parse.unquote(parsed['streamUrl'][0]); cell_number=parsed.get('cell-number', [''])[0]; final_url=stream_url + ('&cell-number=' + urllib.parse.unquote(cell_number) if cell_number else ''); print(final_url.replace(' ', '+'))" 2>/dev/null)
+    if [[ "$CONNECTION_URL" =~ ^wss:// ]]; then
+        # Presigned URL format - extract session ID from path and token from cell-number param
+        SESSION_ID=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); path=urllib.parse.urlparse(url).path; session_id=path.split('/')[-1] if path else ''; print(session_id)" 2>/dev/null)
+        TOKEN=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('cell-number', [''])[0])" 2>/dev/null)
+        STREAM_URL="$CONNECTION_URL"
+    else
+        # Kubectl format - extract from query params
+        SESSION_ID=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('sessionId', [''])[0])" 2>/dev/null)
+        TOKEN=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('sessionToken', [''])[0])" 2>/dev/null)
+        STREAM_URL=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('streamUrl', [''])[0])" 2>/dev/null)
+    fi
     
     # Extract region from stream URL
     AWS_REGION=$(echo "$STREAM_URL" | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
     AWS_SSM_CLI="${AWS_SSM_CLI:-session-manager-plugin}"
     
-    # Validate all required parameters
+    # Validate required parameters (SESSION_ID, STREAM_URL, TOKEN are fetched from API, not validated here)
     _require AWS_REGION "${AWS_REGION}"
     _require AWS_SSM_CLI "${AWS_SSM_CLI}"
-    _require SESSION_ID "${SESSION_ID}"
-    _require_nolog STREAM_URL "${STREAM_URL}"
-    _require_nolog TOKEN "${TOKEN}"
+    
+    if [ -z "${SESSION_ID}" ] || [ -z "${STREAM_URL}" ] || [ -z "${TOKEN}" ]; then
+        _log "Error: Failed to retrieve valid session credentials from API"
+        exit 1
+    fi
 
     _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
 }
