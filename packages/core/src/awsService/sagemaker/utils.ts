@@ -5,6 +5,7 @@
 
 import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
 import { sshLogFileLocation } from '../../shared/sshConfig'
@@ -155,5 +156,44 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
 export function startMonitoringTerminalActivity(idleFilePath: string): NodeJS.Timeout {
     return setInterval(async () => {
         await checkTerminalActivity(idleFilePath)
+    }, ActivityCheckInterval)
+}
+
+/**
+ * Starts monitoring background state (tasks, debug sessions, notebook kernels, unsaved work).
+ * Updates the idle file if any background activity is detected.
+ */
+export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Timeout {
+    return setInterval(async () => {
+        getLogger().info(
+            `[Background State] Checking... tasks:${vscode.tasks.taskExecutions.length}, debug:${vscode.debug.activeDebugSession !== undefined}`
+        )
+        const hasActiveTasks = vscode.tasks.taskExecutions.length > 0
+        const hasDebugSession = vscode.debug.activeDebugSession !== undefined
+
+        let hasActiveKernels = false
+        for (const notebook of vscode.workspace.notebookDocuments) {
+            for (const cell of notebook.getCells()) {
+                if (
+                    cell.executionSummary?.executionOrder !== undefined &&
+                    cell.executionSummary.timing?.endTime === undefined
+                ) {
+                    hasActiveKernels = true
+                    break
+                }
+            }
+            if (hasActiveKernels) {
+                break
+            }
+        }
+
+        const hasUnsaved = vscode.workspace.textDocuments.some((doc) => doc.isDirty && doc.uri.scheme === 'file')
+
+        if (hasActiveTasks || hasDebugSession || hasActiveKernels || hasUnsaved) {
+            getLogger().info(
+                `[Background State] tasks:${hasActiveTasks}, debug:${hasDebugSession}, kernels:${hasActiveKernels}, unsaved:${hasUnsaved}`
+            )
+            await updateIdleFile(idleFilePath)
+        }
     }, ActivityCheckInterval)
 }

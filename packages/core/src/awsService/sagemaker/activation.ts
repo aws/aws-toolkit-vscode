@@ -10,7 +10,12 @@ import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
 import * as uriHandlers from './uriHandlers'
 import { openRemoteConnect, filterSpaceAppsByDomainUserProfiles, stopSpace } from './commands'
-import { updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
+import {
+    updateIdleFile,
+    startMonitoringTerminalActivity,
+    startMonitoringBackgroundState,
+    ActivityCheckInterval,
+} from './utils'
 import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker, UserActivity } from '../../shared/extensionUtilities'
@@ -24,6 +29,7 @@ import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
 import { getLogger } from '../../shared/logger/logger'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
+let backgroundStateInterval: NodeJS.Timeout | undefined
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -90,6 +96,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             userActivity.onUserActivity(() => updateIdleFile(idleFilePath))
 
             terminalActivityInterval = startMonitoringTerminalActivity(idleFilePath)
+            backgroundStateInterval = startMonitoringBackgroundState(idleFilePath)
 
             // Write initial timestamp
             await updateIdleFile(idleFilePath)
@@ -99,6 +106,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     if (terminalActivityInterval) {
                         clearInterval(terminalActivityInterval)
                         terminalActivityInterval = undefined
+                    }
+                    if (backgroundStateInterval) {
+                        clearInterval(backgroundStateInterval)
+                        backgroundStateInterval = undefined
                     }
                 },
             })
