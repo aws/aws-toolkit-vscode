@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "We can connect to hyperpod spaces through toolkit but now user will be able to save their work in case of connection disruption as we now support reconnection."
+	"description": "This update enhances HyperPod Space connectivity in the Toolkit by adding reconnection support. In the event of a connection disruption, users can now seamlessly reconnect to their existing session and resume work without losing in-progress changes."
 }
