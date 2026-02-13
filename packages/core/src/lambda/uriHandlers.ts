@@ -11,9 +11,23 @@ import { openLambdaFolderForEdit } from './commands/editLambda'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isUserCancelledError } from '../shared/errors'
 
 const localize = nls.loadMessageBundle()
+
+export function handleLambdaUriError(e: unknown, functionName: string, region: string): never {
+    // Classify cancellations for telemetry metrics
+    const message = e instanceof Error ? e.message.toLowerCase() : ''
+    const isCancellation = isUserCancelledError(e) || message.includes('canceled') || message.includes('cancelled')
+
+    if (isCancellation) {
+        throw ToolkitError.chain(e, 'User cancelled operation', { cancelled: true })
+    }
+
+    // Handle other errors
+    void vscode.window.showErrorMessage(`Unable to open function ${functionName} in region ${region}: ${e}`)
+    throw ToolkitError.chain(e, 'Failed to open Lambda function')
+}
 
 export function registerLambdaUriHandler() {
     async function openFunctionHandler(params: ReturnType<typeof parseOpenParams>) {
@@ -34,7 +48,7 @@ export function registerLambdaUriHandler() {
                 }
                 await openLambdaFolderForEdit(params.functionName, params.region)
             } catch (e) {
-                throw new ToolkitError(`Unable to get function ${params.functionName} in region ${params.region}: ${e}`)
+                handleLambdaUriError(e, params.functionName, params.region)
             }
         })
     }

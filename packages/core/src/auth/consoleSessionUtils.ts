@@ -16,8 +16,8 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Auth } from './auth'
-import { CredentialsId, asString } from './providers/credentials'
 import { createRegionPrompter } from '../shared/ui/common/region'
+import { getConnectionIdFromProfile } from './utils'
 
 /**
  * @description Authenticates with AWS using browser-based login via AWS CLI.
@@ -217,14 +217,6 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
 
         if (result.exitCode === 0) {
             telemetry.aws_consoleLoginCLISuccess.emit({ result: 'Succeeded' })
-            // Show generic success message
-            void vscode.window.showInformationMessage(
-                localize(
-                    'AWS.message.success.consoleLogin',
-                    'Login with console credentials command completed. Profile "{0}" is now available.',
-                    profileName
-                )
-            )
             logger.info('Login with console credentials command completed. Exit code: %d', result.exitCode)
         } else if (result.exitCode === 254) {
             logger.error(
@@ -291,49 +283,35 @@ export async function authenticateWithConsoleLogin(profileName?: string, region?
                 code: 'ConsoleLoginConfigError',
             })
         }
+        // Show success message after seeing newly created session in the disk
+        void vscode.window.showInformationMessage(
+            `Profile "${profileName}" ready with credentials from ${profile.login_session} console session`
+        )
 
-        // Activate the newly created profile
-        try {
-            logger.info(`Activating profile: ${profileName}`)
-            // Connection ID format is "profile:profileName"
-            const credentialsId: CredentialsId = {
-                credentialSource: 'profile',
-                credentialTypeId: profileName,
-            }
-            const connectionId = asString(credentialsId)
-            // Invalidate cached credentials to force fresh fetch
-            getLogger().info(`Invalidated cached credentials for ${connectionId}`)
-            globals.loginManager.store.invalidateCredentials(credentialsId)
-            logger.info(`Looking for connection with ID: ${connectionId}`)
+        logger.info(`Activating profile: ${profileName}`)
+        const connectionId = getConnectionIdFromProfile(profileName)
+        // Invalidate cached credentials to force fresh fetch
+        getLogger().info(`Invalidated cached credentials for ${connectionId}`)
+        globals.loginManager.store.invalidateCredentials({
+            credentialSource: 'profile',
+            credentialTypeId: profileName,
+        })
+        logger.info(`Looking for connection with ID: ${connectionId}`)
 
-            const connection = await Auth.instance.getConnection({ id: connectionId })
-            if (connection === undefined) {
-                // Log available connections for debugging
-                const availableConnections = await Auth.instance.listConnections()
-                logger.error(
-                    'Connection not found. Available connections: %O',
-                    availableConnections.map((c) => c.id)
-                )
-                throw new ToolkitError(`Failed to get connection from profile: ${connectionId}`, {
-                    code: 'MissingConnection',
-                })
-            }
-
-            // Don't call useConnection() - let credentials be fetched naturally when needed
-            await Auth.instance.updateConnectionState(connectionId, 'valid')
-        } catch (error: any) {
-            logger.error('Failed to activate profile: %O', error)
-            void vscode.window.showErrorMessage(
-                localize(
-                    'AWS.message.error.consoleLogin.profileActivationFailed',
-                    'Failed to activate profile: {0}',
-                    error instanceof Error ? error.message : String(error)
-                )
+        // Make sure that connection exists before letting other part use connection
+        const connection = await Auth.instance.getConnection({ id: connectionId })
+        if (connection === undefined) {
+            // Log available connections for debugging
+            const availableConnections = await Auth.instance.listConnections()
+            logger.error(
+                'Connection not found. Available connections: %O',
+                availableConnections.map((c) => c.id)
             )
-            throw new ToolkitError('Failed to activate profile', {
-                code: 'ProfileActivationFailed',
-                cause: error as Error,
+            throw new ToolkitError(`Failed to get connection from profile: ${connectionId}`, {
+                code: 'MissingConnection',
             })
         }
+        // Don't call useConnection() - let credentials be fetched naturally when needed
+        await Auth.instance.updateConnectionState(connectionId, 'valid')
     })
 }

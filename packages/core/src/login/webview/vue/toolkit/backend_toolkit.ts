@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { tryAddCredentials } from '../../../../auth/utils'
+import { setupConsoleConnection, tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
@@ -90,8 +90,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         getLogger().debug(`called startConsoleCredentialSetup()`)
         const runAuth = async () => {
             try {
-                // Execute AWS CLI login command
-                await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+                await setupConsoleConnection(profileName, region)
 
                 // Hide auth view and show resource explorer
                 await setContext('aws.explorer.showAuthView', false)

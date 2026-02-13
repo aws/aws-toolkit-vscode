@@ -1,3 +1,11 @@
+## 1.109.0 2026-01-29
+
+- **Bug Fix** Amazon Q: "Fix All Issues" now includes warnings when triggered from a warning diagnostic
+
+## 1.108.0 2026-01-23
+
+- Miscellaneous non-user-facing changes
+
 ## 1.107.0 2026-01-08
 
 - Miscellaneous non-user-facing changes

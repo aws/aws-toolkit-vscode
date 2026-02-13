@@ -1,3 +1,12 @@
+## 3.95.0 2026-01-29
+
+- **Bug Fix** AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials.
+- **Bug Fix** Opening Lambda functions from AWS Console now works with missing or mismatched local credentials
+
+## 3.94.0 2026-01-23
+
+- **Bug Fix** Console session credentials now prompt for window reload when stale, eliminating manual VS Code restarts after token refresh or profile updates (#8488)
+
 ## 3.93.0 2026-01-15
 
 - **Bug Fix** AWS CLI update process could enter an infinite retry loop when outdated CLI is detected during console login. The Toolkit now attempts the update once and prompts users to manually reload and retry, preventing continuous failed authentication attempts.
