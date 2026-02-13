@@ -16,10 +16,13 @@ import { VSCODE_EXTENSION_ID_CONSTANTS, VSCODE_REMOTE_SSH_EXTENSION } from './ex
 const getRemoteSshExtension = () => {
     const appName = vscode?.env?.appName?.toLowerCase()
 
-    if (appName?.includes('cursor')) {
-        return VSCODE_REMOTE_SSH_EXTENSION.cursor
+    for (const key in VSCODE_REMOTE_SSH_EXTENSION) {
+        if (appName?.includes(key)) {
+            return VSCODE_REMOTE_SSH_EXTENSION[key as keyof typeof VSCODE_REMOTE_SSH_EXTENSION]
+        }
     }
 
+    // Default to vscode if no match found
     return VSCODE_REMOTE_SSH_EXTENSION.vscode
 }
 
