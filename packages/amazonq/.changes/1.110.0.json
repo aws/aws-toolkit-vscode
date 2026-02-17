@@ -1,0 +1,10 @@
+{
+	"date": "2026-02-16",
+	"version": "1.110.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Fix chat history restoration to display rich UI elements and persist user preferences"
+		}
+	]
+}

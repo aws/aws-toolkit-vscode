@@ -1,3 +1,7 @@
+## 3.96.0 2026-02-13
+
+- Miscellaneous non-user-facing changes
+
 ## 3.95.0 2026-01-29
 
 - **Bug Fix** AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials.
