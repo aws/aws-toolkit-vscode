@@ -1,3 +1,7 @@
+## 1.110.0 2026-02-16
+
+- **Bug Fix** Amazon Q Chat: Fix chat history restoration to display rich UI elements and persist user preferences
+
 ## 1.109.0 2026-01-29
 
 - **Bug Fix** Amazon Q: "Fix All Issues" now includes warnings when triggered from a warning diagnostic
