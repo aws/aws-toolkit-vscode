@@ -160,6 +160,35 @@ export function startMonitoringTerminalActivity(idleFilePath: string): NodeJS.Ti
 }
 
 /**
+ * Checks for active Jupyter kernels by querying the Jupyter extension API.
+ * Returns true if any kernel is in 'busy' state.
+ */
+export async function hasActiveJupyterKernels(): Promise<boolean> {
+    try {
+        const jupyterExt = vscode.extensions.getExtension('ms-toolsai.jupyter')
+        if (!jupyterExt) {
+            // Jupyter extension not installed, fall back to executionSummary check
+            return false
+        }
+
+        const api = await jupyterExt.activate()
+
+        for (const notebook of vscode.workspace.notebookDocuments) {
+            const kernel = await api.kernels.getKernel(notebook.uri)
+            if (kernel && kernel.status === 'busy') {
+                getLogger().info(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
+                return true
+            }
+        }
+
+        return false
+    } catch (error) {
+        getLogger().error(`Error checking Jupyter kernel state: ${error}`)
+        return false
+    }
+}
+
+/**
  * Starts monitoring background state (tasks, debug sessions, notebook kernels, unsaved work).
  * Updates the idle file if any background activity is detected.
  */
@@ -171,21 +200,8 @@ export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Tim
         const hasActiveTasks = vscode.tasks.taskExecutions.length > 0
         const hasDebugSession = vscode.debug.activeDebugSession !== undefined
 
-        let hasActiveKernels = false
-        for (const notebook of vscode.workspace.notebookDocuments) {
-            for (const cell of notebook.getCells()) {
-                if (
-                    cell.executionSummary?.executionOrder !== undefined &&
-                    cell.executionSummary.timing?.endTime === undefined
-                ) {
-                    hasActiveKernels = true
-                    break
-                }
-            }
-            if (hasActiveKernels) {
-                break
-            }
-        }
+        // Use Jupyter extension API to check actual kernel state
+        const hasActiveKernels = await hasActiveJupyterKernels()
 
         const hasUnsaved = vscode.workspace.textDocuments.some((doc) => doc.isDirty && doc.uri.scheme === 'file')
 
