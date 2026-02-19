@@ -257,7 +257,7 @@ export function getUserAgentPairs(
     globalState = globals.globalState
 ): UserAgent {
     const pairs: UserAgent = isAmazonQ()
-        ? [[isSageMaker() ? sageMakerAppname : 'AmazonQ-For-VSCode', extensionVersion]]
+        ? [['AmazonQ-For-VSCode', extensionVersion]]
         : [['AWS-Toolkit-For-VSCode', extensionVersion]]
 
     if (opt?.includePlatform) {
