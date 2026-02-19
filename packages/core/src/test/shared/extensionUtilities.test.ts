@@ -386,11 +386,11 @@ describe('isSageMaker', function () {
             assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
-        it('returns false when app name is different', function () {
+        it('returns true when app name is Visual Studio Code with env vars', function () {
             sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
 
-            assert.strictEqual(isSageMaker('SMAI'), false)
+            assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
         it('returns false when env vars are missing', function () {
