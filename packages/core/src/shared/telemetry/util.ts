@@ -32,7 +32,6 @@ import { v5 as uuidV5 } from 'uuid'
 import { ToolkitError } from '../errors'
 import { GlobalState } from '../globalState'
 import type { UserAgent } from '@aws-sdk/types'
-import { sageMakerAppname } from '../vscode/constants'
 
 const legacySettingsTelemetryValueDisable = 'Disable'
 const legacySettingsTelemetryValueEnable = 'Enable'
