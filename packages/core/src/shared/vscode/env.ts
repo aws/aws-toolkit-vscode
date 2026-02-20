@@ -396,3 +396,63 @@ export async function getMachineId(): Promise<string> {
     // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
+
+/**
+ * Detects the current IDE information (name, CLI command, process patterns)
+ * Supports VS Code, Cursor, Kiro, Windsurf, and other forks
+ */
+export function getIdeInfo(): {
+    name: string
+    cliName: string
+    processPatterns: {
+        windows: RegExp
+        darwin: RegExp
+        linux: RegExp
+    }
+} {
+    const appName = vscode?.env?.appName?.toLowerCase() || ''
+
+    // Detect IDE based on app name
+    if (appName.includes('cursor')) {
+        return {
+            name: 'Cursor',
+            cliName: 'cursor',
+            processPatterns: {
+                windows: /Cursor\.exe/i,
+                darwin: /Cursor\.app\/Contents\/MacOS\/Electron/,
+                linux: /^cursor$/i,
+            },
+        }
+    } else if (appName.includes('kiro')) {
+        return {
+            name: 'Kiro',
+            cliName: 'kiro',
+            processPatterns: {
+                windows: /Kiro\.exe/i,
+                darwin: /Kiro\.app\/Contents\/MacOS\/Electron/,
+                linux: /^kiro$/i,
+            },
+        }
+    } else if (appName.includes('windsurf')) {
+        return {
+            name: 'Windsurf',
+            cliName: 'windsurf',
+            processPatterns: {
+                windows: /Windsurf\.exe/i,
+                darwin: /Windsurf\.app\/Contents\/MacOS\/Electron/,
+                linux: /^windsurf$/i,
+            },
+        }
+    }
+
+    // Default to VS Code (including insiders)
+    return {
+        name: 'VS Code',
+        cliName: 'code',
+        processPatterns: {
+            windows: /Code\.exe/i,
+            darwin: /Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\/Electron/,
+            linux: /^(code(-insiders)?|electron)$/i,
+        },
+    }
+}
