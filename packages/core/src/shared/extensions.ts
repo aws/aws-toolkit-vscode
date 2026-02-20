@@ -15,14 +15,17 @@ import { VSCODE_EXTENSION_ID_CONSTANTS, VSCODE_REMOTE_SSH_EXTENSION } from './ex
 // Determine the remote SSH extension based on the editor
 const getRemoteSshExtension = () => {
     const appName = vscode?.env?.appName?.toLowerCase()
+    if (!appName) {
+        return VSCODE_REMOTE_SSH_EXTENSION.vscode
+    }
 
-    for (const key in VSCODE_REMOTE_SSH_EXTENSION) {
-        if (appName?.includes(key)) {
+    // Check each IDE key in the extension map
+    for (const key of Object.keys(VSCODE_REMOTE_SSH_EXTENSION)) {
+        if (appName.includes(key)) {
             return VSCODE_REMOTE_SSH_EXTENSION[key as keyof typeof VSCODE_REMOTE_SSH_EXTENSION]
         }
     }
 
-    // Default to vscode if no match found
     return VSCODE_REMOTE_SSH_EXTENSION.vscode
 }
 
@@ -30,10 +33,10 @@ const getRemoteSshExtension = () => {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID = {
     ...VSCODE_EXTENSION_ID_CONSTANTS,
-    get remotessh() {
+    get remotessh(): { readonly id: string; readonly minVersion: string } {
         return getRemoteSshExtension()
     },
-} as const
+}
 
 // Re-export for backward compatibility
 export { VSCODE_REMOTE_SSH_EXTENSION }

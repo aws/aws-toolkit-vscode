@@ -5,13 +5,13 @@
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_REMOTE_SSH_EXTENSION = {
-    vscode: {
-        id: 'ms-vscode-remote.remote-ssh',
-        minVersion: '0.74.0',
-    },
     cursor: {
         id: 'anysphere.remote-ssh',
         minVersion: '1.0.2',
+    },
+    vscode: {
+        id: 'ms-vscode-remote.remote-ssh',
+        minVersion: '0.74.0',
     },
 } as const
 
