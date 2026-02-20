@@ -7,7 +7,7 @@
  * The following was influenced by this guide: https://code.visualstudio.com/api/extension-guides/web-extensions
  */
 
-import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from 'aws-core-vscode/utils'
 import 'mocha' // Imports mocha for the browser, defining the `mocha` global.
 import * as vscode from 'vscode'
 
@@ -47,12 +47,12 @@ function gatherTestFiles() {
  * So this function ensures the extension has fully activated.
  */
 async function activateExtension() {
-    const extId = VSCODE_EXTENSION_ID.amazonq
+    const extId = VSCODE_EXTENSION_ID_CONSTANTS.amazonq
     const ext = vscode.extensions.getExtension(extId)
     if (!ext) {
         throw new Error(`Extension '${extId}' not found, can't activate it to run tests.`)
     }
-    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.amazonq)?.activate()
+    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID_CONSTANTS.amazonq)?.activate()
 }
 
 function runMochaTests(resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) {
