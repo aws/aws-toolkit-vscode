@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { register } from '../../codecatalyst/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../shared/extensionIds'
 import { CodeCatalystClient } from '../../shared/clients/codecatalystClient'
 import { SeverityLevel } from '../shared/vscode/message'
 import { getTestWindow } from '../shared/vscode/window'
@@ -18,14 +18,16 @@ import { builderIdStartUrl } from '../../auth/sso/constants'
 type Stub<T extends (...args: any[]) => any> = sinon.SinonStub<Parameters<T>, ReturnType<T>>
 
 function createCloneUri(target: string): vscode.Uri {
-    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/clone?url=${encodeURIComponent(target)}`)
+    return vscode.Uri.parse(
+        `vscode://${VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit}/clone?url=${encodeURIComponent(target)}`
+    )
 }
 
 function createConnectUri(params: { [key: string]: any }): vscode.Uri {
     const encoded = Object.entries(params)
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
         .join('&')
-    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID.awstoolkit}/connect/codecatalyst?${encoded}`)
+    return vscode.Uri.parse(`vscode://${VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit}/connect/codecatalyst?${encoded}`)
 }
 
 // Tests involving `UriHandler` should _not_ couple the URI paths to the implementation.
