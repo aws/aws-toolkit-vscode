@@ -22,7 +22,7 @@ const pollInterval = 30 * 60 * 100 // 30 minutes
  * Generic IDE process patterns for detection across all VS Code forks
  * Supports: VS Code, Cursor, Kiro, Windsurf, and other forks
  */
-const IDE_PROCESS_PATTERNS = {
+const ideProcessPatterns = {
     windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
     darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/Electron/,
     linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
@@ -75,13 +75,12 @@ function checkVSCodeWindows(): Promise<boolean> {
         const platform = os.platform()
 
         if (platform === 'win32') {
-            // Check for any VS Code fork process
             execFile('tasklist', [], (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
                 }
-                resolve(IDE_PROCESS_PATTERNS.windows.test(stdout))
+                resolve(ideProcessPatterns.windows.test(stdout))
             })
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
@@ -90,7 +89,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => IDE_PROCESS_PATTERNS.darwin.test(line))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
                 resolve(found)
             })
         } else {
@@ -100,7 +99,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => IDE_PROCESS_PATTERNS.linux.test(line.trim()))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
                 resolve(found)
             })
         }
