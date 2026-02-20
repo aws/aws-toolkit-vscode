@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { getIdeInfo } from './vscode/env'
 import { Settings } from '../shared/settings'
 import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
@@ -31,7 +32,7 @@ export enum RemoteSessionError {
 }
 
 export interface MissingTool {
-    readonly name: 'code' | 'ssm' | 'ssh'
+    readonly name: string
     readonly reason?: string
 }
 
@@ -146,8 +147,11 @@ async function ensureSsmCli() {
 export async function ensureTools() {
     const [vsc, ssh, ssm] = await Promise.all([getVscodeCliPath(), findSshPath(), ensureSsmCli()])
 
+    const ideInfo = getIdeInfo()
+    const cliName = ideInfo.cliName
+
     const missing: MissingTool[] = []
-    pushIf(missing, vsc === undefined, { name: 'code' })
+    pushIf(missing, vsc === undefined, { name: cliName })
     pushIf(missing, ssh === undefined, { name: 'ssh' })
 
     if (ssm.isErr()) {
