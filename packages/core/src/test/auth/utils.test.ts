@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import * as authUtils from '../../auth/utils'
+import { getTestWindow } from '../shared/vscode/window'
 
 describe('getConnectionIdFromProfile', function () {
     it('constructs connection ID from profile name', function () {
@@ -35,16 +36,39 @@ describe('setupConsoleConnection', function () {
 
     it('creates connection after successful console login', async function () {
         const executeCommandStub = sandbox.stub(vscode.commands, 'executeCommand').resolves()
+        const getConnectionStub = sandbox
+            .stub(Auth.instance, 'getConnection')
+            .resolves({ id: 'profile:test-profile' } as any)
         const useConnectionStub = sandbox.stub(Auth.instance, 'useConnection').resolves()
 
         await authUtils.setupConsoleConnection('test-profile', 'us-east-1')
 
         assert.ok(executeCommandStub.calledOnceWith('aws.toolkit.auth.consoleLogin', 'test-profile', 'us-east-1'))
+        assert.ok(getConnectionStub.calledOnceWith({ id: 'profile:test-profile' }))
         assert.ok(useConnectionStub.calledOnceWith({ id: 'profile:test-profile' }))
+    })
+
+    it('throws error when connection was not created', async function () {
+        sandbox.stub(vscode.commands, 'executeCommand').resolves()
+        sandbox.stub(Auth.instance, 'getConnection').resolves(undefined)
+        getTestWindow().onDidShowMessage((m) => m.close())
+
+        await assert.rejects(
+            () => authUtils.setupConsoleConnection('test-profile', 'us-east-1'),
+            (err: ToolkitError) => {
+                assert.strictEqual(
+                    err.message,
+                    'Unable to connect to AWS. Console login was cancelled or did not complete successfully.'
+                )
+                assert.strictEqual(err.cancelled, true)
+                return true
+            }
+        )
     })
 
     it('throws error when useConnection fails', async function () {
         sandbox.stub(vscode.commands, 'executeCommand').resolves()
+        sandbox.stub(Auth.instance, 'getConnection').resolves({ id: 'profile:test-profile' } as any)
         const error = new Error('useConnection failed')
         sandbox.stub(Auth.instance, 'useConnection').rejects(error)
 
