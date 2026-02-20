@@ -10,6 +10,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
+import { consoleSessionHelpUrl } from '../shared/constants'
 import { codicon, getIcon } from '../shared/icons'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
@@ -926,5 +927,19 @@ export async function setupConsoleConnection(profileName: string, region: string
     getLogger().info('Auth: Sets up a connection via browser login for profile: %s, region: %s', profileName, region)
     await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
     const connectionId = getConnectionIdFromProfile(profileName)
+    // Verify connection was actually created before trying to use it.
+    // The telemetry wrapper around the console login command catches and logs errors but returns undefined
+    // instead of re-throwing them. When users cancel (userCancelled=true), the command completes without error,
+    // so we must check if the connection exists before attempting to use it to avoid confusing downstream errors.
+    const connection = await Auth.instance.getConnection({ id: connectionId })
+    if (!connection) {
+        const message = 'Unable to connect to AWS. Console login was cancelled or did not complete successfully.'
+        void vscode.window.showWarningMessage(message, localizedText.learnMore).then((selection) => {
+            if (selection === localizedText.learnMore) {
+                void vscode.env.openExternal(vscode.Uri.parse(consoleSessionHelpUrl))
+            }
+        })
+        throw new ToolkitError(message, { cancelled: true })
+    }
     await Auth.instance.useConnection({ id: connectionId })
 }
