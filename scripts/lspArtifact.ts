@@ -152,7 +152,22 @@ export async function downloadLanguageServer(): Promise<void> {
 
                         // Clean up temp directory
                         fs.rmdirSync(tempDir)
-                        fs.rmdirSync(path.join(resourcesDir, 'servers', 'indexing'), { recursive: true })
+                        // Strip heavy native/model files from indexing, keep tree-sitter + extension.js
+                        const indexingDir = path.join(resourcesDir, 'servers', 'indexing')
+                        if (fs.existsSync(indexingDir)) {
+                            const binDir = path.join(indexingDir, 'dist', 'bin')
+                            if (fs.existsSync(binDir)) {
+                                fs.rmdirSync(binDir, { recursive: true })
+                            }
+                            const buildDir = path.join(indexingDir, 'dist', 'build')
+                            if (fs.existsSync(buildDir)) {
+                                fs.rmdirSync(buildDir, { recursive: true })
+                            }
+                            const modelsDir = path.join(indexingDir, 'models')
+                            if (fs.existsSync(modelsDir)) {
+                                fs.rmdirSync(modelsDir, { recursive: true })
+                            }
+                        }
                         fs.rmdirSync(path.join(resourcesDir, 'servers', 'ripgrep'), { recursive: true })
                         fs.rmSync(path.join(resourcesDir, 'servers', 'node'))
                         if (!fs.existsSync(path.join(resourcesDir, 'servers', 'aws-lsp-codewhisperer.js'))) {
