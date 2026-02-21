@@ -1556,10 +1556,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.smus.refresh",
-                    "when": "false"
-                },
-                {
                     "command": "aws.cloudformation.api.copyResourceIdentifier",
                     "when": "false"
                 },
