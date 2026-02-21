@@ -13,6 +13,7 @@ import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
 import { matchesPattern } from './textUtilities'
 import { getIdeType } from '../extensionUtilities'
+import { getIdeInfo } from '../vscode/env'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -53,7 +54,7 @@ export async function tryRun(
 }
 
 /**
- * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
+ * Gets the fullpath to IDE CLI (code, cursor, kiro, windsurf, etc.), or falls back to the CLI name (not
  * absolute) if it works. For Kiro on Windows, looks for `kiro.cmd` instead.
  *
  * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
@@ -63,6 +64,9 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
         return vscPath
     }
 
+    const ideInfo = getIdeInfo()
+    const cliName = ideInfo.cliName || 'code'
+
     const vscExe = process.argv0
     const ideType = getIdeType()
     const isKiro = ideType === 'kiro'
@@ -70,22 +74,21 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
     const vscs = isKiro
         ? getKiroCliPaths(vscExe)
         : [
-              // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
               // Special case for flatpak (steamdeck). #V896741845
               // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
-              '/app/bin/code',
+              `/app/bin/${cliName}`,
               // Note: macOS does not have a separate "code-insiders" binary.
-              path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
-              path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
-              path.resolve(`${vscode.env.appRoot}/../../bin/code-insiders`), // Windows
+              path.resolve(`${vscode.env.appRoot}/bin/${cliName}`), // macOS
+              path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}`), // Windows
+              path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}-insiders`), // Windows
               // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
-              path.resolve(`${vscode.env.appRoot}/code`),
-              path.resolve(vscExe, '../bin/code-insiders'),
-              path.resolve(vscExe, '../bin/code'),
-              path.resolve(vscExe, '../../bin/code-insiders'),
-              path.resolve(vscExe, '../../bin/code'),
-              '/usr/bin/code',
-              'code', // $PATH
+              path.resolve(`${vscode.env.appRoot}/${cliName}`),
+              path.resolve(vscExe, `../bin/${cliName}-insiders`),
+              path.resolve(vscExe, `../bin/${cliName}`),
+              path.resolve(vscExe, `../../bin/${cliName}-insiders`),
+              path.resolve(vscExe, `../../bin/${cliName}`),
+              `/usr/bin/${cliName}`,
+              cliName, // $PATH
           ]
 
     for (const vsc of vscs) {
