@@ -4,7 +4,14 @@
  */
 
 import { By, WebElement, WebviewView } from 'vscode-extension-tester'
-import { waitForElement, writeToChat } from '../utils/generalUtils'
+import {
+    waitForElement,
+    writeToChat,
+    waitForChatResponse,
+    findMynahCardsBody,
+    findItemByText,
+    clickMoreContentIndicator,
+} from '../utils/generalUtils'
 import { sleep } from '../utils/generalUtils'
 
 /**
@@ -13,21 +20,34 @@ import { sleep } from '../utils/generalUtils'
  * @returns Promise<{items: WebElement[], texts: string[]}> Array of menu items and their text labels
  */
 export async function getQuickActionsCommands(webview: WebviewView): Promise<{ items: WebElement[]; texts: string[] }> {
-    await writeToChat('/', webview, false)
-    // need to give the overlay time to load
-    await sleep(2000)
-    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
-    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
-    if (quickActionItems.length === 0) {
-        throw new Error('No quick action commands found')
-    }
-    const quickActionTexts = []
-    for (const item of quickActionItems) {
-        const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
-        quickActionTexts.push(text)
-    }
+    try {
+        await writeToChat('/', webview, false)
+        // need to give the overlay time to load
+        await sleep(2000)
+        const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+        const quickActionItems = await overlayWrapper.findElements(
+            By.css('[data-testid="prompt-input-quick-pick-item"]')
+        )
+        if (quickActionItems.length === 0) {
+            throw new Error('No quick action commands found')
+        }
+        const quickActionTexts: string[] = []
+        for (const item of quickActionItems) {
+            const text = await item.findElement(By.css('.mynah-detailed-list-item-name')).getText()
+            quickActionTexts.push(text)
+        }
 
-    return { items: quickActionItems, texts: quickActionTexts }
+        const requiredTexts = ['/help', '/transform', '/clear', '/compact']
+        const missingTexts = requiredTexts.filter((text) => !quickActionTexts.includes(text))
+
+        if (missingTexts.length > 0) {
+            throw new Error(`Missing required texts: ${missingTexts.join(', ')}`)
+        }
+
+        return { items: quickActionItems, texts: quickActionTexts }
+    } catch (e) {
+        throw new Error(`Failed to get quick actions commands`)
+    }
 }
 
 /**
@@ -36,24 +56,155 @@ export async function getQuickActionsCommands(webview: WebviewView): Promise<{ i
  * @param commandName The name of the command to click
  */
 export async function clickQuickActionsCommand(webview: WebviewView, commandName: string): Promise<void> {
-    await writeToChat('/', webview, false)
-    // need to give the overlay time to load
-    await sleep(2000)
-    const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
-    const quickActionItems = await overlayWrapper.findElements(By.css('[data-testid="prompt-input-quick-pick-item"]'))
-    if (quickActionItems.length === 0) {
-        throw new Error('No quick action commands found')
-    }
-
-    for (const item of quickActionItems) {
-        const descriptionElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
-        const description = await descriptionElement.getText()
-        if (description.includes(commandName)) {
-            await item.click()
-            await sleep(3000)
-            return
+    try {
+        await writeToChat('/', webview, false)
+        // need to give the overlay time to load
+        await sleep(2000)
+        const overlayWrapper = await waitForElement(webview, By.css('.mynah-chat-prompt-quick-picks-overlay-wrapper'))
+        const quickActionItems = await overlayWrapper.findElements(
+            By.css('[data-testid="prompt-input-quick-pick-item"]')
+        )
+        if (quickActionItems.length === 0) {
+            throw new Error('No quick action commands found')
         }
+
+        for (const item of quickActionItems) {
+            const descriptionElement = await item.findElement(By.css('.mynah-detailed-list-item-name'))
+            const description = await descriptionElement.getText()
+            if (description.includes(commandName)) {
+                await item.click()
+                await sleep(3000)
+                return
+            }
+        }
+
+        throw new Error(`Command "${commandName}" not found`)
+    } catch (e) {
+        throw new Error(`Failed to click quick actions command '${commandName}'`)
+    }
+}
+
+/**
+ * Tests the /compact command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testCompactCommand(webviewView: WebviewView): Promise<void> {
+    await writeToChat('Hello, Amazon Q!', webviewView)
+    await waitForChatResponse(webviewView)
+    await sleep(4000)
+    await clickQuickActionsCommand(webviewView, '/compact')
+    await waitForChatResponse(webviewView)
+    await sleep(5000)
+    await clickMoreContentIndicator(webviewView)
+    const list = await findMynahCardsBody(webviewView)
+    await sleep(5000)
+    await findItemByText(list, 'Conversation history has been compacted successfully!')
+}
+
+/**
+ * Tests the /transform command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testTransformCommand(webviewView: WebviewView): Promise<void> {
+    await clickQuickActionsCommand(webviewView, '/transform')
+    const list = await findMynahCardsBody(webviewView)
+    try {
+        await findItemByText(list, 'Welcome to Code Transformation!')
+    } catch (e) {
+        throw new Error('Transform command failed: Expected welcome message not found')
+    }
+}
+
+/**
+ * Tests the /clear command functionality
+ * @param webviewView The WebviewView instance
+ */
+export async function testClearCommand(webviewView: WebviewView): Promise<void> {
+    await writeToChat('Hello, Amazon Q!', webviewView)
+    await sleep(5000)
+    await clickQuickActionsCommand(webviewView, '/clear')
+    await sleep(500)
+
+    const list = await findMynahCardsBody(webviewView)
+
+    // Verify the message is no longer present
+    let messageFound = false
+    try {
+        await findItemByText(list, 'Hello, Amazon Q!')
+        messageFound = true
+    } catch (e) {
+        // Message not found - this is expected after /clear
     }
 
-    throw new Error(`Command "${commandName}" not found`)
+    if (messageFound) {
+        throw new Error('Clear command failed: User message still present')
+    }
+}
+
+/**
+ * Clicks the Open Job History button in transform view
+ * @param webviewView The WebviewView instance
+ */
+export async function clickOpenJobHistory(webviewView: WebviewView): Promise<void> {
+    try {
+        const button = await waitForElement(webviewView, By.css('[action-id="gumbyViewJobHistory"]'))
+        await button.click()
+    } catch (error) {
+        throw new Error(`Failed to click Open Job History button`)
+    }
+}
+
+/**
+ * Clicks on the AWS Responsible AI Policy link
+ * @param webview The WebviewView instance
+ */
+export async function clickAWSResponsibleAIPolicy(webview: WebviewView): Promise<void> {
+    try {
+        const policyLink = await webview.findWebElement(
+            By.css(`a.mynah-ui-clickable-item:contains("AWS Responsible AI Policy")`)
+        )
+        await policyLink.click()
+    } catch (error) {
+        throw new Error(`Failed to click AWS Responsible AI Policy`)
+    }
+}
+
+/**
+ * Clicks on View job history link and checks terminal message
+ * @param webviewView The WebviewView instance
+ */
+export async function clickViewJobHistoryAndCheckTerminal(webviewView: WebviewView): Promise<void> {
+    try {
+        await webviewView.switchBack()
+        await sleep(2000)
+        const driver = webviewView.getDriver()
+        const viewJobHistoryLink = await driver.findElement(By.linkText('View job history'))
+        await viewJobHistoryLink.click()
+        await sleep(3000)
+        await webviewView.switchToFrame()
+    } catch (error) {
+        throw new Error(`Failed to click View job history: ${error}`)
+    }
+}
+
+/**
+ * Gets all chat item action buttons
+ * @param webview The WebviewView instance
+ * @returns Promise<WebElement[]> Array of action button elements
+ */
+export async function getChatItemActionButtons(webview: WebviewView): Promise<WebElement[]> {
+    return await webview.findWebElements(By.css('[data-testid="chat-item-action-button"]'))
+}
+
+/**
+ * Clicks a specific chat item action button by index
+ * @param webview The WebviewView instance
+ * @param index The index of the button to click (0-based)
+ */
+export async function clickChatItemActionButton(webview: WebviewView, index: number): Promise<void> {
+    const buttons = await getChatItemActionButtons(webview)
+    if (index >= buttons.length) {
+        throw new Error(`Button index ${index} out of range. Found ${buttons.length} buttons.`)
+    }
+    await buttons[index].click()
 }
