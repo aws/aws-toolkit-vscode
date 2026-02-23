@@ -146,7 +146,10 @@ export async function deeplinkConnect(
             wsUrl,
             token,
             domain,
-            appType
+            appType,
+            workspaceName,
+            undefined,
+            namespace
         )
 
         try {

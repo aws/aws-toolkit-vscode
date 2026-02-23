@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
 import { getSmSsmEnv, spawnDetachedServer } from './utils'
+import { parseArn } from './detached-server/utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
@@ -25,6 +26,9 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
+import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
+import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -37,19 +41,32 @@ class HyperPodSshConfig extends SshConfig {
     }
 
     protected override createSSHConfigSection(proxyCommand: string): string {
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCmd = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         return `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host hp_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
-    ProxyCommand '${this.hyperpodConnectPath}' '%h'
+    ProxyCommand ${proxyCmd}
     IdentitiesOnly yes
 `
     }
 
     public override async ensureValid() {
-        const proxyCommand = `'${this.hyperpodConnectPath}' '%h'`
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCommand = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         const verifyHost = await this.verifySSHHost(proxyCommand)
         if (verifyHost.isErr()) {
             return verifyHost
@@ -101,7 +118,12 @@ export async function prepareDevEnvConnection(
     wsUrl?: string,
     token?: string,
     domain?: string,
-    appType?: string
+    appType?: string,
+    devspaceName?: string,
+    clusterName?: string,
+    namespace?: string,
+    region?: string,
+    clusterArn?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
@@ -119,7 +141,13 @@ export async function prepareDevEnvConnection(
     const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = `hp_${session}`
+        const clusterPart = clusterName || 'unknown'
+        const namespacePart = namespace || 'default'
+        const devspacePart = devspaceName || session || 'unknown'
+        const regionPart =
+            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
+        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
+        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
     } else {
         hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
@@ -134,21 +162,25 @@ export async function prepareDevEnvConnection(
         await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
     }
 
-    // HyperPod doesn't need the local server (only for SageMaker Studio)
-    if (connectionType !== 'sm_hp') {
-        await startLocalServer(ctx)
-    }
+    await startLocalServer(ctx)
     await removeKnownHost(hostname)
 
-    const hyperpodConnectPath = path.join(ctx.globalStorageUri.fsPath, 'hyperpod_connect')
+    const hyperpodConnectPath = path.join(
+        ctx.globalStorageUri.fsPath,
+        process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
+    )
 
     // Copy hyperpod_connect script if needed
     if (connectionType === 'sm_hp') {
-        const sourceScriptPath = ctx.asAbsolutePath('resources/hyperpod_connect')
+        const sourceScriptPath = ctx.asAbsolutePath(
+            process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
+        )
         if (!(await fs.existsFile(hyperpodConnectPath))) {
             try {
                 await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                await fs.chmod(hyperpodConnectPath, 0o755)
+                if (process.platform !== 'win32') {
+                    await fs.chmod(hyperpodConnectPath, 0o755)
+                }
                 logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
             } catch (err) {
                 logger.error(`Failed to copy hyperpod_connect script: ${err}`)
@@ -215,6 +247,10 @@ export async function prepareDevEnvConnection(
                       AWS_SSM_CLI: ssm,
                       DEBUG_LOG: '1',
                       LOG_FILE_LOCATION: logFileLocation,
+                      SAGEMAKER_LOCAL_SERVER_FILE_PATH: path.join(
+                          ctx.globalStorageUri.fsPath,
+                          'sagemaker-local-server-info.json'
+                      ),
                   }
 
                   // Add AWS credentials
@@ -258,6 +294,22 @@ export async function prepareDevEnvConnection(
         },
         rejectOnErrorCode: true,
     })
+
+    // Start connection monitoring for HyperPod connections
+    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
+        try {
+            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
+            connectionMonitor.startMonitoring(connectionKey)
+
+            const reconnectionManager = HyperpodReconnectionManager.getInstance()
+            reconnectionManager.scheduleReconnection(connectionKey)
+
+            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
+        } catch (error) {
+            getLogger().warn(`Failed to start HyperPod monitoring: ${error}`)
+        }
+    }
 
     return {
         hostname,
