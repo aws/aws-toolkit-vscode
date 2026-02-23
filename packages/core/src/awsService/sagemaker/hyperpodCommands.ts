@@ -11,6 +11,13 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
+import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
+import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
+import { startLocalServer, prepareDevEnvConnection } from './model'
+import { startVscodeRemote } from '../../shared/extensions/ssh'
+import globals from '../../shared/extensionGlobals'
+import { clearSSHHostKey } from './hyperpodUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -56,10 +63,71 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             logger.error(`No kubectlClient available for cluster: ${node.hpCluster.clusterName}`)
             return
         }
-        const response = await kubectlClient.createWorkspaceConnection(node.devSpace)
-        getLogger().debug(`HyperPod connection response: &O`, response)
-        await vscode.env.openExternal(vscode.Uri.parse(response.url))
-        void vscode.window.showInformationMessage(`Started connection to HyperPod dev space: ${node.devSpace.name}`)
+
+        const connectionKey = createConnectionKey(
+            node.devSpace.name,
+            node.devSpace.namespace,
+            node.hpCluster.clusterName
+        )
+
+        try {
+            await startLocalServer(globals.context)
+
+            const eksCluster = kubectlClient.getEksCluster()
+            if (!eksCluster?.endpoint || !eksCluster?.certificateAuthority?.data) {
+                throw new Error('EKS cluster information is required but not available')
+            }
+            await storeHyperpodConnection(
+                node.devSpace.name,
+                node.devSpace.namespace,
+                node.hpCluster.clusterArn,
+                node.hpCluster.clusterName,
+                node.devSpace.cluster,
+                eksCluster.endpoint,
+                eksCluster.certificateAuthority.data,
+                node.regionCode
+            )
+
+            const reconnectionManager = HyperpodReconnectionManager.getInstance()
+            reconnectionManager.scheduleReconnection(connectionKey)
+
+            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
+            connectionMonitor.startMonitoring(connectionKey)
+        } catch (error) {
+            getLogger().warn(`Failed to store HyperPod connection info: ${error}`)
+        }
+
+        await clearSSHHostKey(connectionKey, node.regionCode, node.hpCluster.clusterArn.split(':')[4])
+
+        const remoteEnv = await prepareDevEnvConnection(
+            '',
+            globals.context,
+            'sm_hp',
+            false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            node.devSpace.name,
+            node.hpCluster.clusterName,
+            node.devSpace.namespace,
+            node.regionCode,
+            node.hpCluster.clusterArn
+        )
+
+        await startVscodeRemote(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            '/home/sagemaker-user',
+            remoteEnv.vscPath,
+            'sagemaker-user'
+        )
+
+        void vscode.window.showInformationMessage(
+            `Connected to HyperPod dev space: ${node.devSpace.name} (${node.devSpace.namespace})`
+        )
     } catch (error) {
         logger.error(`Failed to connect to HyperPod dev space: ${error}`)
         void vscode.window.showErrorMessage(
