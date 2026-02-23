@@ -15,6 +15,7 @@ import {
     deleteFilesInFolder,
     overwriteChangesForEdit,
     getFunctionWithFallback,
+    promptConsoleLogin,
 } from '../../../lambda/commands/editLambda'
 import { LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import * as downloadLambda from '../../../lambda/commands/downloadLambda'
@@ -28,6 +29,8 @@ import globals from '../../../shared/extensionGlobals'
 import { lambdaTempPath } from '../../../lambda/utils'
 import * as lambdaClient from '../../../shared/clients/lambdaClient'
 import * as authUtils from '../../../auth/utils'
+import { getTestWindow } from '../../shared/vscode/window'
+import { ToolkitError } from '../../../shared/errors'
 
 describe('editLambda', function () {
     let mockLambda: LambdaFunction
@@ -309,6 +312,34 @@ describe('editLambda', function () {
     })
 })
 
+describe('promptConsoleLogin', function () {
+    it('returns true when user selects Continue', async function () {
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
+
+        const result = await promptConsoleLogin('test-function')
+
+        assert.strictEqual(result, true)
+    })
+
+    it('returns false when user closes dialog', async function () {
+        getTestWindow().onDidShowMessage((m) => m.close())
+
+        const result = await promptConsoleLogin('test-function')
+
+        assert.strictEqual(result, false)
+    })
+
+    it('returns false and opens auth manager when user selects different sign-in method', async function () {
+        const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Use a different sign-in method'))
+
+        const result = await promptConsoleLogin('test-function')
+
+        assert.strictEqual(result, false)
+        assert(executeCommandStub.calledWith('aws.toolkit.auth.manageConnections'))
+    })
+})
+
 describe('getFunctionWithFallback', function () {
     let getFunctionWithCredentialsStub: sinon.SinonStub
     let setupConsoleConnectionStub: sinon.SinonStub
@@ -343,10 +374,39 @@ describe('getFunctionWithFallback', function () {
         assert(setupConsoleConnectionStub.notCalled)
     })
 
+    it('prompts user before creating console connection when no active connection exists', async function () {
+        getFunctionWithCredentialsStub.resolves(mockFunction)
+        getIAMConnectionStub.resolves(undefined)
+        setupConsoleConnectionStub.resolves()
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.calledOnce)
+    })
+
+    it('throws error when user opts out of console login with no active connection', async function () {
+        getIAMConnectionStub.resolves(undefined)
+        getTestWindow().onDidShowMessage((m) => m.close())
+
+        await assert.rejects(
+            () => getFunctionWithFallback('test-function', 'us-east-1'),
+            (err: ToolkitError) => {
+                assert.strictEqual(err.message, 'User opted out of console login despite no active connection')
+                assert.strictEqual(err.cancelled, true)
+                return true
+            }
+        )
+
+        assert(setupConsoleConnectionStub.notCalled)
+    })
+
     it('creates console connection when no active connection exists', async function () {
         getFunctionWithCredentialsStub.resolves(mockFunction)
         getIAMConnectionStub.resolves(undefined)
         setupConsoleConnectionStub.resolves()
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
         const result = await getFunctionWithFallback('test-function', 'us-east-1')
 
@@ -361,6 +421,7 @@ describe('getFunctionWithFallback', function () {
         getFunctionWithCredentialsStub.rejects(error)
         getIAMConnectionStub.resolves(undefined)
         setupConsoleConnectionStub.resolves()
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
         await assert.rejects(
             () => getFunctionWithFallback('test-function', 'us-east-1'),
@@ -370,6 +431,39 @@ describe('getFunctionWithFallback', function () {
 
         assert(setupConsoleConnectionStub.calledOnce)
         assert(showViewLogsMessageStub.notCalled)
+    })
+
+    it('prompts user before retrying with console credentials on ResourceNotFoundException', async function () {
+        const error = new Error('Function not found')
+        error.name = 'ResourceNotFoundException'
+        getFunctionWithCredentialsStub.onFirstCall().rejects(error)
+        getFunctionWithCredentialsStub.onSecondCall().resolves(mockFunction)
+        getIAMConnectionStub.resolves(mockConnection)
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
+
+        const result = await getFunctionWithFallback('test-function', 'us-east-1')
+
+        assert.strictEqual(result, mockFunction)
+        assert(setupConsoleConnectionStub.calledOnce)
+    })
+
+    it('throws error when user opts out of console login with mismatched credentials', async function () {
+        const error = new Error('Function not found')
+        error.name = 'ResourceNotFoundException'
+        getFunctionWithCredentialsStub.rejects(error)
+        getIAMConnectionStub.resolves(mockConnection)
+        getTestWindow().onDidShowMessage((m) => m.close())
+
+        await assert.rejects(
+            () => getFunctionWithFallback('test-function', 'us-east-1'),
+            (err: ToolkitError) => {
+                assert.strictEqual(err.message, 'User opted out of console login despite mismatched credentials')
+                assert.strictEqual(err.cancelled, true)
+                return true
+            }
+        )
+
+        assert(setupConsoleConnectionStub.notCalled)
     })
 
     it('retries with console credentials on ResourceNotFoundException with existing connection', async function () {
@@ -384,6 +478,7 @@ describe('getFunctionWithFallback', function () {
             getCredentials: sinon.stub().resolves({ accountId: '123456789' }),
         }
         getIAMConnectionStub.resolves(mockConnection)
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
         const result = await getFunctionWithFallback('test-function', 'us-east-1')
 
@@ -406,6 +501,7 @@ describe('getFunctionWithFallback', function () {
             getCredentials: sinon.stub().resolves({ accountId: '987654321' }),
         }
         getIAMConnectionStub.resolves(mockConnection)
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
         const result = await getFunctionWithFallback('test-function', 'us-east-2')
 
@@ -420,6 +516,7 @@ describe('getFunctionWithFallback', function () {
         const setupError = new Error('Console setup failed')
         getIAMConnectionStub.resolves(undefined)
         setupConsoleConnectionStub.rejects(setupError)
+        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
         await assert.rejects(
             () => getFunctionWithFallback('test-function', 'us-east-1'),

@@ -19,6 +19,7 @@ import {
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import fs from '../../shared/fs/fs'
 import globals from '../../shared/extensionGlobals'
+import * as localizedText from '../../shared/localizedText'
 import { LambdaFunctionNodeDecorationProvider } from '../explorer/lambdaFunctionNodeDecorationProvider'
 import path from 'path'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -229,13 +230,37 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
     })
 }
 
+export async function promptConsoleLogin(functionName: string): Promise<boolean> {
+    const continueBtn = localizedText.continueText
+    const useOtherMethodBtn = localize('AWS.lambda.open.useOtherMethod', 'Use a different sign-in method')
+    const response = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.lambda.open.consoleLoginPrompt',
+            'To open Lambda function locally, Toolkit will sign you in using browser-based authentication (aws login).\n\n' +
+                'Requires AWS CLI v2.32.0+ and specific IAM permissions for programmatic access to AWS through the AWS Sign-in service.\n\n' +
+                'Toolkit can help install or update the AWS CLI if needed.\n\n' +
+                'Continue?'
+        ),
+        { modal: true }, // need to take action before proceeding
+        continueBtn,
+        useOtherMethodBtn
+    )
+
+    if (response === useOtherMethodBtn) {
+        await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections')
+        return false
+    }
+
+    return response === continueBtn
+}
+
 /**
  * Retrieves Lambda function configuration with automatic fallback to console credentials.
  * Handles credential mismatches (ResourceNotFoundException, AccessDeniedException).
  *
  * Three scenarios:
- * 1. No connection exists → Set up console first, try once, if it fails don't retry (because we already used console)
- * 2. Connection exists → Try it first, if it fails with credential error, fall back to console
+ * 1. No connection exists → Prompt user, set up console first, try once, if it fails don't retry (because we already used console)
+ * 2. Connection exists → Try it first, if it fails with credential error, prompt and fall back to console
  * 3. Connection exists and fails → Retry with console, if that fails, throw (no second retry)
  *
  * @param name - Lambda function name
@@ -247,8 +272,12 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
     // Tracks if we've already attempted console credentials
     let calledConsoleLogin = false
 
-    // If no connection, create console connection before first attempt
+    // If no connection, prompt and create console connection before first attempt
     if (!activeConnection) {
+        const proceed = await promptConsoleLogin(name)
+        if (!proceed) {
+            throw new ToolkitError('User opted out of console login despite no active connection', { cancelled: true })
+        }
         await setupConsoleConnection(name, region)
         calledConsoleLogin = true
     }
@@ -273,7 +302,13 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
             // Skip retry if we just created console connection - error is not due to credential mismatch
             throw ToolkitError.chain(error, 'Failed to get Lambda function with console credentials. Retry skipped.')
         } else {
-            // Retry once with console credentials
+            // Prompt and retry once with console credentials
+            const proceed = await promptConsoleLogin(name)
+            if (!proceed) {
+                throw new ToolkitError('User opted out of console login despite mismatched credentials', {
+                    cancelled: true,
+                })
+            }
             await setupConsoleConnection(name, region)
             return await getFunctionWithCredentials(region, name)
         }
