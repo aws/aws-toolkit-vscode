@@ -12,16 +12,26 @@ import { showConfirmationMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { ToolkitError, isUserCancelledError } from '../shared/errors'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
-export function handleLambdaUriError(e: unknown, functionName: string, region: string): never {
+export function handleLambdaUriError(e: unknown, functionName: string, region: string): void {
     // Classify cancellations for telemetry metrics
-    const message = e instanceof Error ? e.message.toLowerCase() : ''
-    const isCancellation = isUserCancelledError(e) || message.includes('canceled') || message.includes('cancelled')
+    const message = e instanceof Error ? e.message : ''
+    const isCancellation =
+        isUserCancelledError(e) ||
+        message.toLowerCase().includes('canceled') ||
+        message.toLowerCase().includes('cancelled')
 
     if (isCancellation) {
-        throw ToolkitError.chain(e, 'User cancelled operation', { cancelled: true })
+        getLogger().info(`Opening Lambda function cancelled: ${message}`)
+        // Record cancellation in telemetry but don't pop-up error to user
+        telemetry.record({
+            result: 'Cancelled',
+            reasonDesc: message,
+        })
+        return
     }
 
     // Handle other errors
