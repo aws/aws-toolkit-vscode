@@ -21,6 +21,7 @@ import { isSmusIamConnection } from '../auth/model'
 import { setupUserActivityMonitoring } from '../../awsService/sagemaker/sagemakerSpace'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isSageMaker } from '../../shared/extensionUtilities'
+import { createAgentsFile } from '../bootstrapAgentContext'
 import { recordSpaceTelemetry } from '../shared/telemetry'
 import { DataZoneClient } from '../shared/client/datazoneClient'
 import { handleCredExpiredError } from '../shared/credentialExpiryHandler'
@@ -165,6 +166,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             logger.error(`Error in UserActivityMonitoring: ${error}`)
             throw error
         }
+
+        // Create AGENTS.md to provide SageMaker-specific context for AI code generation
+        await createAgentsFile(extensionContext)
     } else {
         logger.info('Not in SageMaker Unified Studio remote environment, skipping user activity monitoring')
     }
