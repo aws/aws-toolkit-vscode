@@ -316,7 +316,7 @@ describe('promptConsoleLogin', function () {
     it('returns true when user selects Continue', async function () {
         getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
 
-        const result = await promptConsoleLogin('test-function')
+        const result = await promptConsoleLogin()
 
         assert.strictEqual(result, true)
     })
@@ -324,7 +324,7 @@ describe('promptConsoleLogin', function () {
     it('returns false when user closes dialog', async function () {
         getTestWindow().onDidShowMessage((m) => m.close())
 
-        const result = await promptConsoleLogin('test-function')
+        const result = await promptConsoleLogin()
 
         assert.strictEqual(result, false)
     })
@@ -333,7 +333,7 @@ describe('promptConsoleLogin', function () {
         const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
         getTestWindow().onDidShowMessage((m) => m.selectItem('Use a different sign-in method'))
 
-        const result = await promptConsoleLogin('test-function')
+        const result = await promptConsoleLogin()
 
         assert.strictEqual(result, false)
         assert(executeCommandStub.calledWith('aws.toolkit.auth.manageConnections'))

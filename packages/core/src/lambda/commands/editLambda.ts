@@ -274,7 +274,7 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
 
     // If no connection, prompt and create console connection before first attempt
     if (!activeConnection) {
-        const proceed = await promptConsoleLogin(name)
+        const proceed = await promptConsoleLogin()
         if (!proceed) {
             throw new ToolkitError('User opted out of console login despite no active connection', { cancelled: true })
         }
@@ -303,7 +303,7 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
             throw ToolkitError.chain(error, 'Failed to get Lambda function with console credentials. Retry skipped.')
         } else {
             // Prompt and retry once with console credentials
-            const proceed = await promptConsoleLogin(name)
+            const proceed = await promptConsoleLogin()
             if (!proceed) {
                 throw new ToolkitError('User opted out of console login despite mismatched credentials', {
                     cancelled: true,
