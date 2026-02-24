@@ -25,6 +25,7 @@ import {
 import {
     cloud9Appname,
     cloud9CnAppname,
+    kiroAppname,
     sageMakerAppname,
     sageMakerUnifiedStudio,
     vscodeAppname,
@@ -71,13 +72,17 @@ let computeRegion: string | undefined = notInitialized
 let serviceName: string = notInitialized
 let isSMUS: boolean = false
 
-export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'unknown' {
     if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
 
     if (vscode.env.appName === sageMakerAppname) {
         return 'sagemaker'
+    }
+
+    if (vscode.env.appName?.includes(kiroAppname)) {
+        return 'kiro'
     }
 
     // Theia doesn't necessarily have all env properties
@@ -181,6 +186,13 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
     }
     const codecat = getCodeCatalystDevEnvId() !== undefined
     return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
+}
+
+/**
+ * Determines if the current system is the Kiro IDE.
+ */
+export function isKiro(): boolean {
+    return getIdeType() === 'kiro'
 }
 
 /**
