@@ -72,7 +72,8 @@ export async function downloadLanguageServer(): Promise<void> {
     await ensureDirectoryExists(resourcesDir)
 
     return new Promise((resolve, reject) => {
-        const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/qAgenticChatServer/0/manifest.json'
+        const manifestUrl =
+            'https://github.com/aws/language-servers/releases/download/agentic-pre-updating-indexing-bundle/manifest.json'
 
         https
             .get(manifestUrl, (res) => {
