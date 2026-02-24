@@ -12,6 +12,9 @@
         {
             "path": "packages/amazonq",
         },
+        {
+            "path": "packages/sagemaker-ssh-kiro",
+        },
     ],
     "settings": {
         "typescript.tsdk": "node_modules/typescript/lib",
