@@ -374,7 +374,7 @@ describe('getFunctionWithFallback', function () {
         assert(setupConsoleConnectionStub.notCalled)
     })
 
-    it('prompts user before creating console connection when no active connection exists', async function () {
+    it('prompts user and creates console connection when no active connection exists', async function () {
         getFunctionWithCredentialsStub.resolves(mockFunction)
         getIAMConnectionStub.resolves(undefined)
         setupConsoleConnectionStub.resolves()
@@ -384,6 +384,7 @@ describe('getFunctionWithFallback', function () {
 
         assert.strictEqual(result, mockFunction)
         assert(setupConsoleConnectionStub.calledOnce)
+        assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
     })
 
     it('throws error when user opts out of console login with no active connection', async function () {
@@ -400,19 +401,6 @@ describe('getFunctionWithFallback', function () {
         )
 
         assert(setupConsoleConnectionStub.notCalled)
-    })
-
-    it('creates console connection when no active connection exists', async function () {
-        getFunctionWithCredentialsStub.resolves(mockFunction)
-        getIAMConnectionStub.resolves(undefined)
-        setupConsoleConnectionStub.resolves()
-        getTestWindow().onDidShowMessage((m) => m.selectItem('Continue'))
-
-        const result = await getFunctionWithFallback('test-function', 'us-east-1')
-
-        assert.strictEqual(result, mockFunction)
-        assert(setupConsoleConnectionStub.calledOnce)
-        assert(setupConsoleConnectionStub.calledWith('test-function', 'us-east-1'))
     })
 
     it('does not retry when console connection was just created and fails', async function () {
