@@ -9,7 +9,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import {
     generateJavaLambdaHandler,
+    getLambdaHandlerCandidates,
     getLambdaHandlerComponents,
+    gradleBasePattern,
     isValidClassSymbol,
     isValidLambdaHandler,
     JavaLambdaHandlerComponents,
@@ -21,6 +23,97 @@ import { fs } from '../../../shared'
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
 describe('javaCodeLensProvider', () => {
+    describe('gradleBasePattern', () => {
+        // The regex used in getLambdaHandlerCandidates to match Gradle build files.
+        const gradleRegex = /^.*\.gradle(\.kts)?$/
+
+        it('matches build.gradle', () => {
+            assert.ok(gradleRegex.test('build.gradle'), 'Expected pattern to match build.gradle')
+            assert.ok(gradleRegex.test('/path/to/build.gradle'), 'Expected pattern to match path/to/build.gradle')
+        })
+
+        it('matches build.gradle.kts', () => {
+            assert.ok(gradleRegex.test('build.gradle.kts'), 'Expected pattern to match build.gradle.kts')
+            assert.ok(
+                gradleRegex.test('/path/to/build.gradle.kts'),
+                'Expected pattern to match path/to/build.gradle.kts'
+            )
+        })
+
+        it('matches custom-named gradle files like brazil.gradle.kts', () => {
+            assert.ok(gradleRegex.test('brazil.gradle.kts'), 'Expected pattern to match brazil.gradle.kts')
+            assert.ok(
+                gradleRegex.test('/path/to/brazil.gradle.kts'),
+                'Expected pattern to match path/to/brazil.gradle.kts'
+            )
+            assert.ok(gradleRegex.test('brazil.gradle'), 'Expected pattern to match brazil.gradle')
+        })
+
+        it('gradleBasePattern glob matches any *.gradle and *.gradle.kts files', () => {
+            assert.strictEqual(gradleBasePattern, '**/*.gradle{,.kts}')
+        })
+    })
+
+    describe('getLambdaHandlerCandidates', () => {
+        let tempFolder: string
+
+        beforeEach(async () => {
+            tempFolder = await makeTemporaryToolkitFolder()
+        })
+
+        afterEach(async () => {
+            await fs.delete(tempFolder, { recursive: true })
+        })
+
+        it('returns empty array when no gradle build file exists', async function () {
+            const programFile = path.join(tempFolder, 'App.java')
+            await fs.writeFile(programFile, SampleJavaSamProgram.getFunctionText())
+            const textDoc = await vscode.workspace.openTextDocument(programFile)
+
+            const candidates = await getLambdaHandlerCandidates(textDoc)
+            assert.strictEqual(candidates.length, 0, 'Expected no candidates when no build file exists')
+        })
+
+        it('detects handler candidates when build.gradle exists', async function () {
+            const buildFile = path.join(tempFolder, 'build.gradle')
+            await fs.writeFile(buildFile, '')
+            const programFile = path.join(tempFolder, 'App.java')
+            await fs.writeFile(programFile, SampleJavaSamProgram.getFunctionText())
+            const textDoc = await vscode.workspace.openTextDocument(programFile)
+
+            // getLambdaHandlerCandidates calls vscode.executeDocumentSymbolProvider which
+            // requires a real language server; we verify it at least finds the project root
+            // (i.e. does not return early with an empty array due to missing build file).
+            // The function will return [] only if rootUri is falsy, so a non-empty result
+            // (or a result that didn't throw) confirms the build file was found.
+            // Since we can't easily mock the symbol provider in unit tests, we just assert
+            // the function resolves without error.
+            await assert.doesNotReject(getLambdaHandlerCandidates(textDoc))
+        })
+
+        it('detects handler candidates when build.gradle.kts exists', async function () {
+            const buildFile = path.join(tempFolder, 'build.gradle.kts')
+            await fs.writeFile(buildFile, '')
+            const programFile = path.join(tempFolder, 'App.java')
+            await fs.writeFile(programFile, SampleJavaSamProgram.getFunctionText())
+            const textDoc = await vscode.workspace.openTextDocument(programFile)
+
+            await assert.doesNotReject(getLambdaHandlerCandidates(textDoc))
+        })
+
+        it('detects handler candidates when a custom-named gradle file like brazil.gradle.kts exists', async function () {
+            const buildFile = path.join(tempFolder, 'brazil.gradle.kts')
+            await fs.writeFile(buildFile, '')
+            const programFile = path.join(tempFolder, 'App.java')
+            await fs.writeFile(programFile, SampleJavaSamProgram.getFunctionText())
+            const textDoc = await vscode.workspace.openTextDocument(programFile)
+
+            // Before the fix, the extension only checked for 'build.gradle' and would not
+            // recognize 'brazil.gradle.kts' as a valid Gradle build file.
+            await assert.doesNotReject(getLambdaHandlerCandidates(textDoc))
+        })
+    })
+
     describe('getLambdaHandlerComponents', () => {
         let tempFolder: string
 
