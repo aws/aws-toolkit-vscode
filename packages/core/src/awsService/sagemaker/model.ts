@@ -214,39 +214,39 @@ export async function prepareDevEnvConnection(
                     logger.error(`Failed to copy hyperpod_connect script: ${err}`)
                 }
             }
-        }
 
-        const sshConfig =
-            connectionType === 'sm_hp'
-                ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
-        const config = await sshConfig.ensureValid()
-        if (config.isErr()) {
-            const err = config.err()
-            const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
-            logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
+            const sshConfig =
+                connectionType === 'sm_hp'
+                    ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
+                    : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+            const config = await sshConfig.ensureValid()
+            if (config.isErr()) {
+                const err = config.err()
+                const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
+                logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
 
-            if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
-                const sshConfigPath = getSshConfigPath()
-                const openConfigButton = 'Open SSH Config'
-                const resp = await vscode.window.showErrorMessage(
-                    SshConfigErrorMessage(),
-                    { modal: true, detail: err.message },
-                    openConfigButton
-                )
+                if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
+                    const sshConfigPath = getSshConfigPath()
+                    const openConfigButton = 'Open SSH Config'
+                    const resp = await vscode.window.showErrorMessage(
+                        SshConfigErrorMessage(),
+                        { modal: true, detail: err.message },
+                        openConfigButton
+                    )
 
-                if (resp === openConfigButton) {
-                    void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+                    if (resp === openConfigButton) {
+                        void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+                    }
+
+                    // Throw error to stop the connection flow
+                    // User is already notified via modal above, downstream handlers check the error code
+                    throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
+                        code: SshConfigError,
+                    })
                 }
 
-                // Throw error to stop the connection flow
-                // User is already notified via modal above, downstream handlers check the error code
-                throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
-                    code: SshConfigError,
-                })
+                throw err
             }
-
-            throw err
         }
     }
 

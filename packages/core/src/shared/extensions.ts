@@ -31,7 +31,6 @@ const getRemoteSshExtension = () => {
 
 // For actual use in IDE, not test environment
 // eslint-disable-next-line @typescript-eslint/naming-convention
-
 export const VSCODE_EXTENSION_ID = {
     ...VSCODE_EXTENSION_ID_CONSTANTS,
     get remotessh(): { readonly id: string; readonly minVersion: string } {
