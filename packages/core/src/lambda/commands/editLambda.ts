@@ -230,7 +230,7 @@ export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 
     })
 }
 
-export async function promptConsoleLogin(functionName: string): Promise<boolean> {
+export async function promptConsoleLogin(): Promise<boolean> {
     const continueBtn = localizedText.continueText
     const useOtherMethodBtn = localize('AWS.lambda.open.useOtherMethod', 'Use a different sign-in method')
     const response = await vscode.window.showInformationMessage(
