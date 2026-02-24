@@ -276,7 +276,7 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
     if (!activeConnection) {
         const proceed = await promptConsoleLogin()
         if (!proceed) {
-            throw new ToolkitError('User opted out of console login despite no active connection', { cancelled: true })
+            throw new ToolkitError('Console login not performed (no active connection)', { cancelled: true })
         }
         await setupConsoleConnection(name, region)
         calledConsoleLogin = true
@@ -305,7 +305,7 @@ export async function getFunctionWithFallback(name: string, region: string): Pro
             // Prompt and retry once with console credentials
             const proceed = await promptConsoleLogin()
             if (!proceed) {
-                throw new ToolkitError('User opted out of console login despite mismatched credentials', {
+                throw new ToolkitError('Console login not performed (mismatched credentials)', {
                     cancelled: true,
                 })
             }
