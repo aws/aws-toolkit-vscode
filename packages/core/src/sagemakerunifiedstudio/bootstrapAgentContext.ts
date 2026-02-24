@@ -1,0 +1,90 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as path from 'path'
+import * as vscode from 'vscode'
+import fs from '../shared/fs/fs'
+import { getLogger } from '../shared/logger/logger'
+import { agentsFile, contextFile, importStatement, notificationMessage, promptMessage } from './shared/constants'
+
+function notifyContextUpdated(): void {
+    void vscode.window.showInformationMessage(notificationMessage)
+}
+
+async function promptUserToAddSmusContext(): Promise<boolean> {
+    const choice = await vscode.window.showInformationMessage(promptMessage, 'Yes', 'No')
+    return choice === 'Yes'
+}
+
+/**
+ * Creates or updates ~/smus-context.md with SageMaker Unified Studio context,
+ * and ensures ~/AGENTS.md imports it.
+ *
+ * Behavior:
+ * - If AGENTS.md doesn't exist, prompts the user. If accepted, creates both files.
+ * - If AGENTS.md exists with the import, silently updates smus-context.md.
+ * - If AGENTS.md exists without the import, and smus-context.md already exists,
+ *   silently updates smus-context.md (user removed the import, respect that).
+ * - If AGENTS.md exists without the import, and smus-context.md doesn't exist,
+ *   prompts the user. If accepted, creates smus-context.md and adds the import.
+ *   If declined, does nothing.
+ *
+ * Failures are logged but do not throw.
+ */
+export async function createAgentsFile(ctx: vscode.ExtensionContext): Promise<void> {
+    const logger = getLogger('smus')
+
+    try {
+        const templatePath = ctx.asAbsolutePath(path.join('resources', 'smus-context-template.md'))
+        const content = await fs.readFileText(templatePath)
+
+        const contextFileExists = await fs.existsFile(contextFile)
+        const agentsFileExists = await fs.existsFile(agentsFile)
+
+        if (!agentsFileExists) {
+            if (!(await promptUserToAddSmusContext())) {
+                logger.info('User declined adding SageMaker context')
+                return
+            }
+            await fs.writeFile(contextFile, content)
+            await fs.writeFile(agentsFile, importStatement + '\n')
+            logger.info(`Created ${contextFile} and ${agentsFile}`)
+            notifyContextUpdated()
+            return
+        }
+
+        const agentsContent = await fs.readFileText(agentsFile)
+
+        if (agentsContent.includes(importStatement)) {
+            // Already imported — just update the context file
+            await fs.writeFile(contextFile, content)
+            logger.info(`Updated ${contextFile}`)
+            return
+        }
+
+        if (contextFileExists) {
+            // smus-context.md exists but isn't imported — user removed it, respect that
+            // Still update the context file in case they reference it elsewhere
+            await fs.writeFile(contextFile, content)
+            logger.info(`Updated ${contextFile}, skipping AGENTS.md (user removed import)`)
+            notifyContextUpdated()
+            return
+        }
+
+        // AGENTS.md exists, no import, no smus-context.md — prompt
+        if (!(await promptUserToAddSmusContext())) {
+            logger.info('User declined adding SageMaker context')
+            return
+        }
+
+        await fs.writeFile(contextFile, content)
+        const separator = agentsContent.endsWith('\n') ? '\n' : '\n\n'
+        await fs.writeFile(agentsFile, agentsContent + separator + importStatement + '\n')
+        logger.info(`Created ${contextFile} and added import to ${agentsFile}`)
+        notifyContextUpdated()
+    } catch (err) {
+        logger.warn(`Failed to create/update AGENTS.md: ${err}`)
+    }
+}
