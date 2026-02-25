@@ -7,11 +7,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { getIdeInfo } from './vscode/env'
 import { Settings } from '../shared/settings'
 import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
+import { VSCODE_EXTENSION_ID } from './extensions'
 import { Err, Result } from '../shared/utilities/result'
 import { ToolkitError, UnknownError } from './errors'
 import { getLogger } from './logger/logger'
@@ -31,7 +32,7 @@ export enum RemoteSessionError {
 }
 
 export interface MissingTool {
-    readonly name: 'code' | 'ssm' | 'ssh'
+    readonly name: string
     readonly reason?: string
 }
 
@@ -92,11 +93,16 @@ export interface VscodeRemoteConnection {
     readonly SessionProcess: typeof ChildProcess
 }
 
-export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    try {
-        await ensureRemoteSshInstalled()
-    } catch (e) {
-        return Result.err(e as Error)
+export async function ensureDependencies(options?: {
+    skipRemoteSshCheck?: boolean
+}): Promise<Result<DependencyPaths, CancellationError | Error>> {
+    // Skip Remote SSH extension check if explicitly requested (e.g., for SageMaker in Kiro)
+    if (!options?.skipRemoteSshCheck) {
+        try {
+            await ensureRemoteSshInstalled()
+        } catch (e) {
+            return Result.err(e as Error)
+        }
     }
 
     const tools = await ensureTools()
@@ -108,19 +114,19 @@ export async function ensureDependencies(): Promise<Result<DependencyPaths, Canc
 }
 
 export async function ensureRemoteSshInstalled(): Promise<void> {
-    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
+    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id, VSCODE_EXTENSION_ID.remotessh.minVersion)) {
         showInstallExtensionMsg(
-            VSCODE_EXTENSION_ID.remotessh,
+            VSCODE_EXTENSION_ID.remotessh.id,
             'Remote SSH',
             'Connecting to Dev Environment',
-            vscodeExtensionMinVersion.remotessh
+            VSCODE_EXTENSION_ID.remotessh.minVersion
         )
 
-        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id)) {
             throw new ToolkitError('Remote SSH extension version is too low', {
                 cancelled: true,
                 code: RemoteSessionError.ExtensionVersionTooLow,
-                details: { expected: vscodeExtensionMinVersion.remotessh },
+                details: { expected: VSCODE_EXTENSION_ID.remotessh.minVersion },
             })
         } else {
             throw new ToolkitError('Remote SSH extension not installed', {
@@ -146,8 +152,11 @@ async function ensureSsmCli() {
 export async function ensureTools() {
     const [vsc, ssh, ssm] = await Promise.all([getVscodeCliPath(), findSshPath(), ensureSsmCli()])
 
+    const ideInfo = getIdeInfo()
+    const cliName = ideInfo.cliName
+
     const missing: MissingTool[] = []
-    pushIf(missing, vsc === undefined, { name: 'code' })
+    pushIf(missing, vsc === undefined, { name: cliName })
     pushIf(missing, ssh === undefined, { name: 'ssh' })
 
     if (ssm.isErr()) {

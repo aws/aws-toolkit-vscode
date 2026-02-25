@@ -47,6 +47,7 @@ packages/toolkit/package.nls.json
 packages/toolkit/resources
 packages/amazonq/package.nls.json
 packages/amazonq/resources
+packages/sagemaker-ssh-kiro/resources
 
 # Icons
 packages/*/resources/fonts/aws-toolkit-icons.woff
