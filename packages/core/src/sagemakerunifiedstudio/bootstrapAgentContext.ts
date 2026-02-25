@@ -11,37 +11,50 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { agentsFile, contextFile, importStatement, notificationMessage, promptMessage } from './shared/constants'
 import { extractAccountIdFromResourceMetadata } from './shared/smusUtils'
 import { getResourceMetadata } from './shared/utils/resourceMetadataUtils'
+import { SmusAuthenticationProvider } from './auth/providers/smusAuthenticationProvider'
 
 function notifyContextUpdated(): void {
     void vscode.window.showInformationMessage(notificationMessage)
 }
 
 async function promptUserToAddSmusContext(accountId: string, domainId: string | undefined): Promise<boolean> {
-    return telemetry.toolkit_showNotification.run(async () => {
-        telemetry.record({ id: 'smusContextPrompt', component: 'editor', passive: true })
+    const metadata = getResourceMetadata()
+    const region = metadata?.AdditionalMetadata?.DataZoneDomainRegion
+    const projectId = metadata?.AdditionalMetadata?.DataZoneProjectId
+    const spaceKey = metadata?.SpaceName
+    const authProvider = SmusAuthenticationProvider.fromContext()
+
+    // Extract project account ID and region from ResourceArn
+    // ARN format: arn:aws:sagemaker:region:account-id:space/domain-id/space-name
+    const arnParts = metadata?.ResourceArn?.split(':')
+    const projectRegion = arnParts?.[3]
+    const projectAccountId = arnParts?.[4]
+
+    const commonFields = {
+        smusDomainId: domainId,
+        smusDomainAccountId: accountId,
+        smusDomainRegion: region,
+        smusProjectId: projectId,
+        smusProjectAccountId: projectAccountId,
+        smusProjectRegion: projectRegion,
+        smusSpaceKey: spaceKey,
+        smusAuthMode: authProvider.activeConnection?.type,
+        passive: true,
+    }
+
+    telemetry.smus_agentContextShowPrompt.emit({
+        ...commonFields,
+    })
+
+    return telemetry.smus_agentContextUserChoice.run(async () => {
         const choice = await vscode.window.showWarningMessage(promptMessage, 'Yes', 'No')
-        await telemetry.smus_acceptAgentsNotification.run(async () => {
-            telemetry.record({ passive: true })
-            if (choice === 'Yes') {
-                telemetry.record({
-                    smusAcceptAgentContextAction: 'accepted',
-                    smusDomainId: domainId,
-                    smusDomainAccountId: accountId,
-                })
-            } else if (choice === 'No') {
-                telemetry.record({
-                    smusAcceptAgentContextAction: 'declined',
-                    smusDomainId: domainId,
-                    smusDomainAccountId: accountId,
-                })
-            } else {
-                telemetry.record({
-                    smusAcceptAgentContextAction: 'dismissed',
-                    smusDomainId: domainId,
-                    smusDomainAccountId: accountId,
-                })
-            }
-        })
+        if (choice === 'Yes') {
+            telemetry.record({ smusAcceptAgentContextAction: 'accepted', ...commonFields })
+        } else if (choice === 'No') {
+            telemetry.record({ smusAcceptAgentContextAction: 'declined', ...commonFields })
+        } else {
+            telemetry.record({ smusAcceptAgentContextAction: 'dismissed', ...commonFields })
+        }
         return choice === 'Yes'
     })
 }
