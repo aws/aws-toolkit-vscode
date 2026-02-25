@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Show recent executions for each state machine in the Explorer"
+}

@@ -20,6 +20,7 @@ interface StateMachine {
     arn: string
     name: string
     region: string
+    explorerNode?: StateMachineNode
 }
 
 export class ExecuteStateMachineWebview extends VueWebview {
@@ -64,6 +65,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
             this.logger.info('started execution for Step Functions State Machine')
             this.channel.appendLine(localize('AWS.stepFunctions.executeStateMachine.info.started', 'Execution started'))
             this.channel.appendLine(startExecResponse.executionArn || '')
+            await this.refreshExplorerNode(this.stateMachine.explorerNode)
         } catch (e) {
             executeResult = 'Failed'
             const error = e as Error
@@ -79,6 +81,16 @@ export class ExecuteStateMachineWebview extends VueWebview {
             telemetry.stepfunctions_executeStateMachine.emit({ result: executeResult })
         }
     }
+
+    /**
+     * Assuming the state machine execution was started via a StateMachineNode in the
+     * AWS Explorer, refresh the list of executions, so this new execution will appear.
+     */
+    private async refreshExplorerNode(node?: StateMachineNode): Promise<void> {
+        if (node) {
+            return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+        }
+    }
 }
 
 const Panel = VueWebview.compilePanel(ExecuteStateMachineWebview)
@@ -88,6 +100,7 @@ export async function executeStateMachine(context: ExtContext, node: StateMachin
         arn: node.details.stateMachineArn || '',
         name: node.details.name || '',
         region: node.regionCode,
+        explorerNode: node,
     })
 
     await wv.show({

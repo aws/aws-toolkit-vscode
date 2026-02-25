@@ -10,6 +10,10 @@ import {
     DescribeStateMachineCommand,
     DescribeStateMachineCommandInput,
     DescribeStateMachineCommandOutput,
+    ExecutionListItem,
+    ListExecutionsCommand,
+    ListExecutionsCommandInput,
+    ListExecutionsCommandOutput,
     ListStateMachinesCommand,
     ListStateMachinesCommandInput,
     ListStateMachinesCommandOutput,
@@ -42,6 +46,21 @@ export class StepFunctionsClient extends ClientWrapper<SFNClient> {
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
+    }
+
+    public async *listExecutions(
+        request: ListExecutionsCommandInput = {},
+        resultsToReturn: number
+    ): AsyncIterableIterator<ExecutionListItem> {
+        do {
+            request.maxResults = resultsToReturn
+            const response: ListExecutionsCommandOutput = await this.makeRequest(ListExecutionsCommand, request)
+            if (response.executions) {
+                resultsToReturn -= response.executions.length
+                yield* response.executions
+            }
+            request.nextToken = response.nextToken
+        } while (request.nextToken && resultsToReturn > 0)
     }
 
     public async getStateMachineDetails(
