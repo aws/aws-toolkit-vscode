@@ -336,7 +336,7 @@
             "name": "smusAcceptAgentContextAction",
             "type": "string",
             "allowedValues": ["accepted", "declined", "dismissed"],
-            "description": "Whether the user accepted, declined or dismissed the smus context prompt to add to AGENTS.md"
+            "description": "Whether the user accepted the smus context added to AGENTS.md"
         }
     ],
     "metrics": [
@@ -1776,8 +1776,8 @@
             ]
         },
         {
-            "name": "smus_agentContextShowPrompt",
-            "description": "Emitted whenever user is shown a prompt to add SMUS context to their AGENTS.md",
+            "name": "smus_acceptAgentsNotification",
+            "description": "Emitted whenever user accepts AGENTS.md file changes",
             "metadata": [
                 {
                     "type": "smusDomainId",
@@ -1785,73 +1785,11 @@
                 },
                 {
                     "type": "smusDomainAccountId",
-                    "required": false
-                },
-                {
-                    "type": "smusDomainRegion",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectId",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectAccountId",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectRegion",
-                    "required": false
-                },
-                {
-                    "type": "smusSpaceKey",
-                    "required": false
-                },
-                {
-                    "type": "smusAuthMode",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "smus_agentContextUserChoice",
-            "description": "Emitted whenever user makes a choice on adding SMUS context to their AGENTS.md",
-            "metadata": [
-                {
-                    "type": "smusDomainId",
-                    "required": false
-                },
-                {
-                    "type": "smusDomainAccountId",
-                    "required": false
-                },
-                {
-                    "type": "smusDomainRegion",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectId",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectAccountId",
-                    "required": false
-                },
-                {
-                    "type": "smusProjectRegion",
-                    "required": false
-                },
-                {
-                    "type": "smusSpaceKey",
-                    "required": false
-                },
-                {
-                    "type": "smusAuthMode",
                     "required": false
                 },
                 {
                     "type": "smusAcceptAgentContextAction",
-                    "required": false
+                    "required": true
                 }
             ]
         }
