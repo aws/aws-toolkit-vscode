@@ -1777,7 +1777,7 @@
         },
         {
             "name": "smus_agentContextShowPrompt",
-            "description": "Emitted whenever is shown a prompt to add SMUS context to their AGENTS.md",
+            "description": "Emitted whenever user is shown a prompt to add SMUS context to their AGENTS.md",
             "metadata": [
                 {
                     "type": "smusDomainId",

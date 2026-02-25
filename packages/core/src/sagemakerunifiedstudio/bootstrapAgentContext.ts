@@ -24,14 +24,11 @@ async function promptUserToAddSmusContext(accountId: string, domainId: string | 
     const spaceKey = metadata?.SpaceName
     const authProvider = SmusAuthenticationProvider.fromContext()
 
-    let projectAccountId: string | undefined
-    if (projectId) {
-        try {
-            projectAccountId = await authProvider.getProjectAccountId(projectId)
-        } catch {
-            projectAccountId = undefined
-        }
-    }
+    // Extract project account ID and region from ResourceArn
+    // ARN format: arn:aws:sagemaker:region:account-id:space/domain-id/space-name
+    const arnParts = metadata?.ResourceArn?.split(':')
+    const projectRegion = arnParts?.[3]
+    const projectAccountId = arnParts?.[4]
 
     const commonFields = {
         smusDomainId: domainId,
@@ -39,24 +36,24 @@ async function promptUserToAddSmusContext(accountId: string, domainId: string | 
         smusDomainRegion: region,
         smusProjectId: projectId,
         smusProjectAccountId: projectAccountId,
-        smusProjectRegion: region,
+        smusProjectRegion: projectRegion,
         smusSpaceKey: spaceKey,
         smusAuthMode: authProvider.activeConnection?.type,
+        passive: true,
     }
 
     telemetry.smus_agentContextShowPrompt.emit({
-        passive: true,
         ...commonFields,
     })
 
     return telemetry.smus_agentContextUserChoice.run(async () => {
         const choice = await vscode.window.showWarningMessage(promptMessage, 'Yes', 'No')
         if (choice === 'Yes') {
-            telemetry.record({ passive: true, smusAcceptAgentContextAction: 'accepted', ...commonFields })
+            telemetry.record({ smusAcceptAgentContextAction: 'accepted', ...commonFields })
         } else if (choice === 'No') {
-            telemetry.record({ passive: true, smusAcceptAgentContextAction: 'declined', ...commonFields })
+            telemetry.record({ smusAcceptAgentContextAction: 'declined', ...commonFields })
         } else {
-            telemetry.record({ passive: true, smusAcceptAgentContextAction: 'dismissed', ...commonFields })
+            telemetry.record({ smusAcceptAgentContextAction: 'dismissed', ...commonFields })
         }
         return choice === 'Yes'
     })
