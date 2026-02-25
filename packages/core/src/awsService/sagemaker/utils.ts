@@ -135,7 +135,7 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 const stats = await fs.stat(filePath)
                 const mtime = new Date(stats.mtime).getTime()
                 if (now - mtime < ActivityCheckInterval) {
-                    getLogger().info(
+                    getLogger().debug(
                         `[Terminal Activity] Detected in ${fileName}, mtime: ${new Date(mtime).toISOString()}`
                     )
                     await updateIdleFile(idleFilePath)
@@ -145,6 +145,7 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 getLogger().error(`Error reading file stats:`, err)
             }
         }
+        getLogger().debug(`No terminal activity detected.`)
     } catch (err) {
         getLogger().error(`Error reading /dev/pts directory:`, err)
     }
@@ -176,11 +177,12 @@ export async function hasActiveJupyterKernels(): Promise<boolean> {
         for (const notebook of vscode.workspace.notebookDocuments) {
             const kernel = await api.kernels.getKernel(notebook.uri)
             if (kernel && kernel.status === 'busy') {
-                getLogger().info(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
+                getLogger().debug(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
                 return true
             }
         }
 
+        getLogger().debug(`No kernel activity detected.`)
         return false
     } catch (error) {
         getLogger().error(`Error checking Jupyter kernel state: ${error}`)
@@ -194,22 +196,30 @@ export async function hasActiveJupyterKernels(): Promise<boolean> {
  */
 export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Timeout {
     return setInterval(async () => {
-        getLogger().info(
-            `[Background State] Checking... tasks:${vscode.tasks.taskExecutions.length}, debug:${vscode.debug.activeDebugSession !== undefined}`
-        )
+        getLogger().debug(`Monitoring background state.`)
         const hasActiveTasks = vscode.tasks.taskExecutions.length > 0
         const hasDebugSession = vscode.debug.activeDebugSession !== undefined
 
         // Use Jupyter extension API to check actual kernel state
         const hasActiveKernels = await hasActiveJupyterKernels()
 
-        const hasUnsaved = vscode.workspace.textDocuments.some((doc) => doc.isDirty && doc.uri.scheme === 'file')
+        // Check for unsaved text documents (file and untitled)
+        const hasUnsavedText = vscode.workspace.textDocuments.some(
+            (doc) => doc.isDirty && (doc.uri.scheme === 'file' || doc.uri.scheme === 'untitled')
+        )
+
+        // Check for unsaved notebooks
+        const hasUnsavedNotebooks = vscode.workspace.notebookDocuments.some((notebook) => notebook.isDirty)
+
+        const hasUnsaved = hasUnsavedText || hasUnsavedNotebooks
 
         if (hasActiveTasks || hasDebugSession || hasActiveKernels || hasUnsaved) {
-            getLogger().info(
+            getLogger().debug(
                 `[Background State] tasks:${hasActiveTasks}, debug:${hasDebugSession}, kernels:${hasActiveKernels}, unsaved:${hasUnsaved}`
             )
             await updateIdleFile(idleFilePath)
+        } else {
+            getLogger().debug(`No background activity detected.`)
         }
     }, ActivityCheckInterval)
 }
