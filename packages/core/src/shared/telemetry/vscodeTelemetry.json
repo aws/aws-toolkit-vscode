@@ -331,6 +331,12 @@
             "type": "string",
             "allowedValues": ["sso", "iam"],
             "description": "SMUS authentication mode (SSO or IAM)"
+        },
+        {
+            "name": "smusAcceptAgentContextAction",
+            "type": "string",
+            "allowedValues": ["accepted", "declined", "dismissed"],
+            "description": "Whether the user accepted the smus context added to AGENTS.md"
         }
     ],
     "metrics": [
@@ -1766,6 +1772,24 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_acceptAgentsNotification",
+            "description": "Emitted whenever user accepts AGENTS.md file changes",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAcceptAgentContextAction",
+                    "required": true
                 }
             ]
         }

@@ -7,15 +7,43 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import fs from '../shared/fs/fs'
 import { getLogger } from '../shared/logger/logger'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { agentsFile, contextFile, importStatement, notificationMessage, promptMessage } from './shared/constants'
+import { extractAccountIdFromResourceMetadata } from './shared/smusUtils'
+import { getResourceMetadata } from './shared/utils/resourceMetadataUtils'
 
 function notifyContextUpdated(): void {
     void vscode.window.showInformationMessage(notificationMessage)
 }
 
-async function promptUserToAddSmusContext(): Promise<boolean> {
-    const choice = await vscode.window.showInformationMessage(promptMessage, 'Yes', 'No')
-    return choice === 'Yes'
+async function promptUserToAddSmusContext(accountId: string, domainId: string | undefined): Promise<boolean> {
+    return telemetry.toolkit_showNotification.run(async () => {
+        telemetry.record({ id: 'smusContextPrompt', component: 'editor', passive: true })
+        const choice = await vscode.window.showWarningMessage(promptMessage, 'Yes', 'No')
+        await telemetry.smus_acceptAgentsNotification.run(async () => {
+            telemetry.record({ passive: true })
+            if (choice === 'Yes') {
+                telemetry.record({
+                    smusAcceptAgentContextAction: 'accepted',
+                    smusDomainId: domainId,
+                    smusDomainAccountId: accountId,
+                })
+            } else if (choice === 'No') {
+                telemetry.record({
+                    smusAcceptAgentContextAction: 'declined',
+                    smusDomainId: domainId,
+                    smusDomainAccountId: accountId,
+                })
+            } else {
+                telemetry.record({
+                    smusAcceptAgentContextAction: 'dismissed',
+                    smusDomainId: domainId,
+                    smusDomainAccountId: accountId,
+                })
+            }
+        })
+        return choice === 'Yes'
+    })
 }
 
 /**
@@ -42,9 +70,15 @@ export async function createAgentsFile(ctx: vscode.ExtensionContext): Promise<vo
 
         const contextFileExists = await fs.existsFile(contextFile)
         const agentsFileExists = await fs.existsFile(agentsFile)
+        const accountId = await extractAccountIdFromResourceMetadata()
+        const metadata = getResourceMetadata()
+
+        // Domain ID (DataZone)
+        const domainId = metadata?.AdditionalMetadata?.DataZoneDomainId
 
         if (!agentsFileExists) {
-            if (!(await promptUserToAddSmusContext())) {
+            logger.info('Adding new AGENTS.md file')
+            if (!(await promptUserToAddSmusContext(accountId, domainId))) {
                 logger.info('User declined adding SageMaker context')
                 return
             }
@@ -58,6 +92,7 @@ export async function createAgentsFile(ctx: vscode.ExtensionContext): Promise<vo
         const agentsContent = await fs.readFileText(agentsFile)
 
         if (agentsContent.includes(importStatement)) {
+            logger.info('AGENTS.md contains import for SMUS context')
             // Already imported — just update the context file
             await fs.writeFile(contextFile, content)
             logger.info(`Updated ${contextFile}`)
@@ -74,7 +109,7 @@ export async function createAgentsFile(ctx: vscode.ExtensionContext): Promise<vo
         }
 
         // AGENTS.md exists, no import, no smus-context.md — prompt
-        if (!(await promptUserToAddSmusContext())) {
+        if (!(await promptUserToAddSmusContext(accountId, domainId))) {
             logger.info('User declined adding SageMaker context')
             return
         }
