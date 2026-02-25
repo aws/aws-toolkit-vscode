@@ -140,5 +140,22 @@ df = spark.read.format("jdbc").options(**options).option("dbtable", "my_table").
 
 ## MCP Server Configuration
 
--   When configuring MCP servers, pass AWS credentials via environment variable expansion:
-    "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}"
+MCP servers in this environment may need AWS credentials forwarded from the container. If an MCP tool returns "Unable to locate credentials", add the `env` block to the affected server in MCP server config file:
+
+```json
+{
+    "mcpServers": {
+        "example-server": {
+            "command": "uvx",
+            "args": ["example-server@latest"],
+            "env": {
+                "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}"
+            },
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}
+```
+
+If you cannot edit the config directly, suggest the user add the `env` block to their MCP server entry in MCP server config.
