@@ -7,21 +7,25 @@ inclusion: always
 This workspace is running on an Amazon SageMaker Unified Studio Space.
 
 ## Environment
-- Operating system: Ubuntu-based SageMaker Distribution
-- User: sagemaker-user
-- Home directory: /home/sagemaker-user
-- AWS credentials are available via the container credentials provider (AWS_CONTAINER_CREDENTIALS_RELATIVE_URI)
-- Do NOT hardcode AWS credentials; use the default credential chain (e.g., boto3.Session())
+
+-   Operating system: Ubuntu-based SageMaker Distribution
+-   User: sagemaker-user
+-   Home directory: /home/sagemaker-user
+-   AWS credentials are available via the container credentials provider (AWS_CONTAINER_CREDENTIALS_RELATIVE_URI)
+-   Do NOT hardcode AWS credentials; use the default credential chain (e.g., boto3.Session())
 
 ## Project Info
-- ~/README.md contains project-specific configuration such as connection names and available compute resources.
-- ~/shared/README.md contains shared project data catalog and storage information.
-Refer to these files when you need details about the project's connections, databases, or S3 paths.
+
+-   ~/README.md contains project-specific configuration such as connection names and available compute resources.
+-   ~/shared/README.md contains shared project data catalog and storage information.
+    Refer to these files when you need details about the project's connections, databases, or S3 paths.
 
 ## Project Library (`sagemaker_studio`)
+
 The `sagemaker_studio` package is pre-installed and provides access to project resources.
 
 ### Project
+
 ```python
 from sagemaker_studio import Project
 project = Project()
@@ -35,6 +39,7 @@ project.s3.root           # project S3 root path
 ```
 
 ### Connections
+
 ```python
 project.connections                          # list all connections
 project.connection()                         # default IAM connection
@@ -48,6 +53,7 @@ conn.create_client("glue")                   # boto3 client for specific service
 ```
 
 ### Catalogs, Databases, and Tables
+
 ```python
 catalog = project.connection().catalog()     # default catalog
 catalog = project.connection().catalog("catalog_id")
@@ -59,6 +65,7 @@ table.columns                                # list columns (name, type)
 ```
 
 ### SQL Utilities
+
 ```python
 from sagemaker_studio import sqlutils
 
@@ -83,6 +90,7 @@ engine = sqlutils.get_engine(connection_name="project.redshift")
 ```
 
 ### DataFrame Utilities
+
 ```python
 from sagemaker_studio import dataframeutils
 import pandas as pd
@@ -101,6 +109,7 @@ df = pd.read_catalog_table(
 ```
 
 ### Spark Utilities
+
 ```python
 from sagemaker_studio import sparkutils
 
@@ -114,19 +123,39 @@ df = spark.read.format("jdbc").options(**options).option("dbtable", "my_table").
 ```
 
 ## Compute Options
-- **Local Python**: Runs directly on the Space instance. Use for single-machine Python, ML, and AI workloads.
-- **Apache Spark (AWS Glue / Amazon EMR)**: Use `%%pyspark`, `%%scalaspark`, or `%%sql` cell magics in notebooks. Default Spark connection is `project.spark.compatibility`.
-- **SQL (Athena)**: Use `%%sql project.athena` for Trino SQL queries via Amazon Athena.
-- **SQL (Redshift)**: Use `%%sql project.redshift` if a Redshift connection is available.
+
+-   **Local Python**: Runs directly on the Space instance. Use for single-machine Python, ML, and AI workloads.
+-   **Apache Spark (AWS Glue / Amazon EMR)**: Use `%%pyspark`, `%%scalaspark`, or `%%sql` cell magics in notebooks. Default Spark connection is `project.spark.compatibility`.
+-   **SQL (Athena)**: Use `%%sql project.athena` for Trino SQL queries via Amazon Athena.
+-   **SQL (Redshift)**: Use `%%sql project.redshift` if a Redshift connection is available.
 
 ## Code Patterns
-- Use `sagemaker_studio.Project()` for project-aware sessions and resource discovery
-- Reference data using S3 URIs in s3://bucket/prefix format
-- Write Spark DataFrames to the project catalog: `df.write.saveAsTable(f"{database}.table_name", format='parquet', mode='overwrite')`
-- SQL query results are available as DataFrames in subsequent cells via the `_` variable
-- Use `sqlutils.sql()` for programmatic SQL execution against any connection
-- Use `pd.read_catalog_table()` / `df.to_catalog_table()` for pandas catalog I/O
+
+-   Use `sagemaker_studio.Project()` for project-aware sessions and resource discovery
+-   Reference data using S3 URIs in s3://bucket/prefix format
+-   Write Spark DataFrames to the project catalog: `df.write.saveAsTable(f"{database}.table_name", format='parquet', mode='overwrite')`
+-   SQL query results are available as DataFrames in subsequent cells via the `_` variable
+-   Use `sqlutils.sql()` for programmatic SQL execution against any connection
+-   Use `pd.read_catalog_table()` / `df.to_catalog_table()` for pandas catalog I/O
 
 ## MCP Server Configuration
-- When configuring MCP servers, pass AWS credentials via environment variable expansion:
-  "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}"
+
+MCP servers in this environment may need AWS credentials forwarded from the container. If an MCP tool returns "Unable to locate credentials", add the `env` block to the affected server in MCP server config file:
+
+```json
+{
+    "mcpServers": {
+        "example-server": {
+            "command": "uvx",
+            "args": ["example-server@latest"],
+            "env": {
+                "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}"
+            },
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}
+```
+
+If you cannot edit the config directly, suggest the user add the `env` block to their MCP server entry in MCP server config.
