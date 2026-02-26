@@ -267,7 +267,7 @@ export class ResourcesManager {
                     }
                     await this.applyCompletionSnippet(result)
                     const [successCount, failureCount] = this.getSuccessAndFailureCount(result)
-                    this.renderResultMessage(successCount, failureCount, purpose)
+                    this.renderResultMessage(result, successCount, failureCount, purpose)
                 }
             )
         } catch (error) {
@@ -392,7 +392,12 @@ export class ResourcesManager {
         return this.getResourcesToImportInput(selections)
     }
 
-    private renderResultMessage(successCount: number, failureCount: number, purpose: ResourceStatePurpose) {
+    private renderResultMessage(
+        result: ResourceStateResult,
+        successCount: number,
+        failureCount: number,
+        purpose: ResourceStatePurpose
+    ) {
         const action = purpose === ResourceStatePurpose.Import ? 'imported' : 'cloned'
 
         if (successCount > 0 && failureCount === 0) {
@@ -402,7 +407,29 @@ export class ResourcesManager {
                 `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed`
             )
         } else if (failureCount > 0) {
-            showErrorMessage(`Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`)
+            let errorMsg = `Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`
+            if (result.failureReasons && typeof result.failureReasons === 'object') {
+                const reasons =
+                    result.failureReasons instanceof Map
+                        ? result.failureReasons
+                        : new Map(Object.entries(result.failureReasons as Record<string, unknown>))
+                for (const [, identifierMap] of reasons) {
+                    if (identifierMap && typeof identifierMap === 'object') {
+                        const identifiers =
+                            identifierMap instanceof Map
+                                ? identifierMap
+                                : new Map(Object.entries(identifierMap as Record<string, string>))
+                        for (const [, reason] of identifiers) {
+                            if (reason.includes('cloudformation:GetResource') || /Missing.*permission/i.test(reason)) {
+                                errorMsg = `Failed to import resource: ${reason}`
+                                break
+                            }
+                            errorMsg = `Failed to import resource: ${reason}`
+                        }
+                    }
+                }
+            }
+            showErrorMessage(errorMsg)
         } else {
             void window.showInformationMessage(`No resources were ${action}`)
         }
