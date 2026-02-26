@@ -43,6 +43,7 @@ async function promptUserToAddSmusContext(accountId: string, domainId: string | 
     }
 
     telemetry.smus_agentContextShowPrompt.emit({
+        result: 'Succeeded',
         ...commonFields,
     })
 
