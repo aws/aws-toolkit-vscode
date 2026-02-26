@@ -69,6 +69,7 @@ export interface ResourceStateResult {
     successfulImports: Map<ResourceType, ResourceIdentifier[]>
     failedImports: Map<ResourceType, ResourceIdentifier[]>
     warning?: string
+    failureReasons?: Map<ResourceType, Map<ResourceIdentifier, string>>
 }
 
 export const ResourceStateRequest = new RequestType<ResourceStateParams, ResourceStateResult, void>(
