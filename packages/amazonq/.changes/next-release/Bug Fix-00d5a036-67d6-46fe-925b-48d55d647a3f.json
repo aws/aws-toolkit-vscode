@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "fix: inline chat fails to revert to original state after users reject"
+}

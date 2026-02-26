@@ -47,6 +47,8 @@ export class InlineTask {
     public selectedText: string
     public languageName: string | undefined
 
+    public readonly originalDocumentText: string
+
     public partialSelectedText: string | undefined
     public partialSelectedTextRight: string | undefined
 
@@ -67,6 +69,7 @@ export class InlineTask {
     ) {
         this.selectedRange = textDocumentUtil.expandSelectionToFullLines(document, selection)
         this.selectedText = document.getText(this.selectedRange)
+        this.originalDocumentText = document.getText()
         this.languageName = extractLanguageNameFromFile(document)
     }
 
