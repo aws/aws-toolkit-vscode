@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Adds a confirmation prompt before initiating console credential login (aws login) when opening a Lambda function in VS Code. Improves clarity around prerequisites and reduces unexpected login cancellations."
-}
