@@ -29,7 +29,7 @@
         "testWeb": "npm run testWeb -w packages/ --if-present",
         "testE2E": "npm run testE2E -w packages/ --if-present",
         "testInteg": "npm run testInteg -w packages/ --if-present",
-        "package": "npm run package -w packages/toolkit -w packages/amazonq",
+        "package": "npm run package -w packages/sagemaker-ssh-kiro && npm run package -w packages/toolkit -w packages/amazonq && rm -f sagemaker-ssh-kiro-*.vsix",
         "newChange": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "createRelease": "echo 'Must specify subproject/workspace with -w packages/<subproject>' && false",
         "lint": "npm run lint -w packages/ --if-present",
