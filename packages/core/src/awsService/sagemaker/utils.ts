@@ -5,6 +5,7 @@
 
 import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
 import { sshLogFileLocation } from '../../shared/sshConfig'
@@ -134,6 +135,9 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 const stats = await fs.stat(filePath)
                 const mtime = new Date(stats.mtime).getTime()
                 if (now - mtime < ActivityCheckInterval) {
+                    getLogger().debug(
+                        `[Terminal Activity] Detected in ${fileName}, mtime: ${new Date(mtime).toISOString()}`
+                    )
                     await updateIdleFile(idleFilePath)
                     return
                 }
@@ -141,6 +145,7 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 getLogger().error(`Error reading file stats:`, err)
             }
         }
+        getLogger().debug(`No terminal activity detected.`)
     } catch (err) {
         getLogger().error(`Error reading /dev/pts directory:`, err)
     }
@@ -152,5 +157,69 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
 export function startMonitoringTerminalActivity(idleFilePath: string): NodeJS.Timeout {
     return setInterval(async () => {
         await checkTerminalActivity(idleFilePath)
+    }, ActivityCheckInterval)
+}
+
+/**
+ * Checks for active Jupyter kernels by querying the Jupyter extension API.
+ * Returns true if any kernel is in 'busy' state.
+ */
+export async function hasActiveJupyterKernels(): Promise<boolean> {
+    try {
+        const jupyterExt = vscode.extensions.getExtension('ms-toolsai.jupyter')
+        if (!jupyterExt) {
+            // Jupyter extension not installed, fall back to executionSummary check
+            return false
+        }
+
+        const api = await jupyterExt.activate()
+
+        for (const notebook of vscode.workspace.notebookDocuments) {
+            const kernel = await api.kernels.getKernel(notebook.uri)
+            if (kernel && kernel.status === 'busy') {
+                getLogger().debug(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
+                return true
+            }
+        }
+
+        getLogger().debug(`No kernel activity detected.`)
+        return false
+    } catch (error) {
+        getLogger().error(`Error checking Jupyter kernel state: ${error}`)
+        return false
+    }
+}
+
+/**
+ * Starts monitoring background state (tasks, debug sessions, notebook kernels, unsaved work).
+ * Updates the idle file if any background activity is detected.
+ */
+export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Timeout {
+    return setInterval(async () => {
+        getLogger().debug(`Monitoring background state.`)
+        const hasActiveTasks = vscode.tasks.taskExecutions.length > 0
+        const hasDebugSession = vscode.debug.activeDebugSession !== undefined
+
+        // Use Jupyter extension API to check actual kernel state
+        const hasActiveKernels = await hasActiveJupyterKernels()
+
+        // Check for unsaved text documents (file and untitled)
+        const hasUnsavedText = vscode.workspace.textDocuments.some(
+            (doc) => doc.isDirty && (doc.uri.scheme === 'file' || doc.uri.scheme === 'untitled')
+        )
+
+        // Check for unsaved notebooks
+        const hasUnsavedNotebooks = vscode.workspace.notebookDocuments.some((notebook) => notebook.isDirty)
+
+        const hasUnsaved = hasUnsavedText || hasUnsavedNotebooks
+
+        if (hasActiveTasks || hasDebugSession || hasActiveKernels || hasUnsaved) {
+            getLogger().debug(
+                `[Background State] tasks:${hasActiveTasks}, debug:${hasDebugSession}, kernels:${hasActiveKernels}, unsaved:${hasUnsaved}`
+            )
+            await updateIdleFile(idleFilePath)
+        } else {
+            getLogger().debug(`No background activity detected.`)
+        }
     }, ActivityCheckInterval)
 }

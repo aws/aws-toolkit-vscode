@@ -210,7 +210,7 @@ export function isSageMaker(appName: 'SMAI' | 'SMUS' | 'SMUS-SPACE-REMOTE-ACCESS
 
     switch (appName) {
         case 'SMAI':
-            return vscode.env.appName === sageMakerAppname && hasSMEnvVars
+            return (vscode.env.appName === sageMakerAppname || vscode.env.appName === vscodeAppname) && hasSMEnvVars
         case 'SMUS':
             return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
         case 'SMUS-SPACE-REMOTE-ACCESS':
@@ -444,6 +444,9 @@ export class UserActivity implements vscode.Disposable {
             (event: vscode.Event<any>) => {
                 this.activityEvent.fire()
                 getLogger().debug(`UserActivity: event fired "${event.name}"`)
+                getLogger().info(
+                    `[UserActivity] Event fired: "${event.name}", window focused: ${vscode.window.state.focused}`
+                )
             },
             delay,
             { leading: true, trailing: false }
@@ -476,7 +479,6 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorOptions,
             vscode.window.onDidOpenTerminal,
             vscode.window.onDidCloseTerminal,
-            vscode.window.onDidChangeTerminalState,
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
@@ -491,6 +493,15 @@ export class UserActivity implements vscode.Disposable {
         //
         // Events with special cases:
         //
+
+        this.register(
+            vscode.window.onDidChangeTerminalState((terminal) => {
+                if (!vscode.window.state.focused) {
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTerminalState)
+            })
+        )
 
         this.register(
             vscode.window.onDidChangeWindowState((e) => {

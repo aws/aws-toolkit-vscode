@@ -329,6 +329,21 @@ describe('UserActivity', function () {
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
+        it('does not fire onDidChangeTerminalState when window is not focused', function () {
+            stubUserActivityEvent(vscode.window, 'onDidChangeTerminalState')
+            const focusedStub = sandbox.stub(vscode.window.state, 'focused')
+
+            const triggerUserActivity = createTriggerActivityFunc()
+
+            focusedStub.value(false)
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 0)
+
+            focusedStub.value(true)
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 1)
+        })
+
         /**
          * Helper to stub a vscode event object.
          *
@@ -386,11 +401,11 @@ describe('isSageMaker', function () {
             assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
-        it('returns false when app name is different', function () {
+        it('returns true when app name is Visual Studio Code with env vars', function () {
             sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
 
-            assert.strictEqual(isSageMaker('SMAI'), false)
+            assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
         it('returns false when env vars are missing', function () {
