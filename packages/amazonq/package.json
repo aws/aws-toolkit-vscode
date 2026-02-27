@@ -193,13 +193,13 @@
                     "type": "string",
                     "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexCacheDirPath%",
                     "default": null,
-                    "scope": "application"
+                    "scope": "window"
                 },
                 "amazonQ.workspaceIndexIgnoreFilePatterns": {
                     "type": "array",
                     "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexIgnoreFilePatterns%",
                     "default": [],
-                    "scope": "application"
+                    "scope": "window"
                 },
                 "amazonQ.ignoredSecurityIssues": {
                     "type": "array",
