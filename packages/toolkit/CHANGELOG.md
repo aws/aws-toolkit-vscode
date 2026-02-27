@@ -1,3 +1,11 @@
+## 3.97.0 2026-02-26
+
+- **Bug Fix** Adds a confirmation prompt before initiating console credential login (aws login) when opening a Lambda function in VS Code. Improves clarity around prerequisites and reduces unexpected login cancellations.
+- **Bug Fix** Lamdbda: Console-to-IDE transition shows "Connection does not exist" error when console login is cancelled or fail.
+- **Feature** AI assistants are able to receive SageMaker Unified Studio context when connected to a Space
+- **Feature** This update enhances HyperPod Space connectivity in the Toolkit by adding reconnection support. In the event of a connection disruption, users can now seamlessly reconnect to their existing session and resume work without losing in-progress changes.
+- **Feature** SageMaker Studio users can now connect to Spaces from Kiro IDE
+
 ## 3.96.0 2026-02-13
 
 - Miscellaneous non-user-facing changes
