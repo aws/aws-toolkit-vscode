@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Added support for Cursor IDE, enabling AWS Toolkit functionality in Cursor with automatic detection and appropriate Remote SSH extension usage."
+}
