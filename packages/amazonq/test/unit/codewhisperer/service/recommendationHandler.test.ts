@@ -52,6 +52,18 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
 
+        const createMockServerResult = () => ({
+            recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
+            $response: {
+                requestId: 'test_request',
+                httpResponse: {
+                    headers: {
+                        'x-amzn-sessionid': 'test_request',
+                    },
+                },
+            },
+        })
+
         // it('should assign correct recommendations given input', async function () {
         //     assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
         //     assert.strictEqual(
@@ -83,17 +95,7 @@ describe('recommendationHandler', function () {
         // })
 
         it('should assign request id correctly', async function () {
-            const mockServerResult = {
-                recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                $response: {
-                    requestId: 'test_request',
-                    httpResponse: {
-                        headers: {
-                            'x-amzn-sessionid': 'test_request',
-                        },
-                    },
-                },
-            }
+            const mockServerResult = createMockServerResult()
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(handler, 'isCancellationRequested').returns(false)
@@ -104,49 +106,46 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
-            const mockServerResult = {
-                recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
-                $response: {
-                    requestId: 'test_request',
-                    httpResponse: {
-                        headers: {
-                            'x-amzn-sessionid': 'test_request',
-                        },
-                    },
-                },
+            // Mock vscode.commands.executeCommand to prevent hang on 'aws.amazonq.getWorkspaceId'
+            const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves({ workspaces: [] })
+
+            try {
+                const mockServerResult = createMockServerResult()
+                const handler = new RecommendationHandler()
+                sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+                sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
+                    isUtg: false,
+                    isProcessTimeout: false,
+                    supplementalContextItems: [],
+                    contentsLength: 100,
+                    latency: 0,
+                    strategy: 'empty',
+                })
+                sinon.stub(performance, 'now').returns(0.0)
+                session.startPos = new vscode.Position(1, 0)
+                session.startCursorOffset = 2
+                await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+                const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
+                assertTelemetry({
+                    codewhispererRequestId: 'test_request',
+                    codewhispererSessionId: 'test_request',
+                    codewhispererLastSuggestionIndex: 1,
+                    codewhispererTriggerType: 'AutoTrigger',
+                    codewhispererAutomatedTriggerType: 'Enter',
+                    codewhispererImportRecommendationEnabled: true,
+                    result: 'Succeeded',
+                    codewhispererLineNumber: 1,
+                    codewhispererCursorOffset: 38,
+                    codewhispererLanguage: 'python',
+                    credentialStartUrl: testStartUrl,
+                    codewhispererSupplementalContextIsUtg: false,
+                    codewhispererSupplementalContextTimeout: false,
+                    codewhispererSupplementalContextLatency: 0,
+                    codewhispererSupplementalContextLength: 100,
+                })
+            } finally {
+                executeCommandStub.restore()
             }
-            const handler = new RecommendationHandler()
-            sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
-            sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
-                isUtg: false,
-                isProcessTimeout: false,
-                supplementalContextItems: [],
-                contentsLength: 100,
-                latency: 0,
-                strategy: 'empty',
-            })
-            sinon.stub(performance, 'now').returns(0.0)
-            session.startPos = new vscode.Position(1, 0)
-            session.startCursorOffset = 2
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
-            const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
-            assertTelemetry({
-                codewhispererRequestId: 'test_request',
-                codewhispererSessionId: 'test_request',
-                codewhispererLastSuggestionIndex: 1,
-                codewhispererTriggerType: 'AutoTrigger',
-                codewhispererAutomatedTriggerType: 'Enter',
-                codewhispererImportRecommendationEnabled: true,
-                result: 'Succeeded',
-                codewhispererLineNumber: 1,
-                codewhispererCursorOffset: 38,
-                codewhispererLanguage: 'python',
-                credentialStartUrl: testStartUrl,
-                codewhispererSupplementalContextIsUtg: false,
-                codewhispererSupplementalContextTimeout: false,
-                codewhispererSupplementalContextLatency: 0,
-                codewhispererSupplementalContextLength: 100,
-            })
         })
     })
 

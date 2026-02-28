@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
+import * as sinon from 'sinon'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import * as EditorContext from 'aws-core-vscode/codewhisperer'
 import {
@@ -378,15 +379,28 @@ describe('editorContext', function () {
 
     describe('buildListRecommendationRequest', function () {
         it('Should return expected fields for optOut, nextToken and reference config', async function () {
-            const nextToken = 'testToken'
-            const optOutPreference = false
-            await globals.telemetry.setTelemetryEnabled(false)
-            const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
-            const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
+            // Mock vscode.commands.executeCommand to prevent hang on 'aws.amazonq.getWorkspaceId'
+            const executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves({ workspaces: [] })
 
-            assert.strictEqual(actual.request.nextToken, nextToken)
-            assert.strictEqual((actual.request as GenerateCompletionsRequest).optOutPreference, 'OPTOUT')
-            assert.strictEqual(actual.request.referenceTrackerConfiguration?.recommendationsWithReferences, 'BLOCK')
+            try {
+                const nextToken = 'testToken'
+                const optOutPreference = false
+                await globals.telemetry.setTelemetryEnabled(false)
+                const editor = createMockTextEditor(
+                    'import math\ndef two_sum(nums, target):\n',
+                    'test.py',
+                    'python',
+                    1,
+                    17
+                )
+                const actual = await EditorContext.buildListRecommendationRequest(editor, nextToken, optOutPreference)
+
+                assert.strictEqual(actual.request.nextToken, nextToken)
+                assert.strictEqual((actual.request as GenerateCompletionsRequest).optOutPreference, 'OPTOUT')
+                assert.strictEqual(actual.request.referenceTrackerConfiguration?.recommendationsWithReferences, 'BLOCK')
+            } finally {
+                executeCommandStub.restore()
+            }
         })
     })
 })
