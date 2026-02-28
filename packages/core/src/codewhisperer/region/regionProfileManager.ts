@@ -70,7 +70,7 @@ export class RegionProfileManager {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
             super(
                 'aws.amazonq.regionProfiles.cache',
-                3600000,
+                60000,
                 {
                     resource: {
                         locked: false,
@@ -141,15 +141,26 @@ export class RegionProfileManager {
 
         const conn = this.connectionProvider()
         if (conn === undefined || !isSsoConnection(conn)) {
+            RegionProfileManager.logger.info(
+                `listRegionProfile: no valid SSO connection, skipping (conn=${conn === undefined ? 'undefined' : 'non-SSO'})`
+            )
             return []
         }
         const availableProfiles: RegionProfile[] = []
         const failedRegions: string[] = []
 
+        RegionProfileManager.logger.info(
+            `listRegionProfile: calling listAvailableProfiles across ${endpoints.size} regions`
+        )
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this._createQClient(region, endpoint, conn as SsoConnection)
-            const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
-                client.listAvailableProfiles(request).promise()
+            const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) => {
+                const response = await client.listAvailableProfiles(request).promise()
+                RegionProfileManager.logger.info(
+                    `listRegionProfile: listAvailableProfiles response for region=${region}, requestId=${(response as any).$response?.requestId}, profileCount=${response.profiles?.length ?? 0}`
+                )
+                return response
+            }
             const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
             try {
                 const profiles = await pageableToCollection(requester, request, 'nextToken', 'profiles')
@@ -177,6 +188,10 @@ export class RegionProfileManager {
                 failedRegions.push(region)
             }
         }
+
+        RegionProfileManager.logger.info(
+            `listRegionProfile: completed. totalProfiles=${availableProfiles.length}, failedRegions=[${failedRegions.join(', ')}]`
+        )
 
         // Throw error if any regional API calls failed and no profiles are available
         if (failedRegions.length > 0 && availableProfiles.length === 0) {
