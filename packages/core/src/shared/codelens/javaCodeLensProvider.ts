@@ -14,7 +14,7 @@ export const javaAllfiles: vscode.DocumentFilter[] = [
         language: javaLanguage,
     },
 ]
-export const gradleBasePattern = '**/build.gradle'
+export const gradleBasePattern = '**/*.gradle{,.kts}'
 export const mavenBasePattern = '**/pom.xml'
 
 const regexpReservedWordPublic = /\bpublic \b/
@@ -32,7 +32,7 @@ export interface JavaLambdaHandlerComponents {
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const rootUri =
         (await findParentProjectFile(document.uri, /^.*pom.xml$/)) ??
-        (await findParentProjectFile(document.uri, /^.*build.gradle$/))
+        (await findParentProjectFile(document.uri, /^.*\.gradle(\.kts)?$/))
     if (!rootUri) {
         return []
     }
