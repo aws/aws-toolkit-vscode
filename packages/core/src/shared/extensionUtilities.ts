@@ -443,8 +443,7 @@ export class UserActivity implements vscode.Disposable {
         const throttledEmit = _.throttle(
             (event: vscode.Event<any>) => {
                 this.activityEvent.fire()
-                getLogger().debug(`UserActivity: event fired "${event.name}"`)
-                getLogger().info(
+                getLogger().debug(
                     `[UserActivity] Event fired: "${event.name}", window focused: ${vscode.window.state.focused}`
                 )
             },
