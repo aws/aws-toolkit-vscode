@@ -55,6 +55,16 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
     }
 }
 
+function httpsGetFollowRedirects(url: string, callback: (res: any) => void) {
+    https.get(url, (res: any) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+            httpsGetFollowRedirects(res.headers.location, callback)
+        } else {
+            callback(res)
+        }
+    })
+}
+
 export async function downloadLanguageServer(): Promise<void> {
     const tempDir = path.join(os.tmpdir(), 'amazonq-download-temp')
     const resourcesDir = path.join(__dirname, '../packages/amazonq/resources/language-server')
@@ -72,9 +82,10 @@ export async function downloadLanguageServer(): Promise<void> {
     await ensureDirectoryExists(resourcesDir)
 
     return new Promise((resolve, reject) => {
-        const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/qAgenticChatServer/0/manifest.json'
-        https
-            .get(manifestUrl, (res) => {
+        const manifestUrl =
+            'https://github.com/aws/language-servers/releases/download/agentic-pre-updating-indexing-bundle/manifest.json'
+
+        httpsGetFollowRedirects(manifestUrl, (res) => {
                 let data = ''
 
                 res.on('data', (chunk) => {
@@ -111,8 +122,7 @@ export async function downloadLanguageServer(): Promise<void> {
                             console.log(`Downloading ${fileName} from ${fileUrl} ...`)
 
                             await new Promise((downloadResolve, downloadReject) => {
-                                https
-                                    .get(fileUrl, (fileRes) => {
+                                httpsGetFollowRedirects(fileUrl, (fileRes) => {
                                         const fileStream = fs.createWriteStream(tempFilePath)
                                         fileRes.pipe(fileStream)
 
