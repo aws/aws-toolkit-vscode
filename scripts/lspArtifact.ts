@@ -55,9 +55,12 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
     }
 }
 
-function httpsGetFollowRedirects(url: string, callback: (res: any) => void) {
-    https.get(url, (res: any) => {
-        if (res.statusCode === 301 || res.statusCode === 302) {
+function httpsGetFollowRedirects(
+    url: string,
+    callback: (res: import('http').IncomingMessage) => void
+): import('http').ClientRequest {
+    return https.get(url, (res) => {
+        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
             httpsGetFollowRedirects(res.headers.location, callback)
         } else {
             callback(res)
