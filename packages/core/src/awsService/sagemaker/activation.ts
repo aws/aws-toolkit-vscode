@@ -115,7 +115,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         } catch (error) {
             getLogger().error(`Error in MonitoringTerminalActivity: ${error}`)
-            throw error
         }
     } else {
         getLogger().info('Not in SMAI environment, skipping user activity monitoring')

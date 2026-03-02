@@ -168,14 +168,14 @@ export async function hasActiveJupyterKernels(): Promise<boolean> {
     try {
         const jupyterExt = vscode.extensions.getExtension('ms-toolsai.jupyter')
         if (!jupyterExt) {
-            // Jupyter extension not installed, fall back to executionSummary check
+            // Jupyter extension not installed, cannot detect active kernels
             return false
         }
 
-        const api = await jupyterExt.activate()
+        const jupyterExtApi = await jupyterExt.activate()
 
         for (const notebook of vscode.workspace.notebookDocuments) {
-            const kernel = await api.kernels.getKernel(notebook.uri)
+            const kernel = await jupyterExtApi.kernels.getKernel(notebook.uri)
             if (kernel && kernel.status === 'busy') {
                 getLogger().debug(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
                 return true
