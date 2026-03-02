@@ -27,7 +27,9 @@ phases:
             - export HOME=/home/codebuild-user
             # Generate CHANGELOG.md
             - npm run createRelease -w packages/toolkit -w packages/amazonq
+            - npm run package -w packages/sagemaker-ssh-kiro # Must be built before toolkit (toolkit embeds it)
             - npm run package -w packages/toolkit -w packages/amazonq
+            - rm -f sagemaker-ssh-kiro-*.vsix # Remove standalone VSIX; it's already embedded inside toolkit VSIX
 
 artifacts:
     files:

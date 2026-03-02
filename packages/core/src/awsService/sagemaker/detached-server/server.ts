@@ -10,6 +10,7 @@ import http, { IncomingMessage, ServerResponse } from 'http'
 import { handleGetSession } from './routes/getSession'
 import { handleGetSessionAsync } from './routes/getSessionAsync'
 import { handleRefreshToken } from './routes/refreshToken'
+import { handleGetHyperpodSession } from './routes/getHyperpodSession'
 import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
@@ -21,7 +22,7 @@ const pollInterval = 30 * 60 * 100 // 30 minutes
  * Generic IDE process patterns for detection across all VS Code forks
  * Supports: VS Code, Cursor, Kiro, Windsurf, and other forks
  */
-const IDE_PROCESS_PATTERNS = {
+const ideProcessPatterns = {
     windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
     darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/Electron/,
     linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
@@ -37,6 +38,8 @@ const server = http.createServer((req: IncomingMessage, res: ServerResponse) => 
             return handleGetSessionAsync(req, res)
         case '/refresh_token':
             return handleRefreshToken(req, res)
+        case '/get_hyperpod_session':
+            return handleGetHyperpodSession(req, res)
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end(`Not Found: ${req.url}`)
@@ -50,6 +53,9 @@ server.listen(0, '127.0.0.1', async () => {
         const pid = process.pid
 
         console.log(`Detached server listening on http://127.0.0.1:${port} (pid: ${pid})`)
+        const parentIdeType = process.env.PARENT_IDE_TYPE
+
+        console.log(`Parent IDE type: ${parentIdeType}`)
 
         const filePath = process.env.SAGEMAKER_LOCAL_SERVER_FILE_PATH
         if (!filePath) {
@@ -70,16 +76,27 @@ server.listen(0, '127.0.0.1', async () => {
 function checkVSCodeWindows(): Promise<boolean> {
     return new Promise((resolve) => {
         const platform = os.platform()
+        const parentIdeType = process.env.PARENT_IDE_TYPE
 
         if (platform === 'win32') {
-            // Check for any VS Code fork process
-            execFile('tasklist', [], (err, stdout) => {
-                if (err) {
-                    resolve(false)
-                    return
-                }
-                resolve(IDE_PROCESS_PATTERNS.windows.test(stdout))
-            })
+            if (parentIdeType === 'kiro') {
+                execFile('tasklist', ['/FI', 'IMAGENAME eq kiro.exe'], (err, stdout) => {
+                    if (err) {
+                        resolve(false)
+                        return
+                    }
+                    resolve(/kiro\.exe/i.test(stdout))
+                })
+            } else {
+                // Check for any VS Code fork process
+                execFile('tasklist', [], (err, stdout) => {
+                    if (err) {
+                        resolve(false)
+                        return
+                    }
+                    resolve(ideProcessPatterns.windows.test(stdout))
+                })
+            }
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
                 if (err) {
@@ -87,7 +104,13 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => IDE_PROCESS_PATTERNS.darwin.test(line))
+                let found = false
+                if (parentIdeType === 'kiro') {
+                    found = stdout.split('\n').some((line) => /kiro\.app\/Contents\/MacOS\/Electron/i.test(line))
+                } else {
+                    // Default to VSCode
+                    found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
+                }
                 resolve(found)
             })
         } else {
@@ -97,7 +120,13 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => IDE_PROCESS_PATTERNS.linux.test(line.trim()))
+                let found = false
+                if (parentIdeType === 'kiro') {
+                    found = stdout.split('\n').some((line) => /^kiro(-insiders)?$/i.test(line.trim()))
+                } else {
+                    // Default to VSCode
+                    found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
+                }
                 resolve(found)
             })
         }

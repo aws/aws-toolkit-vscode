@@ -55,16 +55,13 @@ interface Cli {
     exec?: string
 }
 
-export type AwsClis = Extract<
-    ToolId,
-    'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch' | 'path-resolver'
->
+export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const awsClis: { [cli in AwsClis]: Cli } = {
+export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin')],
@@ -188,7 +185,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         manualInstallLink: 'https://runfinch.com/docs/getting-started/installation/',
         exec: 'finch',
     },
-    'path-resolver': {
+    pathResolver: {
         command: {
             windows: ['where'],
             unix: ['which'],
@@ -593,7 +590,7 @@ export async function updateAwsCli(): Promise<string> {
     const result = await installCli('aws-cli', false)
 
     // Get the which/ where command, run it to find the AWS CLI path, and display it to the user
-    const whichCommands = getOsCommands(awsClis['path-resolver'])
+    const whichCommands = getOsCommands(awsClis.pathResolver)
     if (whichCommands && whichCommands.length > 0) {
         const whichCmd = whichCommands[0]
         const cliExec = awsClis['aws-cli'].exec

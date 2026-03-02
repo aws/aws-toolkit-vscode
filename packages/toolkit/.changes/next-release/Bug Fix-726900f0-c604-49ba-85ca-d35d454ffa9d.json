@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Lamdbda: Console-to-IDE transition shows \"Connection does not exist\" error when console login is cancelled or fail."
-}

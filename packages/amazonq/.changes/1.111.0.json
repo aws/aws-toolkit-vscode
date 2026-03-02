@@ -1,0 +1,10 @@
+{
+	"date": "2026-02-26",
+	"version": "1.111.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "fix: inline chat fails to revert to original state after users reject"
+		}
+	]
+}

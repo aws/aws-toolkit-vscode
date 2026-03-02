@@ -8,7 +8,7 @@
 import * as vscode from 'vscode'
 import { getSshConfigPath, sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
-import { SshConfig } from '../../shared/sshConfig'
+import { ensureConnectScript, SshConfig } from '../../shared/sshConfig'
 import { Result } from '../../shared/utilities/result'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
@@ -17,14 +17,22 @@ import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
 import { getSmSsmEnv, spawnDetachedServer } from './utils'
+import { parseArn } from './detached-server/utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
+import { isKiro } from '../../shared/extensionUtilities'
+import { getIdeType } from '../../shared/extensionUtilities'
+import { ChildProcess } from '../../shared/utilities/processUtils'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
+import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
+import { HyperpodReconnectionManager } from './hyperpodReconnection'
+import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -37,19 +45,32 @@ class HyperPodSshConfig extends SshConfig {
     }
 
     protected override createSSHConfigSection(proxyCommand: string): string {
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCmd = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         return `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host hp_*
     ForwardAgent yes
     AddKeysToAgent yes
     StrictHostKeyChecking accept-new
-    ProxyCommand '${this.hyperpodConnectPath}' '%h'
+    ProxyCommand ${proxyCmd}
     IdentitiesOnly yes
 `
     }
 
     public override async ensureValid() {
-        const proxyCommand = `'${this.hyperpodConnectPath}' '%h'`
+        const isWindows = process.platform === 'win32'
+        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
+        const hostParam = isWindows ? '"%h"' : "'%h'"
+        const proxyCommand = isWindows
+            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
+            : `${quotedPath} ${hostParam}`
+
         const verifyHost = await this.verifySSHHost(proxyCommand)
         if (verifyHost.isErr()) {
             return verifyHost
@@ -63,18 +84,29 @@ export async function tryRemoteConnection(
     ctx: vscode.ExtensionContext,
     progress: vscode.Progress<{ message?: string; increment?: number }>
 ) {
+    if (useSageMakerSshKiroExtension()) {
+        await ensureSageMakerSshKiroExtension(ctx)
+    }
+
+    const path = '/home/sagemaker-user'
+    const username = 'sagemaker-user'
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
     const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
+
     try {
         progress.report({ message: 'Opening remote session' })
-        await startVscodeRemote(
-            remoteEnv.SessionProcess,
-            remoteEnv.hostname,
-            '/home/sagemaker-user',
-            remoteEnv.vscPath,
-            'sagemaker-user'
-        )
+        if (useSageMakerSshKiroExtension()) {
+            await startRemoteViaSageMakerSshKiro(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                path,
+                remoteEnv.vscPath,
+                username
+            )
+        } else {
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, path, remoteEnv.vscPath, username)
+        }
     } catch (err) {
         getLogger().info(
             `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${await node.getAppArn()} error: ${err}`
@@ -101,25 +133,41 @@ export async function prepareDevEnvConnection(
     wsUrl?: string,
     token?: string,
     domain?: string,
-    appType?: string
+    appType?: string,
+    devspaceName?: string,
+    clusterName?: string,
+    namespace?: string,
+    region?: string,
+    clusterArn?: string
 ) {
     const remoteLogger = configureRemoteConnectionLogger()
-    const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+    // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
+    const { ssm, vsc, ssh } = (
+        await ensureDependencies({ skipRemoteSshCheck: useSageMakerSshKiroExtension() })
+    ).unwrap()
 
-    // Check timeout setting for remote SSH connections
-    const remoteSshConfig = vscode.workspace.getConfiguration('remote.SSH')
-    const current = remoteSshConfig.get<number>('connectTimeout')
-    if (typeof current === 'number' && current < 120) {
-        await remoteSshConfig.update('connectTimeout', 120, vscode.ConfigurationTarget.Global)
-        void vscode.window.showInformationMessage(
-            'Updated "remote.SSH.connectTimeout" to 120 seconds to improve stability.'
-        )
+    if (!useSageMakerSshKiroExtension()) {
+        // Check timeout setting for remote SSH connections
+        const remoteSshConfig = vscode.workspace.getConfiguration('remote.SSH')
+        const current = remoteSshConfig.get<number>('connectTimeout')
+        if (typeof current === 'number' && current < 120) {
+            await remoteSshConfig.update('connectTimeout', 120, vscode.ConfigurationTarget.Global)
+            void vscode.window.showInformationMessage(
+                'Updated "remote.SSH.connectTimeout" to 120 seconds to improve stability.'
+            )
+        }
     }
 
     const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = `hp_${session}`
+        const clusterPart = clusterName || 'unknown'
+        const namespacePart = namespace || 'default'
+        const devspacePart = devspaceName || session || 'unknown'
+        const regionPart =
+            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
+        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
+        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
     } else {
         hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
@@ -133,61 +181,73 @@ export async function prepareDevEnvConnection(
     } else if (connectionType === 'sm_dl') {
         await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
     }
+    await startLocalServer(ctx)
 
-    // HyperPod doesn't need the local server (only for SageMaker Studio)
-    if (connectionType !== 'sm_hp') {
-        await startLocalServer(ctx)
-    }
-    await removeKnownHost(hostname)
-
-    const hyperpodConnectPath = path.join(ctx.globalStorageUri.fsPath, 'hyperpod_connect')
-
-    // Copy hyperpod_connect script if needed
-    if (connectionType === 'sm_hp') {
-        const sourceScriptPath = ctx.asAbsolutePath('resources/hyperpod_connect')
-        if (!(await fs.existsFile(hyperpodConnectPath))) {
-            try {
-                await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                await fs.chmod(hyperpodConnectPath, 0o755)
-                logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
-            } catch (err) {
-                logger.error(`Failed to copy hyperpod_connect script: ${err}`)
-            }
+    if (useSageMakerSshKiroExtension()) {
+        // Skip SSH Config and known host changes when using the SageMaker SSH
+        // Kiro uses the embedded SageMaker SSH Kiro extension which handles SSH connections differently
+        const scriptResult = await ensureConnectScript('sagemaker_connect')
+        if (scriptResult.isErr()) {
+            throw scriptResult
         }
-    }
+    } else {
+        await removeKnownHost(hostname)
 
-    const sshConfig =
-        connectionType === 'sm_hp'
-            ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-            : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
-    const config = await sshConfig.ensureValid()
-    if (config.isErr()) {
-        const err = config.err()
-        logger.error(`sagemaker: failed to add ssh config section: ${err.message}`)
+        const hyperpodConnectPath = path.join(
+            ctx.globalStorageUri.fsPath,
+            process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
+        )
 
-        if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
-            const sshConfigPath = getSshConfigPath()
-            const openConfigButton = 'Open SSH Config'
-            const resp = await vscode.window.showErrorMessage(
-                SshConfigErrorMessage(),
-                { modal: true, detail: err.message },
-                openConfigButton
+        // Copy hyperpod_connect script if needed
+        if (connectionType === 'sm_hp') {
+            const sourceScriptPath = ctx.asAbsolutePath(
+                process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
             )
-
-            if (resp === openConfigButton) {
-                void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+            if (!(await fs.existsFile(hyperpodConnectPath))) {
+                try {
+                    await fs.copy(sourceScriptPath, hyperpodConnectPath)
+                    if (process.platform !== 'win32') {
+                        await fs.chmod(hyperpodConnectPath, 0o755)
+                    }
+                    logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
+                } catch (err) {
+                    logger.error(`Failed to copy hyperpod_connect script: ${err}`)
+                }
             }
 
-            // Throw error to stop the connection flow
-            // User is already notified via modal above, downstream handlers check the error code
-            throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
-                code: SshConfigError,
-            })
-        }
+            const sshConfig =
+                connectionType === 'sm_hp'
+                    ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
+                    : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+            const config = await sshConfig.ensureValid()
+            if (config.isErr()) {
+                const err = config.err()
+                const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
+                logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
 
-        const logPrefix = connectionType === 'sm_hp' ? 'hyperpod' : 'sagemaker'
-        logger.error(`${logPrefix}: failed to add ssh config section: ${err.message}`)
-        throw err
+                if (err instanceof ToolkitError && err.code === 'SshCheckFailed') {
+                    const sshConfigPath = getSshConfigPath()
+                    const openConfigButton = 'Open SSH Config'
+                    const resp = await vscode.window.showErrorMessage(
+                        SshConfigErrorMessage(),
+                        { modal: true, detail: err.message },
+                        openConfigButton
+                    )
+
+                    if (resp === openConfigButton) {
+                        void vscode.window.showTextDocument(vscode.Uri.file(sshConfigPath))
+                    }
+
+                    // Throw error to stop the connection flow
+                    // User is already notified via modal above, downstream handlers check the error code
+                    throw new ToolkitError('Unable to connect: SSH configuration contains errors', {
+                        code: SshConfigError,
+                    })
+                }
+
+                throw err
+            }
+        }
     }
 
     // set envirionment variables
@@ -215,6 +275,10 @@ export async function prepareDevEnvConnection(
                       AWS_SSM_CLI: ssm,
                       DEBUG_LOG: '1',
                       LOG_FILE_LOCATION: logFileLocation,
+                      SAGEMAKER_LOCAL_SERVER_FILE_PATH: path.join(
+                          ctx.globalStorageUri.fsPath,
+                          'sagemaker-local-server-info.json'
+                      ),
                   }
 
                   // Add AWS credentials
@@ -259,6 +323,22 @@ export async function prepareDevEnvConnection(
         rejectOnErrorCode: true,
     })
 
+    // Start connection monitoring for HyperPod connections
+    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
+        try {
+            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
+            connectionMonitor.startMonitoring(connectionKey)
+
+            const reconnectionManager = HyperpodReconnectionManager.getInstance()
+            reconnectionManager.scheduleReconnection(connectionKey)
+
+            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
+        } catch (error) {
+            getLogger().warn(`Failed to start HyperPod monitoring: ${error}`)
+        }
+    }
+
     return {
         hostname,
         envProvider,
@@ -295,6 +375,7 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
             ...process.env,
             SAGEMAKER_ENDPOINT: customEndpoint,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: infoFilePath,
+            PARENT_IDE_TYPE: getIdeType(),
         },
     })
 
@@ -391,4 +472,20 @@ export async function removeKnownHost(hostname: string): Promise<void> {
             throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
         }
     }
+}
+
+export function useSageMakerSshKiroExtension(): boolean {
+    return isKiro()
+}
+
+export async function startRemoteViaSageMakerSshKiro(
+    ProcessClass: typeof ChildProcess,
+    hostname: string,
+    targetDirectory: string,
+    vscPath: string,
+    user?: string
+): Promise<void> {
+    const userAt = user ? `${user}@` : ''
+    const workspaceUri = `vscode-remote://sagemaker-ssh-kiro+${userAt}${hostname}${targetDirectory}`
+    await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()
 }
