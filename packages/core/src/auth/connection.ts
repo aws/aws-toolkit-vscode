@@ -19,7 +19,7 @@ import { asStringifiedStack } from '../shared/telemetry/spans'
 import { getTelemetryReason, getTelemetryReasonDesc } from '../shared/errors'
 import { builderIdStartUrl } from './sso/constants'
 
-/** Shows a warning message unless it is the same as the last one shown. */
+/** shows a warning message unless it is the same as the last one shown. */
 const warnOnce = onceChanged((s: string, url: string) => {
     void showMessageWithUrl(s, url, undefined, 'warn')
 })
