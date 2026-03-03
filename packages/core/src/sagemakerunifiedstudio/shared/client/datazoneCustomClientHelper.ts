@@ -268,6 +268,63 @@ export class DataZoneCustomClientHelper {
     }
 
     /**
+     * Gets all domains with IAM authentication mode using pagination
+     * @returns Promise resolving to an array of IAM-based DataZone domains
+     */
+    public async getAllIamDomains(): Promise<DomainSummary[]> {
+        const logger = getLogger('smus')
+
+        try {
+            logger.info('DataZoneCustomClientHelper: Getting all IAM domains')
+
+            const iamDomains: DomainSummary[] = []
+            let nextToken: string | undefined
+            let totalDomainsChecked = 0
+            const maxResultsPerPage = 25
+
+            do {
+                const response = await this.listDomains({
+                    status: 'AVAILABLE',
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+
+                const { domains } = response
+                totalDomainsChecked += domains.length
+
+                logger.debug(
+                    `DataZoneCustomClientHelper: Checking ${domains.length} domains in current page (total checked: ${totalDomainsChecked})`
+                )
+
+                for (const domain of domains) {
+                    logger.debug(`DataZoneCustomClientHelper: Domain ${domain.id} full response: %O`, domain)
+
+                    const isIam = isIamDomain({
+                        domainVersion: domain.domainVersion,
+                        iamSignIns: domain.iamSignIns,
+                        domainId: domain.id,
+                    })
+
+                    if (isIam) {
+                        logger.info(`DataZoneCustomClientHelper: Found IAM domain, id: ${domain.id} (${domain.name})`)
+                        iamDomains.push(domain)
+                    }
+                }
+
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            logger.info(
+                `DataZoneCustomClientHelper: Found ${iamDomains.length} IAM domain(s) after checking ${totalDomainsChecked} total domains`
+            )
+            return iamDomains
+        } catch (err) {
+            logger.error('DataZoneCustomClientHelper: Failed to get IAM domains: %s', err as Error)
+            throw new Error(`Failed to get IAM domains: ${(err as Error).message}`)
+        }
+    }
+
+    /**
      * Gets a specific domain by its ID
      * @param domainId The ID of the domain to retrieve
      * @returns Promise resolving to the GetDomainOutput
