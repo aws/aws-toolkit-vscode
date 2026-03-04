@@ -36,6 +36,7 @@ import {
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
 import { parse } from '@aws-sdk/util-arn-parser'
+import { storeHyperpodConnection } from './detached-server/hyperpodMappingUtils.js'
 
 const localize = nls.loadMessageBundle()
 
@@ -140,8 +141,8 @@ export async function deeplinkConnect(
         let clusterName: string | undefined
         let region: string | undefined
         if (!domain && eksClusterArn && workspaceName && namespace) {
-            const parsed = parseArn(eksClusterArn)
-            clusterName = parsed.clusterName
+            const parsed = parse(eksClusterArn)
+            clusterName = parsed.resource.split('/')[1]
             region = parsed.region
             connectionType = 'sm_hp'
             const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${parsed.accountId}`
@@ -149,8 +150,6 @@ export async function deeplinkConnect(
                 ? proposedSession
                 : createValidSshSession(workspaceName, namespace, clusterName, region, parsed.accountId)
 
-            // Store connection info for presigned URL
-            const { storeHyperpodConnection } = await import('./detached-server/hyperpodMappingUtils.js')
             await storeHyperpodConnection(
                 workspaceName,
                 namespace,
@@ -218,26 +217,6 @@ export async function deeplinkConnect(
             )
             throw err
         }
-    }
-}
-
-function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
-    try {
-        const parsed = parse(arn)
-        if (!parsed.service) {
-            throw new Error('Invalid service')
-        }
-        const clusterName = parsed.resource.split('/')[1]
-        if (!clusterName) {
-            throw new Error('Invalid cluster name')
-        }
-        return {
-            accountId: parsed.accountId,
-            clusterName,
-            region: parsed.region,
-        }
-    } catch (error) {
-        throw new Error('Invalid cluster ARN')
     }
 }
 
