@@ -126,6 +126,10 @@ export async function deeplinkConnect(
         eksClusterArn: ${eksClusterArn}`
     )
 
+    getLogger().info(
+        `sm:deeplinkConnect: Condition check - !domain: ${!domain}, eksClusterArn: ${!!eksClusterArn}, workspaceName: ${!!workspaceName}, namespace: ${!!namespace}`
+    )
+
     if (isRemoteWorkspace()) {
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
@@ -133,13 +137,32 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
+        let clusterName: string | undefined
+        let region: string | undefined
         if (!domain && eksClusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseArn(eksClusterArn)
+            const parsed = parseArn(eksClusterArn)
+            clusterName = parsed.clusterName
+            region = parsed.region
             connectionType = 'sm_hp'
-            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${parsed.accountId}`
             session = isValidSshHostname(proposedSession)
                 ? proposedSession
-                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
+                : createValidSshSession(workspaceName, namespace, clusterName, region, parsed.accountId)
+
+            // Store connection info for presigned URL
+            const { storeHyperpodConnection } = await import('./detached-server/hyperpodMappingUtils.js')
+            await storeHyperpodConnection(
+                workspaceName,
+                namespace,
+                eksClusterArn,
+                clusterName,
+                clusterName,
+                undefined,
+                undefined,
+                region,
+                wsUrl,
+                token
+            )
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
@@ -153,8 +176,10 @@ export async function deeplinkConnect(
             domain,
             appType,
             workspaceName,
-            undefined,
-            namespace
+            clusterName,
+            namespace,
+            region,
+            eksClusterArn
         )
 
         try {
