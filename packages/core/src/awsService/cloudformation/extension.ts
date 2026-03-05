@@ -15,7 +15,7 @@ import {
 import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
 import { formatMessage, toString } from './utils'
 import globals from '../../shared/extensionGlobals'
-import { getServiceEnvVarConfig } from '../../shared/vscode/env'
+import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
 import {
     deployTemplateCommand,
@@ -49,7 +49,8 @@ import {
 import { openStackTemplateCommand } from './commands/openStackTemplate'
 import { selectRegionCommand } from './commands/regionCommands'
 import { AwsCredentialsService, encryptionKey } from './auth/credentials'
-import { ExtensionId, ExtensionName, Version, CloudFormationTelemetrySettings } from './extensionConfig'
+import { ExtensionId, ExtensionName, CloudFormationTelemetrySettings } from './extensionConfig'
+import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../shared/extensionIds'
 import { commandKey } from './utils'
 import { CloudFormationExplorer } from './explorer/explorer'
 import { handleTelemetryOptIn } from './telemetryOptIn'
@@ -149,8 +150,8 @@ async function startClient(context: ExtensionContext) {
             aws: {
                 clientInfo: {
                     extension: {
-                        name: ExtensionId,
-                        version: Version,
+                        name: VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit,
+                        version: extensionVersion,
                     },
                     clientId: getClientId(globals.globalState, telemetryEnabled),
                 },
