@@ -36,7 +36,6 @@ import {
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
 import { parse } from '@aws-sdk/util-arn-parser'
-import { storeHyperpodConnection } from './detached-server/hyperpodMappingUtils.js'
 
 const localize = nls.loadMessageBundle()
 
@@ -127,10 +126,6 @@ export async function deeplinkConnect(
         eksClusterArn: ${eksClusterArn}`
     )
 
-    getLogger().info(
-        `sm:deeplinkConnect: Condition check - !domain: ${!domain}, eksClusterArn: ${!!eksClusterArn}, workspaceName: ${!!workspaceName}, namespace: ${!!namespace}`
-    )
-
     if (isRemoteWorkspace()) {
         void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
@@ -138,30 +133,13 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        let clusterName: string | undefined
-        let region: string | undefined
         if (!domain && eksClusterArn && workspaceName && namespace) {
-            const parsed = parse(eksClusterArn)
-            clusterName = parsed.resource.split('/')[1]
-            region = parsed.region
+            const { accountId, region, clusterName } = parseArn(eksClusterArn)
             connectionType = 'sm_hp'
-            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${parsed.accountId}`
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             session = isValidSshHostname(proposedSession)
                 ? proposedSession
-                : createValidSshSession(workspaceName, namespace, clusterName, region, parsed.accountId)
-
-            await storeHyperpodConnection(
-                workspaceName,
-                namespace,
-                eksClusterArn,
-                clusterName,
-                clusterName,
-                undefined,
-                undefined,
-                region,
-                wsUrl,
-                token
-            )
+                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
         }
         const remoteEnv = await prepareDevEnvConnection(
             connectionIdentifier,
@@ -175,10 +153,8 @@ export async function deeplinkConnect(
             domain,
             appType,
             workspaceName,
-            clusterName,
-            namespace,
-            region,
-            eksClusterArn
+            undefined,
+            namespace
         )
 
         try {
@@ -217,6 +193,26 @@ export async function deeplinkConnect(
             )
             throw err
         }
+    }
+}
+
+function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
+    try {
+        const parsed = parse(arn)
+        if (!parsed.service) {
+            throw new Error('Invalid service')
+        }
+        const clusterName = parsed.resource.split('/')[1]
+        if (!clusterName) {
+            throw new Error('Invalid cluster name')
+        }
+        return {
+            accountId: parsed.accountId,
+            clusterName,
+            region: parsed.region,
+        }
+    } catch (error) {
+        throw new Error('Invalid cluster ARN')
     }
 }
 
