@@ -56,31 +56,32 @@ export async function readServerInfo(): Promise<ServerInfo> {
 }
 
 /**
- * Parses a SageMaker ARN to extract region, account ID, and space name.
+ * Parses a SageMaker or EKS ARN to extract region, account ID, and space/cluster name.
  * Supports formats like:
  *   arn:aws:sagemaker:<region>:<account_id>:space/<domain>/<space_name>
  *   arn:aws:sagemaker:<region>:<account_id>:cluster/<cluster_id>
+ *   arn:aws:eks:<region>:<account>:cluster/cluster-name
  *   or sm_lc_arn:aws:sagemaker:<region>:<account_id>:space__d-xxxx__<name>
  *
  * If the input is prefixed with an identifier (e.g. "sagemaker-user@"), the function will strip it.
  *
- * @param arn - The full SageMaker ARN string
+ * @param arn - The full ARN string
  * @returns An object containing the region, accountId, and spaceName
  * @throws If the ARN format is invalid
  */
 export function parseArn(arn: string): { region: string; accountId: string; spaceName: string } {
     const cleanedArn = arn.includes('@') ? arn.split('@')[1] : arn
-    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<account_id>\d+):(space|cluster)[/:].+$/i
+    const regex = /^arn:aws:(sagemaker|eks):(?<region>[^:]+):(?<account_id>\d+):(space|cluster)[/:].+$/i
     const match = cleanedArn.match(regex)
 
     if (!match?.groups) {
-        throw new Error(`Invalid SageMaker ARN format: "${arn}"`)
+        throw new Error(`Invalid SageMaker/EKS ARN format: "${arn}"`)
     }
 
-    // Extract space name from the end of the ARN (after the last forward slash)
+    // Extract space/cluster name from the end of the ARN (after the last forward slash)
     const spaceName = cleanedArn.split('/').pop()
     if (!spaceName) {
-        throw new Error(`Could not extract space name from ARN: "${arn}"`)
+        throw new Error(`Could not extract space/cluster name from ARN: "${arn}"`)
     }
 
     return {
