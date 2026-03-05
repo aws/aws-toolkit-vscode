@@ -641,17 +641,20 @@ export function registerMessageListeners(
             params: params,
         })
     })
+
     languageClient.onNotification(
         pinnedContextNotificationType.method,
         (params: ContextCommandParams & { tabId: string; textDocument?: TextDocumentIdentifier }) => {
             const editor = vscode.window.activeTextEditor
             let textDocument = undefined
+            let cursorState = undefined
             if (editor && isTextEditor(editor)) {
-                textDocument = { uri: vscode.workspace.asRelativePath(editor.document.uri) }
+                textDocument = { uri: editor.document.uri.toString() }
+                cursorState = getCursorState(editor.selections)
             }
             void provider.webview?.postMessage({
                 command: pinnedContextNotificationType.method,
-                params: { ...params, textDocument },
+                params: { ...params, textDocument, cursorState },
             })
         }
     )
