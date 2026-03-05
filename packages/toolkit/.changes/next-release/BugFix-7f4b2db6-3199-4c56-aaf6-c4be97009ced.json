@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SageMaker: Fixed HyperPod workspace reconnection for deeplink usecase"
-}
