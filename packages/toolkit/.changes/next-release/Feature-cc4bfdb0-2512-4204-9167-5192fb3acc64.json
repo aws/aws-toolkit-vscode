@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Replace stack: with stack '' to ensure failure messages maintain proper grammar."
+}
