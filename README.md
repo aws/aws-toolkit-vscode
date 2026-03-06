@@ -17,7 +17,7 @@ AWS Toolkit is a [VS Code extension](https://marketplace.visualstudio.com/itemde
 -   Connect VSCode to your EC2 instances
 -   Connect to your [CodeCatalyst](https://codecatalyst.aws/) Dev Environments
 -   Debug your Lambda functions using [SAM CLI](https://github.com/aws/aws-sam-cli)
--   Check and autocomplete code in SAM/CFN (CloudFormation) `template.yaml` files
+-   Author, validate, and deploy CloudFormation templates with the [CloudFormation Language Server](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/ide-extension.html)
 -   `Open Terminal` on your EC2 instances or ECS tasks
 -   `Search Log Group` on your CloudWatch logs
 -   Browse your AWS resources
@@ -29,6 +29,7 @@ AWS Toolkit is a [VS Code extension](https://marketplace.visualstudio.com/itemde
 -   Quick Start Guides for...
     -   [Amazon Q](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.amazon-q-vscode)
     -   [AWS Toolkit](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
+        -   [AWS CloudFormation Language Server](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/ide-extension.html)
 -   [FAQ / Troubleshooting](./docs/faq-credentials.md)
 -   [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome)
 -   General info about [AWS SDKs and Tools](https://docs.aws.amazon.com/sdkref/latest/guide/overview.html)
