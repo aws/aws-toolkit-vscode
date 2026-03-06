@@ -24,7 +24,7 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
-import { isKiro } from '../../shared/extensionUtilities'
+import { isKiro, isCursor } from '../../shared/extensionUtilities'
 import { getIdeType } from '../../shared/extensionUtilities'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
@@ -158,7 +158,8 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix = connectionType
+    const hostnamePrefix =
+        isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'sm_cursor_') : connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
         const clusterPart = clusterName || 'unknown'
@@ -219,7 +220,7 @@ export async function prepareDevEnvConnection(
         const sshConfig =
             connectionType === 'sm_hp'
                 ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+                : new SshConfig(ssh, isCursor() ? 'sm_cursor_' : 'sm_', 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()

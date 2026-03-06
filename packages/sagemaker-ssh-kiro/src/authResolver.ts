@@ -339,8 +339,10 @@ export function validateAuthority(authority: string): { hostname: string; user: 
         }
     }
 
-    if (!/^sm_[a-zA-Z0-9\._-]+$/.test(hostname)) {
-        throw new Error(`Invalid SageMaker hostname format: ${hostname}. Expected either 'sm_*' format.`)
+    if (!/^(sm_lc_|sm_dl_|sm_cursor_lc_|sm_cursor_dl_|hp_)[a-zA-Z0-9\._-]+$/.test(hostname)) {
+        throw new Error(
+            `Invalid SageMaker hostname format: ${hostname}. Expected 'sm_lc_*', 'sm_dl_*', 'sm_cursor_lc_*', 'sm_cursor_dl_*', or 'hp_*' format.`
+        )
     }
 
     return { hostname, user }

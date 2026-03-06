@@ -196,6 +196,13 @@ export function isKiro(): boolean {
 }
 
 /**
+ * Determines if the current system is Cursor IDE.
+ */
+export function isCursor(): boolean {
+    return vscode.env.appName?.toLowerCase().includes('cursor') ?? false
+}
+
+/**
  *
  * @param appName to identify the proper SM instance
  * @returns true if the current system is SageMaker(SMAI or SMUS)

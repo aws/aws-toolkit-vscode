@@ -24,15 +24,18 @@ const localize = nls.loadMessageBundle()
 export class SshConfig {
     protected readonly configHostName: string
     protected readonly proxyCommandRegExp: RegExp
+    protected readonly allowBothPrefixes: boolean
 
     public constructor(
         protected readonly sshPath: string,
         protected readonly hostNamePrefix: string,
         protected readonly scriptPrefix: string,
-        protected readonly keyPath?: string
+        protected readonly keyPath?: string,
+        allowBothPrefixes: boolean = false
     ) {
         this.configHostName = `${hostNamePrefix}*`
         this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
+        this.allowBothPrefixes = allowBothPrefixes
     }
 
     protected isWin(): boolean {
