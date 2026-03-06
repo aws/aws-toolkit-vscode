@@ -104,6 +104,20 @@ export class SshConfig {
             return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
+
+        // Check if the actual Host pattern in config matches what we're looking for
+        const sshConfigPath = getSshConfigPath()
+        const configExists = await fileExists(sshConfigPath)
+        if (configExists && matches) {
+            const configContent = await readFileAsString(sshConfigPath)
+            const hostPattern = new RegExp(`Host\\s+${this.configHostName.replace('*', '\\*')}`, 'i')
+            const hasExactHost = hostPattern.test(configContent)
+            if (!hasExactHost) {
+                // Found a match via SSH but our exact Host pattern doesn't exist - different prefix is matching
+                return Result.ok(undefined)
+            }
+        }
+
         return Result.ok(matches?.[0])
     }
 
