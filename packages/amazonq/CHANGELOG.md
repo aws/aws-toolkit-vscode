@@ -1,3 +1,7 @@
+## 1.112.0 2026-03-06
+
+- Miscellaneous non-user-facing changes
+
 ## 1.111.0 2026-02-26
 
 - **Bug Fix** fix: inline chat fails to revert to original state after users reject
