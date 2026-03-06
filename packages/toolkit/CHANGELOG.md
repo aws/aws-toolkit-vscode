@@ -1,3 +1,7 @@
+## 3.98.0 2026-03-06
+
+- **Feature** Replace stack: with stack '' to ensure failure messages maintain proper grammar.
+
 ## 3.97.0 2026-02-26
 
 - **Bug Fix** Adds a confirmation prompt before initiating console credential login (aws login) when opening a Lambda function in VS Code. Improves clarity around prerequisites and reduces unexpected login cancellations.
