@@ -11,6 +11,7 @@ import fetch from 'node-fetch'
 import globals from '../../../shared/extensionGlobals'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, SmusTimeouts, SmusErrorCodes, validateCredentialFields } from '../../shared/smusUtils'
+import { DevSettings } from '../../../shared/settings'
 
 /**
  * Credentials provider for SageMaker Unified Studio Domain Execution Role (DER)
@@ -121,6 +122,21 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
      */
     public async getCredentials(): Promise<AWS.Credentials> {
         this.logger.debug(`Getting DER credentials for domain ${this.domainId}`)
+
+        // Dev stub: bypass redeem-token and return hardcoded credentials for testing.
+        // Use this to test that Admin Project Role credentials from ssoRedeemToken work
+        // for the downstream flow (ListProjects, ListEnvironments, GetEnvironmentCredentials).
+        // Set in VS Code settings: "aws.dev.smusStubDerCredentials": { "accessKeyId": "...", "secretAccessKey": "...", "sessionToken": "..." }
+        const stubCreds = DevSettings.instance.get('smusStubDerCredentials', {} as any)
+        if (stubCreds.accessKeyId && stubCreds.secretAccessKey) {
+            this.logger.warn(`STUB: Using hardcoded DER credentials for domain ${this.domainId}`)
+            return {
+                accessKeyId: stubCreds.accessKeyId,
+                secretAccessKey: stubCreds.secretAccessKey,
+                sessionToken: stubCreds.sessionToken,
+                expiration: new Date(Date.now() + SmusCredentialExpiry.derExpiryMs),
+            }
+        }
 
         // Check cache first (10-minute expiry with 5-minute buffer for proactive refresh)
         if (this.credentialCache && this.credentialCache.expiresAt > new Date()) {

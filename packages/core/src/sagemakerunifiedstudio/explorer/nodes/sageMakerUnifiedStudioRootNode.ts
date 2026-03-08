@@ -583,6 +583,16 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             } else {
                 // In non-IAM mode, fetch all projects without filtering
                 allProjects = await datazoneClient.fetchAllProjects()
+                try {
+                    const { DefaultStsClient } = await import('../../../shared/clients/stsClient.js')
+                    const authProvider = SmusAuthenticationProvider.fromContext()
+                    const creds = await (await authProvider.getDerCredentialsProvider()).getCredentials()
+                    const stsClient = new DefaultStsClient(authProvider.getDomainRegion(), creds)
+                    const identity = await stsClient.getCallerIdentity()
+                    logger.warn(`DEBUG caller identity after ListProjects: ${JSON.stringify(identity)}`)
+                } catch (e) {
+                    logger.warn(`DEBUG failed to get caller identity: ${e}`)
+                }
             }
 
             const items = createProjectQuickPickItems(allProjects)
