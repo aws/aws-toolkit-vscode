@@ -1,7 +1,6 @@
 ## 0.2.0
 
 - Added support for setting the http_proxy and https_proxy environment variables on the remote Kiro server, configurable via the `aws.sagemaker.ssh.kiro.httpProxy` and `aws.sagemaker.ssh.kiro.httpsProxy` settings
-- Added support for setting the no_proxy environment variable on the remote Kiro server, configurable via the `aws.sagemaker.ssh.kiro.noProxy` setting ([#8649](https://github.com/aws/aws-toolkit-vscode/pull/8649))
 
 ## 0.1.1
 
