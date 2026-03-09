@@ -104,24 +104,6 @@ export class SshConfig {
             return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
-
-        // Check if the actual Host pattern in config matches what we're looking for
-        const sshConfigPath = getSshConfigPath()
-        const configExists = await fileExists(sshConfigPath)
-        if (configExists && matches) {
-            const configContent = await readFileAsString(sshConfigPath)
-            const hostPattern = new RegExp(`Host\\s+${this.configHostName.replace('*', '\\*')}`, 'i')
-            const hasExactHost = hostPattern.test(configContent)
-            if (!hasExactHost) {
-                // Found a match via SSH but our exact Host pattern doesn't exist - different prefix is matching
-                // This is OK for SageMaker where sm_* and sm_cursor_* can coexist
-                if (this.scriptPrefix === 'sagemaker_connect') {
-                    return Result.ok(undefined)
-                }
-                return Result.ok(undefined)
-            }
-        }
-
         return Result.ok(matches?.[0])
     }
 
@@ -155,10 +137,6 @@ export class SshConfig {
         configSection: string | undefined,
         proxyCommand: string
     ): Promise<void> {
-        if (configSection !== undefined) {
-            getLogger().warn(`SSH config: found outdated "${this.configHostName}" section, will update`)
-        }
-
         const confirmTitle = localize(
             'AWS.sshConfig.confirm.installSshConfig.title',
             '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
@@ -176,20 +154,24 @@ export class SshConfig {
 
     // Check if the hostname pattern is working.
     protected async verifySSHHost(proxyCommand: string) {
-        const matchResult = await this.matchSshSection()
-        if (matchResult.isErr()) {
-            return matchResult
+        const sshConfigPath = getSshConfigPath()
+        const configExists = await fileExists(sshConfigPath)
+
+        if (configExists) {
+            const configContent = await readFileAsString(sshConfigPath)
+            const hostPattern = new RegExp(`^Host\\s+${this.configHostName.replace('*', '\\*')}\\s*$`, 'm')
+            const hasExactHost = hostPattern.test(configContent)
+
+            if (hasExactHost) {
+                return Result.ok()
+            }
         }
 
-        const configSection = matchResult.ok()
-        const hasProxyCommand = configSection?.includes(proxyCommand)
-
-        if (!hasProxyCommand) {
-            try {
-                await this.promptUserToConfigureSshConfig(configSection, proxyCommand)
-            } catch (e) {
-                return Result.err(e as Error)
-            }
+        // Entry doesn't exist, add it
+        try {
+            await this.promptUserToConfigureSshConfig(undefined, proxyCommand)
+        } catch (e) {
+            return Result.err(e as Error)
         }
 
         return Result.ok()
