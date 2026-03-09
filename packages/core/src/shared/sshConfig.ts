@@ -114,29 +114,15 @@ export class SshConfig {
             const hasExactHost = hostPattern.test(configContent)
             if (!hasExactHost) {
                 // Found a match via SSH but our exact Host pattern doesn't exist - different prefix is matching
+                // This is OK for SageMaker where sm_* and sm_cursor_* can coexist
+                if (this.scriptPrefix === 'sagemaker_connect') {
+                    return Result.ok(undefined)
+                }
                 return Result.ok(undefined)
             }
         }
 
         return Result.ok(matches?.[0])
-    }
-
-    private async promptUserForOutdatedSection(configSection: string): Promise<void> {
-        getLogger().warn(`SSH config: found old/outdated "${this.configHostName}" section:\n%O`, configSection)
-        const oldConfig = localize(
-            'AWS.sshConfig.error.oldConfig',
-            'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
-            this.configHostName
-        )
-
-        const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
-        await vscode.window.showWarningMessage(oldConfig, openConfig).then((resp) => {
-            if (resp === openConfig) {
-                void vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
-            }
-        })
-
-        throw new ToolkitError(oldConfig, { code: 'OldConfig' })
     }
 
     protected async writeSectionToConfig(proxyCommand: string) {
@@ -170,7 +156,7 @@ export class SshConfig {
         proxyCommand: string
     ): Promise<void> {
         if (configSection !== undefined) {
-            await this.promptUserForOutdatedSection(configSection)
+            getLogger().warn(`SSH config: found outdated "${this.configHostName}" section, will update`)
         }
 
         const confirmTitle = localize(
