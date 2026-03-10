@@ -518,3 +518,35 @@ describe('hasSageMakerEnvVars', function () {
         assert.strictEqual(hasSageMakerEnvVars(), false)
     })
 })
+
+describe('isCursor', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns true when appName contains cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(require('../../shared/extensionUtilities').isCursor(), true)
+    })
+
+    it('returns true when appName contains cursor in mixed case', function () {
+        sandbox.stub(vscode.env, 'appName').value('CURSOR IDE')
+        assert.strictEqual(require('../../shared/extensionUtilities').isCursor(), true)
+    })
+
+    it('returns false when appName does not contain cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+        assert.strictEqual(require('../../shared/extensionUtilities').isCursor(), false)
+    })
+
+    it('returns false when appName is undefined', function () {
+        sandbox.stub(vscode.env, 'appName').value(undefined)
+        assert.strictEqual(require('../../shared/extensionUtilities').isCursor(), false)
+    })
+})

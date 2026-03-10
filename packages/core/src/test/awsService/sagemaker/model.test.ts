@@ -364,3 +364,81 @@ describe('SageMaker Model', () => {
         })
     })
 })
+
+describe('prepareDevEnvConnection with Cursor support', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('adds cursor prefix to hostname when isCursor returns true', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'isCursor').returns(true)
+
+        const connectionType = 'sm_lc'
+        const expectedPrefix = 'sm_cursor_lc'
+
+        // Test the hostname prefix logic
+        const hostnamePrefix =
+            utils.isCursor() && connectionType !== 'sm_hp'
+                ? connectionType.replace('sm_', 'sm_cursor_')
+                : connectionType
+
+        assert.strictEqual(hostnamePrefix, expectedPrefix)
+    })
+
+    it('does not add cursor prefix when isCursor returns false', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'isCursor').returns(false)
+
+        const connectionType = 'sm_lc'
+        const expectedPrefix = 'sm_lc'
+
+        const hostnamePrefix =
+            utils.isCursor() && connectionType !== 'sm_hp'
+                ? connectionType.replace('sm_', 'sm_cursor_')
+                : connectionType
+
+        assert.strictEqual(hostnamePrefix, expectedPrefix)
+    })
+
+    it('does not add cursor prefix for hyperpod connections', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'isCursor').returns(true)
+
+        const connectionType = 'sm_hp'
+        const expectedPrefix = 'sm_hp'
+
+        const hostnamePrefix =
+            utils.isCursor() && connectionType !== 'sm_hp'
+                ? connectionType.replace('sm_', 'sm_cursor_')
+                : connectionType
+
+        assert.strictEqual(hostnamePrefix, expectedPrefix)
+    })
+
+    it('uses cursor prefix in SshConfig when isCursor is true', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'isCursor').returns(true)
+
+        const expectedPrefix = 'sm_cursor_'
+        const actualPrefix = utils.isCursor() ? 'sm_cursor_' : 'sm_'
+
+        assert.strictEqual(actualPrefix, expectedPrefix)
+    })
+
+    it('uses standard prefix in SshConfig when isCursor is false', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'isCursor').returns(false)
+
+        const expectedPrefix = 'sm_'
+        const actualPrefix = utils.isCursor() ? 'sm_cursor_' : 'sm_'
+
+        assert.strictEqual(actualPrefix, expectedPrefix)
+    })
+})

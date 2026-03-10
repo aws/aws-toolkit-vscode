@@ -307,3 +307,64 @@ describe('CodeCatalyst Connect Script', function () {
         })
     })
 })
+
+describe('verifySSHHost with updated logic', async function () {
+    let fileExistsStub: sinon.SinonStub
+    let readFileStub: sinon.SinonStub
+    let promptStub: sinon.SinonStub
+
+    beforeEach(function () {
+        fileExistsStub = sinon.stub()
+        readFileStub = sinon.stub()
+        promptStub = sinon.stub(SshConfig.prototype, 'promptUserToConfigureSshConfig')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('does not prompt when exact host pattern exists in config', async function () {
+        const testConfig = new MockSshConfig('sshPath', 'sm_', 'sagemaker_connect')
+
+        fileExistsStub.resolves(true)
+        readFileStub.resolves('Host sm_*\n  ProxyCommand sagemaker_connect')
+
+        sinon.stub(require('../../shared/filesystemUtilities'), 'fileExists').callsFake(fileExistsStub)
+        sinon.stub(require('../../shared/filesystemUtilities'), 'readFileAsString').callsFake(readFileStub)
+
+        const result = await testConfig.testVerifySshHostWrapper('sagemaker_connect', '')
+
+        assert.ok(result.isOk())
+        sinon.assert.notCalled(promptStub)
+    })
+
+    it('prompts to add config when host pattern does not exist', async function () {
+        const testConfig = new MockSshConfig('sshPath', 'sm_', 'sagemaker_connect')
+
+        fileExistsStub.resolves(true)
+        readFileStub.resolves('Host other_*\n  ProxyCommand other_script')
+
+        sinon.stub(require('../../shared/filesystemUtilities'), 'fileExists').callsFake(fileExistsStub)
+        sinon.stub(require('../../shared/filesystemUtilities'), 'readFileAsString').callsFake(readFileStub)
+        promptStub.resolves()
+
+        const result = await testConfig.testVerifySshHostWrapper('sagemaker_connect', '')
+
+        assert.ok(result.isOk())
+        sinon.assert.calledOnce(promptStub)
+    })
+
+    it('prompts to add config when ssh config file does not exist', async function () {
+        const testConfig = new MockSshConfig('sshPath', 'sm_', 'sagemaker_connect')
+
+        fileExistsStub.resolves(false)
+
+        sinon.stub(require('../../shared/filesystemUtilities'), 'fileExists').callsFake(fileExistsStub)
+        promptStub.resolves()
+
+        const result = await testConfig.testVerifySshHostWrapper('sagemaker_connect', '')
+
+        assert.ok(result.isOk())
+        sinon.assert.calledOnce(promptStub)
+    })
+})
