@@ -380,7 +380,7 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         const utils = require('../../../shared/extensionUtilities')
         sandbox.stub(utils, 'isCursor').returns(true)
 
-        const connectionType = 'sm_lc'
+        const connectionType: string = 'sm_lc'
         const expectedPrefix = 'sm_cursor_lc'
 
         // Test the hostname prefix logic
@@ -396,7 +396,7 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         const utils = require('../../../shared/extensionUtilities')
         sandbox.stub(utils, 'isCursor').returns(false)
 
-        const connectionType = 'sm_lc'
+        const connectionType: string = 'sm_lc'
         const expectedPrefix = 'sm_lc'
 
         const hostnamePrefix =
@@ -411,7 +411,7 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         const utils = require('../../../shared/extensionUtilities')
         sandbox.stub(utils, 'isCursor').returns(true)
 
-        const connectionType = 'sm_hp'
+        const connectionType: string = 'sm_hp'
         const expectedPrefix = 'sm_hp'
 
         const hostnamePrefix =

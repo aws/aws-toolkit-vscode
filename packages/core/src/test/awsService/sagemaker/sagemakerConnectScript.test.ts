@@ -32,9 +32,7 @@ describe('sagemaker_connect script', function () {
         it('parses cursor format sm_cursor_<creds-type>_<arn>', async function () {
             const hostname = 'sm_cursor_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
 
-            const result = await new ChildProcess('bash', [scriptPath, hostname]).run({
-                spawnOptions: { timeout: 5000 },
-            })
+            const result = await new ChildProcess('bash', [scriptPath, hostname], { timeout: 5000 }).run()
 
             const output = result.stderr + result.stdout
             assert.ok(!output.includes('Invalid hostname format'))
@@ -99,13 +97,11 @@ describe('sagemaker_connect script', function () {
         it('parses cursor format sm_cursor_<creds-type>_<arn>', async function () {
             const hostname = 'sm_cursor_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
 
-            const result = await new ChildProcess('powershell.exe', [
-                '-ExecutionPolicy',
-                'Bypass',
-                '-File',
-                psScriptPath,
-                hostname,
-            ]).run({ spawnOptions: { timeout: 5000 } })
+            const result = await new ChildProcess(
+                'powershell.exe',
+                ['-ExecutionPolicy', 'Bypass', '-File', psScriptPath, hostname],
+                { timeout: 5000 }
+            ).run()
 
             const output = result.stderr + result.stdout
             assert.ok(!output.includes('Invalid hostname format'))
