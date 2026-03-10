@@ -24,7 +24,7 @@ const pollInterval = 30 * 60 * 100 // 30 minutes
  */
 const ideProcessPatterns = {
     windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-    darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/Electron/,
+    darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,
     linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
 }
 
