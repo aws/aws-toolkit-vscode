@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: Connection to studio spaces now works reliably on all VSCode versions"
+}
