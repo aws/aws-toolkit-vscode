@@ -12,6 +12,7 @@ import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
 import { matchesPattern } from './textUtilities'
+import { getIdeType } from '../extensionUtilities'
 import { getIdeInfo } from '../vscode/env'
 
 /** Full path to VSCode CLI. */
@@ -53,8 +54,8 @@ export async function tryRun(
 }
 
 /**
- * Gets the fullpath to the IDE CLI (code, cursor, kiro, windsurf, etc.), or falls back to the CLI name (not
- * absolute) if it works.
+ * Gets the fullpath to IDE CLI (code, cursor, kiro, windsurf, etc.), or falls back to the CLI name (not
+ * absolute) if it works. For Kiro on Windows, looks for `kiro.cmd` instead.
  *
  * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
  */
@@ -67,26 +68,31 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
     const cliName = ideInfo.cliName || 'code'
 
     const vscExe = process.argv0
-    // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
-    const vscs = [
-        // Special case for flatpak (steamdeck). #V896741845
-        // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
-        `/app/bin/${cliName}`,
-        // Note: macOS does not have a separate "code-insiders" binary.
-        path.resolve(`${vscode.env.appRoot}/bin/${cliName}`), // macOS
-        path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}`), // Windows
-        path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}-insiders`), // Windows
-        // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
-        path.resolve(`${vscode.env.appRoot}/${cliName}`),
-        path.resolve(vscExe, `../bin/${cliName}-insiders`),
-        path.resolve(vscExe, `../bin/${cliName}`),
-        path.resolve(vscExe, `../../bin/${cliName}-insiders`),
-        path.resolve(vscExe, `../../bin/${cliName}`),
-        `/usr/bin/${cliName}`,
-        cliName, // $PATH
-    ]
+    const ideType = getIdeType()
+    const isKiro = ideType === 'kiro'
+
+    const vscs = isKiro
+        ? getKiroCliPaths(vscExe)
+        : [
+              // Special case for flatpak (steamdeck). #V896741845
+              // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
+              `/app/bin/${cliName}`,
+              // Note: macOS does not have a separate "code-insiders" binary.
+              path.resolve(`${vscode.env.appRoot}/bin/${cliName}`), // macOS
+              path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}`), // Windows
+              path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}-insiders`), // Windows
+              // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
+              path.resolve(`${vscode.env.appRoot}/${cliName}`),
+              path.resolve(vscExe, `../bin/${cliName}-insiders`),
+              path.resolve(vscExe, `../bin/${cliName}`),
+              path.resolve(vscExe, `../../bin/${cliName}-insiders`),
+              path.resolve(vscExe, `../../bin/${cliName}`),
+              `/usr/bin/${cliName}`,
+              cliName, // $PATH
+          ]
+
     for (const vsc of vscs) {
-        if (!vsc || (vsc !== cliName && !(await fs.exists(vsc)))) {
+        if (!vsc || (vsc !== 'code' && vsc !== 'kiro' && !(await fs.exists(vsc)))) {
             continue
         }
         if (await tryRun(vsc, ['--version'])) {
@@ -96,6 +102,31 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
     }
 
     return undefined
+}
+
+/**
+ * Gets Kiro CLI paths
+ */
+function getKiroCliPaths(vscExe: string): string[] {
+    return [
+        path.resolve(`${vscode.env.appRoot}/bin/kiro`),
+        path.resolve(`${vscode.env.appRoot}/../../bin/kiro`),
+        path.resolve(`${vscode.env.appRoot}/kiro`),
+        path.resolve(vscExe, '../bin/kiro'),
+        path.resolve(vscExe, '../../bin/kiro'),
+
+        // When no `kiro` file is found in the application directories, search for a `code` file in the same locations.
+        // This is necessary for Mac because the executable is called `code`. Though `kiro` on the $PATH may resolve to
+        // /usr/local/bin/kiro, that is just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code.
+        path.resolve(`${vscode.env.appRoot}/bin/code`),
+        path.resolve(`${vscode.env.appRoot}/../../bin/code`),
+        path.resolve(`${vscode.env.appRoot}/code`),
+        path.resolve(vscExe, '../bin/code'),
+        path.resolve(vscExe, '../../bin/code'),
+
+        '/usr/bin/kiro',
+        'kiro', // $PATH
+    ]
 }
 
 /**

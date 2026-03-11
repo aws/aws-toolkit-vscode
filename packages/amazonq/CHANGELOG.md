@@ -1,3 +1,11 @@
+## 1.112.0 2026-03-06
+
+- Miscellaneous non-user-facing changes
+
+## 1.111.0 2026-02-26
+
+- **Bug Fix** fix: inline chat fails to revert to original state after users reject
+
 ## 1.110.0 2026-02-16
 
 - **Bug Fix** Amazon Q Chat: Fix chat history restoration to display rich UI elements and persist user preferences

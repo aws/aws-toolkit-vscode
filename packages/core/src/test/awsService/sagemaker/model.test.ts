@@ -8,7 +8,12 @@ import * as sinon from 'sinon'
 import * as os from 'os'
 import * as path from 'path'
 import { DevSettings, fs, ToolkitError } from '../../../shared'
-import { removeKnownHost, startLocalServer, stopLocalServer } from '../../../awsService/sagemaker/model'
+import {
+    removeKnownHost,
+    startLocalServer,
+    stopLocalServer,
+    startRemoteViaSageMakerSshKiro,
+} from '../../../awsService/sagemaker/model'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
 
@@ -299,6 +304,63 @@ describe('SageMaker Model', () => {
                 assert.strictEqual(err.message, 'Failed to write updated known_hosts file')
                 assert.strictEqual((err as ToolkitError).cause?.message, 'write failed')
             }
+        })
+    })
+
+    describe('startRemoteViaSageMakerSshKiro', function () {
+        let sandbox: sinon.SinonSandbox
+        let mockProcessClass: sinon.SinonStub
+        let mockProcessInstance: { run: sinon.SinonStub }
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            mockProcessInstance = { run: sandbox.stub().resolves() }
+            mockProcessClass = sandbox.stub().returns(mockProcessInstance)
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('constructs correct workspace URI without user', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/home/sagemaker-user',
+                '/usr/bin/code'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+space_arn/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
+
+        it('constructs correct workspace URI with user', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/home/sagemaker-user',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@space_arn/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
+
+        it('handles different target directories', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/workspace/project',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@space_arn/workspace/project`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
         })
     })
 })
