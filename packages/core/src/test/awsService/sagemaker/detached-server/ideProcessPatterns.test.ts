@@ -6,7 +6,8 @@
 import assert from 'assert'
 
 describe('detached-server IDE process patterns', function () {
-    // These patterns are from server.ts
+    // These patterns must match those in server.ts
+    // Note: We cannot import from server.ts as it's a detached server file
     const ideProcessPatterns = {
         windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
         darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,

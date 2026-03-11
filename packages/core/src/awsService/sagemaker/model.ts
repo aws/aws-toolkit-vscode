@@ -24,7 +24,7 @@ import { ToolkitError } from '../../shared/errors'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
-import { isKiro, isCursor } from '../../shared/extensionUtilities'
+import { isKiro } from '../../shared/extensionUtilities'
 import { getIdeType } from '../../shared/extensionUtilities'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
@@ -35,6 +35,53 @@ import { HyperpodReconnectionManager } from './hyperpodReconnection'
 import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
+
+/**
+ * Maps IDE types to their SSH hostname prefix suffix.
+ * VSCode uses no suffix, Cursor uses '_cursor' suffix.
+ */
+const IDE_PREFIX_MAP: Record<string, string> = {
+    vscode: '',
+    cursor: '_cursor',
+}
+
+/**
+ * Gets the SSH config hostname prefix based on connection type and IDE.
+ * This is used for SSH config Host patterns (e.g., 'sm_*', 'sm_cursor_*').
+ * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
+ * @returns The SSH config prefix (e.g., 'sm_', 'sm_cursor_', 'hp_')
+ */
+function getSshConfigPrefix(connectionType: string): string {
+    if (connectionType === 'sm_hp') {
+        return 'hp_'
+    }
+
+    const ideType = getIdeType()
+    const suffix = IDE_PREFIX_MAP[ideType] || ''
+
+    return `sm${suffix}_`
+}
+
+/**
+ * Gets the full hostname prefix for SSH connections.
+ * This is used for actual hostnames (e.g., 'sm_lc', 'sm_cursor_lc').
+ * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
+ * @returns The hostname prefix with IDE-specific suffix if applicable
+ */
+function getHostnamePrefix(connectionType: string): string {
+    if (connectionType === 'sm_hp') {
+        return connectionType
+    }
+
+    const ideType = getIdeType()
+    const suffix = IDE_PREFIX_MAP[ideType] || ''
+
+    if (suffix) {
+        return connectionType.replace('sm_', `sm${suffix}_`)
+    }
+
+    return connectionType
+}
 
 class HyperPodSshConfig extends SshConfig {
     constructor(
@@ -158,8 +205,7 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix =
-        isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'sm_cursor_') : connectionType
+    const hostnamePrefix = getHostnamePrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
         const clusterPart = clusterName || 'unknown'
@@ -220,7 +266,7 @@ export async function prepareDevEnvConnection(
         const sshConfig =
             connectionType === 'sm_hp'
                 ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, isCursor() ? 'sm_cursor_' : 'sm_', 'sagemaker_connect')
+                : new SshConfig(ssh, getSshConfigPrefix(connectionType), 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()

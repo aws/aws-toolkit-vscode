@@ -24,18 +24,15 @@ const localize = nls.loadMessageBundle()
 export class SshConfig {
     protected readonly configHostName: string
     protected readonly proxyCommandRegExp: RegExp
-    protected readonly allowBothPrefixes: boolean
 
     public constructor(
         protected readonly sshPath: string,
         protected readonly hostNamePrefix: string,
         protected readonly scriptPrefix: string,
-        protected readonly keyPath?: string,
-        allowBothPrefixes: boolean = false
+        protected readonly keyPath?: string
     ) {
         this.configHostName = `${hostNamePrefix}*`
         this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
-        this.allowBothPrefixes = allowBothPrefixes
     }
 
     protected isWin(): boolean {
@@ -104,7 +101,8 @@ export class SshConfig {
             return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
-        return Result.ok(matches?.[0])
+        const hasProxyCommand = matches?.[0]
+        return Result.ok(hasProxyCommand)
     }
 
     protected async writeSectionToConfig(proxyCommand: string) {
@@ -163,6 +161,20 @@ export class SshConfig {
             const hasExactHost = hostPattern.test(configContent)
 
             if (hasExactHost) {
+                // Verify the proxy command is correct
+                const configSection = await this.matchSshSection()
+                if (configSection.isErr()) {
+                    return configSection
+                }
+
+                const hasProxyCommand = configSection.ok()
+                if (!hasProxyCommand) {
+                    // Host exists but proxy command is missing or outdated
+                    getLogger().warn(
+                        `SSH config for ${this.configHostName} exists but proxy command is missing or outdated`
+                    )
+                }
+
                 return Result.ok()
             }
         }

@@ -72,7 +72,7 @@ let computeRegion: string | undefined = notInitialized
 let serviceName: string = notInitialized
 let isSMUS: boolean = false
 
-export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'unknown' {
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'cursor' | 'unknown' {
     if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
@@ -83,6 +83,10 @@ export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'unkn
 
     if (vscode.env.appName?.includes(kiroAppname)) {
         return 'kiro'
+    }
+
+    if (vscode.env.appName?.toLowerCase().includes('cursor')) {
+        return 'cursor'
     }
 
     // Theia doesn't necessarily have all env properties
@@ -193,13 +197,6 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
  */
 export function isKiro(): boolean {
     return getIdeType() === 'kiro'
-}
-
-/**
- * Determines if the current system is Cursor IDE.
- */
-export function isCursor(): boolean {
-    return vscode.env.appName?.toLowerCase().includes('cursor') ?? false
 }
 
 /**
