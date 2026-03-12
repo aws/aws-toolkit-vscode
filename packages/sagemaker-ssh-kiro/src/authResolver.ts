@@ -339,6 +339,8 @@ export function validateAuthority(authority: string): { hostname: string; user: 
         }
     }
 
+    // Validate hostname format - Kiro only handles standard SageMaker and HyperPod hostnames
+    // Cursor-specific hostnames (sm_cursor_*) are handled by the standard Remote SSH extension
     if (!/^sm_[a-zA-Z0-9\._-]+$/.test(hostname)) {
         throw new Error(`Invalid SageMaker hostname format: ${hostname}. Expected either 'sm_*' format.`)
     }
