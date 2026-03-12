@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
-import { ChildProcess, ChildProcessResult } from '../../shared/utilities/processUtils'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
@@ -27,6 +27,7 @@ class MockSshConfig extends SshConfig {
     public testIsWin: boolean = false
     public configSection: string = ''
     public exitCodeOverride: number = 0
+    public mockConfigContent: string = ''
 
     public async getProxyCommandWrapper(command: string): Promise<Result<string, ToolkitError>> {
         return await this.getProxyCommand(command)
@@ -48,15 +49,6 @@ class MockSshConfig extends SshConfig {
 
     protected override isWin() {
         return this.testIsWin
-    }
-
-    protected override async checkSshOnHost(): Promise<ChildProcessResult> {
-        return {
-            exitCode: this.exitCodeOverride,
-            error: undefined,
-            stdout: this.configSection,
-            stderr: '',
-        }
     }
 
     public createSSHConfigSectionWrapper(proxyCommand: string): string {
@@ -96,34 +88,48 @@ describe('VscodeRemoteSshConfig', async function () {
     })
 
     describe('matchSshSection', async function () {
+        let fileExistsStub: sinon.SinonStub
+        let readFileStub: sinon.SinonStub
+
         beforeEach(function () {
-            config.exitCodeOverride = 0
+            fileExistsStub = sinon.stub()
+            readFileStub = sinon.stub()
+            sinon.stub(require('../../shared/filesystemUtilities'), 'fileExists').callsFake(fileExistsStub)
+            sinon.stub(require('../../shared/filesystemUtilities'), 'readFileAsString').callsFake(readFileStub)
         })
 
-        it('returns ok with match when proxycommand is present', async function () {
-            const testSection = `proxycommandfdsafdsafd${testProxyCommand}sa342432`
-            const result = await config.testMatchSshSection(testSection)
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('returns ok with match when proxycommand is present in the host block', async function () {
+            fileExistsStub.resolves(true)
+            const configContent = `Host testHostNamePrefix*\n    ProxyCommand ${testProxyCommand}\n`
+            readFileStub.resolves(configContent)
+
+            const result = await config.testMatchSshSection('')
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.ok(match)
         })
 
-        it('returns ok result with undefined inside when proxycommand is not present', async function () {
-            const testSection = `fdsafdsafdsa342432`
-            const result = await config.testMatchSshSection(testSection)
+        it('returns ok result with undefined when host pattern does not exist', async function () {
+            fileExistsStub.resolves(true)
+            readFileStub.resolves('Host other_*\n    ProxyCommand other_command\n')
+
+            const result = await config.testMatchSshSection('')
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.strictEqual(match, undefined)
         })
 
-        it('returns error when ssh check fails with non-zero exit code', async function () {
-            config.exitCodeOverride = 255
-            const testSection = `some config`
-            const result = await config.testMatchSshSection(testSection)
-            assert.ok(result.isErr())
-            const error = result.err()
-            assert.ok(error.message.includes('ssh check against host failed'))
-            assert.ok(error.message.includes('255'))
+        it('returns undefined when config file does not exist', async function () {
+            fileExistsStub.resolves(false)
+
+            const result = await config.testMatchSshSection('')
+            assert.ok(result.isOk())
+            const match = result.unwrap()
+            assert.strictEqual(match, undefined)
         })
     })
 
@@ -132,31 +138,46 @@ describe('VscodeRemoteSshConfig', async function () {
             [configSection: string | undefined, proxyCommand: string],
             Promise<void>
         >
+        let fileExistsStub: sinon.SinonStub
+        let readFileStub: sinon.SinonStub
+
         before(function () {
             promptUserToConfigureSshConfigStub = sinon.stub(SshConfig.prototype, 'promptUserToConfigureSshConfig')
         })
 
         beforeEach(function () {
-            config.exitCodeOverride = 0
+            fileExistsStub = sinon.stub()
+            readFileStub = sinon.stub()
+            sinon.stub(require('../../shared/filesystemUtilities'), 'fileExists').callsFake(fileExistsStub)
+            sinon.stub(require('../../shared/filesystemUtilities'), 'readFileAsString').callsFake(readFileStub)
             promptUserToConfigureSshConfigStub.resetHistory()
+        })
+
+        afterEach(function () {
+            sinon.restore()
         })
 
         after(function () {
             sinon.restore()
         })
 
-        it('writes to ssh config if command not found.', async function () {
-            const testSection = 'no-command-here'
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+        it('writes to ssh config if host entry not found', async function () {
+            fileExistsStub.resolves(true)
+            readFileStub.resolves('Host other_*\n    ProxyCommand other_command\n')
+            promptUserToConfigureSshConfigStub.resolves()
+
+            const result = await config.testVerifySshHostWrapper(testCommand, '')
 
             assert.ok(result.isOk())
-            sinon.assert.calledOn(promptUserToConfigureSshConfigStub, config)
             sinon.assert.calledOnce(promptUserToConfigureSshConfigStub)
         })
 
-        it('does not write to ssh config if command is find', async function () {
-            const testSection = `this is some text that doesn't matter, but here proxycommand ${testProxyCommand}`
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+        it('does not write to ssh config if host entry exists with correct command', async function () {
+            fileExistsStub.resolves(true)
+            const configContent = `Host testHostNamePrefix*\n    ProxyCommand ${testProxyCommand}\n`
+            readFileStub.resolves(configContent)
+
+            const result = await config.testVerifySshHostWrapper(testCommand, '')
 
             assert.ok(result.isOk())
             sinon.assert.notCalled(promptUserToConfigureSshConfigStub)
