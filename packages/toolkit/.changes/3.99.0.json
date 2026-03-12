@@ -1,0 +1,10 @@
+{
+	"date": "2026-03-12",
+	"version": "3.99.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SageMaker: Connection to studio spaces now works reliably on all VSCode versions"
+		}
+	]
+}
