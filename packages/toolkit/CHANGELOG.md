@@ -1,3 +1,7 @@
+## 3.99.0 2026-03-12
+
+- **Bug Fix** SageMaker: Connection to studio spaces now works reliably on all VSCode versions
+
 ## 3.98.0 2026-03-06
 
 - **Feature** Replace stack: with stack '' to ensure failure messages maintain proper grammar.
