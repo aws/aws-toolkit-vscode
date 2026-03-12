@@ -504,24 +504,49 @@ async function fetchProjectsByIamProfile(
         projects = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
         logger.debug(`Fetched ${projects.length} projects for user profile ${userProfileId}`)
     } else {
-        const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
-        const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-            credentialsProvider,
-            authProvider.getDomainRegion()
-        )
+        // Try IAM User flow first - use GetUserProfile and filter by userIdentifier
+        try {
+            logger.debug('Using IAM user flow with GetUserProfile API')
 
-        // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
-        // The cached ARN needs conversion for role sessions
-        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
-        logger.debug(`Using IAM role ARN: ${roleArn}`)
+            const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                callerIdentityArn,
+                authProvider.getDomainId()
+            )
+            logger.info(`Retrieved user profile ID: ${userProfileId} for IAM principal ${callerIdentityArn}`)
 
-        // Get group profile ID for the current role
-        const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
-        logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+            projects = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
+            logger.debug(`Fetched ${projects.length} projects for user profile ${userProfileId}`)
+        } catch (e) {
+            logger.debug(`IAM user flow failed: ${(e as Error).message}. Will fall back to group profile flow.`)
+            projects = []
+        }
 
-        // Fetch projects filtered by group profile
-        projects = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
-        logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+        // Fall back to group profile flow if user profile returned no projects
+        if (projects.length === 0) {
+            const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(
+                activeConnection.profileName
+            )
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                credentialsProvider,
+                authProvider.getDomainRegion()
+            )
+
+            // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
+            // The cached ARN needs conversion for role sessions
+            const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
+            logger.debug(`Using IAM role ARN: ${roleArn}`)
+
+            // Get group profile ID for the current role
+            const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(
+                authProvider.getDomainId(),
+                roleArn
+            )
+            logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+
+            // Fetch projects filtered by group profile
+            projects = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
+            logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+        }
     }
 
     return projects

@@ -106,7 +106,6 @@ export interface DataZoneConnection {
 }
 
 // Constants for DataZone environment configuration
-const toolingBlueprintName = 'Tooling'
 const sageMakerProviderName = 'Amazon SageMaker'
 
 /**
@@ -241,12 +240,7 @@ export class DataZoneClient {
             const datazoneClient = await this.getDataZoneClient()
 
             this.logger.debug('Listing environment blueprints')
-            const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: this.domainId,
-                managed: true,
-                name: this.getToolingBlueprintName(),
-            })
-            const toolingBlueprint = domainBlueprints.items?.[0]
+            const toolingBlueprint = await this.getToolingBlueprint(datazoneClient, this.domainId)
             if (!toolingBlueprint) {
                 this.logger.error('Failed to get tooling blueprint')
                 throw new Error('Failed to get tooling blueprint')
@@ -713,14 +707,9 @@ export class DataZoneClient {
         this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
         const datazoneClient = await this.getDataZoneClient()
 
-        let domainBlueprints
+        let toolingBlueprint
         try {
-            // Get the tooling blueprint
-            domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: domainId,
-                managed: true,
-                name: this.getToolingBlueprintName(),
-            })
+            toolingBlueprint = await this.getToolingBlueprint(datazoneClient, domainId)
         } catch (err) {
             this.logger.error(
                 'Failed to list environment blueprints for domain %s, %s',
@@ -730,7 +719,6 @@ export class DataZoneClient {
             throw err
         }
 
-        const toolingBlueprint = domainBlueprints.items?.[0]
         if (!toolingBlueprint) {
             this.logger.error('No tooling blueprint found for domain %s', domainId)
             throw new Error('No tooling blueprint found')
@@ -865,9 +853,38 @@ export class DataZoneClient {
     }
 
     /**
-     * Gets the correct tooling blueprint name
+     * Lists the tooling environment blueprint, with fallback for IAM mode.
+     * In IAM mode, tries 'ToolingLite' first (IAM domains), then falls back to 'Tooling' (IAM login in IDC domains).
      */
-    private getToolingBlueprintName(): string {
-        return getContext('aws.smus.isIamMode') ? 'ToolingLite' : toolingBlueprintName
+    private async getToolingBlueprint(datazoneClient: DataZone, domainId: string) {
+        // TODO: this needs to be cleaned based on domain type, not login type.
+        if (getContext('aws.smus.isIamMode')) {
+            // Try 'ToolingLite' first for IAM domains
+            const toolingLiteResult = await datazoneClient.listEnvironmentBlueprints({
+                domainIdentifier: domainId,
+                managed: true,
+                name: 'ToolingLite',
+            })
+            if (toolingLiteResult.items && toolingLiteResult.items.length > 0) {
+                return toolingLiteResult.items[0]
+            }
+
+            // Fall back to 'Tooling' for IAM login in IDC domains
+            this.logger.debug('No ToolingLite blueprint found, falling back to Tooling for IAM login in IDC domain')
+            const toolingResult = await datazoneClient.listEnvironmentBlueprints({
+                domainIdentifier: domainId,
+                managed: true,
+                name: 'Tooling',
+            })
+            return toolingResult.items?.[0]
+        }
+
+        // Non-IAM mode: use 'Tooling' directly
+        const result = await datazoneClient.listEnvironmentBlueprints({
+            domainIdentifier: domainId,
+            managed: true,
+            name: 'Tooling',
+        })
+        return result.items?.[0]
     }
 }

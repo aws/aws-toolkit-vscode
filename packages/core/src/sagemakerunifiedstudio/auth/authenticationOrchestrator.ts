@@ -9,6 +9,8 @@ import { ToolkitError } from '../../shared/errors'
 import { SmusErrorCodes } from '../shared/smusUtils'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
 import { CredentialsProvider } from '../../auth/providers/credentials'
+// @ts-ignore
+import { setContext } from '../../shared/vscode/setContext'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
 import {
@@ -118,6 +120,10 @@ export class SmusAuthenticationOrchestrator {
                     code: SmusErrorCodes.UserCancelled,
                 })
             }
+            // TODO: now we know the selected domain, we need to check the domain type
+            // this is now hard to false coded for testing
+            // await setContext('aws.smus.isIamModeDomain', false)
+
             const domainUrl = `https://${selectedDomainId}.sagemaker.${profileSelection.region}.on.aws/`
 
             this.logger.info(`Using domain URL: ${domainUrl}`)

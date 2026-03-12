@@ -536,3 +536,34 @@ export async function createDZClientForProject(
         credentialsProvider
     )
 }
+
+/**
+ * Creates a DataZoneClient with appropriate credentials provider for call getConnection with secret
+ * If domain mode is IAM mode login and IDC domain, use IAM role credential provider
+ * If domain mode is IAM mode, use the project credential provider
+ * If domain mode is not IAM mode, use the DER credential provider
+ * @param smusAuthProvider The SMUS authentication provider
+ * @param projectId The project ID for project-specific credentials
+ * @returns Promise resolving to DataZoneClient instance
+ */
+export async function createDZClientForRedshift(
+    smusAuthProvider: SmusAuthenticationProvider,
+    projectId: string
+): Promise<DataZoneClient> {
+    let credentialsProvider
+    if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.isIamModeDomain')) {
+        credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
+            (smusAuthProvider.activeConnection as SmusIamConnection).profileName
+        )
+    } else {
+        credentialsProvider = getContext('aws.smus.isIamMode')
+            ? await smusAuthProvider.getProjectCredentialProvider(projectId)
+            : await smusAuthProvider.getDerCredentialsProvider()
+    }
+
+    return DataZoneClient.createWithCredentials(
+        smusAuthProvider.getDomainRegion(),
+        smusAuthProvider.getDomainId(),
+        credentialsProvider
+    )
+}

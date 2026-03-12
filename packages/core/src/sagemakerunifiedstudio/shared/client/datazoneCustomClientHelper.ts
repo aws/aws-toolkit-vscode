@@ -298,17 +298,8 @@ export class DataZoneCustomClientHelper {
 
                 for (const domain of domains) {
                     logger.debug(`DataZoneCustomClientHelper: Domain ${domain.id} full response: %O`, domain)
-
-                    const isIam = isIamDomain({
-                        domainVersion: domain.domainVersion,
-                        iamSignIns: domain.iamSignIns,
-                        domainId: domain.id,
-                    })
-
-                    if (isIam) {
-                        logger.info(`DataZoneCustomClientHelper: Found IAM domain, id: ${domain.id} (${domain.name})`)
-                        iamDomains.push(domain)
-                    }
+                    // All domains will be presented to the user, then user picks target domain
+                    iamDomains.push(domain)
                 }
 
                 nextToken = response.nextToken
