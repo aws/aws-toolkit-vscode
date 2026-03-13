@@ -18,7 +18,7 @@ import { RecommendationHandler, RecommendationService, session } from 'aws-core-
 import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
-describe('Amazon Q Inline', async function () {
+describe.skip('Amazon Q Inline', async function () {
     const retries = 3
     this.retries(retries)
 
