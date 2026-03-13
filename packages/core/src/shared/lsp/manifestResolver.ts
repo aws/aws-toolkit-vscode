@@ -103,7 +103,7 @@ export class ManifestResolver {
         return manifest
     }
 
-    private parseManifest(content: string): Manifest {
+    protected parseManifest(content: string): Manifest {
         try {
             return JSON.parse(content) as Manifest
         } catch (error) {
