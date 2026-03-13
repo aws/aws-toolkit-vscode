@@ -12,7 +12,7 @@ import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
-import { getContext } from '../../../shared/vscode/setContext'
+import { DevSettings } from '../../../shared/settings'
 
 /**
  * Credentials provider for SageMaker Unified Studio Connection credentials
@@ -133,7 +133,7 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
         )
 
         try {
-            if (getContext('aws.smus.isIamMode') && this.projectId) {
+            if (DevSettings.instance.get('smusIamDomainSsoTest', true) && this.projectId) {
                 return (await this.smusAuthProvider.getProjectCredentialProvider(this.projectId)).getCredentials()
             }
             const datazoneClient = DataZoneClient.createWithCredentials(

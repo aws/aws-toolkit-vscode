@@ -12,7 +12,7 @@ import { withTelemetryContext } from '../../../shared/telemetry/util'
 import { SsoConnection } from '../../../auth/connection'
 import { showReauthenticateMessage } from '../../../shared/utilities/messages'
 import * as localizedText from '../../../shared/localizedText'
-import { ToolkitPromptSettings } from '../../../shared/settings'
+import { ToolkitPromptSettings, DevSettings } from '../../../shared/settings'
 import { setContext, getContext } from '../../../shared/vscode/setContext'
 import { getLogger } from '../../../shared/logger/logger'
 import {
@@ -29,6 +29,7 @@ import {
     SmusIamConnection,
     isSmusSsoConnection,
     isSmusIamConnection,
+    getDataZoneSsoScope,
 } from '../model'
 import { IamCredentialExpiryAction, showIamCredentialExpiryOptions } from '../credentialExpiryHandler'
 
@@ -45,7 +46,7 @@ import { fromContainerMetadata, fromIni, fromNodeProviderChain } from '@aws-sdk/
 import { randomUUID } from '../../../shared/crypto'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
+import { createDZClientBaseOnDomainMode, createDZClientForProject } from '../../explorer/nodes/utils'
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { loadSharedConfigFiles } from '@smithy/shared-ini-file-loader'
 import { loadSharedCredentialsProfiles } from '../../../auth/credentials/sharedCredentials'
@@ -580,6 +581,31 @@ export class SmusAuthenticationProvider {
 
             // No existing connection found, create a new one
             logger.info('No existing connection found, creating new connection')
+
+            // Dev stub: skip SSO browser login entirely for IAM domains with no IDC instance.
+            // DER credentials are already stubbed via smusStubDerCredentials, so no real token needed.
+            // Set in VS Code settings: "aws.dev.smusStubSsoIssuerUrl": "https://identitycenter.amazonaws.com/ssoins-fake"
+            const stubIssuerUrl = DevSettings.instance.get('smusStubSsoIssuerUrl', '')
+            if (stubIssuerUrl) {
+                logger.warn(`STUB: Skipping SSO browser login, using fake connection for domain ${domainId}`)
+                const stubConn = {
+                    id: `sso:${stubIssuerUrl}`,
+                    label: `STUB: ${domainId}`,
+                    type: 'sso' as const,
+                    scopes: [getDataZoneSsoScope()],
+                    startUrl: stubIssuerUrl,
+                    ssoRegion: region,
+                    domainUrl,
+                    domainId,
+                    getToken: async () => ({ accessToken: 'stub-token', expiresAt: new Date(Date.now() + 3600000) }),
+                    getRegistration: async () => undefined,
+                }
+                const result = await this.secondaryAuth.useNewConnection(stubConn as any)
+                if (!SmusUtils.isInSmusSpaceEnvironment()) {
+                    void vscode.commands.executeCommand('aws.smus.switchProject')
+                }
+                return result as SmusConnection
+            }
 
             // Get SSO instance info from DataZone
             const ssoInstanceInfo = await SmusUtils.getSsoInstanceInfo(domainUrl)
@@ -1238,7 +1264,9 @@ export class SmusAuthenticationProvider {
             const projectCreds = await projectCredProvider.getCredentials()
 
             // Get project region from tooling environment
-            const dzClient = await createDZClientBaseOnDomainMode(this)
+            const dzClient = DevSettings.instance.get('smusIamDomainSsoTest', false)
+                ? await createDZClientForProject(this, projectId)
+                : await createDZClientBaseOnDomainMode(this)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
             const projectRegion = toolingEnv.awsAccountRegion
 
