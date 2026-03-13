@@ -1,0 +1,4 @@
+{
+  "type": "bugfix",
+  "description": "Display AWS error message when importing CloudFormation resource state fails. Currently users only see 'Failed to import * resource(s)'."
+}
