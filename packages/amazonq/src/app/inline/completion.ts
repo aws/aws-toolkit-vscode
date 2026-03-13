@@ -288,7 +288,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         }
     }
 
-    // this method is automatically invoked by VS Code as user types
+    // This method is automatically invoked by VS Code as user types
     async provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
