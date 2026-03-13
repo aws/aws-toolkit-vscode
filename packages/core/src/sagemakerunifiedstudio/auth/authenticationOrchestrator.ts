@@ -6,11 +6,9 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
-import { SmusErrorCodes } from '../shared/smusUtils'
-import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
+import { SmusErrorCodes, isExpressDomain } from '../shared/smusUtils'
+import { SmusAuthenticationProvider, setSmusIamModeDomainContext } from './providers/smusAuthenticationProvider'
 import { CredentialsProvider } from '../../auth/providers/credentials'
-// @ts-ignore
-import { setContext } from '../../shared/vscode/setContext'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
 import {
@@ -120,9 +118,20 @@ export class SmusAuthenticationOrchestrator {
                     code: SmusErrorCodes.UserCancelled,
                 })
             }
-            // TODO: now we know the selected domain, we need to check the domain type
-            // this is now hard to false coded for testing
-            // await setContext('aws.smus.isIamModeDomain', false)
+            // Detect actual domain type (EXPRESS = IAM domain) via GetDomain preferences
+            try {
+                const datazoneHelper = DataZoneCustomClientHelper.getInstance(
+                    await authProvider.getCredentialsProviderForIamProfile(profileSelection.profileName),
+                    profileSelection.region
+                )
+                const domainInfo = await datazoneHelper.getDomain(selectedDomainId)
+                await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
+                this.logger.info(`Domain ${selectedDomainId} mode: ${mode}`)
+            } catch (err) {
+                this.logger.warn(`Failed to detect domain type, defaulting to IAM: ${(err as Error).message}`)
+                await setSmusIamModeDomainContext(true)
+            }
 
             const domainUrl = `https://${selectedDomainId}.sagemaker.${profileSelection.region}.on.aws/`
 
@@ -252,6 +261,11 @@ export class SmusAuthenticationOrchestrator {
                     // Fetch domain information
                     const domainInfo = await datazoneHelper.getDomain(domainId)
                     domainName = domainInfo.name
+
+                    // Set domain mode flag based on preferences
+                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                    const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
+                    this.logger.info(`Domain ${domainId} mode: ${mode}`)
 
                     this.logger.debug(`Successfully fetched domain name: ${domainName}`)
                 } catch (fetchErr) {

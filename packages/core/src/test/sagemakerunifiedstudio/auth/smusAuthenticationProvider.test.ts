@@ -1425,6 +1425,14 @@ describe('SmusAuthenticationProvider', function () {
         it('should set IAM mode context to true when domain is IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
 
+            // Override getDomain to return an IAM domain with EXPRESS preferences
+            mockClientHelper.getDomain = sinon.stub().resolves({
+                id: testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
+                domainVersion: 'V2',
+                iamSignIns: ['IAM_ROLE', 'IAM_USER'],
+                preferences: { DOMAIN_MODE: 'EXPRESS' },
+            })
+
             await smusAuthProvider['initIamModeContextInSpaceEnvironment']()
 
             assert.ok(getResourceMetadataStub.called)
@@ -1436,12 +1444,13 @@ describe('SmusAuthenticationProvider', function () {
                 )
             )
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', true))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamModeDomain', true))
         })
 
         it('should set IAM mode context to false when domain is not IAM mode', async function () {
             getResourceMetadataStub.returns(testResourceMetadata)
 
-            // Override getDomain to return a non-IAM domain
+            // Override getDomain to return a non-IAM domain (no preferences)
             mockClientHelper.getDomain = sinon.stub().resolves({
                 id: testResourceMetadata.AdditionalMetadata.DataZoneDomainId,
                 domainVersion: 'V2',
@@ -1458,6 +1467,7 @@ describe('SmusAuthenticationProvider', function () {
                 )
             )
             assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamMode', false))
+            assert.ok(setContextStubGlobal.calledWith('aws.smus.isIamModeDomain', false))
         })
 
         it('should not call IAM mode check when resource metadata is missing', async function () {

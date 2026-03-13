@@ -555,6 +555,17 @@ export function isIamDomain(input: IamDomainCheckInput): boolean {
 }
 
 /**
+ * Determines if a domain is an IAM (EXPRESS) domain based on the preferences field
+ * from the GetDomain API response.
+ *
+ * @param preferences - The preferences record from GetDomainOutput
+ * @returns true if preferences.DOMAIN_MODE === 'EXPRESS', false otherwise
+ */
+export function isExpressDomain(preferences?: Record<string, string>): boolean {
+    return preferences?.['DOMAIN_MODE'] === 'EXPRESS'
+}
+
+/**
  * Extracts the account ID from a SageMaker ARN.
  * Supports formats like:
  *   arn:aws:sagemaker:<region>:<account_id>:app/*
