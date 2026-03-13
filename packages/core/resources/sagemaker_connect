@@ -89,12 +89,12 @@ fi
 HOSTNAME="$1"
 
 # Parse creds_type and AWS resource ARN from HOSTNAME
-if [[ "$HOSTNAME" =~ ^sm_(cursor_)?([^_]+)_(arn_._aws.*)$ ]]; then
+if [[ "$HOSTNAME" =~ ^sm(c)?_([^_]+)_(arn_._aws.*)$ ]]; then
     CREDS_TYPE="${BASH_REMATCH[2]}"
     AWS_RESOURCE_ARN="${BASH_REMATCH[3]}"
 else
     echo "Hostname: $HOSTNAME"
-    echo "Invalid hostname format. Expected format: sm_<creds-type>_<AWSResourceARN> or sm_cursor_<creds-type>_<AWSResourceARN>"
+    echo "Invalid hostname format. Expected format: sm_<creds-type>_<AWSResourceARN> or smc_<creds-type>_<AWSResourceARN>"
     exit 1
 fi
 

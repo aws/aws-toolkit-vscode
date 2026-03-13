@@ -381,13 +381,11 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         sandbox.stub(utils, 'isCursor').returns(true)
 
         const connectionType: string = 'sm_lc'
-        const expectedPrefix = 'sm_cursor_lc'
+        const expectedPrefix = 'smc_lc'
 
         // Test the hostname prefix logic
         const hostnamePrefix =
-            utils.isCursor() && connectionType !== 'sm_hp'
-                ? connectionType.replace('sm_', 'sm_cursor_')
-                : connectionType
+            utils.isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'smc_') : connectionType
 
         assert.strictEqual(hostnamePrefix, expectedPrefix)
     })
@@ -415,9 +413,7 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         const expectedPrefix = 'sm_hp'
 
         const hostnamePrefix =
-            utils.isCursor() && connectionType !== 'sm_hp'
-                ? connectionType.replace('sm_', 'sm_cursor_')
-                : connectionType
+            utils.isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'smc_') : connectionType
 
         assert.strictEqual(hostnamePrefix, expectedPrefix)
     })
@@ -426,8 +422,8 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         const utils = require('../../../shared/extensionUtilities')
         sandbox.stub(utils, 'isCursor').returns(true)
 
-        const expectedPrefix = 'sm_cursor_'
-        const actualPrefix = utils.isCursor() ? 'sm_cursor_' : 'sm_'
+        const expectedPrefix = 'smc_'
+        const actualPrefix = utils.isCursor() ? 'smc_' : 'sm_'
 
         assert.strictEqual(actualPrefix, expectedPrefix)
     })

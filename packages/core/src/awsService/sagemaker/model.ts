@@ -38,18 +38,18 @@ const logger = getLogger('sagemaker')
 
 /**
  * Maps IDE types to their SSH hostname prefix suffix.
- * VSCode uses no suffix, Cursor uses '_cursor' suffix.
+ * VSCode uses no suffix, Cursor uses 'c' suffix.
  */
 const IDE_PREFIX_MAP: Record<string, string> = {
     vscode: '',
-    cursor: '_cursor',
+    cursor: 'c',
 }
 
 /**
  * Gets the SSH config hostname prefix based on connection type and IDE.
- * This is used for SSH config Host patterns (e.g., 'sm_*', 'sm_cursor_*').
+ * This is used for SSH config Host patterns (e.g., 'sm_*', 'smc_*').
  * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
- * @returns The SSH config prefix (e.g., 'sm_', 'sm_cursor_', 'hp_')
+ * @returns The SSH config prefix (e.g., 'sm_', 'smc_', 'hp_')
  */
 function getSshConfigPrefix(connectionType: string): string {
     if (connectionType === 'sm_hp') {
@@ -64,7 +64,7 @@ function getSshConfigPrefix(connectionType: string): string {
 
 /**
  * Gets the full hostname prefix for SSH connections.
- * This is used for actual hostnames (e.g., 'sm_lc', 'sm_cursor_lc').
+ * This is used for actual hostnames (e.g., 'sm_lc', 'smc_lc').
  * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
  * @returns The hostname prefix with IDE-specific suffix if applicable
  */

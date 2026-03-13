@@ -29,8 +29,8 @@ describe('sagemaker_connect script', function () {
             assert.ok(!output.includes('Invalid hostname format'))
         })
 
-        it('parses cursor format sm_cursor_<creds-type>_<arn>', async function () {
-            const hostname = 'sm_cursor_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
+        it('parses cursor format smc_<creds-type>_<arn>', async function () {
+            const hostname = 'smc_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
 
             const result = await new ChildProcess('bash', [scriptPath, hostname]).run({
                 spawnOptions: { timeout: 5000 },
@@ -66,7 +66,7 @@ describe('sagemaker_connect script', function () {
         })
 
         it('extracts correct creds type from cursor format', async function () {
-            const hostname = 'sm_cursor_dl_arn_._aws_test'
+            const hostname = 'smc_dl_arn_._aws_test'
 
             const result = await new ChildProcess('bash', [scriptPath, hostname]).run({
                 spawnOptions: { timeout: 5000 },
@@ -96,8 +96,8 @@ describe('sagemaker_connect script', function () {
             assert.ok(!output.includes('Invalid hostname format'))
         })
 
-        it('parses cursor format sm_cursor_<creds-type>_<arn>', async function () {
-            const hostname = 'sm_cursor_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
+        it('parses cursor format smc_<creds-type>_<arn>', async function () {
+            const hostname = 'smc_lc_arn_._aws_sagemaker_us-east-1_123456789012_domain__d-abc123'
 
             const result = await new ChildProcess('powershell.exe', [
                 '-ExecutionPolicy',
