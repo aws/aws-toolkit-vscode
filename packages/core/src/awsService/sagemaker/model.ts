@@ -198,21 +198,19 @@ export async function prepareDevEnvConnection(
             process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
         )
 
-        // Copy hyperpod_connect script if needed
+        // Always copy hyperpod_connect script to ensure latest version
         if (connectionType === 'sm_hp') {
             const sourceScriptPath = ctx.asAbsolutePath(
                 process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
             )
-            if (!(await fs.existsFile(hyperpodConnectPath))) {
-                try {
-                    await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                    if (process.platform !== 'win32') {
-                        await fs.chmod(hyperpodConnectPath, 0o755)
-                    }
-                    logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
-                } catch (err) {
-                    logger.error(`Failed to copy hyperpod_connect script: ${err}`)
+            try {
+                await fs.copy(sourceScriptPath, hyperpodConnectPath)
+                if (process.platform !== 'win32') {
+                    await fs.chmod(hyperpodConnectPath, 0o755)
                 }
+                logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
+            } catch (err) {
+                logger.error(`Failed to copy hyperpod_connect script: ${err}`)
             }
         }
 
