@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import { getSshConfigPath, sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { ensureConnectScript, SshConfig } from '../../shared/sshConfig'
-import { Result } from '../../shared/utilities/result'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
 import * as os from 'os'
@@ -35,49 +34,6 @@ import { HyperpodReconnectionManager } from './hyperpodReconnection'
 import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
-
-class HyperPodSshConfig extends SshConfig {
-    constructor(
-        sshPath: string,
-        private readonly hyperpodConnectPath: string
-    ) {
-        super(sshPath, 'hp_', 'hyperpod_connect')
-    }
-
-    protected override createSSHConfigSection(proxyCommand: string): string {
-        const isWindows = process.platform === 'win32'
-        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
-        const hostParam = isWindows ? '"%h"' : "'%h'"
-        const proxyCmd = isWindows
-            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
-            : `${quotedPath} ${hostParam}`
-
-        return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host hp_*
-    ForwardAgent yes
-    AddKeysToAgent yes
-    StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCmd}
-    IdentitiesOnly yes
-`
-    }
-
-    public override async ensureValid() {
-        const isWindows = process.platform === 'win32'
-        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
-        const hostParam = isWindows ? '"%h"' : "'%h'"
-        const proxyCommand = isWindows
-            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
-            : `${quotedPath} ${hostParam}`
-
-        const verifyHost = await this.verifySSHHost(proxyCommand)
-        if (verifyHost.isErr()) {
-            return verifyHost
-        }
-        return Result.ok()
-    }
-}
 
 export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
@@ -193,30 +149,9 @@ export async function prepareDevEnvConnection(
     } else {
         await removeKnownHost(hostname)
 
-        const hyperpodConnectPath = path.join(
-            ctx.globalStorageUri.fsPath,
-            process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
-        )
-
-        // Always copy hyperpod_connect script to ensure latest version
-        if (connectionType === 'sm_hp') {
-            const sourceScriptPath = ctx.asAbsolutePath(
-                process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
-            )
-            try {
-                await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                if (process.platform !== 'win32') {
-                    await fs.chmod(hyperpodConnectPath, 0o755)
-                }
-                logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
-            } catch (err) {
-                logger.error(`Failed to copy hyperpod_connect script: ${err}`)
-            }
-        }
-
         const sshConfig =
             connectionType === 'sm_hp'
-                ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
+                ? new SshConfig(ssh, 'hp_', 'hyperpod_connect')
                 : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
