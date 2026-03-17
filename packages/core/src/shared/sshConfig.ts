@@ -83,12 +83,26 @@ export class SshConfig {
     }
 
     protected async matchSshSection() {
-        // Check if our exact Host pattern exists in the config file
+        // Validate SSH config via the SSH binary — catches syntax errors and system-level issues
+        const result = await this.checkSshOnHost()
+        if (result.exitCode !== 0) {
+            let errorMessage = result.stderr?.trim() || `ssh check against host failed: ${result.exitCode}`
+            const sshConfigPath = getSshConfigPath()
+            errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
+
+            if (result.error) {
+                return Result.err(ToolkitError.chain(result.error, errorMessage))
+            }
+
+            return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
+        }
+
+        // Parse the config file directly to extract our Host block's ProxyCommand.
+        // This avoids relying on `ssh -G` stdout which can be affected by SSH canonicalization.
         const sshConfigPath = getSshConfigPath()
         const configExists = await fileExists(sshConfigPath)
 
         if (!configExists) {
-            // No config file exists at all
             return Result.ok(undefined)
         }
 
@@ -97,11 +111,9 @@ export class SshConfig {
         const hasExactHost = hostPattern.test(configContent)
 
         if (!hasExactHost) {
-            // Our exact Host pattern doesn't exist
             return Result.ok(undefined)
         }
 
-        // Our Host pattern exists, extract ProxyCommand directly from our specific Host block
         const lines = configContent.split('\n')
         let inOurHostBlock = false
         let proxyCommandLine = ''
@@ -109,18 +121,15 @@ export class SshConfig {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim()
 
-            // Check if this is our Host line
             if (hostPattern.test(line)) {
                 inOurHostBlock = true
                 continue
             }
 
-            // If we're in our block and hit another Host line, we're done
             if (inOurHostBlock && line.startsWith('Host ')) {
                 break
             }
 
-            // If we're in our block, look for ProxyCommand
             if (inOurHostBlock && line.toLowerCase().startsWith('proxycommand ')) {
                 proxyCommandLine = line
                 break
@@ -128,15 +137,12 @@ export class SshConfig {
         }
 
         if (!proxyCommandLine) {
-            // Host exists but no ProxyCommand found - return a marker to indicate corrupted entry
             return Result.ok('CORRUPTED_NO_PROXYCOMMAND')
         }
 
-        // Extract the proxy command value and check if it matches our script
         const matches = proxyCommandLine.match(this.proxyCommandRegExp)
 
         if (!matches) {
-            // ProxyCommand exists but doesn't match our script - return it as corrupted
             return Result.ok(proxyCommandLine)
         }
 
@@ -218,35 +224,9 @@ export class SshConfig {
         }
 
         const configSection = matchResult.ok()
+        const hasProxyCommand = configSection?.includes(proxyCommand)
 
-        if (configSection === undefined) {
-            // Host entry doesn't exist, need to add it
-            try {
-                await this.promptUserToConfigureSshConfig(undefined, proxyCommand)
-            } catch (e) {
-                return Result.err(e as Error)
-            }
-            return Result.ok()
-        }
-
-        // Host entry exists, validate the proxy command
-        // Extract the core script path (without quotes and hostname token) for comparison
-        // Expected format: '/path/to/sagemaker_connect' '%n'
-        const expectedPathMatch = proxyCommand.match(/['"]([^'"]+sagemaker_connect[^'"]*)['"]/)
-        const expectedPath = expectedPathMatch ? expectedPathMatch[1] : null
-
-        // The configSection from ssh -G will have format like: proxycommand /path/to/sagemaker_connect %n
-        // Normalize both for comparison (remove quotes, extra spaces)
-        const normalizedConfig = configSection
-            .toLowerCase()
-            .replace(/['"]|\s+/g, ' ')
-            .trim()
-        const normalizedExpected = expectedPath ? expectedPath.toLowerCase().replace(/\s+/g, ' ').trim() : ''
-
-        const isValid = normalizedExpected && normalizedConfig.includes(normalizedExpected)
-
-        if (!isValid) {
-            // Proxy command is outdated or malformed
+        if (!hasProxyCommand) {
             try {
                 await this.promptUserToConfigureSshConfig(configSection, proxyCommand)
             } catch (e) {

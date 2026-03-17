@@ -40,7 +40,7 @@ const logger = getLogger('sagemaker')
  * Maps IDE types to their SSH hostname prefix suffix.
  * VSCode uses no suffix, Cursor uses 'c' suffix.
  */
-const IDE_PREFIX_MAP: Record<string, string> = {
+const idePrefixMap: Record<string, string> = {
     vscode: '',
     cursor: 'c',
 }
@@ -57,7 +57,7 @@ function getSshConfigPrefix(connectionType: string): string {
     }
 
     const ideType = getIdeType()
-    const suffix = IDE_PREFIX_MAP[ideType] || ''
+    const suffix = idePrefixMap[ideType] || ''
 
     return `sm${suffix}_`
 }
@@ -74,7 +74,7 @@ function getHostnamePrefix(connectionType: string): string {
     }
 
     const ideType = getIdeType()
-    const suffix = IDE_PREFIX_MAP[ideType] || ''
+    const suffix = idePrefixMap[ideType] || ''
 
     if (suffix) {
         return connectionType.replace('sm_', `sm${suffix}_`)
