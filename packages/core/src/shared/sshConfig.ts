@@ -83,70 +83,25 @@ export class SshConfig {
     }
 
     protected async matchSshSection() {
-        // Validate SSH config via the SSH binary — catches syntax errors and system-level issues
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
+            // Format stderr error message for display to user
             let errorMessage = result.stderr?.trim() || `ssh check against host failed: ${result.exitCode}`
             const sshConfigPath = getSshConfigPath()
+            // Remove the SSH config file path prefix from error messages to make them more readable
+            // SSH errors often include the full path like "/Users/name/.ssh/config: line 5: Bad configuration option"
             errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
 
             if (result.error) {
+                // System level error
                 return Result.err(ToolkitError.chain(result.error, errorMessage))
             }
 
+            // SSH ran but returned error exit code
             return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
-
-        // Parse the config file directly to extract our Host block's ProxyCommand.
-        // This avoids relying on `ssh -G` stdout which can be affected by SSH canonicalization.
-        const sshConfigPath = getSshConfigPath()
-        const configExists = await fileExists(sshConfigPath)
-
-        if (!configExists) {
-            return Result.ok(undefined)
-        }
-
-        const configContent = await readFileAsString(sshConfigPath)
-        const hostPattern = new RegExp(`^Host\\s+${this.configHostName.replace('*', '\\*')}\\s*$`, 'm')
-        const hasExactHost = hostPattern.test(configContent)
-
-        if (!hasExactHost) {
-            return Result.ok(undefined)
-        }
-
-        const lines = configContent.split('\n')
-        let inOurHostBlock = false
-        let proxyCommandLine = ''
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim()
-
-            if (hostPattern.test(line)) {
-                inOurHostBlock = true
-                continue
-            }
-
-            if (inOurHostBlock && line.startsWith('Host ')) {
-                break
-            }
-
-            if (inOurHostBlock && line.toLowerCase().startsWith('proxycommand ')) {
-                proxyCommandLine = line
-                break
-            }
-        }
-
-        if (!proxyCommandLine) {
-            return Result.ok('CORRUPTED_NO_PROXYCOMMAND')
-        }
-
-        const matches = proxyCommandLine.match(this.proxyCommandRegExp)
-
-        if (!matches) {
-            return Result.ok(proxyCommandLine)
-        }
-
-        return Result.ok(matches[0])
+        const matches = result.stdout.match(this.proxyCommandRegExp)
+        return Result.ok(matches?.[0])
     }
 
     private async promptUserForOutdatedSection(configSection: string): Promise<void> {

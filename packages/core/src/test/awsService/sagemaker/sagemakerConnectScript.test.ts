@@ -37,7 +37,7 @@ describe('sagemaker_connect script', function () {
             })
 
             const output = result.stderr + result.stdout
-            assert.ok(!output.includes('Invalid hostname npmformat'))
+            assert.ok(!output.includes('Invalid hostname npm format'))
         })
 
         it('rejects invalid hostname format', async function () {

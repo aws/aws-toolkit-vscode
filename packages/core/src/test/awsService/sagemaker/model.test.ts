@@ -13,6 +13,7 @@ import {
     startLocalServer,
     stopLocalServer,
     startRemoteViaSageMakerSshKiro,
+    applyIdeSuffix,
 } from '../../../awsService/sagemaker/model'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
@@ -365,7 +366,7 @@ describe('SageMaker Model', () => {
     })
 })
 
-describe('prepareDevEnvConnection with Cursor support', function () {
+describe('applyIdeSuffix', function () {
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
@@ -376,65 +377,27 @@ describe('prepareDevEnvConnection with Cursor support', function () {
         sandbox.restore()
     })
 
-    it('adds cursor prefix to hostname when isCursor returns true', function () {
+    it('adds cursor suffix when IDE is cursor', function () {
         const utils = require('../../../shared/extensionUtilities')
-        sandbox.stub(utils, 'isCursor').returns(true)
+        sandbox.stub(utils, 'getIdeType').returns('cursor')
 
-        const connectionType: string = 'sm_lc'
-        const expectedPrefix = 'smc_lc'
-
-        // Test the hostname prefix logic
-        const hostnamePrefix =
-            utils.isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'smc_') : connectionType
-
-        assert.strictEqual(hostnamePrefix, expectedPrefix)
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'smc_lc')
+        assert.strictEqual(applyIdeSuffix('sm_dl'), 'smc_dl')
+        assert.strictEqual(applyIdeSuffix('sm_'), 'smc_')
     })
 
-    it('does not add cursor prefix when isCursor returns false', function () {
+    it('does not modify prefix when IDE is vscode', function () {
         const utils = require('../../../shared/extensionUtilities')
-        sandbox.stub(utils, 'isCursor').returns(false)
+        sandbox.stub(utils, 'getIdeType').returns('vscode')
 
-        const connectionType: string = 'sm_lc'
-        const expectedPrefix = 'sm_lc'
-
-        const hostnamePrefix =
-            utils.isCursor() && connectionType !== 'sm_hp'
-                ? connectionType.replace('sm_', 'sm_cursor_')
-                : connectionType
-
-        assert.strictEqual(hostnamePrefix, expectedPrefix)
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'sm_lc')
+        assert.strictEqual(applyIdeSuffix('sm_'), 'sm_')
     })
 
-    it('does not add cursor prefix for hyperpod connections', function () {
+    it('does not modify prefix for unknown IDE types', function () {
         const utils = require('../../../shared/extensionUtilities')
-        sandbox.stub(utils, 'isCursor').returns(true)
+        sandbox.stub(utils, 'getIdeType').returns('unknown')
 
-        const connectionType: string = 'sm_hp'
-        const expectedPrefix = 'sm_hp'
-
-        const hostnamePrefix =
-            utils.isCursor() && connectionType !== 'sm_hp' ? connectionType.replace('sm_', 'smc_') : connectionType
-
-        assert.strictEqual(hostnamePrefix, expectedPrefix)
-    })
-
-    it('uses cursor prefix in SshConfig when isCursor is true', function () {
-        const utils = require('../../../shared/extensionUtilities')
-        sandbox.stub(utils, 'isCursor').returns(true)
-
-        const expectedPrefix = 'smc_'
-        const actualPrefix = utils.isCursor() ? 'smc_' : 'sm_'
-
-        assert.strictEqual(actualPrefix, expectedPrefix)
-    })
-
-    it('uses standard prefix in SshConfig when isCursor is false', function () {
-        const utils = require('../../../shared/extensionUtilities')
-        sandbox.stub(utils, 'isCursor').returns(false)
-
-        const expectedPrefix = 'sm_'
-        const actualPrefix = utils.isCursor() ? 'sm_cursor_' : 'sm_'
-
-        assert.strictEqual(actualPrefix, expectedPrefix)
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'sm_lc')
     })
 })

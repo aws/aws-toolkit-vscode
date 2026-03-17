@@ -40,47 +40,19 @@ const logger = getLogger('sagemaker')
  * Maps IDE types to their SSH hostname prefix suffix.
  * VSCode uses no suffix, Cursor uses 'c' suffix.
  */
-const idePrefixMap: Record<string, string> = {
+const ideSuffixMap: Record<string, string> = {
     vscode: '',
     cursor: 'c',
 }
 
 /**
- * Gets the SSH config hostname prefix based on connection type and IDE.
- * This is used for SSH config Host patterns (e.g., 'sm_*', 'smc_*').
- * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
- * @returns The SSH config prefix (e.g., 'sm_', 'smc_', 'hp_')
+ * Applies IDE-specific suffix to an 'sm_' prefixed string.
+ * e.g. 'sm_lc' → 'smc_lc' on Cursor, unchanged on VSCode.
+ * HyperPod ('sm_hp') is excluded since it uses a separate 'hp_' prefix.
  */
-function getSshConfigPrefix(connectionType: string): string {
-    if (connectionType === 'sm_hp') {
-        return 'hp_'
-    }
-
-    const ideType = getIdeType()
-    const suffix = idePrefixMap[ideType] || ''
-
-    return `sm${suffix}_`
-}
-
-/**
- * Gets the full hostname prefix for SSH connections.
- * This is used for actual hostnames (e.g., 'sm_lc', 'smc_lc').
- * @param connectionType The base connection type (e.g., 'sm_lc', 'sm_dl', 'sm_hp')
- * @returns The hostname prefix with IDE-specific suffix if applicable
- */
-function getHostnamePrefix(connectionType: string): string {
-    if (connectionType === 'sm_hp') {
-        return connectionType
-    }
-
-    const ideType = getIdeType()
-    const suffix = idePrefixMap[ideType] || ''
-
-    if (suffix) {
-        return connectionType.replace('sm_', `sm${suffix}_`)
-    }
-
-    return connectionType
+export function applyIdeSuffix(value: string): string {
+    const suffix = ideSuffixMap[getIdeType()] || ''
+    return suffix ? value.replace('sm_', `sm${suffix}_`) : value
 }
 
 class HyperPodSshConfig extends SshConfig {
@@ -205,7 +177,7 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix = getHostnamePrefix(connectionType)
+    const hostnamePrefix = connectionType === 'sm_hp' ? connectionType : applyIdeSuffix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
         const clusterPart = clusterName || 'unknown'
@@ -266,7 +238,7 @@ export async function prepareDevEnvConnection(
         const sshConfig =
             connectionType === 'sm_hp'
                 ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, getSshConfigPrefix(connectionType), 'sagemaker_connect')
+                : new SshConfig(ssh, applyIdeSuffix('sm_'), 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()

@@ -87,11 +87,11 @@ function Get-SSMSessionInfoAsync {
 
 # Parse creds_type and AWS resource ARN from HOSTNAME
 Write-Host "`nParsing hostname..."
-if ($Hostname -match "^sm(c)?_([^_]+)_(arn_._aws.*)$") {
+if ($Hostname -match "^sm([^_]*)_([^_]+)_(arn_._aws.*)$") {
     $CREDS_TYPE = $matches[2]
     $AWS_RESOURCE_ARN = $matches[3] -replace '_._', ':' -replace '__', '/'
 } else {
-    Write-Error "Invalid hostname format. Expected format: sm_<creds-type>_<AWSResourceARN> or smc_<creds-type>_<AWSResourceARN>"
+    Write-Error "Invalid hostname format. Expected format: sm<optional_sub_type>_<creds-type>_<AWSResourceARN>"
     exit 1
 }
 
