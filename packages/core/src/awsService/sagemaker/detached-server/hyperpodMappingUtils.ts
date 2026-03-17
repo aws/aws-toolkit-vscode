@@ -11,7 +11,6 @@ export interface HyperpodSpaceMapping {
     namespace: string
     clusterArn: string
     clusterName: string
-    eksClusterName: string
     endpoint?: string
     certificateAuthorityData?: string
     region?: string
@@ -61,11 +60,11 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
     })
 }
 
-export function createConnectionKey(devspaceName: string, namespace: string, clusterName: string): string {
-    if (devspaceName.includes(':') || namespace.includes(':') || clusterName.includes(':')) {
+export function createConnectionKey(workspaceName: string, namespace: string, clusterName: string): string {
+    if (workspaceName.includes(':') || namespace.includes(':') || clusterName.includes(':')) {
         throw new Error('Connection key parameters cannot contain colon characters')
     }
-    return `${clusterName}:${namespace}:${devspaceName}`
+    return `${workspaceName}:${namespace}:${clusterName}`
 }
 
 export async function storeHyperpodConnection(
@@ -73,7 +72,6 @@ export async function storeHyperpodConnection(
     namespace: string,
     clusterArn: string,
     clusterName: string,
-    eksClusterName: string,
     endpoint?: string,
     certificateAuthorityData?: string,
     region?: string,
@@ -87,7 +85,6 @@ export async function storeHyperpodConnection(
         namespace,
         clusterArn,
         clusterName,
-        eksClusterName,
         endpoint,
         certificateAuthorityData,
         region,

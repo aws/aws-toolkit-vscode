@@ -31,7 +31,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             const devspaceStr = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
             const namespaceStr = Array.isArray(namespace) ? namespace[0] : namespace
             const clusterStr = Array.isArray(clusterName) ? clusterName[0] : clusterName
-            lookupKey = `${clusterStr}:${namespaceStr}:${devspaceStr}`
+            lookupKey = `${devspaceStr}:${namespaceStr}:${clusterStr}`
         } else if (devspaceName) {
             lookupKey = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
         } else {
@@ -60,7 +60,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         }
 
         const keyParts = lookupKey.split(':')
-        const actualDevspaceName = keyParts.length === 3 ? keyParts[2] : String(devspaceName || lookupKey)
+        const actualDevspaceName = keyParts.length === 3 ? keyParts[0] : String(devspaceName || lookupKey)
 
         // Check if we have EKS cluster details for kubectl-based reconnection
         const hasKubectlDetails = !!(connectionInfo.endpoint && connectionInfo.certificateAuthorityData)
@@ -75,7 +75,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
                     'eks',
                     'describe-cluster',
                     '--name',
-                    connectionInfo.eksClusterName,
+                    connectionInfo.clusterName,
                     '--region',
                     region,
                     '--output',
@@ -93,7 +93,6 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
                         connectionInfo.namespace,
                         connectionInfo.clusterArn,
                         connectionInfo.clusterName,
-                        connectionInfo.eksClusterName,
                         endpoint,
                         certData,
                         region,
@@ -151,7 +150,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         }
 
         const eksCluster = {
-            name: connectionInfo.eksClusterName,
+            name: connectionInfo.clusterName,
             arn: connectionInfo.clusterArn,
             endpoint: connectionInfo.endpoint,
             certificateAuthority: {

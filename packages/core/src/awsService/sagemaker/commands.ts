@@ -35,7 +35,7 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
-import { parse } from '@aws-sdk/util-arn-parser'
+import { parseArn } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -133,29 +133,37 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
+        let clusterName: string | undefined
+        let region: string | undefined
+        let accountId: string | undefined
         if (!domain && eksClusterArn && workspaceName && namespace) {
-            const { accountId, region, clusterName } = parseArn(eksClusterArn)
+            const parsed = parseArn(eksClusterArn)
+            clusterName = parsed.resourceName
+            region = parsed.region
+            accountId = parsed.accountId
             connectionType = 'sm_hp'
             const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             session = isValidSshHostname(proposedSession)
                 ? proposedSession
                 : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
         }
-        const remoteEnv = await prepareDevEnvConnection(
-            connectionIdentifier,
-            ctx.extensionContext,
+        const remoteEnv = await prepareDevEnvConnection({
+            spaceArn: connectionIdentifier,
+            ctx: ctx.extensionContext,
             connectionType,
-            isSMUS /* isSMUS */,
-            undefined /* node */,
+            isSMUS,
             session,
             wsUrl,
             token,
             domain,
             appType,
             workspaceName,
-            undefined,
-            namespace
-        )
+            clusterName,
+            namespace,
+            region,
+            clusterArn: eksClusterArn,
+            accountId,
+        })
 
         try {
             const path = '/home/sagemaker-user'
@@ -193,26 +201,6 @@ export async function deeplinkConnect(
             )
             throw err
         }
-    }
-}
-
-function parseArn(arn: string): { accountId: string; region: string; clusterName: string } {
-    try {
-        const parsed = parse(arn)
-        if (!parsed.service) {
-            throw new Error('Invalid service')
-        }
-        const clusterName = parsed.resource.split('/')[1]
-        if (!clusterName) {
-            throw new Error('Invalid cluster name')
-        }
-        return {
-            accountId: parsed.accountId,
-            clusterName,
-            region: parsed.region,
-        }
-    } catch (error) {
-        throw new Error('Invalid cluster ARN')
     }
 }
 

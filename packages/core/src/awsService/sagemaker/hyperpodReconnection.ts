@@ -7,7 +7,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { clearSSHHostKey } from './hyperpodUtils'
+import { removeKnownHost } from './utils'
 import { getHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 export class HyperpodReconnectionManager {
@@ -50,7 +50,9 @@ export class HyperpodReconnectionManager {
     async refreshCredentials(connectionKey: string): Promise<void> {
         try {
             const connectionMapping = await getHyperpodConnection(connectionKey)
-            await clearSSHHostKey(connectionKey, connectionMapping?.region, connectionMapping?.accountId)
+            const [space, ns, cluster] = connectionKey.split(':')
+            const hostname = `hp_${space}_${ns}_${cluster}_${connectionMapping?.region}_${connectionMapping?.accountId}`
+            await removeKnownHost(hostname)
 
             const serverInfoPath = vscode.Uri.joinPath(
                 globals.context.globalStorageUri,

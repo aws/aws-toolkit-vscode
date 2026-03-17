@@ -54,12 +54,12 @@ function Get-FreshCredentials {
 function Main {
     Write-Log "=============================================================================="
     
-    # Parse hostname format: hp_{cluster_name}_{namespace}_{space_name}_{region}_{account_id}
+    # Parse hostname format: hp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
     if ($HostName -match '^hp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$') {
-        $clusterName = $Matches[1]
+        $devspaceName = $Matches[1]
         $namespace = $Matches[2]
-        $devspaceName = $Matches[3]
-        $connectionKey = "${clusterName}:${namespace}:${devspaceName}"
+        $clusterName = $Matches[3]
+        $connectionKey = "${devspaceName}:${namespace}:${clusterName}"
     } else {
         # Old format fallback
         $devspaceName = $HostName -replace '^hp_', ''

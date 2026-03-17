@@ -8,7 +8,8 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
-import { open, parseArn, readServerInfo } from '../utils'
+import { open, readServerInfo } from '../utils'
+import { parseArn } from '../utils'
 import { openErrorPage } from '../errorPage'
 import { SmusDeeplinkSessionExpiredError } from '../../constants'
 
@@ -76,7 +77,7 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
 
             // Continue with existing SageMaker AI refresh flow
             const serverInfo = await readServerInfo()
-            const { spaceName } = parseArn(connectionIdentifier)
+            const { resourceName: spaceName } = parseArn(connectionIdentifier)
 
             const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
                 connectionIdentifier

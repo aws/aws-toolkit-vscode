@@ -30,7 +30,7 @@ export class HyperpodConnectionMonitor {
         const keyParts = connectionKey.split(':')
         if (keyParts.length !== 3) {
             getLogger().warn(
-                `Connection key ${connectionKey} does not follow expected format (cluster:namespace:devspace). Monitoring may be unreliable.`
+                `Connection key ${connectionKey} does not follow expected format (workspace:namespace:cluster). Monitoring may be unreliable.`
             )
         }
 
@@ -79,7 +79,7 @@ export class HyperpodConnectionMonitor {
 
             let hostPattern: string
             if (keyParts.length === 3 && connectionMapping?.region && connectionMapping?.accountId) {
-                // New format: hp_<cluster_name>_<namespace>_<space_name>_<region>_<account_id>
+                // Format: hp_<devspace>_<namespace>_<cluster>_<region>_<account_id>
                 hostPattern = `hp_${keyParts[0]}_${keyParts[1]}_${keyParts[2]}_${connectionMapping.region}_${connectionMapping.accountId}`
             } else {
                 hostPattern = `hp_${connectionKey.replace(/:/g, '_')}`

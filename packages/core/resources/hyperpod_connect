@@ -62,7 +62,7 @@ import json
 try:
     with open('$PROFILES_FILE', 'r') as f:
         profiles = json.load(f)
-    matches = sorted([k for k in profiles.keys() if k.endswith(':$DEVSPACE_NAME')])
+    matches = sorted([k for k in profiles.keys() if k.startswith('$DEVSPACE_NAME:')])
     print(matches[0] if matches else '$DEVSPACE_NAME')
 except:
     print('$DEVSPACE_NAME')
@@ -109,7 +109,7 @@ _get_fresh_credentials() {
         API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
     elif [ -n "$CLUSTER_NAME" ] && [ -n "$NAMESPACE" ]; then
         # Use individual parameters if available
-        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$(_url_encode "$DEVSPACE_NAME")&namespace=$(_url_encode "$NAMESPACE")&cluster_name=$(_url_encode "$CLUSTER_NAME")"
+        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$(_url_encode "$WORKSPACE_NAME")&namespace=$(_url_encode "$NAMESPACE")&cluster_name=$(_url_encode "$CLUSTER_NAME")"
     else
         # Fallback for legacy format
         API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
@@ -122,7 +122,7 @@ _get_fresh_credentials() {
     fi
     
     # Parse JSON once and check for error response
-    read -r STATUS ERROR_MSG CONNECTION_URL < <(echo "$API_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('status', 'success'), data.get('message', ''), data.get('connection', {}).get('url', ''))" 2>/dev/null) || {
+    read -r STATUS ERROR_MSG CONNECTION_URL < <(echo "$API_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('status', 'success'), data.get('message', '') or '_', data.get('connection', {}).get('url', ''))" 2>/dev/null) || {
         _log "Error: Failed to parse API response JSON"
         exit 1
     }
@@ -145,18 +145,18 @@ _main() {
     fi
 
     # Extract devspace name, cluster name, and namespace from hostname
-    # New format: hp_{cluster_name}_{namespace}_{space_name}_{region}_{account_id}
-    # Old format: hp_{devspace} (for backward compatibility)
+    # New format: hp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
+    # Old format: hp_{workspace} (for backward compatibility)
     if [[ "$1" =~ ^hp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
-        # New format: cluster_namespace_space_region_account
-        CLUSTER_NAME="${BASH_REMATCH[1]}"
+        # Format: hp_{workspace}_{namespace}_{cluster}_{region}_{account}
+        WORKSPACE_NAME="${BASH_REMATCH[1]}"
         NAMESPACE="${BASH_REMATCH[2]}"
-        DEVSPACE_NAME="${BASH_REMATCH[3]}"
-        # Construct the expected connection key (cluster:namespace:devspace)
-        CONNECTION_KEY="${CLUSTER_NAME}:${NAMESPACE}:${DEVSPACE_NAME}"
+        CLUSTER_NAME="${BASH_REMATCH[3]}"
+        # Construct the expected connection key (workspace:namespace:cluster)
+        CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
     else
         # Old format or fallback - extract devspace name only
-        DEVSPACE_NAME=$(echo "$1" | sed 's/hp_//')
+        WORKSPACE_NAME=$(echo "$1" | sed 's/hp_//')
         CLUSTER_NAME=""
         NAMESPACE=""
         CONNECTION_KEY=""
@@ -164,15 +164,15 @@ _main() {
     
     # For new format, we already have the connection key constructed from hostname
     # For old format, look up the connection key from the hyperpod profiles file
-    [ -z "$CONNECTION_KEY" ] && CONNECTION_KEY=$(_resolve_connection_key "$DEVSPACE_NAME")
+    [ -z "$CONNECTION_KEY" ] && CONNECTION_KEY=$(_resolve_connection_key "$WORKSPACE_NAME")
     
     if [ -z "$CONNECTION_KEY" ]; then
-        _log "Error: Could not determine connection key for devspace: $DEVSPACE_NAME"
+        _log "Error: Could not determine connection key for devspace: $WORKSPACE_NAME"
         exit 1
     fi
     
     _log "=============================================================================="
-    _log "Connecting to HyperPod devspace: $DEVSPACE_NAME (connection key: $CONNECTION_KEY)"
+    _log "Connecting to HyperPod devspace: $WORKSPACE_NAME (connection key: $CONNECTION_KEY)"
     
     # Always get fresh credentials (CONNECTION_URL is set by _get_fresh_credentials)
     _get_fresh_credentials "$CONNECTION_KEY"

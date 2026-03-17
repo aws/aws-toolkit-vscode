@@ -11,12 +11,10 @@ import { createBoundProcess, ensureDependencies } from '../../shared/remoteSessi
 import { ensureConnectScript, SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
-import * as os from 'os'
 import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
-import { getSmSsmEnv, spawnDetachedServer } from './utils'
-import { parseArn } from './detached-server/utils'
+import { getSmSsmEnv, removeKnownHost, spawnDetachedServer } from './utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
@@ -31,7 +29,7 @@ import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
 import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
 import { HyperpodReconnectionManager } from './hyperpodReconnection'
-import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
+import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
@@ -48,7 +46,7 @@ export async function tryRemoteConnection(
     const username = 'sagemaker-user'
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
-    const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
+    const remoteEnv = await prepareDevEnvConnection({ spaceArn, ctx, connectionType: 'sm_lc', isSMUS, node })
 
     try {
         progress.report({ message: 'Opening remote session' })
@@ -79,23 +77,48 @@ export function extractRegionFromStreamUrl(streamUrl: string): string {
     return match[1]
 }
 
-export async function prepareDevEnvConnection(
-    spaceArn: string,
-    ctx: vscode.ExtensionContext,
-    connectionType: string,
-    isSMUS: boolean,
-    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode | undefined,
-    session?: string,
-    wsUrl?: string,
-    token?: string,
-    domain?: string,
-    appType?: string,
-    devspaceName?: string,
-    clusterName?: string,
-    namespace?: string,
-    region?: string,
+export interface DevEnvConnectionOptions {
+    spaceArn: string
+    ctx: vscode.ExtensionContext
+    connectionType: string
+    isSMUS: boolean
+    node?: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode
+    session?: string
+    wsUrl?: string
+    token?: string
+    domain?: string
+    appType?: string
+    workspaceName?: string
+    clusterName?: string
+    namespace?: string
+    region?: string
     clusterArn?: string
-) {
+    accountId?: string
+    eksEndpoint?: string
+    eksCertAuthData?: string
+}
+
+export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
+    const {
+        spaceArn,
+        ctx,
+        connectionType,
+        isSMUS,
+        node,
+        session,
+        wsUrl,
+        token,
+        domain,
+        appType,
+        workspaceName,
+        clusterName,
+        namespace,
+        region,
+        clusterArn,
+        accountId,
+        eksEndpoint,
+        eksCertAuthData,
+    } = opts
     const remoteLogger = configureRemoteConnectionLogger()
     // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
     const { ssm, vsc, ssh } = (
@@ -114,18 +137,11 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix = connectionType
     let hostname: string
     if (connectionType === 'sm_hp') {
-        const clusterPart = clusterName || 'unknown'
-        const namespacePart = namespace || 'default'
-        const devspacePart = devspaceName || session || 'unknown'
-        const regionPart =
-            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
-        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
-        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
+        hostname = session ? `hp_${session}` : `hp_${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
     } else {
-        hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
+        hostname = `${connectionType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
     // save space credential mapping
     if (connectionType === 'sm_lc') {
@@ -241,25 +257,28 @@ export async function prepareDevEnvConnection(
         return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
     }
     const SessionProcess = createBoundProcess(envProvider).extend({
-        onStdout: (data: string) => {
-            remoteLogger(data)
-            if (connectionType === 'sm_hp') {
-                getLogger().info(`[ProxyCommand stdout] ${data}`)
-            }
-        },
-        onStderr: (data: string) => {
-            remoteLogger(data)
-            if (connectionType === 'sm_hp') {
-                getLogger().error(`[ProxyCommand stderr] ${data}`)
-            }
-        },
+        onStdout: (data: string) => remoteLogger(data),
+        onStderr: (data: string) => remoteLogger(data),
         rejectOnErrorCode: true,
     })
 
     // Start connection monitoring for HyperPod connections
-    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
+    if (connectionType === 'sm_hp' && workspaceName && clusterName && namespace) {
         try {
-            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+            const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
+
+            await storeHyperpodConnection(
+                workspaceName,
+                namespace,
+                clusterArn!,
+                clusterName,
+                eksEndpoint,
+                eksCertAuthData,
+                region,
+                wsUrl,
+                token
+            )
+
             const connectionMonitor = HyperpodConnectionMonitor.getInstance()
             connectionMonitor.startMonitoring(connectionKey)
 
@@ -370,40 +389,6 @@ export async function stopLocalServer(ctx: vscode.ExtensionContext): Promise<voi
         logger.debug('removed server info file.')
     } catch (err: any) {
         logger.warn(`could not delete info file: ${err.message ?? err}`)
-    }
-}
-
-export async function removeKnownHost(hostname: string): Promise<void> {
-    const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts')
-
-    if (!(await fs.existsFile(knownHostsPath))) {
-        logger.warn(`known_hosts not found at ${knownHostsPath}`)
-        return
-    }
-
-    let lines: string[]
-    try {
-        const content = await fs.readFileText(knownHostsPath)
-        lines = content.split('\n')
-    } catch (err: any) {
-        throw ToolkitError.chain(err, 'Failed to read known_hosts file')
-    }
-
-    const updatedLines = lines.filter((line) => {
-        const entryHostname = line.split(' ')[0].split(',')
-        // Hostnames in the known_hosts file seem to be always lowercase, but keeping the case-sensitive check just in
-        // case. Originally we were only doing the case-sensitive check which caused users to get a host
-        // identification error when reconnecting to a Space after it was restarted.
-        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
-    })
-
-    if (updatedLines.length !== lines.length) {
-        try {
-            await fs.writeFile(knownHostsPath, updatedLines.join('\n'), { atomic: true })
-            logger.debug(`Removed '${hostname}' from known_hosts`)
-        } catch (err: any) {
-            throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
-        }
     }
 }
 

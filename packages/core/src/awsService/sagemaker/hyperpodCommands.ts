@@ -11,13 +11,9 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
-import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
-import { HyperpodReconnectionManager } from './hyperpodReconnection'
-import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
-import { startLocalServer, prepareDevEnvConnection } from './model'
+import { prepareDevEnvConnection } from './model'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
 import globals from '../../shared/extensionGlobals'
-import { clearSSHHostKey } from './hyperpodUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -64,58 +60,22 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             return
         }
 
-        const connectionKey = createConnectionKey(
-            node.devSpace.name,
-            node.devSpace.namespace,
-            node.hpCluster.clusterName
-        )
+        const eksCluster = kubectlClient.getEksCluster()
 
-        try {
-            await startLocalServer(globals.context)
-
-            const eksCluster = kubectlClient.getEksCluster()
-            if (!eksCluster?.endpoint || !eksCluster?.certificateAuthority?.data) {
-                throw new Error('EKS cluster information is required but not available')
-            }
-            await storeHyperpodConnection(
-                node.devSpace.name,
-                node.devSpace.namespace,
-                node.hpCluster.clusterArn,
-                node.hpCluster.clusterName,
-                node.devSpace.cluster,
-                eksCluster.endpoint,
-                eksCluster.certificateAuthority.data,
-                node.regionCode
-            )
-
-            const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            reconnectionManager.scheduleReconnection(connectionKey)
-
-            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
-            connectionMonitor.startMonitoring(connectionKey)
-        } catch (error) {
-            getLogger().warn(`Failed to store HyperPod connection info: ${error}`)
-        }
-
-        await clearSSHHostKey(connectionKey, node.regionCode, node.hpCluster.clusterArn.split(':')[4])
-
-        const remoteEnv = await prepareDevEnvConnection(
-            '',
-            globals.context,
-            'sm_hp',
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            node.devSpace.name,
-            node.hpCluster.clusterName,
-            node.devSpace.namespace,
-            node.regionCode,
-            node.hpCluster.clusterArn
-        )
+        const remoteEnv = await prepareDevEnvConnection({
+            spaceArn: '',
+            ctx: globals.context,
+            connectionType: 'sm_hp',
+            isSMUS: false,
+            workspaceName: node.devSpace.name,
+            clusterName: node.devSpace.cluster,
+            namespace: node.devSpace.namespace,
+            region: node.regionCode,
+            clusterArn: node.hpCluster.clusterArn,
+            accountId: node.hpCluster.clusterArn.split(':')[4],
+            eksEndpoint: eksCluster?.endpoint,
+            eksCertAuthData: eksCluster?.certificateAuthority?.data,
+        })
 
         await startVscodeRemote(
             remoteEnv.SessionProcess,

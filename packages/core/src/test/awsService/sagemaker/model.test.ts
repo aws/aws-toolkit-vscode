@@ -8,12 +8,8 @@ import * as sinon from 'sinon'
 import * as os from 'os'
 import * as path from 'path'
 import { DevSettings, fs, ToolkitError } from '../../../shared'
-import {
-    removeKnownHost,
-    startLocalServer,
-    stopLocalServer,
-    startRemoteViaSageMakerSshKiro,
-} from '../../../awsService/sagemaker/model'
+import { startLocalServer, stopLocalServer, startRemoteViaSageMakerSshKiro } from '../../../awsService/sagemaker/model'
+import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
 

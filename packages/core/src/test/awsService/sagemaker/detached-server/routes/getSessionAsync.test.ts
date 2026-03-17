@@ -9,6 +9,7 @@ import assert from 'assert'
 import { SessionStore } from '../../../../../awsService/sagemaker/detached-server/sessionStore'
 import { handleGetSessionAsync } from '../../../../../awsService/sagemaker/detached-server/routes/getSessionAsync'
 import * as utils from '../../../../../awsService/sagemaker/detached-server/utils'
+import * as sagemakerUtils from '../../../../../awsService/sagemaker/utils'
 import * as errorPage from '../../../../../awsService/sagemaker/detached-server/errorPage'
 import { SmusDeeplinkSessionExpiredError } from '../../../../../awsService/sagemaker/constants'
 
@@ -76,8 +77,8 @@ describe('handleGetSessionAsync', () => {
 
         sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
         sinon
-            .stub(utils, 'parseArn')
-            .returns({ region: 'us-east-1', accountId: '123456789012', spaceName: 'test-space' })
+            .stub(sagemakerUtils, 'parseArn')
+            .returns({ region: 'us-east-1', accountId: '123456789012', resourceName: 'test-space' })
         sinon.stub(utils, 'open').resolves()
         await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
@@ -155,8 +156,8 @@ describe('handleGetSessionAsync', () => {
 
             sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
             sinon
-                .stub(utils, 'parseArn')
-                .returns({ region: 'us-east-1', accountId: '123456789012', spaceName: 'test-space' })
+                .stub(sagemakerUtils, 'parseArn')
+                .returns({ region: 'us-east-1', accountId: '123456789012', resourceName: 'test-space' })
             sinon.stub(utils, 'open').resolves()
 
             await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
@@ -178,8 +179,8 @@ describe('handleGetSessionAsync', () => {
 
             sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
             sinon
-                .stub(utils, 'parseArn')
-                .returns({ region: 'us-east-1', accountId: '123456789012', spaceName: 'test-space' })
+                .stub(sagemakerUtils, 'parseArn')
+                .returns({ region: 'us-east-1', accountId: '123456789012', resourceName: 'test-space' })
             sinon.stub(utils, 'open').resolves()
 
             await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
