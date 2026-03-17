@@ -79,10 +79,10 @@ export class HyperpodConnectionMonitor {
 
             let hostPattern: string
             if (keyParts.length === 3 && connectionMapping?.region && connectionMapping?.accountId) {
-                // Format: hp_<devspace>_<namespace>_<cluster>_<region>_<account_id>
-                hostPattern = `hp_${keyParts[0]}_${keyParts[1]}_${keyParts[2]}_${connectionMapping.region}_${connectionMapping.accountId}`
+                // Format: smhp_<devspace>_<namespace>_<cluster>_<region>_<account_id>
+                hostPattern = `smhp_${keyParts[0]}_${keyParts[1]}_${keyParts[2]}_${connectionMapping.region}_${connectionMapping.accountId}`
             } else {
-                hostPattern = `hp_${connectionKey.replace(/:/g, '_')}`
+                hostPattern = `smhp_${connectionKey.replace(/:/g, '_')}`
             }
 
             const isWindows = process.platform === 'win32'

@@ -54,15 +54,15 @@ function Get-FreshCredentials {
 function Main {
     Write-Log "=============================================================================="
     
-    # Parse hostname format: hp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
-    if ($HostName -match '^hp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$') {
+    # Parse hostname format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
+    if ($HostName -match '^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$') {
         $devspaceName = $Matches[1]
         $namespace = $Matches[2]
         $clusterName = $Matches[3]
         $connectionKey = "${devspaceName}:${namespace}:${clusterName}"
     } else {
         # Old format fallback
-        $devspaceName = $HostName -replace '^hp_', ''
+        $devspaceName = $HostName -replace '^smhp_', ''
         $profilesFile = "$env:USERPROFILE\.aws\.hyperpod-space-profiles"
         
         if (Test-Path $profilesFile) {

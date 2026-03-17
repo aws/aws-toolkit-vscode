@@ -4,14 +4,9 @@
  */
 
 import * as assert from 'assert'
+import { ideProcessPatterns } from '../../../../awsService/sagemaker/detached-server/server'
 
 describe('ideProcessPatterns', () => {
-    const ideProcessPatterns = {
-        windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-        darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,
-        linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
-    }
-
     describe('darwin pattern', () => {
         it('matches VS Code with Electron', () => {
             const line = '/Applications/Visual Studio Code.app/Contents/MacOS/Electron'

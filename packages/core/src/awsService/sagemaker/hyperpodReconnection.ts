@@ -51,7 +51,7 @@ export class HyperpodReconnectionManager {
         try {
             const connectionMapping = await getHyperpodConnection(connectionKey)
             const [space, ns, cluster] = connectionKey.split(':')
-            const hostname = `hp_${space}_${ns}_${cluster}_${connectionMapping?.region}_${connectionMapping?.accountId}`
+            const hostname = `smhp_${space}_${ns}_${cluster}_${connectionMapping?.region}_${connectionMapping?.accountId}`
             await removeKnownHost(hostname)
 
             const serverInfoPath = vscode.Uri.joinPath(

@@ -14,7 +14,7 @@
 #   DEBUG_LOG           - Enable debug logging (default: 0)
 #
 # USAGE:
-#   ./hyperpod_connect hp_demo1
+#   ./hyperpod_connect smhp_demo1
 #
 # SECURITY NOTE:
 # This script handles sensitive authentication tokens. Ensure proper file permissions
@@ -140,15 +140,15 @@ _main() {
     LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
 
     if [ $# -ne 1 ]; then
-        _log "Usage: $0 hp_<devspace_name>"
+        _log "Usage: $0 smhp_<devspace_name>"
         exit 1
     fi
 
     # Extract devspace name, cluster name, and namespace from hostname
-    # New format: hp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
-    # Old format: hp_{workspace} (for backward compatibility)
-    if [[ "$1" =~ ^hp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
-        # Format: hp_{workspace}_{namespace}_{cluster}_{region}_{account}
+    # New format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
+    # Old format: smhp_{workspace} (for backward compatibility)
+    if [[ "$1" =~ ^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+        # Format: smhp_{workspace}_{namespace}_{cluster}_{region}_{account}
         WORKSPACE_NAME="${BASH_REMATCH[1]}"
         NAMESPACE="${BASH_REMATCH[2]}"
         CLUSTER_NAME="${BASH_REMATCH[3]}"
@@ -156,7 +156,7 @@ _main() {
         CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
     else
         # Old format or fallback - extract devspace name only
-        WORKSPACE_NAME=$(echo "$1" | sed 's/hp_//')
+        WORKSPACE_NAME=$(echo "$1" | sed 's/smhp_//')
         CLUSTER_NAME=""
         NAMESPACE=""
         CONNECTION_KEY=""

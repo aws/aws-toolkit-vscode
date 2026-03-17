@@ -33,6 +33,20 @@ import { createConnectionKey, storeHyperpodConnection } from './detached-server/
 
 const logger = getLogger('sagemaker')
 
+const ideSuffix: Record<string, string> = {
+    vscode: '',
+    cursor: 'c',
+}
+
+/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_' */
+export function getSshPrefix(connectionType: string): string {
+    if (connectionType === 'sm_hp') {
+        return 'smhp_'
+    }
+    const suffix = ideSuffix[getIdeType()] ?? ''
+    return `sm${suffix}_`
+}
+
 export async function tryRemoteConnection(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
     ctx: vscode.ExtensionContext,
@@ -137,11 +151,15 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
         }
     }
 
+    const sshPrefix = getSshPrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = session ? `hp_${session}` : `hp_${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+        hostname = session
+            ? `${sshPrefix}${session}`
+            : `${sshPrefix}${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
     } else {
-        hostname = `${connectionType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
+        const credsType = connectionType.replace('sm_', '')
+        hostname = `${sshPrefix}${credsType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
     // save space credential mapping
     if (connectionType === 'sm_lc') {
@@ -167,8 +185,8 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
 
         const sshConfig =
             connectionType === 'sm_hp'
-                ? new SshConfig(ssh, 'hp_', 'hyperpod_connect')
-                : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+                ? new SshConfig(ssh, sshPrefix, 'hyperpod_connect')
+                : new SshConfig(ssh, sshPrefix, 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
