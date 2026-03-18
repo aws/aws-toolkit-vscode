@@ -14,14 +14,13 @@ import { join } from 'path'
 import { SpaceMappings } from '../types'
 import open from 'open'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
+import { WriteQueue } from './writeQueue'
 export { open }
 
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
 const tempFilePath = `${mappingFilePath}.tmp`
 
-// Simple file lock to prevent concurrent writes
-let isWriting = false
-const writeQueue: Array<() => Promise<void>> = []
+const writeQueue = new WriteQueue()
 
 // Currently SSM registration happens asynchronously with App launch, which can lead to
 // StartSession Internal Failure when connecting to a fresly-started Space.
@@ -98,25 +97,6 @@ export async function readMapping() {
 }
 
 /**
- * Processes the write queue to ensure only one write operation happens at a time.
- */
-async function processWriteQueue() {
-    if (isWriting || writeQueue.length === 0) {
-        return
-    }
-
-    isWriting = true
-    try {
-        while (writeQueue.length > 0) {
-            const writeOperation = writeQueue.shift()!
-            await writeOperation()
-        }
-    } finally {
-        isWriting = false
-    }
-}
-
-/**
  * Detects if the connection identifier is using SMUS credentials
  * @param connectionIdentifier - The connection identifier to check
  * @returns Promise<boolean> - true if SMUS, false otherwise
@@ -174,8 +154,7 @@ export async function writeMapping(mapping: SpaceMappings) {
 
         writeQueue.push(writeOperation)
 
-        // ProcessWriteQueue handles its own errors via individual operation callbacks
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        processWriteQueue()
+        writeQueue.process()
     })
 }

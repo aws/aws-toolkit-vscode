@@ -7,6 +7,8 @@ import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import os from 'os'
 import { join } from 'path'
 
+import { WriteQueue } from './writeQueue'
+
 export interface HyperpodSpaceMapping {
     namespace: string
     clusterArn: string
@@ -26,8 +28,7 @@ export interface HyperpodMappings {
 export const hyperpodMappingFilePath = join(os.homedir(), '.aws', '.hyperpod-space-profiles')
 const tempFilePath = `${hyperpodMappingFilePath}.tmp`
 
-let isWriting = false
-const writeQueue: Array<() => Promise<void>> = []
+const writeQueue = new WriteQueue()
 
 export async function readHyperpodMapping(): Promise<HyperpodMappings> {
     try {
@@ -56,7 +57,7 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
         }
 
         writeQueue.push(writeOperation)
-        void processWriteQueue()
+        void writeQueue.process()
     })
 }
 
@@ -111,20 +112,4 @@ export async function getHyperpodConnectionByDetails(
 ): Promise<HyperpodSpaceMapping | undefined> {
     const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
     return getHyperpodConnection(connectionKey)
-}
-
-async function processWriteQueue() {
-    if (isWriting || writeQueue.length === 0) {
-        return
-    }
-
-    isWriting = true
-    try {
-        while (writeQueue.length > 0) {
-            const writeOperation = writeQueue.shift()!
-            await writeOperation()
-        }
-    } finally {
-        isWriting = false
-    }
 }
