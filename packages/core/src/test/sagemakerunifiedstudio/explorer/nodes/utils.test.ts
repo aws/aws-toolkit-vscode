@@ -5,6 +5,9 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
+import * as vscodeUtils from '../../../../shared/vscode/setContext'
+import { DataZoneClient } from '../../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import {
     getLabel,
     isLeafNode,
@@ -17,6 +20,7 @@ import {
     getRedshiftTypeFromHost,
     isRedLakeCatalog,
     isS3TablesCatalog,
+    createDZClientForProject,
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/utils'
 import { NodeType, ConnectionType, RedshiftType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
 
@@ -309,5 +313,66 @@ describe('utils', function () {
         it('should return false for undefined catalog', function () {
             assert.strictEqual(isS3TablesCatalog(undefined), false)
         })
+    })
+})
+
+describe('createDZClientForProject', function () {
+    let getContextStub: sinon.SinonStub
+    let mockAuthProvider: any
+    const mockProjectCreds = { id: 'project-creds' }
+    const mockDerCreds = { id: 'der-creds' }
+    const mockIamCreds = { id: 'iam-creds' }
+    const mockClient = { id: 'mock-client' }
+
+    beforeEach(function () {
+        getContextStub = sinon.stub(vscodeUtils, 'getContext')
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockClient as any)
+        mockAuthProvider = {
+            getProjectCredentialProvider: sinon.stub().resolves(mockProjectCreds),
+            getDerCredentialsProvider: sinon.stub().resolves(mockDerCreds),
+            getCredentialsProviderForIamProfile: sinon.stub().resolves(mockIamCreds),
+            getDomainRegion: sinon.stub().returns('us-east-2'),
+            getDomainId: sinon.stub().returns('dzd-test'),
+            activeConnection: { profileName: 'test-profile' },
+        }
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('should use project credentials for IAM domain (isIamModeDomain=true)', async function () {
+        getContextStub.withArgs('aws.smus.isIamModeDomain').returns(true)
+        getContextStub.returns(false)
+
+        await createDZClientForProject(mockAuthProvider, 'proj-1')
+
+        sinon.assert.calledOnce(mockAuthProvider.getProjectCredentialProvider)
+        sinon.assert.notCalled(mockAuthProvider.getDerCredentialsProvider)
+        sinon.assert.notCalled(mockAuthProvider.getCredentialsProviderForIamProfile)
+    })
+
+    it('should use IAM profile credentials for IAM login into IdC domain', async function () {
+        getContextStub.withArgs('aws.smus.isIamModeDomain').returns(false)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(true)
+        getContextStub.returns(false)
+
+        await createDZClientForProject(mockAuthProvider, 'proj-1')
+
+        sinon.assert.calledOnce(mockAuthProvider.getCredentialsProviderForIamProfile)
+        sinon.assert.notCalled(mockAuthProvider.getProjectCredentialProvider)
+        sinon.assert.notCalled(mockAuthProvider.getDerCredentialsProvider)
+    })
+
+    it('should use DER credentials for SSO login into IdC domain', async function () {
+        getContextStub.withArgs('aws.smus.isIamModeDomain').returns(false)
+        getContextStub.withArgs('aws.smus.isIamMode').returns(false)
+        getContextStub.returns(false)
+
+        await createDZClientForProject(mockAuthProvider, 'proj-1')
+
+        sinon.assert.calledOnce(mockAuthProvider.getDerCredentialsProvider)
+        sinon.assert.notCalled(mockAuthProvider.getProjectCredentialProvider)
+        sinon.assert.notCalled(mockAuthProvider.getCredentialsProviderForIamProfile)
     })
 })

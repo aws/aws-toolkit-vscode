@@ -313,12 +313,23 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
-        if (getContext('aws.smus.isIamMode')) {
+        if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.isIamModeDomain')) {
+            // IAM login into IDC domain — show all spaces for now
+            // TODO: Filter by user/group profile once IAM role federation is fully enabled
+            userProfileId = undefined
+        } else if (getContext('aws.smus.isIamMode')) {
             userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
-            userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+            try {
+                userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+            } catch {
+                // SSO login into IAM domain — ssoRedeemToken may not return DER-style session name
+                // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
+                this.logger.warn('Failed to extract SSO user profile ID from userId, showing all spaces')
+                userProfileId = undefined
+            }
         }
 
         const sagemakerDomainId = await this.getSageMakerDomainId()
@@ -332,7 +343,8 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            if (userProfileId === userProfile) {
+            // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
+            if (userProfileId === undefined || userProfileId === userProfile) {
                 filteredSpaceApps.set(key, app)
             }
         }

@@ -11,6 +11,7 @@ import { GetEnvironmentCommandOutput } from '@aws-sdk/client-datazone/dist-types
 import { DefaultStsClient } from '../../../../shared/clients/stsClient'
 import { SmusUtils, SmusErrorCodes } from '../../../../sagemakerunifiedstudio/shared/smusUtils'
 import { ToolkitError } from '../../../../shared/errors'
+import * as vscodeUtils from '../../../../shared/vscode/setContext'
 
 describe('DataZoneClient', () => {
     let dataZoneClient: DataZoneClient
@@ -631,6 +632,30 @@ describe('DataZoneClient', () => {
                     return true
                 }
             )
+        })
+    })
+
+    describe('getToolingBlueprintName', function () {
+        let getContextStub: sinon.SinonStub
+
+        beforeEach(function () {
+            getContextStub = sinon.stub(vscodeUtils, 'getContext')
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('should return ToolingLite for IAM domains', function () {
+            getContextStub.withArgs('aws.smus.isIamModeDomain').returns(true)
+            const result = (dataZoneClient as any).getToolingBlueprintName()
+            assert.strictEqual(result, 'ToolingLite')
+        })
+
+        it('should return Tooling for IdC domains', function () {
+            getContextStub.withArgs('aws.smus.isIamModeDomain').returns(false)
+            const result = (dataZoneClient as any).getToolingBlueprintName()
+            assert.strictEqual(result, 'Tooling')
         })
     })
 })
