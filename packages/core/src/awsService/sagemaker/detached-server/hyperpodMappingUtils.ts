@@ -113,3 +113,19 @@ export async function getHyperpodConnectionByDetails(
     const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
     return getHyperpodConnection(connectionKey)
 }
+
+async function processWriteQueue() {
+    if (isWriting || writeQueue.length === 0) {
+        return
+    }
+
+    isWriting = true
+    try {
+        while (writeQueue.length > 0) {
+            const writeOperation = writeQueue.shift()!
+            await writeOperation()
+        }
+    } finally {
+        isWriting = false
+    }
+}

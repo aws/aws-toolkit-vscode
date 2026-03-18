@@ -48,23 +48,15 @@ function Main {
     
     Write-Log "Connecting to HyperPod workspace: $workspaceName (connection key: $connectionKey)"
     
-    # Get fresh credentials
-    $apiResponse = Get-FreshCredentials -ConnectionKey $connectionKey
-    
-    # Parse connection URL
-    $connectionUrl = [System.Web.HttpUtility]::HtmlDecode($apiResponse.connection.url)
-    $uri = [System.Uri]$connectionUrl
-    $queryParams = [System.Web.HttpUtility]::ParseQueryString($uri.Query)
-    
-    $sessionId = $queryParams['sessionId']
-    $token = $queryParams['sessionToken'] -replace ' ', '+'
-    $streamUrl = [System.Web.HttpUtility]::UrlDecode($queryParams['streamUrl']) -replace ' ', '+'
-    
-    # Add cell-number if present (and fix spaces)
-    $cellNumber = $queryParams['cell-number']
-    if ($cellNumber) {
-        $cellNumberDecoded = [System.Web.HttpUtility]::UrlDecode($cellNumber) -replace ' ', '+'
-        $streamUrl += "&cell-number=$cellNumberDecoded"
+    # Use env vars directly for initial connection (deeplink), reconnection via API is disabled
+    if ($env:STREAM_URL -and $env:TOKEN) {
+        Write-Log "Using credentials from environment variables (initial connection)"
+        $streamUrl = $env:STREAM_URL
+        $token = $env:TOKEN
+        $sessionId = if ($env:SESSION_ID) { $env:SESSION_ID } else { $HostName }
+    } else {
+        Write-Log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
+        exit 1
     }
     
     # Extract region from stream URL
@@ -95,8 +87,5 @@ function Main {
     # Execute session-manager-plugin with proper JSON escaping (same as Studio script)
     & $awsSsmCli "{\`"streamUrl\`":\`"${streamUrl}\`",\`"tokenValue\`":\`"${token}\`",\`"sessionId\`":\`"${sessionId}\`"}" "$awsRegion" "StartSession"
 }
-
-# Load required assembly for URL decoding
-Add-Type -AssemblyName System.Web
 
 Main

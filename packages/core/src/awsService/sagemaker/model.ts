@@ -27,7 +27,6 @@ import { ChildProcess } from '../../shared/utilities/processUtils'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
-import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
 import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
@@ -325,9 +324,6 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
                 wsUrl,
                 token
             )
-
-            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
-            connectionMonitor.startMonitoring(connectionKey)
 
             getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
         } catch (error) {
