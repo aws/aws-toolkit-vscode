@@ -18,7 +18,7 @@ const execFileAsync = promisify(execFile)
 export async function handleGetHyperpodSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
     const connectionKey = parsedUrl.query.connection_key
-    const devspaceName = parsedUrl.query.devspace_name
+    const workspaceName = parsedUrl.query.devspace_name
     const namespace = parsedUrl.query.namespace
     const clusterName = parsedUrl.query.cluster_name
 
@@ -27,13 +27,13 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
 
         if (connectionKey) {
             lookupKey = Array.isArray(connectionKey) ? connectionKey[0] : connectionKey
-        } else if (devspaceName && namespace && clusterName) {
-            const devspaceStr = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
+        } else if (workspaceName && namespace && clusterName) {
+            const workspaceStr = Array.isArray(workspaceName) ? workspaceName[0] : workspaceName
             const namespaceStr = Array.isArray(namespace) ? namespace[0] : namespace
             const clusterStr = Array.isArray(clusterName) ? clusterName[0] : clusterName
-            lookupKey = `${devspaceStr}:${namespaceStr}:${clusterStr}`
-        } else if (devspaceName) {
-            lookupKey = Array.isArray(devspaceName) ? devspaceName[0] : devspaceName
+            lookupKey = `${workspaceStr}:${namespaceStr}:${clusterStr}`
+        } else if (workspaceName) {
+            lookupKey = Array.isArray(workspaceName) ? workspaceName[0] : workspaceName
         } else {
             res.writeHead(400, { 'Content-Type': 'application/json' })
             res.end(
@@ -60,7 +60,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         }
 
         const keyParts = lookupKey.split(':')
-        const actualDevspaceName = keyParts.length === 3 ? keyParts[0] : String(devspaceName || lookupKey)
+        const actualWorkspaceName = keyParts.length === 3 ? keyParts[0] : String(workspaceName || lookupKey)
 
         // Check if we have EKS cluster details for kubectl-based reconnection
         const hasKubectlDetails = !!(connectionInfo.endpoint && connectionInfo.certificateAuthorityData)
@@ -89,7 +89,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
                 if (endpoint && certData) {
                     // Update stored connection with EKS details for future use
                     await storeHyperpodConnection(
-                        actualDevspaceName,
+                        actualWorkspaceName,
                         connectionInfo.namespace,
                         connectionInfo.clusterArn,
                         connectionInfo.clusterName,
@@ -117,7 +117,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
                             type: 'vscode-remote',
                             url: connectionInfo.wsUrl,
                         },
-                        devspace: actualDevspaceName,
+                        workspace: actualWorkspaceName,
                         timestamp: Date.now(),
                         warning: `Using cached presigned URL. Fresh credential generation failed: ${error instanceof Error ? error.message : String(error)}`,
                     })
@@ -173,8 +173,8 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
 
         const kubectlClient = new KubectlClient(eksCluster, hyperpodCluster)
 
-        const devSpace: HyperpodDevSpace = {
-            name: actualDevspaceName,
+        const hpWorkspace: HyperpodDevSpace = {
+            name: actualWorkspaceName,
             namespace: connectionInfo.namespace,
             cluster: connectionInfo.clusterName,
             group: 'workspace.jupyter.org',
@@ -186,14 +186,14 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             accessType: '',
         }
 
-        const workspaceConnection = await kubectlClient.createWorkspaceConnection(devSpace)
+        const workspaceConnection = await kubectlClient.createWorkspaceConnection(hpWorkspace)
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
             JSON.stringify({
                 status: 'success',
                 connection: workspaceConnection,
-                devspace: actualDevspaceName,
+                workspace: actualWorkspaceName,
                 timestamp: Date.now(),
             })
         )

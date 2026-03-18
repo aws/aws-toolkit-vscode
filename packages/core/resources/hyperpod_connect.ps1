@@ -56,30 +56,30 @@ function Main {
     
     # Parse hostname format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
     if ($HostName -match '^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$') {
-        $devspaceName = $Matches[1]
+        $workspaceName = $Matches[1]
         $namespace = $Matches[2]
         $clusterName = $Matches[3]
-        $connectionKey = "${devspaceName}:${namespace}:${clusterName}"
+        $connectionKey = "${workspaceName}:${namespace}:${clusterName}"
     } else {
         # Old format fallback
-        $devspaceName = $HostName -replace '^smhp_', ''
+        $workspaceName = $HostName -replace '^smhp_', ''
         $profilesFile = "$env:USERPROFILE\.aws\.hyperpod-space-profiles"
         
         if (Test-Path $profilesFile) {
             $profiles = Get-Content $profilesFile | ConvertFrom-Json
-            $matches = $profiles.PSObject.Properties.Name | Where-Object { $_ -match ":$devspaceName$" } | Sort-Object
-            $connectionKey = if ($matches) { $matches[0] } else { $devspaceName }
+            $matches = $profiles.PSObject.Properties.Name | Where-Object { $_ -match ":$workspaceName$" } | Sort-Object
+            $connectionKey = if ($matches) { $matches[0] } else { $workspaceName }
         } else {
-            $connectionKey = $devspaceName
+            $connectionKey = $workspaceName
         }
     }
     
     if (-not $connectionKey) {
-        Write-Log "Error: Could not determine connection key for devspace: $devspaceName"
+        Write-Log "Error: Could not determine connection key for workspace: $workspaceName"
         exit 1
     }
     
-    Write-Log "Connecting to HyperPod devspace: $devspaceName (connection key: $connectionKey)"
+    Write-Log "Connecting to HyperPod workspace: $workspaceName (connection key: $connectionKey)"
     
     # Get fresh credentials
     $apiResponse = Get-FreshCredentials -ConnectionKey $connectionKey

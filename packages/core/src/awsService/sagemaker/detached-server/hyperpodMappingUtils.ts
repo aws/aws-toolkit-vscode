@@ -68,7 +68,7 @@ export function createConnectionKey(workspaceName: string, namespace: string, cl
 }
 
 export async function storeHyperpodConnection(
-    devspaceName: string,
+    workspaceName: string,
     namespace: string,
     clusterArn: string,
     clusterName: string,
@@ -79,7 +79,7 @@ export async function storeHyperpodConnection(
     token?: string
 ): Promise<void> {
     const mapping = await readHyperpodMapping()
-    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
     const accountId = clusterArn.split(':')[4]
     mapping[connectionKey] = {
         namespace,
@@ -105,11 +105,11 @@ export async function getHyperpodConnection(connectionKey: string): Promise<Hype
 }
 
 export async function getHyperpodConnectionByDetails(
-    devspaceName: string,
+    workspaceName: string,
     namespace: string,
     clusterName: string
 ): Promise<HyperpodSpaceMapping | undefined> {
-    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
     return getHyperpodConnection(connectionKey)
 }
 
