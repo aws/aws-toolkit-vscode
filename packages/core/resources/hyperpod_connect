@@ -47,10 +47,6 @@ _require() {
     _log "$1=$2"
 }
 
-_url_encode() {
-    python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$1"
-}
-
 _resolve_connection_key() {
     local WORKSPACE_NAME=$1
     local PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
@@ -78,60 +74,6 @@ _hyperpod() {
     local SESSION_ID=$5
 
     exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
-}
-
-_get_fresh_credentials() {
-    local CONNECTION_KEY=$1
-    
-    _log "Getting fresh credentials for connection key: $CONNECTION_KEY"
-    
-    # Read server info to get port
-    if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
-        _log "Error: SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set"
-        exit 1
-    fi
-    
-    if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
-        _log "Error: Server info file not found: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
-        exit 1
-    fi
-    
-    local PORT=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
-    if [ -z "$PORT" ] || [ "$PORT" == "null" ]; then
-        _log "Error: 'port' field is missing or invalid in $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
-        exit 1
-    fi
-    
-    # Call API to get fresh credentials using the determined connection key
-    local API_URL
-    if [[ "$CONNECTION_KEY" =~ ^[^:]+:[^:]+:[^:]+$ ]]; then
-        # Use full connection key for precise lookup (preferred)
-        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
-    elif [ -n "$CLUSTER_NAME" ] && [ -n "$NAMESPACE" ]; then
-        # Use individual parameters if available
-        API_URL="http://localhost:$PORT/get_hyperpod_session?devspace_name=$(_url_encode "$WORKSPACE_NAME")&namespace=$(_url_encode "$NAMESPACE")&cluster_name=$(_url_encode "$CLUSTER_NAME")"
-    else
-        # Fallback for legacy format
-        API_URL="http://localhost:$PORT/get_hyperpod_session?connection_key=$(_url_encode "$CONNECTION_KEY")"
-    fi
-    API_RESPONSE=$(curl -s "$API_URL")
-    
-    if [ $? -ne 0 ] || [ -z "$API_RESPONSE" ]; then
-        _log "Error: Failed to get credentials from API"
-        exit 1
-    fi
-    
-    # Parse JSON once and check for error response
-    read -r STATUS ERROR_MSG CONNECTION_URL < <(echo "$API_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('status', 'success'), data.get('message', '') or '_', data.get('connection', {}).get('url', ''))" 2>/dev/null) || {
-        _log "Error: Failed to parse API response JSON"
-        exit 1
-    }
-    if [ "$STATUS" = "error" ]; then
-        _log "Error from API: ${ERROR_MSG:-Unknown error}"
-        exit 1
-    fi
-    
-    _log "Fresh credentials obtained from API"
 }
 
 _main() {
@@ -174,19 +116,12 @@ _main() {
     _log "=============================================================================="
     _log "Connecting to HyperPod workspace: $WORKSPACE_NAME (connection key: $CONNECTION_KEY)"
     
-    # Always get fresh credentials (CONNECTION_URL is set by _get_fresh_credentials)
-    _get_fresh_credentials "$CONNECTION_KEY"
-    
-    if [[ "$CONNECTION_URL" =~ ^wss:// ]]; then
-        # Presigned URL format - extract session ID from path and token from cell-number param
-        SESSION_ID=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); path=urllib.parse.urlparse(url).path; session_id=path.split('/')[-1] if path else ''; print(session_id)" 2>/dev/null)
-        TOKEN=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('cell-number', [''])[0])" 2>/dev/null)
-        STREAM_URL="$CONNECTION_URL"
+    # Use env vars directly for initial connection (deeplink), call API only for reconnection
+    if [ -n "${STREAM_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
+        _log "Using credentials from environment variables (initial connection)"
     else
-        # Kubectl format - extract from query params
-        SESSION_ID=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('sessionId', [''])[0])" 2>/dev/null)
-        TOKEN=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('sessionToken', [''])[0])" 2>/dev/null)
-        STREAM_URL=$(echo "$CONNECTION_URL" | python3 -c "import sys, urllib.parse; url=sys.stdin.read().strip(); params=urllib.parse.parse_qs(urllib.parse.urlparse(url).query); print(params.get('streamUrl', [''])[0])" 2>/dev/null)
+        _log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
+        exit 1
     fi
     
     # Extract region from stream URL

@@ -28,7 +28,6 @@ import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
 import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
-import { HyperpodReconnectionManager } from './hyperpodReconnection'
 import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
@@ -232,13 +231,43 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
                           ?.replace(/&#39;/g, "'")
                           .replace(/&quot;/g, '"')
                           .replace(/&amp;/g, '&') || ''
-                  const region = decodedWsUrl ? extractRegionFromStreamUrl(decodedWsUrl) : ''
+
+                  // Parse presigned URL to extract STREAM_URL, TOKEN, and SESSION_ID
+                  let streamUrl = decodedWsUrl
+                  let sessionToken = decodedToken
+                  let sessionId = hostname || ''
+
+                  if (decodedWsUrl && !decodedToken) {
+                      try {
+                          const parsedUrl = new URL(decodedWsUrl)
+                          const params = parsedUrl.searchParams
+                          // Extract from query params (vscode:// redirect URL format)
+                          const qStreamUrl = params.get('streamUrl')
+                          const qSessionToken = params.get('sessionToken')
+                          const qSessionId = params.get('sessionId')
+                          if (qStreamUrl) {
+                              streamUrl = qStreamUrl
+                              sessionToken = qSessionToken || ''
+                              sessionId = qSessionId || sessionId
+                          } else if (decodedWsUrl.startsWith('wss://')) {
+                              // Direct wss:// presigned URL format
+                              const pathParts = parsedUrl.pathname.split('/')
+                              sessionId = pathParts[pathParts.length - 1] || sessionId
+                              sessionToken = params.get('cell-number') || ''
+                              streamUrl = decodedWsUrl
+                          }
+                      } catch (e) {
+                          logger.warn(`Failed to parse connection URL: ${e}`)
+                      }
+                  }
+
+                  const region = streamUrl ? extractRegionFromStreamUrl(streamUrl) : ''
 
                   const hyperPodEnv: NodeJS.ProcessEnv = {
                       AWS_REGION: region,
-                      SESSION_ID: hostname || '',
-                      STREAM_URL: decodedWsUrl,
-                      TOKEN: decodedToken,
+                      SESSION_ID: sessionId,
+                      STREAM_URL: streamUrl,
+                      TOKEN: sessionToken,
                       AWS_SSM_CLI: ssm,
                       DEBUG_LOG: '1',
                       LOG_FILE_LOCATION: logFileLocation,
@@ -299,9 +328,6 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
 
             const connectionMonitor = HyperpodConnectionMonitor.getInstance()
             connectionMonitor.startMonitoring(connectionKey)
-
-            const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            reconnectionManager.scheduleReconnection(connectionKey)
 
             getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
         } catch (error) {

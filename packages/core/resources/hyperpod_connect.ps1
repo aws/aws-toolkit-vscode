@@ -18,39 +18,6 @@ function Write-Log {
     "$timestamp $Message" | Out-File -FilePath $LogFileLocation -Append -Encoding utf8
 }
 
-function Get-FreshCredentials {
-    param([string]$ConnectionKey)
-    
-    Write-Log "Getting fresh credentials for connection key: $ConnectionKey"
-    
-    # Read server info to get port
-    $serverInfoFile = "$env:APPDATA\Code\User\globalStorage\amazonwebservices.aws-toolkit-vscode\sagemaker-local-server-info.json"
-    if (-not (Test-Path $serverInfoFile)) {
-        Write-Log "Error: Server info file not found: $serverInfoFile"
-        exit 1
-    }
-    
-    $serverInfo = Get-Content $serverInfoFile | ConvertFrom-Json
-    $port = $serverInfo.port
-    
-    if (-not $port) {
-        Write-Log "Error: Could not extract port from server info file"
-        exit 1
-    }
-    
-    # Call API to get fresh credentials
-    $apiUrl = "http://localhost:$port/get_hyperpod_session?connection_key=$ConnectionKey"
-    
-    try {
-        $response = Invoke-RestMethod -Uri $apiUrl -Method Get
-        Write-Log "Fresh credentials obtained from API"
-        return $response
-    } catch {
-        Write-Log "Error: Failed to get credentials from API: $_"
-        exit 1
-    }
-}
-
 function Main {
     Write-Log "=============================================================================="
     
