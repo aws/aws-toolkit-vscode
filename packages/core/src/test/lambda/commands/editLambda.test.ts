@@ -394,7 +394,7 @@ describe('getFunctionWithFallback', function () {
         await assert.rejects(
             () => getFunctionWithFallback('test-function', 'us-east-1'),
             (err: ToolkitError) => {
-                assert.strictEqual(err.message, 'User opted out of console login despite no active connection')
+                assert.strictEqual(err.message, 'Console login not performed (no active connection)')
                 assert.strictEqual(err.cancelled, true)
                 return true
             }
@@ -445,7 +445,7 @@ describe('getFunctionWithFallback', function () {
         await assert.rejects(
             () => getFunctionWithFallback('test-function', 'us-east-1'),
             (err: ToolkitError) => {
-                assert.strictEqual(err.message, 'User opted out of console login despite mismatched credentials')
+                assert.strictEqual(err.message, 'Console login not performed (mismatched credentials)')
                 assert.strictEqual(err.cancelled, true)
                 return true
             }
