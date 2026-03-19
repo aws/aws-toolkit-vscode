@@ -9,7 +9,6 @@ import assert from 'assert'
 import { handleGetSession } from '../../../../../awsService/sagemaker/detached-server/routes/getSession'
 import * as credentials from '../../../../../awsService/sagemaker/detached-server/credentials'
 import * as utils from '../../../../../awsService/sagemaker/detached-server/utils'
-import * as sagemakerUtils from '../../../../../awsService/sagemaker/utils'
 import * as errorPage from '../../../../../awsService/sagemaker/detached-server/errorPage'
 
 describe('handleGetSession', () => {
@@ -38,13 +37,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 500 if resolveCredentialsFor throws', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').rejects(new Error('creds error'))
-        sinon.stub(sagemakerUtils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            resourceName: 'space-name',
-        })
 
         await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
 
@@ -53,13 +47,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 500 if startSagemakerSession throws', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
-        sinon.stub(sagemakerUtils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            resourceName: 'space-name',
-        })
         sinon.stub(utils, 'startSagemakerSession').rejects(new Error('session error'))
 
         await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
@@ -69,13 +58,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 200 and session data on success', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
-        sinon.stub(sagemakerUtils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            resourceName: 'space-name',
-        })
         sinon.stub(utils, 'startSagemakerSession').resolves({
             SessionId: 'abc123',
             StreamUrl: 'https://stream',
