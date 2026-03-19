@@ -8,8 +8,7 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
-import { open, readServerInfo } from '../utils'
-import { parseArn } from '../utils'
+import { open, readServerInfo, parseArn } from '../utils'
 import { openErrorPage } from '../errorPage'
 import { SmusDeeplinkSessionExpiredError } from '../../constants'
 

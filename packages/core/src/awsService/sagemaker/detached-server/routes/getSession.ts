@@ -6,8 +6,7 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
-import { startSagemakerSession, isSmusConnection, isSmusIamConnection } from '../utils'
-import { parseArn } from '../utils'
+import { startSagemakerSession, isSmusConnection, isSmusIamConnection, parseArn } from '../utils'
 import { resolveCredentialsFor } from '../credentials'
 import url from 'url'
 import { SageMakerServiceException } from '@amzn/sagemaker-client'
