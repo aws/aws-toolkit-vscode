@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Users can now choose which specific resource to reference when multiple resources of the same type exist"
+}

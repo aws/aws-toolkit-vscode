@@ -32,15 +32,18 @@ describe('RelatedResourcesApi', function () {
     })
 
     describe('getAuthoredResourceTypes', function () {
-        it('should send request with template URI and return resource types', async function () {
+        it('should send request with template URI and return authored resources', async function () {
             const templateUri = 'file:///test/template.yaml'
-            const expectedTypes = ['AWS::S3::Bucket', 'AWS::Lambda::Function']
+            const expectedResources = [
+                { logicalId: 'MyBucket', type: 'AWS::S3::Bucket' },
+                { logicalId: 'MyFunction', type: 'AWS::Lambda::Function' },
+            ]
 
-            mockClient.sendRequest.resolves(expectedTypes)
+            mockClient.sendRequest.resolves(expectedResources)
 
             const result = await getAuthoredResourceTypes(mockClient, templateUri)
 
-            assert.deepStrictEqual(result, expectedTypes)
+            assert.deepStrictEqual(result, expectedResources)
             assert.ok(mockClient.sendRequest.calledOnce)
             assert.ok(mockClient.sendRequest.calledWith(GetAuthoredResourceTypesRequest, templateUri))
         })

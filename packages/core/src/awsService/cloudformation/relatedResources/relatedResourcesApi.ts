@@ -5,6 +5,7 @@
 
 import { LanguageClient } from 'vscode-languageclient/node'
 import {
+    AuthoredResource,
     GetAuthoredResourceTypesRequest,
     GetRelatedResourceTypesParams,
     GetRelatedResourceTypesRequest,
@@ -14,7 +15,10 @@ import {
     TemplateUri,
 } from './relatedResourcesProtocol'
 
-export async function getAuthoredResourceTypes(client: LanguageClient, templateUri: TemplateUri): Promise<string[]> {
+export async function getAuthoredResourceTypes(
+    client: LanguageClient,
+    templateUri: TemplateUri
+): Promise<AuthoredResource[]> {
     return client.sendRequest(GetAuthoredResourceTypesRequest, templateUri)
 }
 
