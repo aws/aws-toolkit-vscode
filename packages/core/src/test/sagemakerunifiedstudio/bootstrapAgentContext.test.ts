@@ -10,6 +10,9 @@ import fs from '../../shared/fs/fs'
 import { createAgentsFile } from '../../sagemakerunifiedstudio/bootstrapAgentContext'
 import { agentsFile, contextFile, importStatement, promptMessage } from '../../sagemakerunifiedstudio/shared/constants'
 import { getTestWindow } from '../shared/vscode/window'
+import * as smusUtils from '../../sagemakerunifiedstudio/shared/smusUtils'
+import * as resourceMetadataUtils from '../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
+import { SmusAuthenticationProvider } from '../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 
 describe('AGENTS.md', function () {
     let sandbox: sinon.SinonSandbox
@@ -26,6 +29,19 @@ describe('AGENTS.md', function () {
         } as any
         writeStub = sandbox.stub(fs, 'writeFile').resolves()
         existsStub = sandbox.stub(fs, 'existsFile')
+        sandbox.stub(smusUtils, 'extractAccountIdFromResourceMetadata').resolves('123456789012')
+        sandbox.stub(resourceMetadataUtils, 'getResourceMetadata').returns({
+            ResourceArn: 'arn:aws:sagemaker:us-east-1:123456789012:space/d-abc123/my-space',
+            SpaceName: 'my-space',
+            AdditionalMetadata: {
+                DataZoneDomainId: 'dzd-test',
+                DataZoneDomainRegion: 'us-east-1',
+                DataZoneProjectId: 'proj-test',
+            },
+        } as any)
+        sandbox.stub(SmusAuthenticationProvider, 'fromContext').returns({
+            activeConnection: undefined,
+        } as any)
     })
 
     afterEach(function () {
