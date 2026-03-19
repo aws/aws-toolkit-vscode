@@ -25,6 +25,7 @@ import {
 import {
     cloud9Appname,
     cloud9CnAppname,
+    cursorAppname,
     kiroAppname,
     sageMakerAppname,
     sageMakerUnifiedStudio,
@@ -85,7 +86,7 @@ export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'curs
         return 'kiro'
     }
 
-    if (vscode.env.appName?.toLowerCase().includes('cursor')) {
+    if (vscode.env.appName?.toLowerCase().includes(cursorAppname.toLowerCase())) {
         return 'cursor'
     }
 

@@ -36,7 +36,7 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
     attemptCount.set(connectionIdentifier, count)
 
     if (count > maxRetries) {
-        console.log(`Retry cap reached for ${connectionIdentifier} (${count}/${maxRetries})`)
+        console.debug(`Retry cap reached for ${connectionIdentifier} (${count}/${maxRetries})`)
         res.writeHead(429, { 'Content-Type': 'text/plain' })
         res.end('Too many retry attempts. Please reconnect manually.')
         return

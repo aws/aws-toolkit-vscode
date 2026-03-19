@@ -92,7 +92,7 @@ export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): 
         {
             AWS_SSM_CLI: ssmPath,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: sagemakerLocalServerPath,
-            LOG_FILE_LOCATION: sshLogFileLocation('sagemaker', 'blah'),
+            LOG_FILE_LOCATION: sshLogFileLocation('sagemaker', 'connect'),
         },
         process.env
     )
