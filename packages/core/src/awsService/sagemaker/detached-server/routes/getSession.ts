@@ -6,11 +6,16 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
-import { startSagemakerSession, parseArn, isSmusConnection, isSmusIamConnection } from '../utils'
+import { startSagemakerSession, isSmusConnection, isSmusIamConnection, parseArn } from '../utils'
 import { resolveCredentialsFor } from '../credentials'
 import url from 'url'
 import { SageMakerServiceException } from '@amzn/sagemaker-client'
 import { getVSCodeErrorText, getVSCodeErrorTitle, openErrorPage } from '../errorPage'
+
+const maxRetries = 8
+const attemptCount = new Map<string, number>()
+const lastAttemptTime = new Map<string, number>()
+const resetWindowMs = 10 * 60 * 1000
 
 export async function handleGetSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -19,6 +24,21 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
     if (!connectionIdentifier) {
         res.writeHead(400, { 'Content-Type': 'text/plain' })
         res.end(`Missing required query parameter: "connection_identifier" (${connectionIdentifier})`)
+        return
+    }
+
+    const now = Date.now()
+    if (now - (lastAttemptTime.get(connectionIdentifier) ?? 0) > resetWindowMs) {
+        attemptCount.set(connectionIdentifier, 0)
+    }
+    lastAttemptTime.set(connectionIdentifier, now)
+    const count = (attemptCount.get(connectionIdentifier) ?? 0) + 1
+    attemptCount.set(connectionIdentifier, count)
+
+    if (count > maxRetries) {
+        console.debug(`Retry cap reached for ${connectionIdentifier} (${count}/${maxRetries})`)
+        res.writeHead(429, { 'Content-Type': 'text/plain' })
+        res.end('Too many retry attempts. Please reconnect manually.')
         return
     }
 
@@ -33,12 +53,13 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
     }
 
     const { region } = parseArn(connectionIdentifier)
-    // Detect if this is a SMUS connection for specialized error handling
     const isSmus = await isSmusConnection(connectionIdentifier)
     const isSmusIamConn = await isSmusIamConnection(connectionIdentifier)
 
     try {
         const session = await startSagemakerSession({ region, connectionIdentifier, credentials })
+        attemptCount.delete(connectionIdentifier)
+        lastAttemptTime.delete(connectionIdentifier)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
             JSON.stringify({
