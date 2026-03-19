@@ -25,6 +25,7 @@ import {
 import {
     cloud9Appname,
     cloud9CnAppname,
+    cursorAppname,
     kiroAppname,
     sageMakerAppname,
     sageMakerUnifiedStudio,
@@ -72,7 +73,7 @@ let computeRegion: string | undefined = notInitialized
 let serviceName: string = notInitialized
 let isSMUS: boolean = false
 
-export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'unknown' {
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'cursor' | 'unknown' {
     if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
@@ -83,6 +84,10 @@ export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'unkn
 
     if (vscode.env.appName?.includes(kiroAppname)) {
         return 'kiro'
+    }
+
+    if (vscode.env.appName?.toLowerCase().includes(cursorAppname.toLowerCase())) {
+        return 'cursor'
     }
 
     // Theia doesn't necessarily have all env properties
