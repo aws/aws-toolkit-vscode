@@ -142,10 +142,6 @@ export async function deeplinkConnect(
             region = parsed.region
             accountId = parsed.accountId
             connectionType = 'sm_hp'
-            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
-            session = isValidSshHostname(proposedSession)
-                ? proposedSession
-                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
         }
         const remoteEnv = await prepareDevEnvConnection({
             spaceArn: connectionIdentifier,
@@ -207,41 +203,6 @@ export async function deeplinkConnect(
 /**
  * Validates and sanitizes session names for SSH hostname compliance
  */
-function createValidSshSession(
-    workspaceName: string,
-    namespace: string,
-    clusterName: string,
-    region: string,
-    accountId: string
-): string {
-    const sanitize = (str: string, maxLength: number): string =>
-        str
-            .toLowerCase()
-            .replace(/[^a-z0-9.-]/g, '')
-            .replace(/^-+|-+$/g, '')
-            .substring(0, maxLength)
-
-    const components = [
-        sanitize(workspaceName, 63), // K8s limit
-        sanitize(namespace, 63), // K8s limit
-        sanitize(clusterName, 100), // EKS limit
-        sanitize(region, 16), // Longest AWS region limit
-        sanitize(accountId, 12), // Fixed
-    ].filter((c) => c.length > 0)
-    // Total: 63 + 63 + 100 + 16 + 12 + 4 separators + 3 chars for hostname header = 261 > 253 (max limit)
-    // If all attributes max out char limit, then accountId will be truncated to the first 4 char.
-
-    const session = components.join('_').substring(0, 253)
-    return session
-}
-
-/**
- * Validates if a string meets SSH hostname naming convention
- */
-function isValidSshHostname(label: string): boolean {
-    return /^[a-z0-9]([a-z0-9.-_]{0,251}[a-z0-9])?$/.test(label)
-}
-
 export async function stopSpace(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
     ctx: vscode.ExtensionContext,

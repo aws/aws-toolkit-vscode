@@ -39,7 +39,7 @@ describe('ideProcessPatterns', () => {
         })
 
         it('does not match unrelated processes', () => {
-            const line = '/Applications/Safari.app/Contents/MacOS/Safari'
+            const line = '/usr/bin/python3'
             assert.strictEqual(ideProcessPatterns.darwin.test(line), false)
         })
     })

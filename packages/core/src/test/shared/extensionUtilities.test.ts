@@ -335,7 +335,7 @@ describe('UserActivity', function () {
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
-        it('does not fire onDidChangeTerminalState when window is not focused', function () {
+        it('does not fire onDidChangeTerminalState when window is not focused', async function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeTerminalState')
             const focusedStub = sandbox.stub(vscode.window.state, 'focused')
 
@@ -344,6 +344,9 @@ describe('UserActivity', function () {
             focusedStub.value(false)
             triggerUserActivity({})
             assert.strictEqual(userActivitySubscriber.callCount, 0)
+
+            // Allow throttle window to elapse before next call
+            await new Promise((resolve) => setTimeout(resolve, 1))
 
             focusedStub.value(true)
             triggerUserActivity({})

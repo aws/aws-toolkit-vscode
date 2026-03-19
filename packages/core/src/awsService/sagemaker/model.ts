@@ -36,6 +36,35 @@ const ideSuffix: Record<string, string> = {
     cursor: 'c',
 }
 
+export function isValidSshHostname(label: string): boolean {
+    return /^[a-z0-9]([a-z0-9.-_]{0,251}[a-z0-9])?$/.test(label)
+}
+
+export function createValidSshSession(
+    workspaceName: string,
+    namespace: string,
+    clusterName: string,
+    region: string,
+    accountId: string
+): string {
+    const sanitize = (str: string, maxLength: number): string =>
+        str
+            .toLowerCase()
+            .replace(/[^a-z0-9.-]/g, '')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, maxLength)
+
+    const components = [
+        sanitize(workspaceName, 63),
+        sanitize(namespace, 63),
+        sanitize(clusterName, 100),
+        sanitize(region, 16),
+        sanitize(accountId, 12),
+    ].filter((c) => c.length > 0)
+
+    return components.join('_').substring(0, 253)
+}
+
 /** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_' */
 export function getSshPrefix(connectionType: string): string {
     if (connectionType === 'sm_hp') {
@@ -152,9 +181,14 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     const sshPrefix = getSshPrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
-        hostname = session
-            ? `${sshPrefix}${session}`
-            : `${sshPrefix}${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+        let hpSession = session
+        if (!hpSession) {
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            hpSession = isValidSshHostname(proposedSession)
+                ? proposedSession
+                : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
+        }
+        hostname = `${sshPrefix}${hpSession}`
     } else {
         const credsType = connectionType.replace('sm_', '')
         hostname = `${sshPrefix}${credsType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`

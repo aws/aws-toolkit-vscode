@@ -56,6 +56,7 @@ function Main {
         $sessionId = if ($env:SESSION_ID) { $env:SESSION_ID } else { $HostName }
     } else {
         Write-Log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
+        Write-Error "No env credentials available. Please reconnect from the IDE."
         exit 1
     }
     
