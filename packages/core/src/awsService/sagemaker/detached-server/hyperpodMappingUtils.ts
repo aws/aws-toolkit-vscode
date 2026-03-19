@@ -95,37 +95,3 @@ export async function storeHyperpodConnection(
     }
     await writeHyperpodMapping(mapping)
 }
-
-export async function getStoredConnections(): Promise<HyperpodMappings> {
-    return await readHyperpodMapping()
-}
-
-export async function getHyperpodConnection(connectionKey: string): Promise<HyperpodSpaceMapping | undefined> {
-    const mapping = await readHyperpodMapping()
-    return mapping[connectionKey]
-}
-
-export async function getHyperpodConnectionByDetails(
-    workspaceName: string,
-    namespace: string,
-    clusterName: string
-): Promise<HyperpodSpaceMapping | undefined> {
-    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
-    return getHyperpodConnection(connectionKey)
-}
-
-async function processWriteQueue() {
-    if (isWriting || writeQueue.length === 0) {
-        return
-    }
-
-    isWriting = true
-    try {
-        while (writeQueue.length > 0) {
-            const writeOperation = writeQueue.shift()!
-            await writeOperation()
-        }
-    } finally {
-        isWriting = false
-    }
-}
