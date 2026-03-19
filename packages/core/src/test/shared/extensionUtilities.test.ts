@@ -536,6 +536,11 @@ describe('getIdeType', function () {
         sandbox.restore()
     })
 
+    it('returns kiro when appName contains Kiro', function () {
+        sandbox.stub(vscode.env, 'appName').value('Kiro')
+        assert.strictEqual(getIdeType(), 'kiro')
+    })
+
     it('returns cursor when appName contains Cursor', function () {
         sandbox.stub(vscode.env, 'appName').value('Cursor')
         assert.strictEqual(getIdeType(), 'cursor')
