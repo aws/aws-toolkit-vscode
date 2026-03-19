@@ -10,6 +10,9 @@ import fs from '../../shared/fs/fs'
 import { createAgentsFile } from '../../sagemakerunifiedstudio/bootstrapAgentContext'
 import { agentsFile, contextFile, importStatement, promptMessage } from '../../sagemakerunifiedstudio/shared/constants'
 import { getTestWindow } from '../shared/vscode/window'
+import * as smusUtils from '../../sagemakerunifiedstudio/shared/smusUtils'
+import * as resourceMetadataUtils from '../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
+import { SmusAuthenticationProvider } from '../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 
 describe('AGENTS.md', function () {
     let sandbox: sinon.SinonSandbox
@@ -26,6 +29,9 @@ describe('AGENTS.md', function () {
         } as any
         writeStub = sandbox.stub(fs, 'writeFile').resolves()
         existsStub = sandbox.stub(fs, 'existsFile')
+        sandbox.stub(smusUtils, 'extractAccountIdFromResourceMetadata').resolves('123456789012')
+        sandbox.stub(resourceMetadataUtils, 'getResourceMetadata').returns(undefined)
+        sandbox.stub(SmusAuthenticationProvider, 'fromContext').returns({ activeConnection: undefined } as any)
     })
 
     afterEach(function () {
