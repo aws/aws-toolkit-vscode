@@ -9,7 +9,13 @@ import { ServiceException } from '@smithy/smithy-client'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import { UserActivity, getComputeRegion, initializeComputeRegion, isCn } from '../../shared/extensionUtilities'
+import {
+    UserActivity,
+    getComputeRegion,
+    getIdeType,
+    initializeComputeRegion,
+    isCn,
+} from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
@@ -331,15 +337,15 @@ describe('UserActivity', function () {
 
         it('does not fire onDidChangeTerminalState when window is not focused', function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeTerminalState')
-            const focusedStub = sandbox.stub(vscode.window.state, 'focused')
+            const stateStub = sandbox.stub(vscode.window, 'state')
 
             const triggerUserActivity = createTriggerActivityFunc()
 
-            focusedStub.value(false)
+            stateStub.value({ focused: false })
             triggerUserActivity({})
             assert.strictEqual(userActivitySubscriber.callCount, 0)
 
-            focusedStub.value(true)
+            stateStub.value({ focused: true })
             triggerUserActivity({})
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
@@ -516,5 +522,32 @@ describe('hasSageMakerEnvVars', function () {
         // Test no env vars
         sandbox.stub(process, 'env').value({})
         assert.strictEqual(hasSageMakerEnvVars(), false)
+    })
+})
+
+describe('getIdeType', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns kiro when appName contains Kiro', function () {
+        sandbox.stub(vscode.env, 'appName').value('Kiro')
+        assert.strictEqual(getIdeType(), 'kiro')
+    })
+
+    it('returns cursor when appName contains Cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getIdeType(), 'cursor')
+    })
+
+    it('returns cursor case-insensitively', function () {
+        sandbox.stub(vscode.env, 'appName').value('CURSOR IDE')
+        assert.strictEqual(getIdeType(), 'cursor')
     })
 })
