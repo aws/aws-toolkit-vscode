@@ -8,7 +8,7 @@ import * as assert from 'assert'
 describe('ideProcessPatterns', () => {
     const ideProcessPatterns = {
         windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-        darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,
+        darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/.*/,
         linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
     }
 

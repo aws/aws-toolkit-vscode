@@ -22,9 +22,9 @@ const pollInterval = 30 * 60 * 100 // 30 minutes
  * Generic IDE process patterns for detection across all VS Code forks
  * Supports: VS Code, Cursor, Kiro, Windsurf, and other forks
  */
-const ideProcessPatterns = {
+export const ideProcessPatterns = {
     windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-    darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,
+    darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/.*/,
     linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
 }
 

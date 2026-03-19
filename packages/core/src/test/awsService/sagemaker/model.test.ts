@@ -13,6 +13,7 @@ import {
     startLocalServer,
     stopLocalServer,
     startRemoteViaSageMakerSshKiro,
+    applyIdeSuffix,
 } from '../../../awsService/sagemaker/model'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
@@ -362,5 +363,41 @@ describe('SageMaker Model', () => {
             sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
             sinon.assert.calledOnce(mockProcessInstance.run)
         })
+    })
+})
+
+describe('applyIdeSuffix', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('adds cursor suffix when IDE is cursor', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'getIdeType').returns('cursor')
+
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'smc_lc')
+        assert.strictEqual(applyIdeSuffix('sm_dl'), 'smc_dl')
+        assert.strictEqual(applyIdeSuffix('sm_'), 'smc_')
+    })
+
+    it('does not modify prefix when IDE is vscode', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'getIdeType').returns('vscode')
+
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'sm_lc')
+        assert.strictEqual(applyIdeSuffix('sm_'), 'sm_')
+    })
+
+    it('does not modify prefix for unknown IDE types', function () {
+        const utils = require('../../../shared/extensionUtilities')
+        sandbox.stub(utils, 'getIdeType').returns('unknown')
+
+        assert.strictEqual(applyIdeSuffix('sm_lc'), 'sm_lc')
     })
 })

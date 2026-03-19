@@ -36,6 +36,25 @@ import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
+/**
+ * Maps IDE types to their SSH hostname prefix suffix.
+ * VSCode uses no suffix, Cursor uses 'c' suffix.
+ */
+const ideSuffixMap: Record<string, string> = {
+    vscode: '',
+    cursor: 'c',
+}
+
+/**
+ * Applies IDE-specific suffix to an 'sm_' prefixed string.
+ * e.g. 'sm_lc' → 'smc_lc' on Cursor, unchanged on VSCode.
+ * HyperPod ('sm_hp') is excluded since it uses a separate 'hp_' prefix.
+ */
+export function applyIdeSuffix(value: string): string {
+    const suffix = ideSuffixMap[getIdeType()] || ''
+    return suffix ? value.replace('sm_', `sm${suffix}_`) : value
+}
+
 class HyperPodSshConfig extends SshConfig {
     constructor(
         sshPath: string,
@@ -158,7 +177,7 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix = connectionType
+    const hostnamePrefix = connectionType === 'sm_hp' ? connectionType : applyIdeSuffix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
         const clusterPart = clusterName || 'unknown'
@@ -219,7 +238,7 @@ export async function prepareDevEnvConnection(
         const sshConfig =
             connectionType === 'sm_hp'
                 ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+                : new SshConfig(ssh, applyIdeSuffix('sm_'), 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
