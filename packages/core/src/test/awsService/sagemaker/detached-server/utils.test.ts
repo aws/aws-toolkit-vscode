@@ -5,7 +5,8 @@
 
 /* eslint-disable no-restricted-imports */
 import * as assert from 'assert'
-import { parseArn, writeMapping, readMapping } from '../../../../awsService/sagemaker/detached-server/utils'
+import { parseArn } from '../../../../awsService/sagemaker/utils'
+import { writeMapping, readMapping } from '../../../../awsService/sagemaker/detached-server/utils'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as os from 'os'
@@ -18,7 +19,7 @@ describe('parseArn', () => {
         assert.deepStrictEqual(result, {
             region: 'us-west-2',
             accountId: '123456789012',
-            spaceName: 'my-space-name',
+            resourceName: 'my-space-name',
         })
     })
 
@@ -28,18 +29,18 @@ describe('parseArn', () => {
         assert.deepStrictEqual(result, {
             region: 'ap-southeast-1',
             accountId: '123456789012',
-            spaceName: 'my-space-name',
+            resourceName: 'my-space-name',
         })
     })
 
     it('throws on malformed ARN', () => {
         const invalidArn = 'arn:aws:invalid:format'
-        assert.throws(() => parseArn(invalidArn), /Invalid SageMaker ARN format/)
+        assert.throws(() => parseArn(invalidArn), /Invalid ARN format/)
     })
 
     it('throws when missing region/account', () => {
         const invalidArn = 'arn:aws:sagemaker:::space/xyz'
-        assert.throws(() => parseArn(invalidArn), /Invalid SageMaker ARN format/)
+        assert.throws(() => parseArn(invalidArn), /Invalid ARN format/)
     })
 })
 
