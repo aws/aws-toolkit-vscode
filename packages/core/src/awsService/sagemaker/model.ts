@@ -9,15 +9,12 @@ import * as vscode from 'vscode'
 import { getSshConfigPath, sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { ensureConnectScript, SshConfig } from '../../shared/sshConfig'
-import { Result } from '../../shared/utilities/result'
 import * as path from 'path'
 import { persistLocalCredentials, persistSmusProjectCreds, persistSSMConnection } from './credentialMapping'
-import * as os from 'os'
 import _ from 'lodash'
 import { fs } from '../../shared/fs/fs'
 import * as nodefs from 'fs'
-import { getSmSsmEnv, spawnDetachedServer } from './utils'
-import { parseArn } from './detached-server/utils'
+import { getSmSsmEnv, removeKnownHost, spawnDetachedServer } from './utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
@@ -30,53 +27,51 @@ import { ChildProcess } from '../../shared/utilities/processUtils'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { SshConfigError, SshConfigErrorMessage } from './constants'
 import globals from '../../shared/extensionGlobals'
-import { HyperpodConnectionMonitor } from './hyperpodConnectionMonitor'
-import { HyperpodReconnectionManager } from './hyperpodReconnection'
-import { createConnectionKey } from './detached-server/hyperpodMappingUtils'
+import { createConnectionKey, storeHyperpodConnection } from './detached-server/hyperpodMappingUtils'
 
 const logger = getLogger('sagemaker')
 
-class HyperPodSshConfig extends SshConfig {
-    constructor(
-        sshPath: string,
-        private readonly hyperpodConnectPath: string
-    ) {
-        super(sshPath, 'hp_', 'hyperpod_connect')
+const ideSuffix: Record<string, string> = {
+    vscode: '',
+    cursor: 'c',
+}
+
+export function isValidSshHostname(label: string): boolean {
+    return /^[a-z0-9]([a-z0-9.-_]{0,251}[a-z0-9])?$/.test(label)
+}
+
+export function createValidSshSession(
+    workspaceName: string,
+    namespace: string,
+    clusterName: string,
+    region: string,
+    accountId: string
+): string {
+    const sanitize = (str: string, maxLength: number): string =>
+        str
+            .toLowerCase()
+            .replace(/[^a-z0-9.-]/g, '')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, maxLength)
+
+    const components = [
+        sanitize(workspaceName, 63),
+        sanitize(namespace, 63),
+        sanitize(clusterName, 100),
+        sanitize(region, 16),
+        sanitize(accountId, 12),
+    ].filter((c) => c.length > 0)
+
+    return components.join('_').substring(0, 253)
+}
+
+/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_' */
+export function getSshPrefix(connectionType: string): string {
+    if (connectionType === 'sm_hp') {
+        return 'smhp_'
     }
-
-    protected override createSSHConfigSection(proxyCommand: string): string {
-        const isWindows = process.platform === 'win32'
-        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
-        const hostParam = isWindows ? '"%h"' : "'%h'"
-        const proxyCmd = isWindows
-            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
-            : `${quotedPath} ${hostParam}`
-
-        return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host hp_*
-    ForwardAgent yes
-    AddKeysToAgent yes
-    StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCmd}
-    IdentitiesOnly yes
-`
-    }
-
-    public override async ensureValid() {
-        const isWindows = process.platform === 'win32'
-        const quotedPath = isWindows ? `"${this.hyperpodConnectPath}"` : `'${this.hyperpodConnectPath}'`
-        const hostParam = isWindows ? '"%h"' : "'%h'"
-        const proxyCommand = isWindows
-            ? `powershell.exe -ExecutionPolicy Bypass -File ${quotedPath} ${hostParam}`
-            : `${quotedPath} ${hostParam}`
-
-        const verifyHost = await this.verifySSHHost(proxyCommand)
-        if (verifyHost.isErr()) {
-            return verifyHost
-        }
-        return Result.ok()
-    }
+    const suffix = ideSuffix[getIdeType()] ?? ''
+    return `sm${suffix}_`
 }
 
 export async function tryRemoteConnection(
@@ -92,7 +87,7 @@ export async function tryRemoteConnection(
     const username = 'sagemaker-user'
     const spaceArn = (await node.getSpaceArn()) as string
     const isSMUS = node instanceof SagemakerUnifiedStudioSpaceNode
-    const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc', isSMUS, node)
+    const remoteEnv = await prepareDevEnvConnection({ spaceArn, ctx, connectionType: 'sm_lc', isSMUS, node })
 
     try {
         progress.report({ message: 'Opening remote session' })
@@ -123,23 +118,48 @@ export function extractRegionFromStreamUrl(streamUrl: string): string {
     return match[1]
 }
 
-export async function prepareDevEnvConnection(
-    spaceArn: string,
-    ctx: vscode.ExtensionContext,
-    connectionType: string,
-    isSMUS: boolean,
-    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode | undefined,
-    session?: string,
-    wsUrl?: string,
-    token?: string,
-    domain?: string,
-    appType?: string,
-    devspaceName?: string,
-    clusterName?: string,
-    namespace?: string,
-    region?: string,
+export interface DevEnvConnectionOptions {
+    spaceArn: string
+    ctx: vscode.ExtensionContext
+    connectionType: string
+    isSMUS: boolean
+    node?: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode
+    session?: string
+    wsUrl?: string
+    token?: string
+    domain?: string
+    appType?: string
+    workspaceName?: string
+    clusterName?: string
+    namespace?: string
+    region?: string
     clusterArn?: string
-) {
+    accountId?: string
+    eksEndpoint?: string
+    eksCertAuthData?: string
+}
+
+export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
+    const {
+        spaceArn,
+        ctx,
+        connectionType,
+        isSMUS,
+        node,
+        session,
+        wsUrl,
+        token,
+        domain,
+        appType,
+        workspaceName,
+        clusterName,
+        namespace,
+        region,
+        clusterArn,
+        accountId,
+        eksEndpoint,
+        eksCertAuthData,
+    } = opts
     const remoteLogger = configureRemoteConnectionLogger()
     // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
     const { ssm, vsc, ssh } = (
@@ -158,18 +178,20 @@ export async function prepareDevEnvConnection(
         }
     }
 
-    const hostnamePrefix = connectionType
+    const sshPrefix = getSshPrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
-        const clusterPart = clusterName || 'unknown'
-        const namespacePart = namespace || 'default'
-        const devspacePart = devspaceName || session || 'unknown'
-        const regionPart =
-            region || (clusterArn ? parseArn(clusterArn).region : wsUrl ? extractRegionFromStreamUrl(wsUrl) : 'unknown')
-        const accountPart = clusterArn ? parseArn(clusterArn).accountId : 'unknown'
-        hostname = `hp_${clusterPart}_${namespacePart}_${devspacePart}_${regionPart}_${accountPart}`
+        let hpSession = session
+        if (!hpSession) {
+            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+            hpSession = isValidSshHostname(proposedSession)
+                ? proposedSession
+                : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
+        }
+        hostname = `${sshPrefix}${hpSession}`
     } else {
-        hostname = `${hostnamePrefix}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
+        const credsType = connectionType.replace('sm_', '')
+        hostname = `${sshPrefix}${credsType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
     }
     // save space credential mapping
     if (connectionType === 'sm_lc') {
@@ -193,33 +215,10 @@ export async function prepareDevEnvConnection(
     } else {
         await removeKnownHost(hostname)
 
-        const hyperpodConnectPath = path.join(
-            ctx.globalStorageUri.fsPath,
-            process.platform === 'win32' ? 'hyperpod_connect.ps1' : 'hyperpod_connect'
-        )
-
-        // Copy hyperpod_connect script if needed
-        if (connectionType === 'sm_hp') {
-            const sourceScriptPath = ctx.asAbsolutePath(
-                process.platform === 'win32' ? 'resources/hyperpod_connect.ps1' : 'resources/hyperpod_connect'
-            )
-            if (!(await fs.existsFile(hyperpodConnectPath))) {
-                try {
-                    await fs.copy(sourceScriptPath, hyperpodConnectPath)
-                    if (process.platform !== 'win32') {
-                        await fs.chmod(hyperpodConnectPath, 0o755)
-                    }
-                    logger.info(`Copied hyperpod_connect script to ${hyperpodConnectPath}`)
-                } catch (err) {
-                    logger.error(`Failed to copy hyperpod_connect script: ${err}`)
-                }
-            }
-        }
-
         const sshConfig =
             connectionType === 'sm_hp'
-                ? new HyperPodSshConfig(ssh, hyperpodConnectPath)
-                : new SshConfig(ssh, 'sm_', 'sagemaker_connect')
+                ? new SshConfig(ssh, sshPrefix, 'hyperpod_connect')
+                : new SshConfig(ssh, sshPrefix, 'sagemaker_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
@@ -265,13 +264,43 @@ export async function prepareDevEnvConnection(
                           ?.replace(/&#39;/g, "'")
                           .replace(/&quot;/g, '"')
                           .replace(/&amp;/g, '&') || ''
-                  const region = decodedWsUrl ? extractRegionFromStreamUrl(decodedWsUrl) : ''
+
+                  // Parse presigned URL to extract STREAM_URL, TOKEN, and SESSION_ID
+                  let streamUrl = decodedWsUrl
+                  let sessionToken = decodedToken
+                  let sessionId = hostname || ''
+
+                  if (decodedWsUrl && !decodedToken) {
+                      try {
+                          const parsedUrl = new URL(decodedWsUrl)
+                          const params = parsedUrl.searchParams
+                          // Extract from query params (vscode:// redirect URL format)
+                          const qStreamUrl = params.get('streamUrl')
+                          const qSessionToken = params.get('sessionToken')
+                          const qSessionId = params.get('sessionId')
+                          if (qStreamUrl) {
+                              streamUrl = qStreamUrl
+                              sessionToken = qSessionToken || ''
+                              sessionId = qSessionId || sessionId
+                          } else if (decodedWsUrl.startsWith('wss://')) {
+                              // Direct wss:// presigned URL format
+                              const pathParts = parsedUrl.pathname.split('/')
+                              sessionId = pathParts[pathParts.length - 1] || sessionId
+                              sessionToken = params.get('cell-number') || ''
+                              streamUrl = decodedWsUrl
+                          }
+                      } catch (e) {
+                          logger.warn(`Failed to parse connection URL: ${e}`)
+                      }
+                  }
+
+                  const region = streamUrl ? extractRegionFromStreamUrl(streamUrl) : ''
 
                   const hyperPodEnv: NodeJS.ProcessEnv = {
                       AWS_REGION: region,
-                      SESSION_ID: hostname || '',
-                      STREAM_URL: decodedWsUrl,
-                      TOKEN: decodedToken,
+                      SESSION_ID: sessionId,
+                      STREAM_URL: streamUrl,
+                      TOKEN: sessionToken,
                       AWS_SSM_CLI: ssm,
                       DEBUG_LOG: '1',
                       LOG_FILE_LOCATION: logFileLocation,
@@ -308,30 +337,27 @@ export async function prepareDevEnvConnection(
         return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
     }
     const SessionProcess = createBoundProcess(envProvider).extend({
-        onStdout: (data: string) => {
-            remoteLogger(data)
-            if (connectionType === 'sm_hp') {
-                getLogger().info(`[ProxyCommand stdout] ${data}`)
-            }
-        },
-        onStderr: (data: string) => {
-            remoteLogger(data)
-            if (connectionType === 'sm_hp') {
-                getLogger().error(`[ProxyCommand stderr] ${data}`)
-            }
-        },
+        onStdout: (data: string) => remoteLogger(data),
+        onStderr: (data: string) => remoteLogger(data),
         rejectOnErrorCode: true,
     })
 
     // Start connection monitoring for HyperPod connections
-    if (connectionType === 'sm_hp' && devspaceName && clusterName && namespace) {
+    if (connectionType === 'sm_hp' && workspaceName && clusterName && namespace) {
         try {
-            const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
-            const connectionMonitor = HyperpodConnectionMonitor.getInstance()
-            connectionMonitor.startMonitoring(connectionKey)
+            const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
 
-            const reconnectionManager = HyperpodReconnectionManager.getInstance()
-            reconnectionManager.scheduleReconnection(connectionKey)
+            await storeHyperpodConnection(
+                workspaceName,
+                namespace,
+                clusterArn!,
+                clusterName,
+                eksEndpoint,
+                eksCertAuthData,
+                region,
+                wsUrl,
+                token
+            )
 
             getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
         } catch (error) {
@@ -437,40 +463,6 @@ export async function stopLocalServer(ctx: vscode.ExtensionContext): Promise<voi
         logger.debug('removed server info file.')
     } catch (err: any) {
         logger.warn(`could not delete info file: ${err.message ?? err}`)
-    }
-}
-
-export async function removeKnownHost(hostname: string): Promise<void> {
-    const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts')
-
-    if (!(await fs.existsFile(knownHostsPath))) {
-        logger.warn(`known_hosts not found at ${knownHostsPath}`)
-        return
-    }
-
-    let lines: string[]
-    try {
-        const content = await fs.readFileText(knownHostsPath)
-        lines = content.split('\n')
-    } catch (err: any) {
-        throw ToolkitError.chain(err, 'Failed to read known_hosts file')
-    }
-
-    const updatedLines = lines.filter((line) => {
-        const entryHostname = line.split(' ')[0].split(',')
-        // Hostnames in the known_hosts file seem to be always lowercase, but keeping the case-sensitive check just in
-        // case. Originally we were only doing the case-sensitive check which caused users to get a host
-        // identification error when reconnecting to a Space after it was restarted.
-        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
-    })
-
-    if (updatedLines.length !== lines.length) {
-        try {
-            await fs.writeFile(knownHostsPath, updatedLines.join('\n'), { atomic: true })
-            logger.debug(`Removed '${hostname}' from known_hosts`)
-        } catch (err: any) {
-            throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
-        }
     }
 }
 
