@@ -5,14 +5,18 @@
 
 import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
+import * as os from 'os'
 import * as vscode from 'vscode'
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
 import { sshLogFileLocation } from '../../shared/sshConfig'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared/errors'
 
 export const DomainKeyDelimiter = '__'
+export { parseArn } from './detached-server/utils'
+const logger = getLogger('sagemaker')
 
 export function getDomainSpaceKey(domainId: string, spaceName: string): string {
     return `${domainId}${DomainKeyDelimiter}${spaceName}`
@@ -88,7 +92,7 @@ export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): 
         {
             AWS_SSM_CLI: ssmPath,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: sagemakerLocalServerPath,
-            LOF_FILE_LOCATION: sshLogFileLocation('sagemaker', 'blah'),
+            LOG_FILE_LOCATION: sshLogFileLocation('sagemaker', 'connect'),
         },
         process.env
     )
@@ -222,4 +226,35 @@ export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Tim
             getLogger().debug(`No background activity detected.`)
         }
     }, ActivityCheckInterval)
+}
+
+export async function removeKnownHost(hostname: string): Promise<void> {
+    const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts')
+
+    if (!(await fs.existsFile(knownHostsPath))) {
+        logger.warn(`known_hosts not found at ${knownHostsPath}`)
+        return
+    }
+
+    let lines: string[]
+    try {
+        const content = await fs.readFileText(knownHostsPath)
+        lines = content.split('\n')
+    } catch (err: any) {
+        throw ToolkitError.chain(err, 'Failed to read known_hosts file')
+    }
+
+    const updatedLines = lines.filter((line) => {
+        const entryHostname = line.split(' ')[0].split(',')
+        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
+    })
+
+    if (updatedLines.length !== lines.length) {
+        try {
+            await fs.writeFile(knownHostsPath, updatedLines.join('\n'), { atomic: true })
+            logger.debug(`Removed '${hostname}' from known_hosts`)
+        } catch (err: any) {
+            throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
+        }
+    }
 }
