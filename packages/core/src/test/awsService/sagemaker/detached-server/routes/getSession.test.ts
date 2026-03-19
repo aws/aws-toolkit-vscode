@@ -142,7 +142,7 @@ describe('handleGetSession', () => {
             const successUrl = `/session?connection_identifier=${successArn}`
 
             // Use up some retries with failures
-            credentials.resolveCredentialsFor.restore()
+            ;(credentials.resolveCredentialsFor as sinon.SinonStub).restore()
             sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
             sinon.stub(utils, 'startSagemakerSession').rejects(new Error('fail'))
 
@@ -155,7 +155,7 @@ describe('handleGetSession', () => {
             }
 
             // Now succeed
-            utils.startSagemakerSession.restore()
+            ;(utils.startSagemakerSession as sinon.SinonStub).restore()
             sinon.stub(utils, 'startSagemakerSession').resolves({
                 SessionId: 's',
                 StreamUrl: 'wss://x',
@@ -171,7 +171,7 @@ describe('handleGetSession', () => {
             assert.strictEqual(resWriteHead.firstCall.args[0], 200)
 
             // Should be able to fail 8 more times (counter was reset)
-            utils.startSagemakerSession.restore()
+            ;(utils.startSagemakerSession as sinon.SinonStub).restore()
             sinon.stub(utils, 'startSagemakerSession').rejects(new Error('fail'))
 
             for (let i = 0; i < 8; i++) {
