@@ -7,7 +7,7 @@ import { fs } from '../../shared/fs/fs'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { RemoteAppMetadata } from './utils'
 import { getLogger } from '../../shared/logger/logger'
-import { parseArn } from './detached-server/utils'
+import { parseArn } from './utils'
 
 export async function getRemoteAppMetadata(): Promise<RemoteAppMetadata> {
     try {

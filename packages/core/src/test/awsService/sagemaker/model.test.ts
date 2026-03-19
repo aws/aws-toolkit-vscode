@@ -9,11 +9,12 @@ import * as os from 'os'
 import * as path from 'path'
 import { DevSettings, fs, ToolkitError } from '../../../shared'
 import {
-    removeKnownHost,
     startLocalServer,
     stopLocalServer,
     startRemoteViaSageMakerSshKiro,
+    getSshPrefix,
 } from '../../../awsService/sagemaker/model'
+import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
 
@@ -362,5 +363,39 @@ describe('SageMaker Model', () => {
             sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
             sinon.assert.calledOnce(mockProcessInstance.run)
         })
+    })
+})
+
+describe('getSshPrefix', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns sm_ for vscode sagemaker connection', function () {
+        sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'sm_')
+        assert.strictEqual(getSshPrefix('sm_dl'), 'sm_')
+    })
+
+    it('returns smc_ for cursor sagemaker connection', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'smc_')
+        assert.strictEqual(getSshPrefix('sm_dl'), 'smc_')
+    })
+
+    it('returns smhp_ for hyperpod connection regardless of IDE', function () {
+        sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+        assert.strictEqual(getSshPrefix('sm_hp'), 'smhp_')
+    })
+
+    it('returns sm_ for unknown IDE type', function () {
+        sandbox.stub(vscode.env, 'appName').value('SomeOtherIDE')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'sm_')
     })
 })
