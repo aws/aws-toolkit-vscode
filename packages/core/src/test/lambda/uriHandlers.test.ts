@@ -10,6 +10,7 @@ import { globals } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { assertTelemetry } from '../../test/testUtil'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 describe('Lambda URI Handler', function () {
     describe('load-function', function () {
@@ -38,27 +39,33 @@ describe('Lambda URI Handler', function () {
     })
 
     describe('handleLambdaUriError', function () {
-        it('records cancelled result for CancellationError', function () {
+        it('records cancelled result for CancellationError', async function () {
             const error = new CancellationError('user')
-            handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            await telemetry.lambda_uriHandler.run(async () => {
+                handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            })
             assertTelemetry('lambda_uriHandler', {
                 result: 'Cancelled',
                 reasonDesc: 'User cancelled',
             })
         })
 
-        it('records cancelled result for "canceled" message', function () {
+        it('records cancelled result for "canceled" message', async function () {
             const error = new Error('Canceled') // vscode reload window
-            handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            await telemetry.lambda_uriHandler.run(async () => {
+                handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            })
             assertTelemetry('lambda_uriHandler', {
                 result: 'Cancelled',
                 reasonDesc: 'Canceled',
             })
         })
 
-        it('records cancelled result for "cancelled" message', function () {
+        it('records cancelled result for "cancelled" message', async function () {
             const error = new Error('Timeout token cancelled')
-            handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            await telemetry.lambda_uriHandler.run(async () => {
+                handleLambdaUriError(error, 'test-fn', 'us-east-1')
+            })
             assertTelemetry('lambda_uriHandler', {
                 result: 'Cancelled',
                 reasonDesc: 'Timeout token cancelled',
