@@ -7,11 +7,12 @@ import { promises as fs } from 'fs' // eslint-disable-line no-restricted-imports
 import os from 'os'
 import { join } from 'path'
 
+import { WriteQueue } from './writeQueue'
+
 export interface HyperpodSpaceMapping {
     namespace: string
     clusterArn: string
     clusterName: string
-    eksClusterName: string
     endpoint?: string
     certificateAuthorityData?: string
     region?: string
@@ -27,8 +28,7 @@ export interface HyperpodMappings {
 export const hyperpodMappingFilePath = join(os.homedir(), '.aws', '.hyperpod-space-profiles')
 const tempFilePath = `${hyperpodMappingFilePath}.tmp`
 
-let isWriting = false
-const writeQueue: Array<() => Promise<void>> = []
+const writeQueue = new WriteQueue()
 
 export async function readHyperpodMapping(): Promise<HyperpodMappings> {
     try {
@@ -57,23 +57,22 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
         }
 
         writeQueue.push(writeOperation)
-        void processWriteQueue()
+        void writeQueue.process()
     })
 }
 
-export function createConnectionKey(devspaceName: string, namespace: string, clusterName: string): string {
-    if (devspaceName.includes(':') || namespace.includes(':') || clusterName.includes(':')) {
+export function createConnectionKey(workspaceName: string, namespace: string, clusterName: string): string {
+    if (workspaceName.includes(':') || namespace.includes(':') || clusterName.includes(':')) {
         throw new Error('Connection key parameters cannot contain colon characters')
     }
-    return `${clusterName}:${namespace}:${devspaceName}`
+    return `${workspaceName}:${namespace}:${clusterName}`
 }
 
 export async function storeHyperpodConnection(
-    devspaceName: string,
+    workspaceName: string,
     namespace: string,
     clusterArn: string,
     clusterName: string,
-    eksClusterName: string,
     endpoint?: string,
     certificateAuthorityData?: string,
     region?: string,
@@ -81,13 +80,12 @@ export async function storeHyperpodConnection(
     token?: string
 ): Promise<void> {
     const mapping = await readHyperpodMapping()
-    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
+    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
     const accountId = clusterArn.split(':')[4]
     mapping[connectionKey] = {
         namespace,
         clusterArn,
         clusterName,
-        eksClusterName,
         endpoint,
         certificateAuthorityData,
         region,
@@ -96,38 +94,4 @@ export async function storeHyperpodConnection(
         token,
     }
     await writeHyperpodMapping(mapping)
-}
-
-export async function getStoredConnections(): Promise<HyperpodMappings> {
-    return await readHyperpodMapping()
-}
-
-export async function getHyperpodConnection(connectionKey: string): Promise<HyperpodSpaceMapping | undefined> {
-    const mapping = await readHyperpodMapping()
-    return mapping[connectionKey]
-}
-
-export async function getHyperpodConnectionByDetails(
-    devspaceName: string,
-    namespace: string,
-    clusterName: string
-): Promise<HyperpodSpaceMapping | undefined> {
-    const connectionKey = createConnectionKey(devspaceName, namespace, clusterName)
-    return getHyperpodConnection(connectionKey)
-}
-
-async function processWriteQueue() {
-    if (isWriting || writeQueue.length === 0) {
-        return
-    }
-
-    isWriting = true
-    try {
-        while (writeQueue.length > 0) {
-            const writeOperation = writeQueue.shift()!
-            await writeOperation()
-        }
-    } finally {
-        isWriting = false
-    }
 }

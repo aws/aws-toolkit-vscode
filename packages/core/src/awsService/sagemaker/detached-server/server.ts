@@ -10,7 +10,6 @@ import http, { IncomingMessage, ServerResponse } from 'http'
 import { handleGetSession } from './routes/getSession'
 import { handleGetSessionAsync } from './routes/getSessionAsync'
 import { handleRefreshToken } from './routes/refreshToken'
-import { handleGetHyperpodSession } from './routes/getHyperpodSession'
 import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
@@ -19,12 +18,12 @@ import { execFile } from 'child_process'
 const pollInterval = 30 * 60 * 100 // 30 minutes
 
 /**
- * Generic IDE process patterns for detection across all VS Code forks
- * Supports: VS Code, Cursor, Kiro, Windsurf, and other forks
+ * Generic IDE process patterns for detection across all VS Code forks.
+ * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
  */
-const ideProcessPatterns = {
+export const ideProcessPatterns = {
     windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-    darwin: /(Visual Studio Code( - Insiders)?|Cursor|Kiro|Windsurf)\.app\/Contents\/MacOS\/(Electron|Code)/,
+    darwin: /\.app\/Contents\/MacOS\//,
     linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
 }
 
@@ -38,8 +37,6 @@ const server = http.createServer((req: IncomingMessage, res: ServerResponse) => 
             return handleGetSessionAsync(req, res)
         case '/refresh_token':
             return handleRefreshToken(req, res)
-        case '/get_hyperpod_session':
-            return handleGetHyperpodSession(req, res)
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end(`Not Found: ${req.url}`)
