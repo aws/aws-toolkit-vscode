@@ -206,13 +206,14 @@ describe('AppBuilder Walkthrough', function () {
             })
 
             describe('override existing template', async () => {
+                let overwritePromptShown: boolean
                 beforeEach(() => {
+                    overwritePromptShown = false
                     getTestWindow().onDidShowMessage((message) => {
-                        assert.strictEqual(
-                            message.message,
-                            'template.yaml already exist in the selected directory, overwrite?'
-                        )
-                        message.selectItem('Yes')
+                        if (message.message === 'template.yaml already exist in the selected directory, overwrite?') {
+                            overwritePromptShown = true
+                            message.selectItem('Yes')
+                        }
                     })
                 })
 
@@ -220,6 +221,7 @@ describe('AppBuilder Walkthrough', function () {
                     // When
                     await genWalkthroughProject('Visual', workspaceUri, undefined)
                     // Then
+                    assert.ok(overwritePromptShown, 'Expected overwrite prompt to be shown')
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
                 })
 
@@ -229,6 +231,7 @@ describe('AppBuilder Walkthrough', function () {
                     // When
                     await genWalkthroughProject('API', workspaceUri, 'python')
                     // Then template should be overwritten
+                    assert.ok(overwritePromptShown, 'Expected overwrite prompt to be shown')
                     assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
                     assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
                     await config.update('enableCodeLenses', true, vscode.ConfigurationTarget.Global)
@@ -240,11 +243,9 @@ describe('AppBuilder Walkthrough', function () {
                     // Given existing template.yaml
                     // select do not overwrite
                     getTestWindow().onDidShowMessage((message) => {
-                        assert.strictEqual(
-                            message.message,
-                            'template.yaml already exist in the selected directory, overwrite?'
-                        )
-                        message.selectItem('No')
+                        if (message.message === 'template.yaml already exist in the selected directory, overwrite?') {
+                            message.selectItem('No')
+                        }
                     })
                 })
 
