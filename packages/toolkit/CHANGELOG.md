@@ -1,3 +1,7 @@
+## 3.100.0 2026-03-20
+
+- Miscellaneous non-user-facing changes
+
 ## 3.99.0 2026-03-12
 
 - **Bug Fix** SageMaker: Connection to studio spaces now works reliably on all VSCode versions
