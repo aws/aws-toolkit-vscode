@@ -342,5 +342,7 @@ export function deactivate(): Thenable<void> | undefined {
         return undefined
     }
 
-    return client.stop()
+    return client.stop().catch((err) => {
+        getLogger('awsCfnLsp').warn(`CloudFormation language client stop error: ${err}`)
+    })
 }

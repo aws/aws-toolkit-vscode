@@ -15,17 +15,21 @@ export class StackActionCodeLensProvider implements CodeLensProvider {
     constructor(private readonly client: LanguageClient) {}
 
     async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[]> {
-        if (token.isCancellationRequested) {
+        if (token.isCancellationRequested || !this.client.isRunning()) {
             return []
         }
 
-        const result = await this.client.sendRequest<CodeLens[]>(
-            codeLensRequest,
-            { textDocument: { uri: document.uri.toString() } },
-            token
-        )
+        try {
+            const result = await this.client.sendRequest<CodeLens[]>(
+                codeLensRequest,
+                { textDocument: { uri: document.uri.toString() } },
+                token
+            )
 
-        return result || []
+            return result || []
+        } catch {
+            return []
+        }
     }
 
     refresh(): void {
