@@ -331,9 +331,9 @@ export async function activate(context: ExtensionContext) {
     )
 
     try {
-        // Skip LSP client in test/CI to avoid unhandled rejections from
+        // Skip LSP client in unit tests to avoid unhandled rejections from
         // vscode-languageclient internals when the server process fails.
-        if (process.env.AWS_TOOLKIT_AUTOMATION) {
+        if (process.env.AWS_TOOLKIT_AUTOMATION === 'unit') {
             return
         }
         await startClient(context)
