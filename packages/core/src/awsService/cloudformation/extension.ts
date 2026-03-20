@@ -182,16 +182,6 @@ async function startClient(context: ExtensionContext) {
 
     const stacksManager = new StacksManager(client)
 
-    // Suppress unhandled rejections from LanguageClient internal lifecycle
-    // (e.g., connection disposed during initialization on CI)
-    process.on('unhandledRejection', (reason: unknown) => {
-        const msg = reason instanceof Error ? reason.message : String(reason)
-        if (msg.includes('connection got disposed') || msg.includes('Client is not running')) {
-            getLogger('awsCfnLsp').warn(`CloudFormation LSP: ${msg}`)
-            return
-        }
-    })
-
     await client.start()
 
     const documentManager = new DocumentManager(client)
@@ -341,6 +331,11 @@ export async function activate(context: ExtensionContext) {
     )
 
     try {
+        // Skip LSP client in test/CI to avoid unhandled rejections from
+        // vscode-languageclient internals when the server process fails.
+        if (process.env.AWS_TOOLKIT_AUTOMATION) {
+            return
+        }
         await startClient(context)
     } catch (err) {
         getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'CloudFormation language server failed to start'))
