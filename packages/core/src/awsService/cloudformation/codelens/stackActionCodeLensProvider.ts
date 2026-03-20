@@ -5,6 +5,7 @@
 
 import { CancellationToken, CodeLens, CodeLensProvider, Event, EventEmitter, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient/node'
+import { getLogger } from '../../../shared/logger/logger'
 
 const codeLensRequest = 'textDocument/codeLens'
 
@@ -27,7 +28,8 @@ export class StackActionCodeLensProvider implements CodeLensProvider {
             )
 
             return result || []
-        } catch {
+        } catch (err) {
+            getLogger('awsCfnLsp').debug('CodeLens request failed: %s', err)
             return []
         }
     }
