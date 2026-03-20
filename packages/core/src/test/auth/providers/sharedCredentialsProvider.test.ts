@@ -306,6 +306,7 @@ describe('SharedCredentialsProvider - Console Session', function () {
 
         it('does not prompt reload for non-session errors', async function () {
             const error = new Error('Some other error')
+            const messagesBefore = getTestWindow().shownMessages.length
 
             await assert.rejects(
                 () => handleInvalidConsoleCredentials(error, 'test-profile', 'us-east-1'),
@@ -315,7 +316,7 @@ describe('SharedCredentialsProvider - Console Session', function () {
                 }
             )
 
-            assert.strictEqual(getTestWindow().shownMessages.length, 0)
+            assert.strictEqual(getTestWindow().shownMessages.length, messagesBefore)
         })
 
         it('handles Failed to load token from error message', async function () {

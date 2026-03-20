@@ -30,33 +30,30 @@ async function checkFile(
         // Timeout if we wait too long for file to exist
         setTimeout(() => reject(new Error('Timed out waiting for log message')), 10_000)
 
-        // Wait for file to exist
-        while (!fs.existsSync(logPath.fsPath)) {
+        // Wait for file to exist and contain expected messages
+        while (true) {
+            if (!fs.existsSync(logPath.fsPath)) {
+                await sleep(200)
+                continue
+            }
+            const contents = fs.readFileSync(logPath.fsPath)
+
+            // Error if unexpected messages are in the log file
+            const foundUnexpected = unexpected
+                .filter((t) => contents.includes(t))
+                .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
+            if (foundUnexpected) {
+                return reject(new Error(foundUnexpected))
+            }
+
+            // Retry if expected messages haven't been flushed yet
+            const notFound = expected.filter((t) => !contents.includes(t))
+            if (notFound.length === 0) {
+                return resolve()
+            }
+
             await sleep(200)
         }
-        const contents = fs.readFileSync(logPath.fsPath)
-
-        // Error if unexpected messages are in the log file
-        const foundUnexpected = unexpected
-            .filter((t) => contents.includes(t))
-            .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
-        if (foundUnexpected) {
-            return reject(new Error(foundUnexpected))
-        }
-
-        // Fail if any of the expected messages are not in the log file
-        const notFound = expected.filter((t) => !contents.includes(t))
-        if (notFound.length > 0) {
-            const last10Lines = contents.toString().split('\n').slice(-10)
-            reject(
-                new Error(
-                    notFound.reduce((a, b) => a + `Expected message not found in log: ${b}\n`, '') +
-                        `\n\n Last 10 log lines:\n${last10Lines.join('\n')}`
-                )
-            )
-        }
-
-        resolve()
     })
 
     return logger.dispose().then(() => check)

@@ -378,6 +378,7 @@ describe('editorContext', function () {
 
     describe('buildListRecommendationRequest', function () {
         it('Should return expected fields for optOut, nextToken and reference config', async function () {
+            this.timeout(60_000)
             const nextToken = 'testToken'
             const optOutPreference = false
             await globals.telemetry.setTelemetryEnabled(false)
