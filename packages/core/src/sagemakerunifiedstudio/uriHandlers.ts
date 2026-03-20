@@ -33,7 +33,7 @@ export function register(ctx: ExtContext) {
                 ctx,
                 params.connection_identifier,
                 params.session,
-                `${params.ws_url}&cell-number=${params['cell-number']}`, // Re-append cell-number to ws_url
+                `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`, // Re-append cell-number to ws_url
                 params.token,
                 params.domain,
                 params.app_type,
