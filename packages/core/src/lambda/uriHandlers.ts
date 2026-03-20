@@ -26,12 +26,7 @@ export function handleLambdaUriError(e: unknown, functionName: string, region: s
 
     if (isCancellation) {
         getLogger().info(`Opening Lambda function cancelled: ${message}`)
-        // Record cancellation in telemetry but don't pop-up error to user
-        telemetry.record({
-            result: 'Cancelled',
-            reasonDesc: message,
-        })
-        return
+        throw ToolkitError.chain(e, 'User cancelled operation', { cancelled: true })
     }
 
     // Handle other errors
