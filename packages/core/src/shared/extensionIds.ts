@@ -34,5 +34,4 @@ export const VSCODE_EXTENSION_ID_CONSTANTS = {
     git: 'vscode.git',
     // default to VSCode in test environment
     remotessh: VSCODE_REMOTE_SSH_EXTENSION.vscode,
-    sagemakerSshKiro: 'amazonwebservices.sagemaker-ssh-kiro',
 } as const
