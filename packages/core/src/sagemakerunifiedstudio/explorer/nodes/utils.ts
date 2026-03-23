@@ -526,8 +526,8 @@ export async function createDZClientForProject(
     let credentialsProvider
     if (getContext('aws.smus.isIamModeDomain')) {
         credentialsProvider = await smusAuthProvider.getProjectCredentialProvider(projectId)
-    } else if (getContext('aws.smus.isIamMode')) {
-        // IAM login into IdC domain — no DER available, use IAM role credentials
+    } else if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
+        // IAM login into IdC domain (local only) — no DER available, use IAM role credentials
         credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
             (smusAuthProvider.activeConnection as SmusIamConnection).profileName
         )
