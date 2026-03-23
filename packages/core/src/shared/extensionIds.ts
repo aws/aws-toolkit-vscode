@@ -22,6 +22,7 @@ export const VSCODE_REMOTE_SSH_EXTENSION = {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const VSCODE_EXTENSION_ID_CONSTANTS = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
+    amazonq: 'amazonwebservices.amazon-q-vscode',
     python: 'ms-python.python',
     // python depends on jupyter plugin
     jupyter: 'ms-toolsai.jupyter',
@@ -33,4 +34,5 @@ export const VSCODE_EXTENSION_ID_CONSTANTS = {
     git: 'vscode.git',
     // default to VSCode in test environment
     remotessh: VSCODE_REMOTE_SSH_EXTENSION.vscode,
+    sagemakerSshKiro: 'amazonwebservices.sagemaker-ssh-kiro',
 } as const
