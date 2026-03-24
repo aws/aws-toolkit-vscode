@@ -80,6 +80,13 @@ export function createMockSpaceNode(): any {
             DomainSpaceKey: 'test-space-key',
             regionCode: 'us-east-1',
             getParent: sinon.stub().returns(mockParent),
+            getStatus: sinon.stub().returns('InService'),
+            spaceApp: {
+                SpaceName: 'test-space',
+                SpaceSettingsSummary: { RemoteAccess: 'ENABLED' },
+            },
+            updateSpaceAppStatus: sinon.stub().resolves(),
+            refreshNode: sinon.stub().resolves(),
         },
         getParent: sinon.stub().returns(mockParent),
     }
