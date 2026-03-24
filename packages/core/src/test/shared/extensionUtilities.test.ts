@@ -9,7 +9,13 @@ import { ServiceException } from '@smithy/smithy-client'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import { UserActivity, getComputeRegion, initializeComputeRegion, isCn } from '../../shared/extensionUtilities'
+import {
+    UserActivity,
+    getComputeRegion,
+    getIdeType,
+    initializeComputeRegion,
+    isCn,
+} from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
@@ -329,6 +335,21 @@ describe('UserActivity', function () {
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
+        it('does not fire onDidChangeTerminalState when window is not focused', function () {
+            stubUserActivityEvent(vscode.window, 'onDidChangeTerminalState')
+            const stateStub = sandbox.stub(vscode.window, 'state')
+
+            const triggerUserActivity = createTriggerActivityFunc()
+
+            stateStub.value({ focused: false })
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 0)
+
+            stateStub.value({ focused: true })
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 1)
+        })
+
         /**
          * Helper to stub a vscode event object.
          *
@@ -386,11 +407,11 @@ describe('isSageMaker', function () {
             assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
-        it('returns false when app name is different', function () {
+        it('returns true when app name is Visual Studio Code with env vars', function () {
             sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
             sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
 
-            assert.strictEqual(isSageMaker('SMAI'), false)
+            assert.strictEqual(isSageMaker('SMAI'), true)
         })
 
         it('returns false when env vars are missing', function () {
@@ -501,5 +522,32 @@ describe('hasSageMakerEnvVars', function () {
         // Test no env vars
         sandbox.stub(process, 'env').value({})
         assert.strictEqual(hasSageMakerEnvVars(), false)
+    })
+})
+
+describe('getIdeType', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns kiro when appName contains Kiro', function () {
+        sandbox.stub(vscode.env, 'appName').value('Kiro')
+        assert.strictEqual(getIdeType(), 'kiro')
+    })
+
+    it('returns cursor when appName contains Cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getIdeType(), 'cursor')
+    })
+
+    it('returns cursor case-insensitively', function () {
+        sandbox.stub(vscode.env, 'appName').value('CURSOR IDE')
+        assert.strictEqual(getIdeType(), 'cursor')
     })
 })

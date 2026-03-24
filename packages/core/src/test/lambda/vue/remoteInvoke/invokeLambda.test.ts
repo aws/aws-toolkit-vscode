@@ -69,22 +69,38 @@ describe('RemoteInvokeWebview', () => {
         })
     })
     describe('invokeLambda', () => {
-        it('invokes Lambda function successfully', async () => {
-            const input = '{"key": "value"}'
-            const mockResponse = {
+        let mockResponse: InvocationResponse
+        let appendedLines: string[]
+
+        beforeEach(() => {
+            mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
                 Payload: new TextEncoder().encode('{"result": "success"}'),
             } satisfies InvocationResponse
-            client.invoke.resolves(mockResponse)
 
-            const appendedLines: string[] = []
+            appendedLines = []
             outputChannel.appendLine = (line: string) => {
                 appendedLines.push(line)
             }
+        })
+
+        it('invokes Lambda function successfully', async () => {
+            const input = '{"key": "value"}'
+            client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda(input)
             assert(client.invoke.calledOnce)
-            assert(client.invoke.calledWith(data.FunctionArn, input, sinon.match.any, 'Tail'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: input,
+                        version: sinon.match.any,
+                        tenantId: sinon.match.any,
+                        logtype: 'Tail',
+                    })
+                )
+            )
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
@@ -97,16 +113,12 @@ describe('RemoteInvokeWebview', () => {
             ])
         })
         it('handles Lambda invocation with no payload', async () => {
-            const mockResponse = {
+            mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
                 Payload: new TextEncoder().encode(''),
             } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
-            const appendedLines: string[] = []
-            outputChannel.appendLine = (line: string) => {
-                appendedLines.push(line)
-            }
 
             await remoteInvokeWebview.invokeLambda('')
 
@@ -122,16 +134,11 @@ describe('RemoteInvokeWebview', () => {
             ])
         })
         it('handles Lambda invocation with undefined LogResult', async () => {
-            const mockResponse = {
+            mockResponse = {
                 Payload: new TextEncoder().encode('{"result": "success"}'),
             } satisfies InvocationResponse
 
             client.invoke.resolves(mockResponse)
-
-            const appendedLines: string[] = []
-            outputChannel.appendLine = (line: string) => {
-                appendedLines.push(line)
-            }
 
             await remoteInvokeWebview.invokeLambda('{}')
 
@@ -927,6 +934,31 @@ describe('RemoteInvokeWebview', () => {
             )
             // opens in side panel
             assert.deepStrictEqual(createWebviewPanelArgs[2], { viewColumn: vscode.ViewColumn.Beside })
+        })
+
+        it('should check TenancyConfig when function has it', async () => {
+            const functionNodeWithTenancy = {
+                ...mockFunctionNode,
+                configuration: {
+                    ...mockFunctionNode.configuration,
+                    TenancyConfig: { TenantIsolationMode: 'PER_TENANT' },
+                },
+            }
+
+            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, {
+                ...data,
+                LambdaFunctionNode: functionNodeWithTenancy as any,
+            })
+
+            const initialData = webview.init()
+            assert.ok(initialData.LambdaFunctionNode?.configuration?.TenancyConfig)
+        })
+
+        it('should check TenancyConfig when function does not have it', async () => {
+            const webview = new RemoteInvokeWebview(outputChannel, client as any, client as any, data)
+
+            const initialData = webview.init()
+            assert.strictEqual(initialData.LambdaFunctionNode?.configuration?.TenancyConfig, undefined)
         })
     })
 })

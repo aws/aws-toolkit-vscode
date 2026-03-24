@@ -25,6 +25,8 @@ import {
 import {
     cloud9Appname,
     cloud9CnAppname,
+    cursorAppname,
+    kiroAppname,
     sageMakerAppname,
     sageMakerUnifiedStudio,
     vscodeAppname,
@@ -71,13 +73,21 @@ let computeRegion: string | undefined = notInitialized
 let serviceName: string = notInitialized
 let isSMUS: boolean = false
 
-export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'cursor' | 'unknown' {
     if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
         return 'cloud9'
     }
 
     if (vscode.env.appName === sageMakerAppname) {
         return 'sagemaker'
+    }
+
+    if (vscode.env.appName?.includes(kiroAppname)) {
+        return 'kiro'
+    }
+
+    if (vscode.env.appName?.toLowerCase().includes(cursorAppname.toLowerCase())) {
+        return 'cursor'
     }
 
     // Theia doesn't necessarily have all env properties
@@ -184,6 +194,13 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
 }
 
 /**
+ * Determines if the current system is the Kiro IDE.
+ */
+export function isKiro(): boolean {
+    return getIdeType() === 'kiro'
+}
+
+/**
  *
  * @param appName to identify the proper SM instance
  * @returns true if the current system is SageMaker(SMAI or SMUS)
@@ -198,7 +215,7 @@ export function isSageMaker(appName: 'SMAI' | 'SMUS' | 'SMUS-SPACE-REMOTE-ACCESS
 
     switch (appName) {
         case 'SMAI':
-            return vscode.env.appName === sageMakerAppname && hasSMEnvVars
+            return (vscode.env.appName === sageMakerAppname || vscode.env.appName === vscodeAppname) && hasSMEnvVars
         case 'SMUS':
             return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
         case 'SMUS-SPACE-REMOTE-ACCESS':
@@ -431,7 +448,9 @@ export class UserActivity implements vscode.Disposable {
         const throttledEmit = _.throttle(
             (event: vscode.Event<any>) => {
                 this.activityEvent.fire()
-                getLogger().debug(`UserActivity: event fired "${event.name}"`)
+                getLogger().debug(
+                    `[UserActivity] Event fired: "${event.name}", window focused: ${vscode.window.state.focused}`
+                )
             },
             delay,
             { leading: true, trailing: false }
@@ -464,7 +483,6 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorOptions,
             vscode.window.onDidOpenTerminal,
             vscode.window.onDidCloseTerminal,
-            vscode.window.onDidChangeTerminalState,
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
@@ -479,6 +497,15 @@ export class UserActivity implements vscode.Disposable {
         //
         // Events with special cases:
         //
+
+        this.register(
+            vscode.window.onDidChangeTerminalState((terminal) => {
+                if (!vscode.window.state.focused) {
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTerminalState)
+            })
+        )
 
         this.register(
             vscode.window.onDidChangeWindowState((e) => {

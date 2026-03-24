@@ -55,8 +55,10 @@ jobs:
             - run: npm ci
             - name: vsix
               run: |
-                  npm run createRelease -w packages/toolkit # Generate CHANGELOG.md
+                  npm run createRelease -w packages/toolkit  # Generate CHANGELOG.md
+                  npm run -w packages/sagemaker-ssh-kiro package  # Must be built before toolkit (toolkit embeds it)
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
+                  rm -f sagemaker-ssh-kiro-*.vsix  # Remove standalone VSIX; it's already embedded inside toolkit VSIX
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts

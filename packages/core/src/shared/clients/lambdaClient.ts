@@ -66,20 +66,22 @@ export class DefaultLambdaClient {
         )
     }
 
-    public async invoke(
-        name: string,
-        payload?: BlobPayloadInputTypes,
-        version?: string,
-        logtype: 'Tail' | 'None' = 'Tail'
-    ): Promise<InvocationResponse> {
+    public async invoke(params: {
+        name: string
+        payload?: BlobPayloadInputTypes
+        version?: string
+        tenantId?: string
+        logtype?: 'Tail' | 'None'
+    }): Promise<InvocationResponse> {
         const sdkClient = await this.createSdkClient()
 
         const response = await sdkClient.send(
             new InvokeCommand({
-                FunctionName: name,
-                LogType: logtype,
-                Payload: payload,
-                Qualifier: version,
+                FunctionName: params.name,
+                LogType: params.logtype ?? 'Tail',
+                Payload: params.payload,
+                Qualifier: params.version,
+                TenantId: params.tenantId,
             })
         )
 
@@ -324,7 +326,7 @@ export class DefaultLambdaClient {
 
     private async createSdkClient(): Promise<LambdaSdkClient> {
         return globals.sdkClientBuilderV3.createAwsService({
-            serviceClient: LambdaSdkClient,
+            serviceClient: LambdaSdkClient as any,
             userAgent: !this.userAgent,
             clientOptions: {
                 customUserAgent: this.userAgent,
@@ -333,7 +335,7 @@ export class DefaultLambdaClient {
                     requestTimeout: this.defaultTimeoutInMs,
                 }),
             },
-        })
+        }) as LambdaSdkClient
     }
 }
 
@@ -349,6 +351,7 @@ export async function getFunctionWithCredentials(region: string, name: string): 
 
     const credentials =
         connection.type === 'iam' ? await connection.getCredentials() : fromSSO({ profile: connection.id })
+
     const client = new LambdaSdkClient({ region, credentials })
 
     const command = new GetFunctionCommand({ FunctionName: name })

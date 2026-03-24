@@ -5,9 +5,10 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as os from 'os'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
-import { loadSharedCredentialsProfiles } from '../../../auth/credentials/sharedCredentials'
+import { loadSharedCredentialsProfiles, parseIni } from '../../../auth/credentials/sharedCredentials'
 import { getCredentialsFilename, getConfigFilename } from '../../../auth/credentials/sharedCredentialsFile'
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
@@ -1189,7 +1190,7 @@ export class SmusIamProfileSelector {
         }
 
         // Parse the file line by line to handle profile replacement properly
-        const lines = content.split('\n')
+        const lines = content.split(os.EOL)
         const newLines: string[] = []
         let inTargetProfile = false
         let profileFound = false
@@ -1230,7 +1231,7 @@ export class SmusIamProfileSelector {
         }
 
         // Update content with the new lines
-        content = newLines.join('\n')
+        content = newLines.join(os.EOL)
 
         // Write back to file
         await fs.writeFile(credentialsPath, content)
@@ -1245,62 +1246,85 @@ export class SmusIamProfileSelector {
         try {
             logger.debug(`Updating profile ${profileName} with region ${region}`)
 
-            const credentialsPath = getCredentialsFilename()
+            // Check both config and credential files
+            const filepathsToCheck = [getCredentialsFilename(), getConfigFilename()]
 
-            if (!(await fs.existsFile(credentialsPath))) {
-                throw new ToolkitError('Credentials file not found', { code: 'CredentialsFileNotFound' })
-            }
+            let profileUpdated = false
 
-            // Read the current credentials file
-            const content = await fs.readFileText(credentialsPath)
+            for (const filePath of filepathsToCheck) {
+                // File does not exist, try next file
+                if (!(await fs.existsFile(filePath))) {
+                    continue
+                }
 
-            // Find the profile section
-            const profileSectionRegex = new RegExp(`^\\[${profileName}\\]$`, 'm')
-            const profileMatch = content.match(profileSectionRegex)
+                const content = await fs.readFileText(filePath)
+                const sections = parseIni(content, vscode.Uri.file(filePath))
 
-            if (!profileMatch) {
-                throw new ToolkitError(`Profile ${profileName} not found in credentials file`, {
-                    code: 'ProfileNotFound',
-                })
-            }
+                // Find the profile section in this file
+                const profileSection = sections.find(
+                    (section) => section.type === 'profile' && section.name === profileName
+                )
 
-            // Find the next profile section or end of file
-            const profileStartIndex = profileMatch.index!
-            const nextProfileMatch = content.slice(profileStartIndex + 1).match(/^\[.*\]$/m)
-            const profileEndIndex = nextProfileMatch ? profileStartIndex + 1 + nextProfileMatch.index! : content.length
+                // Profile not in this file, try next file
+                if (!profileSection) {
+                    continue
+                }
 
-            // Extract the profile section
-            const profileSection = content.slice(profileStartIndex, profileEndIndex)
+                // Find the profile section boundaries using the startLines from parsed section
+                const profileStartLine = profileSection.startLines[0]
+                const lines = content.split(os.EOL)
 
-            // Check if region already exists in the profile
-            let updatedProfileSection: string
-
-            if (this.regionLinePattern.test(profileSection)) {
-                // Replace existing region
-                updatedProfileSection = profileSection.replace(this.regionLinePattern, `region = ${region}`)
-            } else {
-                // Add region to the profile (before any empty lines at the end)
-                const lines = profileSection.split('\n')
-                // Find the last non-empty line index (compatible with older JS versions)
-                let lastNonEmptyIndex = -1
-                for (let i = lines.length - 1; i >= 0; i--) {
-                    if (lines[i].trim() !== '') {
-                        lastNonEmptyIndex = i
+                // Find the next profile section or end of file
+                let profileEndLine = lines.length
+                for (let i = profileStartLine + 1; i < lines.length; i++) {
+                    if (lines[i].match(/^\s*\[([^\[\]]+)]\s*$/)) {
+                        profileEndLine = i
                         break
                     }
                 }
-                lines.splice(lastNonEmptyIndex + 1, 0, `region = ${region}`)
-                updatedProfileSection = lines.join('\n')
+
+                // Extract the profile section lines
+                const profileLines = lines.slice(profileStartLine, profileEndLine)
+
+                // Check if region already exists in the profile
+                const regionLineIndex = profileLines.findIndex((line) => this.regionLinePattern.test(line))
+
+                if (regionLineIndex !== -1) {
+                    // Replace existing region
+                    profileLines[regionLineIndex] = `region = ${region}`
+                } else {
+                    // Add region to the profile (after the last non-empty line)
+                    let lastNonEmptyIndex = -1
+                    for (let i = profileLines.length - 1; i >= 0; i--) {
+                        if (profileLines[i].trim() !== '') {
+                            lastNonEmptyIndex = i
+                            break
+                        }
+                    }
+                    profileLines.splice(lastNonEmptyIndex + 1, 0, `region = ${region}`)
+                }
+
+                // Reconstruct the file content
+                const updatedLines = [
+                    ...lines.slice(0, profileStartLine),
+                    ...profileLines,
+                    ...lines.slice(profileEndLine),
+                ]
+                const updatedContent = updatedLines.join(os.EOL)
+
+                // Write back to file
+                await fs.writeFile(filePath, updatedContent)
+
+                logger.debug(`Successfully updated profile ${profileName} with region ${region} in ${filePath}`)
+                profileUpdated = true
+                break
             }
 
-            // Replace the profile section in the content
-            const updatedContent =
-                content.slice(0, profileStartIndex) + updatedProfileSection + content.slice(profileEndIndex)
-
-            // Write back to file
-            await fs.writeFile(credentialsPath, updatedContent)
-
-            logger.debug(`Successfully updated profile ${profileName} with region ${region}`)
+            if (!profileUpdated) {
+                throw new ToolkitError(`Profile ${profileName} not found in credentials or config file`, {
+                    code: 'ProfileNotFound',
+                })
+            }
         } catch (error) {
             logger.error('Failed to update profile region: %s', error)
             throw new ToolkitError(`Failed to update profile region: ${(error as Error).message}`, {

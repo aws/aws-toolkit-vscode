@@ -1,3 +1,32 @@
+## 3.100.0 2026-03-20
+
+- Miscellaneous non-user-facing changes
+
+## 3.99.0 2026-03-12
+
+- **Bug Fix** SageMaker: Connection to studio spaces now works reliably on all VSCode versions
+
+## 3.98.0 2026-03-06
+
+- **Feature** Replace stack: with stack '' to ensure failure messages maintain proper grammar.
+
+## 3.97.0 2026-02-26
+
+- **Bug Fix** Adds a confirmation prompt before initiating console credential login (aws login) when opening a Lambda function in VS Code. Improves clarity around prerequisites and reduces unexpected login cancellations.
+- **Bug Fix** Lamdbda: Console-to-IDE transition shows "Connection does not exist" error when console login is cancelled or fail.
+- **Feature** AI assistants are able to receive SageMaker Unified Studio context when connected to a Space
+- **Feature** This update enhances HyperPod Space connectivity in the Toolkit by adding reconnection support. In the event of a connection disruption, users can now seamlessly reconnect to their existing session and resume work without losing in-progress changes.
+- **Feature** SageMaker Studio users can now connect to Spaces from Kiro IDE
+
+## 3.96.0 2026-02-13
+
+- Miscellaneous non-user-facing changes
+
+## 3.95.0 2026-01-29
+
+- **Bug Fix** AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials.
+- **Bug Fix** Opening Lambda functions from AWS Console now works with missing or mismatched local credentials
+
 ## 3.94.0 2026-01-23
 
 - **Bug Fix** Console session credentials now prompt for window reload when stale, eliminating manual VS Code restarts after token refresh or profile updates (#8488)

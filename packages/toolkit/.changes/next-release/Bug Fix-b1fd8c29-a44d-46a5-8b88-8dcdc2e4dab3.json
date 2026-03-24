@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials."
-}
