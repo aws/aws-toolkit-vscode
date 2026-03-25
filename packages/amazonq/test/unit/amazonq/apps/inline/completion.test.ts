@@ -25,6 +25,7 @@ import {
     ReferenceHoverProvider,
     ReferenceLogViewProvider,
     vsCodeState,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
@@ -253,6 +254,7 @@ describe('InlineCompletionManager', () => {
                 recommendationService = new RecommendationService(mockSessionManager)
                 documentEventListener = new DocumentEventListener()
                 vsCodeState.isRecommendationsActive = false
+                sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
                 mockSessionManager = {
                     getActiveSession: getActiveSessionStub,
                     getActiveRecommendation: getActiveRecommendationStub,
