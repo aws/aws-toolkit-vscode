@@ -38,6 +38,7 @@ import {
     toIdeDiagnostics,
     handleExtraBrackets,
     InlineCompletionLoggingReason,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
@@ -346,6 +347,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken,
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        if (!AuthUtil.instance.isConnectionValid()) {
+            getLogger().warn('Inline completion skipped: connection is not valid or has expired')
+            return []
+        }
+
         if (vsCodeState.isCodeWhispererEditing) {
             getLogger().info('Q is editing, returning empty')
             return []
