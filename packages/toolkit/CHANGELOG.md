@@ -1,3 +1,7 @@
+## 3.101.0 2026-03-26
+
+- Miscellaneous non-user-facing changes
+
 ## 3.100.0 2026-03-20
 
 - Miscellaneous non-user-facing changes
