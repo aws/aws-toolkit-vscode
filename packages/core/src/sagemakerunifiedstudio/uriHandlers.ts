@@ -9,6 +9,7 @@ import { ExtContext } from '../shared/extensions'
 import { deeplinkConnect } from '../awsService/sagemaker/commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { SmusAuthMode } from '../shared/telemetry/telemetry.gen'
+import { getLogger } from '../shared/logger/logger'
 
 const amzHeaders = [
     'X-Amz-Security-Token',
@@ -96,6 +97,19 @@ export function register(ctx: ExtContext) {
  * @throws Error if required parameters are missing
  */
 export function parseConnectParams(query: SearchParams) {
+    // Extract session from ws_url as fallback. When the deep link URL contains sigv4 params
+    // embedded inside ws_url with single percent-encoding, VS Code's URI parser can decode
+    // the %26 separators, causing those params to break out as top-level query params and
+    // displacing 'session'. The session ID is always present in the ws_url data-channel path.
+    const wsUrl = query.get('ws_url')
+    if (!query.has('session') && wsUrl) {
+        const match = wsUrl.match(/data-channel\/([^?&]+)/)
+        if (match) {
+            getLogger().info(`Recovered missing session from ws_url: ${match[1]}`)
+            query.set('session', match[1])
+        }
+    }
+
     const requiredParams = query.getFromKeysOrThrow(
         'connection_identifier',
         'domain',
