@@ -441,7 +441,7 @@ describe('SAM Integration Tests', async function () {
                                 manifestFile = /^.*pom\.xml$/
                                 break
                             } else if (scenario.dependencyManager === 'gradle') {
-                                manifestFile = /^.*build\.gradle$/
+                                manifestFile = /^.*\.gradle(\.kts)?$/
                                 break
                             }
                             assert.fail(`invalid dependency manager for java: ${scenario.dependencyManager}`)
