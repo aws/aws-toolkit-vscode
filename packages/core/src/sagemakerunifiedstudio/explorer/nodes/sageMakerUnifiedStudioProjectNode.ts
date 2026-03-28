@@ -21,7 +21,8 @@ import { ToolkitError } from '../../../shared/errors'
 import { SmusErrorCodes } from '../../shared/smusUtils'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { SmusIamConnection } from '../../auth/model'
-import { createDZClientBaseOnDomainMode, createErrorItem } from './utils'
+import { createDZClientBaseOnDomainMode, createDZClientForProject, createErrorItem } from './utils'
+import { DevSettings } from '../../../shared/settings'
 
 /**
  * Tree node representing a SageMaker Unified Studio project
@@ -136,10 +137,12 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                     return [dataNode]
                 }
 
-                const dzClient = await createDZClientBaseOnDomainMode(this.authProvider)
                 if (!this.project?.id) {
                     throw new Error('Project ID is required')
                 }
+                const dzClient = DevSettings.instance.get('smusIamDomainSsoTest', false)
+                    ? await createDZClientForProject(this.authProvider, this.project.id)
+                    : await createDZClientBaseOnDomainMode(this.authProvider)
                 const toolingEnv = await dzClient.getToolingEnvironment(this.project.id)
                 const spaceAwsAccountRegion = toolingEnv.awsAccountRegion
 

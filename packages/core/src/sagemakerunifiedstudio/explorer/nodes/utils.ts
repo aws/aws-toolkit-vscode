@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { getLogger } from '../../../shared/logger/logger'
 import { getIcon, IconPath, addColor } from '../../../shared/icons'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import {
@@ -526,10 +527,16 @@ export async function createDZClientForProject(
     smusAuthProvider: SmusAuthenticationProvider,
     projectId: string
 ): Promise<DataZoneClient> {
-    const credentialsProvider = getContext('aws.smus.isIamMode')
-        ? await smusAuthProvider.getProjectCredentialProvider(projectId)
-        : await smusAuthProvider.getDerCredentialsProvider()
-
+    const credentialsProvider = await smusAuthProvider.getProjectCredentialProvider(projectId)
+    try {
+        const creds = await credentialsProvider.getCredentials()
+        const { DefaultStsClient } = await import('../../../shared/clients/stsClient.js')
+        const stsClient = new DefaultStsClient(smusAuthProvider.getDomainRegion(), creds)
+        const identity = await stsClient.getCallerIdentity()
+        getLogger('smus').warn(`DEBUG createDZClientForProject caller identity: ${identity.Arn}`)
+    } catch (e) {
+        getLogger('smus').warn(`DEBUG createDZClientForProject failed to get caller identity: ${e}`)
+    }
     return DataZoneClient.createWithCredentials(
         smusAuthProvider.getDomainRegion(),
         smusAuthProvider.getDomainId(),

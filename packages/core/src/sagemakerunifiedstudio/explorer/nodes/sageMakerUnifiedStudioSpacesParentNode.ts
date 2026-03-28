@@ -19,10 +19,11 @@ import { SmusUtils, SmusErrorCodes } from '../../shared/smusUtils'
 import { getIcon } from '../../../shared/icons'
 import { PENDING_NODE_POLLING_INTERVAL_MS } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
-import { createDZClientBaseOnDomainMode } from './utils'
+import { createDZClientBaseOnDomainMode, createDZClientForProject } from './utils'
 import { SmusIamConnection } from '../../auth/model'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
 import { ToolkitError } from '../../../shared/errors'
+import { DevSettings } from '../../../shared/settings'
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -201,7 +202,9 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         }
 
         this.logger.debug('Getting DataZone client instance')
-        const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
+        const datazoneClient = DevSettings.instance.get('smusIamDomainSsoTest', false)
+            ? await createDZClientForProject(this.authProvider, this.projectId)
+            : await createDZClientBaseOnDomainMode(this.authProvider)
         if (!datazoneClient) {
             throw new Error('DataZone client is not initialized')
         }
@@ -318,7 +321,13 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
-            userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+            try {
+                userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+            } catch {
+                // TODO: remove this stub - only for testing SSO login to IAM domain with non-DER credentials
+                this.logger.warn(`STUB: Failed to extract SSO user profile ID, showing all spaces`)
+                userProfileId = undefined
+            }
         }
 
         const sagemakerDomainId = await this.getSageMakerDomainId()
@@ -327,12 +336,16 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             false /* filterSmusDomains */
         )
 
+        this.logger.warn(
+            `DEBUG all spaces (${spaceApps.size}): ${JSON.stringify([...spaceApps.values()].map((a) => ({ name: a.SpaceName, owner: a.OwnershipSettingsSummary?.OwnerUserProfileName })))}`
+        )
+
         // Filter spaceApps to only show spaces owned by current user
         this.logger.debug(`Filtering spaces for user profile ID: ${userProfileId}`)
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            if (userProfileId === userProfile) {
+            if (userProfileId === undefined || userProfileId === userProfile) {
                 filteredSpaceApps.set(key, app)
             }
         }
