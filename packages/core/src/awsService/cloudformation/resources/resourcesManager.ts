@@ -267,7 +267,7 @@ export class ResourcesManager {
                     }
                     await this.applyCompletionSnippet(result)
                     const [successCount, failureCount] = this.getSuccessAndFailureCount(result)
-                    this.renderResultMessage(successCount, failureCount, purpose)
+                    this.renderResultMessage(result, successCount, failureCount, purpose)
                 }
             )
         } catch (error) {
@@ -392,7 +392,12 @@ export class ResourcesManager {
         return this.getResourcesToImportInput(selections)
     }
 
-    private renderResultMessage(successCount: number, failureCount: number, purpose: ResourceStatePurpose) {
+    private renderResultMessage(
+        result: ResourceStateResult,
+        successCount: number,
+        failureCount: number,
+        purpose: ResourceStatePurpose
+    ) {
         const action = purpose === ResourceStatePurpose.Import ? 'imported' : 'cloned'
 
         if (successCount > 0 && failureCount === 0) {
@@ -402,10 +407,46 @@ export class ResourcesManager {
                 `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed`
             )
         } else if (failureCount > 0) {
-            showErrorMessage(`Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`)
+            const errorMsg = this.getFailureMessage(result, failureCount, action)
+            showErrorMessage(errorMsg)
         } else {
             void window.showInformationMessage(`No resources were ${action}`)
         }
+    }
+
+    private getFailureMessage(result: ResourceStateResult, failureCount: number, action: string): string {
+        const defaultMessage = `Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`
+        if (!result.failureReasons || typeof result.failureReasons !== 'object') {
+            return defaultMessage
+        }
+
+        const reasons =
+            result.failureReasons instanceof Map
+                ? result.failureReasons
+                : new Map(Object.entries(result.failureReasons as Record<string, unknown>))
+
+        const allReasons: string[] = []
+
+        for (const [, identifierMap] of reasons) {
+            if (!identifierMap || typeof identifierMap !== 'object') continue
+
+            const identifiers =
+                identifierMap instanceof Map
+                    ? identifierMap
+                    : new Map(Object.entries(identifierMap as Record<string, string>))
+
+            // Check for permission error - if found, return immediately
+            const permissionError = Array.from(identifiers.values()).find(
+                (reason) => reason.includes('cloudformation:GetResource') || /Missing.*permission/i.test(reason)
+            )
+
+            if (permissionError) {
+                return `Failed to import resource: ${permissionError}`
+            }
+        }
+
+        const reasonText = allReasons.length > 0 ? `:\n${allReasons.join('\n')}` : ''
+        return `${defaultMessage}${reasonText}`
     }
 
     private getResourcesArray(): ResourceList[] {
