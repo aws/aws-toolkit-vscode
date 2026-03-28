@@ -14,6 +14,7 @@ import {
 
 import * as nls from 'vscode-nls'
 import { SamCliSettings } from './samCliSettings'
+import { SamCliTelemetryHelper } from './samCliTelemetryHelper'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -54,7 +55,9 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
         getLogger().info(localize('AWS.running.command', 'Command: {0}', `${this.childProcess}`))
         log.verbose(`running: ${this.childProcess}`)
-        return await this.childProcess.run({
+        
+        const startTime = performance.now()
+        const result = await this.childProcess.run({
             onStdout: (text, context) => {
                 getDebugConsoleLogger().info(text)
                 log.verbose(`stdout: ${text}`)
@@ -66,5 +69,17 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
                 options?.onStderr?.(text, context)
             },
         })
+        
+        // Record telemetry
+        const duration = performance.now() - startTime
+        const command = invokeOptions.arguments[0] as 'build' | 'deploy' | 'init' | 'local-invoke' | 'start-api'
+        SamCliTelemetryHelper.instance.recordSamCommand(
+            command,
+            result.exitCode === 0,
+            duration,
+            result.exitCode !== 0 ? result.exitCode.toString() : undefined
+        )
+        
+        return result
     }
 }
