@@ -35,11 +35,17 @@ export interface HyperpodCluster {
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
     private k8sApi: k8s.CustomObjectsApi
+    private eksCluster: Cluster
 
-    public constructor(eksCluster: Cluster, hyperpodCluster: HyperpodCluster) {
+    public constructor(eksCluster: Cluster, _hyperpodCluster: HyperpodCluster) {
+        this.eksCluster = eksCluster
         this.kubeConfig = new k8s.KubeConfig()
-        this.loadKubeConfig(eksCluster, hyperpodCluster)
+        this.loadKubeConfig(eksCluster, _hyperpodCluster)
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
+    }
+
+    getEksCluster(): Cluster {
+        return this.eksCluster
     }
 
     async getSpacesForCluster(eksCluster: Cluster): Promise<HyperpodDevSpace[]> {
@@ -256,9 +262,12 @@ export class KubectlClient {
             const presignedUrl = body.status?.workspaceConnectionUrl
             const connectionType = body.status?.workspaceConnectionType
 
+            if (!presignedUrl) {
+                throw new Error('No workspace connection URL returned')
+            }
+
             getLogger().info(`Connection Type: ${connectionType}`)
             getLogger().info(`Presigned URL: ${presignedUrl}`)
-
             return { type: connectionType || 'vscode-remote', url: presignedUrl }
         } catch (error) {
             getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)

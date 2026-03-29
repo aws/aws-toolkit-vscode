@@ -117,12 +117,14 @@ export class InlineChatController {
                 this.task
             )
         }
-        const insertions = task.diff.filter((diff) => diff.type === 'insertion')
+        // Revert to the original document text
+        const fullRange = new vscode.Range(
+            task.document.positionAt(0),
+            task.document.positionAt(task.document.getText().length)
+        )
         await editor.edit(
             (editBuilder) => {
-                for (const insertion of insertions) {
-                    editBuilder.delete(insertion.range)
-                }
+                editBuilder.replace(fullRange, task.originalDocumentText)
             },
             { undoStopAfter: false, undoStopBefore: false }
         )

@@ -11,6 +11,9 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
+import { prepareDevEnvConnection } from './model'
+import { startVscodeRemote } from '../../shared/extensions/ssh'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -56,10 +59,40 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             logger.error(`No kubectlClient available for cluster: ${node.hpCluster.clusterName}`)
             return
         }
-        const response = await kubectlClient.createWorkspaceConnection(node.devSpace)
-        getLogger().debug(`HyperPod connection response: &O`, response)
-        await vscode.env.openExternal(vscode.Uri.parse(response.url))
-        void vscode.window.showInformationMessage(`Started connection to HyperPod dev space: ${node.devSpace.name}`)
+
+        const eksCluster = kubectlClient.getEksCluster()
+
+        // Call createWorkspaceConnection to get presigned URL with credentials
+        const workspaceConnection = await kubectlClient.createWorkspaceConnection(node.devSpace)
+        const connectionUrl = workspaceConnection.url
+
+        const remoteEnv = await prepareDevEnvConnection({
+            spaceArn: '',
+            ctx: globals.context,
+            connectionType: 'sm_hp',
+            isSMUS: false,
+            workspaceName: node.devSpace.name,
+            clusterName: node.devSpace.cluster,
+            namespace: node.devSpace.namespace,
+            region: node.regionCode,
+            clusterArn: node.hpCluster.clusterArn,
+            accountId: node.hpCluster.clusterArn.split(':')[4],
+            eksEndpoint: eksCluster?.endpoint,
+            eksCertAuthData: eksCluster?.certificateAuthority?.data,
+            wsUrl: connectionUrl,
+        })
+
+        await startVscodeRemote(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            '/home/sagemaker-user',
+            remoteEnv.vscPath,
+            'sagemaker-user'
+        )
+
+        void vscode.window.showInformationMessage(
+            `Connected to HyperPod dev space: ${node.devSpace.name} (${node.devSpace.namespace})`
+        )
     } catch (error) {
         logger.error(`Failed to connect to HyperPod dev space: ${error}`)
         void vscode.window.showErrorMessage(

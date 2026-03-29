@@ -152,6 +152,28 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         return appsList[0] // At most one App for one SagemakerSpace
     }
 
+    public async listAppsForDomain(domainId: string): Promise<AppDetails[]> {
+        return this.listApps({ DomainIdEquals: domainId }).flatten().promise()
+    }
+
+    /**
+     * Search for an app by space name from the domain's app list (case-insensitive).
+     * If space name is all lowercase, uses the more efficient SpaceNameEquals filter.
+     * Otherwise, fetches all apps in the domain and performs case-insensitive matching.
+     */
+    public async listAppsForDomainMatchSpaceIgnoreCase(
+        domainId: string,
+        spaceName: string
+    ): Promise<AppDetails | undefined> {
+        // If space name is all lowercase, use the efficient SpaceNameEquals filter
+        if (spaceName === spaceName.toLowerCase()) {
+            return this.listAppForSpace(domainId, spaceName)
+        }
+        // Otherwise, fetch all apps and do case-insensitive matching
+        const apps = await this.listAppsForDomain(domainId)
+        return apps.find((app) => app.SpaceName?.toLowerCase() === spaceName.toLowerCase())
+    }
+
     public async startSpace(spaceName: string, domainId: string, skipInstanceTypePrompts: boolean = false) {
         let spaceDetails: DescribeSpaceCommandOutput
 

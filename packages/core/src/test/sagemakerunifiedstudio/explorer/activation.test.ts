@@ -20,6 +20,7 @@ import * as extensionUtilities from '../../../shared/extensionUtilities'
 import { createMockSpaceNode } from '../testUtils'
 import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import * as model from '../../../sagemakerunifiedstudio/auth/model'
+import * as bootstrapAgentContext from '../../../sagemakerunifiedstudio/bootstrapAgentContext'
 
 describe('SMUS Explorer Activation', function () {
     let mockExtensionContext: vscode.ExtensionContext
@@ -574,6 +575,32 @@ describe('SMUS Explorer Activation', function () {
             await activate(mockExtensionContext)
 
             assert.ok(mockExtensionContext.subscriptions.includes(mockTreeView))
+        })
+    })
+
+    describe('AGENTS.md', function () {
+        let createAgentsFileStub: sinon.SinonStub
+        let isSageMakerStub: sinon.SinonStub
+
+        beforeEach(function () {
+            createAgentsFileStub = sinon.stub(bootstrapAgentContext, 'createAgentsFile').resolves()
+            isSageMakerStub = extensionUtilities.isSageMaker as sinon.SinonStub
+        })
+
+        it('should create AGENTS.md when running on SMUS Space remote access', async function () {
+            isSageMakerStub.returns(true)
+
+            await activate(mockExtensionContext)
+
+            assert.ok(createAgentsFileStub.calledOnceWith(mockExtensionContext))
+        })
+
+        it('should not create AGENTS.md when not on SMUS Space remote access', async function () {
+            isSageMakerStub.returns(false)
+
+            await activate(mockExtensionContext)
+
+            assert.ok(createAgentsFileStub.notCalled)
         })
     })
 })

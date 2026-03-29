@@ -13,13 +13,18 @@ import { getLogger } from '../../shared/logger/logger'
 import { SagemakerSpaceNode, tryRefreshNode } from './explorer/sagemakerSpaceNode'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import _ from 'lodash'
-import { prepareDevEnvConnection, tryRemoteConnection } from './model'
+import {
+    prepareDevEnvConnection,
+    startRemoteViaSageMakerSshKiro,
+    tryRemoteConnection,
+    useSageMakerSshKiroExtension,
+} from './model'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { AccessDeniedException } from '@amzn/sagemaker-client'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { RemoteSessionError } from '../../shared/remoteSession'
 import {
     ConnectFromRemoteWorkspaceMessage,
     InstanceTypeInsufficientMemory,
@@ -30,6 +35,7 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
+import { parseArn } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -112,16 +118,12 @@ export async function deeplinkConnect(
     )
 
     getLogger().info(
-        `sm:deeplinkConnect: 
-        domain: ${domain}, 
-        appType: ${appType}, 
-        workspaceName: ${workspaceName}, 
-        namespace: ${namespace}, 
+        `sm:deeplinkConnect:
+        domain: ${domain},
+        appType: ${appType},
+        workspaceName: ${workspaceName},
+        namespace: ${namespace},
         eksClusterArn: ${eksClusterArn}`
-    )
-
-    getLogger().info(
-        `sm:deeplinkConnect: domain: ${domain}, appType: ${appType}, workspaceName: ${workspaceName}, namespace: ${namespace}, eksClusterArn: ${eksClusterArn}`
     )
 
     if (isRemoteWorkspace()) {
@@ -131,30 +133,50 @@ export async function deeplinkConnect(
 
     try {
         let connectionType = 'sm_dl'
-        if (domain === '') {
+        let clusterName: string | undefined
+        let region: string | undefined
+        let accountId: string | undefined
+        if (!domain && eksClusterArn && workspaceName && namespace) {
+            const parsed = parseArn(eksClusterArn)
+            clusterName = parsed.resourceName
+            region = parsed.region
+            accountId = parsed.accountId
             connectionType = 'sm_hp'
         }
-        const remoteEnv = await prepareDevEnvConnection(
-            connectionIdentifier,
-            ctx.extensionContext,
+        const remoteEnv = await prepareDevEnvConnection({
+            spaceArn: connectionIdentifier,
+            ctx: ctx.extensionContext,
             connectionType,
-            isSMUS /* isSMUS */,
-            undefined /* node */,
+            isSMUS,
             session,
             wsUrl,
             token,
             domain,
-            appType
-        )
+            appType,
+            workspaceName,
+            clusterName,
+            namespace,
+            region,
+            clusterArn: eksClusterArn,
+            accountId,
+        })
 
         try {
-            await startVscodeRemote(
-                remoteEnv.SessionProcess,
-                remoteEnv.hostname,
-                '/home/sagemaker-user',
-                remoteEnv.vscPath,
-                'sagemaker-user'
-            )
+            const path = '/home/sagemaker-user'
+            const username = 'sagemaker-user'
+
+            if (useSageMakerSshKiroExtension()) {
+                await ensureSageMakerSshKiroExtension(ctx.extensionContext)
+                await startRemoteViaSageMakerSshKiro(
+                    remoteEnv.SessionProcess,
+                    remoteEnv.hostname,
+                    path,
+                    remoteEnv.vscPath,
+                    username
+                )
+            } else {
+                await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, path, remoteEnv.vscPath, username)
+            }
         } catch (remoteErr: any) {
             throw new ToolkitError(
                 `Failed to establish remote connection: ${remoteErr.message}. Check Remote-SSH logs for details.`,
@@ -169,15 +191,18 @@ export async function deeplinkConnect(
             isSMUS
         )
 
-        if (![RemoteSessionError.MissingExtension, RemoteSessionError.ExtensionVersionTooLow].includes(err.code)) {
+        if (!isUserCancelledError(err)) {
             void vscode.window.showErrorMessage(
-                `Remote connection failed: ${err.message || 'Unknown error'}. Check Output > Log (Window) for details.`
+                `Remote connection failed: ${err?.message || 'Unknown error'}. Check Output > Log (Window) for details.`
             )
             throw err
         }
     }
 }
 
+/**
+ * Validates and sanitizes session names for SSH hostname compliance
+ */
 export async function stopSpace(
     node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
     ctx: vscode.ExtensionContext,

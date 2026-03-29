@@ -249,6 +249,7 @@ async function invokeLambdaHandler(
             name: config.name,
             region: config.region,
             runtime: config.lambda?.runtime as Runtime,
+            tenantId: config.lambda?.tenantId,
         }
 
         // sam local invoke ...

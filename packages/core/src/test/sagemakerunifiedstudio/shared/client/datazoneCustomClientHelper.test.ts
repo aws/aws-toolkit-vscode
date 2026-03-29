@@ -6,9 +6,15 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { DataZoneCustomClientHelper } from '../../../../sagemakerunifiedstudio/shared/client/datazoneCustomClientHelper'
-import * as DataZoneCustomClient from '../../../../sagemakerunifiedstudio/shared/client/datazonecustomclient'
+import {
+    DomainSummary,
+    ListDomainsCommand,
+    GetDomainCommand,
+    SearchGroupProfilesCommand,
+    SearchUserProfilesCommand,
+} from '@amzn/datazone-custom-client'
 
-type DataZoneDomain = DataZoneCustomClient.Types.DomainSummary
+type DataZoneDomain = DomainSummary
 
 describe('DataZoneCustomClientHelper', () => {
     let client: DataZoneCustomClientHelper
@@ -103,9 +109,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                listDomains: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(ListDomainsCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -124,6 +128,12 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(result.nextToken, 'next-token')
             assert.ok(result.domains[0].createdAt instanceof Date)
             assert.ok(result.domains[0].lastUpdatedAt instanceof Date)
+
+            // Verify API was called with correct command type and parameters
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.maxResults, 10)
+            assert.strictEqual(command.input.status, 'AVAILABLE')
         })
 
         it('should handle empty results', async () => {
@@ -133,9 +143,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                listDomains: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(ListDomainsCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -369,9 +377,7 @@ describe('DataZoneCustomClientHelper', () => {
                 preferences: { DOMAIN_MODE: 'EXPRESS' },
             }
             const mockDataZoneClient = {
-                getDomain: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(GetDomainCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -387,11 +393,10 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(result.domainVersion, '1.0')
             assert.deepStrictEqual(result.preferences, { DOMAIN_MODE: 'EXPRESS' })
 
-            // Verify the API was called with correct parameters
-            assert.ok(mockDataZoneClient.getDomain.calledOnce)
-            assert.deepStrictEqual(mockDataZoneClient.getDomain.firstCall.args[0], {
-                identifier: mockDomainId,
-            })
+            // Verify the API was called with correct command type and parameters
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.identifier, mockDomainId)
         })
 
         it('should handle API errors when getting domain', async () => {
@@ -399,9 +404,7 @@ describe('DataZoneCustomClientHelper', () => {
             const error = new Error('Domain not found')
 
             const mockDataZoneClient = {
-                getDomain: sinon.stub().returns({
-                    promise: () => Promise.reject(error),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(GetDomainCommand)).rejects(error),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -409,10 +412,9 @@ describe('DataZoneCustomClientHelper', () => {
             await assert.rejects(() => client.getDomain(mockDomainId), error)
 
             // Verify the API was called with correct parameters
-            assert.ok(mockDataZoneClient.getDomain.calledOnce)
-            assert.deepStrictEqual(mockDataZoneClient.getDomain.firstCall.args[0], {
-                identifier: mockDomainId,
-            })
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.identifier, mockDomainId)
         })
     })
 
@@ -425,7 +427,7 @@ describe('DataZoneCustomClientHelper', () => {
                     {
                         domainId: mockDomainId,
                         id: 'gp_profile1',
-                        status: 'ACTIVATED',
+                        status: 'ASSIGNED',
                         groupName: 'AdminGroup',
                         rolePrincipalArn: 'arn:aws:iam::123456789012:role/AdminRole',
                         rolePrincipalId: 'AIDAI123456789EXAMPLE',
@@ -433,7 +435,7 @@ describe('DataZoneCustomClientHelper', () => {
                     {
                         domainId: mockDomainId,
                         id: 'gp_profile2',
-                        status: 'ACTIVATED',
+                        status: 'ASSIGNED',
                         groupName: 'DeveloperGroup',
                         rolePrincipalArn: 'arn:aws:iam::123456789012:role/DeveloperRole',
                         rolePrincipalId: 'AIDAI987654321EXAMPLE',
@@ -443,9 +445,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchGroupProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchGroupProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -461,12 +461,12 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(result.items[1].id, 'gp_profile2')
             assert.strictEqual(result.nextToken, 'next-token')
 
-            // Verify API was called with correct parameters
-            assert.ok(mockDataZoneClient.searchGroupProfiles.calledOnce)
-            const callArgs = mockDataZoneClient.searchGroupProfiles.firstCall.args[0]
-            assert.strictEqual(callArgs.domainIdentifier, mockDomainId)
-            assert.strictEqual(callArgs.groupType, 'IAM_ROLE_SESSION_GROUP')
-            assert.strictEqual(callArgs.maxResults, 50)
+            // Verify API was called with correct command type and parameters
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.domainIdentifier, mockDomainId)
+            assert.strictEqual(command.input.groupType, 'IAM_ROLE_SESSION_GROUP')
+            assert.strictEqual(command.input.maxResults, 50)
         })
 
         it('should handle empty results', async () => {
@@ -476,9 +476,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchGroupProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchGroupProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -492,9 +490,7 @@ describe('DataZoneCustomClientHelper', () => {
         it('should handle API errors', async () => {
             const error = new Error('API Error')
             const mockDataZoneClient = {
-                searchGroupProfiles: sinon.stub().returns({
-                    promise: () => Promise.reject(error),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchGroupProfilesCommand)).rejects(error),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -508,7 +504,7 @@ describe('DataZoneCustomClientHelper', () => {
                     {
                         domainId: mockDomainId,
                         id: 'gp_profile3',
-                        status: 'ACTIVATED',
+                        status: 'ASSIGNED',
                         groupName: 'TestGroup',
                         rolePrincipalArn: 'arn:aws:iam::123456789012:role/TestRole',
                         rolePrincipalId: 'AIDAI111111111EXAMPLE',
@@ -518,9 +514,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchGroupProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchGroupProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -532,9 +526,11 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(result.items.length, 1)
             assert.strictEqual(result.nextToken, undefined)
 
-            // Verify nextToken was passed
-            const callArgs = mockDataZoneClient.searchGroupProfiles.firstCall.args[0]
-            assert.strictEqual(callArgs.nextToken, 'previous-token')
+            // Verify send was called with correct command type and parameters
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.domainIdentifier, mockDomainId)
+            assert.strictEqual(command.input.nextToken, 'previous-token')
         })
     })
 
@@ -573,9 +569,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchUserProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchUserProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -591,12 +585,12 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(result.items[1].id, 'up_user2')
             assert.strictEqual(result.nextToken, 'next-token')
 
-            // Verify API was called with correct parameters
-            assert.ok(mockDataZoneClient.searchUserProfiles.calledOnce)
-            const callArgs = mockDataZoneClient.searchUserProfiles.firstCall.args[0]
-            assert.strictEqual(callArgs.domainIdentifier, mockDomainId)
-            assert.strictEqual(callArgs.userType, 'DATAZONE_IAM_USER')
-            assert.strictEqual(callArgs.maxResults, 50)
+            // Verify API was called with correct command type and parameters
+            assert.ok(mockDataZoneClient.send.calledOnce)
+            const command = mockDataZoneClient.send.firstCall.args[0]
+            assert.strictEqual(command.input.domainIdentifier, mockDomainId)
+            assert.strictEqual(command.input.userType, 'DATAZONE_IAM_USER')
+            assert.strictEqual(command.input.maxResults, 50)
         })
 
         it('should handle SSO user profiles', async () => {
@@ -620,9 +614,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchUserProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchUserProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -643,9 +635,7 @@ describe('DataZoneCustomClientHelper', () => {
             }
 
             const mockDataZoneClient = {
-                searchUserProfiles: sinon.stub().returns({
-                    promise: () => Promise.resolve(mockResponse),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchUserProfilesCommand)).resolves(mockResponse),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -661,9 +651,7 @@ describe('DataZoneCustomClientHelper', () => {
         it('should handle API errors', async () => {
             const error = new Error('API Error')
             const mockDataZoneClient = {
-                searchUserProfiles: sinon.stub().returns({
-                    promise: () => Promise.reject(error),
-                }),
+                send: sinon.stub().withArgs(sinon.match.instanceOf(SearchUserProfilesCommand)).rejects(error),
             }
 
             sinon.stub(client as any, 'getDataZoneCustomClient').resolves(mockDataZoneClient)
@@ -689,7 +677,7 @@ describe('DataZoneCustomClientHelper', () => {
                     {
                         id: 'gp_profile1',
                         rolePrincipalArn: mockRoleArn,
-                        status: 'ACTIVATED',
+                        status: 'ASSIGNED',
                     },
                 ],
                 nextToken: undefined,
@@ -710,7 +698,7 @@ describe('DataZoneCustomClientHelper', () => {
                     {
                         id: 'gp_profile1',
                         rolePrincipalArn: 'arn:aws:iam::123456789012:role/OtherRole',
-                        status: 'ACTIVATED',
+                        status: 'ASSIGNED',
                     },
                 ],
                 nextToken: undefined,
@@ -861,10 +849,8 @@ describe('DataZoneCustomClientHelper', () => {
                 items: [
                     {
                         id: 'up_user1',
-                        status: 'ACTIVATED',
-                        details: {
-                            // No iam field
-                        },
+                        status: 'ASSIGNED',
+                        details: undefined,
                     },
                 ],
                 nextToken: undefined,
@@ -947,7 +933,7 @@ describe('DataZoneCustomClientHelper', () => {
                         {
                             id: mockGroupProfileId,
                             rolePrincipalArn: mockRoleArn,
-                            status: 'ACTIVATED',
+                            status: 'ASSIGNED',
                         },
                     ],
                     nextToken: undefined,

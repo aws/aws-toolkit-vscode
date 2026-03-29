@@ -9,6 +9,16 @@ import { ExtContext } from '../shared/extensions'
 import { deeplinkConnect } from '../awsService/sagemaker/commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { SmusAuthMode } from '../shared/telemetry/telemetry.gen'
+
+const amzHeaders = [
+    'X-Amz-Security-Token',
+    'X-Amz-Algorithm',
+    'X-Amz-Date',
+    'X-Amz-SignedHeaders',
+    'X-Amz-Credential',
+    'X-Amz-Expires',
+    'X-Amz-Signature',
+] as const
 /**
  * Registers the SMUS deeplink URI handler at path `/connect/smus`.
  *
@@ -29,11 +39,20 @@ export function register(ctx: ExtContext) {
             // instead of remaining part of the ws_url. This causes the ws_url to lose the
             // cell-number context it needs. To fix this, we manually re-append the cell-number
             // query parameter back to the ws_url to restore the original intended URL structure.
+            let wsUrl = `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`
+
+            for (const header of amzHeaders) {
+                const value = params[header]
+                if (value) {
+                    wsUrl += `&${header}=${encodeURIComponent(value)}`
+                }
+            }
+
             await deeplinkConnect(
                 ctx,
                 params.connection_identifier,
                 params.session,
-                `${params.ws_url}&cell-number=${params['cell-number']}`, // Re-append cell-number to ws_url
+                wsUrl, // Re-append cell-number and SigV4 headers to ws_url
                 params.token,
                 params.domain,
                 params.app_type,
@@ -95,7 +114,8 @@ export function parseConnectParams(query: SearchParams) {
         'smus_auth_mode'
     )
 
-    return { ...requiredParams, ...optionalParams }
+    const amzHeaderParams = query.getFromKeys(...amzHeaders)
+    return { ...requiredParams, ...optionalParams, ...amzHeaderParams }
 }
 
 /**

@@ -53,8 +53,16 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
             // Add "Fix with Amazon Q" action
             actions.push(this.createFixWithQAction(document, range, diagnostics))
 
-            // Add "Fix All with Amazon Q" action
-            actions.push(this.createFixAllWithQAction(document))
+            // Check if any diagnostic is error or warning to show "Fix All Issues"
+            const hasErrorOrWarning = diagnostics.some(
+                (d) =>
+                    d.severity === vscode.DiagnosticSeverity.Error || d.severity === vscode.DiagnosticSeverity.Warning
+            )
+            if (hasErrorOrWarning) {
+                // If triggered from warning, include warnings; if from error, only errors
+                const hasWarning = diagnostics.some((d) => d.severity === vscode.DiagnosticSeverity.Warning)
+                actions.push(this.createFixAllWithQAction(document, hasWarning))
+            }
 
             // Add "Explain Problem" action
             actions.push(this.createExplainProblemAction(document, range, diagnostics))
@@ -84,12 +92,13 @@ export class AutoDebugCodeActionsProvider implements vscode.CodeActionProvider, 
         return action
     }
 
-    private createFixAllWithQAction(document: vscode.TextDocument): vscode.CodeAction {
-        const action = new vscode.CodeAction('Amazon Q: Fix All Errors', vscode.CodeActionKind.QuickFix)
+    private createFixAllWithQAction(document: vscode.TextDocument, includeWarnings: boolean): vscode.CodeAction {
+        const action = new vscode.CodeAction('Amazon Q: Fix All Issues', vscode.CodeActionKind.QuickFix)
 
         action.command = {
             command: 'amazonq.02.fixAllWithQ',
-            title: 'Amazon Q: Fix All Errors',
+            title: 'Amazon Q: Fix All Issues',
+            arguments: [includeWarnings],
         }
 
         return action

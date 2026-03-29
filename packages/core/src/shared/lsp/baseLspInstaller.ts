@@ -27,7 +27,8 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
     constructor(
         protected config: Config,
         loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp' | 'awsCfnLsp'>,
-        private manifestResolver?: ManifestResolver
+        private manifestResolver?: ManifestResolver,
+        private readonly hashAlgorithm: string = 'sha384'
     ) {
         this.logger = getLogger(loggerName)
     }
@@ -56,7 +57,8 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
                 includePrerelease: true,
             }),
             manifestUrl,
-            this.downloadMessageOverride
+            this.downloadMessageOverride,
+            this.hashAlgorithm
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory

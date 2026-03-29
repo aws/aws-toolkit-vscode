@@ -19,6 +19,8 @@ describe('StackOutputsWebviewProvider', () => {
                 options: {},
                 html: '',
             },
+            onDidChangeVisibility: sandbox.stub(),
+            visible: true,
         }
     }
 

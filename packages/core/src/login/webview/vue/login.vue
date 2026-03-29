@@ -126,6 +126,17 @@
                 <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.CONSOLE_CREDENTIAL"
+                    :itemId="LoginOption.CONSOLE_CREDENTIAL"
+                    :itemText="'Use credentials from the AWS Console'"
+                    :itemTitle="'Console credentials'"
+                    :itemSubTitle="'recommended'"
+                    :itemType="LoginOption.CONSOLE_CREDENTIAL"
+                    class="selectable-item bottomMargin"
+                ></SelectableItem>
+                <SelectableItem
+                    v-if="app === 'TOOLKIT'"
+                    @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
                     :itemText="'Sign in to AWS with single sign-on'"
@@ -139,7 +150,7 @@
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
-                    :itemTitle="'IAM Credentials'"
+                    :itemTitle="'IAM credentials'"
                     :itemType="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -220,8 +231,26 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                <div
+                    v-if="app === 'TOOLKIT' && profileName.length > 0 && previousStage === 'AWS_PROFILE'"
+                    class="header bottomMargin"
+                >
                     Connecting to IAM...
+                </div>
+                <div
+                    v-else-if="app === 'TOOLKIT' && profileName.length > 0 && previousStage === 'CONSOLE_PROFILE'"
+                    class="bottomMargin"
+                >
+                    <div class="header">Opening AWS sign-in in your default browser...</div>
+                    <div class="hint">
+                        If you're already signed in to AWS Console, you can select that session. Otherwise, follow the
+                        steps to sign in with your AWS account.
+                    </div>
+                    <a
+                        class="hint"
+                        href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html#cli-configure-sign-in-prerequisites"
+                        >Need help? Check setup requirements</a
+                    >
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
@@ -237,14 +266,14 @@
                     />
                 </svg>
             </button>
-            <div class="header">IAM Credentials:</div>
+            <div class="header">IAM credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
             <a
                 class="hint"
                 href="https://docs.aws.amazon.com/sdkref/latest/guide/access-iam-users.html#step1authIamUser"
                 >Learn More</a
             >
-            <div class="title topMargin">Profile Name</div>
+            <div class="title topMargin">Profile name</div>
             <div class="hint">The identifier for these credentials</div>
             <input
                 class="iamInput bottomMargin"
@@ -254,7 +283,7 @@
                 v-model="profileName"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Access Key</div>
+            <div class="title">Access key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -263,7 +292,7 @@
                 v-model="accessKey"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Secret Key</div>
+            <div class="title">Secret key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -273,6 +302,56 @@
                 @keydown.enter="handleContinueClick()"
             />
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
+                Continue
+            </button>
+        </template>
+        <template v-if="stage === 'CONSOLE_PROFILE'">
+            <button class="back-button bottomMargin" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
+            <div class="header">Use your AWS Console credentials</div>
+            <div class="hint">
+                (Recommended) Use your AWS Console sign-in to get secure, temporary credentials for local development.
+                No need to create or manage access keys.
+            </div>
+            <a class="hint" href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html"
+                >Learn More</a
+            >
+            <div class="title topMargin">Profile name</div>
+            <div class="hint">Use letters, numbers, underscores, or hyphens</div>
+            <input
+                class="iamInput bottomMargin"
+                type="text"
+                id="profileName"
+                name="profileName"
+                v-model="profileName"
+                placeholder="profile-name"
+                @input="validateProfileName"
+                @keydown.enter="handleContinueClick()"
+                @keydown="preventInvalidChars"
+            />
+            <div class="title topMargin">Region (optional)</div>
+            <select
+                class="regionSelect"
+                id="regions"
+                name="regions"
+                v-model="selectedRegion"
+                @change="handleRegionInput($event)"
+            >
+                <option v-for="region in regions" :key="region.id" :value="region.id">
+                    {{ `${region.name} (${region.id})` }}
+                </option>
+            </select>
+            <button
+                class="continue-button"
+                :disabled="shouldDisableConsoleSessionContinue()"
+                v-on:click="handleContinueClick()"
+            >
                 Continue
             </button>
         </template>
@@ -290,7 +369,7 @@ import { ssoUrlFormatRegex, ssoUrlFormatMessage, urlInvalidFormatMessage } from 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
+type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE' | 'CONSOLE_PROFILE'
 
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
@@ -300,6 +379,8 @@ function getCredentialId(loginOption: LoginOption) {
             return 'iamIdentityCenter'
         case LoginOption.IAM_CREDENTIAL:
             return 'sharedCredentials'
+        case LoginOption.CONSOLE_CREDENTIAL:
+            return 'consoleCredentials'
         default:
             return undefined
     }
@@ -307,6 +388,7 @@ function getCredentialId(loginOption: LoginOption) {
 
 const authUiClickOptionMap = {
     [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
+    [LoginOption.CONSOLE_CREDENTIAL]: 'auth_consoleCredentialsOption',
     [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
     [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
     [LoginOption.IMPORTED_LOGINS]: 'auth_existingAuthOption',
@@ -345,6 +427,7 @@ export default defineComponent({
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
+            previousStage: '' as Stage,
             regions: [] as Region[],
             startUrlError: '',
             startUrlWarning: '',
@@ -445,11 +528,16 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
                     this.$nextTick(() => document.getElementById('profileName')!.focus())
+                } else if (this.selectedLoginOption === LoginOption.CONSOLE_CREDENTIAL) {
+                    this.stage = 'CONSOLE_PROFILE'
+                    this.$nextTick(() => document.getElementById('profileName')!.focus())
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
                 }
             } else if (this.stage === 'SSO_FORM') {
                 if (this.shouldDisableSsoContinue()) {
                     return
                 }
+                this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
 
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
@@ -463,8 +551,22 @@ export default defineComponent({
                 if (this.shouldDisableIamContinue()) {
                     return
                 }
+                this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
                 const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                if (error) {
+                    this.stage = 'START'
+                    void client.errorNotification(error)
+                } else {
+                    this.stage = 'CONNECTED'
+                }
+            } else if (this.stage === 'CONSOLE_PROFILE') {
+                if (this.shouldDisableConsoleSessionContinue()) {
+                    return
+                }
+                this.previousStage = this.stage
+                this.stage = 'AUTHENTICATING'
+                const error = await client.startConsoleCredentialSetup(this.profileName, this.selectedRegion)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -584,7 +686,7 @@ export default defineComponent({
             } else if (this.app === 'AMAZONQ') {
                 this.selectedLoginOption = LoginOption.BUILDER_ID
             } else if (this.app === 'TOOLKIT') {
-                this.selectedLoginOption = LoginOption.ENTERPRISE_SSO
+                this.selectedLoginOption = LoginOption.CONSOLE_CREDENTIAL
             }
             this.$forceUpdate()
         },
@@ -593,6 +695,27 @@ export default defineComponent({
         },
         shouldDisableIamContinue() {
             return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+        },
+        shouldDisableConsoleSessionContinue() {
+            return this.profileName.length <= 0 || !this.selectedRegion || !/^[a-zA-Z0-9_-]+$/.test(this.profileName)
+        },
+        validateProfileName(event: Event) {
+            const input = event.target as HTMLInputElement
+            // Replaces all invalid characters from both keypress and paste events
+            const validValue = input.value.replace(/[^a-zA-Z0-9_-]/g, '')
+            if (validValue !== input.value) {
+                this.profileName = validValue
+            }
+        },
+        preventInvalidChars(event: KeyboardEvent) {
+            // Allow control keys (backspace, delete, arrows, etc)
+            if (event.key.length === 1) {
+                // Only check single characters
+                // Only allow letters, numbers, underscore, and hyphen
+                if (!/^[a-zA-Z0-9_-]+$/.test(event.key)) {
+                    event.preventDefault()
+                }
+            }
         },
     },
 })

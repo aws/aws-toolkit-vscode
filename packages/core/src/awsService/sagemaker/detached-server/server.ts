@@ -17,6 +17,16 @@ import { execFile } from 'child_process'
 
 const pollInterval = 30 * 60 * 100 // 30 minutes
 
+/**
+ * Generic IDE process patterns for detection across all VS Code forks.
+ * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
+ */
+export const ideProcessPatterns = {
+    windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
+    darwin: /\.app\/Contents\/MacOS\//,
+    linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
+}
+
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     const parsedUrl = url.parse(req.url || '', true)
 
@@ -40,6 +50,9 @@ server.listen(0, '127.0.0.1', async () => {
         const pid = process.pid
 
         console.log(`Detached server listening on http://127.0.0.1:${port} (pid: ${pid})`)
+        const parentIdeType = process.env.PARENT_IDE_TYPE
+
+        console.log(`Parent IDE type: ${parentIdeType}`)
 
         const filePath = process.env.SAGEMAKER_LOCAL_SERVER_FILE_PATH
         if (!filePath) {
@@ -60,15 +73,27 @@ server.listen(0, '127.0.0.1', async () => {
 function checkVSCodeWindows(): Promise<boolean> {
     return new Promise((resolve) => {
         const platform = os.platform()
+        const parentIdeType = process.env.PARENT_IDE_TYPE
 
         if (platform === 'win32') {
-            execFile('tasklist', ['/FI', 'IMAGENAME eq Code.exe'], (err, stdout) => {
-                if (err) {
-                    resolve(false)
-                    return
-                }
-                resolve(/Code\.exe/i.test(stdout))
-            })
+            if (parentIdeType === 'kiro') {
+                execFile('tasklist', ['/FI', 'IMAGENAME eq kiro.exe'], (err, stdout) => {
+                    if (err) {
+                        resolve(false)
+                        return
+                    }
+                    resolve(/kiro\.exe/i.test(stdout))
+                })
+            } else {
+                // Check for any VS Code fork process
+                execFile('tasklist', [], (err, stdout) => {
+                    if (err) {
+                        resolve(false)
+                        return
+                    }
+                    resolve(ideProcessPatterns.windows.test(stdout))
+                })
+            }
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
                 if (err) {
@@ -76,9 +101,13 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout
-                    .split('\n')
-                    .some((line) => /Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\/Electron/.test(line))
+                let found = false
+                if (parentIdeType === 'kiro') {
+                    found = stdout.split('\n').some((line) => /kiro\.app\/Contents\/MacOS\/Electron/i.test(line))
+                } else {
+                    // Default to VSCode
+                    found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
+                }
                 resolve(found)
             })
         } else {
@@ -88,7 +117,13 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => /^(code(-insiders)?|electron)$/i.test(line.trim()))
+                let found = false
+                if (parentIdeType === 'kiro') {
+                    found = stdout.split('\n').some((line) => /^kiro(-insiders)?$/i.test(line.trim()))
+                } else {
+                    // Default to VSCode
+                    found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
+                }
                 resolve(found)
             })
         }
@@ -99,7 +134,7 @@ async function monitorVSCodeAndExit() {
     while (true) {
         const found = await checkVSCodeWindows()
         if (!found) {
-            console.log('No VSCode windows found. Shutting down detached server.')
+            console.log('No IDE windows found. Shutting down detached server.')
             process.exit(0)
         }
         await new Promise((r) => setTimeout(r, pollInterval))

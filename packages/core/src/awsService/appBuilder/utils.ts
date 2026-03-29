@@ -276,7 +276,7 @@ export class EnhancedLambdaClient {
 
     async invoke(name: string, payload?: InvocationRequest['Payload']): Promise<InvocationResponse> {
         try {
-            return await this.client.invoke(name, payload)
+            return await this.client.invoke({ name, payload })
         } catch (error) {
             if (isPermissionError(error)) {
                 throw createEnhancedPermissionError(

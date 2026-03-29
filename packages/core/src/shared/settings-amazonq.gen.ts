@@ -26,7 +26,6 @@ export const amazonqSettings = {
         "amazonQSelectDeveloperProfile": {}
     },
     "amazonQ.showCodeWithReferences": {},
-    "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},
     "amazonQ.shareContentWithAWS": {},
     "amazonQ.workspaceIndex": {},

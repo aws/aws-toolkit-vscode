@@ -11,7 +11,8 @@
                 "aws-cli",
                 "sam-cli",
                 "docker",
-                "finch"
+                "finch",
+                "path-resolver"
             ]
         },
         {
@@ -174,6 +175,11 @@
             "description": "Comma-delimited list of scopes that user has."
         },
         {
+            "name": "authConsoleLoginStarted",
+            "type": "boolean",
+            "description": "Indicates the console login flow was initiated"
+        },
+        {
             "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
@@ -325,6 +331,12 @@
             "type": "string",
             "allowedValues": ["sso", "iam"],
             "description": "SMUS authentication mode (SSO or IAM)"
+        },
+        {
+            "name": "smusAcceptAgentContextAction",
+            "type": "string",
+            "allowedValues": ["accepted", "declined", "dismissed"],
+            "description": "Whether the user accepted, declined or dismissed the smus context prompt to add to AGENTS.md"
         }
     ],
     "metrics": [
@@ -1274,6 +1286,20 @@
             "description": "User used a LocalStack connection"
         },
         {
+            "name": "aws_consoleLoginCLISuccess",
+            "description": "Emitted when AWS CLI 'aws login' command completes successfully with exit code 0"
+        },
+        {
+            "name": "auth_consoleLoginCommand",
+            "description": "Tracks the complete console login flow, including profile creation and activation",
+            "metadata": [
+                {
+                    "type": "authConsoleLoginStarted",
+                    "required": false
+                }
+            ]
+        },
+        {
             "name": "lambda_remoteDebugStop",
             "description": "user stop remote debugging",
             "metadata": [
@@ -1745,6 +1771,86 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_agentContextShowPrompt",
+            "description": "Emitted whenever user is shown a prompt to add SMUS context to their AGENTS.md",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_agentContextUserChoice",
+            "description": "Emitted whenever user makes a choice on adding SMUS context to their AGENTS.md",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusAcceptAgentContextAction",
                     "required": false
                 }
             ]

@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Add conditional Tenant ID field to Remote Invoke panel for multi-tenant Lambda functions. The field appears when function has TenancyConfig and passes the value to AWS Lambda Invoke API."
+}

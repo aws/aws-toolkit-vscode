@@ -9,7 +9,7 @@ import {
     SmusAuthenticationPreferencesManager,
     SmusAuthenticationPreferences,
     SmusIamProfileConfig,
-} from '../../../../sagemakerunifiedstudio/auth/preferences/authenticationPreferences'
+} from '../../../../sagemakerunifiedstudio/auth/utils/authenticationPreferences'
 import { globals } from '../../../../shared'
 
 describe('SmusAuthenticationPreferencesManager', function () {

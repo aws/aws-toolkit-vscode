@@ -21,6 +21,7 @@ import { ConnectionCredentialsProvider } from '../auth/providers/connectionCrede
 import { DataZoneConnection } from './client/datazoneClient'
 import { createDZClientBaseOnDomainMode } from '../explorer/nodes/utils'
 
+const notSet = 'not-set'
 /**
  * Records space telemetry
  */
@@ -30,37 +31,46 @@ export async function recordSpaceTelemetry(
 ) {
     const logger = getLogger('smus')
 
+    const parent = node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
+    const authProvider = SmusAuthenticationProvider.fromContext()
+    const projectId = parent?.getProjectId()
+    const domainId = parent?.getAuthProvider()?.getDomainId()
+
+    span.record({
+        smusAuthMode: authProvider.activeConnection?.type,
+        smusSpaceKey: node.resource.DomainSpaceKey,
+        smusDomainRegion: node.resource.regionCode,
+        smusDomainId: domainId,
+        smusProjectId: projectId,
+    })
+
     try {
-        const parent = node.resource.getParent() as SageMakerUnifiedStudioSpacesParentNode
-        const authProvider = SmusAuthenticationProvider.fromContext()
         const accountId = await authProvider.getDomainAccountId()
-        const projectId = parent?.getProjectId()
+        span.record({ smusDomainAccountId: accountId })
+    } catch (err) {
+        span.record({ smusDomainAccountId: notSet })
+        logger.warn(`Failed to record domain account Id for telemetry in domain ${domainId}: ${(err as Error).message}`)
+    }
 
-        // Get project account ID and region
-        let projectAccountId: string | undefined
-        let projectRegion: string | undefined
-
-        if (projectId) {
-            projectAccountId = await authProvider.getProjectAccountId(projectId)
-
-            // Get project region from tooling environment
-            const dzClient = await createDZClientBaseOnDomainMode(authProvider)
-            const toolingEnv = await dzClient.getToolingEnvironment(projectId)
-            projectRegion = toolingEnv.awsAccountRegion
+    if (projectId) {
+        try {
+            const projectAccountId = await authProvider.getProjectAccountId(projectId)
+            span.record({ smusProjectAccountId: projectAccountId })
+        } catch (err) {
+            span.record({ smusProjectAccountId: notSet })
+            logger.warn(
+                `Failed to record project account Id for telemetry in domain ${domainId}: ${(err as Error).message}`
+            )
         }
 
-        span.record({
-            smusAuthMode: authProvider.activeConnection?.type,
-            smusSpaceKey: node.resource.DomainSpaceKey,
-            smusDomainRegion: node.resource.regionCode,
-            smusDomainId: parent?.getAuthProvider()?.getDomainId(),
-            smusDomainAccountId: accountId,
-            smusProjectId: projectId,
-            smusProjectAccountId: projectAccountId,
-            smusProjectRegion: projectRegion,
-        })
-    } catch (err) {
-        logger.error(`Failed to record space telemetry: ${(err as Error).message}`)
+        try {
+            const dzClient = await createDZClientBaseOnDomainMode(authProvider)
+            const toolingEnv = await dzClient.getToolingEnvironment(projectId)
+            span.record({ smusProjectRegion: toolingEnv.awsAccountRegion })
+        } catch (err) {
+            span.record({ smusProjectRegion: notSet })
+            logger.warn(`Failed to get project region for telemetry: ${(err as Error).message}`)
+        }
     }
 }
 
@@ -90,6 +100,7 @@ export async function recordAuthTelemetry(
             smusDomainAccountId: accountId,
         })
     } catch (err) {
+        span.record({ smusDomainAccountId: notSet })
         logger.error(
             `Failed to record Domain AccountId in data connection telemetry for domain ${domainId} in region ${region}: ${err}`
         )
@@ -106,23 +117,25 @@ export async function recordDataConnectionTelemetry(
 ) {
     const logger = getLogger('smus')
 
-    try {
-        const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
-        const authProvider = SmusAuthenticationProvider.fromContext()
-        const accountId = await connectionCredentialsProvider.getDomainAccountId()
+    const isInSmusSpace = getContext('aws.smus.inSmusSpaceEnvironment')
+    const authProvider = SmusAuthenticationProvider.fromContext()
 
-        span.record({
-            smusAuthMode: authProvider.activeConnection?.type,
-            smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
-            smusDomainId: connection.domainId,
-            smusDomainAccountId: accountId,
-            smusProjectId: connection.projectId,
-            smusConnectionId: connection.connectionId,
-            smusConnectionType: connection.type,
-            smusProjectRegion: connection.location?.awsRegion,
-            smusProjectAccountId: connection.location?.awsAccountId,
-        })
+    span.record({
+        smusAuthMode: authProvider.activeConnection?.type,
+        smusToolkitEnv: isInSmusSpace ? 'smus_space' : 'local',
+        smusDomainId: connection.domainId,
+        smusProjectId: connection.projectId,
+        smusConnectionId: connection.connectionId,
+        smusConnectionType: connection.type,
+        smusProjectRegion: connection.location?.awsRegion,
+        smusProjectAccountId: connection.location?.awsAccountId,
+    })
+
+    try {
+        const accountId = await connectionCredentialsProvider.getDomainAccountId()
+        span.record({ smusDomainAccountId: accountId })
     } catch (err) {
-        logger.error(`Failed to record data connection telemetry: ${(err as Error).message}`)
+        span.record({ smusDomainAccountId: notSet })
+        logger.warn(`Failed to record domain account ID for data connection telemetry: ${(err as Error).message}`)
     }
 }

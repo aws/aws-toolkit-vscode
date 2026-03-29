@@ -242,7 +242,7 @@ export const smusLoginCommand = Commands.declare('aws.smus.login', (context: vsc
             // Import authentication method selection components
             const { SmusAuthenticationMethodSelector } = await import('../../auth/ui/authenticationMethodSelection.js')
             const { SmusAuthenticationPreferencesManager } = await import(
-                '../../auth/preferences/authenticationPreferences.js'
+                '../../auth/utils/authenticationPreferences.js'
             )
 
             // Check for preferred authentication method
@@ -389,10 +389,13 @@ export const smusSignOutCommand = Commands.declare(
 
                     // Clear connection-specific preferences on sign out (but keep auth method preference)
                     const { SmusAuthenticationPreferencesManager } = await import(
-                        '../../auth/preferences/authenticationPreferences.js'
+                        '../../auth/utils/authenticationPreferences.js'
                     )
                     await SmusAuthenticationPreferencesManager.clearConnectionPreferences(context)
                 }
+
+                // Dispose smusAuthProvider
+                authProvider.dispose()
 
                 // Show success message
                 void vscode.window.showInformationMessage('Successfully signed out from SageMaker Unified Studio.')

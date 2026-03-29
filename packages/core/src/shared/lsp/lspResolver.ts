@@ -34,7 +34,7 @@ export class LanguageServerResolver {
          * Custom message to show user when downloading, if undefined it will use the default.
          */
         downloadMessage?: string,
-        private readonly _defaultDownloadFolder?: string
+        private readonly hashAlgorithm: string = 'sha384'
     ) {
         this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
     }
@@ -294,7 +294,7 @@ export class LanguageServerResolver {
                     return [{ filename: fetchResult.filename, data }]
                 }
 
-                const hash = createHash('sha384', data)
+                const hash = createHash(this.hashAlgorithm, data)
                 if (hash === fetchResult.hash) {
                     return [{ filename: fetchResult.filename, data }]
                 }
@@ -501,7 +501,6 @@ export class LanguageServerResolver {
     }
 
     private getDownloadDirectory(version: string) {
-        const directory = this._defaultDownloadFolder ?? this.defaultDownloadFolder()
-        return `${directory}/${version}`
+        return `${this.defaultDownloadFolder()}/${version}`
     }
 }

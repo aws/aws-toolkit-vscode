@@ -63,7 +63,7 @@ describe('SagemakerSpace', function () {
 
             mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
             mockClient.describeApp.resolves(mockDescribeAppResponse)
-            mockClient.listAppForSpace.resolves(mockDescribeAppResponse)
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockDescribeAppResponse)
 
             const space = new SagemakerSpace(mockClient as any, 'us-east-1', mockSpaceApp)
             const updateSpaceSpy = sinon.spy(space, 'updateSpace')
@@ -108,7 +108,7 @@ describe('SagemakerSpace', function () {
                 Status: 'InService',
                 $metadata: { requestId: 'test-request-id' },
             }
-            mockClient.listAppForSpace.resolves(mockDescribeAppResponse)
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockDescribeAppResponse)
             mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
 
             const space = new SagemakerSpace(mockClient as any, 'us-east-1', mockSpaceApp)
@@ -126,7 +126,7 @@ describe('SagemakerSpace', function () {
             assert.strictEqual(updateSpaceArgs.SpaceSharingSettingsSummary, undefined)
         })
 
-        it('should update app status using listAppForSpace', async function () {
+        it('should update app status using listAppsForDomainMatchSpaceIgnoreCase', async function () {
             const mockDescribeSpaceResponse = {
                 SpaceName: 'test-space',
                 Status: 'InService',
@@ -141,7 +141,7 @@ describe('SagemakerSpace', function () {
             }
 
             mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
-            mockClient.listAppForSpace.resolves(mockAppFromList)
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockAppFromList)
 
             // Create space without App.AppName
             const spaceWithoutAppName: SagemakerSpaceApp = {
@@ -152,9 +152,9 @@ describe('SagemakerSpace', function () {
             const space = new SagemakerSpace(mockClient as any, 'us-east-1', spaceWithoutAppName)
             await space.updateSpaceAppStatus()
 
-            // Verify listAppForSpace was called instead of describeApp
-            assert.ok(mockClient.listAppForSpace.calledOnce)
-            assert.ok(mockClient.listAppForSpace.calledWith('test-domain', 'test-space'))
+            // Verify listAppsForDomainMatchSpaceIgnoreCase was called instead of describeApp
+            assert.ok(mockClient.listAppsForDomainMatchSpaceIgnoreCase.calledOnce)
+            assert.ok(mockClient.listAppsForDomainMatchSpaceIgnoreCase.calledWith('test-domain', 'test-space'))
             assert.ok(mockClient.describeApp.notCalled)
         })
     })

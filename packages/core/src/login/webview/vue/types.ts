@@ -36,6 +36,7 @@ export type AuthFlowState = (typeof AuthFlowStates)[keyof typeof AuthFlowStates]
 export enum LoginOption {
     NONE,
     BUILDER_ID,
+    CONSOLE_CREDENTIAL,
     ENTERPRISE_SSO,
     IAM_CREDENTIAL,
     IMPORTED_LOGINS,
@@ -53,6 +54,7 @@ export type AuthUiClick =
     | 'auth_builderIdOption'
     | 'auth_credentialsOption'
     | 'auth_codecatalystOption'
+    | 'auth_consoleCredentialsOption'
     | 'auth_existingAuthOption'
     | 'auth_regionSelection'
     | 'auth_codeCatalystSignIn'

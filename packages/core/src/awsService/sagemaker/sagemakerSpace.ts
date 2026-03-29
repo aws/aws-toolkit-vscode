@@ -117,7 +117,10 @@ export class SagemakerSpace {
         // get app using ListApps API, with given DomainId and SpaceName
         const app =
             this.spaceApp.DomainId && this.spaceApp.SpaceName
-                ? await this.client.listAppForSpace(this.spaceApp.DomainId, this.spaceApp.SpaceName)
+                ? await this.client.listAppsForDomainMatchSpaceIgnoreCase(
+                      this.spaceApp.DomainId,
+                      this.spaceApp.SpaceName
+                  )
                 : undefined
         if (!app) {
             logger.error(

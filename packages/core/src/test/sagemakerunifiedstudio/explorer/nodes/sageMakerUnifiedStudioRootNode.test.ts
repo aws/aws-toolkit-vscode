@@ -1113,3 +1113,62 @@ describe('selectSMUSProject - Error Handling', function () {
         })
     })
 })
+
+describe('smusSignOutCommand', function () {
+    let mockAuthProvider: sinon.SinonStubbedInstance<SmusAuthenticationProvider>
+    let executeCommandStub: sinon.SinonStub
+    let fromContextStub: sinon.SinonStub
+
+    beforeEach(function () {
+        const testDomainId = 'test-domain-123'
+
+        mockAuthProvider = {
+            dispose: sinon.stub(),
+            isConnected: sinon.stub().returns(true),
+            isConnectionValid: sinon.stub().returns(true),
+            signOut: sinon.stub().resolves(),
+            getDomainId: sinon.stub().returns(testDomainId),
+            getDomainRegion: sinon.stub().returns('us-west-2'),
+            activeConnection: {
+                type: 'sso',
+                domainId: testDomainId,
+                ssoRegion: 'us-west-2',
+                domainUrl: 'https://test-domain.datazone.aws.amazon.com',
+                scopes: ['datazone:domain:access'],
+            },
+            onDidChange: sinon.stub().returns({ dispose: sinon.stub() }),
+        } as any
+
+        // Stub SmusAuthenticationProvider.fromContext to return our mock
+        fromContextStub = sinon.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
+
+        // Stub executeCommand to avoid actually calling refresh
+        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand')
+        executeCommandStub.withArgs('aws.smus.rootView.refresh').resolves()
+        executeCommandStub.withArgs('aws.smus.signOut').callThrough()
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('disposes auth provider when signing out', async function () {
+        await vscode.commands.executeCommand('aws.smus.signOut')
+
+        assert.ok(fromContextStub.calledOnce, 'fromContext should be called once')
+
+        assert.ok(mockAuthProvider.signOut.calledOnce, 'signOut should be called once')
+
+        assert.ok(mockAuthProvider.dispose.calledOnce, 'dispose should be called once')
+
+        const testWindow = getTestWindow()
+        assert.ok(
+            testWindow.shownMessages.some((msg) =>
+                msg.message.includes('Successfully signed out from SageMaker Unified Studio.')
+            ),
+            'success message should be shown'
+        )
+
+        assert.ok(executeCommandStub.calledWith('aws.smus.rootView.refresh'), 'refresh command should be called')
+    })
+})

@@ -2,6 +2,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import { parse } from '@aws-sdk/util-arn-parser'
+
 export function arnToConsoleUrl(arn: string): string {
     return `https://console.aws.amazon.com/go/view?arn=${encodeURIComponent(arn)}`
 }
@@ -9,6 +12,15 @@ export function arnToConsoleUrl(arn: string): string {
 export function arnToConsoleTabUrl(arn: string, tab: 'resources' | 'events' | 'outputs'): string {
     const region = arn.split(':')[3]
     return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/${tab}?stackId=${encodeURIComponent(arn)}`
+}
+
+export function operationIdToConsoleUrl(arn: string, operationId: string): string | undefined {
+    try {
+        const region = parse(arn).region
+        return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/operations/info?stackId=${encodeURIComponent(arn)}&operationId=${operationId}`
+    } catch {
+        return undefined
+    }
 }
 
 // Reference link - https://cloudscape.design/foundation/visual-foundation/iconography/ - icon name: external

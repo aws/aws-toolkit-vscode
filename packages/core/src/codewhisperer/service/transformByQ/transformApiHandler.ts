@@ -919,17 +919,24 @@ export async function runClientSideBuild(projectCopyDir: string, clientInstructi
             throw err
         }
     } finally {
-        await fs.delete(projectCopyDir, { recursive: true })
-        await fs.delete(uploadZipDir, { recursive: true })
-        await fs.delete(uploadZipPath, { force: true })
-        const exportZipDir = path.join(
-            os.tmpdir(),
-            `downloadClientInstructions_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
-        )
-        await fs.delete(exportZipDir, { recursive: true })
-        getLogger().info(
-            `CodeTransformation: deleted projectCopy, clientInstructionsResult, and downloadClientInstructions directories/files`
-        )
+        try {
+            await fs.delete(projectCopyDir, { recursive: true })
+            await fs.delete(uploadZipDir, { recursive: true })
+            await fs.delete(uploadZipPath, { force: true })
+            const exportZipDir = path.join(
+                os.tmpdir(),
+                `downloadClientInstructions_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
+            )
+            await fs.delete(exportZipDir, { recursive: true })
+            getLogger().info(
+                `CodeTransformation: deleted projectCopy, clientInstructionsResult, and downloadClientInstructions directories/files`
+            )
+        } catch (e) {
+            getLogger().info(
+                'CodeTransformation: error deleting temporary files after client-side build, continuing anyway: %O',
+                e
+            )
+        }
     }
 }
 
