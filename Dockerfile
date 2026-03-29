@@ -18,7 +18,12 @@ ENV CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0
 
 WORKDIR /code
 
-# See https://github.com/npm/npm/issues/3497 for --unsafe-perm arg 
+# Create non-root user for security
+RUN useradd -m -s /bin/bash appuser && chown -R appuser:appuser /code
+
+USER appuser
+
+# See https://github.com/npm/npm/issues/3497 for --unsafe-perm arg
 # See http://elementalselenium.com/tips/38-headless for running headless
 # Here we use option 2, but you might be able to do option 1 in code build. exe is Xvfb not xvfb.
-CMD npm install --unsafe-perm && npm run vscode:prepublish && xvfb-run npm test --silent
+CMD npm install && npm run vscode:prepublish && xvfb-run npm test --silent
