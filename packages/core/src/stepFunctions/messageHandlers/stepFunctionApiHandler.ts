@@ -61,6 +61,12 @@ export class StepFunctionApiHandler {
                 case ApiAction.SFNStopExecution:
                     response = await this.clients.sfn.stopExecution(params)
                     break
+                case ApiAction.SFNUpdateMapRun:
+                    response = await this.clients.sfn.updateMapRun(params)
+                    break
+                case ApiAction.SFNListExecutions:
+                    response = await this.clients.sfn.listExecutions(params)
+                    break
                 case ApiAction.CWlFilterLogEvents:
                     response = await this.clients.cwl.filterLogEvents(params)
                     break

@@ -13,6 +13,7 @@ import {
     InitResponseMessage,
     StartExecutionMessage,
     RedriveMessage,
+    OpenChildExecutionMessage,
 } from '../messageHandlers/types'
 import {
     loadStageMessageHandler,
@@ -50,6 +51,9 @@ export async function handleMessage(message: Message, context: ExecutionDetailsC
                 break
             case Command.REDRIVE:
                 void redriveExecutionMessageHandler(message as RedriveMessage, context)
+                break
+            case Command.OPEN_CHILD_EXECUTION:
+                void openChildExecutionMessageHandler(message as OpenChildExecutionMessage, context)
                 break
             default:
                 void handleUnsupportedMessage(context, message)
@@ -126,4 +130,8 @@ async function redriveExecutionMessageHandler(message: RedriveMessage, context: 
         context.panel.dispose()
     }
     await context.openExecutionDetails(executionArn)
+}
+
+async function openChildExecutionMessageHandler(message: OpenChildExecutionMessage, context: ExecutionDetailsContext) {
+    await context.openExecutionDetails(message.executionArn)
 }
