@@ -111,6 +111,18 @@ describe('SMUS URI Handler', function () {
             assert.strictEqual(resultWithoutOptional.smus_project_id, undefined)
             assert.strictEqual(resultWithoutOptional.smus_domain_region, undefined)
         })
+
+        it('recovers session from ws_url when session param is missing', function () {
+            const { session: _removed, ...paramsWithoutSession } = validParams
+            const paramsWithDataChannel = {
+                ...paramsWithoutSession,
+                ws_url: 'wss://ssmmessages.us-west-2.amazonaws.com/v1/data-channel/SageMaker-remote-abc123?role=publish_subscribe',
+            }
+            const query = new SearchParams(paramsWithDataChannel)
+            const result = parseConnectParams(query)
+
+            assert.strictEqual(result.session, 'SageMaker-remote-abc123')
+        })
     })
 
     it('properly encodes cell-number with spaces and special characters', async function () {
