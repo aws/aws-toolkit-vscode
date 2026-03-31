@@ -18,6 +18,7 @@ import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import globals from '../../../shared/extensionGlobals'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 
 export const hyperpodContextValue = 'awsSagemakerHyperpodNode'
 export type SelectedClusterNamespaces = [string, string[]][]
@@ -92,7 +93,14 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
                 let kcClient = this.getKubectlClient(cluster.clusterName)
                 if (!kcClient) {
-                    kcClient = new KubectlClient(eksCluster, cluster)
+                    const credentialsProvider = async () => {
+                        const creds = await globals.awsContext.getCredentials()
+                        if (!creds) {
+                            throw new Error('No AWS credentials available for EKS authentication')
+                        }
+                        return creds as AwsCredentialIdentity
+                    }
+                    kcClient = await KubectlClient.create(eksCluster, cluster, credentialsProvider)
                     this.kubectlClients.set(cluster.clusterName, kcClient)
                 }
                 const spacesPerCluster = await kcClient.getSpacesForCluster(eksCluster)

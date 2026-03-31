@@ -181,12 +181,17 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     const sshPrefix = getSshPrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
-        let hpSession = session
-        if (!hpSession) {
+        // Always construct hostname from workspace components for a meaningful window title.
+        // The `session` param is the SSM sessionId (e.g. "eks-sagemaker-jupyter"), not a hostname.
+        let hpSession: string | undefined
+        if (workspaceName && namespace && clusterName && region && accountId) {
             const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
             hpSession = isValidSshHostname(proposedSession)
                 ? proposedSession
-                : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
+                : createValidSshSession(workspaceName, namespace, clusterName, region, accountId)
+        }
+        if (!hpSession) {
+            hpSession = session || 'hyperpod'
         }
         hostname = `${sshPrefix}${hpSession}`
     } else {

@@ -85,8 +85,13 @@ function Main {
     Write-Log "AWS_SSM_CLI=$awsSsmCli"
     Write-Log "SESSION_ID=$sessionId"
     
-    # Execute session-manager-plugin with proper JSON escaping (same as Studio script)
-    & $awsSsmCli "{\`"streamUrl\`":\`"${streamUrl}\`",\`"tokenValue\`":\`"${token}\`",\`"sessionId\`":\`"${sessionId}\`"}" "$awsRegion" "StartSession"
+    # Pass JSON via environment variable to avoid Windows command-line quoting issues.
+    # session-manager-plugin reads from env var when args[1] starts with "AWS_SSM_START_SESSION_RESPONSE".
+    $jsonObj = @{ streamUrl = $streamUrl; tokenValue = $token; sessionId = $sessionId }
+    $jsonStr = $jsonObj | ConvertTo-Json -Compress
+    $envVarName = "AWS_SSM_START_SESSION_RESPONSE"
+    $env:AWS_SSM_START_SESSION_RESPONSE = $jsonStr
+    & $awsSsmCli $envVarName "$awsRegion" "StartSession"
 }
 
 Main
