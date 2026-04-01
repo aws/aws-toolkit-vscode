@@ -24,6 +24,8 @@ export interface HyperpodCluster {
     clusterName: string
     clusterArn: string
     status: string
+    eksClusterName?: string
+    eksClusterArn?: string
     regionCode: string
 }
 
@@ -34,24 +36,30 @@ export interface WorkspaceConnectionResult {
     sessionId: string
 }
 
-/** Refresh the token 1 minute before it expires. */
+/** Buffer time (ms) before token expiry to trigger a proactive refresh, avoiding mid-request expirations. */
 const tokenRefreshBufferMs = 60_000
+
+export interface EksClusterInfo {
+    name?: string
+    endpoint?: string
+    certificateAuthority?: { data?: string }
+}
 
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
-    private k8sApi!: k8s.CustomObjectsApi
+    private k8sApi: k8s.CustomObjectsApi | undefined
     private tokenExpiry: number = 0
 
-    private constructor(
-        private readonly eksCluster: any,
+    protected constructor(
+        private readonly eksCluster: EksClusterInfo,
         private readonly hyperpodCluster: HyperpodCluster,
         private readonly credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
     ) {
         this.kubeConfig = new k8s.KubeConfig()
     }
 
-    static async create(
-        eksCluster: any,
+    static async createForCluster(
+        eksCluster: EksClusterInfo,
         hyperpodCluster: HyperpodCluster,
         credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
     ): Promise<KubectlClient> {
@@ -60,8 +68,15 @@ export class KubectlClient {
         return client
     }
 
-    getEksCluster(): any {
+    getEksCluster(): EksClusterInfo {
         return this.eksCluster
+    }
+
+    protected getApi(): k8s.CustomObjectsApi {
+        if (!this.k8sApi) {
+            throw new Error('[Hyperpod] KubectlClient not initialized — call createForCluster()')
+        }
+        return this.k8sApi
     }
 
     async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
@@ -84,7 +99,7 @@ export class KubectlClient {
                 },
             }
 
-            const response = await this.k8sApi.createNamespacedCustomObject(
+            const response = await this.getApi().createNamespacedCustomObject(
                 group,
                 version,
                 devSpace.namespace,
@@ -96,6 +111,8 @@ export class KubectlClient {
             const status = body.status
             const presignedUrl = status?.workspaceConnectionUrl
             const connectionType = status?.workspaceConnectionType
+            // tokenValue and sessionId may not be present in all API responses.
+            // When empty, the existing connection flow in model.ts falls back to parsing these from the presigned URL.
             const token = status?.tokenValue ?? ''
             const sessionId = status?.sessionId ?? ''
 
@@ -107,7 +124,7 @@ export class KubectlClient {
         }
     }
 
-    private async initKubeConfig(): Promise<void> {
+    protected async initKubeConfig(): Promise<void> {
         if (!this.eksCluster.name || !this.eksCluster.endpoint) {
             return
         }
@@ -147,13 +164,13 @@ export class KubectlClient {
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
     }
 
-    private async ensureValidToken(): Promise<void> {
+    protected async ensureValidToken(): Promise<void> {
         if (Date.now() >= this.tokenExpiry - tokenRefreshBufferMs) {
             await this.refreshToken()
         }
     }
 
-    private async refreshToken(): Promise<void> {
+    protected async refreshToken(): Promise<void> {
         if (!this.eksCluster.name) {
             return
         }

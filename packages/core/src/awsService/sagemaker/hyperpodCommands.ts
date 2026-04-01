@@ -65,7 +65,6 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         // Call createWorkspaceConnection to get presigned URL with credentials
         const workspaceConnection = await kubectlClient.createWorkspaceConnection(node.devSpace)
         const connectionUrl = workspaceConnection.url
-        const connectionToken = workspaceConnection.token
 
         const remoteEnv = await prepareDevEnvConnection({
             spaceArn: '',
@@ -81,7 +80,6 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             eksEndpoint: eksCluster?.endpoint,
             eksCertAuthData: eksCluster?.certificateAuthority?.data,
             wsUrl: connectionUrl,
-            token: connectionToken,
         })
 
         await startVscodeRemote(

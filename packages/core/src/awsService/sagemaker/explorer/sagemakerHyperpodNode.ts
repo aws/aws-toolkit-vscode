@@ -100,7 +100,7 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
                         }
                         return creds as AwsCredentialIdentity
                     }
-                    kcClient = await KubectlClient.create(eksCluster, cluster, credentialsProvider)
+                    kcClient = await KubectlClient.createForCluster(eksCluster, cluster, credentialsProvider)
                     this.kubectlClients.set(cluster.clusterName, kcClient)
                 }
                 const spacesPerCluster = await kcClient.getSpacesForCluster(eksCluster)

@@ -4,59 +4,30 @@
  */
 
 import * as vscode from 'vscode'
-import * as k8s from '@kubernetes/client-node'
 import { getLogger } from '../logger/logger'
 import { Cluster } from '@aws-sdk/client-eks'
 import { SagemakerDevSpaceNode } from '../../awsService/sagemaker/explorer/sagemakerDevSpaceNode'
 import { AwsCredentialIdentity, Provider } from '@aws-sdk/types'
-import { generateEksToken } from './eksTokenGenerator'
+import {
+    KubectlClient as KubectlClientBase,
+    HyperpodDevSpace,
+    HyperpodCluster,
+    WorkspaceConnectionResult,
+    EksClusterInfo,
+} from '../../awsService/sagemaker/detached-server/kubectlClientStub'
 
-export interface HyperpodDevSpace {
-    name: string
-    namespace: string
-    cluster: string
-    group: string
-    version: string
-    plural: string
-    status: string
-    appType: string
-    creator: string
-    accessType: string
-}
+export type { HyperpodDevSpace, HyperpodCluster, WorkspaceConnectionResult, EksClusterInfo }
 
-export interface HyperpodCluster {
-    clusterName: string
-    clusterArn: string
-    status: string
-    eksClusterName?: string
-    eksClusterArn?: string
-    regionCode: string
-}
-
-export interface WorkspaceConnectionResult {
-    type: string
-    url: string
-    token: string
-    sessionId: string
-}
-
-/** Refresh the token 1 minute before it expires. */
-const tokenRefreshBufferMs = 60_000
-
-export class KubectlClient {
-    private kubeConfig: k8s.KubeConfig
-    private k8sApi!: k8s.CustomObjectsApi
-    private tokenExpiry: number = 0
-
+export class KubectlClient extends KubectlClientBase {
     private constructor(
-        private readonly eksCluster: Cluster,
-        private readonly hyperpodCluster: HyperpodCluster,
-        private readonly credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
+        eksCluster: Cluster,
+        hyperpodCluster: HyperpodCluster,
+        credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
     ) {
-        this.kubeConfig = new k8s.KubeConfig()
+        super(eksCluster, hyperpodCluster, credentials)
     }
 
-    static async create(
+    static override async createForCluster(
         eksCluster: Cluster,
         hyperpodCluster: HyperpodCluster,
         credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
@@ -66,8 +37,8 @@ export class KubectlClient {
         return client
     }
 
-    getEksCluster(): Cluster {
-        return this.eksCluster
+    override getEksCluster(): Cluster {
+        return super.getEksCluster() as Cluster
     }
 
     async getSpacesForCluster(eksCluster: Cluster): Promise<HyperpodDevSpace[]> {
@@ -77,7 +48,7 @@ export class KubectlClient {
             const version = 'v1alpha1'
             const plural = 'workspaces'
 
-            const res = await this.k8sApi!.listClusterCustomObject(group, version, plural)
+            const res = await this.getApi().listClusterCustomObject(group, version, plural)
             if (!res) {
                 getLogger().info(`No cluster custom object found`)
                 return []
@@ -117,7 +88,7 @@ export class KubectlClient {
     async getHyperpodSpaceStatus(devSpace: HyperpodDevSpace): Promise<string> {
         try {
             await this.ensureValidToken()
-            const response = await this.k8sApi!.getNamespacedCustomObject(
+            const response = await this.getApi().getNamespacedCustomObject(
                 devSpace.group,
                 devSpace.version,
                 devSpace.namespace,
@@ -128,9 +99,7 @@ export class KubectlClient {
             const statusObj = (response.body as any).status
             const desiredStatus = (response.body as any).spec?.desiredStatus
             const conditions = statusObj?.conditions
-            const currentStatus = this.getStatusFromConditions(conditions, desiredStatus)
-
-            return currentStatus
+            return this.getStatusFromConditions(conditions, desiredStatus)
         } catch (error) {
             throw new Error(`[Hyperpod] Failed to get status for devSpace: ${devSpace.name}`)
         }
@@ -159,7 +128,7 @@ export class KubectlClient {
                 },
             }
 
-            await this.k8sApi!.patchNamespacedCustomObject(
+            await this.getApi().patchNamespacedCustomObject(
                 devSpace.group,
                 devSpace.version,
                 devSpace.namespace,
@@ -178,121 +147,19 @@ export class KubectlClient {
         }
     }
 
-    async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
+    override async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
+        getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
         try {
-            await this.ensureValidToken()
-            getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
-
-            const group = 'connection.workspace.jupyter.org'
-            const version = 'v1alpha1'
-            const plural = 'workspaceconnections'
-
-            const workspaceConnection = {
-                apiVersion: `${group}/${version}`,
-                kind: 'WorkspaceConnection',
-                metadata: {
-                    namespace: devSpace.namespace,
-                },
-                spec: {
-                    workspaceName: devSpace.name,
-                    workspaceConnectionType: 'vscode-remote',
-                },
-            }
-
-            getLogger().info(`[Hyperpod] Creating WorkspaceConnection: %O`, workspaceConnection)
-
-            const response = await this.k8sApi!.createNamespacedCustomObject(
-                group,
-                version,
-                devSpace.namespace,
-                plural,
-                workspaceConnection
-            )
-
-            const body = response.body as any
-            const status = body.status
-            const presignedUrl = status?.workspaceConnectionUrl
-            const connectionType = status?.workspaceConnectionType
-            const token = status?.tokenValue ?? ''
-            const sessionId = status?.sessionId ?? ''
-
-            if (!presignedUrl) {
+            const result = await super.createWorkspaceConnection(devSpace)
+            if (!result.url) {
                 throw new Error('No workspace connection URL returned')
             }
-
-            getLogger().info(`Connection Type: ${connectionType}`)
-            return { type: connectionType || 'vscode-remote', url: presignedUrl, token, sessionId }
+            getLogger().info(`Connection Type: ${result.type}`)
+            return result
         } catch (error) {
             getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)
-            throw new Error(
-                `Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
-            )
+            throw error
         }
-    }
-
-    private async initKubeConfig(): Promise<void> {
-        if (!this.eksCluster.name || !this.eksCluster.endpoint) {
-            return
-        }
-
-        const { token, expiresAt } = await generateEksToken(
-            this.eksCluster.name,
-            this.hyperpodCluster.regionCode,
-            this.credentials
-        )
-        this.tokenExpiry = expiresAt.getTime()
-
-        this.kubeConfig.loadFromOptions({
-            clusters: [
-                {
-                    name: this.eksCluster.name,
-                    server: this.eksCluster.endpoint,
-                    caData: this.eksCluster.certificateAuthority?.data,
-                    skipTLSVerify: false,
-                },
-            ],
-            users: [
-                {
-                    name: this.eksCluster.name,
-                    token,
-                },
-            ],
-            contexts: [
-                {
-                    name: this.eksCluster.name,
-                    cluster: this.eksCluster.name,
-                    user: this.eksCluster.name,
-                },
-            ],
-            currentContext: this.eksCluster.name,
-        })
-
-        this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
-    }
-
-    private async ensureValidToken(): Promise<void> {
-        if (Date.now() >= this.tokenExpiry - tokenRefreshBufferMs) {
-            await this.refreshToken()
-        }
-    }
-
-    private async refreshToken(): Promise<void> {
-        if (!this.eksCluster.name) {
-            return
-        }
-
-        const { token, expiresAt } = await generateEksToken(
-            this.eksCluster.name,
-            this.hyperpodCluster.regionCode,
-            this.credentials
-        )
-        this.tokenExpiry = expiresAt.getTime()
-
-        const userIndex = this.kubeConfig.users.findIndex((u) => u.name === this.eksCluster.name)
-        if (userIndex >= 0) {
-            ;(this.kubeConfig.users[userIndex] as any).token = token
-        }
-        this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
     }
 
     private getStatusFromConditions(conditions: any[], desiredStatus?: string): string {
