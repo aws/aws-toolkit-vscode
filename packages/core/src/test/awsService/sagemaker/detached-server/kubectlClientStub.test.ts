@@ -53,18 +53,20 @@ describe('KubectlClient (stub)', function () {
             sinon.assert.calledWith(generateTokenStub, 'test-eks-cluster', 'us-east-1', testCredentials)
         })
 
-        it('skips initialization when eksCluster has no name', async function () {
+        it('throws when eksCluster has no name', async function () {
             const noNameCluster: EksClusterInfo = { endpoint: 'https://eks.us-east-1.amazonaws.com' }
-            await KubectlClient.createForCluster(noNameCluster, hyperpodCluster, testCredentials)
-
-            sinon.assert.notCalled(generateTokenStub)
+            await assert.rejects(
+                KubectlClient.createForCluster(noNameCluster, hyperpodCluster, testCredentials),
+                /missing EKS cluster name or endpoint/
+            )
         })
 
-        it('skips initialization when eksCluster has no endpoint', async function () {
+        it('throws when eksCluster has no endpoint', async function () {
             const noEndpointCluster: EksClusterInfo = { name: 'test-cluster' }
-            await KubectlClient.createForCluster(noEndpointCluster, hyperpodCluster, testCredentials)
-
-            sinon.assert.notCalled(generateTokenStub)
+            await assert.rejects(
+                KubectlClient.createForCluster(noEndpointCluster, hyperpodCluster, testCredentials),
+                /missing EKS cluster name or endpoint/
+            )
         })
     })
 
@@ -76,11 +78,17 @@ describe('KubectlClient (stub)', function () {
     })
 
     describe('getApi', function () {
-        it('throws when client is not initialized (no name/endpoint)', async function () {
-            const emptyCluster: EksClusterInfo = {}
-            const client = await KubectlClient.createForCluster(emptyCluster, hyperpodCluster, testCredentials)
-
-            assert.throws(() => (client as any).getApi(), /KubectlClient not initialized/)
+        it('throws when client is not initialized', async function () {
+            class TestClient extends KubectlClient {
+                constructor() {
+                    super({ name: 'test', endpoint: 'https://test' }, hyperpodCluster, testCredentials)
+                }
+                testGetApi() {
+                    return this.getApi()
+                }
+            }
+            const client = new TestClient()
+            assert.throws(() => client.testGetApi(), /KubectlClient not initialized/)
         })
     })
 
