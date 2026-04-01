@@ -9,6 +9,8 @@ import { Sha256 } from '@aws-crypto/sha256-js'
 import { AwsCredentialIdentity, Provider } from '@aws-sdk/types'
 
 const tokenPrefix = 'k8s-aws-v1.'
+
+/** Maximum token lifetime (seconds). 15 minutes is the upper bound enforced by the EKS token authenticator. */
 const tokenLifetimeSeconds = 900
 
 /**
@@ -44,7 +46,11 @@ export async function generateEksToken(
         },
     })
 
-    const presigned = await signer.presign(request, { expiresIn: tokenLifetimeSeconds })
+    const presigned = await signer.presign(request, { expiresIn: tokenLifetimeSeconds }).catch((err) => {
+        throw new Error(
+            `Failed to generate EKS token for cluster "${clusterName}" in ${region}: ${err instanceof Error ? err.message : String(err)}`
+        )
+    })
 
     const serializedUrl =
         `${presigned.protocol}//${presigned.hostname}${presigned.path}?` +

@@ -126,7 +126,7 @@ export class KubectlClient {
 
     protected async initKubeConfig(): Promise<void> {
         if (!this.eksCluster.name || !this.eksCluster.endpoint) {
-            return
+            throw new Error(`[Hyperpod] Cannot initialize KubectlClient: missing EKS cluster name or endpoint`)
         }
 
         const { token, expiresAt } = await generateEksToken(
