@@ -5,11 +5,8 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import {
-    KubectlClient,
-    EksClusterInfo,
-    HyperpodCluster,
-} from '../../../../awsService/sagemaker/detached-server/kubectlClientStub'
+import { KubectlClient } from '../../../../awsService/sagemaker/detached-server/kubectlClientStub'
+import { EksClusterInfo, HyperpodCluster } from '../../../../awsService/sagemaker/detached-server/hyperpodTypes'
 import * as eksTokenGenerator from '../../../../shared/clients/eksTokenGenerator'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 

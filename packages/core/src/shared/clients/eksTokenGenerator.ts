@@ -52,14 +52,21 @@ export async function generateEksToken(
         )
     })
 
-    const serializedUrl =
-        `${presigned.protocol}//${presigned.hostname}${presigned.path}?` +
-        Object.entries(presigned.query ?? {})
-            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v as string)}`)
-            .join('&')
+    const url = new URL(`${presigned.protocol}//${presigned.hostname}${presigned.path}`)
+    for (const [k, v] of Object.entries(presigned.query ?? {})) {
+        if (Array.isArray(v)) {
+            for (const item of v) {
+                url.searchParams.append(k, item)
+            }
+        } else {
+            url.searchParams.set(k, String(v))
+        }
+    }
 
     return {
-        token: tokenPrefix + Buffer.from(serializedUrl).toString('base64url'),
+        token: tokenPrefix + Buffer.from(url.toString()).toString('base64url'),
+        // expiresAt is a client-side approximation. Clock skew between the local machine and STS
+        // may cause minor drift; the 60s refresh buffer in KubectlClient compensates for this.
         expiresAt: new Date(Date.now() + tokenLifetimeSeconds * 1000),
     }
 }

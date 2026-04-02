@@ -6,44 +6,10 @@
 import * as k8s from '@kubernetes/client-node'
 import { AwsCredentialIdentity, Provider } from '@aws-sdk/types'
 import { generateEksToken } from '../../../shared/clients/eksTokenGenerator'
-
-export interface HyperpodDevSpace {
-    name: string
-    namespace: string
-    cluster: string
-    group: string
-    version: string
-    plural: string
-    status: string
-    appType: string
-    creator: string
-    accessType: string
-}
-
-export interface HyperpodCluster {
-    clusterName: string
-    clusterArn: string
-    status: string
-    eksClusterName?: string
-    eksClusterArn?: string
-    regionCode: string
-}
-
-export interface WorkspaceConnectionResult {
-    type: string
-    url: string
-    token: string
-    sessionId: string
-}
+import { HyperpodDevSpace, HyperpodCluster, WorkspaceConnectionResult, EksClusterInfo } from './hyperpodTypes'
 
 /** Buffer time (ms) before token expiry to trigger a proactive refresh, avoiding mid-request expirations. */
 const tokenRefreshBufferMs = 60_000
-
-export interface EksClusterInfo {
-    name?: string
-    endpoint?: string
-    certificateAuthority?: { data?: string }
-}
 
 export class KubectlClient {
     private kubeConfig: k8s.KubeConfig
@@ -172,7 +138,7 @@ export class KubectlClient {
 
     protected async refreshToken(): Promise<void> {
         if (!this.eksCluster.name) {
-            return
+            throw new Error('[Hyperpod] Cannot refresh token: EKS cluster name is not set')
         }
 
         const { token, expiresAt } = await generateEksToken(
@@ -184,8 +150,11 @@ export class KubectlClient {
 
         const userIndex = this.kubeConfig.users.findIndex((u) => u.name === this.eksCluster.name)
         if (userIndex >= 0) {
+            // Leading semicolon prevents ASI from treating this as a property access on the previous statement.
             ;(this.kubeConfig.users[userIndex] as any).token = token
         }
+        // KubeConfig doesn't support swapping tokens on an existing API client,
+        // so we must recreate it after each refresh.
         this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
     }
 }

@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
-import { HyperpodCluster, HyperpodDevSpace, KubectlClient } from '../../../shared/clients/kubectlClient'
+import { KubectlClient } from '../../../shared/clients/kubectlClient'
+import { HyperpodCluster, HyperpodDevSpace } from '../detached-server/hyperpodTypes'
 import { SagemakerDevSpaceNode } from './sagemakerDevSpaceNode'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SagemakerConstants } from './constants'
@@ -93,12 +94,19 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
                 let kcClient = this.getKubectlClient(cluster.clusterName)
                 if (!kcClient) {
-                    const credentialsProvider = async () => {
+                    const credentialsProvider = async (): Promise<AwsCredentialIdentity> => {
                         const creds = await globals.awsContext.getCredentials()
                         if (!creds) {
                             throw new Error('No AWS credentials available for EKS authentication')
                         }
-                        return creds as AwsCredentialIdentity
+                        if (!creds.accessKeyId || !creds.secretAccessKey) {
+                            throw new Error('AWS credentials are missing required accessKeyId or secretAccessKey')
+                        }
+                        return {
+                            accessKeyId: creds.accessKeyId,
+                            secretAccessKey: creds.secretAccessKey,
+                            sessionToken: creds.sessionToken,
+                        }
                     }
                     kcClient = await KubectlClient.createForCluster(eksCluster, cluster, credentialsProvider)
                     this.kubectlClients.set(cluster.clusterName, kcClient)

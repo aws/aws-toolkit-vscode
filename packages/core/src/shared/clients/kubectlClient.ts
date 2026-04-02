@@ -8,15 +8,12 @@ import { getLogger } from '../logger/logger'
 import { Cluster } from '@aws-sdk/client-eks'
 import { SagemakerDevSpaceNode } from '../../awsService/sagemaker/explorer/sagemakerDevSpaceNode'
 import { AwsCredentialIdentity, Provider } from '@aws-sdk/types'
+import { KubectlClient as KubectlClientBase } from '../../awsService/sagemaker/detached-server/kubectlClientStub'
 import {
-    KubectlClient as KubectlClientBase,
     HyperpodDevSpace,
     HyperpodCluster,
     WorkspaceConnectionResult,
-    EksClusterInfo,
-} from '../../awsService/sagemaker/detached-server/kubectlClientStub'
-
-export type { HyperpodDevSpace, HyperpodCluster, WorkspaceConnectionResult, EksClusterInfo }
+} from '../../awsService/sagemaker/detached-server/hyperpodTypes'
 
 export class KubectlClient extends KubectlClientBase {
     private constructor(
@@ -101,7 +98,9 @@ export class KubectlClient extends KubectlClientBase {
             const conditions = statusObj?.conditions
             return this.getStatusFromConditions(conditions, desiredStatus)
         } catch (error) {
-            throw new Error(`[Hyperpod] Failed to get status for devSpace: ${devSpace.name}`)
+            throw new Error(
+                `[Hyperpod] Failed to get status for devSpace: ${devSpace.name}: ${error instanceof Error ? error.message : String(error)}`
+            )
         }
     }
 
@@ -157,7 +156,9 @@ export class KubectlClient extends KubectlClientBase {
             getLogger().info(`Connection Type: ${result.type}`)
             return result
         } catch (error) {
-            getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)
+            getLogger().error(
+                `[Hyperpod] Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
+            )
             throw error
         }
     }
