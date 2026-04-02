@@ -9,6 +9,17 @@ import { ExtContext } from '../shared/extensions'
 import { deeplinkConnect } from '../awsService/sagemaker/commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { SmusAuthMode } from '../shared/telemetry/telemetry.gen'
+import { getLogger } from '../shared/logger/logger'
+
+const amzHeaders = [
+    'X-Amz-Security-Token',
+    'X-Amz-Algorithm',
+    'X-Amz-Date',
+    'X-Amz-SignedHeaders',
+    'X-Amz-Credential',
+    'X-Amz-Expires',
+    'X-Amz-Signature',
+] as const
 /**
  * Registers the SMUS deeplink URI handler at path `/connect/smus`.
  *
@@ -29,11 +40,20 @@ export function register(ctx: ExtContext) {
             // instead of remaining part of the ws_url. This causes the ws_url to lose the
             // cell-number context it needs. To fix this, we manually re-append the cell-number
             // query parameter back to the ws_url to restore the original intended URL structure.
+            let wsUrl = `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`
+
+            for (const header of amzHeaders) {
+                const value = params[header]
+                if (value) {
+                    wsUrl += `&${header}=${encodeURIComponent(value)}`
+                }
+            }
+
             await deeplinkConnect(
                 ctx,
                 params.connection_identifier,
                 params.session,
-                `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`, // Re-append cell-number to ws_url
+                wsUrl, // Re-append cell-number and SigV4 headers to ws_url
                 params.token,
                 params.domain,
                 params.app_type,
@@ -77,6 +97,19 @@ export function register(ctx: ExtContext) {
  * @throws Error if required parameters are missing
  */
 export function parseConnectParams(query: SearchParams) {
+    // Extract session from ws_url as fallback. When the deep link URL contains sigv4 params
+    // embedded inside ws_url with single percent-encoding, VS Code's URI parser can decode
+    // the %26 separators, causing those params to break out as top-level query params and
+    // displacing 'session'. The session ID is always present in the ws_url data-channel path.
+    const wsUrl = query.get('ws_url')
+    if (!query.has('session') && wsUrl) {
+        const match = wsUrl.match(/data-channel\/([^?&]+)/)
+        if (match) {
+            getLogger().info(`Recovered missing session from ws_url: ${match[1]}`)
+            query.set('session', match[1])
+        }
+    }
+
     const requiredParams = query.getFromKeysOrThrow(
         'connection_identifier',
         'domain',
@@ -95,7 +128,8 @@ export function parseConnectParams(query: SearchParams) {
         'smus_auth_mode'
     )
 
-    return { ...requiredParams, ...optionalParams }
+    const amzHeaderParams = query.getFromKeys(...amzHeaders)
+    return { ...requiredParams, ...optionalParams, ...amzHeaderParams }
 }
 
 /**
