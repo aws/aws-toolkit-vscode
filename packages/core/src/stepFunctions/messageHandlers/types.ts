@@ -76,6 +76,7 @@ export enum Command {
     START_EXECUTION = 'START_EXECUTION',
     EDIT_STATE_MACHINE = 'EDIT_STATE_MACHINE',
     REDRIVE = 'REDRIVE',
+    OPEN_CHILD_EXECUTION = 'OPEN_CHILD_EXECUTION',
 }
 
 export type FileWatchInfo = {
@@ -122,9 +123,13 @@ export interface RedriveMessage extends Message {
     executionArn: string
 }
 
+export interface OpenChildExecutionMessage extends Message {
+    executionArn: string
+}
+
 export enum ApiAction {
-    IAMListRoles = 'iam:ListRoles',
-    SFNTestState = 'sfn:TestState',
+    IAMListRoles = 'iam:listRoles',
+    SFNTestState = 'sfn:testState',
     SFNDescribeStateMachine = 'sfn:describeStateMachine',
     SFNDescribeStateMachineForExecution = 'sfn:describeStateMachineForExecution',
     SFNDescribeExecution = 'sfn:describeExecution',
@@ -133,6 +138,8 @@ export enum ApiAction {
     SFNRedriveExecution = 'sfn:redriveExecution',
     SFNStartExecution = 'sfn:startExecution',
     SFNStopExecution = 'sfn:stopExecution',
+    SFNUpdateMapRun = 'sfn:updateMapRun',
+    SFNListExecutions = 'sfn:listExecutions',
     CWlFilterLogEvents = 'cwl:filterLogEvents',
     LambdaGetFunctionConfiguration = 'lambda:getFunctionConfiguration',
 }
@@ -148,6 +155,8 @@ type ApiCallRequestMapping = {
     [ApiAction.SFNRedriveExecution]: StepFunctions.RedriveExecutionInput
     [ApiAction.SFNStartExecution]: StepFunctions.StartExecutionInput
     [ApiAction.SFNStopExecution]: StepFunctions.StopExecutionInput
+    [ApiAction.SFNUpdateMapRun]: StepFunctions.UpdateMapRunInput
+    [ApiAction.SFNListExecutions]: StepFunctions.ListExecutionsInput
     [ApiAction.CWlFilterLogEvents]: CloudWatchLogs.FilterLogEventsCommandInput
     [ApiAction.LambdaGetFunctionConfiguration]: Lambda.GetFunctionConfigurationCommandInput
 }
@@ -172,5 +181,7 @@ export type ApiCallRequestMessage =
     | ApiCallRequestMessageBase<ApiAction.SFNRedriveExecution>
     | ApiCallRequestMessageBase<ApiAction.SFNStartExecution>
     | ApiCallRequestMessageBase<ApiAction.SFNStopExecution>
+    | ApiCallRequestMessageBase<ApiAction.SFNUpdateMapRun>
+    | ApiCallRequestMessageBase<ApiAction.SFNListExecutions>
     | ApiCallRequestMessageBase<ApiAction.CWlFilterLogEvents>
     | ApiCallRequestMessageBase<ApiAction.LambdaGetFunctionConfiguration>

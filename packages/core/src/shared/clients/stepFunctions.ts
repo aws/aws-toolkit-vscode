@@ -22,6 +22,9 @@ import {
     GetExecutionHistoryCommand,
     GetExecutionHistoryCommandInput,
     GetExecutionHistoryCommandOutput,
+    ListExecutionsCommand,
+    ListExecutionsCommandInput,
+    ListExecutionsCommandOutput,
     ListStateMachinesCommand,
     ListStateMachinesCommandInput,
     ListStateMachinesCommandOutput,
@@ -39,6 +42,9 @@ import {
     TestStateCommand,
     TestStateCommandInput,
     TestStateCommandOutput,
+    UpdateMapRunCommand,
+    UpdateMapRunCommandInput,
+    UpdateMapRunCommandOutput,
     UpdateStateMachineCommand,
     UpdateStateMachineCommandInput,
     UpdateStateMachineCommandOutput,
@@ -106,6 +112,14 @@ export class StepFunctionsClient extends ClientWrapper<SFNClient> {
 
     public async updateStateMachine(request: UpdateStateMachineCommandInput): Promise<UpdateStateMachineCommandOutput> {
         return this.makeRequest(UpdateStateMachineCommand, request)
+    }
+
+    public async updateMapRun(request: UpdateMapRunCommandInput): Promise<UpdateMapRunCommandOutput> {
+        return this.makeRequest(UpdateMapRunCommand, request)
+    }
+
+    public async listExecutions(request: ListExecutionsCommandInput): Promise<ListExecutionsCommandOutput> {
+        return this.makeRequest(ListExecutionsCommand, request)
     }
 
     public async testState(request: TestStateCommandInput): Promise<TestStateCommandOutput> {
