@@ -76,24 +76,14 @@ function checkVSCodeWindows(): Promise<boolean> {
         const parentIdeType = process.env.PARENT_IDE_TYPE
 
         if (platform === 'win32') {
-            if (parentIdeType === 'kiro') {
-                execFile('tasklist', ['/FI', 'IMAGENAME eq kiro.exe'], (err, stdout) => {
-                    if (err) {
-                        resolve(false)
-                        return
-                    }
-                    resolve(/kiro\.exe/i.test(stdout))
-                })
-            } else {
-                // Check for any VS Code fork process
-                execFile('tasklist', [], (err, stdout) => {
-                    if (err) {
-                        resolve(false)
-                        return
-                    }
-                    resolve(ideProcessPatterns.windows.test(stdout))
-                })
-            }
+            // Check for any VS Code fork process
+            execFile('tasklist', [], (err, stdout) => {
+                if (err) {
+                    resolve(false)
+                    return
+                }
+                resolve(ideProcessPatterns.windows.test(stdout))
+            })
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
                 if (err) {
@@ -101,13 +91,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                let found = false
-                if (parentIdeType === 'kiro') {
-                    found = stdout.split('\n').some((line) => /kiro\.app\/Contents\/MacOS\/Electron/i.test(line))
-                } else {
-                    // Default to VSCode
-                    found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
-                }
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
                 resolve(found)
             })
         } else {
@@ -117,13 +101,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                let found = false
-                if (parentIdeType === 'kiro') {
-                    found = stdout.split('\n').some((line) => /^kiro(-insiders)?$/i.test(line.trim()))
-                } else {
-                    // Default to VSCode
-                    found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
-                }
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
                 resolve(found)
             })
         }

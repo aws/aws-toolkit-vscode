@@ -126,7 +126,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [minimum, stable, insiders]
-                package: [amazonq, toolkit]
+                package: [toolkit]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -251,7 +251,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [stable, insiders]
-                package: [amazonq, toolkit]
+                package: [toolkit]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'

@@ -5,19 +5,6 @@
 This project is open source. We encourage issues, feature requests, code reviews, pull requests or
 any positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
-### Amazon Q
-
-[![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.amazon-q-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.amazon-q-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode)
-
-Amazon Q for VS Code is a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode) for connecting your IDE to [Amazon Q](https://aws.amazon.com/q/developer/) and leveraging generative AI to accelerate your software development.
-
--   Code faster with inline code suggestions as you type
--   Chat with [Amazon Q](https://aws.amazon.com/q/developer/) to generate code, explain code, and get answers to questions about software development
--   Analyze and fix security vulnerabilities in your project
--   Upgrade your Java applications
-
-[Project Directory](https://github.com/aws/aws-toolkit-vscode/tree/master/packages/amazonq)
-
 ### AWS Toolkit
 
 [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)
