@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { SmusErrorCodes } from '../shared/smusUtils'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
-import { CredentialsProvider } from '../../auth/providers/credentials'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
 import {
@@ -215,32 +214,10 @@ export class SmusAuthenticationOrchestrator {
             this.logger.info(`Connected to SageMaker Unified Studio domain: ${domainId} in region ${region}`)
             await this.recordAuthTelemetry(span, authProvider, domainId, region)
 
-            // Update domain cache after successful authentication with domain name
+            // Update domain cache after successful authentication
             try {
-                // Try to fetch domain name from DataZone
-                let domainName: string | undefined
-                try {
-                    this.logger.debug(`Fetching domain name for domain ID: ${domainId} in region: ${region}`)
-
-                    // Get DataZone client helper instance
-                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
-                        (await authProvider.getDerCredentialsProvider()) as CredentialsProvider,
-                        region
-                    )
-
-                    // Fetch domain information
-                    const domainInfo = await datazoneHelper.getDomain(domainId)
-                    domainName = domainInfo.name
-
-                    this.logger.debug(`Successfully fetched domain name: ${domainName}`)
-                } catch (fetchErr) {
-                    // If we can't fetch the domain name, that's okay - we'll cache without it
-                    this.logger.warn(`Failed to fetch domain name from DataZone: ${(fetchErr as Error).message}`)
-                }
-
-                // Update cache with domain URL and optional name
-                await updateRecentDomains(domainUrl, domainName)
-                this.logger.debug(`Updated domain cache with: ${domainUrl}${domainName ? ` (${domainName})` : ''}`)
+                await updateRecentDomains(domainUrl)
+                this.logger.debug(`Updated domain cache with: ${domainUrl}`)
             } catch (cacheErr) {
                 // Cache failures should not block authentication flow
                 this.logger.warn(`Failed to update domain cache: ${(cacheErr as Error).message}`)

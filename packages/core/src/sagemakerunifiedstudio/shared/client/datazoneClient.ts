@@ -19,7 +19,6 @@ import {
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
-import { getContext } from '../../../shared/vscode/setContext'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { DevSettings } from '../../../shared/settings'
 import { ToolkitError } from '../../../shared/errors'
@@ -806,7 +805,11 @@ export class DataZoneClient {
         if (!toolingEnvId) {
             throw new Error('No default environment found for project')
         }
-        return await this.getEnvironmentDetails(toolingEnvId)
+        const env = await this.getEnvironmentDetails(toolingEnvId)
+        this.logger.warn(
+            `DEBUG getToolingEnvironment: ${JSON.stringify({ awsAccountRegion: env.awsAccountRegion, provisionedResources: env.provisionedResources })}`
+        )
+        return env
     }
 
     public async getUserId(): Promise<string | undefined> {
@@ -868,6 +871,7 @@ export class DataZoneClient {
      * Gets the correct tooling blueprint name
      */
     private getToolingBlueprintName(): string {
-        return getContext('aws.smus.isIamMode') ? 'ToolingLite' : toolingBlueprintName
+        const useToolingLite = DevSettings.instance.get('smusIamDomainSsoTest', false)
+        return useToolingLite ? 'ToolingLite' : toolingBlueprintName
     }
 }
