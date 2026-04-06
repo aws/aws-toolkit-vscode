@@ -94,14 +94,18 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
                 let kcClient = this.getKubectlClient(cluster.clusterName)
                 if (!kcClient) {
+                    const creds = await globals.awsContext.getCredentials()
+                    if (!creds) {
+                        getLogger().warn(
+                            `No AWS credentials available for EKS authentication on cluster ${cluster.clusterName}`
+                        )
+                        continue
+                    }
+                    if (!creds.accessKeyId || !creds.secretAccessKey) {
+                        getLogger().warn(`AWS credentials are missing for cluster ${cluster.clusterName}`)
+                        continue
+                    }
                     const credentialsProvider = async (): Promise<AwsCredentialIdentity> => {
-                        const creds = await globals.awsContext.getCredentials()
-                        if (!creds) {
-                            throw new Error('No AWS credentials available for EKS authentication')
-                        }
-                        if (!creds.accessKeyId || !creds.secretAccessKey) {
-                            throw new Error('AWS credentials are missing required accessKeyId or secretAccessKey')
-                        }
                         return {
                             accessKeyId: creds.accessKeyId,
                             secretAccessKey: creds.secretAccessKey,
