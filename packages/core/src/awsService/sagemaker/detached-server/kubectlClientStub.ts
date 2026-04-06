@@ -137,24 +137,8 @@ export class KubectlClient {
     }
 
     protected async refreshToken(): Promise<void> {
-        if (!this.eksCluster.name) {
-            throw new Error('[Hyperpod] Cannot refresh token: EKS cluster name is not set')
-        }
-
-        const { token, expiresAt } = await generateEksToken(
-            this.eksCluster.name,
-            this.hyperpodCluster.regionCode,
-            this.credentials
-        )
-        this.tokenExpiry = expiresAt.getTime()
-
-        const userIndex = this.kubeConfig.users.findIndex((u) => u.name === this.eksCluster.name)
-        if (userIndex >= 0) {
-            // Leading semicolon prevents ASI from treating this as a property access on the previous statement.
-            ;(this.kubeConfig.users[userIndex] as any).token = token
-        }
-        // KubeConfig doesn't support swapping tokens on an existing API client,
-        // so we must recreate it after each refresh.
-        this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
+        // Re-initialize the full kubeConfig with a fresh token.
+        // This avoids mutating the readonly User.token property directly.
+        await this.initKubeConfig()
     }
 }
