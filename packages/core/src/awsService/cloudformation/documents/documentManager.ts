@@ -16,7 +16,7 @@ export type DocumentMetadata = {
     languageId: string
     version: number
     lineCount: number
-    sizeBytes: number
+    sizeBytes?: number
 }
 
 const DocumentsMetadataNotification = new NotificationType<DocumentMetadata[]>('aws/documents/metadata')
@@ -53,6 +53,6 @@ export class DocumentManager {
             )
             return false
         }
-        return doc.sizeBytes > DocumentManager.cfnTemplateBodyMaxBytes
+        return (doc.sizeBytes ?? 0) > DocumentManager.cfnTemplateBodyMaxBytes
     }
 }
