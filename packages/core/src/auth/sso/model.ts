@@ -14,6 +14,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ssoAuthHelpUrl } from '../../shared/constants'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { copyToClipboard } from '../../shared/utilities/messages'
 import { ToolkitError } from '../../shared/errors'
 import { builderIdStartUrl } from './constants'
 
@@ -100,6 +101,7 @@ export function truncateStartUrl(startUrl: string) {
 type Authorization = { readonly verificationUri: string; readonly userCode: string }
 
 export const proceedToBrowser = localize('AWS.auth.loginWithBrowser.proceedToBrowser', 'Proceed To Browser')
+export const copyUrl = localize('AWS.auth.loginWithBrowser.copyLoginUrl', 'Copy authentication URL')
 
 export async function openSsoPortalLink(startUrl: string, authorization: Authorization): Promise<boolean> {
     /**
@@ -122,13 +124,18 @@ export async function openSsoPortalLink(startUrl: string, authorization: Authori
             authorization.userCode
         )
 
+        const options = [proceedToBrowser, copyUrl]
+
         while (true) {
             // TODO: add the 'Help' item back once we have a suitable URL
             // const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
-            const resp = await vscode.window.showInformationMessage(title, { modal: true, detail }, proceedToBrowser)
+            const resp = await vscode.window.showInformationMessage(title, { modal: true, detail }, ...options)
             switch (resp) {
                 case proceedToBrowser:
                     return openSsoUrl(makeConfirmCodeUrl(authorization))
+                case copyUrl:
+                    await copyToClipboard(makeConfirmCodeUrl(authorization).toString(true))
+                    return true
                 case localizedText.help:
                     await tryOpenHelpUrl(ssoAuthHelpUrl)
                     continue
