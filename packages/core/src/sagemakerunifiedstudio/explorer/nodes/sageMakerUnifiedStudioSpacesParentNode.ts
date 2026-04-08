@@ -290,10 +290,30 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     this.authProvider.getDomainRegion()
                 )
 
-                const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
+                // First try to get user profile ID for the session
+                let userProfileId: string | undefined = await datazoneCustomClientHelper.getUserProfileIdForSession(
                     this.authProvider.getDomainId(),
                     assumedRoleArn
                 )
+
+                // If empty, fall back to getUserProfileIdForIamPrincipal
+                if (!userProfileId) {
+                    this.logger.debug(
+                        'getUserProfileIdForSession returned empty, falling back to getUserProfileIdForIamPrincipal'
+                    )
+                    const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
+                    const fallbackProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                        callerArn,
+                        this.authProvider.getDomainId()
+                    )
+                    userProfileId = fallbackProfileId
+                }
+
+                if (!userProfileId) {
+                    throw new ToolkitError('No user profile found for IAM role session', {
+                        code: SmusErrorCodes.NoUserProfileFound,
+                    })
+                }
 
                 this.logger.debug(`Retrieved user profile ID for role session: ${userProfileId}`)
                 return userProfileId
@@ -313,11 +333,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
 
         let userProfileId
-        if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.isIamModeDomain')) {
-            // IAM login into IDC domain — show all spaces for now
-            // TODO: Filter by user/group profile once IAM role federation is fully enabled
-            userProfileId = undefined
-        } else if (getContext('aws.smus.isIamMode')) {
+        if (getContext('aws.smus.isIamMode')) {
             userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
             // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
