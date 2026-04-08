@@ -192,11 +192,15 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getFunctionConfiguration(name: string): Promise<Lambda.FunctionConfiguration> {
+    public async getFunctionConfiguration(name: string): Promise<FunctionConfiguration> {
         const client = await this.createSdkClient()
         try {
-            const request = client.getFunctionConfiguration({ FunctionName: name })
-            const response = await request.promise()
+            const response = await client.send(
+                new GetFunctionConfigurationCommand({
+                    FunctionName: name,
+                })
+            )
+            getLogger().debug('getFunctionConfiguration returned response: %O', response)
             return response
         } catch (e) {
             getLogger().error('Failed to get function configuration: %s', e)
