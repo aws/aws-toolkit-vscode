@@ -13,6 +13,7 @@ import { SmusAuthenticationProvider } from '../../../../sagemakerunifiedstudio/a
 import * as s3Strategy from '../../../../sagemakerunifiedstudio/explorer/nodes/s3Strategy'
 import * as redshiftStrategy from '../../../../sagemakerunifiedstudio/explorer/nodes/redshiftStrategy'
 import * as lakehouseStrategy from '../../../../sagemakerunifiedstudio/explorer/nodes/lakehouseStrategy'
+import * as setContext from '../../../../shared/vscode/setContext'
 
 describe('SageMakerUnifiedStudioDataNode', function () {
     let sandbox: sinon.SinonSandbox
@@ -50,6 +51,14 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             getProjectCredentialProvider: sandbox.stub().resolves(mockProjectCredentialProvider),
             getConnectionCredentialsProvider: sandbox.stub().resolves(mockProjectCredentialProvider),
             getDomainRegion: sandbox.stub().returns('us-east-1'),
+            getDomainId: sandbox.stub().returns('domain-123'),
+            getDerCredentialsProvider: sandbox.stub().resolves({
+                getCredentials: sandbox.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any
 
         mockDataZoneClient = {
@@ -60,7 +69,7 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             getRegion: sandbox.stub().returns('us-east-1'),
         } as any
 
-        sandbox.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sandbox.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
         sandbox.stub(SmusAuthenticationProvider, 'fromContext').returns(mockAuthProvider as any)
         sandbox.stub(s3Strategy, 'createS3ConnectionNode').returns({
             id: 's3-node',
@@ -161,6 +170,9 @@ describe('SageMakerUnifiedStudioDataNode', function () {
                 { connectionId: 'redshift-conn', type: 'REDSHIFT', name: 'redshift-connection' },
             ]
 
+            // Mock IAM mode to be false so Redshift connections are included
+            sandbox.stub(setContext, 'getContext').returns(false)
+
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
             mockDataZoneClient.getConnection
                 .onFirstCall()
@@ -209,13 +221,15 @@ describe('SageMakerUnifiedStudioDataNode', function () {
             const mockConnections = [{ connectionId: 's3-conn', type: 'S3', name: 's3-connection' }]
 
             mockDataZoneClient.listConnections.resolves(mockConnections as any)
-            mockDataZoneClient.getConnection.rejects(new Error('Connection error'))
 
             const children = await dataNode.getChildren()
 
             // Should have Bucket parent node even with connection errors
             assert.strictEqual(children.length, 1)
             assert.strictEqual(children[0].id, 'bucket-parent')
+
+            // Mock connection credentials provider to reject when bucket is expanded
+            mockAuthProvider.getConnectionCredentialsProvider.rejects(new Error('Connection error'))
 
             // Error should occur when expanding the Bucket node
             const bucketChildren = await children[0].getChildren!()

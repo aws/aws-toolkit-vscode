@@ -21,7 +21,7 @@ import {
 import { Settings } from '../../../../shared/settings'
 import { LogDataCodeLensProvider } from '../../../../awsService/cloudWatchLogs/document/logDataCodeLensProvider'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../../shared/constants'
-import { FilteredLogEvent } from 'aws-sdk/clients/cloudwatchlogs'
+import { FilteredLogEvent } from '@aws-sdk/client-cloudwatch-logs'
 
 const getLogEventsMessage = 'This is from getLogEvents'
 

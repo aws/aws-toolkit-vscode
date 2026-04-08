@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import globals from './extensionGlobals'
 
 export interface SamInitState {
@@ -22,7 +22,7 @@ export class ActivationReloadState {
         return {
             template: globals.globalState.get<string>('ACTIVATION_TEMPLATE_PATH_KEY'),
             readme: globals.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY'),
-            runtime: globals.globalState.get<string>('SAM_INIT_RUNTIME_KEY'),
+            runtime: globals.globalState.get<Runtime>('SAM_INIT_RUNTIME_KEY'),
             architecture: globals.globalState.get<string>('SAM_INIT_ARCH_KEY'),
             isImage: globals.globalState.get<boolean>('SAM_INIT_IMAGE_BOOLEAN_KEY'),
         }

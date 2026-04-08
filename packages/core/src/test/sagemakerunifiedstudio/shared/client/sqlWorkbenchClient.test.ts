@@ -11,36 +11,23 @@ import {
     createRedshiftConnectionConfig,
 } from '../../../../sagemakerunifiedstudio/shared/client/sqlWorkbenchClient'
 import { STSClient } from '@aws-sdk/client-sts'
-import globals from '../../../../shared/extensionGlobals'
 import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudio/auth/providers/connectionCredentialsProvider'
+import {
+    DatabaseIntegrationConnectionAuthenticationTypes,
+    SQLWorkbench,
+    GetResourcesCommand,
+    ExecuteQueryCommand,
+} from '@amzn/sql-workbench-client'
 
 describe('SQLWorkbenchClient', function () {
     let sandbox: sinon.SinonSandbox
-    let mockSqlClient: any
-    let mockSdkClientBuilder: any
+    let sendStub: sinon.SinonStub
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
-        mockSqlClient = {
-            getResources: sandbox.stub().returns({
-                promise: sandbox.stub().resolves({
-                    resources: [{ name: 'test-resource' }],
-                    nextToken: 'next-token',
-                }),
-            }),
-            executeQuery: sandbox.stub().returns({
-                promise: sandbox.stub().resolves({
-                    queryExecutions: [{ queryExecutionId: 'test-execution-id' }],
-                }),
-            }),
-        }
-
-        mockSdkClientBuilder = {
-            createAwsService: sandbox.stub().resolves(mockSqlClient),
-        }
-
-        sandbox.stub(globals, 'sdkClientBuilder').value(mockSdkClientBuilder)
+        // Mock SDK v3 send method
+        sendStub = sandbox.stub(SQLWorkbench.prototype, 'send')
     })
 
     afterEach(function () {
@@ -83,11 +70,17 @@ describe('SQLWorkbenchClient', function () {
 
     describe('getResources', function () {
         it('should get resources with connection', async function () {
+            // Mock the send method to return expected response
+            sendStub.resolves({
+                resources: [{ displayName: 'test-resource' }],
+                nextToken: 'next-token',
+            })
+
             const client = SQLWorkbenchClient.getInstance('us-east-1')
             const connectionConfig = {
-                id: 'test-id',
-                type: 'test-type',
-                databaseType: 'REDSHIFT',
+                id: 'arn:aws:sqlworkbench:us-east-1:123456789012:connection/test-uuid-1234',
+                type: DatabaseIntegrationConnectionAuthenticationTypes.FEDERATED,
+                databaseType: 'REDSHIFT' as const,
                 connectableResourceIdentifier: 'test-identifier',
                 connectableResourceType: 'CLUSTER',
                 database: 'test-db',
@@ -99,15 +92,15 @@ describe('SQLWorkbenchClient', function () {
                 maxItems: 50,
             })
 
-            assert.deepStrictEqual(result.resources, [{ name: 'test-resource' }])
+            assert.deepStrictEqual(result.resources, [{ displayName: 'test-resource' }])
             assert.strictEqual(result.nextToken, 'next-token')
+            assert.ok(sendStub.calledOnce)
+            assert.ok(sendStub.firstCall.args[0] instanceof GetResourcesCommand)
         })
 
         it('should handle API errors', async function () {
             const error = new Error('API Error')
-            mockSqlClient.getResources.returns({
-                promise: sandbox.stub().rejects(error),
-            })
+            sendStub.rejects(error)
 
             const client = SQLWorkbenchClient.getInstance('us-east-1')
 
@@ -115,9 +108,9 @@ describe('SQLWorkbenchClient', function () {
                 async () =>
                     await client.getResources({
                         connection: {
-                            id: '',
-                            type: '',
-                            databaseType: '',
+                            id: 'arn:aws:sqlworkbench:us-east-1:123456789012:connection/test-uuid-1234',
+                            type: DatabaseIntegrationConnectionAuthenticationTypes.FEDERATED,
+                            databaseType: 'REDSHIFT' as const,
                             connectableResourceIdentifier: '',
                             connectableResourceType: '',
                             database: '',
@@ -131,11 +124,16 @@ describe('SQLWorkbenchClient', function () {
 
     describe('executeQuery', function () {
         it('should execute query successfully', async function () {
+            // Mock the send method to return expected response
+            sendStub.resolves({
+                queryExecutions: [{ queryExecutionId: 'test-execution-id' }],
+            })
+
             const client = SQLWorkbenchClient.getInstance('us-east-1')
             const connectionConfig = {
-                id: 'test-id',
-                type: 'test-type',
-                databaseType: 'REDSHIFT',
+                id: 'arn:aws:sqlworkbench:us-east-1:123456789012:connection/test-uuid-1234',
+                type: DatabaseIntegrationConnectionAuthenticationTypes.FEDERATED,
+                databaseType: 'REDSHIFT' as const,
                 connectableResourceIdentifier: 'test-identifier',
                 connectableResourceType: 'CLUSTER',
                 database: 'test-db',
@@ -144,19 +142,19 @@ describe('SQLWorkbenchClient', function () {
             const result = await client.executeQuery(connectionConfig, 'SELECT 1')
 
             assert.strictEqual(result, 'test-execution-id')
+            assert.ok(sendStub.calledOnce)
+            assert.ok(sendStub.firstCall.args[0] instanceof ExecuteQueryCommand)
         })
 
         it('should handle query execution errors', async function () {
             const error = new Error('Query Error')
-            mockSqlClient.executeQuery.returns({
-                promise: sandbox.stub().rejects(error),
-            })
+            sendStub.rejects(error)
 
             const client = SQLWorkbenchClient.getInstance('us-east-1')
             const connectionConfig = {
-                id: 'test-id',
-                type: 'test-type',
-                databaseType: 'REDSHIFT',
+                id: 'arn:aws:sqlworkbench:us-east-1:123456789012:connection/test-uuid-1234',
+                type: DatabaseIntegrationConnectionAuthenticationTypes.FEDERATED,
+                databaseType: 'REDSHIFT' as const,
                 connectableResourceIdentifier: 'test-identifier',
                 connectableResourceType: 'CLUSTER',
                 database: 'test-db',

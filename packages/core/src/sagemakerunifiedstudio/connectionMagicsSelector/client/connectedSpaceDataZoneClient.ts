@@ -22,7 +22,7 @@ export interface DataZoneConnection {
  */
 export class ConnectedSpaceDataZoneClient {
     private datazoneClient: DataZone | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         private readonly region: string,

@@ -17,6 +17,16 @@ import { execFile } from 'child_process'
 
 const pollInterval = 30 * 60 * 100 // 30 minutes
 
+/**
+ * Generic IDE process patterns for detection across all VS Code forks.
+ * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
+ */
+export const ideProcessPatterns = {
+    windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
+    darwin: /\.app\/Contents\/MacOS\//,
+    linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
+}
+
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     const parsedUrl = url.parse(req.url || '', true)
 
@@ -62,12 +72,13 @@ function checkVSCodeWindows(): Promise<boolean> {
         const platform = os.platform()
 
         if (platform === 'win32') {
-            execFile('tasklist', ['/FI', 'IMAGENAME eq Code.exe'], (err, stdout) => {
+            // Check for any VS Code fork process
+            execFile('tasklist', [], (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
                 }
-                resolve(/Code\.exe/i.test(stdout))
+                resolve(ideProcessPatterns.windows.test(stdout))
             })
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
@@ -76,9 +87,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout
-                    .split('\n')
-                    .some((line) => /Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\/Electron/.test(line))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
                 resolve(found)
             })
         } else {
@@ -88,7 +97,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => /^(code(-insiders)?|electron)$/i.test(line.trim()))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
                 resolve(found)
             })
         }
@@ -99,7 +108,7 @@ async function monitorVSCodeAndExit() {
     while (true) {
         const found = await checkVSCodeWindows()
         if (!found) {
-            console.log('No VSCode windows found. Shutting down detached server.')
+            console.log('No IDE windows found. Shutting down detached server.')
             process.exit(0)
         }
         await new Promise((r) => setTimeout(r, pollInterval))

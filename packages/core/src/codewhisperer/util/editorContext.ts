@@ -22,7 +22,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
 import { predictionTracker } from '../nextEditPrediction/activation'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -226,7 +226,7 @@ export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
     allowCodeWithReference: boolean,
-    languageClient?: LanguageClient
+    languageClient?: BaseLanguageClient
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
     supplementalMetadata: CodeWhispererSupplementalContext | undefined

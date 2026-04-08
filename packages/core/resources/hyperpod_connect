@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+# HyperPod Connection Script
+# 
+# This script establishes a connection to an AWS SageMaker HyperPod instance using AWS Systems Manager (SSM).
+# HyperPod is AWS's managed service for distributed machine learning training at scale.
+#
+# OVERVIEW:
+# The script always gets fresh credentials from the reconnection manager and uses them to establish
+# a secure session tunnel to a HyperPod compute instance.
+#
+# OPTIONAL ENVIRONMENT VARIABLES:
+#   LOG_FILE_LOCATION   - Path to log file (default: /tmp/hyperpod_connect.log)
+#   DEBUG_LOG           - Enable debug logging (default: 0)
+#
+# USAGE:
+#   ./hyperpod_connect smhp_demo1
+#
+# SECURITY NOTE:
+# This script handles sensitive authentication tokens. Ensure proper file permissions
+# and avoid logging sensitive values in production environments. 
+set -x
+set -e
+set -u
+
+_DATE_CMD=true
+
+if command > /dev/null 2>&1 -v date; then
+    _DATE_CMD=date
+elif command > /dev/null 2>&1 -v /bin/date; then
+    _DATE_CMD=/bin/date
+fi
+
+_log() {
+    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
+}
+
+_require_nolog() {
+    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+        _log "error: missing required arg: $1"
+        exit 1
+    fi
+}
+
+_require() {
+    _require_nolog "$@"
+    _log "$1=$2"
+}
+
+_resolve_connection_key() {
+    local WORKSPACE_NAME=$1
+    local PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
+    
+    [ ! -f "$PROFILES_FILE" ] && echo "$WORKSPACE_NAME" && return
+    
+    python3 -c "
+import json
+try:
+    with open('$PROFILES_FILE', 'r') as f:
+        profiles = json.load(f)
+    matches = sorted([k for k in profiles.keys() if k.startswith('$WORKSPACE_NAME:')])
+    print(matches[0] if matches else '$WORKSPACE_NAME')
+except:
+    print('$WORKSPACE_NAME')
+" 2>/dev/null
+}
+
+_hyperpod() {
+    # Function inputs
+    local AWS_SSM_CLI=$1
+    local AWS_REGION=$2
+    local STREAM_URL=$3
+    local TOKEN=$4
+    local SESSION_ID=$5
+
+    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
+}
+
+_main() {
+    # Set defaults for missing environment variables
+    DEBUG_LOG=${DEBUG_LOG:-0}
+    LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
+
+    if [ $# -ne 1 ]; then
+        _log "Usage: $0 smhp_<workspace_name>"
+        exit 1
+    fi
+
+    # Extract workspace name, cluster name, and namespace from hostname
+    # New format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
+    # Old format: smhp_{workspace} (for backward compatibility)
+    if [[ "$1" =~ ^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+        # Format: smhp_{workspace}_{namespace}_{cluster}_{region}_{account}
+        WORKSPACE_NAME="${BASH_REMATCH[1]}"
+        NAMESPACE="${BASH_REMATCH[2]}"
+        CLUSTER_NAME="${BASH_REMATCH[3]}"
+        # Construct the expected connection key (workspace:namespace:cluster)
+        CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
+    else
+        # Old format or fallback - extract workspace name only
+        WORKSPACE_NAME=$(echo "$1" | sed 's/smhp_//')
+        CLUSTER_NAME=""
+        NAMESPACE=""
+        CONNECTION_KEY=""
+    fi
+    
+    # For new format, we already have the connection key constructed from hostname
+    # For old format, look up the connection key from the hyperpod profiles file
+    [ -z "$CONNECTION_KEY" ] && CONNECTION_KEY=$(_resolve_connection_key "$WORKSPACE_NAME")
+    
+    if [ -z "$CONNECTION_KEY" ]; then
+        _log "Error: Could not determine connection key for workspace: $WORKSPACE_NAME"
+        exit 1
+    fi
+    
+    _log "=============================================================================="
+    _log "Connecting to HyperPod workspace: $WORKSPACE_NAME (connection key: $CONNECTION_KEY)"
+    
+    # Use env vars directly for initial connection (deeplink), call API only for reconnection
+    if [ -n "${STREAM_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
+        _log "Using credentials from environment variables (initial connection)"
+    else
+        _log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
+        exit 1
+    fi
+    
+    # Extract region from stream URL
+    AWS_REGION=$(echo "$STREAM_URL" | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
+    AWS_SSM_CLI="${AWS_SSM_CLI:-session-manager-plugin}"
+    
+    # Validate required parameters (SESSION_ID, STREAM_URL, TOKEN are fetched from API, not validated here)
+    _require AWS_REGION "${AWS_REGION}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI}"
+    
+    if [ -z "${SESSION_ID}" ] || [ -z "${STREAM_URL}" ] || [ -z "${TOKEN}" ]; then
+        _log "Error: Failed to retrieve valid session credentials from API"
+        exit 1
+    fi
+
+    _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
+}
+
+_main "$@"

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { SagemakerParentNode } from './sagemakerParentNode'
+import { SagemakerStudioNode } from './sagemakerStudioNode'
 import { getLogger } from '../../../shared/logger/logger'
 import { SagemakerUnifiedStudioSpaceNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SagemakerSpace } from '../sagemakerSpace'
@@ -15,7 +15,7 @@ import { SagemakerSpace } from '../sagemakerSpace'
 export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNode {
     private smSpace: SagemakerSpace
     public constructor(
-        public readonly parent: SagemakerParentNode,
+        public readonly parent: SagemakerStudioNode,
         public readonly client: SagemakerClient,
         public override readonly regionCode: string,
         public readonly spaceApp: SagemakerSpaceApp

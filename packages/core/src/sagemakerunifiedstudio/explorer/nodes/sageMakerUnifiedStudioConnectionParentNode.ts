@@ -8,7 +8,7 @@ import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioCompu
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { ListConnectionsCommandOutput, ConnectionType } from '@aws-sdk/client-datazone'
 import { SageMakerUnifiedStudioConnectionNode } from './sageMakerUnifiedStudioConnectionNode'
-import { DataZoneClient } from '../../shared/client/datazoneClient'
+import { createDZClientBaseOnDomainMode } from './utils'
 
 // eslint-disable-next-line id-length
 export class SageMakerUnifiedStudioConnectionParentNode implements TreeNode {
@@ -31,7 +31,7 @@ export class SageMakerUnifiedStudioConnectionParentNode implements TreeNode {
     }
 
     public async getChildren(): Promise<TreeNode[]> {
-        const client = await DataZoneClient.getInstance(this.parent.authProvider)
+        const client = await createDZClientBaseOnDomainMode(this.parent.authProvider)
         this.connections = await client.fetchConnections(
             this.parent.parent.project?.domainId,
             this.parent.parent.project?.id,

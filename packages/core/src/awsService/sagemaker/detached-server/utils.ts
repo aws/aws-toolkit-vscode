@@ -13,14 +13,21 @@ import os from 'os'
 import { join } from 'path'
 import { SpaceMappings } from '../types'
 import open from 'open'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
+import { WriteQueue } from './writeQueue'
 export { open }
 
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
 const tempFilePath = `${mappingFilePath}.tmp`
 
-// Simple file lock to prevent concurrent writes
-let isWriting = false
-const writeQueue: Array<() => Promise<void>> = []
+const writeQueue = new WriteQueue()
+
+// Currently SSM registration happens asynchronously with App launch, which can lead to
+// StartSession Internal Failure when connecting to a fresly-started Space.
+// To mitigate, spread out retries over multiple seconds instead of sending all retries within a second.
+// Backoff sequence: 1500ms, 2250ms, 3375ms
+// Retry timing: 1500ms, 3750ms, 7125ms
+const startSessionRetryStrategy = new ConfiguredRetryStrategy(3, (attempt: number) => 1000 * 1.5 ** attempt)
 
 /**
  * Reads the local endpoint info file (default or via env) and returns pid & port.
@@ -47,43 +54,30 @@ export async function readServerInfo(): Promise<ServerInfo> {
     }
 }
 
-/**
- * Parses a SageMaker ARN to extract region, account ID, and space name.
- * Supports formats like:
- *   arn:aws:sagemaker:<region>:<account_id>:space/<domain>/<space_name>
- *   or sm_lc_arn:aws:sagemaker:<region>:<account_id>:space__d-xxxx__<name>
- *
- * If the input is prefixed with an identifier (e.g. "sagemaker-user@"), the function will strip it.
- *
- * @param arn - The full SageMaker ARN string
- * @returns An object containing the region, accountId, and spaceName
- * @throws If the ARN format is invalid
- */
-export function parseArn(arn: string): { region: string; accountId: string; spaceName: string } {
+export function parseArn(arn: string): { region: string; accountId: string; resourceName: string } {
     const cleanedArn = arn.includes('@') ? arn.split('@')[1] : arn
-    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<account_id>\d+):space[/:].+$/i
+    const regex = /^arn:aws:[^:]+:(?<region>[^:]+):(?<account_id>\d+):(space|cluster)[/:].+$/i
     const match = cleanedArn.match(regex)
 
     if (!match?.groups) {
-        throw new Error(`Invalid SageMaker ARN format: "${arn}"`)
+        throw new Error(`Invalid ARN format: "${arn}"`)
     }
 
-    // Extract space name from the end of the ARN (after the last forward slash)
-    const spaceName = cleanedArn.split('/').pop()
-    if (!spaceName) {
-        throw new Error(`Could not extract space name from ARN: "${arn}"`)
+    const resourceName = cleanedArn.split('/').pop()
+    if (!resourceName) {
+        throw new Error(`Could not extract resource name from ARN: "${arn}"`)
     }
 
     return {
         region: match.groups.region,
         accountId: match.groups.account_id,
-        spaceName: spaceName,
+        resourceName,
     }
 }
 
 export async function startSagemakerSession({ region, connectionIdentifier, credentials }: any) {
     const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${region}.amazonaws.com`
-    const client = new SageMakerClient({ region, credentials, endpoint })
+    const client = new SageMakerClient({ region, credentials, endpoint, retryStrategy: startSessionRetryStrategy })
     const command = new StartSessionCommand({ ResourceIdentifier: connectionIdentifier })
     return client.send(command)
 }
@@ -103,25 +97,6 @@ export async function readMapping() {
 }
 
 /**
- * Processes the write queue to ensure only one write operation happens at a time.
- */
-async function processWriteQueue() {
-    if (isWriting || writeQueue.length === 0) {
-        return
-    }
-
-    isWriting = true
-    try {
-        while (writeQueue.length > 0) {
-            const writeOperation = writeQueue.shift()!
-            await writeOperation()
-        }
-    } finally {
-        isWriting = false
-    }
-}
-
-/**
  * Detects if the connection identifier is using SMUS credentials
  * @param connectionIdentifier - The connection identifier to check
  * @returns Promise<boolean> - true if SMUS, false otherwise
@@ -135,6 +110,24 @@ export async function isSmusConnection(connectionIdentifier: string): Promise<bo
         return profile && 'smusProjectId' in profile
     } catch (err) {
         // If we can't read the mapping, assume not SMUS to avoid breaking existing functionality
+        return false
+    }
+}
+
+/**
+ * Detects if the connection identifier is using SMUS IAM credentials
+ * @param connectionIdentifier - The connection identifier to check
+ * @returns Promise<boolean> - true if SMUS IAM connection, false otherwise
+ */
+export async function isSmusIamConnection(connectionIdentifier: string): Promise<boolean> {
+    try {
+        const mapping = await readMapping()
+        const profile = mapping.localCredential?.[connectionIdentifier]
+
+        // Check if profile exists, has smusProjectId, and type is 'iam'
+        return profile && 'smusProjectId' in profile && profile.type === 'iam'
+    } catch (err) {
+        // If we can't detect it is iam connection, assume not SMUS IAM to avoid breaking existing functionality
         return false
     }
 }
@@ -161,8 +154,7 @@ export async function writeMapping(mapping: SpaceMappings) {
 
         writeQueue.push(writeOperation)
 
-        // ProcessWriteQueue handles its own errors via individual operation callbacks
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        processWriteQueue()
+        writeQueue.process()
     })
 }

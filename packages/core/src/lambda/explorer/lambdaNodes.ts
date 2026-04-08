@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
@@ -54,7 +54,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+        const functions: Map<string, FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.client)),
             (configuration) => configuration.FunctionName
         )
@@ -71,10 +71,10 @@ export class LambdaNode extends AWSTreeNodeBase {
 function makeLambdaFunctionNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 ): LambdaFunctionNode {
     let contextValue = contextValueLambdaFunction
-    const isImportableRuntime = samLambdaImportableRuntimes.contains(configuration.Runtime ?? '')
+    const isImportableRuntime = configuration.Runtime && samLambdaImportableRuntimes.contains(configuration.Runtime)
     if (isLocalStackConnection()) {
         if (isImportableRuntime && !isHotReloadingFunction(configuration?.CodeSha256)) {
             contextValue = contextValueLambdaFunctionDownloadOnly

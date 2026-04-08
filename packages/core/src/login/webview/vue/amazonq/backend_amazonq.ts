@@ -210,6 +210,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return []
     }
 
+    override startConsoleCredentialSetup(profileName: string, region: string): Promise<AuthError | undefined> {
+        throw new Error('Method not implemented.')
+    }
+
     override startIamCredentialSetup(
         profileName: string,
         accessKey: string,

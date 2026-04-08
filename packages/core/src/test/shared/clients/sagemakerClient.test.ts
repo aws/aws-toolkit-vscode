@@ -11,6 +11,7 @@ import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getTestWindow } from '../vscode/window'
+import { InstanceTypeInsufficientMemoryMessage } from '../../../awsService/sagemaker/constants'
 
 describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
     const region = 'test-region'
@@ -173,6 +174,127 @@ describe('SagemakerClient.listSpaceApps', function () {
     })
 })
 
+describe('SagemakerClient.listAppForSpace', function () {
+    const region = 'test-region'
+    let client: SagemakerClient
+    let listAppsStub: sinon.SinonStub
+
+    beforeEach(function () {
+        client = new SagemakerClient(region)
+        listAppsStub = sinon.stub(client, 'listApps')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('returns first app for given domain and space', async function () {
+        const appDetails: AppDetails[] = [
+            { AppName: 'app1', DomainId: 'domain1', SpaceName: 'space1', AppType: AppType.CodeEditor },
+        ]
+        listAppsStub.returns(intoCollection([appDetails]))
+
+        const result = await client.listAppForSpace('domain1', 'space1')
+
+        assert.strictEqual(result?.AppName, 'app1')
+        sinon.assert.calledWith(listAppsStub, { DomainIdEquals: 'domain1', SpaceNameEquals: 'space1' })
+    })
+
+    it('returns undefined when no apps found', async function () {
+        listAppsStub.returns(intoCollection([[]]))
+
+        const result = await client.listAppForSpace('domain1', 'space1')
+
+        assert.strictEqual(result, undefined)
+    })
+})
+
+describe('SagemakerClient.listAppsForDomainMatchSpaceIgnoreCase', function () {
+    const region = 'test-region'
+    let client: SagemakerClient
+    let listAppForSpaceStub: sinon.SinonStub
+    let listAppsForDomainStub: sinon.SinonStub
+
+    beforeEach(function () {
+        client = new SagemakerClient(region)
+        listAppForSpaceStub = sinon.stub(client, 'listAppForSpace')
+        listAppsForDomainStub = sinon.stub(client, 'listAppsForDomain')
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('uses efficient listAppForSpace when space name is all lowercase', async function () {
+        const expectedApp: AppDetails = { AppName: 'app1', DomainId: 'domain1', SpaceName: 'myspace' }
+        listAppForSpaceStub.resolves(expectedApp)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'myspace')
+
+        assert.strictEqual(result, expectedApp)
+        sinon.assert.calledOnceWithExactly(listAppForSpaceStub, 'domain1', 'myspace')
+        sinon.assert.notCalled(listAppsForDomainStub)
+    })
+
+    it('fetches all apps and does case-insensitive match when space name has uppercase', async function () {
+        const apps: AppDetails[] = [
+            { AppName: 'app1', DomainId: 'domain1', SpaceName: 'MySpace' },
+            { AppName: 'app2', DomainId: 'domain1', SpaceName: 'OtherSpace' },
+        ]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result?.AppName, 'app1')
+        sinon.assert.calledOnceWithExactly(listAppsForDomainStub, 'domain1')
+        sinon.assert.notCalled(listAppForSpaceStub)
+    })
+
+    it('matches space name case-insensitively (lowercase query, uppercase in API)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'MYSPACE' }]
+        listAppsForDomainStub.resolves(apps)
+
+        // Query with mixed case triggers case-insensitive path
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result?.AppName, 'app1')
+    })
+
+    it('matches space name case-insensitively (uppercase query, lowercase in API)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'myspace' }]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MYSPACE')
+
+        assert.strictEqual(result?.AppName, 'app1')
+    })
+
+    it('returns undefined when no matching app found (case-insensitive path)', async function () {
+        const apps: AppDetails[] = [{ AppName: 'app1', DomainId: 'domain1', SpaceName: 'OtherSpace' }]
+        listAppsForDomainStub.resolves(apps)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('returns undefined when domain has no apps (case-insensitive path)', async function () {
+        listAppsForDomainStub.resolves([])
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'MySpace')
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('returns undefined when listAppForSpace returns undefined (lowercase path)', async function () {
+        listAppForSpaceStub.resolves(undefined)
+
+        const result = await client.listAppsForDomainMatchSpaceIgnoreCase('domain1', 'myspace')
+
+        assert.strictEqual(result, undefined)
+    })
+})
+
 describe('SagemakerClient.waitForAppInService', function () {
     const region = 'test-region'
     let client: SagemakerClient
@@ -216,10 +338,18 @@ describe('SagemakerClient.waitForAppInService', function () {
     it('times out after max retries', async function () {
         describeAppStub.resolves({ Status: 'Pending' })
 
-        await assert.rejects(
-            client.waitForAppInService('domain1', 'space1', 'CodeEditor', 2, 10),
-            /Timed out waiting for app/
-        )
+        const sagemakerModule = await import('../../../shared/clients/sagemaker.js')
+        const originalValue = sagemakerModule.waitForAppConfig.hardTimeoutRetries
+        sagemakerModule.waitForAppConfig.hardTimeoutRetries = 3
+
+        try {
+            await assert.rejects(
+                client.waitForAppInService('domain1', 'space1', 'CodeEditor'),
+                /Timed out waiting for app/
+            )
+        } finally {
+            sagemakerModule.waitForAppConfig.hardTimeoutRetries = originalValue
+        }
     })
 })
 
@@ -355,9 +485,10 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "Yes"
-        await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('Yes')
+        // Wait for the error message to appear and select "Restart Space and Connect"
+        const expectedMessage = InstanceTypeInsufficientMemoryMessage('my-space', 'ml.t3.medium', 'ml.t3.large')
+        await getTestWindow().waitForMessage(new RegExp(expectedMessage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+        getTestWindow().getFirstMessage().selectItem('Restart Space and Connect')
 
         await promise
         sinon.assert.calledOnce(updateSpaceStub)
@@ -380,9 +511,10 @@ describe('SagemakerClient.startSpace', function () {
 
         const promise = client.startSpace('my-space', 'my-domain')
 
-        // Wait for the error message to appear and select "No"
-        await getTestWindow().waitForMessage(/not supported for remote access/)
-        getTestWindow().getFirstMessage().selectItem('No')
+        // Wait for the error message to appear and select "Cancel"
+        const expectedMessage = InstanceTypeInsufficientMemoryMessage('my-space', 'ml.t3.medium', 'ml.t3.large')
+        await getTestWindow().waitForMessage(new RegExp(expectedMessage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+        getTestWindow().getFirstMessage().selectItem('Cancel')
 
         await assert.rejects(promise, (err: ToolkitError) => err.message === 'InstanceType has insufficient memory.')
     })

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { S3 } from '@aws-sdk/client-s3'
+import { S3, ListBucketsCommand } from '@aws-sdk/client-s3'
 import { getLogger } from '../../../shared/logger/logger'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
 
@@ -24,7 +24,7 @@ export interface S3Path {
  */
 export class S3Client {
     private s3Client: S3 | undefined
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         private readonly region: string,
@@ -45,7 +45,7 @@ export class S3Client {
         continuationToken?: string
     ): Promise<{ paths: S3Path[]; nextToken?: string }> {
         try {
-            this.logger.info(`S3Client: Listing paths in bucket ${bucket} with prefix ${prefix || 'root'}`)
+            this.logger.info(`S3Client: Listing paths in bucket ${bucket} with prefix ${prefix}`)
 
             const s3Client = await this.getS3Client()
 
@@ -112,6 +112,40 @@ export class S3Client {
             }
         } catch (err) {
             this.logger.error('S3Client: Failed to list paths: %s', err as Error)
+            throw err
+        }
+    }
+
+    /**
+     * Lists all S3 buckets accessible to the current credentials
+     * @returns Array of bucket objects
+     */
+    public async listBuckets(): Promise<Array<{ Name?: string; CreationDate?: Date }>> {
+        try {
+            this.logger.debug('S3Client: Listing all accessible buckets')
+
+            const s3Client = await this.getS3Client()
+            const allBuckets: Array<{ Name?: string; CreationDate?: Date }> = []
+            let continuationToken: string | undefined
+
+            do {
+                const response = await s3Client.send(
+                    new ListBucketsCommand({
+                        ContinuationToken: continuationToken,
+                        BucketRegion: this.region,
+                    })
+                )
+
+                if (response.Buckets) {
+                    allBuckets.push(...response.Buckets)
+                }
+                continuationToken = response.ContinuationToken
+            } while (continuationToken)
+
+            this.logger.debug(`S3Client: Found ${allBuckets.length} accessible buckets`)
+            return allBuckets
+        } catch (err) {
+            this.logger.error('S3Client: Failed to list buckets: %s', err as Error)
             throw err
         }
     }

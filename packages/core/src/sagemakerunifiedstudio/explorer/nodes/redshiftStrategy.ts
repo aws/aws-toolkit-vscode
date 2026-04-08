@@ -22,7 +22,8 @@ import {
 } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
-import { GlueCatalog } from '../../shared/client/glueCatalogClient'
+import { Catalog } from '@amzn/glue-catalog-client'
+import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 
@@ -32,7 +33,7 @@ import { recordDataConnectionTelemetry } from '../../shared/telemetry'
 export class RedshiftNode implements TreeNode {
     private childrenNodes: TreeNode[] | undefined
     private isLoading = false
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
 
     constructor(
         public readonly data: NodeData,
@@ -71,7 +72,7 @@ export class RedshiftNode implements TreeNode {
                 this.logger.error(`Failed to get children for node ${this.data.id}: ${(err as Error).message}`)
 
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'getChildren', this.id) as RedshiftNode]
             }
         }
@@ -119,7 +120,7 @@ export function createRedshiftConnectionNode(
     connection: DataZoneConnection,
     connectionCredentialsProvider: ConnectionCredentialsProvider
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     return new RedshiftNode(
         {
             id: connection.connectionId,
@@ -168,7 +169,7 @@ export function createRedshiftConnectionNode(
 
                 // Fetch Glue catalogs for filtering purposes only
                 // This will help determine which catalogs are accessible within the project
-                let glueCatalogs: GlueCatalog[] = []
+                let glueCatalogs: Catalog[] = []
                 try {
                     glueCatalogs = await listGlueCatalogs(
                         connection.connectionId,
@@ -209,9 +210,10 @@ export function createRedshiftConnectionNode(
                 // Add database nodes
                 if (filteredDatabases.length === 0) {
                     if (databasesResult.status === 'rejected') {
+                        const error = databasesResult.reason as Error
                         const errorMessage = `Failed to fetch databases - ${databasesResult.reason?.message || databasesResult.reason}.`
-                        void vscode.window.showErrorMessage(errorMessage)
                         allNodes.push(createErrorItem(errorMessage, 'databases', node.id) as RedshiftNode)
+                        await handleCredExpiredError(error, true)
                     } else {
                         allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
                     }
@@ -226,9 +228,10 @@ export function createRedshiftConnectionNode(
                 // Add catalog nodes
                 if (filteredCatalogs.length === 0) {
                     if (catalogsResult.status === 'rejected') {
+                        const error = catalogsResult.reason as Error
                         const errorMessage = `Failed to fetch catalogs - ${catalogsResult.reason?.message || catalogsResult.reason}`
-                        void vscode.window.showErrorMessage(errorMessage)
                         allNodes.push(createErrorItem(errorMessage, 'catalogs', node.id) as RedshiftNode)
+                        await handleCredExpiredError(error, true)
                     } else {
                         allNodes.push(createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode)
                     }
@@ -289,7 +292,7 @@ async function wakeUpDatabase(
     connectionCredentialsProvider: ConnectionCredentialsProvider,
     connection: DataZoneConnection
 ) {
-    const logger = getLogger()
+    const logger = getLogger('smus')
     const clientStore = ConnectionClientStore.getInstance()
     const sqlClient = clientStore.getSQLWorkbenchClient(connection.connectionId, region, connectionCredentialsProvider)
     try {
@@ -307,7 +310,7 @@ function createDatabaseNode(
     connectionConfig: ConnectionConfig,
     parent: RedshiftNode
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {
@@ -384,7 +387,7 @@ function createDatabaseNode(
             } catch (err) {
                 logger.error(`Failed to get schemas: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'schemas', node.id) as RedshiftNode]
             }
         }
@@ -395,7 +398,7 @@ function createDatabaseNode(
  * Creates a schema node
  */
 function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig, parent: RedshiftNode): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {
@@ -438,9 +441,15 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
 
                 // Get schema objects
                 // Make sure we're using the correct database in the connection config
+                const databaseName = parent.data.path?.database || connectionConfig.database
+                if (!databaseName) {
+                    logger.error('Database name is required but was not found in path or connection config')
+                    return [createErrorItem('Database name is missing', 'schema-contents', node.id) as RedshiftNode]
+                }
+
                 const schemaConnectionConfig = {
                     ...connectionConfig,
-                    database: parent.data.path?.database || connectionConfig.database,
+                    database: databaseName,
                 }
 
                 // Create request params object for logging
@@ -455,7 +464,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
                             parentType: ResourceType.SCHEMA,
                         },
                         {
-                            parentId: schemaConnectionConfig.database,
+                            parentId: databaseName,
                             parentType: ResourceType.DATABASE,
                         },
                     ],
@@ -521,7 +530,7 @@ function createSchemaNode(schemaName: string, connectionConfig: ConnectionConfig
             } catch (err) {
                 logger.error(`Failed to get schema contents: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'schema-contents', node.id) as RedshiftNode]
             }
         }
@@ -578,7 +587,7 @@ function createObjectNode(
     connectionConfig: ConnectionConfig,
     parent: RedshiftNode
 ): RedshiftNode {
-    const logger = getLogger()
+    const logger = getLogger('smus')
 
     return new RedshiftNode(
         {
@@ -689,7 +698,7 @@ function createObjectNode(
             } catch (err) {
                 logger.error(`Failed to get columns: ${(err as Error).message}`)
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'columns', node.id) as RedshiftNode]
             }
         }
@@ -768,7 +777,7 @@ async function listGlueCatalogs(
     connectionId: string,
     region: string,
     connectionCredentialsProvider: ConnectionCredentialsProvider
-): Promise<GlueCatalog[]> {
+): Promise<Catalog[]> {
     const clientStore = ConnectionClientStore.getInstance()
     const glueCatalogClient = clientStore.getGlueCatalogClient(connectionId, region, connectionCredentialsProvider)
 
@@ -870,7 +879,7 @@ function createCatalogDatabaseNode(
                 return [createContainerNode(NodeType.REDSHIFT_TABLE, tables, connectionConfig, node)]
             } catch (err) {
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'catalog-tables', node.id) as RedshiftNode]
             }
         }
@@ -967,7 +976,7 @@ function createCatalogTableNode(
                     : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
             } catch (err) {
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'catalog-columns', node.id) as RedshiftNode]
             }
         }
@@ -1030,7 +1039,7 @@ function createCatalogNode(
                     : [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as RedshiftNode]
             } catch (err) {
                 const errorMessage = (err as Error).message
-                void vscode.window.showErrorMessage(errorMessage)
+                await handleCredExpiredError(err, true)
                 return [createErrorItem(errorMessage, 'catalog-databases', node.id) as RedshiftNode]
             }
         }

@@ -16,6 +16,7 @@ describe('ConnectionCredentialsProvider', function () {
     let connectionProvider: ConnectionCredentialsProvider
     let dataZoneClientStub: sinon.SinonStub
 
+    const testProjectId = 'proj-123456'
     const testConnectionId = 'conn-123456'
     const testDomainId = 'dzd_testdomain'
     const testRegion = 'us-east-2'
@@ -42,6 +43,13 @@ describe('ConnectionCredentialsProvider', function () {
             isConnected: sinon.stub().returns(true),
             getDomainId: sinon.stub().returns(testDomainId),
             getDomainRegion: sinon.stub().returns(testRegion),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
             activeConnection: {
                 ssoRegion: testRegion,
             },
@@ -52,10 +60,10 @@ describe('ConnectionCredentialsProvider', function () {
             getConnection: sinon.stub().resolves(mockGetConnectionResponse),
         } as any
 
-        // Stub DataZoneClient.getInstance
-        dataZoneClientStub = sinon.stub(DataZoneClient, 'getInstance').resolves(mockDataZoneClient as any)
+        // Stub DataZoneClient.createWithCredentials
+        dataZoneClientStub = sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
 
-        connectionProvider = new ConnectionCredentialsProvider(mockAuthProvider as any, testConnectionId)
+        connectionProvider = new ConnectionCredentialsProvider(mockAuthProvider as any, testConnectionId, testProjectId)
     })
 
     afterEach(function () {

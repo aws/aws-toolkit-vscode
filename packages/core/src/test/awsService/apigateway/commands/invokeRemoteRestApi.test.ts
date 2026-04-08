@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { listValidMethods } from '../../../../awsService/apigateway/vue/invokeRemoteRestApi'
-import { Resource } from 'aws-sdk/clients/apigateway'
+import { Resource } from '@aws-sdk/client-api-gateway'
 
 describe('listValidMethods', function () {
     const allMethods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']

@@ -63,6 +63,7 @@ describe('SagemakerSpace', function () {
 
             mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
             mockClient.describeApp.resolves(mockDescribeAppResponse)
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockDescribeAppResponse)
 
             const space = new SagemakerSpace(mockClient as any, 'us-east-1', mockSpaceApp)
             const updateSpaceSpy = sinon.spy(space, 'updateSpace')
@@ -107,9 +108,8 @@ describe('SagemakerSpace', function () {
                 Status: 'InService',
                 $metadata: { requestId: 'test-request-id' },
             }
-
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockDescribeAppResponse)
             mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
-            mockClient.describeApp.resolves(mockDescribeAppResponse)
 
             const space = new SagemakerSpace(mockClient as any, 'us-east-1', mockSpaceApp)
             const updateSpaceSpy = sinon.spy(space, 'updateSpace')
@@ -124,6 +124,38 @@ describe('SagemakerSpace', function () {
             assert.strictEqual(updateSpaceArgs.SpaceSettingsSummary, undefined)
             assert.strictEqual(updateSpaceArgs.OwnershipSettingsSummary, undefined)
             assert.strictEqual(updateSpaceArgs.SpaceSharingSettingsSummary, undefined)
+        })
+
+        it('should update app status using listAppsForDomainMatchSpaceIgnoreCase', async function () {
+            const mockDescribeSpaceResponse = {
+                SpaceName: 'test-space',
+                Status: 'InService',
+                DomainId: 'test-domain',
+                $metadata: { requestId: 'test-request-id' },
+            }
+
+            const mockAppFromList = {
+                AppName: 'listed-app',
+                Status: 'InService',
+                $metadata: { requestId: 'test-request-id' },
+            }
+
+            mockClient.describeSpace.resolves(mockDescribeSpaceResponse)
+            mockClient.listAppsForDomainMatchSpaceIgnoreCase.resolves(mockAppFromList)
+
+            // Create space without App.AppName
+            const spaceWithoutAppName: SagemakerSpaceApp = {
+                ...mockSpaceApp,
+                App: undefined,
+            }
+
+            const space = new SagemakerSpace(mockClient as any, 'us-east-1', spaceWithoutAppName)
+            await space.updateSpaceAppStatus()
+
+            // Verify listAppsForDomainMatchSpaceIgnoreCase was called instead of describeApp
+            assert.ok(mockClient.listAppsForDomainMatchSpaceIgnoreCase.calledOnce)
+            assert.ok(mockClient.listAppsForDomainMatchSpaceIgnoreCase.calledWith('test-domain', 'test-space'))
+            assert.ok(mockClient.describeApp.notCalled)
         })
     })
 })

@@ -9,13 +9,13 @@ import assert from 'assert'
 import { AppType } from '@aws-sdk/client-sagemaker'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../../shared/clients/sagemaker'
 import { SagemakerSpaceNode } from '../../../../awsService/sagemaker/explorer/sagemakerSpaceNode'
-import { SagemakerParentNode } from '../../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { SagemakerStudioNode } from '../../../../awsService/sagemaker/explorer/sagemakerStudioNode'
 import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('SagemakerSpaceNode', function () {
     const testRegion = 'testRegion'
     let client: SagemakerClient
-    let testParent: SagemakerParentNode
+    let testParent: SagemakerStudioNode
     let testSpaceApp: SagemakerSpaceApp
     let describeAppStub: sinon.SinonStub
     let testSpaceAppNode: SagemakerSpaceNode
@@ -34,7 +34,7 @@ describe('SagemakerSpaceNode', function () {
 
         sinon.stub(PollingSet.prototype, 'add')
         client = new SagemakerClient(testRegion)
-        testParent = new SagemakerParentNode(testRegion, client)
+        testParent = new SagemakerStudioNode(testRegion, client)
 
         describeAppStub = sinon.stub(SagemakerClient.prototype, 'describeApp')
         testSpaceAppNode = new SagemakerSpaceNode(testParent, client, testRegion, testSpaceApp)
@@ -112,11 +112,13 @@ describe('SagemakerSpaceNode', function () {
     it('updates space app status', async function () {
         const describeSpaceStub = sinon.stub(SagemakerClient.prototype, 'describeSpace')
         describeSpaceStub.resolves({ SpaceName: 'TestSpace', Status: 'InService', $metadata: {} })
-        describeAppStub.resolves({ AppName: 'TestApp', Status: 'InService', $metadata: {} })
+
+        const listAppsMatchSpaceStub = sinon.stub(SagemakerClient.prototype, 'listAppsForDomainMatchSpaceIgnoreCase')
+        listAppsMatchSpaceStub.resolves({ AppName: 'TestApp', Status: 'InService' })
 
         await testSpaceAppNode.updateSpaceAppStatus()
 
         sinon.assert.calledOnce(describeSpaceStub)
-        sinon.assert.calledOnce(describeAppStub)
+        sinon.assert.calledOnce(listAppsMatchSpaceStub)
     })
 })

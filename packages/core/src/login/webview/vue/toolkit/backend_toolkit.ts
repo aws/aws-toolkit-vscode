@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { tryAddCredentials } from '../../../../auth/utils'
+import { setupConsoleConnection, tryAddCredentials } from '../../../../auth/utils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
@@ -84,6 +84,35 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             void vscode.window.showInformationMessage('Toolkit: Successfully connected to AWS IAM Identity Center')
             void this.showResourceExplorer()
         })
+    }
+
+    async startConsoleCredentialSetup(profileName: string, region: string): Promise<AuthError | undefined> {
+        getLogger().debug(`called startConsoleCredentialSetup()`)
+        const runAuth = async () => {
+            try {
+                await setupConsoleConnection(profileName, region)
+
+                // Hide auth view and show resource explorer
+                await setContext('aws.explorer.showAuthView', false)
+                await this.showResourceExplorer()
+
+                return undefined // Success case returns undefined
+            } catch (err) {
+                getLogger().error('Failed setting up authentication with console credentials : %O', err)
+                return {
+                    id: this.id,
+                    text: err instanceof Error ? err.message : String(err),
+                }
+            }
+        }
+        const result = await runAuth()
+        this.storeMetricMetadata({
+            credentialSourceId: 'consoleCredentials',
+            authEnabledFeatures: 'awsExplorer',
+            ...this.getResultForMetrics(result),
+        })
+        this.emitAuthMetric()
+        return result
     }
 
     async startIamCredentialSetup(

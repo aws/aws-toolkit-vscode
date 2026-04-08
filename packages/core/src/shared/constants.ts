@@ -43,7 +43,8 @@ export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 export const ssoCredentialsHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html'
-
+export const consoleSessionHelpUrl: string =
+    'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html#cli-configure-sign-in-prerequisites'
 export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 export const createUrlForLambdaFunctionUrl = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'

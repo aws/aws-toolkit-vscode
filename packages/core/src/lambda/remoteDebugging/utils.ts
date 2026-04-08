@@ -3,39 +3,54 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import IoTSecureTunneling from 'aws-sdk/clients/iotsecuretunneling'
+import { IoTSecureTunnelingClient } from '@aws-sdk/client-iotsecuretunneling'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
-import { getUserAgent } from '../../shared/telemetry/util'
+import { getUserAgentPairs, userAgentPairsToString } from '../../shared/telemetry/util'
 import globals from '../../shared/extensionGlobals'
+import type { UserAgent } from '@aws-sdk/types'
 
-const customUserAgentBase = 'LAMBDA-DEBUG/1.0.0'
+const customUserAgentName = 'LAMBDA-DEBUG'
+const customUserAgentVersion = '1.0.0'
 
-export function getLambdaClientWithAgent(region: string, customUserAgent?: string): DefaultLambdaClient {
+export function getLambdaClientWithAgent(region: string, customUserAgent?: UserAgent): DefaultLambdaClient {
     if (!customUserAgent) {
-        customUserAgent = getLambdaUserAgent()
+        customUserAgent = getLambdaUserAgentPairs()
     }
     return new DefaultLambdaClient(region, customUserAgent)
 }
 
-// Example user agent:
-// LAMBDA-DEBUG/1.0.0 AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/1.102.2 ClientId/11111111-1111-1111-1111-111111111111
+/**
+ * Returns properly formatted UserAgent pairs for AWS SDK v3
+ */
+export function getLambdaDebugUserAgentPairs(): UserAgent {
+    return [
+        [customUserAgentName, customUserAgentVersion],
+        ...getUserAgentPairs({ includePlatform: true, includeClientId: true }),
+    ]
+}
+
+/**
+ * Returns properly formatted UserAgent pairs for AWS SDK v3
+ */
+export function getLambdaUserAgentPairs(): UserAgent {
+    return getUserAgentPairs({ includePlatform: true, includeClientId: true })
+}
+
+/**
+ * Returns user agent string for Lambda debugging in traditional format.
+ * Example: "LAMBDA-DEBUG/1.0.0 AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/1.105.1 ClientId/11111111-1111-1111-1111-111111111111"
+ */
 export function getLambdaDebugUserAgent(): string {
-    return `${customUserAgentBase} ${getLambdaUserAgent()}`
+    return userAgentPairsToString(getLambdaDebugUserAgentPairs())
 }
 
-// Example user agent:
-// AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/1.102.2 ClientId/11111111-1111-1111-1111-111111111111
-export function getLambdaUserAgent(): string {
-    return `${getUserAgent({ includePlatform: true, includeClientId: true })}`
-}
-
-export function getIoTSTClientWithAgent(region: string): Promise<IoTSecureTunneling> {
-    const customUserAgent = `${customUserAgentBase} ${getUserAgent({ includePlatform: true, includeClientId: true })}`
-    return globals.sdkClientBuilder.createAwsService(
-        IoTSecureTunneling,
-        {
-            customUserAgent,
+export function getIoTSTClientWithAgent(region: string): IoTSecureTunnelingClient {
+    return globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: IoTSecureTunnelingClient,
+        clientOptions: {
+            customUserAgent: getLambdaDebugUserAgentPairs(),
+            region,
         },
-        region
-    )
+        userAgent: false,
+    })
 }

@@ -8,7 +8,13 @@ import * as sinon from 'sinon'
 import * as os from 'os'
 import * as path from 'path'
 import { DevSettings, fs, ToolkitError } from '../../../shared'
-import { removeKnownHost, startLocalServer, stopLocalServer } from '../../../awsService/sagemaker/model'
+import {
+    startLocalServer,
+    stopLocalServer,
+    startRemoteViaSageMakerSshKiro,
+    getSshPrefix,
+} from '../../../awsService/sagemaker/model'
+import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
 import assert from 'assert'
 
@@ -211,6 +217,28 @@ describe('SageMaker Model', () => {
             assertLogsContain(`Removed '${hostname}' from known_hosts`, false, 'debug')
         })
 
+        it('removes case-sensitive hostname when entry in known_hosts is lowercase', async function () {
+            const mixedCaseHostname = 'Test.Host.Com'
+
+            sandbox.stub(fs, 'existsFile').resolves(true)
+
+            const inputContent = `test.host.com ssh-rsa AAAA\nsome.other.com ssh-rsa BBBB`
+            const expectedOutput = `some.other.com ssh-rsa BBBB`
+
+            sandbox.stub(fs, 'readFileText').resolves(inputContent)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await removeKnownHost(mixedCaseHostname)
+
+            sinon.assert.calledWith(
+                writeStub,
+                path.join(os.homedir(), '.ssh', 'known_hosts'),
+                sinon.match((value: string) => value.trim() === expectedOutput),
+                { atomic: true }
+            )
+            assertLogsContain(`Removed '${mixedCaseHostname}' from known_hosts`, false, 'debug')
+        })
+
         it('handles hostname in comma-separated list', async function () {
             sandbox.stub(fs, 'existsFile').resolves(true)
 
@@ -278,5 +306,96 @@ describe('SageMaker Model', () => {
                 assert.strictEqual((err as ToolkitError).cause?.message, 'write failed')
             }
         })
+    })
+
+    describe('startRemoteViaSageMakerSshKiro', function () {
+        let sandbox: sinon.SinonSandbox
+        let mockProcessClass: sinon.SinonStub
+        let mockProcessInstance: { run: sinon.SinonStub }
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            mockProcessInstance = { run: sandbox.stub().resolves() }
+            mockProcessClass = sandbox.stub().returns(mockProcessInstance)
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('constructs correct workspace URI without user', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/home/sagemaker-user',
+                '/usr/bin/code'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+space_arn/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
+
+        it('constructs correct workspace URI with user', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/home/sagemaker-user',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@space_arn/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
+
+        it('handles different target directories', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'space_arn',
+                '/workspace/project',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@space_arn/workspace/project`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
+    })
+})
+
+describe('getSshPrefix', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns sm_ for vscode sagemaker connection', function () {
+        sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'sm_')
+        assert.strictEqual(getSshPrefix('sm_dl'), 'sm_')
+    })
+
+    it('returns smc_ for cursor sagemaker connection', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'smc_')
+        assert.strictEqual(getSshPrefix('sm_dl'), 'smc_')
+    })
+
+    it('returns smhp_ for hyperpod connection regardless of IDE', function () {
+        sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+        assert.strictEqual(getSshPrefix('sm_hp'), 'smhp_')
+    })
+
+    it('returns sm_ for unknown IDE type', function () {
+        sandbox.stub(vscode.env, 'appName').value('SomeOtherIDE')
+        assert.strictEqual(getSshPrefix('sm_lc'), 'sm_')
     })
 })

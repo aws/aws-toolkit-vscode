@@ -12,6 +12,7 @@ import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
+import { getContext } from '../../../shared/vscode/setContext'
 
 /**
  * Credentials provider for SageMaker Unified Studio Connection credentials
@@ -19,7 +20,7 @@ import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smu
  * This provider implements independent caching with 10-minute expiry
  */
 export class ConnectionCredentialsProvider implements CredentialsProvider {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private credentialCache?: {
         credentials: AWS.Credentials
         expiresAt: Date
@@ -27,7 +28,8 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
 
     constructor(
         private readonly smusAuthProvider: SmusAuthenticationProvider,
-        private readonly connectionId: string
+        private readonly connectionId: string,
+        private readonly projectId: string
     ) {}
 
     /**
@@ -106,7 +108,7 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
         try {
             return this.smusAuthProvider.isConnected()
         } catch (err) {
-            this.logger.error('SMUS Connection: Error checking if auth provider is connected: %s', err)
+            this.logger.error('Error checking if auth provider is connected: %s', err)
             return false
         }
     }
@@ -116,7 +118,7 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
      * @returns Promise resolving to credentials
      */
     public async getCredentials(): Promise<AWS.Credentials> {
-        this.logger.debug(`SMUS Connection: Getting credentials for connection ${this.connectionId}`)
+        this.logger.debug(`Getting credentials for connection ${this.connectionId}`)
 
         // Check cache first (10-minute expiry)
         if (this.credentialCache && this.credentialCache.expiresAt > new Date()) {
@@ -131,14 +133,21 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
         )
 
         try {
-            const datazoneClient = await DataZoneClient.getInstance(this.smusAuthProvider)
+            if (getContext('aws.smus.isIamMode') && this.projectId) {
+                return (await this.smusAuthProvider.getProjectCredentialProvider(this.projectId)).getCredentials()
+            }
+            const datazoneClient = DataZoneClient.createWithCredentials(
+                this.smusAuthProvider.getDomainRegion(),
+                this.smusAuthProvider.getDomainId(),
+                await this.smusAuthProvider.getDerCredentialsProvider()
+            )
             const getConnectionResponse = await datazoneClient.getConnection({
                 domainIdentifier: this.smusAuthProvider.getDomainId(),
                 identifier: this.connectionId,
                 withSecret: true,
             })
 
-            this.logger.debug(`SMUS Connection: Successfully retrieved connection details for ${this.connectionId}`)
+            this.logger.debug(`Successfully retrieved connection details for ${this.connectionId}`)
 
             // Extract connection credentials
             const connectionCredentials = getConnectionResponse.connectionCredentials
@@ -219,7 +228,7 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
      * Clears the internal cache without fetching new credentials
      */
     public invalidate(): void {
-        this.logger.debug(`SMUS Connection: Invalidating cached credentials for connection ${this.connectionId}`)
+        this.logger.debug(`Invalidating cached credentials for connection ${this.connectionId}`)
         // Clear cache to force fresh fetch on next getCredentials() call
         this.credentialCache = undefined
         this.logger.debug(

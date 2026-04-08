@@ -10,12 +10,13 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
+import { consoleSessionHelpUrl } from '../shared/constants'
 import { codicon, getIcon } from '../shared/icons'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { formatError, ToolkitError } from '../shared/errors'
-import { asString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
@@ -898,4 +899,47 @@ export function isLocalStackConnection(): boolean {
     return (
         globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
     )
+}
+
+/**
+ * Constructs a credentials ID from a profile name.
+ *
+ * @param profileName - Profile name
+ * @returns Credentials ID string
+ */
+export function getConnectionIdFromProfile(profileName: string): string {
+    const credentialsId: CredentialsId = {
+        credentialSource: 'profile',
+        credentialTypeId: profileName,
+    }
+    return asString(credentialsId)
+}
+
+/**
+ * Sets up and activates a console connection via browser login.
+ * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ *
+ * @param profileName - Profile name (typically Lambda function name)
+ * @param region - AWS region
+ * @throws Error if console login fails or user cancels
+ */
+export async function setupConsoleConnection(profileName: string, region: string): Promise<void> {
+    getLogger().info('Auth: Sets up a connection via browser login for profile: %s, region: %s', profileName, region)
+    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+    const connectionId = getConnectionIdFromProfile(profileName)
+    // Verify connection was actually created before trying to use it.
+    // The telemetry wrapper around the console login command catches and logs errors but returns undefined
+    // instead of re-throwing them. When users cancel (userCancelled=true), the command completes without error,
+    // so we must check if the connection exists before attempting to use it to avoid confusing downstream errors.
+    const connection = await Auth.instance.getConnection({ id: connectionId })
+    if (!connection) {
+        const message = 'Unable to connect to AWS. Console login was cancelled or did not complete successfully.'
+        void vscode.window.showWarningMessage(message, localizedText.learnMore).then((selection) => {
+            if (selection === localizedText.learnMore) {
+                void vscode.env.openExternal(vscode.Uri.parse(consoleSessionHelpUrl))
+            }
+        })
+        throw new ToolkitError(message, { cancelled: true })
+    }
+    await Auth.instance.useConnection({ id: connectionId })
 }

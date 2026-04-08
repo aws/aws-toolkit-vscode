@@ -28,6 +28,7 @@ import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { getSampleLambdaPayloads } from '../../utils'
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
+import { isFunctionResource } from '../../../awsService/appBuilder/explorer/samProject'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
@@ -47,6 +48,7 @@ export interface ResourceData {
     runtime: string
     stackName: string
     source: string
+    hasTenancyConfig?: boolean
     environment?: {
         Variables: Record<string, any>
     }
@@ -441,6 +443,10 @@ export async function registerSamDebugInvokeVueCommand(
         (config) => (config.invokeTarget as TemplateTargetProperties).logicalId === resource.resource.Id
     )
 
+    if (!isFunctionResource(resource.resource)) {
+        throw new ToolkitError('Resource is not a Lambda function')
+    }
+
     const webview = new WebviewPanel(context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
@@ -451,6 +457,7 @@ export async function registerSamDebugInvokeVueCommand(
         stackName: resource.stackName ?? '',
         environment: resource.resource.Environment,
         source: source,
+        hasTenancyConfig: !!resource.resource.TenancyConfig,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {
         telemetry.record({ source: 'AppBuilderDebugger' }),

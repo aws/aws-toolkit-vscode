@@ -20,6 +20,7 @@ import {
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 export interface ValidationResult {
     isValid: boolean
@@ -187,7 +188,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 }
             }
             // can't infer the runtime for image-based lambdas
-            if (!config.lambda?.runtime || !samImageLambdaRuntimes().has(config.lambda.runtime)) {
+            if (!config.lambda?.runtime || !samImageLambdaRuntimes().has(config.lambda.runtime as Runtime)) {
                 return {
                     isValid: false,
                     message: localize(
@@ -201,7 +202,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             // TODO: Decide what to do with this re: refs.
             // As of now, this has to be directly declared without a ref, despite the fact that SAM will handle a ref.
             // Should we just pass validation off to SAM and ignore validation at this point, or should we directly process the value (like the handler)?
-            const runtime = CloudFormation.getStringForProperty(resource?.Properties, 'Runtime', cfnTemplate)
+            const runtime = CloudFormation.getStringForProperty(resource?.Properties, 'Runtime', cfnTemplate) as Runtime
             if (!runtime || !samZipLambdaRuntimes.has(runtime)) {
                 return {
                     isValid: false,
@@ -262,7 +263,10 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     }
 
     private validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!debugConfiguration.lambda?.runtime || !samZipLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
+        if (
+            !debugConfiguration.lambda?.runtime ||
+            !samZipLambdaRuntimes.has(debugConfiguration.lambda.runtime as Runtime)
+        ) {
             return {
                 isValid: false,
                 message: localize(

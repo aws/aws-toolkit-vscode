@@ -150,6 +150,9 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
         Commands.register('aws.toolkit.installLocalStack', async () => {
             await installLocalStackExtension(source)
         }),
+        Commands.register('aws.toolkit.installFinch', async () => {
+            await getOrInstallCliWrapper('finch', source)
+        }),
         Commands.register('aws.toolkit.lambda.setWalkthroughToAPI', async () => {
             await setWalkthrough('API')
         }),
