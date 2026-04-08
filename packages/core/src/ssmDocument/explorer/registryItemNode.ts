@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
+import { DocumentIdentifier, ListDocumentsRequest } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 
 import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
@@ -64,8 +64,8 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getDocumentByOwner(client: SsmDocumentClient): Promise<SSM.DocumentIdentifier[]> {
-        const request: SSM.ListDocumentsRequest = {
+    private async getDocumentByOwner(client: SsmDocumentClient): Promise<DocumentIdentifier[]> {
+        const request: ListDocumentsRequest = {
             Filters: [
                 {
                     Key: 'DocumentType',
@@ -95,7 +95,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const documents = new Map<string, SSM.Types.DocumentIdentifier>()
+        const documents = new Map<string, DocumentIdentifier>()
 
         const docs = await this.getDocumentByOwner(this.client)
         for (const doc of docs) {

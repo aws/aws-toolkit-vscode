@@ -26,7 +26,7 @@ import {
 import { downloadUnzip, getLambdaClient, getCFNClient, isPermissionError } from '../utils'
 import { openProjectInWorkspace } from '../walkthrough'
 import { ToolkitError } from '../../../shared/errors'
-import { ResourcesToImport, StackResource } from 'aws-sdk/clients/cloudformation'
+import { ResourceToImport, StackResource } from '@aws-sdk/client-cloudformation'
 import { SignatureV4 } from '@smithy/signature-v4'
 import { Sha256 } from '@aws-crypto/sha256-js'
 import { getIAMConnection } from '../../../auth/utils'
@@ -79,7 +79,7 @@ export async function lambdaToSam(lambdaNode: LambdaFunctionNode): Promise<void>
                     progress.report({ increment: 30, message: 'Generating template...' })
                     // 2.1 call api to get CFN
                     let cfnTemplate: Template
-                    let resourcesToImport: ResourcesToImport
+                    let resourcesToImport: ResourceToImport[]
                     try {
                         ;[cfnTemplate, resourcesToImport] = await callExternalApiForCfnTemplate(lambdaNode)
                     } catch (error) {
@@ -282,7 +282,7 @@ export function ifSamTemplate(template: Template): boolean {
  */
 export async function callExternalApiForCfnTemplate(
     lambdaNode: LambdaFunctionNode
-): Promise<[Template, ResourcesToImport]> {
+): Promise<[Template, ResourceToImport[]]> {
     const conn = await getIAMConnection()
     if (!conn || conn.type !== 'iam') {
         return [{}, []]
@@ -333,7 +333,7 @@ export async function callExternalApiForCfnTemplate(
 
     let status: string | undefined = 'CREATE_IN_PROGRESS'
     let getGeneratedTemplateResponse
-    let resourcesToImport: ResourcesToImport = []
+    let resourcesToImport: ResourceToImport[] = []
     const cfn = await getCFNClient(lambdaNode.regionCode)
 
     // Wait for template generation to complete
@@ -438,7 +438,7 @@ async function promptForProjectLocation(): Promise<vscode.Uri[] | undefined> {
  */
 export async function deployCfnTemplate(
     template: Template,
-    resourcesToImport: ResourcesToImport,
+    resourcesToImport: ResourceToImport[],
     stackName: string,
     region: string
 ): Promise<StackInfo> {
@@ -901,13 +901,13 @@ export async function getPhysicalIdfromCFNResourceName(
 
         // Find resources that start with the given name (SAM transform often adds suffixes)
         const matchingResources = resources.StackResources.filter((resource: StackResource) =>
-            resource.LogicalResourceId.startsWith(name)
+            resource.LogicalResourceId?.startsWith(name)
         )
 
         if (matchingResources.length === 0) {
             // Try a more flexible approach - check if the resource name is a substring
             const substringMatches = resources.StackResources.filter((resource: StackResource) =>
-                resource.LogicalResourceId.includes(name)
+                resource.LogicalResourceId?.includes(name)
             )
 
             if (substringMatches.length === 0) {
@@ -926,7 +926,8 @@ export async function getPhysicalIdfromCFNResourceName(
         // If we have multiple matches, prefer exact prefix match
         // Sort by length to get the closest match (shortest additional suffix)
         matchingResources.sort(
-            (a: StackResource, b: StackResource) => a.LogicalResourceId.length - b.LogicalResourceId.length
+            (a: StackResource, b: StackResource) =>
+                (a.LogicalResourceId?.length ?? 0) - (b.LogicalResourceId?.length ?? 0)
         )
 
         const bestMatch = matchingResources[0]

@@ -26,7 +26,9 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
 
     constructor(
         protected config: Config,
-        loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp'>
+        loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp' | 'awsCfnLsp'>,
+        private manifestResolver?: ManifestResolver,
+        private readonly hashAlgorithm: string = 'sha384'
     ) {
         this.logger = getLogger(loggerName)
     }
@@ -45,7 +47,9 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
             }
         }
 
-        const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
+        const manifest = this.manifestResolver
+            ? await this.manifestResolver.resolve()
+            : await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
             id, // TODO: We may want a display name instead of the ID
@@ -53,7 +57,8 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
                 includePrerelease: true,
             }),
             manifestUrl,
-            this.downloadMessageOverride
+            this.downloadMessageOverride,
+            this.hashAlgorithm
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory

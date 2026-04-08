@@ -13,12 +13,12 @@ import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 import * as os from 'os'
 import { crossFileContextConfig } from '../../models/constants'
-import { LanguageClient } from 'vscode-languageclient'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken,
-    languageClient?: LanguageClient
+    languageClient?: BaseLanguageClient
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = Date.now()
 

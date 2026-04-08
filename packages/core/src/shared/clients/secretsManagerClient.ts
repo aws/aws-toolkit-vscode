@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SecretsManager } from 'aws-sdk'
-import globals from '../extensionGlobals'
 import {
+    CreateSecretCommand,
     CreateSecretRequest,
     CreateSecretResponse,
+    ListSecretsCommand,
     ListSecretsRequest,
     ListSecretsResponse,
-} from 'aws-sdk/clients/secretsmanager'
+    SecretsManagerClient as SecretsManagerSdkClient,
+} from '@aws-sdk/client-secrets-manager'
+import globals from '../extensionGlobals'
 import { productName } from '../constants'
 
 export class SecretsManagerClient {
@@ -18,7 +20,7 @@ export class SecretsManagerClient {
         public readonly regionCode: string,
         private readonly secretsManagerClientProvider: (
             regionCode: string
-        ) => Promise<SecretsManager> = createSecretsManagerClient
+        ) => SecretsManagerSdkClient = createSecretsManagerClient
     ) {}
 
     /**
@@ -27,7 +29,7 @@ export class SecretsManagerClient {
      * @returns a list of the secrets
      */
     public async listSecrets(filter: string): Promise<ListSecretsResponse> {
-        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
+        const secretsManagerClient = this.secretsManagerClientProvider(this.regionCode)
         const request: ListSecretsRequest = {
             IncludePlannedDeletion: false,
             Filters: [
@@ -38,11 +40,11 @@ export class SecretsManagerClient {
             ],
             SortOrder: 'desc',
         }
-        return secretsManagerClient.listSecrets(request).promise()
+        return secretsManagerClient.send(new ListSecretsCommand(request))
     }
 
     public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretResponse> {
-        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
+        const secretsManagerClient = this.secretsManagerClientProvider(this.regionCode)
         const request: CreateSecretRequest = {
             Description: `Database secret created with ${productName}`,
             Name: secretString ? secretString : '',
@@ -59,10 +61,13 @@ export class SecretsManagerClient {
             ],
             ForceOverwriteReplicaSecret: true,
         }
-        return secretsManagerClient.createSecret(request).promise()
+        return secretsManagerClient.send(new CreateSecretCommand(request))
     }
 }
 
-async function createSecretsManagerClient(regionCode: string): Promise<SecretsManager> {
-    return await globals.sdkClientBuilder.createAwsService(SecretsManager, { computeChecksums: true }, regionCode)
+function createSecretsManagerClient(regionCode: string): SecretsManagerSdkClient {
+    return globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: SecretsManagerSdkClient,
+        clientOptions: { region: regionCode },
+    })
 }

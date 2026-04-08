@@ -120,6 +120,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 diffPath: '',
                 summaryPath: '',
                 jobId: transformByQState.getJobId(),
+                transformationType: current.transformationType,
+                sourceJDKVersion: current.sourceJDKVersion,
+                targetJDKVersion: current.targetJDKVersion,
+                customDependencyVersionFilePath: current.customDependencyVersionsFilePath,
+                customBuildCommand: current.customBuildCommand,
             })
         }
         return `<!DOCTYPE html>
@@ -208,6 +213,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <th>Summary File</th>
                         <th>Job Id</th>
                         <th>Refresh Job</th>
+                        <th>Transformation Type</th>
+                        <th>Source JDK Version</th>
+                        <th>Target JDK Version</th>
+                        <th>Custom Dependency Version File Path</th>
+                        <th>Custom Build Command</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -242,6 +252,11 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                                 ↻
                             </button>
                         </td>
+                        <td>${job.transformationType ?? ''}</td>
+                        <td>${job.sourceJDKVersion ?? ''}</td>
+                        <td>${job.targetJDKVersion ?? ''}</td>
+                        <td>${job.customDependencyVersionFilePath ?? ''}</td>
+                        <td>${job.customBuildCommand ? `mvn ${job.customBuildCommand}` : ''}</td>
                     </tr>
                 `
                     )

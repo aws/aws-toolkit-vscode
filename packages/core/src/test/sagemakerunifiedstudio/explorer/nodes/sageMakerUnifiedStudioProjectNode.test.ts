@@ -38,6 +38,14 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             getProjectCredentialProvider: sinon.stub(),
             getDomainRegion: sinon.stub().returns('us-west-2'),
             getDomainAccountId: sinon.stub().resolves('123456789012'),
+            getDomainId: sinon.stub().returns('test-domain'),
+            getDerCredentialsProvider: sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves({
+                    accessKeyId: 'test-key',
+                    secretAccessKey: 'test-secret',
+                    sessionToken: 'test-token',
+                }),
+            }),
         } as any
 
         // Create mock extension context
@@ -63,7 +71,7 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
         } as any
 
         // Stub DataZoneClient static methods
-        sinon.stub(DataZoneClient, 'getInstance').returns(mockDataZoneClient as any)
+        sinon.stub(DataZoneClient, 'createWithCredentials').returns(mockDataZoneClient as any)
 
         // Stub SagemakerClient constructor
         sinon.stub(SagemakerClient.prototype, 'dispose')
@@ -293,21 +301,22 @@ describe('SageMakerUnifiedStudioProjectNode', function () {
             assert.strictEqual(hasAccess, false)
         })
 
-        it('returns false when getCredentials fails', async function () {
+        it('throws error when getCredentials fails', async function () {
             const mockCredProvider = {
                 getCredentials: sinon.stub().rejects(new Error('Credentials error')),
             }
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().resolves(mockCredProvider)
 
-            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
-            assert.strictEqual(hasAccess, false)
+            await assert.rejects(
+                async () => await projectNode['checkProjectCredsAccess']('project-123'),
+                /Credentials error/
+            )
         })
 
-        it('returns false when access check throws non-AccessDeniedException error', async function () {
+        it('throws error when access check throws non-AccessDeniedException error', async function () {
             projectNode['authProvider'].getProjectCredentialProvider = sinon.stub().rejects(new Error('Other error'))
 
-            const hasAccess = await projectNode['checkProjectCredsAccess']('project-123')
-            assert.strictEqual(hasAccess, false)
+            await assert.rejects(async () => await projectNode['checkProjectCredsAccess']('project-123'), /Other error/)
         })
     })
 

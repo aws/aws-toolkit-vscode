@@ -10,7 +10,7 @@ import {
     LakehouseNode,
     createLakehouseConnectionNode,
 } from '../../../../sagemakerunifiedstudio/explorer/nodes/lakehouseStrategy'
-import { GlueCatalogClient } from '../../../../sagemakerunifiedstudio/shared/client/glueCatalogClient'
+import { GlueCatalog } from '@amzn/glue-catalog-client'
 import { GlueClient } from '../../../../sagemakerunifiedstudio/shared/client/glueClient'
 import { ConnectionClientStore } from '../../../../sagemakerunifiedstudio/shared/client/connectionClientStore'
 import { NodeType } from '../../../../sagemakerunifiedstudio/explorer/nodes/types'
@@ -18,7 +18,7 @@ import { ConnectionCredentialsProvider } from '../../../../sagemakerunifiedstudi
 
 describe('LakehouseStrategy', function () {
     let sandbox: sinon.SinonSandbox
-    let mockGlueCatalogClient: sinon.SinonStubbedInstance<GlueCatalogClient>
+    let mockGlueCatalogClient: sinon.SinonStubbedInstance<GlueCatalog>
     let mockGlueClient: sinon.SinonStubbedInstance<GlueClient>
 
     const mockConnection = {
@@ -51,7 +51,8 @@ describe('LakehouseStrategy', function () {
             getTable: sandbox.stub(),
         } as any
 
-        sandbox.stub(GlueCatalogClient, 'createWithCredentials').returns(mockGlueCatalogClient as any)
+        // Stub the GlueCatalog constructor to return our mock
+        sandbox.stub(GlueCatalog.prototype, 'getCatalogs').callsFake(mockGlueCatalogClient.getCatalogs)
         sandbox.stub(GlueClient.prototype, 'getDatabases').callsFake(mockGlueClient.getDatabases)
         sandbox.stub(GlueClient.prototype, 'getTables').callsFake(mockGlueClient.getTables)
         sandbox.stub(GlueClient.prototype, 'getTable').callsFake(mockGlueClient.getTable)
@@ -206,6 +207,7 @@ describe('LakehouseStrategy', function () {
         })
 
         it('should create placeholder when no catalogs found', async function () {
+            // Mock getCatalogs to return empty array in the correct format
             mockGlueCatalogClient.getCatalogs.resolves({ catalogs: [], nextToken: undefined })
 
             const node = createLakehouseConnectionNode(
@@ -215,14 +217,26 @@ describe('LakehouseStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.ok(children.some((child) => child.resource === '[No data found]'))
+            // Check if placeholder exists - it should be a TreeItem with label '[No data found]'
+            const hasPlaceholder = children.some((child) => {
+                const treeItem = (child as any).data?.value
+                return treeItem === '[No data found]' || child.id.includes('placeholder')
+            })
+            assert.ok(hasPlaceholder, 'Should have placeholder node when no catalogs found')
         })
     })
 
     describe('Catalog nodes', function () {
-        it('should create catalog nodes from API', async function () {
+        it('should create regular catalog nodes and load databases', async function () {
+            const regularCatalog = {
+                CatalogId: 'regular-catalog',
+                Name: 'regular-catalog',
+                CatalogType: 'HIVE',
+            }
+
             mockGlueCatalogClient.getCatalogs.resolves({
-                catalogs: [{ CatalogId: 'test-catalog', CatalogType: 'HIVE' }],
+                catalogs: [regularCatalog],
+                nextToken: undefined,
             })
             mockGlueClient.getDatabases.resolves({
                 databases: [{ Name: 'test-db' }],
@@ -236,8 +250,13 @@ describe('LakehouseStrategy', function () {
             )
             const children = await node.getChildren()
 
-            assert.ok(children.length > 0)
+            const catalogNode = children.find((child) => child.id === 'regular-catalog') as LakehouseNode
+            assert.ok(catalogNode)
             assert.ok(mockGlueCatalogClient.getCatalogs.called)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.strictEqual((catalogChildren[0] as LakehouseNode).data.nodeType, NodeType.GLUE_DATABASE)
         })
 
         it('should handle catalog database pagination', async function () {
@@ -276,6 +295,64 @@ describe('LakehouseStrategy', function () {
 
             assert.strictEqual(children.length, 2)
             assert.ok(mockGlueClient.getDatabases.calledTwice)
+        })
+
+        it('should treat RedLake catalogs as parent catalogs', async function () {
+            const redLakeCatalog = {
+                CatalogId: 'redlake-catalog',
+                Name: 'redlake-catalog',
+                FederatedCatalog: {
+                    ConnectionName: 'aws:redshift',
+                },
+            }
+
+            mockGlueCatalogClient.getCatalogs.resolves({
+                catalogs: [redLakeCatalog],
+                nextToken: undefined,
+            })
+
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+            const children = await node.getChildren()
+
+            const catalogNode = children.find((child) => child.id === 'redlake-catalog') as LakehouseNode
+            assert.ok(catalogNode)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.ok(catalogChildren[0].resource === '[No data found]')
+        })
+
+        it('should treat S3Tables catalogs as parent catalogs', async function () {
+            const s3TablesCatalog = {
+                CatalogId: 's3tables-catalog',
+                Name: 's3tables-catalog',
+                FederatedCatalog: {
+                    ConnectionName: 'aws:s3tables',
+                },
+            }
+
+            mockGlueCatalogClient.getCatalogs.resolves({
+                catalogs: [s3TablesCatalog],
+                nextToken: undefined,
+            })
+
+            const node = createLakehouseConnectionNode(
+                mockConnection as any,
+                mockCredentialsProvider as ConnectionCredentialsProvider,
+                'us-east-1'
+            )
+            const children = await node.getChildren()
+
+            const catalogNode = children.find((child) => child.id === 's3tables-catalog') as LakehouseNode
+            assert.ok(catalogNode)
+
+            const catalogChildren = await catalogNode.getChildren()
+            assert.strictEqual(catalogChildren.length, 1)
+            assert.ok(catalogChildren[0].resource === '[No data found]')
         })
     })
 

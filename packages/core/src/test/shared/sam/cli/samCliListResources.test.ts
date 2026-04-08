@@ -4,12 +4,17 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
 import { runSamCliListResource, SamCliListResourcesParameters } from '../../../../shared/sam/cli/samCliListResources'
 import { assertArgIsPresent, assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
 import { getTestLogger } from '../../../globalSetup.test'
+import * as featureRegistry from '../../../../shared/sam/cli/samCliFeatureRegistry'
 
 describe('runSamCliListResource', function () {
     let invokeCount: number
+    let sandbox: sinon.SinonSandbox
+    let validateSamCliVersionForTemplateFileStub: sinon.SinonStub
+    let showWarningStub: sinon.SinonStub
     const fakeTemplateFile = 'template.yaml'
     const fakeStackName = 'testStack'
     const fakeRegion = 'us-west-2'
@@ -17,6 +22,15 @@ describe('runSamCliListResource', function () {
 
     beforeEach(function () {
         invokeCount = 0
+        sandbox = sinon.createSandbox()
+        validateSamCliVersionForTemplateFileStub = sandbox
+            .stub(featureRegistry, 'validateSamCliVersionForTemplateFile')
+            .resolves()
+        showWarningStub = sandbox.stub(featureRegistry, 'showWarningWithSamCliUpdateInstruction').resolves()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     function makeSampleParameters(region?: string): SamCliListResourcesParameters {
@@ -75,5 +89,43 @@ describe('runSamCliListResource', function () {
 
         const logs = logger.getLoggedEntries()
         assert.ok(logs.find((entry) => entry === message))
+    })
+
+    it('validates template before invoking SAM CLI', async function () {
+        const invoker = new MockSamCliProcessInvoker(() => {})
+
+        await runSamCliListResource(makeSampleParameters(), invoker)
+
+        assert.ok(
+            validateSamCliVersionForTemplateFileStub.calledOnce,
+            'validateSamCliVersionForTemplateFile should be called once'
+        )
+    })
+
+    it('returns empty array when validation fails', async function () {
+        const validationError = new Error('SAM CLI version too old')
+        validateSamCliVersionForTemplateFileStub.rejects(validationError)
+        const invoker = new MockSamCliProcessInvoker(() => {
+            invokeCount++
+        })
+
+        const result = await runSamCliListResource(makeSampleParameters(), invoker)
+
+        assert.strictEqual(invokeCount, 0, 'SAM CLI should not be invoked when validation fails')
+        assert.deepStrictEqual(result, [], 'Should return empty array on validation failure')
+        assert.ok(showWarningStub.calledOnce, 'Should show warning message')
+    })
+
+    it('shows user-friendly error message when validation fails', async function () {
+        const validationError = new Error('Your SAM CLI version does not support feature X')
+        validateSamCliVersionForTemplateFileStub.rejects(validationError)
+        const invoker = new MockSamCliProcessInvoker(() => {})
+
+        await runSamCliListResource(makeSampleParameters(), invoker)
+
+        assert.ok(showWarningStub.calledOnce)
+        const errorMessage = showWarningStub.firstCall.args[0]
+        assert.ok(errorMessage.includes('Failed to run SAM CLI list resources'))
+        assert.ok(errorMessage.includes(validationError.message))
     })
 })

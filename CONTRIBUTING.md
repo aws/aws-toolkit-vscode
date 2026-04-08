@@ -230,7 +230,7 @@ more options.
 
 ### Coverage report
 
-You can find the coverage report at `./coverage/amazonq/lcov-report/index.html` and `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
+You can find the coverage report at `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
 
 ### CodeCatalyst Blueprints
 
@@ -526,6 +526,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 #### Step functions
 
 -   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
+
+#### CloudFormation LSP
+
+-   `__CLOUDFORMATIONLSP_PATH`: for aws.dev.cloudformationLsp.path
+-   `__CLOUDFORMATIONLSP_CLOUDFORMATION_ENDPOINT`: for aws.dev.cloudformationLsp.cloudformationEndpoint
 
 #### CI/Testing
 

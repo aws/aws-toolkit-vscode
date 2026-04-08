@@ -40,11 +40,40 @@ describe('SessionStore', () => {
         assert.strictEqual(result, 'https://refresh.url')
     })
 
+    it('returns undefined for SMUS connections (no refreshUrl)', async () => {
+        const store = new SessionStore()
+        readMappingStub.returns({
+            deepLink: {
+                [connectionId]: {
+                    refreshUrl: undefined,
+                    requests: {
+                        'initial-connection': { sessionId: 's0', token: 't0', url: 'u0', status: 'fresh' },
+                    },
+                },
+            },
+        })
+        const result = await store.getRefreshUrl(connectionId)
+        assert.strictEqual(result, undefined)
+    })
+
+    it('returns valid URL for SageMaker AI connections (existing behavior)', async () => {
+        const store = new SessionStore()
+        const result = await store.getRefreshUrl(connectionId)
+        assert.strictEqual(result, 'https://refresh.url')
+    })
+
     it('throws if no mapping exists for connectionId', async () => {
         const store = new SessionStore()
         readMappingStub.returns({ deepLink: {} })
 
         await assert.rejects(() => store.getRefreshUrl('missing'), /No mapping found/)
+    })
+
+    it('throws if no deepLink mapping exists', async () => {
+        const store = new SessionStore()
+        readMappingStub.returns({})
+
+        await assert.rejects(() => store.getRefreshUrl(connectionId), /No deepLink mapping found/)
     })
 
     it('returns fresh entry and marks consumed', async () => {
@@ -141,5 +170,45 @@ describe('SessionStore', () => {
             url: 'u99',
             status: 'fresh',
         })
+    })
+
+    it('cleans up expired connection', async () => {
+        const store = new SessionStore()
+        await store.cleanupExpiredConnection(connectionId)
+        const updated = writeMappingStub.firstCall.args[0]
+        assert.strictEqual(updated.deepLink[connectionId], undefined)
+    })
+
+    it('does not throw when cleaning up non-existent connection', async () => {
+        const store = new SessionStore()
+        await store.cleanupExpiredConnection('non-existent-connection')
+        assert(writeMappingStub.notCalled)
+    })
+
+    it('cleans up only the specified connection without affecting other connections', async () => {
+        const store = new SessionStore()
+        const otherConnectionId = 'other-connection'
+        readMappingStub.returns({
+            deepLink: {
+                [connectionId]: {
+                    refreshUrl: undefined,
+                    requests: {
+                        'initial-connection': { sessionId: 's1', token: 't1', url: 'u1', status: 'fresh' },
+                    },
+                },
+                [otherConnectionId]: {
+                    refreshUrl: 'https://refresh.url',
+                    requests: {
+                        'initial-connection': { sessionId: 's2', token: 't2', url: 'u2', status: 'fresh' },
+                    },
+                },
+            },
+        })
+
+        await store.cleanupExpiredConnection(connectionId)
+        const updated = writeMappingStub.firstCall.args[0]
+        assert.strictEqual(updated.deepLink[connectionId], undefined)
+        assert.ok(updated.deepLink[otherConnectionId])
+        assert.ok(updated.deepLink[otherConnectionId].requests['initial-connection'])
     })
 })

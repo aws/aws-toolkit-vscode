@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import type { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import globals from '../../shared/extensionGlobals'
 import { persistLambdaSnapshot, type LambdaDebugger, type DebugConfig } from './lambdaDebugger'
 import { getLambdaClientWithAgent, getLambdaDebugUserAgent } from './utils'
@@ -35,7 +35,7 @@ export class LocalStackLambdaDebugger implements LambdaDebugger {
 
     public async setup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void> {
         // No function update and version publishing needed for LocalStack
@@ -95,7 +95,7 @@ export class LocalStackLambdaDebugger implements LambdaDebugger {
 
     public async waitForSetup(
         progress: vscode.Progress<{ message?: string; increment?: number }>,
-        functionConfig: Lambda.FunctionConfiguration,
+        functionConfig: FunctionConfiguration,
         region: string
     ): Promise<void> {
         if (!functionConfig?.FunctionArn) {
@@ -142,7 +142,7 @@ export class LocalStackLambdaDebugger implements LambdaDebugger {
         // b) Invokes for debug-enabled await being served until the debugger is connected
     }
 
-    public async cleanup(functionConfig: Lambda.FunctionConfiguration): Promise<void> {
+    public async cleanup(functionConfig: FunctionConfiguration): Promise<void> {
         await vscode.commands.executeCommand('workbench.action.debug.stop')
 
         const endpointUrl = globals.awsContext.getCredentialEndpointUrl()

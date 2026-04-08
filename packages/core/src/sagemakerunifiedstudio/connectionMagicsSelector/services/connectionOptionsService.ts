@@ -133,7 +133,7 @@ class ConnectionOptionsService {
             this.cachedConnections = processedConnections
             return processedConnections
         } catch (error) {
-            getLogger().error('Failed to list DataZone connections: %s', error as Error)
+            getLogger('smus').error('Failed to list DataZone connections: %s', error as Error)
             return []
         }
     }
@@ -190,7 +190,7 @@ class ConnectionOptionsService {
 
             return options
         } catch (error) {
-            getLogger().error('Failed to get connection options: %s', error as Error)
+            getLogger('smus').error('Failed to get connection options: %s', error as Error)
             return []
         }
     }
@@ -231,7 +231,7 @@ class ConnectionOptionsService {
 
             return projectOptions
         } catch (error) {
-            getLogger().error('Failed to get project options: %s', error as Error)
+            getLogger('smus').error('Failed to get project options: %s', error as Error)
             return []
         }
     }
@@ -269,7 +269,7 @@ class ConnectionOptionsService {
 
             this.projectOptions = newProjectOptions
         } catch (error) {
-            getLogger().error('Failed to update connection and project options: %s', error as Error)
+            getLogger('smus').error('Failed to update connection and project options: %s', error as Error)
             this.connectionOptions = []
             this.projectOptions = []
         }

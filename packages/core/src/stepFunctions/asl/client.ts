@@ -32,17 +32,15 @@ import {
     DidChangeConfigurationNotification,
     DocumentRangeFormattingParams,
     DocumentRangeFormattingRequest,
-    LanguageClient,
     LanguageClientOptions,
     NotificationType,
-    ServerOptions,
-    TransportKind,
 } from 'vscode-languageclient'
+import { ServerOptions, TransportKind, LanguageClient } from 'vscode-languageclient/node'
 
 import { YAML_ASL, JSON_ASL, ASL_FORMATS } from '../constants/aslFormats'
 import { StepFunctionsSettings } from '../utils'
 
-export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
+export const ResultLimitReached: NotificationType<string> = new NotificationType('asl/resultLimitReached')
 
 interface Settings {
     asl?: {
@@ -116,8 +114,8 @@ export class ASLLanguageClient {
         )
         client.registerProposedFeatures()
 
-        const disposable = client.start()
-        toDispose.push(disposable)
+        void client.start()
+        toDispose.push(client)
 
         const languageConfiguration: LanguageConfiguration = {
             wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
@@ -144,29 +142,35 @@ export class ASLLanguageClient {
                         const params: DocumentRangeFormattingParams = {
                             textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
                             range: client.code2ProtocolConverter.asRange(range),
-                            options: client.code2ProtocolConverter.asFormattingOptions(options),
+                            options: (client.code2ProtocolConverter as any).asFormattingOptions(options, {}),
                         }
 
-                        return client.sendRequest(DocumentRangeFormattingRequest.type, params, token).then(
-                            (response) => client.protocol2CodeConverter.asTextEdits(response),
-                            async (error) => {
-                                client.logFailedRequest(DocumentRangeFormattingRequest.type, error)
-
-                                return Promise.resolve([])
-                            }
-                        )
+                        return (client as any)
+                            .sendRequest(DocumentRangeFormattingRequest.method, params, undefined)
+                            .then(
+                                (response: any) => client.protocol2CodeConverter.asTextEdits(response),
+                                async () => {
+                                    return Promise.resolve([])
+                                }
+                            )
                     },
                 })
             }
         }
 
-        return client.onReady().then(() => {
+        return client.start().then(() => {
             updateFormatterRegistration()
             const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
             toDispose.push(disposableFunc)
-            toDispose.push(config.onDidChange(({ key }) => key === 'format.enable' && updateFormatterRegistration()))
+            toDispose.push(
+                config.onDidChange(({ key }) => {
+                    if (key === 'format.enable') {
+                        updateFormatterRegistration()
+                    }
+                })
+            )
 
-            client.onNotification(ResultLimitReached, (message) => {
+            client.onNotification(ResultLimitReached, (message: any) => {
                 void window.showInformationMessage(
                     `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
                 )

@@ -41,7 +41,7 @@ class NotebookStateManager {
             edit.set(cell.notebook.uri, [notebookEdit])
             await vscode.workspace.applyEdit(edit)
         } catch (error) {
-            getLogger().warn('setCellMetadata: Failed to set metadata, falling back to in-memory storage')
+            getLogger('smus').warn('setCellMetadata: Failed to set metadata, falling back to in-memory storage')
         }
     }
 
@@ -326,7 +326,7 @@ class NotebookStateManager {
                 await this.updateCellContent(cell, newCellContent)
             }
         } catch (error) {
-            getLogger().error(`Error updating cell with magic command: ${error}`)
+            getLogger('smus').error(`Error updating cell with magic command: ${error}`)
         }
     }
 
@@ -356,7 +356,9 @@ class NotebookStateManager {
                 }
             }
         } catch (error) {
-            getLogger().error(`NotebookEdit failed, attempting to update cell content with WorkspaceEdit: ${error}`)
+            getLogger('smus').error(
+                `NotebookEdit failed, attempting to update cell content with WorkspaceEdit: ${error}`
+            )
         }
 
         try {
@@ -371,10 +373,10 @@ class NotebookStateManager {
 
             const success = await vscode.workspace.applyEdit(edit)
             if (!success) {
-                getLogger().error('WorkspaceEdit failed to apply')
+                getLogger('smus').error('WorkspaceEdit failed to apply')
             }
         } catch (error) {
-            getLogger().error(`Failed to update cell content with WorkspaceEdit: ${error}`)
+            getLogger('smus').error(`Failed to update cell content with WorkspaceEdit: ${error}`)
 
             try {
                 const document = cell.document
@@ -386,7 +388,7 @@ class NotebookStateManager {
                     await vscode.workspace.applyEdit(edit)
                 }
             } catch (finalError) {
-                getLogger().error(`All cell update methods failed: ${finalError}`)
+                getLogger('smus').error(`All cell update methods failed: ${finalError}`)
             }
         }
     }

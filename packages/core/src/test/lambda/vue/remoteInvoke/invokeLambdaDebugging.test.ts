@@ -20,6 +20,7 @@ import globals from '../../../../shared/extensionGlobals'
 import fs from '../../../../shared/fs/fs'
 import { ToolkitError } from '../../../../shared'
 import { createMockDebugConfig } from '../../remoteDebugging/testUtils'
+import { InvocationResponse } from '@aws-sdk/client-lambda'
 
 describe('RemoteInvokeWebview - Debugging Functionality', () => {
     let outputChannel: vscode.OutputChannel
@@ -375,8 +376,8 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
         it('should invoke lambda with remote debugging enabled', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Debug log').toString('base64'),
-                Payload: '{"result": "debug success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "debug success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
             mockDebugController.isDebugging = true
             mockDebugController.qualifier = 'v1'
@@ -385,15 +386,23 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
 
             await remoteInvokeWebview.invokeLambda('{"test": "input"}', 'test', true)
 
-            assert(client.invoke.calledWith(data.FunctionArn, '{"test": "input"}', 'v1'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"test": "input"}',
+                        version: 'v1',
+                    })
+                )
+            )
             assert(focusStub.calledWith('workbench.action.focusFirstEditorGroup'))
         })
 
         it('should handle timer management during debugging invocation', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Debug log').toString('base64'),
-                Payload: '{"result": "debug success"}',
-            }
+                Payload: new TextEncoder().encode('{"result": "debug success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
             mockDebugController.isDebugging = true
 
@@ -501,14 +510,22 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             // 2. Test lambda invocation during debugging
             const mockResponse = {
                 LogResult: Buffer.from('Debug invocation log').toString('base64'),
-                Payload: '{"debugResult": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"debugResult": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda('{"debugInput": "test"}', 'integration-test', true)
 
             // Verify invocation was called with correct parameters
-            assert(client.invoke.calledWith(data.FunctionArn, '{"debugInput": "test"}', '$LATEST'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"debugInput": "test"}',
+                        version: '$LATEST',
+                    })
+                )
+            )
 
             // 3. Stop debugging
             await remoteInvokeWebview.stopDebugging()
@@ -562,14 +579,22 @@ describe('RemoteInvokeWebview - Debugging Functionality', () => {
             // Test invocation with version qualifier
             const mockResponse = {
                 LogResult: Buffer.from('Version debug log').toString('base64'),
-                Payload: '{"versionResult": "success"}',
-            }
+                Payload: new TextEncoder().encode('{"versionResult": "success"}'),
+            } satisfies InvocationResponse
             client.invoke.resolves(mockResponse)
 
             await remoteInvokeWebview.invokeLambda('{"versionInput": "test"}', 'version-test', true)
 
             // Should invoke with version qualifier
-            assert(client.invoke.calledWith(data.FunctionArn, '{"versionInput": "test"}', 'v1'))
+            assert(
+                client.invoke.calledWith(
+                    sinon.match({
+                        name: data.FunctionArn,
+                        payload: '{"versionInput": "test"}',
+                        version: 'v1',
+                    })
+                )
+            )
 
             // Stop debugging
             await remoteInvokeWebview.stopDebugging()

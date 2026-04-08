@@ -5,19 +5,136 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
+import type { UserAgent } from '@aws-sdk/types'
 import { LdkClient, getRegionFromArn, isTunnelInfo } from '../../../lambda/remoteDebugging/ldkClient'
 import { LocalProxy } from '../../../lambda/remoteDebugging/localProxy'
 import * as utils from '../../../lambda/remoteDebugging/utils'
 import * as telemetryUtil from '../../../shared/telemetry/util'
 import globals from '../../../shared/extensionGlobals'
 import { createMockFunctionConfig, createMockProgress } from './testUtils'
+import {
+    IoTSecureTunnelingClient,
+    IoTSecureTunnelingClientResolvedConfig,
+    ListTunnelsCommand,
+    OpenTunnelCommand,
+    RotateTunnelAccessTokenCommand,
+    ServiceInputTypes,
+    ServiceOutputTypes,
+    TunnelStatus,
+} from '@aws-sdk/client-iotsecuretunneling'
+import { AwsStub, mockClient } from 'aws-sdk-client-mock'
+import * as http from 'http'
+import { AWSClientBuilderV3 } from '../../../shared/awsClientBuilderV3'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { Any } from '../../../shared/utilities/typeConstructors'
+
+describe('Remote Debugging User-Agent test', () => {
+    let sandbox: sinon.SinonSandbox
+    let ldkClient: LdkClient
+    let mockServer: http.Server
+    let capturedHeaders: http.IncomingHttpHeaders | undefined
+    let sdkBuilderTmp: Any
+    let mockLocalProxy: any
+
+    before(async () => {
+        sdkBuilderTmp = globals.sdkClientBuilderV3
+
+        mockServer = http.createServer((req, res) => {
+            capturedHeaders = req.headers
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end()
+        })
+
+        // Start the mock server
+        await new Promise<void>((resolve) => {
+            mockServer.listen(0, '127.0.0.1', () => {
+                resolve()
+            })
+        })
+
+        const port = (mockServer.address() as any).port
+        globals.sdkClientBuilderV3 = new AWSClientBuilderV3(
+            new FakeAwsContext({
+                contextCredentials: {
+                    endpointUrl: `http://127.0.0.1:${port}`,
+                    credentials: undefined as any,
+                    credentialsId: '',
+                },
+            })
+        )
+    })
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        sandbox.stub(telemetryUtil, 'getClientId').returns('test-client-id')
+        capturedHeaders = undefined
+        // Mock LocalProxy
+        mockLocalProxy = {
+            start: sandbox.stub(),
+            stop: sandbox.stub(),
+        }
+        sandbox.stub(LocalProxy.prototype, 'start').callsFake(mockLocalProxy.start)
+        sandbox.stub(LocalProxy.prototype, 'stop').callsFake(mockLocalProxy.stop)
+        ldkClient = LdkClient.instance
+        ;(ldkClient as any).localProxy = mockLocalProxy
+        ldkClient.dispose()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    after(async () => {
+        globals.sdkClientBuilderV3 = sdkBuilderTmp
+        // Close the server
+        mockServer.close()
+    })
+
+    for (const scenario of ['Lambda', 'IoT']) {
+        it(`should send ${scenario} request with correct User-Agent header to mock server`, async () => {
+            try {
+                switch (scenario) {
+                    case 'Lambda':
+                        await ldkClient.getFunctionDetail('arn:aws:lambda:us-east-1:123456789012:function:testFunction')
+                        break
+                    case 'IoT':
+                        await ldkClient.createOrReuseTunnel('us-east-1')
+                        break
+                }
+            } catch (e) {
+                // Ignore errors from the mock response, we just want to capture headers
+            }
+
+            // Verify the User-Agent header was sent correctly
+            assert(capturedHeaders, 'Should have captured request headers')
+            const userAgent = capturedHeaders!['user-agent'] || capturedHeaders!['User-Agent']
+            assert(userAgent, 'Should have User-Agent header')
+
+            // The User-Agent should contain our custom user agent pairs
+            assert(
+                userAgent.includes('LAMBDA-DEBUG/1.0.0'),
+                `User-Agent should include LAMBDA-DEBUG/1.0.0, got: ${userAgent}`
+            )
+            // Check for presence of other user agent components without checking specific values
+            assert(
+                userAgent.includes('AWS-Toolkit-For-VSCode/'),
+                `User-Agent should include AWS-Toolkit-For-VSCode/, got: ${userAgent}`
+            )
+            assert(
+                userAgent.includes('Visual-Studio-Code'),
+                `User-Agent should include Visual-Studio-Code, got: ${userAgent}`
+            )
+            assert(userAgent.includes('ClientId/'), `User-Agent should include ClientId/, got: ${userAgent}`)
+        })
+    }
+})
 
 describe('LdkClient', () => {
     let sandbox: sinon.SinonSandbox
     let ldkClient: LdkClient
     let mockLambdaClient: any
-    let mockIoTSTClient: any
+    let mockIoTSTClient: AwsStub<ServiceInputTypes, ServiceOutputTypes, IoTSecureTunnelingClientResolvedConfig>
     let mockLocalProxy: any
 
     beforeEach(() => {
@@ -32,15 +149,8 @@ describe('LdkClient', () => {
         }
         sandbox.stub(utils, 'getLambdaClientWithAgent').returns(mockLambdaClient)
 
-        // Mock IoT ST client with proper promise structure
-        const createPromiseStub = () => sandbox.stub()
-        mockIoTSTClient = {
-            listTunnels: sandbox.stub().returns({ promise: createPromiseStub() }),
-            openTunnel: sandbox.stub().returns({ promise: createPromiseStub() }),
-            closeTunnel: sandbox.stub().returns({ promise: createPromiseStub() }),
-            rotateTunnelAccessToken: sandbox.stub().returns({ promise: createPromiseStub() }),
-        }
-        sandbox.stub(utils, 'getIoTSTClientWithAgent').resolves(mockIoTSTClient)
+        mockIoTSTClient = mockClient(IoTSecureTunnelingClient)
+        sandbox.stub(utils, 'getIoTSTClientWithAgent').returns(mockIoTSTClient as any)
 
         // Mock LocalProxy
         mockLocalProxy = {
@@ -105,8 +215,8 @@ describe('LdkClient', () => {
 
     describe('createOrReuseTunnel()', () => {
         it('should create new tunnel when none exists', async () => {
-            mockIoTSTClient.listTunnels().promise.resolves({ tunnelSummaries: [] })
-            mockIoTSTClient.openTunnel().promise.resolves({
+            mockIoTSTClient.on(ListTunnelsCommand).resolves({ tunnelSummaries: [] })
+            mockIoTSTClient.on(OpenTunnelCommand).resolves({
                 tunnelId: 'tunnel-123',
                 sourceAccessToken: 'source-token',
                 destinationAccessToken: 'dest-token',
@@ -118,20 +228,24 @@ describe('LdkClient', () => {
             assert.strictEqual(result?.tunnelID, 'tunnel-123')
             assert.strictEqual(result?.sourceToken, 'source-token')
             assert.strictEqual(result?.destinationToken, 'dest-token')
-            assert(mockIoTSTClient.listTunnels.called, 'Should list existing tunnels')
-            assert(mockIoTSTClient.openTunnel.called, 'Should create new tunnel')
+            assert.strictEqual(
+                mockIoTSTClient.commandCalls(ListTunnelsCommand).length,
+                1,
+                'Should list existing tunnels'
+            )
+            assert.strictEqual(mockIoTSTClient.commandCalls(OpenTunnelCommand).length, 1, 'Should create new tunnel')
         })
 
         it('should reuse existing tunnel with sufficient time remaining', async () => {
             const existingTunnel = {
                 tunnelId: 'existing-tunnel',
                 description: 'RemoteDebugging+test-client-id',
-                status: 'OPEN',
+                status: TunnelStatus.OPEN,
                 createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
             }
 
-            mockIoTSTClient.listTunnels().promise.resolves({ tunnelSummaries: [existingTunnel] })
-            mockIoTSTClient.rotateTunnelAccessToken().promise.resolves({
+            mockIoTSTClient.on(ListTunnelsCommand).resolves({ tunnelSummaries: [existingTunnel] })
+            mockIoTSTClient.on(RotateTunnelAccessTokenCommand).resolves({
                 sourceAccessToken: 'rotated-source-token',
                 destinationAccessToken: 'rotated-dest-token',
             })
@@ -145,8 +259,8 @@ describe('LdkClient', () => {
         })
 
         it('should handle tunnel creation errors', async () => {
-            mockIoTSTClient.listTunnels().promise.resolves({ tunnelSummaries: [] })
-            mockIoTSTClient.openTunnel().promise.rejects(new Error('Tunnel creation failed'))
+            mockIoTSTClient.on(ListTunnelsCommand).resolves({ tunnelSummaries: [] })
+            mockIoTSTClient.on(OpenTunnelCommand).rejects(new Error('Tunnel creation failed'))
 
             await assert.rejects(
                 async () => await ldkClient.createOrReuseTunnel('us-east-1'),
@@ -158,7 +272,7 @@ describe('LdkClient', () => {
 
     describe('refreshTunnelTokens()', () => {
         it('should refresh tunnel tokens successfully', async () => {
-            mockIoTSTClient.rotateTunnelAccessToken().promise.resolves({
+            mockIoTSTClient.on(RotateTunnelAccessTokenCommand).resolves({
                 sourceAccessToken: 'new-source-token',
                 destinationAccessToken: 'new-dest-token',
             })
@@ -172,7 +286,7 @@ describe('LdkClient', () => {
         })
 
         it('should handle token refresh errors', async () => {
-            mockIoTSTClient.rotateTunnelAccessToken().promise.rejects(new Error('Token refresh failed'))
+            mockIoTSTClient.on(RotateTunnelAccessTokenCommand).rejects(new Error('Token refresh failed'))
 
             await assert.rejects(
                 async () => await ldkClient.refreshTunnelTokens('tunnel-123', 'us-east-1'),
@@ -183,7 +297,7 @@ describe('LdkClient', () => {
     })
 
     describe('getFunctionDetail()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 
@@ -212,7 +326,7 @@ describe('LdkClient', () => {
     })
 
     describe('createDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 
@@ -291,7 +405,7 @@ describe('LdkClient', () => {
     })
 
     describe('removeDebugDeployment()', () => {
-        const mockFunctionConfig: Lambda.FunctionConfiguration = createMockFunctionConfig({
+        const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
             FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
         })
 
@@ -413,6 +527,103 @@ describe('LdkClient', () => {
             const result = await ldkClient.stopProxy()
 
             assert.strictEqual(result, true, 'Should return true when no proxy to stop')
+        })
+    })
+
+    describe('Client User-Agent', () => {
+        let expectedUserAgentPairs: UserAgent
+        let userAgentSandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            userAgentSandbox = sinon.createSandbox()
+            // Stub getUserAgentPairs at the telemetryUtil level to return known pairs
+            const getUserAgentPairsStub = userAgentSandbox.stub(telemetryUtil, 'getUserAgentPairs')
+            const generalUserAgents: UserAgent = [
+                ['AWS-Toolkit-For-VSCode', 'testVersionForUA'],
+                ['Visual-Studio-Code', '1.0.0'],
+                ['ClientId', 'test-client-id'],
+            ]
+            getUserAgentPairsStub.returns(generalUserAgents)
+            const lambdaDebugUserAgent: UserAgent = [['LAMBDA-DEBUG', '1.0.0']]
+            expectedUserAgentPairs = lambdaDebugUserAgent.concat(generalUserAgents)
+        })
+
+        afterEach(() => {
+            userAgentSandbox.restore()
+        })
+
+        it('should create Lambda client with correct user-agent', async () => {
+            // Restore the existing stub and create a new one to track calls
+            const existingStub = (utils.getLambdaClientWithAgent as any).restore
+                ? (utils.getLambdaClientWithAgent as sinon.SinonStub)
+                : undefined
+            if (existingStub) {
+                existingStub.restore()
+            }
+
+            // Stub the Lambda sdkClientBuilderV3 to capture the client options
+            let capturedClientOptions: any
+            const createAwsServiceStubLambda = userAgentSandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            createAwsServiceStubLambda.callsFake((options: any) => {
+                capturedClientOptions = options
+                // Return a mock Lambda client that has the required methods
+                return {
+                    send: async () => ({
+                        Configuration: createMockFunctionConfig({
+                            FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+                        }),
+                    }),
+                    middlewareStack: {} as any,
+                    destroy: () => {},
+                } as any
+            })
+
+            const mockFunctionConfig: FunctionConfiguration = createMockFunctionConfig({
+                FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:testFunction',
+            })
+
+            await ldkClient.getFunctionDetail(mockFunctionConfig.FunctionArn!)
+
+            assert(createAwsServiceStubLambda.called, 'Should call createAwsService')
+            assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
+            assert.deepStrictEqual(
+                capturedClientOptions.clientOptions.customUserAgent,
+                expectedUserAgentPairs,
+                'Should include correct customUserAgent pairs with LAMBDA-DEBUG prefix in Lambda API calls'
+            )
+        })
+
+        it('should create IoT client with correct user-agent', async () => {
+            // Restore the existing stub and create a new one to track calls
+            const existingStub = (utils.getIoTSTClientWithAgent as any).restore
+                ? (utils.getIoTSTClientWithAgent as sinon.SinonStub)
+                : undefined
+            if (existingStub) {
+                existingStub.restore()
+            }
+            // Stub the sdkClientBuilderV3 to capture the client options
+            let capturedClientOptions: any
+            const createAwsServiceStubIoT = userAgentSandbox.stub(globals.sdkClientBuilderV3, 'createAwsService')
+            createAwsServiceStubIoT.callsFake((options: any) => {
+                capturedClientOptions = options
+                return mockIoTSTClient as any
+            })
+
+            mockIoTSTClient.on(ListTunnelsCommand).resolves({ tunnelSummaries: [] })
+            mockIoTSTClient.on(OpenTunnelCommand).resolves({
+                tunnelId: 'tunnel-123',
+                sourceAccessToken: 'source-token',
+                destinationAccessToken: 'dest-token',
+            })
+
+            await ldkClient.createOrReuseTunnel('us-east-1')
+
+            assert(createAwsServiceStubIoT.calledOnce, 'Should call createAwsService once')
+            assert.strictEqual(capturedClientOptions.clientOptions.region, 'us-east-1', 'Should use correct region')
+            assert.deepStrictEqual(
+                capturedClientOptions.clientOptions.customUserAgent,
+                expectedUserAgentPairs,
+                'Should include correct customUserAgent pairs with LAMBDA-DEBUG prefix'
+            )
         })
     })
 })

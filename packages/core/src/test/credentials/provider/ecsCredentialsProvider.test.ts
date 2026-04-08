@@ -4,14 +4,14 @@
  */
 
 import assert from 'assert'
-import { Credentials } from 'aws-sdk'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 import { EcsCredentialsProvider } from '../../../auth/providers/ecsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EcsCredentialsProvider', function () {
     const dummyUri = 'dummyUri'
     const dummyRegion = 'dummmyRegion'
-    const dummyCredentials = { accessKeyId: 'dummyKey' } as Credentials
+    const dummyCredentials = { accessKeyId: 'dummyKey' } as AwsCredentialIdentity
     const dummyProvider = () => {
         return Promise.resolve(dummyCredentials)
     }

@@ -12,7 +12,7 @@ import { ConnectionSummary, ConnectionType } from '@aws-sdk/client-datazone'
 export class SageMakerUnifiedStudioConnectionNode implements TreeNode {
     public resource: SageMakerUnifiedStudioConnectionNode
     contextValue: string
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     id: string
     public constructor(
         private readonly parent: SageMakerUnifiedStudioConnectionParentNode,

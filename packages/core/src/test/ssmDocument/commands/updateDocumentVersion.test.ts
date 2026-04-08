@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { DocumentFormat, DocumentIdentifier, DocumentVersionInfo } from '@aws-sdk/client-ssm'
 import * as sinon from 'sinon'
 import assert from 'assert'
 
@@ -21,9 +21,9 @@ describe('openDocumentItem', async function () {
         sinon.restore()
     })
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
+    const fakeDoc: DocumentIdentifier = {
         Name: 'testDocument',
-        DocumentFormat: 'json',
+        DocumentFormat: DocumentFormat.JSON,
         DocumentType: 'Command',
         Owner: 'Amazon',
     }
@@ -32,7 +32,7 @@ describe('openDocumentItem', async function () {
 
     const fakeRegion = 'us-east-1'
 
-    const fakeSchemaList: SSM.DocumentVersionInfo[] = [
+    const fakeSchemaList: DocumentVersionInfo[] = [
         {
             Name: 'testDocument',
             DocumentVersion: '1',

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { DocumentFormat, DocumentIdentifier, GetDocumentResult } from '@aws-sdk/client-ssm'
 
 import assert from 'assert'
 import * as sinon from 'sinon'
@@ -23,8 +23,8 @@ describe('openDocumentItem', async function () {
         sinon.restore()
     })
 
-    const rawContent: SSM.Types.GetDocumentResult = {
-        DocumentFormat: 'json',
+    const rawContent: GetDocumentResult = {
+        DocumentFormat: DocumentFormat.JSON,
         DocumentType: 'Command',
         Name: 'testDocument',
         Content: `{
@@ -35,9 +35,9 @@ describe('openDocumentItem', async function () {
         }`,
     }
 
-    const fakeDoc: SSM.Types.DocumentIdentifier = {
+    const fakeDoc: DocumentIdentifier = {
         Name: 'testDocument',
-        DocumentFormat: 'json',
+        DocumentFormat: DocumentFormat.JSON,
         DocumentType: 'Command',
         Owner: 'Amazon',
     }
@@ -65,7 +65,7 @@ describe('openDocumentItem', async function () {
 
         const documentNode = generateDocumentItemNode()
         const openTextDocumentStub = sinon.stub(vscode.workspace, 'openTextDocument')
-        await openDocumentItem(documentNode, fakeAwsContext, 'json')
+        await openDocumentItem(documentNode, fakeAwsContext, DocumentFormat.JSON)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, rawContent.Content)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.language, 'ssm-json')
     })

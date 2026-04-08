@@ -31,7 +31,7 @@ export const regionToAccount: RegionAccountMapping = {
 }
 
 // Global layer version
-const globalLayerVersion = 2
+const globalLayerVersion = 3
 
 export function getRemoteDebugLayerForArch(region: string, arch: string): string | undefined {
     const account = regionToAccount[region]

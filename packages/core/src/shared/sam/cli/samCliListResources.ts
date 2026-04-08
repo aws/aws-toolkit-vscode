@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { getSpawnEnv } from '../../env/resolveEnv'
 import { getLogger } from '../../logger/logger'
+import { showWarningWithSamCliUpdateInstruction, validateSamCliVersionForTemplateFile } from './samCliFeatureRegistry'
 
 export interface SamCliListResourcesParameters {
     templateFile: string
@@ -19,6 +20,18 @@ export async function runSamCliListResource(
     listStackResourcesArguments: SamCliListResourcesParameters,
     invoker: SamCliProcessInvoker
 ): Promise<any> {
+    // Validate template features before invoking SAM CLI
+    try {
+        const templateUri = vscode.Uri.file(listStackResourcesArguments.templateFile)
+        await validateSamCliVersionForTemplateFile(templateUri)
+    } catch (validationError: any) {
+        // Validation failed, show error with update instructions
+        getLogger().warn('SAM CLI feature validation failed: %O', validationError)
+        const errorMessage = `Failed to run SAM CLI list resources. ${validationError.message}`
+        void showWarningWithSamCliUpdateInstruction(errorMessage)
+        return []
+    }
+
     const args = [
         'list',
         'resources',

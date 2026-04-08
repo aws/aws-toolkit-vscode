@@ -5,13 +5,18 @@
 
 import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
+import * as os from 'os'
+import * as vscode from 'vscode'
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
 import { sshLogFileLocation } from '../../shared/sshConfig'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
+import { ToolkitError } from '../../shared/errors'
 
 export const DomainKeyDelimiter = '__'
+export { parseArn } from './detached-server/utils'
+const logger = getLogger('sagemaker')
 
 export function getDomainSpaceKey(domainId: string, spaceName: string): string {
     return `${domainId}${DomainKeyDelimiter}${spaceName}`
@@ -87,7 +92,7 @@ export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): 
         {
             AWS_SSM_CLI: ssmPath,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: sagemakerLocalServerPath,
-            LOF_FILE_LOCATION: sshLogFileLocation('sagemaker', 'blah'),
+            LOG_FILE_LOCATION: sshLogFileLocation('sagemaker', 'connect'),
         },
         process.env
     )
@@ -134,6 +139,9 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 const stats = await fs.stat(filePath)
                 const mtime = new Date(stats.mtime).getTime()
                 if (now - mtime < ActivityCheckInterval) {
+                    getLogger().debug(
+                        `[Terminal Activity] Detected in ${fileName}, mtime: ${new Date(mtime).toISOString()}`
+                    )
                     await updateIdleFile(idleFilePath)
                     return
                 }
@@ -141,6 +149,7 @@ export async function checkTerminalActivity(idleFilePath: string): Promise<void>
                 getLogger().error(`Error reading file stats:`, err)
             }
         }
+        getLogger().debug(`No terminal activity detected.`)
     } catch (err) {
         getLogger().error(`Error reading /dev/pts directory:`, err)
     }
@@ -153,4 +162,99 @@ export function startMonitoringTerminalActivity(idleFilePath: string): NodeJS.Ti
     return setInterval(async () => {
         await checkTerminalActivity(idleFilePath)
     }, ActivityCheckInterval)
+}
+
+/**
+ * Checks for active Jupyter kernels by querying the Jupyter extension API.
+ * Returns true if any kernel is in 'busy' state.
+ */
+export async function hasActiveJupyterKernels(): Promise<boolean> {
+    try {
+        const jupyterExt = vscode.extensions.getExtension('ms-toolsai.jupyter')
+        if (!jupyterExt) {
+            // Jupyter extension not installed, cannot detect active kernels
+            return false
+        }
+
+        const jupyterExtApi = await jupyterExt.activate()
+
+        for (const notebook of vscode.workspace.notebookDocuments) {
+            const kernel = await jupyterExtApi.kernels.getKernel(notebook.uri)
+            if (kernel && kernel.status === 'busy') {
+                getLogger().debug(`[Kernel State] Kernel busy for ${notebook.uri.toString()}`)
+                return true
+            }
+        }
+
+        getLogger().debug(`No kernel activity detected.`)
+        return false
+    } catch (error) {
+        getLogger().error(`Error checking Jupyter kernel state: ${error}`)
+        return false
+    }
+}
+
+/**
+ * Starts monitoring background state (tasks, debug sessions, notebook kernels, unsaved work).
+ * Updates the idle file if any background activity is detected.
+ */
+export function startMonitoringBackgroundState(idleFilePath: string): NodeJS.Timeout {
+    return setInterval(async () => {
+        getLogger().debug(`Monitoring background state.`)
+        const hasActiveTasks = vscode.tasks.taskExecutions.length > 0
+        const hasDebugSession = vscode.debug.activeDebugSession !== undefined
+
+        // Use Jupyter extension API to check actual kernel state
+        const hasActiveKernels = await hasActiveJupyterKernels()
+
+        // Check for unsaved text documents (file and untitled)
+        const hasUnsavedText = vscode.workspace.textDocuments.some(
+            (doc) => doc.isDirty && (doc.uri.scheme === 'file' || doc.uri.scheme === 'untitled')
+        )
+
+        // Check for unsaved notebooks
+        const hasUnsavedNotebooks = vscode.workspace.notebookDocuments.some((notebook) => notebook.isDirty)
+
+        const hasUnsaved = hasUnsavedText || hasUnsavedNotebooks
+
+        if (hasActiveTasks || hasDebugSession || hasActiveKernels || hasUnsaved) {
+            getLogger().debug(
+                `[Background State] tasks:${hasActiveTasks}, debug:${hasDebugSession}, kernels:${hasActiveKernels}, unsaved:${hasUnsaved}`
+            )
+            await updateIdleFile(idleFilePath)
+        } else {
+            getLogger().debug(`No background activity detected.`)
+        }
+    }, ActivityCheckInterval)
+}
+
+export async function removeKnownHost(hostname: string): Promise<void> {
+    const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts')
+
+    if (!(await fs.existsFile(knownHostsPath))) {
+        logger.warn(`known_hosts not found at ${knownHostsPath}`)
+        return
+    }
+
+    let lines: string[]
+    try {
+        const content = await fs.readFileText(knownHostsPath)
+        lines = content.split('\n')
+    } catch (err: any) {
+        throw ToolkitError.chain(err, 'Failed to read known_hosts file')
+    }
+
+    const updatedLines = lines.filter((line) => {
+        const entryHostname = line.split(' ')[0].split(',')
+        return !entryHostname.includes(hostname) && !entryHostname.includes(hostname.toLowerCase())
+    })
+
+    if (updatedLines.length !== lines.length) {
+        try {
+            await fs.writeFile(knownHostsPath, updatedLines.join('\n'), { atomic: true })
+            logger.debug(`Removed '${hostname}' from known_hosts`)
+        } catch (err: any) {
+            throw ToolkitError.chain(err, 'Failed to write updated known_hosts file')
+        }
+    }
 }

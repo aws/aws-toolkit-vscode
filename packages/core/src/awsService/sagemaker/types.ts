@@ -12,7 +12,7 @@ export interface SpaceMappings {
 export type LocalCredentialProfile =
     | { type: 'iam'; profileName: string }
     | { type: 'sso'; accessKey: string; secret: string; token: string }
-    | { type: 'sso'; smusProjectId: string }
+    | { type: 'sso' | 'iam'; smusProjectId: string }
 
 export interface DeeplinkSession {
     requests: Record<string, SsmConnectionInfo>

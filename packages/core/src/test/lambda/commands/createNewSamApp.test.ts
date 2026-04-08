@@ -26,7 +26,7 @@ import {
 import { normalize } from '../../../shared/utilities/pathUtils'
 import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 import globals from '../../../shared/extensionGlobals'
-import { Runtime } from '../../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { stub } from '../../utilities/stubber'
 import sinon from 'sinon'
 import { fs } from '../../../shared'

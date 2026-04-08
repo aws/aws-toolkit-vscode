@@ -4,10 +4,10 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { Schemas } from 'aws-sdk'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { getLogger, Logger } from '../../shared/logger/logger'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { SchemaSummary } from '@aws-sdk/client-schemas'
 
 export class Cache {
     public constructor(public readonly credentialsRegionDataList: credentialsRegionDataListMap[]) {}
@@ -26,7 +26,7 @@ export interface regionRegistryMap {
 
 export interface registrySchemasMap {
     registryName: string
-    schemaList: Schemas.SchemaSummary[]
+    schemaList: SchemaSummary[]
 }
 
 /**

@@ -20,7 +20,7 @@ import { SmusCredentialExpiry, SmusTimeouts, SmusErrorCodes, validateCredentialF
  * its own credential lifecycle independently
  */
 export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
-    private readonly logger = getLogger()
+    private readonly logger = getLogger('smus')
     private credentialCache?: {
         credentials: AWS.Credentials
         expiresAt: Date
@@ -120,15 +120,15 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
      * @returns Promise resolving to credentials
      */
     public async getCredentials(): Promise<AWS.Credentials> {
-        this.logger.debug(`SMUS DER: Getting DER credentials for domain ${this.domainId}`)
+        this.logger.debug(`Getting DER credentials for domain ${this.domainId}`)
 
         // Check cache first (10-minute expiry with 5-minute buffer for proactive refresh)
         if (this.credentialCache && this.credentialCache.expiresAt > new Date()) {
-            this.logger.debug(`SMUS DER: Using cached DER credentials for domain ${this.domainId}`)
+            this.logger.debug(`Using cached DER credentials for domain ${this.domainId}`)
             return this.credentialCache.credentials
         }
 
-        this.logger.debug(`SMUS DER: Fetching credentials from API for domain ${this.domainId}`)
+        this.logger.debug(`Fetching credentials from API for domain ${this.domainId}`)
 
         try {
             // Get current SSO access token
@@ -139,11 +139,11 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                 })
             }
 
-            this.logger.debug(`SMUS DER: Got access token for refresh for domain ${this.domainId}`)
+            this.logger.debug(`Got access token for refresh for domain ${this.domainId}`)
 
             // Call SMUS redeem token API to get DER credentials
             const redeemUrl = new URL('/sso/redeem-token', this.domainUrl)
-            this.logger.debug(`SMUS DER: Calling redeem token endpoint: ${redeemUrl.toString()}`)
+            this.logger.debug(`Calling redeem token endpoint: ${redeemUrl.toString()}`)
 
             const requestBody = {
                 domainId: this.domainId,
@@ -182,14 +182,14 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                 throw fetchError
             }
 
-            this.logger.debug(`SMUS DER: Redeem token response status: ${response.status} for domain ${this.domainId}`)
+            this.logger.debug(`Redeem token response status: ${response.status} for domain ${this.domainId}`)
 
             if (!response.ok) {
                 // Try to get response body for more details
                 let responseBody = ''
                 try {
                     responseBody = await response.text()
-                    this.logger.debug(`SMUS DER: Error response body for domain ${this.domainId}: ${responseBody}`)
+                    this.logger.debug(`Error response body for domain ${this.domainId}: ${responseBody}`)
                 } catch (bodyErr) {
                     this.logger.debug(
                         `SMUS DER: Could not read error response body for domain ${this.domainId}: ${bodyErr}`
@@ -212,7 +212,7 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                     expiration: string
                 }
             }
-            this.logger.debug(`SMUS DER: Successfully received credentials from API for domain ${this.domainId}`)
+            this.logger.debug(`Successfully received credentials from API for domain ${this.domainId}`)
 
             // Validate the response data structure
             if (!data.credentials) {
@@ -265,12 +265,12 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
                     credentialExpiresAt = parsedExpiration
                 }
                 if (!isNaN(credentialExpiresAt.getTime())) {
-                    this.logger.debug(`SMUS DER: Credential expires at ${credentialExpiresAt.toISOString()}`)
+                    this.logger.debug(`Credential expires at ${credentialExpiresAt.toISOString()}`)
                 } else {
-                    this.logger.debug(`SMUS DER: Invalid credential expiration date, using default`)
+                    this.logger.debug(`Invalid credential expiration date, using default`)
                 }
             } else {
-                this.logger.debug(`SMUS DER: No expiration provided, using default`)
+                this.logger.debug(`No expiration provided, using default`)
                 credentialExpiresAt = new Date(Date.now() + SmusCredentialExpiry.derExpiryMs)
             }
 
@@ -296,7 +296,7 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
 
             return awsCredentials
         } catch (err) {
-            this.logger.error('SMUS DER: Failed to fetch credentials for domain %s: %s', this.domainId, err)
+            this.logger.error('Failed to fetch credentials for domain %s: %s', this.domainId, err)
             throw new ToolkitError(`Failed to fetch DER credentials for domain ${this.domainId}: ${err}`, {
                 code: 'DerCredentialsFetchFailed',
                 cause: err instanceof Error ? err : undefined,
@@ -309,17 +309,17 @@ export class DomainExecRoleCredentialsProvider implements CredentialsProvider {
      * Clears the internal cache without fetching new credentials
      */
     public invalidate(): void {
-        this.logger.debug(`SMUS DER: Invalidating cached DER credentials for domain ${this.domainId}`)
+        this.logger.debug(`Invalidating cached DER credentials for domain ${this.domainId}`)
         // Clear cache to force fresh fetch on next getCredentials() call
         this.credentialCache = undefined
-        this.logger.debug(`SMUS DER: Successfully invalidated DER credentials cache for domain ${this.domainId}`)
+        this.logger.debug(`Successfully invalidated DER credentials cache for domain ${this.domainId}`)
     }
     /**
      * Disposes of the provider and cleans up resources
      */
     public dispose(): void {
-        this.logger.debug(`SMUS DER: Disposing DER credentials provider for domain ${this.domainId}`)
+        this.logger.debug(`Disposing DER credentials provider for domain ${this.domainId}`)
         this.invalidate()
-        this.logger.debug(`SMUS DER: Successfully disposed DER credentials provider for domain ${this.domainId}`)
+        this.logger.debug(`Successfully disposed DER credentials provider for domain ${this.domainId}`)
     }
 }

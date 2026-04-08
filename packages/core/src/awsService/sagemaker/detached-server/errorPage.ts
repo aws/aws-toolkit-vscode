@@ -32,7 +32,11 @@ export const getVSCodeErrorTitle = (error: SageMakerServiceException): string =>
     return ErrorText.StartSession[ExceptionType.DEFAULT].Title
 }
 
-export const getVSCodeErrorText = (error: SageMakerServiceException, isSmus?: boolean): string => {
+export const getVSCodeErrorText = (
+    error: SageMakerServiceException,
+    isSmus?: boolean,
+    isSmusIamConn?: boolean
+): string => {
     const exceptionType = error.name as ExceptionType
 
     switch (exceptionType) {
@@ -41,9 +45,12 @@ export const getVSCodeErrorText = (error: SageMakerServiceException, isSmus?: bo
             return ErrorText.StartSession[exceptionType].Text.replace('{message}', error.message)
         case ExceptionType.EXPIRED_TOKEN:
             // Use SMUS-specific message if in SMUS context
-            return isSmus
-                ? ErrorText.StartSession[ExceptionType.EXPIRED_TOKEN].SmusText
-                : ErrorText.StartSession[exceptionType].Text
+            if (isSmus) {
+                return isSmusIamConn
+                    ? ErrorText.StartSession[ExceptionType.EXPIRED_TOKEN].SmusIamText
+                    : ErrorText.StartSession[ExceptionType.EXPIRED_TOKEN].SmusSsoText
+            }
+            return ErrorText.StartSession[exceptionType].Text
         case ExceptionType.INTERNAL_FAILURE:
         case ExceptionType.RESOURCE_LIMIT_EXCEEDED:
         case ExceptionType.THROTTLING:
@@ -66,16 +73,18 @@ export const ErrorText = {
         [ExceptionType.EXPIRED_TOKEN]: {
             Title: 'Authentication expired',
             Text: 'Your session has expired. Please refresh your credentials and try again.',
-            SmusText:
-                'Your session has expired. This is likely due to network connectivity issues after machine sleep/resume. Please wait 10-30 seconds for automatic credential refresh, then try again. If the issue persists, try reconnecting through AWS Toolkit.',
+            SmusSsoText:
+                'Your session has expired. This is likely due to network connectivity issues after machine sleep/resume. Wait 10-30 seconds for automatic credential refresh, then try again. If the issue persists, try reconnecting through AWS Toolkit.',
+            SmusIamText:
+                'Your session has expired. Update the credentials associated with the IAM profile or use a valid IAM profile, then try again.',
         },
         [ExceptionType.INTERNAL_FAILURE]: {
-            Title: 'Failed to connect remotely to VSCode',
-            Text: 'Unable to establish remote connection to VSCode. This could be due to several factors. Please try again by clicking the VSCode button. If the problem persists, please contact your admin.',
+            Title: 'Failed to connect remotely to the Space',
+            Text: 'Unable to establish remote connection to the Space. This could be due to several factors. Please try again by clicking the connect button. If the problem persists, please contact your admin.',
         },
         [ExceptionType.RESOURCE_LIMIT_EXCEEDED]: {
             Title: 'Connection limit reached',
-            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one.',
+            Text: 'You have 10 active remote connections to this space. Stop an existing connection to start a new one. If the problem persists, try restarting the Space.',
         },
         [ExceptionType.THROTTLING]: {
             Title: 'Too many connection attempts',

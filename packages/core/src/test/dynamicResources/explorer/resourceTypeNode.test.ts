@@ -13,7 +13,7 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { CloudControlClient } from '../../../shared/clients/cloudControl'
-import { CloudControl } from 'aws-sdk'
+import { ResourceDescription } from '@aws-sdk/client-cloudcontrol'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 import sinon from 'sinon'
 
@@ -183,7 +183,7 @@ describe('ResourceTypeNode', function () {
         cloudControl.listResources = sinon.stub().resolves({
             TypeName: fakeTypeName,
             NextToken: undefined,
-            ResourceDescriptions: resourceIdentifiers.map<CloudControl.ResourceDescription>((identifier) => {
+            ResourceDescriptions: resourceIdentifiers.map<ResourceDescription>((identifier) => {
                 return {
                     Identifier: identifier,
                     ResourceModel: '',

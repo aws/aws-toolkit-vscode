@@ -5,7 +5,7 @@
 
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { Iot } from 'aws-sdk'
+import { PolicyVersion } from '@aws-sdk/client-iot'
 import { deletePolicyCommand } from '../../../../awsService/iot/commands/deletePolicy'
 import { IotPolicyFolderNode } from '../../../../awsService/iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../../awsService/iot/explorer/iotPolicyNode'
@@ -42,8 +42,8 @@ describe('deletePolicyCommand', function () {
         iot.listPolicyTargets = listPolicyStub
         const policyVersions = ['1']
         const listPolicyVersionsStub = sinon.stub().returns(
-            asyncGenerator<Iot.PolicyVersion>(
-                policyVersions.map<Iot.PolicyVersion>((versionId) => {
+            asyncGenerator<PolicyVersion>(
+                policyVersions.map<PolicyVersion>((versionId) => {
                     return {
                         versionId: versionId,
                     }
@@ -86,8 +86,8 @@ describe('deletePolicyCommand', function () {
         iot.listPolicyTargets = listPolicyStub
         const policyVersions = ['1', '2']
         const listPolicyVersionsStub = sinon.stub().returns(
-            asyncGenerator<Iot.PolicyVersion>(
-                policyVersions.map<Iot.PolicyVersion>((versionId) => {
+            asyncGenerator<PolicyVersion>(
+                policyVersions.map<PolicyVersion>((versionId) => {
                     return {
                         versionId: versionId,
                     }

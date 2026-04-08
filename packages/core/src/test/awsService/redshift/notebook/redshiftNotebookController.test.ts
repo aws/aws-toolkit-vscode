@@ -5,19 +5,19 @@
 
 import * as vscode from 'vscode'
 import { RedshiftNotebookController } from '../../../../awsService/redshift/notebook/redshiftNotebookController'
-import sinon = require('sinon')
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock'
 import assert = require('assert')
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftDataClient } from '@aws-sdk/client-redshift-data'
+import sinon = require('sinon')
 
 describe('RedshiftNotebookController', () => {
-    const mockRedshiftData = <RedshiftData>{}
-    const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
+    const mockRedshiftData: AwsClientStub<RedshiftDataClient> = mockClient(RedshiftDataClient)
+    // @ts-expect-error
+    const redshiftClient = new DefaultRedshiftClient('us-east-1', () => mockRedshiftData, undefined, undefined)
     let notebookController: any
     let createNotebookControllerStub: any
-    let executeQueryStub: sinon.SinonStub
     beforeEach(() => {
-        redshiftClient.executeQuery = executeQueryStub
         createNotebookControllerStub = sinon.stub(vscode.notebooks, 'createNotebookController')
         const controllerInstanceValue = {
             supportedLanguages: ['sql'],
@@ -29,6 +29,7 @@ describe('RedshiftNotebookController', () => {
         notebookController = new RedshiftNotebookController(redshiftClient)
     })
     afterEach(() => {
+        mockRedshiftData.reset()
         sinon.restore()
     })
     it('validating parameters of  a notebook controller instance', () => {
