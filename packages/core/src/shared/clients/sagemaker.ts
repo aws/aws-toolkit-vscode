@@ -58,7 +58,7 @@ import { continueText, cancel } from '../localizedText'
 import { showConfirmationMessage } from '../utilities/messages'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
-import { HyperpodCluster } from './kubectlClient'
+import { HyperpodCluster } from '../../awsService/sagemaker/detached-server/hyperpodTypes'
 import { EKSClient } from '@aws-sdk/client-eks'
 import { DevSettings } from '../settings'
 

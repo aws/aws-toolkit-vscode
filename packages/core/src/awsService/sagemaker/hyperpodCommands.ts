@@ -80,6 +80,8 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             eksEndpoint: eksCluster?.endpoint,
             eksCertAuthData: eksCluster?.certificateAuthority?.data,
             wsUrl: connectionUrl,
+            token: workspaceConnection.token || undefined,
+            session: workspaceConnection.sessionId || undefined,
         })
 
         await startVscodeRemote(
