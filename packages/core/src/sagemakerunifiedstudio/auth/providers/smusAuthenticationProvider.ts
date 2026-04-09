@@ -181,6 +181,24 @@ export class SmusAuthenticationProvider {
             // Update IAM mode context in SMUS space environment
             if (getContext('aws.smus.inSmusSpaceEnvironment')) {
                 await this.initIamModeContextInSpaceEnvironment()
+            } else if (activeConn && this.isConnected()) {
+                // For local connections (SSO or IAM), detect domain type via GetDomain
+                try {
+                    const credentialsProvider =
+                        activeConn.type === 'iam'
+                            ? await this.getCredentialsProviderForIamProfile(
+                                  (activeConn as SmusIamConnection).profileName
+                              )
+                            : ((await this.getDerCredentialsProvider()) as CredentialsProvider)
+                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
+                        credentialsProvider,
+                        this.getDomainRegion()
+                    )
+                    const domainInfo = await datazoneHelper.getDomain(this.getDomainId())
+                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                } catch (err) {
+                    this.logger.warn(`Failed to detect domain type on connection change: ${(err as Error).message}`)
+                }
             }
 
             this.onDidChangeEmitter.fire()

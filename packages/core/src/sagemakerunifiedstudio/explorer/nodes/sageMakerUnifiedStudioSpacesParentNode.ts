@@ -336,10 +336,16 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         if (getContext('aws.smus.isIamMode')) {
             userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
-            // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
+            // For SSO login into IDC domains, will be 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
+            this.logger.debug(`User id extracted from identity: ${userId}`)
             try {
-                userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+                if (!getContext('aws.smus.isIamModeDomain')) {
+                    userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+                } else {
+                    // SSO → IAM domain: userId is 'ROLE_ID:session-name', extract session name
+                    userProfileId = userId?.split(':')[1]
+                }
             } catch {
                 // SSO login into IAM domain — ssoRedeemToken may not return DER-style session name
                 // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info

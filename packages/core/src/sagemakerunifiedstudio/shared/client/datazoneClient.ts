@@ -776,18 +776,14 @@ export class DataZoneClient {
                 `Getting environment details for domain ${this.getDomainId()}, environment ${environmentId}`
             )
 
+            // In IAM (EXPRESS) domains, GetEnvironment requires project execution role credentials
+            // (vended by GetEnvironmentCredentials), not the Admin Project Role credentials.
+            // We create a one-off client here instead of using createDZClientForProject because
+            // this method lives inside DataZoneClient and doesn't have access to smusAuthProvider.
             let datazoneClient
-            // In IAM (EXPRESS) domains, GetEnvironment requires project-scoped credentials
             if (getContext('aws.smus.isIamModeDomain') && projectId) {
                 const creds = await this.getProjectDefaultEnvironmentCreds(projectId)
-                datazoneClient = new DataZone({
-                    region: this.getRegion(),
-                    credentials: {
-                        accessKeyId: creds.accessKeyId!,
-                        secretAccessKey: creds.secretAccessKey!,
-                        sessionToken: creds.sessionToken!,
-                    },
-                })
+                datazoneClient = this.createProjectCredentialsDataZoneClient(creds)
             } else {
                 datazoneClient = await this.getDataZoneClient()
             }
@@ -918,5 +914,24 @@ export class DataZoneClient {
             this.logger.error('Failed to get tooling blueprint for domain %s: %s', domainId, (err as Error).message)
             throw new ToolkitError('Failed to get tooling blueprint', { code: 'ToolingBlueprintError' })
         }
+    }
+
+    /**
+     * Creates a one-off DataZone SDK client with raw credentials, respecting endpoint overrides.
+     */
+    private createProjectCredentialsDataZoneClient(creds: GetEnvironmentCredentialsCommandOutput): DataZone {
+        const clientConfig: any = {
+            region: this.getRegion(),
+            credentials: {
+                accessKeyId: creds.accessKeyId!,
+                secretAccessKey: creds.secretAccessKey!,
+                sessionToken: creds.sessionToken!,
+            },
+        }
+        const customEndpoint = DevSettings.instance.get('endpoints', {})['datazone']
+        if (customEndpoint) {
+            clientConfig.endpoint = customEndpoint
+        }
+        return new DataZone(clientConfig)
     }
 }
