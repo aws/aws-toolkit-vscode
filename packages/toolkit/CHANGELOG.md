@@ -1,3 +1,8 @@
+## 4.0.0 2026-04-09
+
+- **Bug Fix** HyperPod: Improved connection reliability with automatic token refresh and fixed connection failures on Windows.
+- **Feature** CloudFormation Language Server: templates exceeding 51KB now automatically enforce S3 upload instead of silently failing at deployment
+
 ## 3.101.0 2026-03-26
 
 - Miscellaneous non-user-facing changes

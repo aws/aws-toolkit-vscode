@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "CloudFormation Language Server: templates exceeding 51KB now automatically enforce S3 upload instead of silently failing at deployment"
-}
