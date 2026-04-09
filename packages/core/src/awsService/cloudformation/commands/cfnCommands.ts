@@ -402,6 +402,15 @@ type UserInputtedTemplateParameters = {
     s3Key?: string
 }
 
+async function promptForS3Key(templateUri: string): Promise<string | undefined> {
+    const fileName = templateUri.split('/').pop()
+    const timestamp = Date.now()
+    const defaultKey = fileName
+        ? `${fileName.split('.')[0]}-${timestamp}.${fileName.split('.').pop()}`
+        : `template-${timestamp}.yaml`
+    return getS3Key(defaultKey)
+}
+
 async function changeSetSteps(
     client: LanguageClient,
     documentManager: DocumentManager,
@@ -432,31 +441,38 @@ async function changeSetSteps(
     // Ask user if they want to upload to S3
     let s3Bucket: string | undefined
     let s3Key: string | undefined
-    const uploadChoice = await shouldUploadToS3()
-    if (uploadChoice === undefined) {
-        return // User chose to configure settings, exit command
-    }
-    if (uploadChoice) {
-        s3Bucket = await getS3Bucket()
+    const templateExceedsSizeLimit = documentManager.requiresS3Upload(templateUri)
+
+    if (templateExceedsSizeLimit || hasArtifacts) {
+        const reason = templateExceedsSizeLimit
+            ? 'S3 bucket is required because template exceeds the 51,200 byte CloudFormation limit'
+            : 'S3 bucket is required because template contains artifacts that need to be uploaded to S3'
+        s3Bucket = await getS3Bucket(reason)
         if (!s3Bucket) {
             return
         }
 
-        const fileName = templateUri.split('/').pop()
-        const timestamp = Date.now()
-        const fileNameWithTimestamp = fileName
-            ? `${fileName.split('.')[0]}-${timestamp}.${fileName.split('.').pop()}`
-            : `template-${timestamp}.yaml`
-        s3Key = await getS3Key(fileNameWithTimestamp)
-        if (!s3Key) {
-            return
+        if (templateExceedsSizeLimit) {
+            s3Key = await promptForS3Key(templateUri)
+            if (!s3Key) {
+                return
+            }
         }
-    } else if (hasArtifacts) {
-        s3Bucket = await getS3Bucket(
-            'S3 bucket is required because template contains artifacts that need to be uploaded to S3'
-        )
-        if (!s3Bucket) {
-            return
+    } else {
+        const uploadChoice = await shouldUploadToS3()
+        if (uploadChoice === undefined) {
+            return // User chose to configure settings, exit command
+        }
+        if (uploadChoice) {
+            s3Bucket = await getS3Bucket()
+            if (!s3Bucket) {
+                return
+            }
+
+            s3Key = await promptForS3Key(templateUri)
+            if (!s3Key) {
+                return
+            }
         }
     }
 

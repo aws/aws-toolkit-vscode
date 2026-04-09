@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { HyperpodCluster, HyperpodDevSpace } from '../../../shared/clients/kubectlClient'
+import { HyperpodCluster, HyperpodDevSpace } from '../detached-server/hyperpodTypes'
 import { SagemakerHyperpodNode } from './sagemakerHyperpodNode'
 import { getIcon } from '../../../shared/icons'
 import { getLogger } from '../../../shared/logger/logger'

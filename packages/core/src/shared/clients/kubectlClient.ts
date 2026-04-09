@@ -4,57 +4,48 @@
  */
 
 import * as vscode from 'vscode'
-import * as k8s from '@kubernetes/client-node'
 import { getLogger } from '../logger/logger'
 import { Cluster } from '@aws-sdk/client-eks'
 import { SagemakerDevSpaceNode } from '../../awsService/sagemaker/explorer/sagemakerDevSpaceNode'
-import globals from '../extensionGlobals'
+import { AwsCredentialIdentity, Provider } from '@aws-sdk/types'
+import { KubectlClient as KubectlClientBase } from '../../awsService/sagemaker/detached-server/kubectlClientStub'
+import {
+    HyperpodDevSpace,
+    HyperpodCluster,
+    WorkspaceConnectionResult,
+} from '../../awsService/sagemaker/detached-server/hyperpodTypes'
 
-export interface HyperpodDevSpace {
-    name: string
-    namespace: string
-    cluster: string
-    group: string
-    version: string
-    plural: string
-    status: string
-    appType: string
-    creator: string
-    accessType: string
-}
-
-export interface HyperpodCluster {
-    clusterName: string
-    clusterArn: string
-    status: string
-    eksClusterName?: string
-    eksClusterArn?: string
-    regionCode: string
-}
-
-export class KubectlClient {
-    private kubeConfig: k8s.KubeConfig
-    private k8sApi: k8s.CustomObjectsApi
-    private eksCluster: Cluster
-
-    public constructor(eksCluster: Cluster, _hyperpodCluster: HyperpodCluster) {
-        this.eksCluster = eksCluster
-        this.kubeConfig = new k8s.KubeConfig()
-        this.loadKubeConfig(eksCluster, _hyperpodCluster)
-        this.k8sApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi)
+export class KubectlClient extends KubectlClientBase {
+    private constructor(
+        eksCluster: Cluster,
+        hyperpodCluster: HyperpodCluster,
+        credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
+    ) {
+        super(eksCluster, hyperpodCluster, credentials)
     }
 
-    getEksCluster(): Cluster {
-        return this.eksCluster
+    static override async createForCluster(
+        eksCluster: Cluster,
+        hyperpodCluster: HyperpodCluster,
+        credentials: AwsCredentialIdentity | Provider<AwsCredentialIdentity>
+    ): Promise<KubectlClient> {
+        const client = new KubectlClient(eksCluster, hyperpodCluster, credentials)
+        await client.initKubeConfig()
+        return client
+    }
+
+    override getEksCluster(): Cluster {
+        return super.getEksCluster() as Cluster
     }
 
     async getSpacesForCluster(eksCluster: Cluster): Promise<HyperpodDevSpace[]> {
         try {
+            await this.ensureValidToken()
             const group = 'workspace.jupyter.org'
             const version = 'v1alpha1'
             const plural = 'workspaces'
 
-            const res = await this.k8sApi!.listClusterCustomObject(group, version, plural)
+            const res = await this.getApi().listClusterCustomObject(group, version, plural)
             if (!res) {
                 getLogger().info(`No cluster custom object found`)
                 return []
@@ -91,58 +82,10 @@ export class KubectlClient {
         return []
     }
 
-    private loadKubeConfig(eksCluster: Cluster, hyperpodCluster: HyperpodCluster): void {
-        if (eksCluster.name && eksCluster.endpoint) {
-            const credentialId = globals.awsContext.getCredentialProfileName()
-            const awsProfile = credentialId?.startsWith('profile:') ? credentialId.split('profile:')[1] : credentialId
-            this.kubeConfig.loadFromOptions({
-                clusters: [
-                    {
-                        name: eksCluster.name,
-                        server: eksCluster.endpoint,
-                        caData: eksCluster.certificateAuthority?.data,
-                        skipTLSVerify: false,
-                    },
-                ],
-                users: [
-                    {
-                        name: eksCluster.name,
-                        exec: {
-                            apiVersion: 'client.authentication.k8s.io/v1beta1',
-                            command: 'aws',
-                            args: [
-                                'eks',
-                                'get-token',
-                                '--cluster-name',
-                                eksCluster.name,
-                                '--region',
-                                hyperpodCluster.regionCode,
-                            ],
-                            env: [
-                                {
-                                    name: 'AWS_PROFILE',
-                                    value: awsProfile,
-                                },
-                            ],
-                            interactiveMode: 'Never',
-                        },
-                    },
-                ],
-                contexts: [
-                    {
-                        name: eksCluster.name,
-                        cluster: eksCluster.name,
-                        user: eksCluster.name,
-                    },
-                ],
-                currentContext: eksCluster.name,
-            })
-        }
-    }
-
     async getHyperpodSpaceStatus(devSpace: HyperpodDevSpace): Promise<string> {
         try {
-            const response = await this.k8sApi!.getNamespacedCustomObject(
+            await this.ensureValidToken()
+            const response = await this.getApi().getNamespacedCustomObject(
                 devSpace.group,
                 devSpace.version,
                 devSpace.namespace,
@@ -153,11 +96,70 @@ export class KubectlClient {
             const statusObj = (response.body as any).status
             const desiredStatus = (response.body as any).spec?.desiredStatus
             const conditions = statusObj?.conditions
-            const currentStatus = this.getStatusFromConditions(conditions, desiredStatus)
-
-            return currentStatus
+            return this.getStatusFromConditions(conditions, desiredStatus)
         } catch (error) {
-            throw new Error(`[Hyperpod] Failed to get status for devSpace: ${devSpace.name}`)
+            throw new Error(
+                `[Hyperpod] Failed to get status for devSpace: ${devSpace.name}: ${error instanceof Error ? error.message : String(error)}`
+            )
+        }
+    }
+
+    async startHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
+        getLogger().info(`[Hyperpod] Starting devSpace: %s`, node.devSpace.name)
+        await this.patchDevSpaceStatus(node.devSpace, 'Running')
+        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
+        node.getParent().trackPendingNode(node.getDevSpaceKey())
+    }
+
+    async stopHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
+        getLogger().info(`[Hyperpod] Stopping devSpace: %s`, node.devSpace.name)
+        await this.patchDevSpaceStatus(node.devSpace, 'Stopped')
+        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
+        node.getParent().trackPendingNode(node.getDevSpaceKey())
+    }
+
+    async patchDevSpaceStatus(devSpace: HyperpodDevSpace, desiredStatus: 'Running' | 'Stopped'): Promise<void> {
+        try {
+            await this.ensureValidToken()
+            const patchBody = {
+                spec: {
+                    desiredStatus: desiredStatus,
+                },
+            }
+
+            await this.getApi().patchNamespacedCustomObject(
+                devSpace.group,
+                devSpace.version,
+                devSpace.namespace,
+                devSpace.plural,
+                devSpace.name,
+                patchBody,
+                undefined,
+                undefined,
+                undefined,
+                { headers: { 'Content-Type': 'application/merge-patch+json' } }
+            )
+        } catch (error) {
+            throw new Error(
+                `[Hyperpod] Failed to update transitional status for devSpace ${devSpace.name}: ${(error as Error).message}`
+            )
+        }
+    }
+
+    override async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
+        getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
+        try {
+            const result = await super.createWorkspaceConnection(devSpace)
+            if (!result.url) {
+                throw new Error('No workspace connection URL returned')
+            }
+            getLogger().info(`Connection Type: ${result.type}`)
+            return result
+        } catch (error) {
+            getLogger().error(
+                `[Hyperpod] Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
+            )
+            throw error
         }
     }
 
@@ -184,96 +186,6 @@ export class KubectlClient {
             return 'Stopped'
         } else {
             return 'Unknown'
-        }
-    }
-
-    async startHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
-        getLogger().info(`[Hyperpod] Starting devSpace: %s`, node.devSpace.name)
-        await this.patchDevSpaceStatus(node.devSpace, 'Running')
-        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
-        node.getParent().trackPendingNode(node.getDevSpaceKey())
-    }
-
-    async stopHyperpodDevSpace(node: SagemakerDevSpaceNode): Promise<void> {
-        getLogger().info(`[Hyperpod] Stopping devSpace: %s`, node.devSpace.name)
-        await this.patchDevSpaceStatus(node.devSpace, 'Stopped')
-        node.devSpace.status = await this.getHyperpodSpaceStatus(node.devSpace)
-        node.getParent().trackPendingNode(node.getDevSpaceKey())
-    }
-
-    async patchDevSpaceStatus(devSpace: HyperpodDevSpace, desiredStatus: 'Running' | 'Stopped'): Promise<void> {
-        try {
-            const patchBody = {
-                spec: {
-                    desiredStatus: desiredStatus,
-                },
-            }
-
-            await this.k8sApi!.patchNamespacedCustomObject(
-                devSpace.group,
-                devSpace.version,
-                devSpace.namespace,
-                devSpace.plural,
-                devSpace.name,
-                patchBody,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { 'Content-Type': 'application/merge-patch+json' } }
-            )
-        } catch (error) {
-            throw new Error(
-                `[Hyperpod] Failed to update transitional status for devSpace ${devSpace.name}: ${(error as Error).message}`
-            )
-        }
-    }
-
-    async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<{ type: string; url: string }> {
-        try {
-            getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
-
-            const group = 'connection.workspace.jupyter.org'
-            const version = 'v1alpha1'
-            const plural = 'workspaceconnections'
-
-            const workspaceConnection = {
-                apiVersion: `${group}/${version}`,
-                kind: 'WorkspaceConnection',
-                metadata: {
-                    namespace: devSpace.namespace,
-                },
-                spec: {
-                    workspaceName: devSpace.name,
-                    workspaceConnectionType: 'vscode-remote',
-                },
-            }
-
-            getLogger().info(`[Hyperpod] Creating WorkspaceConnection: %O`, workspaceConnection)
-
-            const response = await this.k8sApi!.createNamespacedCustomObject(
-                group,
-                version,
-                devSpace.namespace,
-                plural,
-                workspaceConnection
-            )
-
-            const body = response.body as any
-            const presignedUrl = body.status?.workspaceConnectionUrl
-            const connectionType = body.status?.workspaceConnectionType
-
-            if (!presignedUrl) {
-                throw new Error('No workspace connection URL returned')
-            }
-
-            getLogger().info(`Connection Type: ${connectionType}`)
-            getLogger().info(`Presigned URL: ${presignedUrl}`)
-            return { type: connectionType || 'vscode-remote', url: presignedUrl }
-        } catch (error) {
-            getLogger().error(`[Hyperpod] Failed to create workspace connection: ${error}`)
-            throw new Error(
-                `Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
-            )
         }
     }
 }

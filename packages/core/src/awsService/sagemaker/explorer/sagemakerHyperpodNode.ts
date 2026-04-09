@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
-import { HyperpodCluster, HyperpodDevSpace, KubectlClient } from '../../../shared/clients/kubectlClient'
+import { KubectlClient } from '../../../shared/clients/kubectlClient'
+import { HyperpodCluster, HyperpodDevSpace } from '../detached-server/hyperpodTypes'
 import { SagemakerDevSpaceNode } from './sagemakerDevSpaceNode'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { SagemakerConstants } from './constants'
@@ -18,6 +19,7 @@ import { DefaultStsClient } from '../../../shared/clients/stsClient'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import globals from '../../../shared/extensionGlobals'
+import { AwsCredentialIdentity } from '@aws-sdk/types'
 
 export const hyperpodContextValue = 'awsSagemakerHyperpodNode'
 export type SelectedClusterNamespaces = [string, string[]][]
@@ -92,7 +94,25 @@ export class SagemakerHyperpodNode extends AWSTreeNodeBase {
 
                 let kcClient = this.getKubectlClient(cluster.clusterName)
                 if (!kcClient) {
-                    kcClient = new KubectlClient(eksCluster, cluster)
+                    const creds = await globals.awsContext.getCredentials()
+                    if (!creds) {
+                        getLogger().warn(
+                            `No AWS credentials available for EKS authentication on cluster ${cluster.clusterName}`
+                        )
+                        continue
+                    }
+                    if (!creds.accessKeyId || !creds.secretAccessKey) {
+                        getLogger().warn(`AWS credentials are missing for cluster ${cluster.clusterName}`)
+                        continue
+                    }
+                    const credentialsProvider = async (): Promise<AwsCredentialIdentity> => {
+                        return {
+                            accessKeyId: creds.accessKeyId,
+                            secretAccessKey: creds.secretAccessKey,
+                            sessionToken: creds.sessionToken,
+                        }
+                    }
+                    kcClient = await KubectlClient.createForCluster(eksCluster, cluster, credentialsProvider)
                     this.kubectlClients.set(cluster.clusterName, kcClient)
                 }
                 const spacesPerCluster = await kcClient.getSpacesForCluster(eksCluster)
