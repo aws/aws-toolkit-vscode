@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "HyperPod: Improved connection reliability with automatic token refresh and fixed connection failures on Windows."
-}
