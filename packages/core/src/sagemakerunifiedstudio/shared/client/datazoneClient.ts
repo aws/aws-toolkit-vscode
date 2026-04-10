@@ -239,40 +239,17 @@ export class DataZoneClient {
             )
             const datazoneClient = await this.getDataZoneClient()
 
-            let toolingBlueprint
-            try {
-                toolingBlueprint = await this.getToolingBlueprint(datazoneClient, this.domainId)
-            } catch (err) {
-                this.logger.error(
-                    'Failed to get tooling blueprint for domainId: %s, %s',
-                    this.domainId,
-                    (err as Error).message
-                )
-                throw err
-            }
-            if (!toolingBlueprint) {
-                this.logger.error('No tooling blueprint found for domain %s', this.domainId)
-                throw new Error('No tooling blueprint found')
-            }
-            this.logger.debug(`Found tooling blueprint with ID: ${toolingBlueprint.id}, listing environments`)
+            const toolingEnv = await this.getToolingEnvironmentForProject(datazoneClient, this.domainId, projectId)
 
-            const listEnvs = await datazoneClient.listEnvironments({
-                domainIdentifier: this.domainId,
-                projectIdentifier: projectId,
-                environmentBlueprintIdentifier: toolingBlueprint.id,
-                provider: sageMakerProviderName,
-            })
-
-            const defaultEnv = listEnvs.items?.[0]
-            if (!defaultEnv) {
-                this.logger.error('Failed to find default Tooling environment')
-                throw new Error('Failed to find default Tooling environment')
+            if (!toolingEnv?.id) {
+                throw new Error('No tooling environment found for project')
             }
-            this.logger.debug(`Found default environment with ID: ${defaultEnv.id}, getting environment credentials`)
+
+            this.logger.debug(`Found default environment with ID: ${toolingEnv.id}, getting environment credentials`)
 
             const defaultEnvCreds = await datazoneClient.getEnvironmentCredentials({
                 domainIdentifier: this.domainId,
-                environmentIdentifier: defaultEnv.id,
+                environmentIdentifier: toolingEnv.id,
             })
 
             return defaultEnvCreds
@@ -716,50 +693,15 @@ export class DataZoneClient {
         this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
         const datazoneClient = await this.getDataZoneClient()
 
-        let toolingBlueprint
-        try {
-            toolingBlueprint = await this.getToolingBlueprint(datazoneClient, domainId)
-        } catch (err) {
-            this.logger.error('Failed to get tooling blueprint for domainId: %s, %s', domainId, (err as Error).message)
-            throw err
-        }
+        const toolingEnv = await this.getToolingEnvironmentForProject(datazoneClient, domainId, projectId)
 
-        if (!toolingBlueprint) {
-            this.logger.error('No tooling blueprint found for domain %s', domainId)
-            throw new Error('No tooling blueprint found')
-        }
-
-        // List environments for the project
-        let listEnvs
-        try {
-            this.logger.debug(`Listing environments for project ${projectId} with blueprint ${toolingBlueprint.id}`)
-            listEnvs = await datazoneClient.listEnvironments({
-                domainIdentifier: domainId,
-                projectIdentifier: projectId,
-                environmentBlueprintIdentifier: toolingBlueprint.id,
-                provider: sageMakerProviderName,
-            })
-        } catch (err) {
-            this.logger.error(
-                'Failed to list environments for domainId: %s, projectId: %s, %s',
-                domainId,
-                projectId,
-                (err as Error).message
-            )
-            throw err
-        }
-
-        const defaultEnv = listEnvs.items?.[0]
-        if (!defaultEnv || !defaultEnv.id) {
-            this.logger.error(
-                'No default Tooling environment found for domainId: %s, projectId: %s',
-                domainId,
-                projectId
-            )
+        if (!toolingEnv?.id) {
+            this.logger.error('No tooling environment found for domain %s, project %s', domainId, projectId)
             throw new Error('No default Tooling environment found for project')
         }
-        this.logger.debug(`Found tooling environment with ID: ${defaultEnv.id}`)
-        return defaultEnv.id
+
+        this.logger.debug(`Found tooling environment with ID: ${toolingEnv.id}`)
+        return toolingEnv.id
     }
 
     /**
@@ -871,48 +813,48 @@ export class DataZoneClient {
 
     /**
      * Gets the tooling blueprint for a domain.
-     * For IAM Domain mode: Use ToolingLite directly.
-     * For IDC Domain mode: Try ToolingLite first, fall back to Tooling.
+     * Finds the tooling environment for a project by listing blueprints matching "Tooling"
+     * (which returns both Tooling and ToolingLite) and checking which one has an environment.
+     * A project can only have either a Tooling or ToolingLite environment.
      * @param datazoneClient The DataZone client
      * @param domainId The domain identifier
-     * @returns The tooling blueprint or undefined if not found
+     * @param projectId The project identifier
+     * @returns The tooling environment, or undefined if not found
      */
-    private async getToolingBlueprint(datazoneClient: DataZone, domainId: string) {
+    private async getToolingEnvironmentForProject(
+        datazoneClient: DataZone,
+        domainId: string,
+        projectId: string
+    ): Promise<import('@aws-sdk/client-datazone').EnvironmentSummary | undefined> {
         try {
-            if (getContext('aws.smus.isIamModeDomain')) {
-                // IAM domain: use 'ToolingLite' directly
-                const result = await datazoneClient.listEnvironmentBlueprints({
-                    domainIdentifier: domainId,
-                    managed: true,
-                    name: 'ToolingLite',
-                })
-
-                return result.items?.[0]
-            }
-
-            // IDC domain: try 'ToolingLite' first
-            const toolingLiteResult = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: domainId,
-                managed: true,
-                name: 'ToolingLite',
-            })
-
-            if (toolingLiteResult.items && toolingLiteResult.items.length > 0) {
-                return toolingLiteResult.items?.[0]
-            }
-
-            // Fall back to 'Tooling' if ToolingLite not found in IDC domain
-            this.logger.debug('No ToolingLite blueprint found in IDC domain, falling back to Tooling')
-            const toolingResult = await datazoneClient.listEnvironmentBlueprints({
+            // prefix search - will return both Tooling and ToolingLite
+            const blueprintResult = await datazoneClient.listEnvironmentBlueprints({
                 domainIdentifier: domainId,
                 managed: true,
                 name: 'Tooling',
             })
 
-            return toolingResult.items?.[0]
+            if (!blueprintResult.items?.length) {
+                return undefined
+            }
+
+            for (const blueprint of blueprintResult.items) {
+                const envResult = await datazoneClient.listEnvironments({
+                    domainIdentifier: domainId,
+                    projectIdentifier: projectId,
+                    environmentBlueprintIdentifier: blueprint.id,
+                    provider: sageMakerProviderName,
+                })
+                if (envResult.items?.length) {
+                    this.logger.debug(`Found tooling environment ${envResult.items[0].id} via blueprint ${blueprint.name}`)
+                    return envResult.items[0]
+                }
+            }
+
+            return undefined
         } catch (err) {
-            this.logger.error('Failed to get tooling blueprint for domain %s: %s', domainId, (err as Error).message)
-            throw new ToolkitError('Failed to get tooling blueprint', { code: 'ToolingBlueprintError' })
+            this.logger.error('Failed to get tooling environment for domain %s: %s', domainId, (err as Error).message)
+            throw new ToolkitError('Failed to get tooling environment', { code: 'ToolingEnvironmentError' })
         }
     }
 
