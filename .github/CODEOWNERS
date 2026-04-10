@@ -3,3 +3,6 @@ packages/core/src/codewhisperer/ @aws/codewhisperer-team
 packages/core/src/amazonqFeatureDev/ @aws/earlybird
 packages/core/src/awsService/accessanalyzer/ @aws/access-analyzer
 packages/core/src/awsService/cloudformation/ @aws/cfn-dev-productivity
+packages/core/src/awsService/sagemaker/ @aws/sagemaker-code-editor
+packages/core/resources/sagemaker_connect* @aws/sagemaker-code-editor
+packages/core/resources/hyperpod_connect* @aws/sagemaker-code-editor
