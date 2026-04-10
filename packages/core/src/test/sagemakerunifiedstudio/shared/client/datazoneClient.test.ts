@@ -172,22 +172,14 @@ describe('DataZoneClient', () => {
                 getEnvironmentCredentials: sinon.stub().resolves(mockCredentials),
             }
 
-            // Mock getToolingBlueprint to return a blueprint
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').resolves({ id: 'blueprint-1', name: 'Tooling' })
+            // Mock getToolingEnvironmentForProject to return an environment
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves({ id: 'env-1', name: 'Tooling' })
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getProjectDefaultEnvironmentCreds('project-1')
 
             assert.deepStrictEqual(result, mockCredentials)
-            assert.ok(
-                mockDataZone.listEnvironments.calledWith({
-                    domainIdentifier: testDomainId,
-                    projectIdentifier: 'project-1',
-                    environmentBlueprintIdentifier: 'blueprint-1',
-                    provider: 'Amazon SageMaker',
-                })
-            )
             assert.ok(
                 mockDataZone.getEnvironmentCredentials.calledWith({
                     domainIdentifier: testDomainId,
@@ -196,31 +188,24 @@ describe('DataZoneClient', () => {
             )
         })
 
-        it('should throw error when tooling blueprint not found', async () => {
-            // Mock getToolingBlueprint to return undefined (no blueprint found)
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').resolves(undefined)
+        it('should throw error when tooling environment not found', async () => {
+            // Mock getToolingEnvironmentForProject to return undefined
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves(undefined)
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             await assert.rejects(
                 () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
-                /No tooling blueprint found/
+                /No tooling environment found/
             )
         })
 
-        it('should throw error when default environment not found', async () => {
-            const mockDataZone = {
-                listEnvironments: sinon.stub().resolves({
-                    items: [],
-                }),
-            }
-
-            // Mock getToolingBlueprint to return a blueprint
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').resolves({ id: 'blueprint-1', name: 'Tooling' })
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+        it('should throw error when getToolingEnvironmentForProject fails', async () => {
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').rejects(new Error('API Error'))
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             await assert.rejects(
                 () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
-                /Failed to find default Tooling environment/
+                /API Error/
             )
         })
     })
@@ -311,41 +296,30 @@ describe('DataZoneClient', () => {
 
     describe('getToolingEnvironmentId', () => {
         it('should get tooling environment ID successfully', async () => {
-            const mockDataZone = {
-                listEnvironments: sinon.stub().resolves({
-                    items: [{ id: 'env-1', name: 'Tooling' }],
-                }),
-            }
-
-            // Mock getToolingBlueprint to return a blueprint
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').resolves({ id: 'blueprint-1', name: 'Tooling' })
-
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves({ id: 'env-1', name: 'Tooling' })
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             const result = await dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1')
 
             assert.strictEqual(result, 'env-1')
         })
 
-        it('should handle getToolingBlueprint error', async () => {
-            const error = new ToolkitError('Failed to get tooling blueprint')
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').rejects(error)
+        it('should handle getToolingEnvironmentForProject error', async () => {
+            const error = new ToolkitError('Failed to get tooling environment')
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').rejects(error)
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
         })
 
-        it('should handle listEnvironments error', async () => {
-            const error = new Error('Environment API Error')
-            const mockDataZone = {
-                listEnvironments: sinon.stub().rejects(error),
-            }
+        it('should throw when no environment found', async () => {
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves(undefined)
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
-            // Mock getToolingBlueprint to return a blueprint
-            sinon.stub(dataZoneClient as any, 'getToolingBlueprint').resolves({ id: 'blueprint-1', name: 'Tooling' })
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
-
-            await assert.rejects(() => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'), error)
+            await assert.rejects(
+                () => dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1'),
+                /No default Tooling environment found/
+            )
         })
     })
 
