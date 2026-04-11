@@ -846,7 +846,9 @@ export class DataZoneClient {
                     provider: sageMakerProviderName,
                 })
                 if (envResult.items?.length) {
-                    this.logger.debug(`Found tooling environment ${envResult.items[0].id} via blueprint ${blueprint.name}`)
+                    this.logger.debug(
+                        `Found tooling environment ${envResult.items[0].id} via blueprint ${blueprint.name}`
+                    )
                     return envResult.items[0]
                 }
             }

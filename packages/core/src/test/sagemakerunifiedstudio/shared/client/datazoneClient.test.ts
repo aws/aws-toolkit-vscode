@@ -173,7 +173,9 @@ describe('DataZoneClient', () => {
             }
 
             // Mock getToolingEnvironmentForProject to return an environment
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves({ id: 'env-1', name: 'Tooling' })
+            sinon
+                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
+                .resolves({ id: 'env-1', name: 'Tooling' })
 
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
@@ -190,7 +192,9 @@ describe('DataZoneClient', () => {
 
         it('should throw error when tooling environment not found', async () => {
             // Mock getToolingEnvironmentForProject to return undefined
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves(undefined)
+            sinon
+                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
+                .resolves(undefined)
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             await assert.rejects(
@@ -203,10 +207,7 @@ describe('DataZoneClient', () => {
             sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').rejects(new Error('API Error'))
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
-            await assert.rejects(
-                () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
-                /API Error/
-            )
+            await assert.rejects(() => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'), /API Error/)
         })
     })
 
@@ -296,7 +297,9 @@ describe('DataZoneClient', () => {
 
     describe('getToolingEnvironmentId', () => {
         it('should get tooling environment ID successfully', async () => {
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves({ id: 'env-1', name: 'Tooling' })
+            sinon
+                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
+                .resolves({ id: 'env-1', name: 'Tooling' })
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             const result = await dataZoneClient.getToolingEnvironmentId('domain-1', 'project-1')
@@ -344,7 +347,9 @@ describe('DataZoneClient', () => {
                 getEnvironment: sinon.stub().resolves(mockEnvironment),
             }
 
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves({ id: 'env-1', name: 'Tooling' })
+            sinon
+                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
+                .resolves({ id: 'env-1', name: 'Tooling' })
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getToolingEnvironment('project-123')
@@ -664,11 +669,7 @@ describe('DataZoneClient', () => {
 
             await assert.rejects(
                 async () => {
-                    await (dataZoneClient as any).getToolingEnvironmentForProject(
-                        mockDataZone,
-                        'domain-1',
-                        'project-1'
-                    )
+                    await (dataZoneClient as any).getToolingEnvironmentForProject(mockDataZone, 'domain-1', 'project-1')
                 },
                 (error: Error) => {
                     assert.ok(error instanceof ToolkitError)
