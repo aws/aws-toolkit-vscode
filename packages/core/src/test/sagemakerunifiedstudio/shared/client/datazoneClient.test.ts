@@ -192,9 +192,7 @@ describe('DataZoneClient', () => {
 
         it('should throw error when tooling environment not found', async () => {
             // Mock getToolingEnvironmentForProject to return undefined
-            sinon
-                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
-                .resolves(undefined)
+            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves(undefined)
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
 
             await assert.rejects(
