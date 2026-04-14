@@ -8,7 +8,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Ec2InstanceNode, tryRefreshNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
-import { Ec2Node } from './explorer/ec2ParentNode'
+import { Ec2Node, Ec2ParentNode } from './explorer/ec2ParentNode'
 import {
     openRemoteConnection,
     openTerminal,
@@ -78,6 +78,36 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_launchInstance.run(async (span) => {
                 await linkToLaunchInstance(node)
             })
+        }),
+
+        Commands.register('aws.ec2.filterByTag', async (node?: Ec2ParentNode) => {
+            if (!node) {
+                return
+            }
+
+            const input = await vscode.window.showInputBox({
+                placeHolder: 'key=value (e.g. Env=prod)',
+            })
+
+            if (input === undefined) {
+                return
+            }
+
+            const trimmed = input.trim()
+            let key: string
+            let value: string
+
+            const eqIndex = trimmed.indexOf('=')
+            if (eqIndex === -1) {
+                key = trimmed
+                value = ''
+            } else {
+                key = trimmed.substring(0, eqIndex)
+                value = trimmed.substring(eqIndex + 1)
+            }
+
+            node.setTagFilter(key, value)
+            await node.refreshNode()
         })
     )
 }
