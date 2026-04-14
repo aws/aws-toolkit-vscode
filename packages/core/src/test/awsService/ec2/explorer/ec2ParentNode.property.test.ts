@@ -85,6 +85,24 @@ describe('ec2ParentNode property tests', function () {
     })
 
     /**
+     * Feature: ec2-tag-filter, Property 5: Key-only filter (empty value) sets filter for tag existence
+     * Validates: EC2 tags can have empty values
+     */
+    it('Property 5: for any non-empty key with empty value, setTagFilter sets filter and label without value', function () {
+        fc.assert(
+            fc.property(fc.string({ minLength: 1 }), (key) => {
+                const node = createNode()
+                node.setTagFilter(key, '')
+
+                const filter = (node as any).tagFilter
+                assert.deepStrictEqual(filter, [{ Name: `tag:${key}`, Values: [''] }])
+                assert.strictEqual(node.label, `EC2 [tag: ${key}]`)
+            }),
+            { numRuns: 100 }
+        )
+    })
+
+    /**
      * Feature: ec2-tag-filter, Property 4: Whitespace-only input clears filter
      * Validates: Requirements 8.3
      */

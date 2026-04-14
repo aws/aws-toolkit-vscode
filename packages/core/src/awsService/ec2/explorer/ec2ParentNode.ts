@@ -33,9 +33,9 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public setTagFilter(key: string, value: string): void {
-        if (key !== '' && value !== '') {
+        if (key !== '') {
             this.tagFilter = [{ Name: `tag:${key}`, Values: [value] }]
-            this.label = `EC2 [tag: ${key}=${value}]`
+            this.label = value !== '' ? `EC2 [tag: ${key}=${value}]` : `EC2 [tag: ${key}]`
         } else {
             this.tagFilter = undefined
             this.label = 'EC2'

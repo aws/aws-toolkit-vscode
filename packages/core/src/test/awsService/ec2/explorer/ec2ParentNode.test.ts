@@ -225,6 +225,13 @@ describe('ec2ParentNode', function () {
             assert.strictEqual(filter, undefined)
         })
 
+        it('setTagFilter with key only (empty value) sets filter for tag existence', function () {
+            testNode.setTagFilter('Prod', '')
+            const filter = (testNode as any).tagFilter
+            assert.deepStrictEqual(filter, [{ Name: 'tag:Prod', Values: [''] }])
+            assert.strictEqual(testNode.label, 'EC2 [tag: Prod]')
+        })
+
         it('updateChildren passes tagFilter to getInstances when filter is active', async function () {
             getInstancesStub.returns(intoCollection([]))
             testNode.setTagFilter('Env', 'prod')
