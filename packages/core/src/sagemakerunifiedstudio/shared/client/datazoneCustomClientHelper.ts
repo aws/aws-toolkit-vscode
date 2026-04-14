@@ -503,9 +503,6 @@ export class DataZoneCustomClientHelper {
                         profile.details?.iam?.principalId?.includes(sessionName) ||
                         profile.details?.iam?.sessionName?.includes(sessionName)
 
-                    // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
-                    this.logger.info(JSON.stringify(profile))
-
                     if (matchesSession) {
                         this.logger.info(
                             `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} (role: ${iamRoleArn}, session: ${sessionName}) after checking ${totalProfilesChecked} profiles`
