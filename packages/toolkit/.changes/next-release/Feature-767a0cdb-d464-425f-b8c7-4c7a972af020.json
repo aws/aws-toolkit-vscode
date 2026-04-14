@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "EC2: Added \"Filter by Tag\" action to the EC2 explorer node, allowing users to filter instances by tag key=value pairs."
+}

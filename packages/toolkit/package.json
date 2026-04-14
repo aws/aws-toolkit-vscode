@@ -1930,6 +1930,11 @@
                     "group": "2@0"
                 },
                 {
+                    "command": "aws.ec2.filterByTag",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2ParentNode)$/",
+                    "group": "inline"
+                },
+                {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
                     "group": "inline@1"
@@ -3398,6 +3403,18 @@
             {
                 "command": "aws.ec2.copyInstanceId",
                 "title": "%AWS.command.ec2.copyInstanceId%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.filterByTag",
+                "title": "%AWS.command.ec2.filterByTag%",
+                "icon": "$(filter)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
