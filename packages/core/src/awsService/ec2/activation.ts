@@ -17,6 +17,7 @@ import {
     stopInstance,
     linkToLaunchInstance,
     openLogDocument,
+    filterByTag,
 } from './commands'
 import { Ec2ConnecterMap } from './connectionManagerMap'
 import { ec2LogsScheme } from '../../shared/constants'
@@ -81,33 +82,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.filterByTag', async (node?: Ec2ParentNode) => {
-            if (!node) {
-                return
-            }
-
-            const input = await vscode.window.showInputBox({
-                placeHolder: 'key=value (e.g. Env=prod)',
-            })
-
-            if (input === undefined) {
-                return
-            }
-
-            const trimmed = input.trim()
-            let key: string
-            let value: string
-
-            const eqIndex = trimmed.indexOf('=')
-            if (eqIndex === -1) {
-                key = trimmed
-                value = ''
-            } else {
-                key = trimmed.substring(0, eqIndex)
-                value = trimmed.substring(eqIndex + 1)
-            }
-
-            node.setTagFilter(key, value)
-            await node.refreshNode()
+            await filterByTag(node)
         })
     )
 }
