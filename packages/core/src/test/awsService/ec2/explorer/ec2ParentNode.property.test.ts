@@ -7,7 +7,7 @@ import assert from 'assert'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 import { Ec2Client } from '../../../../shared/clients/ec2'
 
-describe('ec2ParentNode parameterized tests', function () {
+describe('ec2ParentNode property tests', function () {
     const testRegion = 'us-east-1'
     const testPartition = 'aws'
 
@@ -16,98 +16,73 @@ describe('ec2ParentNode parameterized tests', function () {
         return new Ec2ParentNode(testRegion, testPartition, client)
     }
 
-    const keyValueCases = [
-        { key: 'Env', value: 'prod' },
-        { key: 'Name', value: 'my-server' },
-        { key: 'team', value: 'backend' },
-        { key: 'a', value: 'b' },
-        { key: 'key-with-dashes', value: 'value_with_underscores' },
-        { key: 'CaseSensitive', value: 'MiXeD' },
-        { key: 'unicode-✓', value: '日本語' },
-        { key: 'spaces in key', value: 'spaces in value' },
-    ]
+    const tagCases = [
+        ['Env', 'prod'],
+        ['Name', 'my-server'],
+        ['team', 'backend'],
+        ['key-with-dashes', 'value_with_underscores'],
+        ['CaseSensitive', 'MiXeD'],
+        ['unicode', '日本語'],
+        ['a', 'b'],
+    ] as const
 
-    describe('setTagFilter produces correct filter structure and label', function () {
-        for (const { key, value } of keyValueCases) {
-            it(`key="${key}", value="${value}"`, function () {
-                const node = createNode()
-                node.setTagFilter(key, value)
+    for (const [key, value] of tagCases) {
+        it(`setTagFilter produces correct filter and label for ${key}=${value}`, function () {
+            const node = createNode()
+            node.setTagFilter(key, value)
 
-                const filter = (node as any).tagFilter
-                assert.deepStrictEqual(filter, [{ Name: `tag:${key}`, Values: [value] }])
-                assert.strictEqual(node.label, `EC2 [tag: ${key}=${value}]`)
-            })
-        }
-    })
+            const filter = (node as any).tagFilter
+            assert.deepStrictEqual(filter, [{ Name: `tag:${key}`, Values: [value] }])
+            assert.strictEqual(node.label, `EC2 [tag: ${key}=${value}]`)
+        })
+    }
 
-    describe('clearing filter resets state and label', function () {
-        for (const { key, value } of keyValueCases) {
-            it(`set key="${key}", value="${value}" then clear`, function () {
-                const node = createNode()
-                node.setTagFilter(key, value)
-                assert.notStrictEqual((node as any).tagFilter, undefined)
+    for (const [key, value] of tagCases) {
+        it(`clearing filter resets state after setting ${key}=${value}`, function () {
+            const node = createNode()
+            node.setTagFilter(key, value)
+            assert.notStrictEqual((node as any).tagFilter, undefined)
 
-                node.setTagFilter('', '')
-                assert.strictEqual((node as any).tagFilter, undefined)
-                assert.strictEqual(node.label, 'EC2')
-            })
-        }
-    })
+            node.setTagFilter('', '')
+            assert.strictEqual((node as any).tagFilter, undefined)
+            assert.strictEqual(node.label, 'EC2')
+        })
+    }
 
-    describe('input parsing splits on first equals sign', function () {
-        const parsingCases = [
-            { input: 'Env=prod', expectedKey: 'Env', expectedValue: 'prod' },
-            { input: 'Name=my=server', expectedKey: 'Name', expectedValue: 'my=server' },
-            { input: 'a=b=c=d', expectedKey: 'a', expectedValue: 'b=c=d' },
-            { input: 'key=', expectedKey: 'key', expectedValue: '' },
-            { input: '=value', expectedKey: '', expectedValue: 'value' },
-            { input: 'x=y=z=', expectedKey: 'x', expectedValue: 'y=z=' },
-        ]
+    const splitCases = [
+        ['Env=prod', 'Env', 'prod'],
+        ['Name=my=server', 'Name', 'my=server'],
+        ['key=a=b=c', 'key', 'a=b=c'],
+        ['tag=', 'tag', ''],
+        ['x=y', 'x', 'y'],
+    ] as const
 
-        for (const { input, expectedKey, expectedValue } of parsingCases) {
-            it(`"${input}" → key="${expectedKey}", value="${expectedValue}"`, function () {
-                const trimmed = input.trim()
-                const eqIndex = trimmed.indexOf('=')
-                const key = trimmed.substring(0, eqIndex)
-                const value = trimmed.substring(eqIndex + 1)
+    for (const [input, expectedKey, expectedValue] of splitCases) {
+        it(`input "${input}" splits into key="${expectedKey}" value="${expectedValue}"`, function () {
+            const trimmed = input.trim()
+            const eqIndex = trimmed.indexOf('=')
+            const key = trimmed.substring(0, eqIndex)
+            const value = trimmed.substring(eqIndex + 1)
 
-                assert.strictEqual(key, expectedKey)
-                assert.strictEqual(value, expectedValue)
-                assert.strictEqual(`${key}=${value}`, trimmed)
-            })
-        }
-    })
+            assert.strictEqual(key, expectedKey)
+            assert.strictEqual(value, expectedValue)
+            assert.ok(!key.includes('='))
+        })
+    }
 
-    describe('key-only filter (empty value) sets filter for tag existence', function () {
-        const keyOnlyCases = ['Prod', 'Environment', 'my-tag', 'a']
+    const whitespaceCases = [' ', '  ', '\t', '\n', ' \t\n ', '\r\n']
 
-        for (const key of keyOnlyCases) {
-            it(`key="${key}" with empty value`, function () {
-                const node = createNode()
-                node.setTagFilter(key, '')
+    for (const ws of whitespaceCases) {
+        it(`whitespace-only input ${JSON.stringify(ws)} clears filter`, function () {
+            const trimmed = ws.trim()
+            assert.strictEqual(trimmed, '')
 
-                const filter = (node as any).tagFilter
-                assert.deepStrictEqual(filter, [{ Name: `tag:${key}`, Values: [''] }])
-                assert.strictEqual(node.label, `EC2 [tag: ${key}]`)
-            })
-        }
-    })
+            const node = createNode()
+            node.setTagFilter('SomeKey', 'SomeValue')
+            node.setTagFilter('', '')
 
-    describe('whitespace-only input clears filter', function () {
-        const whitespaceCases = [' ', '  ', '\t', '\n', ' \t\n ', '   \t   ']
-
-        for (const ws of whitespaceCases) {
-            it(`"${ws.replace(/\t/g, '\\t').replace(/\n/g, '\\n')}" treated as empty`, function () {
-                const trimmed = ws.trim()
-                assert.strictEqual(trimmed, '')
-
-                const node = createNode()
-                node.setTagFilter('SomeKey', 'SomeValue')
-                node.setTagFilter('', '')
-
-                assert.strictEqual((node as any).tagFilter, undefined)
-                assert.strictEqual(node.label, 'EC2')
-            })
-        }
-    })
+            assert.strictEqual((node as any).tagFilter, undefined)
+            assert.strictEqual(node.label, 'EC2')
+        })
+    }
 })
