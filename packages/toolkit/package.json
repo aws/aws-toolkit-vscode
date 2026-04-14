@@ -1931,7 +1931,7 @@
                 },
                 {
                     "command": "aws.ec2.filterByTag",
-                    "when": "viewItem =~ /^(awsEc2ParentNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2ParentNode)$/",
                     "group": "inline"
                 },
                 {
@@ -3413,7 +3413,7 @@
             },
             {
                 "command": "aws.ec2.filterByTag",
-                "title": "Filter by Tag",
+                "title": "%AWS.command.ec2.filterByTag%",
                 "icon": "$(filter)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
