@@ -597,10 +597,12 @@ describe('selectSMUSProject - Express Mode', function () {
 
     beforeEach(function () {
         const mockGroupProfileId = 'group-profile-123'
+        const mockUserProfileId = 'user-profile-123'
 
         mockDataZoneClient = {
             getDomainId: sinon.stub().returns(testDomainId),
             fetchAllProjects: sinon.stub(),
+            getUserProfileIdForIamPrincipal: sinon.stub().resolves(mockUserProfileId),
         } as any
 
         mockProjectNode = {
@@ -674,17 +676,21 @@ describe('selectSMUSProject - Express Mode', function () {
     })
 
     it('filters projects to show only user-created projects in IAM mode', async function () {
-        mockDataZoneClient.fetchAllProjects.resolves([userProject, otherUserProject])
+        // In IAM role session mode, fetchAllProjects is called twice:
+        // once for user profile and once for group profile
+        mockDataZoneClient.fetchAllProjects
+            .onFirstCall()
+            .resolves([userProject]) // user profile projects
+            .onSecondCall()
+            .resolves([otherUserProject]) // group profile projects
 
         const result = await selectSMUSProject(mockProjectNode as any)
 
         // Verify DataZoneCustomClientHelper.getInstance was called
         assert.ok(getInstanceStub.called)
 
-        // Verify projects were fetched with group identifier
-        assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
-        const fetchCallArgs = mockDataZoneClient.fetchAllProjects.getCall(0).args[0]
-        assert.ok(fetchCallArgs?.groupIdentifier)
+        // Verify projects were fetched twice (user profile + group profile)
+        assert.ok(mockDataZoneClient.fetchAllProjects.calledTwice)
 
         // Verify the project was selected and set
         assert.strictEqual(result, userProject)
@@ -693,7 +699,12 @@ describe('selectSMUSProject - Express Mode', function () {
     })
 
     it('shows message when no user-created projects found in IAM mode', async function () {
-        mockDataZoneClient.fetchAllProjects.resolves([])
+        // Both user profile and group profile return empty
+        mockDataZoneClient.fetchAllProjects
+            .onFirstCall()
+            .resolves([]) // user profile projects
+            .onSecondCall()
+            .resolves([]) // group profile projects
 
         const result = await selectSMUSProject(mockProjectNode as any)
 
@@ -726,18 +737,20 @@ describe('selectSMUSProject - Express Mode', function () {
             updatedAt: new Date(Date.now() - 172800000), // 2 days ago
         }
 
-        // In IAM mode, fetchAllProjects is called with groupIdentifier filter
-        // So the API returns only projects for that group (already filtered)
-        mockDataZoneClient.fetchAllProjects.resolves([userProject, userProject2])
+        // In IAM role session mode, fetchAllProjects is called twice
+        // Results are combined from both user profile and group profile
+        mockDataZoneClient.fetchAllProjects
+            .onFirstCall()
+            .resolves([userProject]) // user profile projects
+            .onSecondCall()
+            .resolves([userProject2]) // group profile projects
 
         await selectSMUSProject(mockProjectNode as any)
 
-        // Verify projects were fetched with group identifier
-        assert.ok(mockDataZoneClient.fetchAllProjects.calledOnce)
-        const fetchCallArgs = mockDataZoneClient.fetchAllProjects.getCall(0).args[0]
-        assert.ok(fetchCallArgs?.groupIdentifier)
+        // Verify projects were fetched twice (user profile + group profile)
+        assert.ok(mockDataZoneClient.fetchAllProjects.calledTwice)
 
-        // Verify all returned projects are shown in quick pick
+        // Verify all returned projects are shown in quick pick (combined from both calls)
         const quickPickCall = createQuickPickStub.getCall(0)
         const items = quickPickCall.args[0]
         assert.strictEqual(items.length, 2)
@@ -916,9 +929,13 @@ describe('selectSMUSProject - Error Handling', function () {
         })
 
         it('displays "No accessible projects found" when user has no projects they created', async function () {
-            // In IAM mode, fetchAllProjects is called with groupIdentifier filter
-            // which should return empty array when no projects match
-            mockDataZoneClient.fetchAllProjects.resolves([])
+            // In IAM role session mode, fetchAllProjects is called twice
+            // Both user profile and group profile return empty
+            mockDataZoneClient.fetchAllProjects
+                .onFirstCall()
+                .resolves([]) // user profile projects
+                .onSecondCall()
+                .resolves([]) // group profile projects
 
             const result = await selectSMUSProject(mockProjectNode as any)
 
@@ -932,19 +949,23 @@ describe('selectSMUSProject - Error Handling', function () {
             assert.ok(!mockProjectNode.setProject.called)
         })
 
-        it('handles getGroupProfileId failure with appropriate error message', async function () {
+        it('handles getGroupProfileId failure gracefully and shows no projects message', async function () {
             const testRoleArn = 'arn:aws:iam::123456789012:role/TestRole'
 
-            // Mock getGroupProfileId to throw a ToolkitError with NoGroupProfileFound code
-            const groupProfileError = new ToolkitError(`No group profile found for IAM role: ${testRoleArn}`, {
-                code: SmusErrorCodes.NoGroupProfileFound,
-                name: 'ToolkitError',
-            })
+            // Mock getGroupProfileId to throw an error
+            const groupProfileError = new Error(`No group profile found for IAM role: ${testRoleArn}`)
             const mockDataZoneCustomClientHelper = {
                 getGroupProfileId: sinon.stub().rejects(groupProfileError),
             }
             sinon.restore()
             sinon.stub(DataZoneCustomClientHelper, 'getInstance').returns(mockDataZoneCustomClientHelper as any)
+
+            // Create a mock DataZone client that also fails getUserProfileIdForIamPrincipal
+            const failingMockDataZoneClient = {
+                getDomainId: sinon.stub().returns(testDomainId),
+                fetchAllProjects: sinon.stub().resolves([]),
+                getUserProfileIdForIamPrincipal: sinon.stub().rejects(new Error('User profile not found')),
+            } as any
 
             // Re-stub other dependencies
             const mockAuthProvider = {
@@ -975,20 +996,26 @@ describe('selectSMUSProject - Error Handling', function () {
                 Account: '123456789012',
             })
 
+            // Mock SmusUtils - simulate IAM role session (not IAM user)
+            sinon.stub(SmusUtils, 'isIamUserArn').returns(false)
+            sinon.stub(SmusUtils, 'convertAssumedRoleArnToIamRoleArn').returns(testRoleArn)
+
             const getContextStub = sinon.stub()
             getContextStub.withArgs('aws.smus.isIamMode').returns(true)
             getContextStub.callThrough()
             sinon.replace(setContextModule, 'getContext', getContextStub)
 
-            sinon.replace(utils, 'createDZClientBaseOnDomainMode', sinon.stub().resolves(mockDataZoneClient))
+            sinon.replace(utils, 'createDZClientBaseOnDomainMode', sinon.stub().resolves(failingMockDataZoneClient))
 
             const result = await selectSMUSProject(mockProjectNode as any)
 
-            assert.ok(result instanceof Error)
+            // When both user profile and group profile flows fail/return empty,
+            // the function returns an empty array and shows "No accessible projects" message
+            assert.strictEqual(result, undefined)
             const testWindow = getTestWindow()
             assert.ok(
-                testWindow.shownMessages.some((msg) =>
-                    msg.message.includes(`No resources found for IAM principal: ${testRoleArn}`)
+                testWindow.shownMessages.some(
+                    (msg) => msg.message === 'No accessible projects found for your IAM principal'
                 )
             )
         })

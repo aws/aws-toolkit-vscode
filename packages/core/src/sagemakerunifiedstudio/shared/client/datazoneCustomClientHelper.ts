@@ -268,6 +268,54 @@ export class DataZoneCustomClientHelper {
     }
 
     /**
+     * Gets all domains with IAM authentication mode using pagination
+     * @returns Promise resolving to an array of IAM-based DataZone domains
+     */
+    public async getAllIamDomains(): Promise<DomainSummary[]> {
+        const logger = getLogger('smus')
+
+        try {
+            logger.info('DataZoneCustomClientHelper: Getting all IAM domains')
+
+            const iamDomains: DomainSummary[] = []
+            let nextToken: string | undefined
+            let totalDomainsChecked = 0
+            const maxResultsPerPage = 25
+
+            do {
+                const response = await this.listDomains({
+                    status: 'AVAILABLE',
+                    nextToken,
+                    maxResults: maxResultsPerPage,
+                })
+
+                const { domains } = response
+                totalDomainsChecked += domains.length
+
+                logger.debug(
+                    `DataZoneCustomClientHelper: Checking ${domains.length} domains in current page (total checked: ${totalDomainsChecked})`
+                )
+
+                for (const domain of domains) {
+                    logger.debug(`DataZoneCustomClientHelper: Domain ${domain.id} full response: %O`, domain)
+                    // All domains will be presented to the user, then user picks target domain
+                    iamDomains.push(domain)
+                }
+
+                nextToken = response.nextToken
+            } while (nextToken)
+
+            logger.info(
+                `DataZoneCustomClientHelper: Found ${iamDomains.length} IAM domain(s) after checking ${totalDomainsChecked} total domains`
+            )
+            return iamDomains
+        } catch (err) {
+            logger.error('DataZoneCustomClientHelper: Failed to get IAM domains: %s', err as Error)
+            throw new Error(`Failed to get IAM domains: ${(err as Error).message}`)
+        }
+    }
+
+    /**
      * Gets a specific domain by its ID
      * @param domainId The ID of the domain to retrieve
      * @returns Promise resolving to the GetDomainOutput
@@ -499,7 +547,9 @@ export class DataZoneCustomClientHelper {
                 for (const profile of response.items) {
                     // Match based on session name (role ARN already filtered by searchText)
                     // principalId format: PRINCIPAL_ID:SESSION_NAME
-                    const matchesSession = profile.details?.iam?.principalId?.includes(sessionName)
+                    const matchesSession =
+                        profile.details?.iam?.principalId?.includes(sessionName) ||
+                        profile.details?.iam?.sessionName?.includes(sessionName)
 
                     if (matchesSession) {
                         this.logger.info(

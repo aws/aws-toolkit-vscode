@@ -487,8 +487,6 @@ async function fetchProjectsByIamProfile(
         `Using cached caller identity ARN: ${callerIdentityArn}. Identity type: ${isIamUser ? 'IAM User' : 'IAM Role Session'}`
     )
 
-    let projects: DataZoneProject[]
-
     if (isIamUser) {
         // IAM User flow - use GetUserProfile and filter by userIdentifier
         logger.debug('Using IAM user flow with GetUserProfile API')
@@ -501,30 +499,59 @@ async function fetchProjectsByIamProfile(
         logger.info(`Retrieved user profile ID: ${userProfileId} for IAM principal ${callerIdentityArn}`)
 
         // Fetch projects filtered by user profile
-        projects = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
+        const projects: DataZoneProject[] = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
         logger.debug(`Fetched ${projects.length} projects for user profile ${userProfileId}`)
+        return projects
     } else {
-        const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(activeConnection.profileName)
-        const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
-            credentialsProvider,
-            authProvider.getDomainRegion()
-        )
+        let projectsForUser: DataZoneProject[] = []
+        let projectsForGroup: DataZoneProject[] = []
+        // Try IAM User flow
+        try {
+            logger.debug('Using IAM user flow with GetUserProfile API')
 
-        // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
-        // The cached ARN needs conversion for role sessions
-        const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
-        logger.debug(`Using IAM role ARN: ${roleArn}`)
+            const userProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                callerIdentityArn,
+                authProvider.getDomainId()
+            )
+            logger.info(`Retrieved user profile ID: ${userProfileId} for IAM principal ${callerIdentityArn}`)
 
-        // Get group profile ID for the current role
-        const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(authProvider.getDomainId(), roleArn)
-        logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+            projectsForUser = await datazoneClient.fetchAllProjects({ userIdentifier: userProfileId })
+            logger.debug(`Fetched ${projectsForUser.length} projects for user profile ${userProfileId}`)
+        } catch (e) {
+            logger.debug(`IAM user flow failed: ${(e as Error).message}. Will fall back to group profile flow.`)
+        }
 
-        // Fetch projects filtered by group profile
-        projects = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
-        logger.debug(`Fetched ${projects.length} projects for group profile ${groupProfileId}`)
+        // Fall back to group profile flow if user profile returned no projects
+        try {
+            const credentialsProvider = await authProvider.getCredentialsProviderForIamProfile(
+                activeConnection.profileName
+            )
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                credentialsProvider,
+                authProvider.getDomainRegion()
+            )
+
+            // IAM Role Session flow - use SearchGroupProfile and filter by groupIdentifier
+            // The cached ARN needs conversion for role sessions
+            const roleArn = SmusUtils.convertAssumedRoleArnToIamRoleArn(callerIdentityArn)
+            logger.debug(`Using IAM role ARN: ${roleArn}`)
+
+            // Get group profile ID for the current role
+            const groupProfileId = await datazoneCustomClientHelper.getGroupProfileId(
+                authProvider.getDomainId(),
+                roleArn
+            )
+            logger.info(`Retrieved group profile ID: ${groupProfileId}`)
+
+            // Fetch projects filtered by group profile
+            projectsForGroup = await datazoneClient.fetchAllProjects({ groupIdentifier: groupProfileId })
+            logger.debug(`Fetched ${projectsForGroup.length} projects for group profile ${groupProfileId}`)
+        } catch (e) {
+            logger.debug(`IAM user flow failed: ${(e as Error).message}. Will fall back to group profile flow.`)
+        }
+
+        return [...projectsForUser, ...projectsForGroup]
     }
-
-    return projects
 }
 
 export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProjectNode) {

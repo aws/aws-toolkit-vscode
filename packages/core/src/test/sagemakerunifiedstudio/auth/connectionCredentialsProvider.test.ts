@@ -9,6 +9,7 @@ import { ConnectionCredentialsProvider } from '../../../sagemakerunifiedstudio/a
 import { SmusAuthenticationProvider } from '../../../sagemakerunifiedstudio/auth/providers/smusAuthenticationProvider'
 import { DataZoneClient } from '../../../sagemakerunifiedstudio/shared/client/datazoneClient'
 import { ToolkitError } from '../../../shared/errors'
+import * as vscodeUtils from '../../../shared/vscode/setContext'
 
 describe('ConnectionCredentialsProvider', function () {
     let mockAuthProvider: sinon.SinonStubbedInstance<SmusAuthenticationProvider>
@@ -218,6 +219,65 @@ describe('ConnectionCredentialsProvider', function () {
 
         it('should return correct telemetry type', function () {
             assert.strictEqual(connectionProvider.getTelemetryType(), 'other')
+        })
+    })
+
+    describe('domain unification credential routing', function () {
+        let getContextStub: sinon.SinonStub
+
+        const mockProjectCredentials = {
+            accessKeyId: 'PROJECT-KEY',
+            secretAccessKey: 'project-secret',
+            sessionToken: 'project-token',
+            expiration: new Date(Date.now() + 3600000),
+        }
+
+        const mockIamProfileCredentials = {
+            accessKeyId: 'IAM-PROFILE-KEY',
+            secretAccessKey: 'iam-secret',
+            sessionToken: 'iam-token',
+            expiration: new Date(Date.now() + 3600000),
+        }
+
+        beforeEach(function () {
+            getContextStub = sinon.stub(vscodeUtils, 'getContext')
+        })
+
+        it('should use project credentials when isIamModeDomain is true', async function () {
+            getContextStub.withArgs('aws.smus.isIamModeDomain').returns(true)
+            const stubProvider = sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves(mockProjectCredentials),
+            })
+            ;(mockAuthProvider as any).getProjectCredentialProvider = stubProvider
+
+            const creds = await connectionProvider.getCredentials()
+
+            assert.strictEqual(creds.accessKeyId, 'PROJECT-KEY')
+            sinon.assert.notCalled(dataZoneClientStub)
+        })
+
+        it('should use IAM profile credentials for IAM login into IdC domain', async function () {
+            getContextStub.withArgs('aws.smus.isIamModeDomain').returns(false)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(true)
+            const stubProvider = sinon.stub().resolves({
+                getCredentials: sinon.stub().resolves(mockIamProfileCredentials),
+            })
+            ;(mockAuthProvider as any).getCredentialsProviderForIamProfile = stubProvider
+            ;(mockAuthProvider as any).activeConnection = { profileName: 'test-profile', ssoRegion: testRegion }
+
+            const creds = await connectionProvider.getCredentials()
+
+            assert.strictEqual(creds.accessKeyId, mockConnectionCredentials.accessKeyId)
+        })
+
+        it('should use DER credentials for SSO login into IdC domain', async function () {
+            getContextStub.withArgs('aws.smus.isIamModeDomain').returns(false)
+            getContextStub.withArgs('aws.smus.isIamMode').returns(false)
+
+            const creds = await connectionProvider.getCredentials()
+
+            assert.strictEqual(creds.accessKeyId, mockConnectionCredentials.accessKeyId)
+            sinon.assert.calledOnce(mockAuthProvider.getDerCredentialsProvider as sinon.SinonStub)
         })
     })
 })

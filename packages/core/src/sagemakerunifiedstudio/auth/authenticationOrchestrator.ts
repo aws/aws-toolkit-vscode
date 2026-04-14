@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
-import { SmusErrorCodes } from '../shared/smusUtils'
-import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
+import { SmusErrorCodes, isExpressDomain } from '../shared/smusUtils'
+import { SmusAuthenticationProvider, setSmusIamModeDomainContext } from './providers/smusAuthenticationProvider'
 import { CredentialsProvider } from '../../auth/providers/credentials'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
@@ -19,6 +19,7 @@ import {
 } from './ui/iamProfileSelection'
 import { SmusAuthenticationPreferencesManager } from './utils/authenticationPreferences'
 import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClientHelper'
+import { DomainSummary } from '@amzn/datazone-custom-client'
 import { recordAuthTelemetry } from '../shared/telemetry'
 import { updateRecentDomains, removeDomainFromCache } from './utils/domainCache'
 
@@ -91,21 +92,50 @@ export class SmusAuthenticationOrchestrator {
                 return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
             }
 
-            // Discover IAM-based domain using IAM credential. If IAM-based domain is not present, we should throw an appropriate error
-            // and exit
-            this.logger.debug('Discovering IAM-based domain using IAM credentials')
+            // Discovering domains with IAM sign-in enabled using IAM credentials. If no domain is discovered, throw an error.
+            this.logger.debug('Discovering domains with IAM sign-in enabled using IAM credentials')
 
-            const domainUrl = await this.findSmusIamDomain(
+            const iamDomains = await this.findAllSmusIamDomains(
                 authProvider,
                 profileSelection.profileName,
                 profileSelection.region
             )
-            if (!domainUrl) {
-                throw new ToolkitError('No IAM-based domains found in the specified region', {
-                    code: SmusErrorCodes.IamDomainNotFound,
+            if (iamDomains.length === 0) {
+                throw new ToolkitError(
+                    `No domain with IAM sign-in enabled for the IAM role found in region ${profileSelection.region}`,
+                    {
+                        code: SmusErrorCodes.IamDomainNotFound,
+                        cancelled: true,
+                    }
+                )
+            }
+
+            this.logger.debug(`Multiple IAM domains found (${iamDomains.length}), showing picker`)
+            const selectedDomainId = await this.showIamDomainPicker(iamDomains, profileSelection.region)
+            if (!selectedDomainId) {
+                throw new ToolkitError('User cancelled domain selection', {
                     cancelled: true,
+                    code: SmusErrorCodes.UserCancelled,
                 })
             }
+            // Detect actual domain type (EXPRESS = IAM domain) via GetDomain preferences
+            try {
+                const datazoneHelper = DataZoneCustomClientHelper.getInstance(
+                    await authProvider.getCredentialsProviderForIamProfile(profileSelection.profileName),
+                    profileSelection.region
+                )
+                const domainInfo = await datazoneHelper.getDomain(selectedDomainId)
+                await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
+                this.logger.info(`Domain ${selectedDomainId} mode: ${mode}`)
+            } catch (err) {
+                this.logger.warn(`Failed to detect domain type, defaulting to IAM: ${(err as Error).message}`)
+                await setSmusIamModeDomainContext(true)
+            }
+
+            const domainUrl = `https://${selectedDomainId}.sagemaker.${profileSelection.region}.on.aws/`
+
+            this.logger.info(`Using domain URL: ${domainUrl}`)
 
             // Connect using IAM profile with IAM-based domain flag
             const connection = await authProvider.connectWithIamProfile(
@@ -122,7 +152,7 @@ export class SmusAuthenticationOrchestrator {
             }
 
             this.logger.info(
-                `Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region} to IAM-based domain`
+                `Successfully connected with IAM profile ${profileSelection.profileName} in region ${profileSelection.region}`
             )
 
             // Extract domain ID and region for telemetry logging
@@ -232,6 +262,11 @@ export class SmusAuthenticationOrchestrator {
                     const domainInfo = await datazoneHelper.getDomain(domainId)
                     domainName = domainInfo.name
 
+                    // Set domain mode flag based on preferences
+                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                    const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
+                    this.logger.info(`Domain ${domainId} mode: ${mode}`)
+
                     this.logger.debug(`Successfully fetched domain name: ${domainName}`)
                 } catch (fetchErr) {
                     // If we can't fetch the domain name, that's okay - we'll cache without it
@@ -327,12 +362,96 @@ export class SmusAuthenticationOrchestrator {
     }
 
     /**
+     * Finds all SMUS domains with IAM sign-in enabled using IAM credentials
+     * @param authProvider The SMUS authentication provider
+     * @param profileName The AWS credential profile name
+     * @param region The AWS region
+     * @returns Promise resolving to array of DomainSummary objects of domains with IAM sign-in enabled
+     */
+    private static async findAllSmusIamDomains(
+        authProvider: SmusAuthenticationProvider,
+        profileName: string,
+        region: string
+    ): Promise<DomainSummary[]> {
+        try {
+            this.logger.debug(
+                `Finding domains with IAM sign-in enabled in region ${region} using profile ${profileName}`
+            )
+
+            const datazoneCustomClientHelper = DataZoneCustomClientHelper.getInstance(
+                await authProvider.getCredentialsProviderForIamProfile(profileName),
+                region
+            )
+
+            const iamDomains = await datazoneCustomClientHelper.getAllIamDomains()
+
+            this.logger.debug(
+                `Found ${iamDomains.length} domain(s) domain with IAM sign-in enabled in region ${region}`
+            )
+            return iamDomains
+        } catch (error) {
+            this.logger.error(`Failed to find domains with IAM sign-in enabled: %s`, error)
+            throw new ToolkitError(`Failed to find domains with IAM sign-in enabled: ${(error as Error).message}`, {
+                code: SmusErrorCodes.ApiTimeout,
+                cause: error instanceof Error ? error : undefined,
+            })
+        }
+    }
+
+    /**
+     * Shows a QuickPick for the user to select an IAM domain from a list
+     * @param domains The list of IAM domains to choose from
+     * @param region The AWS region
+     * @returns Promise resolving to the selected domain URL, or undefined if cancelled
+     */
+    private static async showIamDomainPicker(domains: DomainSummary[], region: string): Promise<string | undefined> {
+        return new Promise((resolve) => {
+            const quickPick = vscode.window.createQuickPick()
+            quickPick.title = 'Select a Domain'
+            quickPick.placeholder = 'Multiple domains found. Select a domain to connect to.'
+            quickPick.canSelectMany = false
+            quickPick.ignoreFocusOut = true
+
+            const items: vscode.QuickPickItem[] = domains.map((domain) => {
+                const displayName = domain.name || domain.id
+                return {
+                    label: `$(globe) ${displayName} (${region})`,
+                    description: domain.id,
+                    detail: `Created at ${domain.createdAt}`,
+                }
+            })
+
+            quickPick.items = items
+
+            let isCompleted = false
+
+            quickPick.onDidChangeSelection((selected) => {
+                if (selected.length > 0) {
+                    isCompleted = true
+                    quickPick.dispose()
+                    resolve(selected[0].description)
+                }
+            })
+
+            quickPick.onDidHide(() => {
+                if (!isCompleted) {
+                    quickPick.dispose()
+                    resolve(undefined)
+                }
+            })
+
+            quickPick.show()
+        })
+    }
+
+    /**
      * Finds SMUS IAM-based domain using IAM credentials
      * @param authProvider The SMUS authentication provider
      * @param profileName The AWS credential profile name
      * @param region The AWS region
      * @returns Promise resolving to domain URL or undefined if no IAM-based domain found
      */
+    // @ts-ignore: Keeping for future use
     private static async findSmusIamDomain(
         authProvider: SmusAuthenticationProvider,
         profileName: string,

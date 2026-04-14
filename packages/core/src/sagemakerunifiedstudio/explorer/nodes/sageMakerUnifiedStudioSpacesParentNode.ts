@@ -290,10 +290,30 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                     this.authProvider.getDomainRegion()
                 )
 
-                const userProfileId = await datazoneCustomClientHelper.getUserProfileIdForSession(
+                // First try to get user profile ID for the session
+                let userProfileId: string | undefined = await datazoneCustomClientHelper.getUserProfileIdForSession(
                     this.authProvider.getDomainId(),
                     assumedRoleArn
                 )
+
+                // If empty, fall back to getUserProfileIdForIamPrincipal
+                if (!userProfileId) {
+                    this.logger.debug(
+                        'getUserProfileIdForSession returned empty, falling back to getUserProfileIdForIamPrincipal'
+                    )
+                    const datazoneClient = await createDZClientBaseOnDomainMode(this.authProvider)
+                    const fallbackProfileId = await datazoneClient.getUserProfileIdForIamPrincipal(
+                        callerArn,
+                        this.authProvider.getDomainId()
+                    )
+                    userProfileId = fallbackProfileId
+                }
+
+                if (!userProfileId) {
+                    throw new ToolkitError('No user profile found for IAM role session', {
+                        code: SmusErrorCodes.NoUserProfileFound,
+                    })
+                }
 
                 this.logger.debug(`Retrieved user profile ID for role session: ${userProfileId}`)
                 return userProfileId
@@ -316,9 +336,22 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         if (getContext('aws.smus.isIamMode')) {
             userProfileId = await this.getUserProfileIdForIamAuthMode()
         } else {
-            // Will be of format: 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
+            // For SSO login into IDC domains, will be 'ABCA4NU3S7PEOLDQPLXYZ:user-12345678-d061-70a4-0bf2-eeee67a6ab12'
             const userId = await datazoneClient.getUserId()
-            userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+            this.logger.debug(`User id extracted from identity: ${userId}`)
+            try {
+                if (!getContext('aws.smus.isIamModeDomain')) {
+                    userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
+                } else {
+                    // SSO → IAM domain: userId is 'ROLE_ID:session-name', extract session name
+                    userProfileId = userId?.split(':')[1]
+                }
+            } catch {
+                // SSO login into IAM domain — ssoRedeemToken may not return DER-style session name
+                // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
+                this.logger.warn('Failed to extract SSO user profile ID from userId, showing all spaces')
+                userProfileId = undefined
+            }
         }
 
         const sagemakerDomainId = await this.getSageMakerDomainId()
@@ -332,7 +365,8 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            if (userProfileId === userProfile) {
+            // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
+            if (userProfileId === undefined || userProfileId === userProfile) {
                 filteredSpaceApps.set(key, app)
             }
         }
