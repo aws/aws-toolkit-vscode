@@ -128,6 +128,19 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
             return false
         }
     }
+
+    public async removeRemotePlatforms(predicate: (hostname: string) => boolean): Promise<number> {
+        const current = { ...this._getOrThrow('remotePlatform', {}) }
+        const stale = Object.keys(current).filter(predicate)
+        if (stale.length === 0) {
+            return 0
+        }
+        for (const key of stale) {
+            delete current[key]
+        }
+        await this.update('remotePlatform', current)
+        return stale.length
+    }
 }
 
 /**
