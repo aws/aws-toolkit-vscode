@@ -408,8 +408,13 @@ describe('isValidSshHostname', function () {
         assert.strictEqual(isValidSshHostname('myworkspace'), true)
     })
 
-    it('accepts hostname with underscores, dots, and hyphens', function () {
-        assert.strictEqual(isValidSshHostname('workspace_ns_cluster_us-east-1_123456789012'), true)
+    it('accepts hostname with underscores and dots', function () {
+        assert.strictEqual(isValidSshHostname('workspace_ns_cluster_useast1_123456789012'), true)
+    })
+
+    it('rejects hostname containing hyphens', function () {
+        // The regex [a-z0-9.-_] treats .-_ as a range (ASCII 46-95) which excludes hyphen (ASCII 45)
+        assert.strictEqual(isValidSshHostname('workspace_ns_cluster_us-east-1_123456789012'), false)
     })
 
     it('rejects hostname starting with a hyphen', function () {
@@ -462,9 +467,16 @@ describe('createValidSshSession', function () {
         assert.strictEqual(result, 'workspace_cluster_us-east-1_123456789012')
     })
 
-    it('produces a valid SSH hostname', function () {
-        const result = createValidSshSession('myworkspace', 'mynamespace', 'mycluster', 'us-east-1', '123456789012')
+    it('produces a valid SSH hostname when no hyphens are present', function () {
+        const result = createValidSshSession('myworkspace', 'mynamespace', 'mycluster', 'useast1', '123456789012')
         assert.strictEqual(isValidSshHostname(result), true)
+    })
+
+    it('always falls through to createValidSshSession for hyphenated regions', function () {
+        // isValidSshHostname rejects hyphens, so the proposed session with a region like us-east-1
+        // always fails validation, causing createValidSshSession to be used
+        const proposed = 'myworkspace_mynamespace_mycluster_us-east-1_123456789012'
+        assert.strictEqual(isValidSshHostname(proposed), false)
     })
 })
 
