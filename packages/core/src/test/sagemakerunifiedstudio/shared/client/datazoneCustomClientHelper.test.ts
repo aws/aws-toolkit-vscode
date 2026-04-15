@@ -759,6 +759,29 @@ describe('DataZoneCustomClientHelper', () => {
             assert.strictEqual(searchStub.firstCall.args[1].searchText, 'arn:aws:iam::123456789012:role/AdminRole')
         })
 
+        it('should find matching user profile by sessionName when principalId does not contain session name', async () => {
+            const searchStub = sinon.stub(client, 'searchUserProfiles')
+            searchStub.onFirstCall().resolves({
+                items: [
+                    {
+                        id: 'up_user1',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI123456789EXAMPLE',
+                                sessionName: 'my-session',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+            assert.strictEqual(result, 'up_user1')
+        })
+
         it('should find matching user profile across multiple pages', async () => {
             const searchStub = sinon.stub(client, 'searchUserProfiles')
 
