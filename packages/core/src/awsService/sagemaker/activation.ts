@@ -27,11 +27,26 @@ import {
 } from './hyperpodCommands'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
 import { getLogger } from '../../shared/logger/logger'
+import { RemoteSshSettings } from '../../shared/extensions/ssh'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
 let backgroundStateInterval: NodeJS.Timeout | undefined
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    // Remove stale SageMaker remotePlatform entries (sm_, smc_, smhp_) on Windows.
+    // Prevents Remote-SSH from auto-reconnecting to a dead SSM session before the
+    // toolkit's local server is ready.
+    if (process.platform === 'win32') {
+        void new RemoteSshSettings()
+            .removeRemotePlatforms((h) => h.startsWith('sm'))
+            .then((removed) => {
+                getLogger().info('sagemaker: cleaned %d stale remotePlatform entries', removed)
+            })
+            .catch((e) => {
+                getLogger().warn('sagemaker: remotePlatform cleanup failed: %s', (e as Error).message)
+            })
+    }
+
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx),
         Commands.register('aws.sagemaker.openRemoteConnection', async (node: SagemakerSpaceNode) => {
