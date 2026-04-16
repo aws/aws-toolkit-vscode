@@ -23,7 +23,7 @@ import { isSmusSsoConnection, isSmusIamConnection } from '../../auth/model'
 import { getContext } from '../../../shared/vscode/setContext'
 import { createDZClientBaseOnDomainMode } from './utils'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
-import { recordAuthTelemetry } from '../../shared/telemetry'
+import { recordAccessProjectTelemetry, recordAuthTelemetry } from '../../shared/telemetry'
 
 const contextValueSmusRoot = 'sageMakerUnifiedStudioRoot'
 const contextValueSmusLogin = 'sageMakerUnifiedStudioLogin'
@@ -629,14 +629,7 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
             // Show project picker
             const selectedProject = await showQuickPick(items)
 
-            const accountId = await authProvider.getDomainAccountId()
-            span.record({
-                smusAuthMode: authProvider.activeConnection?.type,
-                smusDomainId: authProvider.getDomainId(),
-                smusProjectId: (selectedProject as DataZoneProject).id as string | undefined,
-                smusDomainRegion: authProvider.getDomainRegion(),
-                smusDomainAccountId: accountId,
-            })
+            await recordAccessProjectTelemetry(span, authProvider, (selectedProject as DataZoneProject)?.id)
             if (
                 selectedProject &&
                 typeof selectedProject === 'object' &&

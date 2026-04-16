@@ -566,9 +566,7 @@ export class DataZoneCustomClientHelper {
             this.logger.error(
                 `DataZoneCustomClientHelper: No user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
             )
-            throw new ToolkitError(`No user profile found for role: ${iamRoleArn} with session: ${sessionName}`, {
-                code: SmusErrorCodes.NoUserProfileFound,
-            })
+            return "";
         } catch (err) {
             // Re-throw if it's already a ToolkitError
             if (err instanceof ToolkitError) {
