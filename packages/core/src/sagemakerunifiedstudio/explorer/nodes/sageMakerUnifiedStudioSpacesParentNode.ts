@@ -297,7 +297,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
                 )
 
                 // If empty, fall back to getUserProfileIdForIamPrincipal
-                if (!userProfileId) {
+                if (!userProfileId || userProfileId.length == 0) {
                     this.logger.debug(
                         'getUserProfileIdForSession returned empty, falling back to getUserProfileIdForIamPrincipal'
                     )
