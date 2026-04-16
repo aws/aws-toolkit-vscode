@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix issue for IAM users who cannot see their Sagemaker Unified Studio spaces"
-}
