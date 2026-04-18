@@ -9,7 +9,14 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
 import { S3Client } from '../../shared/client/s3Client'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
-import { NODE_ID_DELIMITER, NodeType, ConnectionType, NodeData, NO_DATA_FOUND_MESSAGE } from './types'
+import {
+    NODE_ID_DELIMITER,
+    NodeType,
+    ConnectionType,
+    NodeData,
+    NO_DATA_FOUND_MESSAGE,
+    DEFAULT_S3_SHARED_CONNECTION,
+} from './types'
 import { getLabel, isLeafNode, getIconForNodeType, getTooltip, createErrorItem } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import {
@@ -234,33 +241,41 @@ export function createS3ConnectionNode(
                             return [createErrorItem(errorMessage, 'list-buckets', node.id) as S3Node]
                         }
                     } else if (isDefaultConnection && s3Info.prefix) {
-                        // For default connections, show the full path as the first node
-                        const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
+                        // For default connections with prefix:
+                        // - IAM (default.s3_shared): show just bucket, list from root so 'shared/' folder appears
+                        // - IDC (project.s3_default_folder): show bucket/prefix, list from prefix
+                        const isIamSharedConnection = connection.name === DEFAULT_S3_SHARED_CONNECTION
+                        const nodeLabel = isIamSharedConnection ? s3Info.bucket : `${s3Info.bucket}/${s3Info.prefix}`
+                        const listPrefix = isIamSharedConnection ? undefined : s3Info.prefix
+
                         return [
                             new S3Node(
                                 {
-                                    id: fullPath,
+                                    id: nodeLabel,
                                     nodeType: NodeType.S3_BUCKET,
                                     connectionType: ConnectionType.S3,
-                                    value: { bucket: s3Info.bucket, prefix: s3Info.prefix },
+                                    value: {
+                                        bucket: s3Info.bucket,
+                                        prefix: isIamSharedConnection ? undefined : s3Info.prefix,
+                                    },
                                     path: {
                                         connection: connection.name,
                                         bucket: s3Info.bucket,
-                                        key: s3Info.prefix,
-                                        label: fullPath,
+                                        key: isIamSharedConnection ? undefined : s3Info.prefix,
+                                        label: nodeLabel,
                                     },
                                     parent: node,
                                 },
                                 async (bucketNode) => {
                                     try {
-                                        // List objects starting from the prefix
+                                        // List objects starting from the prefix (or root for IAM)
                                         const allPaths = []
                                         let nextToken: string | undefined
 
                                         do {
                                             const result = await s3Client.listPaths(
                                                 s3Info.bucket,
-                                                s3Info.prefix,
+                                                listPrefix,
                                                 nextToken
                                             )
                                             allPaths.push(...result.paths)
@@ -308,30 +323,43 @@ export function createS3ConnectionNode(
                             ),
                         ]
                     } else {
-                        // For non-default connections, show bucket as the first node
+                        // For non-default connections, show bucket (with prefix path if present) as the first node
+                        // Exception: IAM's default.s3_shared should show just bucket and list from root
+                        const isIamSharedConnection = connection.name === DEFAULT_S3_SHARED_CONNECTION
+                        const bucketLabel =
+                            s3Info.prefix && !isIamSharedConnection
+                                ? `${s3Info.bucket}/${s3Info.prefix}`
+                                : s3Info.bucket
+                        const listPrefix = isIamSharedConnection ? undefined : s3Info.prefix
+
                         return [
                             new S3Node(
                                 {
-                                    id: s3Info.bucket,
+                                    id: bucketLabel,
                                     nodeType: NodeType.S3_BUCKET,
                                     connectionType: ConnectionType.S3,
-                                    value: { bucket: s3Info.bucket },
+                                    value: {
+                                        bucket: s3Info.bucket,
+                                        prefix: isIamSharedConnection ? undefined : s3Info.prefix,
+                                    },
                                     path: {
                                         connection: connection.name,
                                         bucket: s3Info.bucket,
+                                        key: isIamSharedConnection ? undefined : s3Info.prefix,
+                                        label: bucketLabel,
                                     },
                                     parent: node,
                                 },
                                 async (bucketNode) => {
                                     try {
-                                        // List objects in the bucket
+                                        // List objects in the bucket (from root for IAM shared connection)
                                         const allPaths = []
                                         let nextToken: string | undefined
 
                                         do {
                                             const result = await s3Client.listPaths(
                                                 s3Info.bucket,
-                                                s3Info.prefix,
+                                                listPrefix,
                                                 nextToken
                                             )
                                             allPaths.push(...result.paths)

@@ -70,10 +70,7 @@ export function getLabel(data: {
             data.value?.connection?.type === ConnectionType.LAKEHOUSE &&
             DATA_DEFAULT_LAKEHOUSE_CONNECTION_NAME_REGEXP.test(data.value?.connection?.name)
         ) {
-            if (getContext('aws.smus.isIamMode')) {
-                return 'Catalogs'
-            }
-            return 'Lakehouse'
+            return 'Catalogs'
         }
         const formattedType = data.value?.connection?.type?.replace(/([A-Z]+(?:_[A-Z]+)*)/g, (match: string) => {
             const words = match.split('_')
@@ -140,6 +137,7 @@ export function isLeafNode(data: { nodeType: NodeType; isContainer?: boolean }):
 export function getIconForNodeType(nodeType: NodeType, isContainer?: boolean): vscode.ThemeIcon | IconPath | undefined {
     switch (nodeType) {
         case NodeType.CONNECTION:
+            return getIcon('aws-sagemakerunifiedstudio-catalog')
         case NodeType.S3_ACCESS_GRANT:
             return undefined
         case NodeType.S3_BUCKET:
