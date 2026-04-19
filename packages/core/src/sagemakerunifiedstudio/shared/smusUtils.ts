@@ -93,6 +93,10 @@ export const SmusErrorCodes = {
     NoGroupProfileFound: 'NoGroupProfileFound',
     /** Error code for when no user profile is found for IAM principal */
     NoUserProfileFound: 'NoUserProfileFound',
+    /** Error code for when no IAM connection (project.iam) is found for project */
+    NoIamConnectionFound: 'NoIamConnectionFound',
+    /** Error code for when IAM connection credentials are not available */
+    NoIamConnectionCredentials: 'NoIamConnectionCredentials',
 } as const
 
 /**
