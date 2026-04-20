@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as path from 'path'
 import sinon from 'sinon'
-import { installCli, updateAwsCli } from '../../../shared/utilities/cliUtils'
+import { awsClis, installCli, updateAwsCli } from '../../../shared/utilities/cliUtils'
 import globals from '../../../shared/extensionGlobals'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { SeverityLevel } from '../vscode/message'
@@ -25,6 +25,29 @@ describe('cliUtils', async function () {
     afterEach(async function () {
         sandbox.restore()
         await fs.delete(path.join(globals.context.globalStorageUri.fsPath, 'tools'), { recursive: true, force: true })
+    })
+
+    describe('awsClis config', function () {
+        it('session-manager-plugin has multiple Windows command paths', function () {
+            const windowsPaths = awsClis['session-manager-plugin'].command.windows
+            assert.ok(windowsPaths)
+            assert.ok(windowsPaths.length > 1, 'should have multiple Windows paths for fallback')
+            assert.ok(
+                windowsPaths.some((p) => p === 'session-manager-plugin.exe'),
+                'should include PATH lookup'
+            )
+            assert.ok(
+                windowsPaths.some((p) => p.includes('Program Files')),
+                'should include Program Files install location'
+            )
+        })
+
+        it('session-manager-plugin has Windows ARM source URL', function () {
+            const windowsSource = awsClis['session-manager-plugin'].source.windows
+            assert.ok(windowsSource)
+            assert.ok(windowsSource.arm, 'should have ARM URL for Windows')
+            assert.ok(windowsSource.x86, 'should have x86 URL for Windows')
+        })
     })
 
     describe('installCli', async function () {
