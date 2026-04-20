@@ -301,6 +301,7 @@ export class SmusUtils {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'User-Agent': 'aws-toolkit-vscode',
+                    Origin: new URL(domainUrl).origin,
                 },
                 body: JSON.stringify(requestBody),
                 timeout: SmusTimeouts.apiCallTimeoutMs,
