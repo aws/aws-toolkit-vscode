@@ -66,6 +66,9 @@ export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
         command: {
             unix: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin')],
             windows: [
+                // First entry must be relative path for local install (installSsmCli uses cmd[0])
+                path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
+                // System-installed paths for global detection
                 'session-manager-plugin.exe',
                 path.join('C:', 'Program Files', 'Amazon', 'SessionManagerPlugin', 'bin', 'session-manager-plugin.exe'),
                 path.join(
@@ -76,7 +79,6 @@ export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
                     'bin',
                     'session-manager-plugin.exe'
                 ),
-                path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
             ],
         },
         source: {
