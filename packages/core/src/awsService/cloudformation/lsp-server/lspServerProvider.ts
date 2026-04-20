@@ -66,5 +66,11 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
         }
     }
 
-    dispose() {}
+    dispose() {
+        for (const provider of this.matchedProviders) {
+            if ('dispose' in provider && typeof provider.dispose === 'function') {
+                provider.dispose()
+            }
+        }
+    }
 }

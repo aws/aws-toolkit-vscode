@@ -8,6 +8,7 @@ import { cleanLspDownloads, fs, getDownloadedVersions } from '../../../../shared
 import { createTestWorkspaceFolder } from '../../../testUtil'
 import path from 'path'
 import assert from 'assert'
+import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 
 async function fakeInstallVersion(version: string, installationDir: string): Promise<void> {
     const versionDir = path.join(installationDir, version)
@@ -21,7 +22,7 @@ async function fakeInstallVersions(versions: string[], installationDir: string):
     }
 }
 
-describe('cleanLSPDownloads', function () {
+describe('cleanLspDownloads', function () {
     let installationDir: Uri
 
     before(async function () {
@@ -39,82 +40,81 @@ describe('cleanLSPDownloads', function () {
         await fs.delete(installationDir, { force: true, recursive: true })
     })
 
-    it('keeps two newest versions', async function () {
+    it('keeps current version and one highest fallback, deletes the rest', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
+
         const deleted = await cleanLspDownloads('2.1.1', [], installationDir.fsPath)
 
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 2)
-        assert.ok(result.includes('2.1.1'))
-        assert.ok(result.includes('1.1.1'))
+        const remaining = (await fs.readdir(installationDir.fsPath)).map(([name]) => name).sort()
+        assert.deepStrictEqual(remaining, ['1.1.1', '2.1.1'])
         assert.strictEqual(deleted.length, 2)
     })
 
-    it('deletes delisted versions', async function () {
-        await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '2.1.1',
-            [{ serverVersion: '1.1.1', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
-
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 2)
-        assert.ok(result.includes('2.1.1'))
-        assert.ok(result.includes('1.0.1'))
-        assert.strictEqual(deleted.length, 2)
-    })
-
-    it('handles case where less than 2 versions are not delisted', async function () {
-        await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.1',
-            [
-                { serverVersion: '1.1.1', isDelisted: true, targets: [] },
-                { serverVersion: '2.1.1', isDelisted: true, targets: [] },
-                { serverVersion: '1.0.0', isDelisted: true, targets: [] },
-            ],
-            installationDir.fsPath
-        )
-
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 1)
-        assert.ok(result.includes('1.0.1'))
-        assert.strictEqual(deleted.length, 3)
-    })
-
-    it('handles case where less than 2 versions exist', async function () {
+    it('keeps only current version when it is the sole downloaded version', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
+
         const deleted = await cleanLspDownloads('1.0.0', [], installationDir.fsPath)
 
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 1)
+        const remaining = (await fs.readdir(installationDir.fsPath)).map(([name]) => name)
+        assert.deepStrictEqual(remaining, ['1.0.0'])
         assert.strictEqual(deleted.length, 0)
     })
 
-    it('does not install delisted version when no other option exists', async function () {
-        await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.0',
-            [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
+    it('keeps current version even when it is not the highest installed', async function () {
+        await fakeInstallVersions(['1.0.0', '2.0.0', '3.0.0'], installationDir.fsPath)
 
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 0)
-        assert.strictEqual(deleted.length, 1)
+        await cleanLspDownloads('1.0.0', [], installationDir.fsPath)
+
+        const remaining = (await fs.readdir(installationDir.fsPath)).map(([name]) => name).sort()
+        assert.deepStrictEqual(remaining, ['1.0.0', '3.0.0'])
     })
 
-    it('ignores invalid versions', async function () {
-        await fakeInstallVersions(['1.0.0', '.DS_STORE'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.0',
-            [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
+    it('ignores entries that are not valid semver', async function () {
+        await fakeInstallVersions(['1.0.0', '2.0.0'], installationDir.fsPath)
+        await fs.mkdir(path.join(installationDir.fsPath, '.DS_STORE'))
 
-        const result = await getDownloadedVersions(installationDir.fsPath)
-        assert.strictEqual(result.length, 0)
-        assert.strictEqual(deleted.length, 1)
+        await cleanLspDownloads('2.0.0', [], installationDir.fsPath)
+
+        const versions = await getDownloadedVersions(installationDir.fsPath)
+        assert.deepStrictEqual(versions.sort(), ['1.0.0', '2.0.0'])
+    })
+
+    it('skips deletion of versions currently in use by a live process', async function () {
+        await fakeInstallVersions(['1.0.0', '2.0.0', '3.0.0'], installationDir.fsPath)
+        // Current pid counts as "in use" — process.kill(pid, 0) succeeds
+        nodeFs.writeFileSync(path.join(installationDir.fsPath, '1.0.0', `.inuse.${process.pid}`), '{}')
+
+        const deleted = await cleanLspDownloads('3.0.0', [], installationDir.fsPath)
+
+        const remaining = (await fs.readdir(installationDir.fsPath)).map(([name]) => name).sort()
+        // keep set = {3.0.0 (current), 2.0.0 (fallback)}; 1.0.0 survives via in-use marker
+        assert.deepStrictEqual(remaining, ['1.0.0', '2.0.0', '3.0.0'])
+        assert.strictEqual(deleted.length, 0)
+    })
+
+    it('deletes versions whose markers reference dead pids', async function () {
+        await fakeInstallVersions(['1.0.0', '2.0.0', '3.0.0'], installationDir.fsPath)
+        const deadPid = 2 ** 22 // far beyond any realistic live pid
+        nodeFs.writeFileSync(path.join(installationDir.fsPath, '1.0.0', `.inuse.${deadPid}`), '{}')
+
+        const deleted = await cleanLspDownloads('3.0.0', [], installationDir.fsPath)
+
+        const remaining = (await fs.readdir(installationDir.fsPath)).map(([name]) => name).sort()
+        assert.deepStrictEqual(remaining, ['2.0.0', '3.0.0'])
+        assert.deepStrictEqual(deleted, ['1.0.0'])
+    })
+
+    it('sweeps stale tmp directories with dead pids', async function () {
+        await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
+        const deadPid = 2 ** 22
+        const staleTmp = path.join(installationDir.fsPath, `1.0.0.tmp.${deadPid}`)
+        const liveTmp = path.join(installationDir.fsPath, `1.0.0.tmp.${process.pid}`)
+        await fs.mkdir(staleTmp)
+        await fs.mkdir(liveTmp)
+
+        await cleanLspDownloads('1.0.0', [], installationDir.fsPath)
+
+        assert.strictEqual(nodeFs.existsSync(staleTmp), false)
+        assert.strictEqual(nodeFs.existsSync(liveTmp), true)
     })
 })
