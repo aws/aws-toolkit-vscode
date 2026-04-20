@@ -32,10 +32,7 @@ describe('cliUtils', async function () {
             const windowsPaths = awsClis['session-manager-plugin'].command.windows
             assert.ok(windowsPaths)
             assert.ok(windowsPaths.length > 1, 'should have multiple Windows paths for fallback')
-            assert.ok(
-                windowsPaths.some((p) => p === 'session-manager-plugin.exe'),
-                'should include PATH lookup'
-            )
+            assert.ok(windowsPaths.includes('session-manager-plugin.exe'), 'should include PATH lookup')
             assert.ok(
                 windowsPaths.some((p) => p.includes('Program Files')),
                 'should include Program Files install location'
