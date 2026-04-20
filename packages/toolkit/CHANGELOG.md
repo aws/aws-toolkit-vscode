@@ -1,3 +1,8 @@
+## 4.1.0 2026-04-16
+
+- **Bug Fix** Fix issue for IAM users who cannot see their Sagemaker Unified Studio spaces
+- **Feature** EC2: Added "Filter by Tag" action to the EC2 explorer node, allowing users to filter instances by tag key=value pairs.
+
 ## 4.0.0 2026-04-09
 
 - **Bug Fix** HyperPod: Improved connection reliability with automatic token refresh and fixed connection failures on Windows.
