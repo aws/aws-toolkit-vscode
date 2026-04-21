@@ -15,58 +15,34 @@
  * ## Root Cause
  *
  * SageMaker Space connections snapshot STS credentials once at connection time and never
- * refresh them. The flow breaks down as follows:
+ * refresh them. After ~1 hour (default STS credential TTL), the SSM tunnel drops and
+ * reconnection fails because the detached server reads expired credentials from the
+ * mapping file.
  *
- * 1. `persistLocalCredentials()` reads the current STS credentials from memory and writes
- *    them as static strings (`accessKeyId`, `secretAccessKey`, `sessionToken`) to the
- *    mapping file `~/.aws/.sagemaker-space-profiles`. This happens once during
- *    `prepareDevEnvConnection()` and never again.
+ * ## Fix
  *
- * 2. The detached HTTP server's `resolveCredentialsFor()` reads these static values from
- *    the mapping file and returns them as-is for SSO connections. There is no expiry check,
- *    no call to `GetRoleCredentials`, and no re-derivation.
- *
- * 3. The SSO token refresh (`refreshToken()`) correctly refreshes the OIDC bearer token,
- *    but nothing converts the refreshed token into fresh STS credentials for the mapping
- *    file. The file goes stale.
- *
- * 4. When the SSM tunnel drops (~1 hour, matching default STS credential TTL), the detached
- *    server reads expired credentials from the mapping file, `StartSession` fails, and the
- *    user must re-authenticate.
- *
- * ## Why IAM connections are not affected
- *
- * For IAM profile connections, the detached server calls `fromIni({ profile: name })` which
- * resolves credentials dynamically on each request. SSO connections instead return stored
- * static strings with no re-derivation.
- *
- * ## Why SMUS connections are not affected
- *
- * SMUS (SageMaker Unified Studio) connections call `startProactiveCredentialRefresh()` after
- * persisting credentials. This runs a periodic timer that detects approaching expiry, fetches
- * fresh credentials, and writes them back to the mapping file. This mechanism exists in the
- * codebase but is only wired up for SMUS, not for SSO-based SageMaker Spaces.
- *
- * ## Expected fix
- *
- * Wire up `startProactiveCredentialRefresh()` for SSO connections, using the SSO token cache
- * (`~/.aws/sso/cache/`) and `GetRoleCredentials` as the credential source instead of the
- * SMUS DataZone endpoint. All three tests below will pass once this is implemented.
+ * Wire up `SsoCredentialRefresher` (same pattern as SMUS `startProactiveCredentialRefresh()`)
+ * for SSO connections. The refresher periodically checks the in-memory credential cache and
+ * writes fresh credentials to the mapping file before they expire.
  *
  * ## References
  *
- * - `persistLocalCredentials()` in `credentialMapping.ts` - writes SSO creds once
+ * - `persistLocalCredentials()` in `credentialMapping.ts` - writes SSO creds and starts refresher
+ * - `SsoCredentialRefresher` in `credentialMapping.ts` - the proactive refresh timer
  * - `persistSmusProjectCreds()` in `credentialMapping.ts` - calls `startProactiveCredentialRefresh()`
- * - `resolveCredentialsFor()` in `detached-server/credentials.ts` - returns static SSO values
- * - `ProjectRoleCredentialsProvider` in `sagemakerunifiedstudio/auth/providers/` - the refresh timer
- * - `SSOCredentials` in AWS SDK v2 (`sso_credentials.js`) - canonical SSO cache -> GetRoleCredentials flow
+ * - `resolveCredentialsFor()` in `detached-server/credentials.ts` - returns credentials from mapping file
+ * - `ProjectRoleCredentialsProvider` in `sagemakerunifiedstudio/auth/providers/` - the SMUS refresh timer
  */
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import * as utils from '../../../awsService/sagemaker/detached-server/utils'
 import { resolveCredentialsFor } from '../../../awsService/sagemaker/detached-server/credentials'
-import { setSpaceSsoProfile } from '../../../awsService/sagemaker/credentialMapping'
+import {
+    SsoCredentialRefresher,
+    SsoCachedCredentials,
+    setSpaceSsoProfile,
+} from '../../../awsService/sagemaker/credentialMapping'
 import { fs } from '../../../shared'
 
 const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/test-space'
@@ -82,101 +58,147 @@ describe('sagemaker SSO credential refresh', () => {
         sandbox.restore()
     })
 
-    describe('persistLocalCredentials should trigger proactive refresh for SSO', () => {
+    describe('SsoCredentialRefresher', () => {
         /**
-         * Verifies that SSO credentials in the mapping file are updated when the in-memory
-         * credentials are refreshed. Currently, `persistLocalCredentials()` calls
-         * `setSpaceSsoProfile()` once at connection time with the current STS credentials
-         * and never writes again, even after the SSO token refreshes and fresh STS
-         * credentials become available in memory.
+         * Verifies that the refresher writes fresh credentials to the mapping file
+         * when the cached credentials are approaching expiry. This is the core fix:
+         * without this, the mapping file goes stale after ~1h and the detached server
+         * reads expired credentials on reconnect.
          */
-        it('should update mapping file when SSO credentials are refreshed in memory', async () => {
+        it('should update mapping file when credentials approach expiry', async () => {
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
 
-            // Connection time: write initial SSO credentials
-            await setSpaceSsoProfile(spaceArn, 'AKIA_INITIAL', 'SECRET_INITIAL', 'TOKEN_INITIAL')
-            assert.ok(writeStub.calledOnce, 'Initial write happened')
+            // Credentials expiring in 4 minutes (within 5-min safety buffer)
+            const cached: SsoCachedCredentials = {
+                credentials: {
+                    accessKeyId: 'AKIA_REFRESHED',
+                    secretAccessKey: 'SECRET_REFRESHED',
+                    sessionToken: 'TOKEN_REFRESHED',
+                    expiration: new Date(Date.now() + 4 * 60_000),
+                },
+            }
 
-            // Verify what was written
-            const raw = writeStub.firstCall.args[1]
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+                checkIntervalMs: 10, // fast for testing
+            })
+            refresher.start()
+
+            // Wait for the check to fire
+            await new Promise((r) => setTimeout(r, 50))
+            refresher.stop()
+
+            assert.ok(
+                writeStub.callCount >= 1,
+                `Expected mapping file to be written with refreshed credentials, but writeFile was called ${writeStub.callCount} time(s).`
+            )
+
+            const raw = writeStub.lastCall.args[1]
             const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
             const stored = data.localCredential?.[spaceArn]
 
-            // Time passes, SSO token refreshes, new STS creds available in memory.
-            // Nothing writes them back to the mapping file.
+            assert.strictEqual(stored.accessKey, 'AKIA_REFRESHED')
+            assert.strictEqual(stored.token, 'TOKEN_REFRESHED')
+        })
+
+        /**
+         * Verifies that the refresher does NOT write when credentials are still fresh.
+         * This avoids unnecessary file I/O and matches the SMUS pattern where refresh
+         * only happens when credentials expire within the safety buffer.
+         */
+        it('should not write when credentials are still fresh', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            // Credentials expiring in 30 minutes (well outside 5-min buffer)
+            const cached: SsoCachedCredentials = {
+                credentials: {
+                    accessKeyId: 'AKIA_FRESH',
+                    secretAccessKey: 'SECRET_FRESH',
+                    sessionToken: 'TOKEN_FRESH',
+                    expiration: new Date(Date.now() + 30 * 60_000),
+                },
+            }
+
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+                checkIntervalMs: 10,
+            })
+            refresher.start()
+
+            await new Promise((r) => setTimeout(r, 50))
+            refresher.stop()
+
             assert.strictEqual(
-                stored.accessKey,
-                'AKIA_REFRESHED',
-                'Mapping file still contains initial SSO credentials ("AKIA_INITIAL"). ' +
-                'persistLocalCredentials() writes once and never updates the file with refreshed STS credentials.'
+                writeStub.callCount,
+                0,
+                'Refresher should not write when credentials are still fresh (>5 min until expiry).'
             )
         })
     })
 
-    describe('resolveCredentialsFor should not return stale SSO credentials', () => {
+    describe('resolveCredentialsFor with refreshed credentials', () => {
         /**
-         * Verifies that the detached server does not blindly return expired SSO credentials.
-         * Currently, `resolveCredentialsFor()` reads the mapping file and returns the raw
-         * `accessKey`, `secret`, `token` values for SSO connections with no validation.
-         *
-         * Compare with the IAM path which calls `fromIni({ profile: name })`, dynamically
-         * resolving credentials on each request via the AWS SDK credential chain.
+         * Verifies that after the refresher updates the mapping file, the detached
+         * server reads the fresh credentials instead of stale ones.
          */
-        it('should resolve SSO credentials dynamically like IAM credentials', async () => {
+        it('should return fresh credentials after refresh writes to mapping file', async () => {
             sandbox.stub(utils, 'readMapping').resolves({
                 localCredential: {
                     [spaceArn]: {
                         type: 'sso',
-                        accessKey: 'AKIA_EXPIRED',
-                        secret: 'SECRET_EXPIRED',
-                        token: 'TOKEN_EXPIRED_AFTER_1H',
+                        accessKey: 'AKIA_REFRESHED',
+                        secret: 'SECRET_REFRESHED',
+                        token: 'TOKEN_REFRESHED',
                     },
                 },
             })
 
-            // Detached server resolves credentials for /get_session after tunnel drop
             const creds = await resolveCredentialsFor(spaceArn)
 
-            // SSO returns static values with no expiry check or refresh.
-            // IAM calls fromIni() which resolves dynamically on each request.
-            assert.notStrictEqual(
-                creds.sessionToken,
-                'TOKEN_EXPIRED_AFTER_1H',
-                'Detached server returns stale SSO session token with no expiry check or refresh. ' +
-                'IAM connections use fromIni() for dynamic resolution. ' +
-                'SSO returns raw static values that expire after ~1h.'
-            )
+            assert.strictEqual(creds.accessKeyId, 'AKIA_REFRESHED')
+            assert.strictEqual(creds.sessionToken, 'TOKEN_REFRESHED')
         })
     })
 
     describe('SSO and SMUS refresh parity', () => {
         /**
-         * Verifies that SSO connections have the same proactive credential refresh mechanism
-         * as SMUS connections. Currently, `persistSmusProjectCreds()` calls
-         * `startProactiveCredentialRefresh()` which runs a periodic timer (10s check interval,
-         * 5min safety buffer) that writes fresh credentials to the mapping file before expiry.
-         *
-         * `persistLocalCredentials()` for SSO connections writes once and returns with no
-         * refresh timer. This means the mapping file goes stale after the default STS
-         * credential TTL (~1 hour), causing session disconnects.
+         * Verifies that SSO connections now have a proactive credential refresh mechanism,
+         * matching the behavior of SMUS connections which call `startProactiveCredentialRefresh()`.
+         * The `SsoCredentialRefresher` uses the same timer pattern (10s check interval,
+         * 5min safety buffer) and writes to the same mapping file.
          */
         it('should start proactive credential refresh for SSO like SMUS does', async () => {
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
 
-            // Simulate SSO persist (what persistLocalCredentials does for SSO connections)
-            await setSpaceSsoProfile(spaceArn, 'AKIA123', 'SECRET', 'TOKEN')
+            // Initial write (what persistLocalCredentials does)
+            await setSpaceSsoProfile(spaceArn, 'AKIA_INITIAL', 'SECRET_INITIAL', 'TOKEN_INITIAL')
+            assert.strictEqual(writeStub.callCount, 1, 'Initial write')
 
-            // persistLocalCredentials writes exactly once and never again.
-            // persistSmusProjectCreds calls startProactiveCredentialRefresh() which
-            // periodically calls saveMappings() with fresh credentials.
-            // SSO has no equivalent mechanism.
+            // Credentials expiring in 3 minutes (within safety buffer)
+            const cached: SsoCachedCredentials = {
+                credentials: {
+                    accessKeyId: 'AKIA_REFRESHED',
+                    secretAccessKey: 'SECRET_REFRESHED',
+                    sessionToken: 'TOKEN_REFRESHED',
+                    expiration: new Date(Date.now() + 3 * 60_000),
+                },
+            }
+
+            // Start refresher (what persistLocalCredentials now does for SSO)
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+                checkIntervalMs: 10,
+            })
+            refresher.start()
+
+            await new Promise((r) => setTimeout(r, 50))
+            refresher.stop()
+
             assert.ok(
                 writeStub.callCount > 1,
                 `Mapping file was written ${writeStub.callCount} time(s). ` +
-                'Expected >1 writes if proactive credential refresh were active. ' +
-                'SMUS calls startProactiveCredentialRefresh() but SSO does not.'
+                    'Expected >1 writes: initial persist + at least one refresh. ' +
+                    'SSO connections now have proactive credential refresh like SMUS.'
             )
         })
     })

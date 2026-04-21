@@ -20,6 +20,111 @@ import { isSmusSsoConnection } from '../../sagemakerunifiedstudio/auth/model'
 const mappingFileName = '.sagemaker-space-profiles'
 const mappingFilePath = path.join(os.homedir(), '.aws', mappingFileName)
 
+export interface SsoCachedCredentials {
+    credentials: {
+        accessKeyId: string
+        secretAccessKey: string
+        sessionToken?: string
+        expiration?: Date
+    }
+}
+
+/**
+ * Proactive credential refresh for SSO-based SageMaker Space connections.
+ *
+ * Follows the same pattern as SMUS `ProjectRoleCredentialsProvider.startProactiveCredentialRefresh()`:
+ * - Checks every 10 seconds using setTimeout (handles sleep/resume correctly)
+ * - Refreshes when credentials expire within 5 minutes (safety buffer)
+ * - Writes fresh credentials to the mapping file so the detached server always reads valid creds
+ *
+ * Without this, SSO connections disconnect after ~1 hour when the initial STS credentials expire
+ * because `persistLocalCredentials()` only writes once at connection time.
+ */
+export class SsoCredentialRefresher {
+    private refreshTimer?: ReturnType<typeof setTimeout>
+    private active = false
+    readonly checkIntervalMs: number
+    readonly safetyBufferMs: number
+
+    constructor(
+        private readonly spaceArn: string,
+        private readonly getCachedCredentials: () => SsoCachedCredentials | undefined,
+        options?: { checkIntervalMs?: number; safetyBufferMs?: number }
+    ) {
+        this.checkIntervalMs = options?.checkIntervalMs ?? 10_000
+        this.safetyBufferMs = options?.safetyBufferMs ?? 5 * 60_000
+    }
+
+    public start(): void {
+        if (this.active) {
+            return
+        }
+        this.active = true
+        this.scheduleNextCheck()
+    }
+
+    public stop(): void {
+        this.active = false
+        if (this.refreshTimer !== undefined) {
+            clearTimeout(this.refreshTimer)
+            this.refreshTimer = undefined
+        }
+    }
+
+    public isActive(): boolean {
+        return this.active
+    }
+
+    private scheduleNextCheck(): void {
+        if (!this.active) {
+            return
+        }
+        this.refreshTimer = setTimeout(async () => {
+            try {
+                await this.refreshIfNeeded()
+            } catch (error) {
+                getLogger().error(`SSO credential refresh failed for ${this.spaceArn}: %O`, error)
+            }
+            if (this.active) {
+                this.scheduleNextCheck()
+            }
+        }, this.checkIntervalMs)
+    }
+
+    private async refreshIfNeeded(): Promise<void> {
+        const cached = this.getCachedCredentials()
+        if (!cached) {
+            return
+        }
+
+        const expiration = cached.credentials.expiration?.getTime()
+        if (expiration && expiration - Date.now() > this.safetyBufferMs) {
+            return // credentials still fresh
+        }
+
+        // Credentials are expiring soon or have no expiry info - write them to mapping file
+        await setSpaceSsoProfile(
+            this.spaceArn,
+            cached.credentials.accessKeyId,
+            cached.credentials.secretAccessKey,
+            cached.credentials.sessionToken ?? ''
+        )
+    }
+}
+
+/** Active SSO credential refreshers, keyed by spaceArn */
+const activeSsoRefreshers = new Map<string, SsoCredentialRefresher>()
+
+/**
+ * Stops all active SSO credential refreshers. Call on extension deactivation or user logout.
+ */
+export function stopAllSsoCredentialRefreshers(): void {
+    for (const refresher of activeSsoRefreshers.values()) {
+        refresher.stop()
+    }
+    activeSsoRefreshers.clear()
+}
+
 export async function loadMappings(): Promise<SpaceMappings> {
     try {
         if (!(await fs.existsFile(mappingFilePath))) {
@@ -63,6 +168,19 @@ export async function persistLocalCredentials(spaceArn: string): Promise<void> {
             credentials.credentials.secretAccessKey,
             credentials.credentials.sessionToken ?? ''
         )
+
+        // Start proactive credential refresh for SSO connections.
+        // Without this, the mapping file goes stale after ~1h (default STS TTL)
+        // and the detached server reads expired credentials on reconnect.
+        const existing = activeSsoRefreshers.get(spaceArn)
+        if (existing) {
+            existing.stop()
+        }
+        const refresher = new SsoCredentialRefresher(spaceArn, () => {
+            return globals.loginManager.store.credentialsCache[currentProfileId] as SsoCachedCredentials | undefined
+        })
+        activeSsoRefreshers.set(spaceArn, refresher)
+        refresher.start()
     } else {
         await setSpaceIamProfile(spaceArn, currentProfileId)
     }
