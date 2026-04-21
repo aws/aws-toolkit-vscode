@@ -181,13 +181,10 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     const sshPrefix = getSshPrefix(connectionType)
     let hostname: string
     if (connectionType === 'sm_hp') {
-        let hpSession = session
-        if (!hpSession) {
-            const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
-            hpSession = isValidSshHostname(proposedSession)
-                ? proposedSession
-                : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
-        }
+        const proposedSession = `${workspaceName}_${namespace}_${clusterName}_${region}_${accountId}`
+        const hpSession = isValidSshHostname(proposedSession)
+            ? proposedSession
+            : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
         hostname = `${sshPrefix}${hpSession}`
     } else {
         const credsType = connectionType.replace('sm_', '')
@@ -268,7 +265,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
                   // Parse presigned URL to extract STREAM_URL, TOKEN, and SESSION_ID
                   let streamUrl = decodedWsUrl
                   let sessionToken = decodedToken
-                  let sessionId = hostname || ''
+                  let sessionId = session || hostname || ''
 
                   if (decodedWsUrl && !decodedToken) {
                       try {
