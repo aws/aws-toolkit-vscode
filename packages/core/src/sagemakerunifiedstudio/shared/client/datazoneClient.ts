@@ -8,7 +8,6 @@ import {
     ConnectionSummary,
     DataZone,
     GetConnectionCommandOutput,
-    GetEnvironmentCredentialsCommandOutput,
     ListConnectionsCommandOutput,
     PhysicalEndpoint,
     RedshiftPropertiesOutput,
@@ -228,33 +227,48 @@ export class DataZoneClient {
 
     /**
      * Gets the default tooling environment credentials for a DataZone project
+     * Uses the IAM connection to retrieve credentials via GetConnection API
      * @param projectId The DataZone project identifier
-     * @returns Promise resolving to environment credentials
-     * @throws Error if tooling blueprint or environment is not found
+     * @returns Promise resolving to connection credentials
+     * @throws Error if IAM connection is not found or credentials cannot be retrieved
      */
-    public async getProjectDefaultEnvironmentCreds(projectId: string): Promise<GetEnvironmentCredentialsCommandOutput> {
+    public async getProjectDefaultEnvironmentCreds(projectId: string): Promise<ConnectionCredentials> {
         try {
             this.logger.debug(
-                `Getting project default environment credentials for domain ${this.domainId}, project ${projectId}`
+                `Getting project IAM connection credentials for domain ${this.domainId}, project ${projectId}`
             )
-            const datazoneClient = await this.getDataZoneClient()
 
-            const toolingEnv = await this.getToolingEnvironmentForProject(datazoneClient, this.domainId, projectId)
+            // List IAM connections directly using type filter
+            const response = await this.fetchConnections(this.domainId, projectId, ConnectionType.IAM)
+            // If both exist, project.iam is returned.
+            const iamConnection =
+                response.items?.find((conn) => conn.name === 'project.iam') ??
+                response.items?.find((conn) => conn.name === 'default.iam')
 
-            if (!toolingEnv?.id) {
-                throw new Error('No tooling environment found for project')
+            if (!iamConnection || !iamConnection.connectionId) {
+                throw new ToolkitError('No IAM connection found for project', {
+                    code: SmusErrorCodes.NoIamConnectionFound,
+                })
             }
 
-            this.logger.debug(`Found default environment with ID: ${toolingEnv.id}, getting environment credentials`)
+            this.logger.debug(`Found IAM connection with ID: ${iamConnection.connectionId}, getting credentials`)
 
-            const defaultEnvCreds = await datazoneClient.getEnvironmentCredentials({
+            // Get the connection with credentials
+            const connectionWithCreds = await this.getConnection({
                 domainIdentifier: this.domainId,
-                environmentIdentifier: toolingEnv.id,
+                identifier: iamConnection.connectionId,
+                withSecret: true,
             })
 
-            return defaultEnvCreds
+            if (!connectionWithCreds.connectionCredentials) {
+                throw new ToolkitError('IAM connection credentials not available', {
+                    code: SmusErrorCodes.NoIamConnectionCredentials,
+                })
+            }
+
+            return connectionWithCreds.connectionCredentials
         } catch (err) {
-            this.logger.error('Failed to get project default environment credentials: %s', err as Error)
+            this.logger.error('Failed to get project IAM connection credentials: %s', err as Error)
             throw err
         }
     }
@@ -863,7 +877,7 @@ export class DataZoneClient {
     /**
      * Creates a one-off DataZone SDK client with raw credentials, respecting endpoint overrides.
      */
-    private createProjectCredentialsDataZoneClient(creds: GetEnvironmentCredentialsCommandOutput): DataZone {
+    private createProjectCredentialsDataZoneClient(creds: ConnectionCredentials): DataZone {
         const clientConfig: any = {
             region: this.getRegion(),
             credentials: {

@@ -17,7 +17,7 @@ import { createDZClientBaseOnDomainMode } from '../../explorer/nodes/utils'
 /**
  * Credentials provider for SageMaker Unified Studio Project Role credentials
  * Uses Domain Execution Role (DER) credentials to get project-scoped credentials
- * via the DataZone GetEnvironmentCredentials API
+ * via the DataZone GetConnection API with the IAM connection
  *
  * This provider implements independent caching with 10-minute expiry and can be used
  * with any AWS SDK client (S3Client, LambdaClient, etc.)
@@ -127,10 +127,10 @@ export class ProjectRoleCredentialsProvider implements CredentialsProvider {
             const response = await dataZoneClient.getProjectDefaultEnvironmentCreds(this.projectId)
 
             this.logger.debug(
-                `SMUS Project: Successfully received response from GetEnvironmentCredentials API for project ${this.projectId}`
+                `SMUS Project: Successfully received response from GetConnection API for project ${this.projectId}`
             )
 
-            // Validate credential fields - credentials are returned directly in the response
+            // Validate credential fields - credentials are returned from connectionCredentials
             validateCredentialFields(response, 'InvalidProjectCredentialResponse', 'project credential response')
 
             // Create AWS credentials with expiration
