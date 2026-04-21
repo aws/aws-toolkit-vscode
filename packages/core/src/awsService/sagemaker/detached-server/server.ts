@@ -56,7 +56,9 @@ server.listen(0, '127.0.0.1', async () => {
 
         const filePath = process.env.SAGEMAKER_LOCAL_SERVER_FILE_PATH
         if (!filePath) {
-            throw new Error('SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set')
+            console.error('SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set')
+            process.exit(0)
+            return
         }
 
         const data = { pid, port }
