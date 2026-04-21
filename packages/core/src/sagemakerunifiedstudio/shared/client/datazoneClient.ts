@@ -7,6 +7,7 @@ import {
     ConnectionCredentials,
     ConnectionSummary,
     DataZone,
+    EnvironmentBlueprintSummary,
     GetConnectionCommandOutput,
     GetEnvironmentCredentialsCommandOutput,
     ListConnectionsCommandOutput,
@@ -611,6 +612,25 @@ export class DataZoneClient {
             projectIdentifier: project,
             type: ConnectionType,
         })
+    }
+
+    /**
+     * Lists environment blueprints for a domain
+     * @param domainId The DataZone domain identifier
+     * @param options Optional filters (managed, name)
+     * @returns Array of environment blueprint summaries
+     */
+    public async listEnvironmentBlueprints(
+        domainId: string,
+        options?: { managed?: boolean; name?: string }
+    ): Promise<EnvironmentBlueprintSummary[]> {
+        const datazoneClient = await this.getDataZoneClient()
+        const response = await datazoneClient.listEnvironmentBlueprints({
+            domainIdentifier: domainId,
+            managed: options?.managed,
+            name: options?.name,
+        })
+        return response.items ?? []
     }
     /**
      * Lists connections in a DataZone environment

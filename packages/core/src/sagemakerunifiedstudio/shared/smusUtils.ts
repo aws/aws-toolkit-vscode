@@ -11,6 +11,8 @@ import fetch from 'node-fetch'
 import { CredentialsProvider, CredentialsProviderType } from '../../auth/providers/credentials'
 import { CredentialType } from '../../shared/telemetry/telemetry'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
+import { ConnectionType } from '@aws-sdk/client-datazone'
+import { DataZoneClient } from './client/datazoneClient'
 
 /**
  * Represents SSO instance information retrieved from DataZone
@@ -556,14 +558,44 @@ export function isIamDomain(input: IamDomainCheckInput): boolean {
 }
 
 /**
- * Determines if a domain is an IAM (EXPRESS) domain based on the preferences field
- * from the GetDomain API response.
+ * Determines if a domain is an IAM (EXPRESS) domain by checking for the presence
+ * of a 'default.iam' connection in the IAM connections list.
  *
- * @param preferences - The preferences record from GetDomainOutput
- * @returns true if preferences.DOMAIN_MODE === 'EXPRESS', false otherwise
+ * @param client - DataZone client instance
+ * @param domainId - The domain identifier
+ * @param projectId - The project identifier (optional, but recommended for accurate results)
+ * @returns Promise resolving to true if a 'default.iam' IAM connection exists, false otherwise
  */
-export function isExpressDomain(preferences?: Record<string, string>): boolean {
-    return preferences?.['DOMAIN_MODE'] === 'EXPRESS'
+export async function isExpressDomain(client: DataZoneClient, domainId: string, projectId?: string): Promise<boolean> {
+    const logger = getLogger('smus')
+    try {
+        const iamConnections = await client.fetchConnections(domainId, projectId, ConnectionType.IAM)
+        logger.debug(`isExpressDomain: iamConnections response: ${JSON.stringify(iamConnections)}`)
+
+        const defaultIam = iamConnections.items?.find((connection) => connection.name === 'default.iam')
+        const projectIam = iamConnections.items?.find((connection) => connection.name === 'project.iam')
+
+        logger.debug(
+            `isExpressDomain check for domain ${domainId}: found ${iamConnections.items?.length ?? 0} IAM connections, defaultIam=${!!defaultIam}, projectIam=${!!projectIam}`
+        )
+
+        if (defaultIam && projectIam) {
+            // Additional check: verify 'default.iam' connection's environment uses the ToolingLite blueprint.
+            // Can't use getEnvironment because ProjectRole doesn't have this permission.
+            const environment = await client.getEnvironmentDetails(defaultIam.environmentId!, projectId)
+            const blueprints = await client.listEnvironmentBlueprints(domainId, { managed: true, name: 'ToolingLite' })
+            const isToolingLite = blueprints.length === 1 && blueprints[0].id === environment.environmentBlueprintId
+            logger.debug(
+                `isExpressDomain: ToolingLite blueprint check for domain ${domainId}: isToolingLite=${isToolingLite}`
+            )
+            return isToolingLite
+        }
+
+        return !!defaultIam
+    } catch (err) {
+        logger.warn(`Failed to check for EXPRESS domain via IAM connections: ${(err as Error).message}`)
+        return false
+    }
 }
 
 /**
