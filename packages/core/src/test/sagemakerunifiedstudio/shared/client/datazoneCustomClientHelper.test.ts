@@ -1199,7 +1199,6 @@ describe('DataZoneCustomClientHelper', () => {
                 const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
                 assert.strictEqual(result, '')
             })
-            })
         })
     })
 })
