@@ -1104,7 +1104,6 @@ describe('DataZoneCustomClientHelper', () => {
                 const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
                 assert.strictEqual(result, '')
             })
-            })
         })
 
         describe('Error scenarios in filtering logic', () => {
