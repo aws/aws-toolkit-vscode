@@ -1046,14 +1046,8 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        assert.strictEqual(err.code, 'NoUserProfileFound')
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
             })
 
             it('should handle API errors during space filtering', async () => {
@@ -1107,13 +1101,9 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
+            })
             })
         })
 
@@ -1206,13 +1196,9 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
+            })
             })
         })
     })
