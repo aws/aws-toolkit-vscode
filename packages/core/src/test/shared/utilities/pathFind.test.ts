@@ -7,6 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as os from 'os'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
 import { findSshPath, findTypescriptCompiler, getVscodeCliPath, tryRun } from '../../../shared/utilities/pathFind'
@@ -141,6 +142,69 @@ describe('pathFind', function () {
             const ssh = (await findSshPath(true))!
             const result = await tryRun(ssh, ['-G', 'x'], 'noresult')
             assert.ok(result)
+        })
+    })
+
+    describe('getVscodeCliPath Kiro fallbacks', function () {
+        let sandbox: sinon.SinonSandbox
+        let previousPath: string | undefined
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            previousPath = process.env.PATH
+            // Clear cached vscPath so the probe loop runs fresh.
+            for (const key of Object.keys(require.cache)) {
+                if (key.includes('shared/utilities/pathFind')) {
+                    delete require.cache[key]
+                }
+            }
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+            process.env.PATH = previousPath
+        })
+
+        it('falls back to `code` binary under appRoot when running on Kiro', async function () {
+            if (isWin()) {
+                this.skip()
+            }
+            const ws = await testutil.createTestWorkspaceFolder()
+            const fakeAppRoot = path.join(ws.uri.fsPath, 'Kiro.app/Contents/Resources/app')
+            const fakeCode = path.join(fakeAppRoot, 'bin', 'code')
+            await testutil.createExecutableFile(fakeCode, '')
+
+            sandbox.stub(vscode.env, 'appName').value('Kiro')
+            sandbox.stub(vscode.env, 'appRoot').value(fakeAppRoot)
+            process.env.PATH = ws.uri.fsPath // no `kiro` binary here
+
+            const { getVscodeCliPath: fresh } = require('../../../shared/utilities/pathFind')
+            const result = await fresh()
+
+            assert.ok(result, 'expected getVscodeCliPath() to resolve a path on Kiro')
+            testutil.assertEqualPaths(result!, fakeCode)
+        })
+
+        it('prefers `kiro` binary over `code` fallback when both exist', async function () {
+            if (isWin()) {
+                this.skip()
+            }
+            const ws = await testutil.createTestWorkspaceFolder()
+            const fakeAppRoot = path.join(ws.uri.fsPath, 'Kiro.app/Contents/Resources/app')
+            const fakeKiro = path.join(fakeAppRoot, 'bin', 'kiro')
+            const fakeCode = path.join(fakeAppRoot, 'bin', 'code')
+            await testutil.createExecutableFile(fakeKiro, '')
+            await testutil.createExecutableFile(fakeCode, '')
+
+            sandbox.stub(vscode.env, 'appName').value('Kiro')
+            sandbox.stub(vscode.env, 'appRoot').value(fakeAppRoot)
+            process.env.PATH = ws.uri.fsPath
+
+            const { getVscodeCliPath: fresh } = require('../../../shared/utilities/pathFind')
+            const result = await fresh()
+
+            assert.ok(result)
+            testutil.assertEqualPaths(result!, fakeKiro)
         })
     })
 })

@@ -84,7 +84,20 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
         path.resolve(vscExe, `../../bin/${cliName}`),
         `/usr/bin/${cliName}`,
         cliName, // $PATH
+        // Kiro fallback: Kiro.app ships the CLI as `code`, not `kiro`. On the $PATH, `kiro` may exist but
+        // it's just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code. If none of the
+        // `kiro`-named probes succeed, search for a `code`-named binary in the same application paths.
+        ...(cliName === 'kiro'
+            ? [
+                  path.resolve(`${vscode.env.appRoot}/bin/code`),
+                  path.resolve(`${vscode.env.appRoot}/../../bin/code`),
+                  path.resolve(`${vscode.env.appRoot}/code`),
+                  path.resolve(vscExe, '../bin/code'),
+                  path.resolve(vscExe, '../../bin/code'),
+              ]
+            : []),
     ]
+
     for (const vsc of vscs) {
         if (!vsc || (vsc !== cliName && !(await fs.exists(vsc)))) {
             continue
