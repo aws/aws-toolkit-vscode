@@ -30,8 +30,12 @@ export interface RelatedResourcesCodeAction extends CodeAction {
     }
 }
 
-export const GetAuthoredResourceTypesRequest = new RequestType<TemplateUri, AuthoredResource[], void>(
+export const GetAuthoredResourceTypesRequest = new RequestType<TemplateUri, string[], void>(
     'aws/cfn/template/resources/authored'
+)
+
+export const GetAuthoredResourceTypesRequestV2 = new RequestType<TemplateUri, AuthoredResource[], void>(
+    'aws/cfn/template/resources/authored/v2'
 )
 
 export const GetRelatedResourceTypesRequest = new RequestType<GetRelatedResourceTypesParams, string[], void>(

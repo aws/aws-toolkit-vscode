@@ -7,11 +7,13 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import {
     getAuthoredResourceTypes,
+    getAuthoredResourceTypesV2,
     getRelatedResourceTypes,
     insertRelatedResources,
 } from '../../../../awsService/cloudformation/relatedResources/relatedResourcesApi'
 import {
     GetAuthoredResourceTypesRequest,
+    GetAuthoredResourceTypesRequestV2,
     GetRelatedResourceTypesRequest,
     InsertRelatedResourcesRequest,
 } from '../../../../awsService/cloudformation/relatedResources/relatedResourcesProtocol'
@@ -32,18 +34,15 @@ describe('RelatedResourcesApi', function () {
     })
 
     describe('getAuthoredResourceTypes', function () {
-        it('should send request with template URI and return authored resources', async function () {
+        it('should send request with template URI and return resource types', async function () {
             const templateUri = 'file:///test/template.yaml'
-            const expectedResources = [
-                { logicalId: 'MyBucket', type: 'AWS::S3::Bucket' },
-                { logicalId: 'MyFunction', type: 'AWS::Lambda::Function' },
-            ]
+            const expectedTypes = ['AWS::S3::Bucket', 'AWS::Lambda::Function']
 
-            mockClient.sendRequest.resolves(expectedResources)
+            mockClient.sendRequest.resolves(expectedTypes)
 
             const result = await getAuthoredResourceTypes(mockClient, templateUri)
 
-            assert.deepStrictEqual(result, expectedResources)
+            assert.deepStrictEqual(result, expectedTypes)
             assert.ok(mockClient.sendRequest.calledOnce)
             assert.ok(mockClient.sendRequest.calledWith(GetAuthoredResourceTypesRequest, templateUri))
         })
@@ -54,6 +53,34 @@ describe('RelatedResourcesApi', function () {
             mockClient.sendRequest.resolves([])
 
             const result = await getAuthoredResourceTypes(mockClient, templateUri)
+
+            assert.deepStrictEqual(result, [])
+        })
+    })
+
+    describe('getAuthoredResourceTypesV2', function () {
+        it('should send request with template URI and return authored resources', async function () {
+            const templateUri = 'file:///test/template.yaml'
+            const expectedResources = [
+                { logicalId: 'MyBucket', type: 'AWS::S3::Bucket' },
+                { logicalId: 'MyFunction', type: 'AWS::Lambda::Function' },
+            ]
+
+            mockClient.sendRequest.resolves(expectedResources)
+
+            const result = await getAuthoredResourceTypesV2(mockClient, templateUri)
+
+            assert.deepStrictEqual(result, expectedResources)
+            assert.ok(mockClient.sendRequest.calledOnce)
+            assert.ok(mockClient.sendRequest.calledWith(GetAuthoredResourceTypesRequestV2, templateUri))
+        })
+
+        it('should return empty array when no resources found', async function () {
+            const templateUri = 'file:///test/empty.yaml'
+
+            mockClient.sendRequest.resolves([])
+
+            const result = await getAuthoredResourceTypesV2(mockClient, templateUri)
 
             assert.deepStrictEqual(result, [])
         })

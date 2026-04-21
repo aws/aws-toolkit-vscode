@@ -5,14 +5,14 @@
 
 import { window } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient/node'
-import { getAuthoredResourceTypes, getRelatedResourceTypes } from '../relatedResources/relatedResourcesApi'
+import { getAuthoredResourceTypesV2, getRelatedResourceTypes } from '../relatedResources/relatedResourcesApi'
 import { AuthoredResource } from '../relatedResources/relatedResourcesProtocol'
 
 export class RelatedResourceSelector {
     constructor(private client: LanguageClient) {}
 
     async selectAuthoredResourceType(templateUri: string): Promise<{ logicalId: string; type: string } | undefined> {
-        const authoredResources = await getAuthoredResourceTypes(this.client, templateUri)
+        const authoredResources = await getAuthoredResourceTypesV2(this.client, templateUri)
         if (authoredResources.length === 0) {
             void window.showInformationMessage('No resources found in the current template')
             return undefined
