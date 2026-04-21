@@ -58,6 +58,49 @@ export async function tryRun(
  *
  * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
  */
+/**
+ * Builds the ordered list of candidate paths to probe when looking for an IDE CLI binary.
+ * Extracted from `getVscodeCliPath()` so it can be unit-tested without touching the filesystem,
+ * module cache, or process globals.
+ *
+ * For Kiro, `code`-named fallback paths inside the app bundle are appended after the standard
+ * `kiro`-named probes. This is because Kiro.app ships its CLI as `code` (not `kiro`); on systems
+ * where the user hasn't installed the `/usr/local/bin/kiro` PATH shim, these fallbacks are the
+ * only way to resolve a working CLI.
+ */
+export function getCliProbePaths(cliName: string, appRoot: string, vscExe: string): string[] {
+    const base = [
+        // Special case for flatpak (steamdeck). #V896741845
+        // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
+        `/app/bin/${cliName}`,
+        // Note: macOS does not have a separate "code-insiders" binary.
+        path.resolve(`${appRoot}/bin/${cliName}`), // macOS
+        path.resolve(`${appRoot}/../../bin/${cliName}`), // Windows
+        path.resolve(`${appRoot}/../../bin/${cliName}-insiders`), // Windows
+        // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
+        path.resolve(`${appRoot}/${cliName}`),
+        path.resolve(vscExe, `../bin/${cliName}-insiders`),
+        path.resolve(vscExe, `../bin/${cliName}`),
+        path.resolve(vscExe, `../../bin/${cliName}-insiders`),
+        path.resolve(vscExe, `../../bin/${cliName}`),
+        `/usr/bin/${cliName}`,
+        cliName, // $PATH
+    ]
+    if (cliName === 'kiro') {
+        // Kiro fallback: Kiro.app ships the CLI as `code`, not `kiro`. On the $PATH, `kiro` may exist
+        // but it's just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code. If none of
+        // the `kiro`-named probes succeed, search for a `code`-named binary in the same application paths.
+        base.push(
+            path.resolve(`${appRoot}/bin/code`),
+            path.resolve(`${appRoot}/../../bin/code`),
+            path.resolve(`${appRoot}/code`),
+            path.resolve(vscExe, '../bin/code'),
+            path.resolve(vscExe, '../../bin/code')
+        )
+    }
+    return base
+}
+
 export async function getVscodeCliPath(): Promise<string | undefined> {
     if (vscPath) {
         return vscPath
@@ -65,38 +108,7 @@ export async function getVscodeCliPath(): Promise<string | undefined> {
 
     const ideInfo = getIdeInfo()
     const cliName = ideInfo.cliName || 'code'
-
-    const vscExe = process.argv0
-    // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
-    const vscs = [
-        // Special case for flatpak (steamdeck). #V896741845
-        // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
-        `/app/bin/${cliName}`,
-        // Note: macOS does not have a separate "code-insiders" binary.
-        path.resolve(`${vscode.env.appRoot}/bin/${cliName}`), // macOS
-        path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}`), // Windows
-        path.resolve(`${vscode.env.appRoot}/../../bin/${cliName}-insiders`), // Windows
-        // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
-        path.resolve(`${vscode.env.appRoot}/${cliName}`),
-        path.resolve(vscExe, `../bin/${cliName}-insiders`),
-        path.resolve(vscExe, `../bin/${cliName}`),
-        path.resolve(vscExe, `../../bin/${cliName}-insiders`),
-        path.resolve(vscExe, `../../bin/${cliName}`),
-        `/usr/bin/${cliName}`,
-        cliName, // $PATH
-        // Kiro fallback: Kiro.app ships the CLI as `code`, not `kiro`. On the $PATH, `kiro` may exist but
-        // it's just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code. If none of the
-        // `kiro`-named probes succeed, search for a `code`-named binary in the same application paths.
-        ...(cliName === 'kiro'
-            ? [
-                  path.resolve(`${vscode.env.appRoot}/bin/code`),
-                  path.resolve(`${vscode.env.appRoot}/../../bin/code`),
-                  path.resolve(`${vscode.env.appRoot}/code`),
-                  path.resolve(vscExe, '../bin/code'),
-                  path.resolve(vscExe, '../../bin/code'),
-              ]
-            : []),
-    ]
+    const vscs = getCliProbePaths(cliName, vscode.env.appRoot, process.argv0)
 
     for (const vsc of vscs) {
         if (!vsc || (vsc !== cliName && !(await fs.exists(vsc)))) {
