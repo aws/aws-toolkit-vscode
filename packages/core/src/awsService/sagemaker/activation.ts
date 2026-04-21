@@ -27,6 +27,7 @@ import {
 } from './hyperpodCommands'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
 import { getLogger } from '../../shared/logger/logger'
+import { stopAllSsoCredentialRefreshers } from './credentialMapping'
 
 let terminalActivityInterval: NodeJS.Timeout | undefined
 let backgroundStateInterval: NodeJS.Timeout | undefined
@@ -34,6 +35,7 @@ let backgroundStateInterval: NodeJS.Timeout | undefined
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx),
+        { dispose: () => stopAllSsoCredentialRefreshers() },
         Commands.register('aws.sagemaker.openRemoteConnection', async (node: SagemakerSpaceNode) => {
             if (!validateNode(node)) {
                 return
