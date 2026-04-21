@@ -5,14 +5,18 @@
 
 import { window } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient/node'
-import { getAuthoredResourceTypes, getRelatedResourceTypes } from '../relatedResources/relatedResourcesApi'
+import {
+    getAuthoredResourceTypes,
+    getAuthoredResourceTypesV2,
+    getRelatedResourceTypes,
+} from '../relatedResources/relatedResourcesApi'
 import { AuthoredResource } from '../relatedResources/relatedResourcesProtocol'
 
 export class RelatedResourceSelector {
     constructor(private client: LanguageClient) {}
 
     async selectAuthoredResourceType(templateUri: string): Promise<{ logicalId: string; type: string } | undefined> {
-        const authoredResources = await getAuthoredResourceTypes(this.client, templateUri)
+        const authoredResources = await this.getAuthoredResources(templateUri)
         if (authoredResources.length === 0) {
             void window.showInformationMessage('No resources found in the current template')
             return undefined
@@ -36,9 +40,12 @@ export class RelatedResourceSelector {
             return undefined
         }
 
-        const resourcesOfType = resourcesByType.get(selectedType)!
+        const resourcesOfType = resourcesByType.get(selectedType)
+        if (!resourcesOfType) {
+            return undefined
+        }
 
-        // iff multiple resources of this type exist, let user choose which one
+        // if multiple resources of this type exist, let user choose which one
         if (resourcesOfType.length > 1) {
             const logicalIdItems = resourcesOfType.map((resource) => ({
                 label: resource.logicalId,
@@ -58,6 +65,19 @@ export class RelatedResourceSelector {
         }
 
         return { logicalId: resourcesOfType[0].logicalId, type: selectedType }
+    }
+
+    /**
+     * Fetches authored resources, falling back to v1 endpoint for older servers.
+     */
+    private async getAuthoredResources(templateUri: string): Promise<AuthoredResource[]> {
+        try {
+            return await getAuthoredResourceTypesV2(this.client, templateUri)
+        } catch {
+            // Fall back to v1 for older language servers that don't support v2
+            const types = await getAuthoredResourceTypes(this.client, templateUri)
+            return types.map((type, index) => ({ logicalId: `Resource${index + 1}`, type }))
+        }
     }
 
     async promptCreateOrImport(): Promise<'create' | 'import' | undefined> {

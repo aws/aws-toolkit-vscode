@@ -35,8 +35,8 @@ export class RelatedResourcesManager {
             let selectedParentResourceType: string
 
             if (preSelectedResourceType) {
-                /* when pre-selected by type we don't have the logical ID,
-                fall back to using the first instance of that type*/
+                // When pre-selected by type we don't have the logical ID,
+                // fall back to using the first instance of that type
                 selectedParentResourceType = preSelectedResourceType
             } else {
                 const selection = await this.selector.selectAuthoredResourceType(templateUri)
