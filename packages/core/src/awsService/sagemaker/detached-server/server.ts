@@ -54,7 +54,7 @@ server.listen(0, '127.0.0.1', async () => {
         const filePath = process.env.SAGEMAKER_LOCAL_SERVER_FILE_PATH
         if (!filePath) {
             console.error('SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set')
-            process.exit(1)
+            process.exit(0)
             return
         }
 
