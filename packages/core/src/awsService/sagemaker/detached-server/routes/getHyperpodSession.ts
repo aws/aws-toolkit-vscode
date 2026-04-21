@@ -10,6 +10,7 @@ import url from 'url'
 import { readHyperpodMapping, HyperpodSpaceMapping } from '../hyperpodMappingUtils'
 import { KubectlClient } from '../kubectlClientStub'
 import { HyperpodCluster, HyperpodDevSpace, EksClusterInfo } from '../hyperpodTypes'
+import { HttpError } from '@kubernetes/client-node'
 
 const maxRetries = 8
 const attemptCount = new Map<string, number>()
@@ -60,13 +61,13 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
     }
 
     if (!mapping.credentials) {
-        res.writeHead(500, { 'Content-Type': 'text/plain' })
+        res.writeHead(401, { 'Content-Type': 'text/plain' })
         res.end('No stored credentials for this HyperPod connection. Please reconnect from the IDE.')
         return
     }
 
     if (!mapping.endpoint || !mapping.eksClusterName) {
-        res.writeHead(500, { 'Content-Type': 'text/plain' })
+        res.writeHead(422, { 'Content-Type': 'text/plain' })
         res.end('Missing EKS cluster metadata for this HyperPod connection. Please reconnect from the IDE.')
         return
     }
@@ -117,7 +118,13 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         )
     } catch (err) {
         console.error(`Failed to create HyperPod workspace connection for ${connectionKey}:`, err)
-        res.writeHead(500, { 'Content-Type': 'text/plain' })
+        // Surface K8s API status codes (e.g. 401, 403) when available.
+        // HttpError is thrown directly by createForCluster (token generation).
+        // createWorkspaceConnection wraps errors in a plain Error, so we also check .cause.
+        const httpErr =
+            err instanceof HttpError ? err : (err as any)?.cause instanceof HttpError ? (err as any).cause : undefined
+        const statusCode = httpErr?.statusCode ?? 500
+        res.writeHead(statusCode, { 'Content-Type': 'text/plain' })
         res.end(`Failed to create workspace connection: ${(err as Error).message}`)
     }
 }

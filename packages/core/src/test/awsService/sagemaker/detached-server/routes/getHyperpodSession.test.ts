@@ -70,7 +70,7 @@ describe('handleGetHyperpodSession', function () {
         sinon.assert.calledWith(res.end, sinon.match('No HyperPod connection found'))
     })
 
-    it('returns 500 when mapping has no stored credentials', async function () {
+    it('returns 401 when mapping has no stored credentials', async function () {
         const noCredsMapping: hyperpodMappingUtils.HyperpodMappings = {
             'my-space:my-ns:my-cluster': {
                 ...validMapping['my-space:my-ns:my-cluster'],
@@ -81,11 +81,11 @@ describe('handleGetHyperpodSession', function () {
         const req = createMockRequest('?connection_key=my-space:my-ns:my-cluster')
         await handleGetHyperpodSession(req, res as unknown as ServerResponse)
 
-        sinon.assert.calledWith(res.writeHead, 500)
+        sinon.assert.calledWith(res.writeHead, 401)
         sinon.assert.calledWith(res.end, sinon.match('No stored credentials'))
     })
 
-    it('returns 500 when mapping is missing EKS cluster metadata', async function () {
+    it('returns 422 when mapping is missing EKS cluster metadata', async function () {
         const noEksMapping: hyperpodMappingUtils.HyperpodMappings = {
             'my-space:my-ns:my-cluster': {
                 ...validMapping['my-space:my-ns:my-cluster'],
@@ -97,7 +97,7 @@ describe('handleGetHyperpodSession', function () {
         const req = createMockRequest('?connection_key=my-space:my-ns:my-cluster')
         await handleGetHyperpodSession(req, res as unknown as ServerResponse)
 
-        sinon.assert.calledWith(res.writeHead, 500)
+        sinon.assert.calledWith(res.writeHead, 422)
         sinon.assert.calledWith(res.end, sinon.match('Missing EKS cluster metadata'))
     })
 
