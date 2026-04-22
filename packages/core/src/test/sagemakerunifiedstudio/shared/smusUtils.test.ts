@@ -25,6 +25,7 @@ import { ToolkitError } from '../../../shared/errors'
 import * as extensionUtilities from '../../../shared/extensionUtilities'
 import * as resourceMetadataUtils from '../../../sagemakerunifiedstudio/shared/utils/resourceMetadataUtils'
 import fetch from 'node-fetch'
+import { ConnectionType } from '@aws-sdk/client-datazone'
 
 describe('SmusUtils', () => {
     const testDomainUrl = 'https://dzd_domainId.sagemaker.us-east-2.on.aws'
@@ -798,19 +799,63 @@ describe('isIamDomain', () => {
 })
 
 describe('isExpressDomain', () => {
-    it('should return true when DOMAIN_MODE is EXPRESS', () => {
-        assert.strictEqual(isExpressDomain({ DOMAIN_MODE: 'EXPRESS' }), true)
+    let mockClient: { fetchConnections: sinon.SinonStub }
+
+    beforeEach(() => {
+        mockClient = {
+            fetchConnections: sinon.stub(),
+        }
     })
 
-    it('should return false when DOMAIN_MODE is not EXPRESS', () => {
-        assert.strictEqual(isExpressDomain({ DOMAIN_MODE: 'STANDARD' }), false)
+    afterEach(() => {
+        sinon.restore()
     })
 
-    it('should return false when DOMAIN_MODE is missing', () => {
-        assert.strictEqual(isExpressDomain({}), false)
+    it('should return true when default.iam connection exists', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [{ name: 'default.iam' }, { name: 'other-connection' }],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id')
+        assert.strictEqual(result, true)
+        assert.ok(mockClient.fetchConnections.calledOnceWith('test-domain-id', undefined, ConnectionType.IAM))
     })
 
-    it('should return false when preferences is undefined', () => {
-        assert.strictEqual(isExpressDomain(undefined), false)
+    it('should return false when default.iam connection does not exist', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [{ name: 'other-connection' }],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id')
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false when no IAM connections exist', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id')
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false when items is undefined', async () => {
+        mockClient.fetchConnections.resolves({
+            items: undefined,
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id')
+        assert.strictEqual(result, false)
+    })
+
+    it('should return false when fetchConnections throws an error', async () => {
+        mockClient.fetchConnections.rejects(new Error('API error'))
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id')
+        assert.strictEqual(result, false)
+    })
+
+    it('should pass projectId when provided', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [{ name: 'default.iam' }],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id', 'test-project-id')
+        assert.strictEqual(result, true)
+        assert.ok(mockClient.fetchConnections.calledOnceWith('test-domain-id', 'test-project-id', ConnectionType.IAM))
     })
 })

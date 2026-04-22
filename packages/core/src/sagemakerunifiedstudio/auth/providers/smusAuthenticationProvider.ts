@@ -77,7 +77,7 @@ export function setSmusIamModeContext(isIamMode: boolean): Promise<void> {
 
 /**
  * Sets the context variable for SMUS IAM domain mode state (actual domain type).
- * An IAM domain (EXPRESS mode) is identified by preferences.DOMAIN_MODE === 'EXPRESS'.
+ * An IAM domain (EXPRESS mode) is identified by whether it has a default.IAM connection or not.
  * This is independent of the login type — a user can SSO-login into an IAM domain
  * or IAM-login into an IdC domain.
  * @param isIamModeDomain Whether the domain is an IAM (EXPRESS) domain
@@ -102,6 +102,7 @@ export class SmusAuthenticationProvider {
     private cachedDomainAccountId: string | undefined
     private cachedProjectAccountIds = new Map<string, string>()
     private iamCallerIdentityCache: { arn: string; connectionId: string } | undefined
+    private activeProjectId: string | undefined
 
     public readonly secondaryAuth: ReturnType<typeof getSecondaryAuth>
 
@@ -162,6 +163,8 @@ export class SmusAuthenticationProvider {
             this.cachedProjectAccountIds.clear()
             // Clear cached IAM caller identity when connection changes
             this.clearIamCallerIdentityCache()
+            // Clear active project ID when connection changes
+            this.activeProjectId = undefined
             // Clear all clients in client store when connection changes
             ConnectionClientStore.getInstance().clearAll()
             await setSmusConnectedContext(this.isConnected())
@@ -182,7 +185,7 @@ export class SmusAuthenticationProvider {
             if (getContext('aws.smus.inSmusSpaceEnvironment')) {
                 await this.initIamModeContextInSpaceEnvironment()
             } else if (activeConn && this.isConnected()) {
-                // For local connections (SSO or IAM), detect domain type via GetDomain
+                // For local connections (SSO or IAM), detect domain type via listConnections
                 try {
                     const credentialsProvider =
                         activeConn.type === 'iam'
@@ -190,12 +193,13 @@ export class SmusAuthenticationProvider {
                                   (activeConn as SmusIamConnection).profileName
                               )
                             : ((await this.getDerCredentialsProvider()) as CredentialsProvider)
-                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
-                        credentialsProvider,
-                        this.getDomainRegion()
+                    const datazoneClient = DataZoneClient.createWithCredentials(
+                        this.getDomainRegion(),
+                        this.getDomainId(),
+                        credentialsProvider
                     )
-                    const domainInfo = await datazoneHelper.getDomain(this.getDomainId())
-                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                    const isExpress = await isExpressDomain(datazoneClient, this.getDomainId(), this.activeProjectId)
+                    await setSmusIamModeDomainContext(isExpress)
                 } catch (err) {
                     this.logger.warn(`Failed to detect domain type on connection change: ${(err as Error).message}`)
                 }
@@ -240,6 +244,7 @@ export class SmusAuthenticationProvider {
             ) {
                 const domainId = resourceMetadata.AdditionalMetadata.DataZoneDomainId
                 const region = resourceMetadata.AdditionalMetadata.DataZoneDomainRegion
+                const projectId = resourceMetadata.AdditionalMetadata.DataZoneProjectId
 
                 const credentialsProvider = (await this.getDerCredentialsProvider()) as CredentialsProvider
 
@@ -253,7 +258,11 @@ export class SmusAuthenticationProvider {
                 })
                 this.logger.debug(`Domain ${domainId} is in IAM mode: ${isIamMode}`)
                 await setSmusIamModeContext(isIamMode)
-                await setSmusIamModeDomainContext(isExpressDomain(domain.preferences))
+
+                // Check for EXPRESS domain via listConnections for IAM type
+                const datazoneClient = DataZoneClient.createWithCredentials(region, domainId, credentialsProvider)
+                const isExpress = await isExpressDomain(datazoneClient, domainId, projectId)
+                await setSmusIamModeDomainContext(isExpress)
             }
         } catch (error) {
             this.logger.error('Failed to check IAM mode in SMUS space environment:  %s', error)
@@ -1134,6 +1143,14 @@ export class SmusAuthenticationProvider {
         throw new ToolkitError('Domain ID not available. Please reconnect to SMUS.', {
             code: SmusErrorCodes.NoActiveConnection,
         })
+    }
+
+    /**
+     * Sets the active project ID, used to pass projectIdentifier when checking domain type
+     * @param projectId The DataZone project ID
+     */
+    public setActiveProjectId(projectId: string | undefined): void {
+        this.activeProjectId = projectId
     }
 
     /**
