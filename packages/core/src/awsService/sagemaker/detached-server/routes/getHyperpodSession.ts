@@ -38,6 +38,8 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
 
     if (count > maxRetries) {
         console.debug(`Retry cap reached for HyperPod connection ${connectionKey} (${count}/${maxRetries})`)
+        attemptCount.delete(connectionKey)
+        lastAttemptTime.delete(connectionKey)
         res.writeHead(429, { 'Content-Type': 'text/plain' })
         res.end('Too many retry attempts. Please reconnect manually from the IDE.')
         return
