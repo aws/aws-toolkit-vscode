@@ -137,6 +137,7 @@ export interface DevEnvConnectionOptions {
     accountId?: string
     eksEndpoint?: string
     eksCertAuthData?: string
+    eksClusterName?: string
 }
 
 export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
@@ -159,6 +160,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
         accountId,
         eksEndpoint,
         eksCertAuthData,
+        eksClusterName: eksClusterNameOpt,
     } = opts
     const remoteLogger = configureRemoteConnectionLogger()
     // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
@@ -344,6 +346,26 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
         try {
             const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
 
+            // Derive EKS cluster name: prefer explicit value, fall back to parsing from ARN
+            const eksClusterName = eksClusterNameOpt ?? clusterArn?.split('/').pop()
+
+            // Resolve AWS credentials for reconnection
+            let storedCreds:
+                | { accessKeyId: string; secretAccessKey: string; sessionToken?: string }
+                | undefined
+            try {
+                const creds = await globals.awsContext.getCredentials()
+                if (creds) {
+                    storedCreds = {
+                        accessKeyId: creds.accessKeyId,
+                        secretAccessKey: creds.secretAccessKey,
+                        sessionToken: creds.sessionToken,
+                    }
+                }
+            } catch (err) {
+                logger.warn(`Failed to resolve credentials for HyperPod reconnection: ${err}`)
+            }
+
             await storeHyperpodConnection(
                 workspaceName,
                 namespace,
@@ -353,7 +375,9 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
                 eksCertAuthData,
                 region,
                 wsUrl,
-                token
+                token,
+                eksClusterName,
+                storedCreds
             )
 
             getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
