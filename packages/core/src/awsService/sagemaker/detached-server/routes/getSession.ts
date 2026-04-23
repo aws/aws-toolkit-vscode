@@ -44,9 +44,11 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
 
     let credentials
     try {
+        console.log('getSession: resolving credentials for', connectionIdentifier, 'attempt', count)
         credentials = await resolveCredentialsFor(connectionIdentifier)
     } catch (err) {
         console.error('Failed to resolve credentials:', err)
+        console.log('getSession: credential resolution failed - are mapping file creds stale?')
         res.writeHead(500, { 'Content-Type': 'text/plain' })
         res.end((err as Error).message)
         return
@@ -58,6 +60,7 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
 
     try {
         const session = await startSagemakerSession({ region, connectionIdentifier, credentials })
+        console.log('getSession: StartSession succeeded, sessionId=', session.SessionId)
         attemptCount.delete(connectionIdentifier)
         lastAttemptTime.delete(connectionIdentifier)
         res.writeHead(200, { 'Content-Type': 'application/json' })

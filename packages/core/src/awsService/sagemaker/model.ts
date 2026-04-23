@@ -193,8 +193,10 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     // save space credential mapping
     if (connectionType === 'sm_lc') {
         if (!isSMUS) {
+            getLogger().info('SageMaker prepareDevEnvConnection: persisting credentials for space connection (SSO/IAM via persistLocalCredentials)')
             await persistLocalCredentials(spaceArn)
         } else {
+            getLogger().info('SageMaker prepareDevEnvConnection: persisting credentials for space connection (SMUS via persistSmusProjectCreds)')
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
