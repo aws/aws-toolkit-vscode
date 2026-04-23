@@ -267,7 +267,7 @@ export class ResourcesManager {
                     }
                     await this.applyCompletionSnippet(result)
                     const [successCount, failureCount] = this.getSuccessAndFailureCount(result)
-                    this.renderResultMessage(result, successCount, failureCount, purpose)
+                    this.renderResultMessage(successCount, failureCount, purpose, result.failureReasons)
                 }
             )
         } catch (error) {
@@ -393,60 +393,38 @@ export class ResourcesManager {
     }
 
     private renderResultMessage(
-        result: ResourceStateResult,
         successCount: number,
         failureCount: number,
-        purpose: ResourceStatePurpose
+        purpose: ResourceStatePurpose,
+        failureReasons?: Record<string, Record<string, string>>
     ) {
         const action = purpose === ResourceStatePurpose.Import ? 'imported' : 'cloned'
+        const reasonsSuffix = this.formatFailureReasons(failureReasons)
 
         if (successCount > 0 && failureCount === 0) {
             void window.showInformationMessage(`Successfully ${action} ${successCount} resource(s)`)
         } else if (successCount > 0 && failureCount > 0) {
             void window.showWarningMessage(
-                `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed`
+                `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed${reasonsSuffix}`
             )
         } else if (failureCount > 0) {
-            const errorMsg = this.getFailureMessage(result, failureCount, action)
-            showErrorMessage(errorMsg)
+            showErrorMessage(`Failed to ${action.replace('ed', '')} ${failureCount} resource(s)${reasonsSuffix}`)
         } else {
             void window.showInformationMessage(`No resources were ${action}`)
         }
     }
 
-    private getFailureMessage(result: ResourceStateResult, failureCount: number, action: string): string {
-        const defaultMessage = `Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`
-        if (!result.failureReasons || typeof result.failureReasons !== 'object') {
-            return defaultMessage
+    private formatFailureReasons(failureReasons?: Record<string, Record<string, string>>): string {
+        if (!failureReasons) {
+            return ''
         }
-
-        const reasons =
-            result.failureReasons instanceof Map
-                ? result.failureReasons
-                : new Map(Object.entries(result.failureReasons as Record<string, unknown>))
-
-        const allReasons: string[] = []
-
-        for (const [, identifierMap] of reasons) {
-            if (!identifierMap || typeof identifierMap !== 'object') continue
-
-            const identifiers =
-                identifierMap instanceof Map
-                    ? identifierMap
-                    : new Map(Object.entries(identifierMap as Record<string, string>))
-
-            // Check for permission error - if found, return immediately
-            const permissionError = Array.from(identifiers.values()).find(
-                (reason) => reason.includes('cloudformation:GetResource') || /Missing.*permission/i.test(reason)
-            )
-
-            if (permissionError) {
-                return `Failed to import resource: ${permissionError}`
+        const reasons: string[] = []
+        for (const [, identifiers] of Object.entries(failureReasons)) {
+            for (const [id, reason] of Object.entries(identifiers)) {
+                reasons.push(`[${id}: ${reason}]`)
             }
         }
-
-        const reasonText = allReasons.length > 0 ? `:\n${allReasons.join('\n')}` : ''
-        return `${defaultMessage}${reasonText}`
+        return reasons.length > 0 ? `: ${reasons.join(', ')}` : ''
     }
 
     private getResourcesArray(): ResourceList[] {
