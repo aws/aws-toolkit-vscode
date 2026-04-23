@@ -1,3 +1,7 @@
+## 4.2.0 2026-04-23
+
+- Miscellaneous non-user-facing changes
+
 ## 4.1.0 2026-04-16
 
 - **Bug Fix** Fix issue for IAM users who cannot see their Sagemaker Unified Studio spaces
