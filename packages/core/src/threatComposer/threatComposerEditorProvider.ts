@@ -20,7 +20,7 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
+const cdn = vscode.workspace.getConfiguration('aws.threatComposer').get('cdn', 'https://ide-toolkits.threat-composer.aws.dev')
 let clientId = ''
 
 /**

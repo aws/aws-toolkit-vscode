@@ -531,6 +531,11 @@
                     ],
                     "default": "alwaysAsk",
                     "description": "Configure optional changeset flags for CloudFormation templates"
+                },
+                "aws.threatComposer.cdn": {
+                    "type": "string",
+                    "default": "https://ide-toolkits.threat-composer.aws.dev",
+                    "description": "CDN URL used to load IDE Threat Composer resources. Defaults to the AWS-Hosted CDN, use this to point to a custom or internal endpoint."
                 }
             }
         },
