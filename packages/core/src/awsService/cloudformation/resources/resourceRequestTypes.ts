@@ -68,6 +68,7 @@ export interface ResourceStateResult {
     completionItem?: CompletionItem
     successfulImports: Map<ResourceType, ResourceIdentifier[]>
     failedImports: Map<ResourceType, ResourceIdentifier[]>
+    failureReasons?: Record<ResourceType, Record<ResourceIdentifier, string>>
     warning?: string
     failureReasons?: Map<ResourceType, Map<ResourceIdentifier, string>>
 }
