@@ -11,6 +11,8 @@ import { ToolkitError } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { Auth } from '../../auth/auth'
 import { SpaceMappings, SsmConnectionInfo } from './types'
+import { getCredentialsFromStore } from '../../auth/credentials/store'
+import { CredentialsId, fromString } from '../../auth/providers/credentials'
 import { getLogger } from '../../shared/logger/logger'
 import { parseArn } from './utils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
@@ -49,17 +51,20 @@ export class SsoCredentialRefresher {
     constructor(
         private readonly spaceArn: string,
         private readonly getCachedCredentials: () => SsoCachedCredentials | undefined,
+        private readonly credentialsId: CredentialsId,
         options?: { checkIntervalMs?: number; safetyBufferMs?: number }
     ) {
-        this.checkIntervalMs = options?.checkIntervalMs ?? 10_000
+        this.checkIntervalMs = options?.checkIntervalMs ?? 60_000
         this.safetyBufferMs = options?.safetyBufferMs ?? 5 * 60_000
     }
 
     public start(): void {
         if (this.active) {
+            getLogger().debug(`SSO refresh [${this.spaceArn}]: already active, skipping start`)
             return
         }
         this.active = true
+        getLogger().info(`SSO refresh [${this.spaceArn}]: started (check every ${this.checkIntervalMs / 1000}s, buffer ${this.safetyBufferMs / 60000} min)`)
         this.scheduleNextCheck()
     }
 
@@ -69,6 +74,7 @@ export class SsoCredentialRefresher {
             clearTimeout(this.refreshTimer)
             this.refreshTimer = undefined
         }
+        getLogger().info(`SSO refresh [${this.spaceArn}]: stopped`)
     }
 
     public isActive(): boolean {
@@ -93,22 +99,38 @@ export class SsoCredentialRefresher {
 
     private async refreshIfNeeded(): Promise<void> {
         const cached = this.getCachedCredentials()
-        if (!cached) {
-            return
+        const expiration = cached?.credentials.expiration?.getTime()
+        const now = Date.now()
+        const minutesLeft = expiration ? Math.round((expiration - now) / 60000) : 'unknown'
+
+        getLogger().debug(`SSO refresh check [${this.spaceArn}]: expiry in ${minutesLeft} min, buffer=${this.safetyBufferMs / 60000} min`)
+
+        if (expiration && expiration - now > this.safetyBufferMs) {
+            return // still fresh
         }
 
-        const expiration = cached.credentials.expiration?.getTime()
-        if (expiration && expiration - Date.now() > this.safetyBufferMs) {
-            return // credentials still fresh
-        }
+        getLogger().info(`SSO refresh [${this.spaceArn}]: credentials expiring soon (${minutesLeft} min left), fetching fresh via GetRoleCredentials`)
 
-        // Credentials are expiring soon or have no expiry info - write them to mapping file
-        await setSpaceSsoProfile(
-            this.spaceArn,
-            cached.credentials.accessKeyId,
-            cached.credentials.secretAccessKey,
-            cached.credentials.sessionToken ?? ''
-        )
+        try {
+            const freshCreds = await getCredentialsFromStore(this.credentialsId, globals.loginManager.store)
+            if (!freshCreds) {
+                getLogger().warn(`SSO refresh [${this.spaceArn}]: getCredentialsFromStore returned undefined - bearer token may be expired`)
+                return
+            }
+
+            getLogger().debug(`SSO refresh [${this.spaceArn}]: got fresh creds, expiry=${freshCreds.expiration?.toISOString()}`)
+
+            await setSpaceSsoProfile(
+                this.spaceArn,
+                freshCreds.accessKeyId,
+                freshCreds.secretAccessKey,
+                freshCreds.sessionToken ?? ''
+            )
+
+            getLogger().info(`SSO refresh [${this.spaceArn}]: mapping file updated with fresh credentials`)
+        } catch (error) {
+            getLogger().error(`SSO refresh [${this.spaceArn}]: failed to refresh: %O`, error)
+        }
     }
 }
 
@@ -156,12 +178,14 @@ export async function saveMappings(data: SpaceMappings): Promise<void> {
  */
 export async function persistLocalCredentials(spaceArn: string): Promise<void> {
     const currentProfileId = Auth.instance.getCurrentProfileId()
+    getLogger().info(`SageMaker persistLocalCredentials: called for space ${spaceArn}, profileId=${currentProfileId}`)
     if (!currentProfileId) {
         throw new ToolkitError('No current profile ID available for saving space credentials.')
     }
 
     if (currentProfileId.startsWith('sso:')) {
         const credentials = globals.loginManager.store.credentialsCache[currentProfileId]
+        getLogger().debug('SageMaker persistLocalCredentials: writing SSO credentials to mapping file')
         await setSpaceSsoProfile(
             spaceArn,
             credentials.credentials.accessKeyId,
@@ -178,10 +202,12 @@ export async function persistLocalCredentials(spaceArn: string): Promise<void> {
         }
         const refresher = new SsoCredentialRefresher(spaceArn, () => {
             return globals.loginManager.store.credentialsCache[currentProfileId] as SsoCachedCredentials | undefined
-        })
+        }, fromString(currentProfileId))
         activeSsoRefreshers.set(spaceArn, refresher)
         refresher.start()
+        getLogger().info(`SageMaker persistLocalCredentials: SSO credential refresher started for ${spaceArn}`)
     } else {
+        getLogger().debug(`SageMaker persistLocalCredentials: IAM profile ${currentProfileId}, no refresher needed`)
         await setSpaceIamProfile(spaceArn, currentProfileId)
     }
 }

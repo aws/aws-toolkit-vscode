@@ -43,9 +43,11 @@ import {
     SsoCachedCredentials,
     setSpaceSsoProfile,
 } from '../../../awsService/sagemaker/credentialMapping'
+import { CredentialsId } from '../../../auth/providers/credentials'
 import { fs } from '../../../shared'
 
 const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/test-space'
+const dummyCredentialsId: CredentialsId = { credentialSource: 'sso', credentialTypeId: 'test-profile' }
 
 describe('sagemaker SSO credential refresh', () => {
     let sandbox: sinon.SinonSandbox
@@ -79,7 +81,7 @@ describe('sagemaker SSO credential refresh', () => {
                 },
             }
 
-            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, dummyCredentialsId, {
                 checkIntervalMs: 10, // fast for testing
             })
             refresher.start()
@@ -120,7 +122,7 @@ describe('sagemaker SSO credential refresh', () => {
                 },
             }
 
-            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, dummyCredentialsId, {
                 checkIntervalMs: 10,
             })
             refresher.start()
@@ -186,7 +188,7 @@ describe('sagemaker SSO credential refresh', () => {
             }
 
             // Start refresher (what persistLocalCredentials now does for SSO)
-            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, {
+            const refresher = new SsoCredentialRefresher(spaceArn, () => cached, dummyCredentialsId, {
                 checkIntervalMs: 10,
             })
             refresher.start()

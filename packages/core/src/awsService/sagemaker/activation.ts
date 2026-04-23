@@ -33,9 +33,15 @@ let terminalActivityInterval: NodeJS.Timeout | undefined
 let backgroundStateInterval: NodeJS.Timeout | undefined
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    getLogger().info('SageMaker: activation started')
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx),
-        { dispose: () => stopAllSsoCredentialRefreshers() },
+        {
+            dispose: () => {
+                getLogger().debug('SageMaker: registered SSO credential refresher cleanup on deactivation')
+                stopAllSsoCredentialRefreshers()
+            },
+        },
         Commands.register('aws.sagemaker.openRemoteConnection', async (node: SagemakerSpaceNode) => {
             if (!validateNode(node)) {
                 return
