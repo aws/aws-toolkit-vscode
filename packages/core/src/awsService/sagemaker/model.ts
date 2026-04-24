@@ -363,7 +363,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
                     }
                 }
             } catch (err) {
-                logger.warn(`Failed to resolve credentials for HyperPod reconnection: ${err}`)
+                logger.error(`Failed to resolve credentials for HyperPod reconnection: ${err}`)
             }
 
             await storeHyperpodConnection(
