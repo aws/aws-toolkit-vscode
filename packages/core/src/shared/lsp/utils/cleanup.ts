@@ -6,54 +6,70 @@
 import path from 'path'
 import { LspVersion } from '../types'
 import { fs } from '../../../shared/fs/fs'
-import { partition } from '../../../shared/utilities/tsUtils'
 import { parse, sort } from 'semver'
+import { InUseTracker } from './inUseTracker'
 
 export async function getDownloadedVersions(installLocation: string) {
     return (await fs.readdir(installLocation)).filter((x) => parse(x[0]) !== null).map(([f, _], __) => f)
 }
 
-function isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {
-    return manifestVersions.find((v) => v.serverVersion === targetVersion)?.isDelisted ?? false
+const inUseTracker = new InUseTracker()
+
+function isPidAlive(pid: number): boolean {
+    try {
+        process.kill(pid, 0)
+        return true
+    } catch {
+        return false
+    }
+}
+
+async function sweepStaleTmpDirs(downloadDirectory: string): Promise<void> {
+    try {
+        const entries = await fs.readdir(downloadDirectory)
+        for (const [name] of entries) {
+            const match = /\.tmp\.(\d+)$/.exec(name)
+            if (!match) {
+                continue
+            }
+            const pid = parseInt(match[1], 10)
+            if (!isNaN(pid) && !isPidAlive(pid)) {
+                await fs.delete(path.join(downloadDirectory, name), { force: true, recursive: true }).catch(() => {})
+            }
+        }
+    } catch {}
 }
 
 /**
- * Delete all delisted versions and keep the two newest versions that remain
- * @param manifestVersions
- * @param downloadDirectory
- * @returns array of deleted versions.
+ * Keep the current version and one highest fallback.
+ * Skip versions that are currently in use by another IDE/session.
+ * Remove everything else.
  */
 export async function cleanLspDownloads(
     latestInstalledVersion: string,
     manifestVersions: LspVersion[],
     downloadDirectory: string
 ): Promise<string[]> {
+    await sweepStaleTmpDirs(downloadDirectory)
     const downloadedVersions = await getDownloadedVersions(downloadDirectory)
-    const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
-        isDelisted(manifestVersions, v)
-    )
     const deletedVersions: string[] = []
 
-    for (const v of delistedVersions) {
-        await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-        deletedVersions.push(v)
-    }
+    const fallbackVersion = sort(
+        downloadedVersions.filter((v) => parse(v) !== null && v !== latestInstalledVersion)
+    ).reverse()[0]
 
-    if (remainingVersions.length <= 2) {
-        return deletedVersions
-    }
+    const keep = new Set([latestInstalledVersion, ...(fallbackVersion ? [fallbackVersion] : [])])
 
-    for (const v of sort(remainingVersions).slice(0, -2)) {
-        /**
-         * When switching between different manifests, the following edge case can occur:
-         * A newly downloaded version might chronologically be older than all previously downloaded versions,
-         * even though it's marked as the latest version in its own manifest.
-         * In such cases, we skip the cleanup process to preserve this version. Otherwise we will get an EPIPE error
-         */
-        if (v === latestInstalledVersion) {
+    for (const v of downloadedVersions) {
+        if (keep.has(v)) {
             continue
         }
-        await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
+        const versionDir = path.join(downloadDirectory, v)
+        inUseTracker.cleanStaleMarkers(versionDir)
+        if (inUseTracker.isInUse(versionDir)) {
+            continue
+        }
+        await fs.delete(versionDir, { force: true, recursive: true })
         deletedVersions.push(v)
     }
 

@@ -34,7 +34,8 @@ export class LanguageServerResolver {
          * Custom message to show user when downloading, if undefined it will use the default.
          */
         downloadMessage?: string,
-        private readonly hashAlgorithm: string = 'sha384'
+        private readonly hashAlgorithm: string = 'sha384',
+        private readonly rootDir: string = LanguageServerResolver.defaultDir()
     ) {
         this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
     }
@@ -222,9 +223,8 @@ export class LanguageServerResolver {
     }
 
     private async getCachedVersions() {
-        // determine all folders containing lsp versions in the parent folder
         return (await fs.readdir(this.defaultDownloadFolder()))
-            .filter(([_, filetype]) => filetype === FileType.Directory)
+            .filter(([pathName, filetype]) => filetype === FileType.Directory && !pathName.includes('.tmp.'))
             .map(([pathName, _]) => semver.parse(pathName))
             .filter((ver): ver is semver.SemVer => ver !== null)
             .map((x) => x.version)
@@ -265,10 +265,12 @@ export class LanguageServerResolver {
      */
     private async downloadRemoteTargetContent(contents: TargetContent[], lspVersion: LspVersion, timeout: Timeout) {
         const downloadDirectory = this.getDownloadDirectory(lspVersion.serverVersion)
+        const tmpDirectory = `${downloadDirectory}.tmp.${process.pid}`
 
-        if (!(await fs.existsDir(downloadDirectory))) {
-            await fs.mkdir(downloadDirectory)
+        if (await fs.existsDir(tmpDirectory)) {
+            await fs.delete(tmpDirectory, { force: true, recursive: true })
         }
+        await fs.mkdir(tmpDirectory)
 
         const fetchTasks = contents.map(async (content) => {
             return {
@@ -315,10 +317,26 @@ export class LanguageServerResolver {
         )
 
         for (const file of filesToDownload) {
-            await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)
+            await fs.writeFile(`${tmpDirectory}/${file.filename}`, file.data)
         }
 
-        return this.extractZipFilesFromRemote(downloadDirectory)
+        const extracted = await this.extractZipFilesFromRemote(tmpDirectory)
+        if (!extracted) {
+            await fs.delete(tmpDirectory, { force: true, recursive: true })
+            return false
+        }
+
+        // Atomic to prevent partial installs visible to concurrent IDE instances
+        try {
+            await fs.rename(tmpDirectory, downloadDirectory)
+        } catch {
+            await fs.delete(tmpDirectory, { force: true, recursive: true }).catch(() => {})
+            if (await fs.existsDir(downloadDirectory)) {
+                return true
+            }
+            return false
+        }
+        return true
     }
 
     private async extractZipFilesFromRemote(downloadDirectory: string) {
@@ -423,19 +441,17 @@ export class LanguageServerResolver {
             throw new ToolkitError('No valid manifest')
         }
 
-        const latestCompatibleVersion =
-            this.manifest.versions
-                .filter((ver) => this.isCompatibleVersion(ver) && this.hasRequiredTargetContent(ver))
-                .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))[0] ?? undefined
+        const compatible = this.manifest.versions
+            .filter((ver) => this.isCompatibleVersion(ver) && this.hasRequiredTargetContent(ver))
+            .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))
 
-        if (latestCompatibleVersion === undefined) {
-            // TODO fix these error range names
+        if (compatible.length === 0) {
             throw new ToolkitError(
                 `Unable to find a language server that satifies one or more of these conditions: version in range [${this.versionRange.range}], matching system's architecture and platform`
             )
         }
 
-        return latestCompatibleVersion
+        return compatible.find((v) => v.latest) ?? compatible[0]
     }
 
     /**
@@ -497,7 +513,7 @@ export class LanguageServerResolver {
     }
 
     defaultDownloadFolder() {
-        return path.join(LanguageServerResolver.defaultDir(), `${this.lsName}`)
+        return path.join(this.rootDir, `${this.lsName}`)
     }
 
     private getDownloadDirectory(version: string) {

@@ -19,6 +19,8 @@ export interface LspConfig {
     id: string
     suppressPromptPrefix: string
     path?: string
+    /** Override base cache dir for this LSP. Defaults to `LanguageServerResolver.defaultDir()`. */
+    rootDir?: string
 }
 
 export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, Config extends LspConfig = LspConfig> {
@@ -34,7 +36,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
     }
 
     async resolve(): Promise<LspResolution<T>> {
-        const { id, manifestUrl, supportedVersions, path, suppressPromptPrefix } = this.config
+        const { id, manifestUrl, supportedVersions, path, suppressPromptPrefix, rootDir } = this.config
         if (path) {
             const overrideMsg = `Using language server override location: ${path}`
             this.logger.info(overrideMsg)
@@ -58,7 +60,8 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
             }),
             manifestUrl,
             this.downloadMessageOverride,
-            this.hashAlgorithm
+            this.hashAlgorithm,
+            rootDir
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory

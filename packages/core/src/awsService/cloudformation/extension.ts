@@ -50,7 +50,6 @@ import { openStackTemplateCommand } from './commands/openStackTemplate'
 import { selectRegionCommand } from './commands/regionCommands'
 import { AwsCredentialsService, encryptionKey } from './auth/credentials'
 import { ExtensionId, ExtensionName, CloudFormationTelemetrySettings } from './extensionConfig'
-import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../shared/extensionIds'
 import { commandKey } from './utils'
 import { CloudFormationExplorer } from './explorer/explorer'
 import { handleTelemetryOptIn } from './telemetryOptIn'
@@ -150,7 +149,7 @@ async function startClient(context: ExtensionContext) {
             aws: {
                 clientInfo: {
                     extension: {
-                        name: VSCODE_EXTENSION_ID_CONSTANTS.awstoolkit,
+                        name: 'aws.toolkit.vscode',
                         version: extensionVersion,
                     },
                     clientId: getClientId(globals.globalState, telemetryEnabled),
