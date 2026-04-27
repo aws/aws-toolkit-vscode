@@ -19,14 +19,6 @@ export interface HyperpodSpaceMapping {
     accountId?: string
     wsUrl?: string
     token?: string
-    /** EKS cluster name used to initialize the kubectl client for reconnection. */
-    eksClusterName?: string
-    /** AWS credentials stored at connection time, used by the detached server for reconnection. */
-    credentials?: {
-        accessKeyId: string
-        secretAccessKey: string
-        sessionToken?: string
-    }
 }
 
 export interface HyperpodMappings {
@@ -85,9 +77,7 @@ export async function storeHyperpodConnection(
     certificateAuthorityData?: string,
     region?: string,
     wsUrl?: string,
-    token?: string,
-    eksClusterName?: string,
-    credentials?: { accessKeyId: string; secretAccessKey: string; sessionToken?: string }
+    token?: string
 ): Promise<void> {
     const mapping = await readHyperpodMapping()
     const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
@@ -102,8 +92,6 @@ export async function storeHyperpodConnection(
         accountId,
         wsUrl,
         token,
-        eksClusterName,
-        credentials,
     }
     await writeHyperpodMapping(mapping)
 }
