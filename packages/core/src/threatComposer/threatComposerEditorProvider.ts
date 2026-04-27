@@ -20,7 +20,9 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
+function getCdn(): string { 
+    return vscode.workspace.getConfiguration('aws.threatComposer').get('cdn', 'https://ide-toolkits.threat-composer.aws.dev')
+}
 let clientId = ''
 
 /**
@@ -39,6 +41,23 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      */
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ThreatComposerEditorProvider(context)
+
+        context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent: vscode.configurationChangeEvent) => {
+                if (configurationChangeEvent.affectsConfiguration('aws.threatComposer.cdn')) {
+                    // Clear cached content
+                    provider.webviewHtml = ''
+                    // Closed all open Threat Composer editors
+                    for (const visualization of provider.managedVisualizations.values()) {
+                        const panel = visualization.getPanel()
+                        if (panel) {
+                            panel.dispose()
+                        }
+                    }
+                }
+            })
+        )
+
         return vscode.window.registerCustomEditorProvider(ThreatComposerEditorProvider.viewType, provider, {
             webviewOptions: {
                 enableFindWidget: true,
@@ -63,7 +82,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      * @private
      */
     private async fetchWebviewHtml() {
-        const source = isLocalDev ? localhost : cdn
+        const source = isLocalDev ? localhost : getCdn()
         const response = await request.fetch('GET', `${source}/index.html`).response
         this.webviewHtml = await response.text()
 
@@ -83,7 +102,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         let htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
-        const source = isLocalDev ? localhost : cdn
+        const source = isLocalDev ? localhost : getCdn()
         const baseTag = `<base href='${source}'/>`
 
         // Set dark mode, locale, and feature flags
