@@ -350,9 +350,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
             const eksClusterName = eksClusterNameOpt ?? clusterArn?.split('/').pop()
 
             // Resolve AWS credentials for reconnection
-            let storedCreds:
-                | { accessKeyId: string; secretAccessKey: string; sessionToken?: string }
-                | undefined
+            let storedCreds: { accessKeyId: string; secretAccessKey: string; sessionToken?: string } | undefined
             try {
                 const creds = await globals.awsContext.getCredentials()
                 if (creds) {
