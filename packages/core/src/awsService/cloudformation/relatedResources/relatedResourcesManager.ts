@@ -31,10 +31,20 @@ export class RelatedResourcesManager {
         try {
             const templateUri = activeEditor.document.uri.toString()
 
-            const selectedParentResourceType =
-                preSelectedResourceType || (await this.selector.selectAuthoredResourceType(templateUri))
-            if (!selectedParentResourceType) {
-                return
+            let parentLogicalId: string | undefined
+            let selectedParentResourceType: string
+
+            if (preSelectedResourceType) {
+                /* when pre-selected by type we don't have the logical ID,
+                fall back to using the first instance of that type*/
+                selectedParentResourceType = preSelectedResourceType
+            } else {
+                const selection = await this.selector.selectAuthoredResourceType(templateUri)
+                if (!selection) {
+                    return
+                }
+                selectedParentResourceType = selection.type
+                parentLogicalId = selection.logicalId
             }
 
             const selectedRelatedTypes = await this.selector.selectRelatedResourceTypes(selectedParentResourceType)
@@ -48,7 +58,12 @@ export class RelatedResourcesManager {
             }
 
             if (action === 'create') {
-                await this.createRelatedResources(templateUri, selectedParentResourceType, selectedRelatedTypes)
+                await this.createRelatedResources(
+                    templateUri,
+                    selectedParentResourceType,
+                    selectedRelatedTypes,
+                    parentLogicalId
+                )
             } else {
                 await this.importRelatedResources(selectedRelatedTypes, selectedParentResourceType)
             }
@@ -62,12 +77,14 @@ export class RelatedResourcesManager {
     private async createRelatedResources(
         templateUri: string,
         parentResourceType: string,
-        relatedResourceTypes: string[]
+        relatedResourceTypes: string[],
+        parentLogicalId?: string
     ): Promise<void> {
         const result = await insertRelatedResources(this.client, {
             templateUri,
             relatedResourceTypes,
             parentResourceType,
+            parentLogicalId,
         })
 
         await this.applyCodeAction(result)
