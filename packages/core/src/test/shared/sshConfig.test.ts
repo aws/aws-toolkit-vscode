@@ -93,6 +93,31 @@ describe('VscodeRemoteSshConfig', async function () {
             const command = result.unwrap()
             assert.strictEqual(command, `'sagemaker_connect' '%n'`)
         })
+
+        it('prepends env vars to proxy command on non-windows', async function () {
+            const envConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'sagemaker_connect', undefined, {
+                SAGEMAKER_LOCAL_SERVER_FILE_PATH: '/path/to/info.json',
+                AWS_SSM_CLI: '/path/to/ssm',
+            })
+            envConfig.testIsWin = false
+
+            const result = await envConfig.getProxyCommandWrapper('sagemaker_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.ok(command.includes('SAGEMAKER_LOCAL_SERVER_FILE_PATH="/path/to/info.json"'))
+            assert.ok(command.includes('AWS_SSM_CLI="/path/to/ssm"'))
+            assert.ok(command.endsWith(`'sagemaker_connect' '%n'`))
+        })
+
+        it('does not prepend env vars when proxyCommandEnvVars is undefined', async function () {
+            const noEnvConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'sagemaker_connect')
+            noEnvConfig.testIsWin = false
+
+            const result = await noEnvConfig.getProxyCommandWrapper('sagemaker_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.strictEqual(command, `'sagemaker_connect' '%n'`)
+        })
     })
 
     describe('matchSshSection', async function () {

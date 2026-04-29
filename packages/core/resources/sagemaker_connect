@@ -114,8 +114,42 @@ if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
     exit 1
 fi
 
-if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
-    echo "[Error] File not found at SAGEMAKER_LOCAL_SERVER_FILE_PATH: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+# Check if server is alive, start it if not
+_ensure_server_running() {
+    local port
+    port=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+    if [ -n "$port" ] && [ "$port" != "null" ] && curl -s --max-time 2 "http://127.0.0.1:${port}/get_session" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Server is dead — restart it
+    if [ -z "$SAGEMAKER_LOCAL_SERVER_JS_PATH" ] || [ ! -f "$SAGEMAKER_LOCAL_SERVER_JS_PATH" ]; then
+        echo "[Error] Cannot start server: SAGEMAKER_LOCAL_SERVER_JS_PATH is not set or file not found"
+        return 1
+    fi
+
+    local log_dir
+    log_dir=$(dirname "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+    echo "Starting local server..."
+    SAGEMAKER_LOCAL_SERVER_FILE_PATH="$SAGEMAKER_LOCAL_SERVER_FILE_PATH" \
+        nohup node "$SAGEMAKER_LOCAL_SERVER_JS_PATH" \
+        >> "${log_dir}/sagemaker-local-server.out.log" \
+        2>> "${log_dir}/sagemaker-local-server.err.log" &
+
+    # Wait for info file to be written with a valid port
+    local i
+    for i in $(seq 1 20); do
+        port=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+        if [ -n "$port" ] && [ "$port" != "null" ]; then
+            return 0
+        fi
+        sleep 0.5
+    done
+    echo "[Error] Timed out waiting for local server to start"
+    return 1
+}
+
+if ! _ensure_server_running; then
     exit 1
 fi
 
