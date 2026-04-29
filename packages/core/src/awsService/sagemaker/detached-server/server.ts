@@ -10,11 +10,8 @@ import http, { IncomingMessage, ServerResponse } from 'http'
 import { handleGetSession } from './routes/getSession'
 import { handleGetSessionAsync } from './routes/getSessionAsync'
 import { handleRefreshToken } from './routes/refreshToken'
-<<<<<<< HEAD
-=======
 import { handleGetHyperpodSession } from './routes/getHyperpodSession'
 import { handleRefreshHyperpodSession } from './routes/refreshHyperpodSession'
->>>>>>> 5b1371ff3 (refactor detached server for handling hyperpod sessions)
 import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
@@ -42,13 +39,10 @@ const server = http.createServer((req: IncomingMessage, res: ServerResponse) => 
             return handleGetSessionAsync(req, res)
         case '/refresh_token':
             return handleRefreshToken(req, res)
-<<<<<<< HEAD
-=======
         case '/get_hyperpod_session':
             return handleGetHyperpodSession(req, res) // do not use for reconnect - for lc + dl only
         case '/refresh_hyperpod_session':
             return handleRefreshHyperpodSession(req, res) // use for reconnect
->>>>>>> 5b1371ff3 (refactor detached server for handling hyperpod sessions)
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end(`Not Found: ${req.url}`)
