@@ -366,6 +366,20 @@ describe('SageMaker Model', () => {
             sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
             sinon.assert.calledOnce(mockProcessInstance.run)
         })
+
+        it('constructs correct workspace URI with HyperPod hostname', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'smhp_myworkspace_mynamespace_mycluster_uswest2_123456789012',
+                '/home/sagemaker-user',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@smhp_myworkspace_mynamespace_mycluster_uswest2_123456789012/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
     })
 })
 
