@@ -718,15 +718,14 @@ export class DataZoneClient {
                 `Getting environment details for domain ${this.getDomainId()}, environment ${environmentId}`
             )
 
-            // In IAM (EXPRESS) domains, GetEnvironment requires project execution role credentials
-            // (vended by GetEnvironmentCredentials), not the Admin Project Role credentials.
-            // We create a one-off client here instead of using createDZClientForProject because
-            // this method lives inside DataZoneClient and doesn't have access to smusAuthProvider.
             let datazoneClient
-            if (getContext('aws.smus.isIamModeDomain') && projectId) {
+            if (projectId) {
+                // Prefer using project credentials to get environment details, as it's part of the project
+                this.logger.debug("Getting project environment credentials")
                 const creds = await this.getProjectDefaultEnvironmentCreds(projectId)
                 datazoneClient = this.createProjectCredentialsDataZoneClient(creds)
             } else {
+                // Note: This will not work in cross-account
                 datazoneClient = await this.getDataZoneClient()
             }
 
