@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "4.1.0-SNAPSHOT",
+    "version": "4.3.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1840,14 +1840,14 @@
                     "when": "view != aws.smus.rootView && viewItem =~ /^(awsSagemakerSpaceRunningNode|awsSagemakerSpaceStoppedNode)$/"
                 },
                 {
-                    "command": "aws.hyperpod.openRemoteConnection",
+                    "command": "aws.hyperpod.stopSpace",
                     "group": "inline@0",
-                    "when": "viewItem == awsSagemakerHyperpodDevSpaceStoppedNode || viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
+                    "when": "viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
                 },
                 {
-                    "command": "aws.hyperpod.stopSpace",
+                    "command": "aws.hyperpod.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
+                    "when": "viewItem == awsSagemakerHyperpodDevSpaceStoppedNode || viewItem == awsSagemakerHyperpodDevSpaceRunningNode"
                 },
                 {
                     "command": "aws.smus.openRemoteConnection",
