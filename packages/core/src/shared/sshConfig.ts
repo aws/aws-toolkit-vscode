@@ -40,8 +40,9 @@ export class SshConfig {
     }
 
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
-        // Use %n for SageMaker to preserve original hostname case (avoids SSH canonicalization lowercasing and DNS lookup)
-        const hostnameToken = this.scriptPrefix === 'sagemaker_connect' ? '%n' : '%h'
+        // Use %n to preserve original hostname (avoids SSH canonicalization lowercasing and DNS lookup)
+        const hostnameToken =
+            this.scriptPrefix === 'sagemaker_connect' || this.scriptPrefix === 'hyperpod_connect' ? '%n' : '%h'
 
         if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
@@ -220,7 +221,7 @@ Host ${this.configHostName}
     }
 
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.scriptPrefix === 'sagemaker_connect') {
+        if (this.scriptPrefix === 'sagemaker_connect' || this.scriptPrefix === 'hyperpod_connect') {
             return `${this.getSageMakerSSHConfig(proxyCommand)}`
         } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`

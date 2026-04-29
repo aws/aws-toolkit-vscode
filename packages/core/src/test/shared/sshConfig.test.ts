@@ -93,6 +93,16 @@ describe('VscodeRemoteSshConfig', async function () {
             const command = result.unwrap()
             assert.strictEqual(command, `'sagemaker_connect' '%n'`)
         })
+
+        it('uses %n token for hyperpod_connect to preserve hostname case', async function () {
+            const hyperpodConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'hyperpod_connect')
+            hyperpodConfig.testIsWin = false
+
+            const result = await hyperpodConfig.getProxyCommandWrapper('hyperpod_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.strictEqual(command, `'hyperpod_connect' '%n'`)
+        })
     })
 
     describe('matchSshSection', async function () {
@@ -189,6 +199,14 @@ describe('VscodeRemoteSshConfig', async function () {
             const section = config.createSSHConfigSectionWrapper('proxyCommand')
             assert.ok(!section.match(expectedUserString))
             assert.ok(!section.match(expectedIdentityFileString))
+        })
+
+        it('uses SageMaker SSH config for hyperpod_connect (no IdentitiesOnly)', function () {
+            const hyperpodConfig = new MockSshConfig('sshPath', 'smhp_', 'hyperpod_connect')
+            const section = hyperpodConfig.createSSHConfigSectionWrapper('proxyCommand')
+            assert.ok(!section.includes('IdentitiesOnly'))
+            assert.ok(section.includes('proxyCommand'))
+            assert.ok(section.includes('ForwardAgent yes'))
         })
     })
 

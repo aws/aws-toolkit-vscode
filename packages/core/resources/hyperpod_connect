@@ -82,14 +82,14 @@ _main() {
     LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
 
     if [ $# -ne 1 ]; then
-        _log "Usage: $0 smhp_<workspace_name>"
+        _log "Usage: $0 smhp_<workspace_name> or smhpc_<workspace_name>"
         exit 1
     fi
 
     # Extract workspace name, cluster name, and namespace from hostname
     # New format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
     # Old format: smhp_{workspace} (for backward compatibility)
-    if [[ "$1" =~ ^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+    if [[ "$1" =~ ^smhp[^_]*_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
         # Format: smhp_{workspace}_{namespace}_{cluster}_{region}_{account}
         WORKSPACE_NAME="${BASH_REMATCH[1]}"
         NAMESPACE="${BASH_REMATCH[2]}"
@@ -98,7 +98,7 @@ _main() {
         CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
     else
         # Old format or fallback - extract workspace name only
-        WORKSPACE_NAME=$(echo "$1" | sed 's/smhp_//')
+        WORKSPACE_NAME=$(echo "$1" | sed 's/smhp[^_]*_//')
         CLUSTER_NAME=""
         NAMESPACE=""
         CONNECTION_KEY=""

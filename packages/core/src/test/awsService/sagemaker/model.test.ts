@@ -392,9 +392,14 @@ describe('getSshPrefix', function () {
         assert.strictEqual(getSshPrefix('sm_dl'), 'smc_')
     })
 
-    it('returns smhp_ for hyperpod connection regardless of IDE', function () {
+    it('returns smhp_ for hyperpod connection on vscode', function () {
         sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
         assert.strictEqual(getSshPrefix('sm_hp'), 'smhp_')
+    })
+
+    it('returns smhpc_ for hyperpod connection on cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getSshPrefix('sm_hp'), 'smhpc_')
     })
 
     it('returns sm_ for unknown IDE type', function () {
