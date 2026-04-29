@@ -186,6 +186,25 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
             ? proposedSession
             : createValidSshSession(workspaceName!, namespace!, clusterName!, region!, accountId!)
         hostname = `${sshPrefix}${hpSession}`
+
+        // Store connection info before SSH config so the local server can return it
+        if (workspaceName && clusterName && namespace) {
+            try {
+                await storeHyperpodConnection(
+                    workspaceName,
+                    namespace,
+                    clusterArn!,
+                    clusterName,
+                    eksEndpoint,
+                    eksCertAuthData,
+                    region,
+                    wsUrl,
+                    token
+                )
+            } catch (error) {
+                getLogger().warn(`Failed to store HyperPod connection: ${error}`)
+            }
+        }
     } else {
         const credsType = connectionType.replace('sm_', '')
         hostname = `${sshPrefix}${credsType}_${spaceArn.replace(/\//g, '__').replace(/:/g, '_._')}`
@@ -341,25 +360,8 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
 
     // Start connection monitoring for HyperPod connections
     if (connectionType === 'sm_hp' && workspaceName && clusterName && namespace) {
-        try {
-            const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
-
-            await storeHyperpodConnection(
-                workspaceName,
-                namespace,
-                clusterArn!,
-                clusterName,
-                eksEndpoint,
-                eksCertAuthData,
-                region,
-                wsUrl,
-                token
-            )
-
-            getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
-        } catch (error) {
-            getLogger().warn(`Failed to start HyperPod monitoring: ${error}`)
-        }
+        const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
+        getLogger().info(`Started monitoring and reconnection for HyperPod space: ${connectionKey}`)
     }
 
     return {
