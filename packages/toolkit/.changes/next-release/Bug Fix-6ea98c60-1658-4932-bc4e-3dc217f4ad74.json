@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: IDE session restores automatically after closing and reopening the application"
+}

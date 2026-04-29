@@ -105,7 +105,21 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                     const command = sagemakerConnectPath
 
                     let options: cp.SpawnOptions = {
-                        env: { ...process.env }, // Inherit environment variables from parent process
+                        env: {
+                            ...process.env,
+                            SAGEMAKER_LOCAL_SERVER_FILE_PATH: path.join(
+                                awsToolkitGlobalStoragePath,
+                                'sagemaker-local-server-info.json'
+                            ),
+                            SAGEMAKER_LOCAL_SERVER_JS_PATH: path.join(
+                                awsToolkitGlobalStoragePath,
+                                'dist/src/awsService/sagemaker/detached-server/server.js'
+                            ),
+                            AWS_SSM_CLI: path.join(
+                                awsToolkitGlobalStoragePath,
+                                'tools/Amazon/sessionmanagerplugin/bin/session-manager-plugin'
+                            ),
+                        },
                     }
 
                     if (isWindows && /\.ps1$/.test(command)) {

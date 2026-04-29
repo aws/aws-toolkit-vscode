@@ -1,58 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# HyperPod Connection Script
-# 
-# This script establishes a connection to an AWS SageMaker HyperPod instance using AWS Systems Manager (SSM).
-# HyperPod is AWS's managed service for distributed machine learning training at scale.
-#
-# OVERVIEW:
-# The script always gets fresh credentials from the reconnection manager and uses them to establish
-# a secure session tunnel to a HyperPod compute instance.
-#
-# OPTIONAL ENVIRONMENT VARIABLES:
-#   LOG_FILE_LOCATION   - Path to log file (default: /tmp/hyperpod_connect.log)
-#   DEBUG_LOG           - Enable debug logging (default: 0)
-#
-# USAGE:
-#   ./hyperpod_connect smhp_demo1
-#
-# SECURITY NOTE:
-# This script handles sensitive authentication tokens. Ensure proper file permissions
-# and avoid logging sensitive values in production environments. 
 set -x
-set -e
-set -u
-
-_DATE_CMD=true
-
-if command > /dev/null 2>&1 -v date; then
-    _DATE_CMD=date
-elif command > /dev/null 2>&1 -v /bin/date; then
-    _DATE_CMD=/bin/date
-fi
-
-_log() {
-    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
-}
-
-_require_nolog() {
-    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
-        _log "error: missing required arg: $1"
-        exit 1
-    fi
-}
-
-_require() {
-    _require_nolog "$@"
-    _log "$1=$2"
-}
 
 _resolve_connection_key() {
     local WORKSPACE_NAME=$1
     local PROFILES_FILE="$HOME/.aws/.hyperpod-space-profiles"
-    
+
     [ ! -f "$PROFILES_FILE" ] && echo "$WORKSPACE_NAME" && return
-    
+
     python3 -c "
 import json
 try:
@@ -65,79 +20,121 @@ except:
 " 2>/dev/null
 }
 
-_hyperpod() {
-    # Function inputs
-    local AWS_SSM_CLI=$1
-    local AWS_REGION=$2
-    local STREAM_URL=$3
-    local TOKEN=$4
-    local SESSION_ID=$5
+_get_hyperpod_session() {
+    local connection_key="$1"
+    local local_endpoint_port="$2"
 
-    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
+    local url="http://localhost:${local_endpoint_port}/get_hyperpod_session?connection_key=${connection_key}"
+
+    local temp_file="/tmp/hyperpod_session_response_$$_$(date +%s%N).json"
+
+    response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url")
+    http_status="${response: -3}"
+    session_json=$(cat "$temp_file")
+
+    rm -f "$temp_file"
+
+    if [[ "$http_status" -ne 200 ]]; then
+        echo "Error: Failed to get HyperPod session info. HTTP status: $http_status"
+        echo "Response: $session_json"
+        exit 1
+    fi
+
+    if [ -z "$session_json" ]; then
+        echo "Error: HyperPod session info is empty."
+        exit 1
+    fi
+
+    export SSM_SESSION_JSON="$session_json"
 }
 
-_main() {
-    # Set defaults for missing environment variables
-    DEBUG_LOG=${DEBUG_LOG:-0}
-    LOG_FILE_LOCATION=${LOG_FILE_LOCATION:-/tmp/hyperpod_connect.log}
+# Validate input
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <hostname>"
+    exit 1
+fi
 
-    if [ $# -ne 1 ]; then
-        _log "Usage: $0 smhp_<workspace_name>"
-        exit 1
-    fi
+HOSTNAME="$1"
 
-    # Extract workspace name, cluster name, and namespace from hostname
-    # New format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
-    # Old format: smhp_{workspace} (for backward compatibility)
-    if [[ "$1" =~ ^smhp_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
-        # Format: smhp_{workspace}_{namespace}_{cluster}_{region}_{account}
-        WORKSPACE_NAME="${BASH_REMATCH[1]}"
-        NAMESPACE="${BASH_REMATCH[2]}"
-        CLUSTER_NAME="${BASH_REMATCH[3]}"
-        # Construct the expected connection key (workspace:namespace:cluster)
-        CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
-    else
-        # Old format or fallback - extract workspace name only
-        WORKSPACE_NAME=$(echo "$1" | sed 's/smhp_//')
-        CLUSTER_NAME=""
-        NAMESPACE=""
-        CONNECTION_KEY=""
-    fi
-    
-    # For new format, we already have the connection key constructed from hostname
-    # For old format, look up the connection key from the hyperpod profiles file
-    [ -z "$CONNECTION_KEY" ] && CONNECTION_KEY=$(_resolve_connection_key "$WORKSPACE_NAME")
-    
-    if [ -z "$CONNECTION_KEY" ]; then
-        _log "Error: Could not determine connection key for workspace: $WORKSPACE_NAME"
-        exit 1
-    fi
-    
-    _log "=============================================================================="
-    _log "Connecting to HyperPod workspace: $WORKSPACE_NAME (connection key: $CONNECTION_KEY)"
-    
-    # Use env vars directly for initial connection (deeplink), call API only for reconnection
-    if [ -n "${STREAM_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
-        _log "Using credentials from environment variables (initial connection)"
-    else
-        _log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
-        exit 1
-    fi
-    
-    # Extract region from stream URL
-    AWS_REGION=$(echo "$STREAM_URL" | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
-    AWS_SSM_CLI="${AWS_SSM_CLI:-session-manager-plugin}"
-    
-    # Validate required parameters (SESSION_ID, STREAM_URL, TOKEN are fetched from API, not validated here)
-    _require AWS_REGION "${AWS_REGION}"
-    _require AWS_SSM_CLI "${AWS_SSM_CLI}"
-    
-    if [ -z "${SESSION_ID}" ] || [ -z "${STREAM_URL}" ] || [ -z "${TOKEN}" ]; then
-        _log "Error: Failed to retrieve valid session credentials from API"
-        exit 1
+# Parse hostname format: smhp_{workspace}_{namespace}_{cluster_name}_{region}_{account_id}
+if [[ "$HOSTNAME" =~ ^smhp[^_]*_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+    WORKSPACE_NAME="${BASH_REMATCH[1]}"
+    NAMESPACE="${BASH_REMATCH[2]}"
+    CLUSTER_NAME="${BASH_REMATCH[3]}"
+    CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
+else
+    # Old format fallback
+    WORKSPACE_NAME=$(echo "$HOSTNAME" | sed 's/^smhp[^_]*_//')
+    CONNECTION_KEY=$(_resolve_connection_key "$WORKSPACE_NAME")
+fi
+
+if [ -z "$CONNECTION_KEY" ]; then
+    echo "Error: Could not determine connection key for workspace: $WORKSPACE_NAME"
+    exit 1
+fi
+
+# Validate required env var and file
+if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+    echo "[Error] SAGEMAKER_LOCAL_SERVER_FILE_PATH is not set"
+    exit 1
+fi
+
+# Check if server is alive, start it if not
+_ensure_server_running() {
+    local port
+    port=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+    if [ -n "$port" ] && [ "$port" != "null" ] && curl -s --max-time 2 "http://127.0.0.1:${port}/get_hyperpod_session" >/dev/null 2>&1; then
+        return 0
     fi
 
-    _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
+    # Server is dead — restart it
+    if [ -z "$SAGEMAKER_LOCAL_SERVER_JS_PATH" ] || [ ! -f "$SAGEMAKER_LOCAL_SERVER_JS_PATH" ]; then
+        echo "[Error] Cannot start server: SAGEMAKER_LOCAL_SERVER_JS_PATH is not set or file not found"
+        return 1
+    fi
+
+    local log_dir
+    log_dir=$(dirname "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+    echo "Starting local server..."
+    SAGEMAKER_LOCAL_SERVER_FILE_PATH="$SAGEMAKER_LOCAL_SERVER_FILE_PATH" \
+        nohup node "$SAGEMAKER_LOCAL_SERVER_JS_PATH" \
+        >> "${log_dir}/sagemaker-local-server.out.log" \
+        2>> "${log_dir}/sagemaker-local-server.err.log" &
+
+    # Wait for info file to be written with a valid port
+    local i
+    for i in $(seq 1 20); do
+        port=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+        if [ -n "$port" ] && [ "$port" != "null" ]; then
+            return 0
+        fi
+        sleep 0.5
+    done
+    echo "[Error] Timed out waiting for local server to start"
+    return 1
 }
 
-_main "$@"
+if ! _ensure_server_running; then
+    exit 1
+fi
+
+# Extract port from file
+LOCAL_ENDPOINT_PORT=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+if [ -z "$LOCAL_ENDPOINT_PORT" ] || [ "$LOCAL_ENDPOINT_PORT" == "null" ]; then
+    echo "[Error] 'port' field is missing or invalid in $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+    exit 1
+fi
+
+# Retrieve HyperPod session
+_get_hyperpod_session "$CONNECTION_KEY" "$LOCAL_ENDPOINT_PORT"
+
+# Extract region from StreamUrl in session JSON
+REGION=$(echo "$SSM_SESSION_JSON" | jq -r '.StreamUrl' | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
+if [ -z "$REGION" ]; then
+    echo "[Error] Could not extract region from StreamUrl"
+    exit 1
+fi
+
+# Execute the session
+AWS_SSM_CLI="${AWS_SSM_CLI:=session-manager-plugin}"
+exec "${AWS_SSM_CLI}" "$SSM_SESSION_JSON" "$REGION" StartSession

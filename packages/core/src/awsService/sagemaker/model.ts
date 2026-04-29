@@ -212,10 +212,21 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     } else {
         await removeKnownHost(hostname)
 
+        const proxyCommandEnvVars = {
+            SAGEMAKER_LOCAL_SERVER_FILE_PATH: path.join(
+                ctx.globalStorageUri.fsPath,
+                'sagemaker-local-server-info.json'
+            ),
+            SAGEMAKER_LOCAL_SERVER_JS_PATH: ctx.asAbsolutePath(
+                path.join('dist/src/awsService/sagemaker/detached-server/', 'server.js')
+            ),
+            AWS_SSM_CLI: ssm,
+        }
+
         const sshConfig =
             connectionType === 'sm_hp'
-                ? new SshConfig(ssh, sshPrefix, 'hyperpod_connect')
-                : new SshConfig(ssh, sshPrefix, 'sagemaker_connect')
+                ? new SshConfig(ssh, sshPrefix, 'hyperpod_connect', undefined, proxyCommandEnvVars)
+                : new SshConfig(ssh, sshPrefix, 'sagemaker_connect', undefined, proxyCommandEnvVars)
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()

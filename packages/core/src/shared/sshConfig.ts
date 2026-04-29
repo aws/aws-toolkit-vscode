@@ -29,7 +29,8 @@ export class SshConfig {
         protected readonly sshPath: string,
         protected readonly hostNamePrefix: string,
         protected readonly scriptPrefix: string,
-        protected readonly keyPath?: string
+        protected readonly keyPath?: string,
+        protected readonly proxyCommandEnvVars?: Record<string, string>
     ) {
         this.configHostName = `${hostNamePrefix}*`
         this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
@@ -43,6 +44,12 @@ export class SshConfig {
         // Use %n for SageMaker to preserve original hostname case (avoids SSH canonicalization lowercasing and DNS lookup)
         const hostnameToken = this.scriptPrefix === 'sagemaker_connect' ? '%n' : '%h'
 
+        const envPrefix = this.proxyCommandEnvVars
+            ? Object.entries(this.proxyCommandEnvVars)
+                  .map(([k, v]) => (this.isWin() ? `$env:${k}='${v}';` : `${k}="${v}"`))
+                  .join(' ') + ' '
+            : ''
+
         if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
             const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
@@ -50,9 +57,11 @@ export class SshConfig {
             if (r.exitCode !== 0) {
                 return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
             }
-            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" ${hostnameToken}`)
+            return Result.ok(
+                `"${r.stdout}" -ExecutionPolicy RemoteSigned -Command "${envPrefix}& '${command}' ${hostnameToken}"`
+            )
         } else {
-            return Result.ok(`'${command}' '${hostnameToken}'`)
+            return Result.ok(`${envPrefix}'${command}' '${hostnameToken}'`)
         }
     }
 
@@ -104,22 +113,22 @@ export class SshConfig {
         return Result.ok(matches?.[0])
     }
 
-    private async promptUserForOutdatedSection(configSection: string): Promise<void> {
-        getLogger().warn(`SSH config: found old/outdated "${this.configHostName}" section:\n%O`, configSection)
-        const oldConfig = localize(
-            'AWS.sshConfig.error.oldConfig',
-            'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
-            this.configHostName
-        )
-
-        const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
-        await vscode.window.showWarningMessage(oldConfig, openConfig).then((resp) => {
-            if (resp === openConfig) {
-                void vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
-            }
-        })
-
-        throw new ToolkitError(oldConfig, { code: 'OldConfig' })
+    private async removeExistingSection(): Promise<void> {
+        const sshConfigPath = getSshConfigPath()
+        try {
+            const content = await readFileAsString(sshConfigPath)
+            // Match the full Host block: from "# Created by AWS Toolkit" comment (or Host line) to next Host or EOF
+            const hostPattern = new RegExp(
+                `(# Created by AWS Toolkit[^\\n]*\\n)?Host ${this.configHostName.replace('*', '\\*')}\\n([ \\t]+[^\\n]*\\n)*[ \\t]*`,
+                'g'
+            )
+            const updated = content.replace(hostPattern, '').replace(/\n{3,}/g, '\n\n')
+            await fs.writeFile(sshConfigPath, updated)
+            chmodSync(sshConfigPath, 0o600)
+            getLogger().info(`ssh: removed outdated "${this.configHostName}" section from config`)
+        } catch (e) {
+            getLogger().warn(`ssh: failed to remove outdated section: ${e}`)
+        }
     }
 
     protected async writeSectionToConfig(proxyCommand: string) {
@@ -152,20 +161,28 @@ export class SshConfig {
         configSection: string | undefined,
         proxyCommand: string
     ): Promise<void> {
-        if (configSection !== undefined) {
-            await this.promptUserForOutdatedSection(configSection)
-        }
-
-        const confirmTitle = localize(
-            'AWS.sshConfig.confirm.installSshConfig.title',
-            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
-            getIdeProperties().company,
-            this.configHostName
-        )
+        const confirmTitle =
+            configSection !== undefined
+                ? localize(
+                      'AWS.sshConfig.confirm.updateSshConfig.title',
+                      '{0} Toolkit needs to update the {1} section in ~/.ssh/config (current entry is outdated)',
+                      getIdeProperties().company,
+                      this.configHostName
+                  )
+                : localize(
+                      'AWS.sshConfig.confirm.installSshConfig.title',
+                      '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
+                      getIdeProperties().company,
+                      this.configHostName
+                  )
         const confirmText = localize('AWS.sshConfig.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
         if (!response) {
             throw new CancellationError('user')
+        }
+
+        if (configSection !== undefined) {
+            await this.removeExistingSection()
         }
 
         await this.writeSectionToConfig(proxyCommand)
