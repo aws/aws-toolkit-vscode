@@ -13,7 +13,7 @@ import { createS3ConnectionNode, createS3AccessGrantNodes } from './s3Strategy'
 import { createRedshiftConnectionNode } from './redshiftStrategy'
 import { createLakehouseConnectionNode } from './lakehouseStrategy'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
-import { isFederatedConnection, createErrorItem } from './utils'
+import { isFederatedConnection, createErrorItem, createDZClientForProject } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import {
     ConnectionType,
@@ -23,7 +23,6 @@ import {
 } from './types'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { createFederatedConnectionNode } from './federatedConnectionStrategy'
-import { createDZClientForProject } from './utils'
 import { getContext } from '../../../shared/vscode/setContext'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 
@@ -114,8 +113,9 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             dataNodes.push(node)
         }
 
+        // TODO: After IAM/IDC data explorer parity, the conditional logic must be removed
         // Add Redshift nodes second
-        if (!getContext('aws.smus.isIamMode')) {
+        if (!getContext('aws.smus.isIamModeDomain')) {
             for (const connection of redshiftConnections) {
                 if (connection.name.startsWith('project.lakehouse')) {
                     continue

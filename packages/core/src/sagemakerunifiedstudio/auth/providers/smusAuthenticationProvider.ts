@@ -21,6 +21,7 @@ import {
     extractAccountIdFromResourceMetadata,
     convertToToolkitCredentialProvider,
     isIamDomain,
+    isExpressDomain,
 } from '../../shared/smusUtils'
 import {
     createSmusProfile,
@@ -67,11 +68,22 @@ export function setSmusSpaceEnvironmentContext(inSmusSpace: boolean): Promise<vo
 }
 
 /**
- * Sets the context variable for SMUS IAM mode state
- * @param isIamMode Whether the current domain is in IAM mode
+ * Sets the context variable for SMUS IAM mode state (login type)
+ * @param isIamMode Whether the user logged in with IAM credentials
  */
 export function setSmusIamModeContext(isIamMode: boolean): Promise<void> {
     return setContext('aws.smus.isIamMode', isIamMode)
+}
+
+/**
+ * Sets the context variable for SMUS IAM domain mode state (actual domain type).
+ * An IAM domain (EXPRESS mode) is identified by preferences.DOMAIN_MODE === 'EXPRESS'.
+ * This is independent of the login type — a user can SSO-login into an IAM domain
+ * or IAM-login into an IdC domain.
+ * @param isIamModeDomain Whether the domain is an IAM (EXPRESS) domain
+ */
+export function setSmusIamModeDomainContext(isIamModeDomain: boolean): Promise<void> {
+    return setContext('aws.smus.isIamModeDomain', isIamModeDomain)
 }
 const authClassName = 'SmusAuthenticationProvider'
 
@@ -169,6 +181,24 @@ export class SmusAuthenticationProvider {
             // Update IAM mode context in SMUS space environment
             if (getContext('aws.smus.inSmusSpaceEnvironment')) {
                 await this.initIamModeContextInSpaceEnvironment()
+            } else if (activeConn && this.isConnected()) {
+                // For local connections (SSO or IAM), detect domain type via GetDomain
+                try {
+                    const credentialsProvider =
+                        activeConn.type === 'iam'
+                            ? await this.getCredentialsProviderForIamProfile(
+                                  (activeConn as SmusIamConnection).profileName
+                              )
+                            : ((await this.getDerCredentialsProvider()) as CredentialsProvider)
+                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
+                        credentialsProvider,
+                        this.getDomainRegion()
+                    )
+                    const domainInfo = await datazoneHelper.getDomain(this.getDomainId())
+                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
+                } catch (err) {
+                    this.logger.warn(`Failed to detect domain type on connection change: ${(err as Error).message}`)
+                }
             }
 
             this.onDidChangeEmitter.fire()
@@ -223,6 +253,7 @@ export class SmusAuthenticationProvider {
                 })
                 this.logger.debug(`Domain ${domainId} is in IAM mode: ${isIamMode}`)
                 await setSmusIamModeContext(isIamMode)
+                await setSmusIamModeDomainContext(isExpressDomain(domain.preferences))
             }
         } catch (error) {
             this.logger.error('Failed to check IAM mode in SMUS space environment:  %s', error)

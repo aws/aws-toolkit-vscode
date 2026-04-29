@@ -838,7 +838,7 @@ describe('DataZoneCustomClientHelper', () => {
             )
         })
 
-        it('should throw ToolkitError when no matching profile found', async () => {
+        it('should return empty string when no matching profile found', async () => {
             const searchStub = sinon.stub(client, 'searchUserProfiles')
             searchStub.resolves({
                 items: [
@@ -856,14 +856,8 @@ describe('DataZoneCustomClientHelper', () => {
                 nextToken: undefined,
             })
 
-            await assert.rejects(
-                () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                (err: any) => {
-                    assert.ok(err.message.includes('No user profile found'))
-                    assert.strictEqual(err.code, 'NoUserProfileFound')
-                    return true
-                }
-            )
+            const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+            assert.strictEqual(result, '')
         })
 
         it('should handle profiles without IAM details', async () => {
@@ -879,13 +873,8 @@ describe('DataZoneCustomClientHelper', () => {
                 nextToken: undefined,
             })
 
-            await assert.rejects(
-                () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                (err: any) => {
-                    assert.ok(err.message.includes('No user profile found'))
-                    return true
-                }
-            )
+            const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+            assert.strictEqual(result, '')
         })
 
         it('should handle API errors', async () => {
@@ -1057,14 +1046,8 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        assert.strictEqual(err.code, 'NoUserProfileFound')
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
             })
 
             it('should handle API errors during space filtering', async () => {
@@ -1118,13 +1101,8 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
             })
         })
 
@@ -1217,13 +1195,8 @@ describe('DataZoneCustomClientHelper', () => {
                     nextToken: undefined,
                 })
 
-                await assert.rejects(
-                    () => client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn),
-                    (err: any) => {
-                        assert.ok(err.message.includes('No user profile found'))
-                        return true
-                    }
-                )
+                const result = await client.getUserProfileIdForSession(mockDomainId, mockAssumedRoleArn)
+                assert.strictEqual(result, '')
             })
         })
     })

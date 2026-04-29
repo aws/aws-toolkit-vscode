@@ -10,6 +10,7 @@ import { CredentialsId, CredentialsProvider, CredentialsProviderType } from '../
 
 import { DataZoneClient } from '../../shared/client/datazoneClient'
 import { SmusAuthenticationProvider } from './smusAuthenticationProvider'
+import { SmusIamConnection } from '../model'
 import { CredentialType } from '../../../shared/telemetry/telemetry'
 import { SmusCredentialExpiry, validateCredentialFields } from '../../shared/smusUtils'
 import { getContext } from '../../../shared/vscode/setContext'
@@ -133,13 +134,22 @@ export class ConnectionCredentialsProvider implements CredentialsProvider {
         )
 
         try {
-            if (getContext('aws.smus.isIamMode') && this.projectId) {
+            if (getContext('aws.smus.isIamModeDomain') && this.projectId) {
                 return (await this.smusAuthProvider.getProjectCredentialProvider(this.projectId)).getCredentials()
+            }
+            // IdC domain — use DER for SSO login, IAM role credentials for IAM login
+            let credentialsProvider
+            if (getContext('aws.smus.isIamMode')) {
+                credentialsProvider = await this.smusAuthProvider.getCredentialsProviderForIamProfile(
+                    (this.smusAuthProvider.activeConnection as SmusIamConnection).profileName
+                )
+            } else {
+                credentialsProvider = await this.smusAuthProvider.getDerCredentialsProvider()
             }
             const datazoneClient = DataZoneClient.createWithCredentials(
                 this.smusAuthProvider.getDomainRegion(),
                 this.smusAuthProvider.getDomainId(),
-                await this.smusAuthProvider.getDerCredentialsProvider()
+                credentialsProvider
             )
             const getConnectionResponse = await datazoneClient.getConnection({
                 domainIdentifier: this.smusAuthProvider.getDomainId(),

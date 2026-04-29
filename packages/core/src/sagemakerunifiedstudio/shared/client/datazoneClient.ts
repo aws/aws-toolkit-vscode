@@ -106,7 +106,6 @@ export interface DataZoneConnection {
 }
 
 // Constants for DataZone environment configuration
-const toolingBlueprintName = 'Tooling'
 const sageMakerProviderName = 'Amazon SageMaker'
 
 /**
@@ -240,36 +239,17 @@ export class DataZoneClient {
             )
             const datazoneClient = await this.getDataZoneClient()
 
-            this.logger.debug('Listing environment blueprints')
-            const domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: this.domainId,
-                managed: true,
-                name: this.getToolingBlueprintName(),
-            })
-            const toolingBlueprint = domainBlueprints.items?.[0]
-            if (!toolingBlueprint) {
-                this.logger.error('Failed to get tooling blueprint')
-                throw new Error('Failed to get tooling blueprint')
-            }
-            this.logger.debug(`Found tooling blueprint with ID: ${toolingBlueprint.id}, listing environments`)
+            const toolingEnv = await this.getToolingEnvironmentForProject(datazoneClient, this.domainId, projectId)
 
-            const listEnvs = await datazoneClient.listEnvironments({
-                domainIdentifier: this.domainId,
-                projectIdentifier: projectId,
-                environmentBlueprintIdentifier: toolingBlueprint.id,
-                provider: sageMakerProviderName,
-            })
-
-            const defaultEnv = listEnvs.items?.[0]
-            if (!defaultEnv) {
-                this.logger.error('Failed to find default Tooling environment')
-                throw new Error('Failed to find default Tooling environment')
+            if (!toolingEnv?.id) {
+                throw new Error('No tooling environment found for project')
             }
-            this.logger.debug(`Found default environment with ID: ${defaultEnv.id}, getting environment credentials`)
+
+            this.logger.debug(`Found default environment with ID: ${toolingEnv.id}, getting environment credentials`)
 
             const defaultEnvCreds = await datazoneClient.getEnvironmentCredentials({
                 domainIdentifier: this.domainId,
-                environmentIdentifier: defaultEnv.id,
+                environmentIdentifier: toolingEnv.id,
             })
 
             return defaultEnvCreds
@@ -713,60 +693,15 @@ export class DataZoneClient {
         this.logger.debug(`Getting tooling environment ID for domain ${domainId}, project ${projectId}`)
         const datazoneClient = await this.getDataZoneClient()
 
-        let domainBlueprints
-        try {
-            // Get the tooling blueprint
-            domainBlueprints = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: domainId,
-                managed: true,
-                name: this.getToolingBlueprintName(),
-            })
-        } catch (err) {
-            this.logger.error(
-                'Failed to list environment blueprints for domain %s, %s',
-                domainId,
-                (err as Error).message
-            )
-            throw err
-        }
+        const toolingEnv = await this.getToolingEnvironmentForProject(datazoneClient, domainId, projectId)
 
-        const toolingBlueprint = domainBlueprints.items?.[0]
-        if (!toolingBlueprint) {
-            this.logger.error('No tooling blueprint found for domain %s', domainId)
-            throw new Error('No tooling blueprint found')
-        }
-
-        // List environments for the project
-        let listEnvs
-        try {
-            this.logger.debug(`Listing environments for project ${projectId} with blueprint ${toolingBlueprint.id}`)
-            listEnvs = await datazoneClient.listEnvironments({
-                domainIdentifier: domainId,
-                projectIdentifier: projectId,
-                environmentBlueprintIdentifier: toolingBlueprint.id,
-                provider: sageMakerProviderName,
-            })
-        } catch (err) {
-            this.logger.error(
-                'Failed to list environments for domainId: %s, projectId: %s, %s',
-                domainId,
-                projectId,
-                (err as Error).message
-            )
-            throw err
-        }
-
-        const defaultEnv = listEnvs.items?.[0]
-        if (!defaultEnv || !defaultEnv.id) {
-            this.logger.error(
-                'No default Tooling environment found for domainId: %s, projectId: %s',
-                domainId,
-                projectId
-            )
+        if (!toolingEnv?.id) {
+            this.logger.error('No tooling environment found for domain %s, project %s', domainId, projectId)
             throw new Error('No default Tooling environment found for project')
         }
-        this.logger.debug(`Found tooling environment with ID: ${defaultEnv.id}`)
-        return defaultEnv.id
+
+        this.logger.debug(`Found tooling environment with ID: ${toolingEnv.id}`)
+        return toolingEnv.id
     }
 
     /**
@@ -775,13 +710,24 @@ export class DataZoneClient {
      * @returns Promise resolving to environment details
      */
     public async getEnvironmentDetails(
-        environmentId: string
+        environmentId: string,
+        projectId?: string
     ): Promise<import('@aws-sdk/client-datazone').GetEnvironmentCommandOutput> {
         try {
             this.logger.debug(
                 `Getting environment details for domain ${this.getDomainId()}, environment ${environmentId}`
             )
-            const datazoneClient = await this.getDataZoneClient()
+
+            let datazoneClient
+            if (projectId) {
+                // Prefer using project credentials to get environment details, as it's part of the project
+                this.logger.debug("Getting project environment credentials")
+                const creds = await this.getProjectDefaultEnvironmentCreds(projectId)
+                datazoneClient = this.createProjectCredentialsDataZoneClient(creds)
+            } else {
+                // Note: This will not work in cross-account
+                datazoneClient = await this.getDataZoneClient()
+            }
 
             const environment = await datazoneClient.getEnvironment({
                 domainIdentifier: this.getDomainId(),
@@ -806,7 +752,7 @@ export class DataZoneClient {
         if (!toolingEnvId) {
             throw new Error('No default environment found for project')
         }
-        return await this.getEnvironmentDetails(toolingEnvId)
+        return await this.getEnvironmentDetails(toolingEnvId, projectId)
     }
 
     public async getUserId(): Promise<string | undefined> {
@@ -865,9 +811,70 @@ export class DataZoneClient {
     }
 
     /**
-     * Gets the correct tooling blueprint name
+     * Gets the tooling blueprint for a domain.
+     * Finds the tooling environment for a project by listing blueprints matching "Tooling"
+     * (which returns both Tooling and ToolingLite) and checking which one has an environment.
+     * A project can only have either a Tooling or ToolingLite environment.
+     * @param datazoneClient The DataZone client
+     * @param domainId The domain identifier
+     * @param projectId The project identifier
+     * @returns The tooling environment, or undefined if not found
      */
-    private getToolingBlueprintName(): string {
-        return getContext('aws.smus.isIamMode') ? 'ToolingLite' : toolingBlueprintName
+    private async getToolingEnvironmentForProject(
+        datazoneClient: DataZone,
+        domainId: string,
+        projectId: string
+    ): Promise<import('@aws-sdk/client-datazone').EnvironmentSummary | undefined> {
+        try {
+            // prefix search - will return both Tooling and ToolingLite
+            const blueprintResult = await datazoneClient.listEnvironmentBlueprints({
+                domainIdentifier: domainId,
+                managed: true,
+                name: 'Tooling',
+            })
+
+            if (!blueprintResult.items?.length) {
+                return undefined
+            }
+
+            for (const blueprint of blueprintResult.items) {
+                const envResult = await datazoneClient.listEnvironments({
+                    domainIdentifier: domainId,
+                    projectIdentifier: projectId,
+                    environmentBlueprintIdentifier: blueprint.id,
+                    provider: sageMakerProviderName,
+                })
+                if (envResult.items?.length) {
+                    this.logger.debug(
+                        `Found tooling environment ${envResult.items[0].id} via blueprint ${blueprint.name}`
+                    )
+                    return envResult.items[0]
+                }
+            }
+
+            return undefined
+        } catch (err) {
+            this.logger.error('Failed to get tooling environment for domain %s: %s', domainId, (err as Error).message)
+            throw new ToolkitError('Failed to get tooling environment', { code: 'ToolingEnvironmentError' })
+        }
+    }
+
+    /**
+     * Creates a one-off DataZone SDK client with raw credentials, respecting endpoint overrides.
+     */
+    private createProjectCredentialsDataZoneClient(creds: GetEnvironmentCredentialsCommandOutput): DataZone {
+        const clientConfig: any = {
+            region: this.getRegion(),
+            credentials: {
+                accessKeyId: creds.accessKeyId!,
+                secretAccessKey: creds.secretAccessKey!,
+                sessionToken: creds.sessionToken!,
+            },
+        }
+        const customEndpoint = DevSettings.instance.get('endpoints', {})['datazone']
+        if (customEndpoint) {
+            clientConfig.endpoint = customEndpoint
+        }
+        return new DataZone(clientConfig)
     }
 }
