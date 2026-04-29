@@ -38,7 +38,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // toolkit's local server is ready.
     if (process.platform === 'win32') {
         void new RemoteSshSettings()
-            .removeRemotePlatforms((h) => h.startsWith('sm'))
+            .removeRemotePlatforms((h) => /^smc?_|^smhpc?_/.test(h))
             .then((removed) => {
                 getLogger().info('sagemaker: cleaned %d stale remotePlatform entries', removed)
             })
