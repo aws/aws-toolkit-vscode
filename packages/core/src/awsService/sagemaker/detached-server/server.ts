@@ -11,7 +11,6 @@ import { handleGetSession } from './routes/getSession'
 import { handleGetSessionAsync } from './routes/getSessionAsync'
 import { handleRefreshToken } from './routes/refreshToken'
 import { handleGetHyperpodSession } from './routes/getHyperpodSession'
-import { handleRefreshHyperpodSession } from './routes/refreshHyperpodSession'
 import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
@@ -40,9 +39,10 @@ const server = http.createServer((req: IncomingMessage, res: ServerResponse) => 
         case '/refresh_token':
             return handleRefreshToken(req, res)
         case '/get_hyperpod_session':
-            return handleGetHyperpodSession(req, res) // do not use for reconnect - for lc + dl only
-        case '/refresh_hyperpod_session':
-            return handleRefreshHyperpodSession(req, res) // use for reconnect
+            return handleGetHyperpodSession(req, res) // do not use for reconnect - for lc and dl only
+        // TODO(reconnection): uncomment when reconnection PR re-adds credentials/eksClusterName to HyperpodSpaceMapping
+        // case '/refresh_hyperpod_session':
+        //     return handleRefreshHyperpodSession(req, res)
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end(`Not Found: ${req.url}`)
