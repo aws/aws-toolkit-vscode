@@ -11,8 +11,9 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
-import { prepareDevEnvConnection } from './model'
+import { prepareDevEnvConnection, useSageMakerSshKiroExtension, startRemoteViaSageMakerSshKiro } from './model'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -53,6 +54,10 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         return
     }
 
+    if (useSageMakerSshKiroExtension()) {
+        await ensureSageMakerSshKiroExtension(globals.context)
+    }
+
     try {
         const kubectlClient = node.getParent().getKubectlClient(node.hpCluster.clusterName)
         if (!kubectlClient) {
@@ -84,13 +89,23 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             session: workspaceConnection.sessionId || undefined,
         })
 
-        await startVscodeRemote(
-            remoteEnv.SessionProcess,
-            remoteEnv.hostname,
-            '/home/sagemaker-user',
-            remoteEnv.vscPath,
-            'sagemaker-user'
-        )
+        if (useSageMakerSshKiroExtension()) {
+            await startRemoteViaSageMakerSshKiro(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                '/home/sagemaker-user',
+                remoteEnv.vscPath,
+                'sagemaker-user'
+            )
+        } else {
+            await startVscodeRemote(
+                remoteEnv.SessionProcess,
+                remoteEnv.hostname,
+                '/home/sagemaker-user',
+                remoteEnv.vscPath,
+                'sagemaker-user'
+            )
+        }
 
         void vscode.window.showInformationMessage(
             `Connected to HyperPod dev space: ${node.devSpace.name} (${node.devSpace.namespace})`
