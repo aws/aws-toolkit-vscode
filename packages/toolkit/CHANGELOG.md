@@ -1,3 +1,7 @@
+## 4.3.0 2026-04-30
+
+- **Bug Fix** Fix bug where occasionally Kiro path was not discovered on MacOS
+
 ## 4.2.0 2026-04-23
 
 - Miscellaneous non-user-facing changes
