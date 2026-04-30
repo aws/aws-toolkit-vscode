@@ -76,6 +76,57 @@ _hyperpod() {
     exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
 }
 
+# Fetches fresh session credentials from the local detached server.
+# Returns 0 on success (sets STREAM_URL, TOKEN, SESSION_ID), 1 on failure.
+_try_get_hyperpod_session() {
+    local connection_key="$1"
+    local port="$2"
+
+    local url="http://127.0.0.1:${port}/get_hyperpod_session?connection_key=${connection_key}"
+    local temp_file="/tmp/hyperpod_session_$$_$(date +%s%N).json"
+    local max_retries=5
+    local retry_delay=2
+    local attempt=1
+
+    while (( attempt <= max_retries )); do
+        local response http_status session_json
+        response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url" 2>/dev/null) || true
+        http_status="${response: -3}"
+        session_json=$(cat "$temp_file" 2>/dev/null) || true
+
+        if [[ "$http_status" -eq 200 ]]; then
+            rm -f "$temp_file"
+
+            STREAM_URL=$(echo "$session_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['StreamUrl'])" 2>/dev/null)
+            TOKEN=$(echo "$session_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['TokenValue'])" 2>/dev/null)
+            SESSION_ID=$(echo "$session_json" | python3 -c "import sys,json; print(json.load(sys.stdin)['SessionId'])" 2>/dev/null)
+
+            if [ -n "$STREAM_URL" ] && [ -n "$TOKEN" ]; then
+                return 0
+            fi
+            _log "Error: Failed to parse session response"
+            return 1
+        elif [[ "$http_status" -eq 429 ]]; then
+            _log "Retry cap reached on server. Please reconnect from the IDE."
+            rm -f "$temp_file"
+            return 1
+        elif [[ "$http_status" -eq 404 ]] || [[ "$http_status" -eq 401 ]] || [[ "$http_status" -eq 422 ]]; then
+            _log "Server returned $http_status: $session_json"
+            rm -f "$temp_file"
+            return 1
+        else
+            _log "Server returned $http_status. Retrying in ${retry_delay}s... [$attempt/$max_retries]"
+            sleep $retry_delay
+            retry_delay=$((retry_delay * 2))
+            ((attempt++))
+        fi
+    done
+
+    rm -f "$temp_file"
+    _log "Failed to get session after $max_retries attempts."
+    return 1
+}
+
 _main() {
     # Set defaults for missing environment variables
     DEBUG_LOG=${DEBUG_LOG:-0}
@@ -116,28 +167,46 @@ _main() {
     _log "=============================================================================="
     _log "Connecting to HyperPod workspace: $WORKSPACE_NAME (connection key: $CONNECTION_KEY)"
     
-    # Use env vars directly for initial connection (deeplink), call API only for reconnection
-    if [ -n "${STREAM_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
-        _log "Using credentials from environment variables (initial connection)"
-    else
-        _log "No env credentials available. Reconnection via get_hyperpod_session is disabled. Please reconnect from the IDE."
-        exit 1
+    # Try the local server first for fresh credentials. This handles both initial
+    # connections and reconnections. Falls back to env vars if the server call fails
+    # (e.g. deeplink connections without full EKS metadata in the mapping).
+    GOT_SESSION=false
+    if [ -n "${SAGEMAKER_LOCAL_SERVER_FILE_PATH:-}" ] && [ -f "${SAGEMAKER_LOCAL_SERVER_FILE_PATH}" ]; then
+        LOCAL_PORT=$(python3 -c "import json; print(json.load(open('$SAGEMAKER_LOCAL_SERVER_FILE_PATH'))['port'])" 2>/dev/null)
+        if [ -n "$LOCAL_PORT" ]; then
+            _log "Fetching session from local server on port $LOCAL_PORT"
+            set +e
+            _try_get_hyperpod_session "$CONNECTION_KEY" "$LOCAL_PORT"
+            SERVER_RESULT=$?
+            set -e
+            if [ $SERVER_RESULT -eq 0 ]; then
+                GOT_SESSION=true
+                _log "Got fresh session credentials from local server"
+            else
+                _log "Local server call failed (exit $SERVER_RESULT). Falling back to environment variables."
+            fi
+        fi
+    fi
+
+    if [ "$GOT_SESSION" = false ]; then
+        if [ -n "${STREAM_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
+            _log "Using credentials from environment variables"
+            SESSION_ID="${SESSION_ID:-$1}"
+        else
+            _log "Error: No session credentials available. Please reconnect from the IDE."
+            exit 1
+        fi
     fi
     
     # Extract region from stream URL
     AWS_REGION=$(echo "$STREAM_URL" | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
     AWS_SSM_CLI="${AWS_SSM_CLI:-session-manager-plugin}"
     
-    # Validate required parameters (SESSION_ID, STREAM_URL, TOKEN are fetched from API, not validated here)
+    # Validate required parameters
     _require AWS_REGION "${AWS_REGION}"
     _require AWS_SSM_CLI "${AWS_SSM_CLI}"
-    
-    if [ -z "${SESSION_ID}" ] || [ -z "${STREAM_URL}" ] || [ -z "${TOKEN}" ]; then
-        _log "Error: Failed to retrieve valid session credentials from API"
-        exit 1
-    fi
 
-    _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
+    _hyperpod "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "${SESSION_ID:-$1}"
 }
 
 _main "$@"

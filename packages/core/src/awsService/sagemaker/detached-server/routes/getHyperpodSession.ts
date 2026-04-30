@@ -107,15 +107,38 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         const kubectlClient = await KubectlClient.createForCluster(eksCluster, hyperpodCluster, mapping.credentials)
         const connection = await kubectlClient.createWorkspaceConnection(devSpace)
 
+        // The K8s API may return credentials directly or embedded in a vscode:// presigned URL.
+        // Parse the URL to extract the actual SSM session credentials.
+        let streamUrl = connection.url
+        let tokenValue = connection.token
+        let sessionId = connection.sessionId
+
+        if (connection.url && (!connection.token || connection.url.startsWith('vscode://'))) {
+            try {
+                const parsed = new URL(connection.url)
+                const params = parsed.searchParams
+                const qStreamUrl = params.get('streamUrl')
+                const qSessionToken = params.get('sessionToken')
+                const qSessionId = params.get('sessionId')
+                if (qStreamUrl) {
+                    streamUrl = qStreamUrl
+                    tokenValue = qSessionToken || tokenValue
+                    sessionId = qSessionId || sessionId
+                }
+            } catch {
+                // Not a parseable URL, use raw values
+            }
+        }
+
         attemptCount.delete(connectionKey)
         lastAttemptTime.delete(connectionKey)
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(
             JSON.stringify({
-                SessionId: connection.sessionId,
-                StreamUrl: connection.url,
-                TokenValue: connection.token,
+                SessionId: sessionId,
+                StreamUrl: streamUrl,
+                TokenValue: tokenValue,
             })
         )
     } catch (err) {
