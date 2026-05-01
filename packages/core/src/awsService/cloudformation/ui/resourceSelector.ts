@@ -143,9 +143,10 @@ export class ResourceSelector {
                 this.refreshCallback?.()
 
                 if (!result.found) {
-                    void window.showErrorMessage(
-                        `${resourceType} with identifier '${identifier}' was not found. The identifier must match exactly.`
-                    )
+                    const reason = result.error
+                        ? `${result.error}`
+                        : `${resourceType} with identifier '${identifier}' was not found`
+                    void window.showErrorMessage(reason)
                     return []
                 }
 
