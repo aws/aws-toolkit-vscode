@@ -9,7 +9,13 @@ import * as os from 'os'
 import * as path from 'path'
 import * as testutil from '../../testUtil'
 import { fs } from '../../../shared'
-import { findSshPath, findTypescriptCompiler, getVscodeCliPath, tryRun } from '../../../shared/utilities/pathFind'
+import {
+    findSshPath,
+    findTypescriptCompiler,
+    getCliProbePaths,
+    getVscodeCliPath,
+    tryRun,
+} from '../../../shared/utilities/pathFind'
 import { isCI, isWin } from '../../../shared/vscode/env'
 
 describe('pathFind', function () {
@@ -141,6 +147,45 @@ describe('pathFind', function () {
             const ssh = (await findSshPath(true))!
             const result = await tryRun(ssh, ['-G', 'x'], 'noresult')
             assert.ok(result)
+        })
+    })
+
+    describe('getCliProbePaths', function () {
+        const appRoot = '/Applications/Kiro.app/Contents/Resources/app'
+        const vscExe = '/Applications/Kiro.app/Contents/MacOS/Electron'
+
+        it('appends `code` fallback paths inside app bundle for Kiro', function () {
+            const probes = getCliProbePaths('kiro', appRoot, vscExe)
+            assert.ok(
+                probes.includes(path.resolve(`${appRoot}/bin/code`)),
+                'expected Kiro probes to include ${appRoot}/bin/code'
+            )
+        })
+
+        it('does not append `code` fallbacks for non-Kiro forks', function () {
+            for (const cliName of ['code', 'cursor', 'windsurf']) {
+                const probes = getCliProbePaths(cliName, appRoot, vscExe)
+                const codeFallback = probes.find((p) => p.endsWith('/bin/code') && !p.endsWith(`/bin/${cliName}`))
+                assert.strictEqual(
+                    codeFallback,
+                    undefined,
+                    `expected no \`code\` fallback probes for cliName="${cliName}", got ${codeFallback}`
+                )
+            }
+        })
+
+        it('orders `kiro` probes before `code` fallbacks', function () {
+            const probes = getCliProbePaths('kiro', appRoot, vscExe)
+            const lastKiroIdx = probes
+                .map((p, i) => ({ p, i }))
+                .filter(({ p }) => p.endsWith('/kiro') || p === 'kiro')
+                .pop()?.i
+            const firstCodeIdx = probes.findIndex((p) => p.endsWith('/bin/code'))
+            assert.ok(lastKiroIdx !== undefined && firstCodeIdx >= 0)
+            assert.ok(
+                lastKiroIdx! < firstCodeIdx,
+                `expected all kiro probes (last at ${lastKiroIdx}) to come before code fallbacks (first at ${firstCodeIdx})`
+            )
         })
     })
 })

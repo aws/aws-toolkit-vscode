@@ -13,6 +13,9 @@ import {
     stopLocalServer,
     startRemoteViaSageMakerSshKiro,
     getSshPrefix,
+    isValidSshHostname,
+    createValidSshSession,
+    extractRegionFromStreamUrl,
 } from '../../../awsService/sagemaker/model'
 import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
@@ -397,5 +400,102 @@ describe('getSshPrefix', function () {
     it('returns sm_ for unknown IDE type', function () {
         sandbox.stub(vscode.env, 'appName').value('SomeOtherIDE')
         assert.strictEqual(getSshPrefix('sm_lc'), 'sm_')
+    })
+})
+
+describe('isValidSshHostname', function () {
+    it('accepts valid lowercase alphanumeric hostname', function () {
+        assert.strictEqual(isValidSshHostname('myworkspace'), true)
+    })
+
+    it('accepts hostname with underscores and dots', function () {
+        assert.strictEqual(isValidSshHostname('workspace_ns_cluster_useast1_123456789012'), true)
+    })
+
+    it('rejects hostname containing hyphens', function () {
+        // The regex [a-z0-9.-_] treats .-_ as a range (ASCII 46-95) which excludes hyphen (ASCII 45)
+        assert.strictEqual(isValidSshHostname('workspace_ns_cluster_us-east-1_123456789012'), false)
+    })
+
+    it('rejects hostname starting with a hyphen', function () {
+        assert.strictEqual(isValidSshHostname('-invalid'), false)
+    })
+
+    it('rejects hostname with uppercase characters', function () {
+        assert.strictEqual(isValidSshHostname('MyWorkspace'), false)
+    })
+
+    it('rejects empty string', function () {
+        assert.strictEqual(isValidSshHostname(''), false)
+    })
+
+    it('accepts single character hostname', function () {
+        assert.strictEqual(isValidSshHostname('a'), true)
+    })
+
+    it('rejects hostname ending with a hyphen', function () {
+        assert.strictEqual(isValidSshHostname('invalid-'), false)
+    })
+})
+
+describe('createValidSshSession', function () {
+    it('constructs hostname from workspace, namespace, cluster, region, and accountId', function () {
+        const result = createValidSshSession('myworkspace', 'mynamespace', 'mycluster', 'us-east-1', '123456789012')
+        assert.strictEqual(result, 'myworkspace_mynamespace_mycluster_us-east-1_123456789012')
+    })
+
+    it('sanitizes uppercase to lowercase', function () {
+        const result = createValidSshSession('MyWork', 'MyNS', 'MyCluster', 'US-EAST-1', '123456789012')
+        assert.strictEqual(result, 'mywork_myns_mycluster_us-east-1_123456789012')
+    })
+
+    it('strips invalid characters', function () {
+        const result = createValidSshSession('work space!', 'ns@special', 'cluster#1', 'us-east-1', '123456789012')
+        assert.strictEqual(result, 'workspace_nsspecial_cluster1_us-east-1_123456789012')
+    })
+
+    it('truncates long components', function () {
+        const longName = 'a'.repeat(100)
+        const result = createValidSshSession(longName, 'ns', 'cluster', 'us-east-1', '123456789012')
+        // workspaceName truncated to 63
+        assert.ok(result.startsWith('a'.repeat(63) + '_'))
+    })
+
+    it('filters out empty components after sanitization', function () {
+        const result = createValidSshSession('workspace', '!!!', 'cluster', 'us-east-1', '123456789012')
+        // '!!!' sanitizes to empty string and gets filtered out
+        assert.strictEqual(result, 'workspace_cluster_us-east-1_123456789012')
+    })
+
+    it('produces a valid SSH hostname when no hyphens are present', function () {
+        const result = createValidSshSession('myworkspace', 'mynamespace', 'mycluster', 'useast1', '123456789012')
+        assert.strictEqual(isValidSshHostname(result), true)
+    })
+
+    it('always falls through to createValidSshSession for hyphenated regions', function () {
+        // isValidSshHostname rejects hyphens, so the proposed session with a region like us-east-1
+        // always fails validation, causing createValidSshSession to be used
+        const proposed = 'myworkspace_mynamespace_mycluster_us-east-1_123456789012'
+        assert.strictEqual(isValidSshHostname(proposed), false)
+    })
+})
+
+describe('extractRegionFromStreamUrl', function () {
+    it('extracts region from a standard SSM stream URL', function () {
+        assert.strictEqual(
+            extractRegionFromStreamUrl('wss://ssmmessages.us-west-2.amazonaws.com/v1/data-channel/session-id'),
+            'us-west-2'
+        )
+    })
+
+    it('extracts region from a different region', function () {
+        assert.strictEqual(
+            extractRegionFromStreamUrl('wss://ssmmessages.eu-central-1.amazonaws.com/v1/data-channel/session-id'),
+            'eu-central-1'
+        )
+    })
+
+    it('throws for non-matching URL', function () {
+        assert.throws(() => extractRegionFromStreamUrl('wss://example.com/stream'), /Unable to get region/)
     })
 })

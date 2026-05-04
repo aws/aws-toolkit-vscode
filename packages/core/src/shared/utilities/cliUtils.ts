@@ -65,7 +65,21 @@ export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin')],
-            windows: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe')],
+            windows: [
+                // First entry must be relative path for local install (installSsmCli uses cmd[0])
+                path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
+                // System-installed paths for global detection
+                'session-manager-plugin.exe',
+                path.join('C:', 'Program Files', 'Amazon', 'SessionManagerPlugin', 'bin', 'session-manager-plugin.exe'),
+                path.join(
+                    'C:',
+                    'Program Files (x86)',
+                    'Amazon',
+                    'SessionManagerPlugin',
+                    'bin',
+                    'session-manager-plugin.exe'
+                ),
+            ],
         },
         source: {
             // use pkg: zip is unsigned
@@ -75,6 +89,7 @@ export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
             },
             windows: {
                 x86: 'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
+                arm: 'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
             },
             linux: {
                 x86: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb',
