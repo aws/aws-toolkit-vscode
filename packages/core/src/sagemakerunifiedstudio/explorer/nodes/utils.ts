@@ -515,20 +515,25 @@ export async function createDZClientBaseOnDomainMode(
 }
 
 /**
- * Creates a DataZoneClient with appropriate credentials provider for a specific project
- * If domain mode is IAM mode, use the project credential provider
- * If domain mode is not IAM mode, use the DER credential provider
- * @param smusAuthProvider The SMUS authentication provider
- * @param projectId The project ID for project-specific credentials
- * @returns Promise resolving to DataZoneClient instance
+ * Creates a DataZoneClient with appropriate credentials provider for a specific project.
+ * Uses project credentials for IAM (EXPRESS) domains.
+ * For IdC domains: uses DER credentials for SSO login, IAM profile credentials for IAM login.
  */
 export async function createDZClientForProject(
     smusAuthProvider: SmusAuthenticationProvider,
     projectId: string
 ): Promise<DataZoneClient> {
-    const credentialsProvider = getContext('aws.smus.isIamMode')
-        ? await smusAuthProvider.getProjectCredentialProvider(projectId)
-        : await smusAuthProvider.getDerCredentialsProvider()
+    let credentialsProvider
+    if (getContext('aws.smus.isIamModeDomain')) {
+        credentialsProvider = await smusAuthProvider.getProjectCredentialProvider(projectId)
+    } else if (getContext('aws.smus.isIamMode') && !getContext('aws.smus.inSmusSpaceEnvironment')) {
+        // IAM login into IdC domain (local only) — no DER available, use IAM role credentials
+        credentialsProvider = await smusAuthProvider.getCredentialsProviderForIamProfile(
+            (smusAuthProvider.activeConnection as SmusIamConnection).profileName
+        )
+    } else {
+        credentialsProvider = await smusAuthProvider.getDerCredentialsProvider()
+    }
 
     return DataZoneClient.createWithCredentials(
         smusAuthProvider.getDomainRegion(),
