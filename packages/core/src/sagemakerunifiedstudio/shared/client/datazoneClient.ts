@@ -19,7 +19,6 @@ import {
 } from '@aws-sdk/client-datazone'
 import { getLogger } from '../../../shared/logger/logger'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
-import { getContext } from '../../../shared/vscode/setContext'
 import { CredentialsProvider } from '../../../auth/providers/credentials'
 import { DevSettings } from '../../../shared/settings'
 import { ToolkitError } from '../../../shared/errors'
