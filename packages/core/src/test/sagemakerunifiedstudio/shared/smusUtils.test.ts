@@ -15,6 +15,7 @@ import {
     extractAccountIdFromResourceMetadata,
     isCredentialExpirationError,
     isIamDomain,
+    isExpressDomain,
     IamSignInRole,
     IamSignInUser,
     DomainVersionV1,
@@ -793,5 +794,23 @@ describe('isIamDomain', () => {
             iamSignIns: [IamSignInRole, IamSignInUser],
         })
         assert.strictEqual(result, false)
+    })
+})
+
+describe('isExpressDomain', () => {
+    it('should return true when DOMAIN_MODE is EXPRESS', () => {
+        assert.strictEqual(isExpressDomain({ DOMAIN_MODE: 'EXPRESS' }), true)
+    })
+
+    it('should return false when DOMAIN_MODE is not EXPRESS', () => {
+        assert.strictEqual(isExpressDomain({ DOMAIN_MODE: 'STANDARD' }), false)
+    })
+
+    it('should return false when DOMAIN_MODE is missing', () => {
+        assert.strictEqual(isExpressDomain({}), false)
+    })
+
+    it('should return false when preferences is undefined', () => {
+        assert.strictEqual(isExpressDomain(undefined), false)
     })
 })
