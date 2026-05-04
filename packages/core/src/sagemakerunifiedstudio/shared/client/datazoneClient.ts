@@ -720,7 +720,7 @@ export class DataZoneClient {
             let datazoneClient
             if (projectId) {
                 // Prefer using project credentials to get environment details, as it's part of the project
-                this.logger.debug("Getting project environment credentials")
+                this.logger.debug('Getting project environment credentials')
                 const creds = await this.getProjectDefaultEnvironmentCreds(projectId)
                 datazoneClient = this.createProjectCredentialsDataZoneClient(creds)
             } else {
