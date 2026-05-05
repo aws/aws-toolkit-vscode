@@ -79,6 +79,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             accountId: node.hpCluster.clusterArn.split(':')[4],
             eksEndpoint: eksCluster?.endpoint,
             eksCertAuthData: eksCluster?.certificateAuthority?.data,
+            eksClusterName: eksCluster?.name,
             wsUrl: connectionUrl,
             token: workspaceConnection.token || undefined,
             session: workspaceConnection.sessionId || undefined,
