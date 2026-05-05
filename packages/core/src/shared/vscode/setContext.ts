@@ -45,7 +45,9 @@ export type contextKey =
     | 'aws.smus.connected'
     | 'aws.smus.inSmusSpaceEnvironment'
     | 'aws.cloudFormation.serviceEnabled'
+    // TODO: decouple login mode and domain mode, for now isIamMode represents login mode
     | 'aws.smus.isIamMode'
+    | 'aws.smus.isIamModeDomain'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'

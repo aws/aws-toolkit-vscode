@@ -333,6 +333,12 @@
             "description": "SMUS authentication mode (SSO or IAM)"
         },
         {
+            "name": "smusDomainMode",
+            "type": "string",
+            "allowedValues": ["idc", "iam"],
+            "description": "SMUS domain mode (IDC or IAM)"
+        },
+        {
             "name": "smusAcceptAgentContextAction",
             "type": "string",
             "allowedValues": ["accepted", "declined", "dismissed"],
@@ -1450,6 +1456,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1467,6 +1477,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 }
             ]
@@ -1493,6 +1507,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 }
             ]
@@ -1523,6 +1541,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 }
             ],
@@ -1563,6 +1585,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1600,6 +1626,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 }
             ]
@@ -1643,6 +1673,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1685,6 +1719,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1726,6 +1764,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 }
             ]
@@ -1772,6 +1814,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1810,6 +1856,10 @@
                 {
                     "type": "smusAuthMode",
                     "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
                 }
             ]
         },
@@ -1847,6 +1897,10 @@
                 },
                 {
                     "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
                     "required": false
                 },
                 {
