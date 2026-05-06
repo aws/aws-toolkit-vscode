@@ -449,6 +449,8 @@ export async function stopLocalServer(ctx: vscode.ExtensionContext): Promise<voi
         } catch (err: any) {
             if (err.code === 'ESRCH') {
                 logger.warn(`no process found with PID ${pid}. It may have already exited.`)
+            } else if (err.code === 'EPERM') {
+                logger.warn(`permission denied killing PID ${pid}. Process may be elevated or in a different security context. Continuing.`)
             } else {
                 throw ToolkitError.chain(err, 'failed to stop local server')
             }

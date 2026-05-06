@@ -29,6 +29,28 @@ export const ideProcessPatterns = {
 
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     const parsedUrl = url.parse(req.url || '', true)
+    const ts = new Date().toISOString()
+    const serverAddr = server.address()
+    const serverPort = serverAddr && typeof serverAddr === 'object' ? serverAddr.port : 'unknown'
+
+    // Log query params (redact sensitive values)
+    const safeParams: Record<string, string> = {}
+    for (const [k, v] of Object.entries(parsedUrl.query)) {
+        if (k === 'token' || k === 'ws_url' || k === 'session') {
+            safeParams[k] = `[REDACTED ${String(v).length} chars]`
+        } else {
+            safeParams[k] = String(v)
+        }
+    }
+    console.log(`[${ts}] REQUEST: ${req.method} ${parsedUrl.pathname} on port ${serverPort}`)
+    console.log(`[${ts}] PARAMS: ${JSON.stringify(safeParams)}`)
+
+    // Wrap res.writeHead to log response status
+    const origWriteHead = res.writeHead.bind(res)
+    res.writeHead = (statusCode: number, ...args: any[]) => {
+        console.log(`[${ts}] RESPONSE: ${statusCode} ${parsedUrl.pathname} (port ${serverPort}, pid ${process.pid})`)
+        return origWriteHead(statusCode, ...args)
+    }
 
     switch (parsedUrl.pathname) {
         case '/get_session':
