@@ -83,6 +83,25 @@ describe('handleGetSessionAsync', () => {
         assert(ctx.storeStub.markPending.calledWith('abc', 'req123'))
     })
 
+    it('calls markPending before opening browser to prevent race condition', async () => {
+        ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+
+        ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+        ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+        ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
+
+        const callOrder: string[] = []
+        ctx.storeStub.markPending.callsFake(async () => { callOrder.push('markPending') })
+        sinon.stub(utils, 'open').callsFake(async () => { callOrder.push('open'); return undefined as any })
+        sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
+        sinon.stub(utils, 'parseArn').returns({ region: 'us-east-1', accountId: '123456789012', resourceName: 'test-space' })
+
+        await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+        assert.strictEqual(callOrder[0], 'markPending', 'markPending must be called before open')
+        assert.strictEqual(callOrder[1], 'open', 'open must be called after markPending')
+    })
+
     it('responds with 500 if unexpected error occurs', async () => {
         ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
         ctx.storeStub.getFreshEntry.throws(new Error('fail'))

@@ -84,10 +84,13 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
                 `http://localhost:${serverInfo.port}/refresh_token`
             )}`
 
+            // Mark pending BEFORE opening browser to prevent race condition:
+            // browser callback can arrive and write "fresh" before markPending completes,
+            // then markPending overwrites "fresh" back to "pending".
+            await store.markPending(connectionIdentifier, requestId)
             await open(url)
             res.writeHead(202, { 'Content-Type': 'text/plain' })
             res.end('Session is not ready yet. Please retry in a few seconds.')
-            await store.markPending(connectionIdentifier, requestId)
             return
         }
     } catch (err) {

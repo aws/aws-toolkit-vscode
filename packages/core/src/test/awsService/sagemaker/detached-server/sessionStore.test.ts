@@ -155,6 +155,25 @@ describe('SessionStore', () => {
         assert.strictEqual(updated.deepLink[connectionId].requests['newReq'].status, 'pending')
     })
 
+    it('does not overwrite fresh status with pending (race condition guard)', async () => {
+        const store = new SessionStore()
+        readMappingStub.returns({
+            deepLink: {
+                [connectionId]: {
+                    refreshUrl: 'https://refresh.url',
+                    requests: {
+                        [requestId]: { sessionId: 's1', token: 't1', url: 'u1', status: 'fresh' },
+                    },
+                },
+            },
+        })
+
+        await store.markPending(connectionId, requestId)
+
+        // Should NOT have written — fresh must not be downgraded to pending
+        assert(writeMappingStub.notCalled)
+    })
+
     it('sets session entry with default fresh status', async () => {
         const store = new SessionStore()
         const info: SsmConnectionInfo = {
