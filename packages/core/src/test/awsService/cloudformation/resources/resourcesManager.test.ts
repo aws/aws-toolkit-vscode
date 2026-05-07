@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { ResourcesManager } from '../../../../awsService/cloudformation/resources/resourcesManager'
 import { ResourceSelector } from '../../../../awsService/cloudformation/ui/resourceSelector'
 import { ResourceStateResult } from '../../../../awsService/cloudformation/resources/resourceRequestTypes'
@@ -275,5 +276,45 @@ describe('ResourcesManager - removeResourceType', () => {
         assert.ok(globalStateStub.calledOnce)
         const [, updatedTypes] = globalStateStub.firstCall.args
         assert.deepStrictEqual(updatedTypes, ['AWS::S3::Bucket', 'AWS::Lambda::Function'])
+    })
+})
+
+describe('ResourcesManager - refreshResourceList error handling', () => {
+    let sandbox: sinon.SinonSandbox
+    let mockClient: any
+    let mockResourceSelector: ResourceSelector
+    let resourcesManager: ResourcesManager
+    let setContextStub: sinon.SinonStub
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        mockClient = { sendRequest: sandbox.stub() }
+        mockResourceSelector = {} as ResourceSelector
+        setContextStub = sandbox.stub(vscode.commands, 'executeCommand')
+        sandbox.stub(getLogger(), 'error')
+        resourcesManager = new ResourcesManager(mockClient, mockResourceSelector)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should notify listeners even when refreshResourceList fails', async () => {
+        mockClient.sendRequest.rejects(new Error('Network timeout'))
+        const listener = sandbox.stub()
+        resourcesManager.addListener(listener)
+
+        await assert.rejects(() => resourcesManager.refreshResourceList('AWS::S3::Bucket'), /Network timeout/)
+
+        assert.ok(listener.calledOnce)
+    })
+
+    it('should clear loading context even when refreshResourceList fails', async () => {
+        mockClient.sendRequest.rejects(new Error('Access denied'))
+
+        await assert.rejects(() => resourcesManager.refreshResourceList('AWS::Lambda::Function'), /Access denied/)
+
+        // Should call setContext to clear loading state
+        assert.ok(setContextStub.calledWith('setContext', 'aws.cloudformation.refreshingResourceList', false))
     })
 })
