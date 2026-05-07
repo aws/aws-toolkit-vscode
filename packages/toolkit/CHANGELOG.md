@@ -1,3 +1,7 @@
+## 4.4.0 2026-05-07
+
+- **Feature** Add support for SSO and IAM role login into all Sagemaker Unified Studio domain types
+
 ## 4.3.0 2026-04-30
 
 - **Bug Fix** Fix bug where occasionally Kiro path was not discovered on MacOS
