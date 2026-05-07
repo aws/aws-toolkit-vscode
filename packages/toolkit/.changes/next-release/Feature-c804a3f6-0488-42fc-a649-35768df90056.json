@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Add support for SSO and IAM role login into all Sagemaker Unified Studio domain types"
-}
