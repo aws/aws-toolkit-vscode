@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
-import { SmusErrorCodes, isExpressDomain } from '../shared/smusUtils'
-import { SmusAuthenticationProvider, setSmusIamModeDomainContext } from './providers/smusAuthenticationProvider'
+import { SmusErrorCodes } from '../shared/smusUtils'
+import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
 import { CredentialsProvider } from '../../auth/providers/credentials'
 
 import { SmusSsoAuthenticationUI } from './ui/ssoAuthentication'
@@ -117,20 +117,6 @@ export class SmusAuthenticationOrchestrator {
                     cancelled: true,
                     code: SmusErrorCodes.UserCancelled,
                 })
-            }
-            // Detect actual domain type (EXPRESS = IAM domain) via GetDomain preferences
-            try {
-                const datazoneHelper = DataZoneCustomClientHelper.getInstance(
-                    await authProvider.getCredentialsProviderForIamProfile(profileSelection.profileName),
-                    profileSelection.region
-                )
-                const domainInfo = await datazoneHelper.getDomain(selectedDomainId)
-                await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
-                const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
-                this.logger.info(`Domain ${selectedDomainId} mode: ${mode}`)
-            } catch (err) {
-                this.logger.warn(`Failed to detect domain type, defaulting to IAM: ${(err as Error).message}`)
-                await setSmusIamModeDomainContext(true)
             }
 
             const domainUrl = `https://${selectedDomainId}.sagemaker.${profileSelection.region}.on.aws/`
@@ -253,19 +239,12 @@ export class SmusAuthenticationOrchestrator {
                     this.logger.debug(`Fetching domain name for domain ID: ${domainId} in region: ${region}`)
 
                     // Get DataZone client helper instance
-                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(
-                        (await authProvider.getDerCredentialsProvider()) as CredentialsProvider,
-                        region
-                    )
+                    const credentialsProvider = (await authProvider.getDerCredentialsProvider()) as CredentialsProvider
+                    const datazoneHelper = DataZoneCustomClientHelper.getInstance(credentialsProvider, region)
 
                     // Fetch domain information
                     const domainInfo = await datazoneHelper.getDomain(domainId)
                     domainName = domainInfo.name
-
-                    // Set domain mode flag based on preferences
-                    await setSmusIamModeDomainContext(isExpressDomain(domainInfo.preferences))
-                    const mode = domainInfo.preferences?.['DOMAIN_MODE'] ?? 'unknown'
-                    this.logger.info(`Domain ${domainId} mode: ${mode}`)
 
                     this.logger.debug(`Successfully fetched domain name: ${domainName}`)
                 } catch (fetchErr) {
