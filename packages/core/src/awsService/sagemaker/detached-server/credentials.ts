@@ -20,6 +20,7 @@ import { readMapping } from './utils'
  * @throws If the profile is missing, malformed, or unsupported.
  */
 export async function resolveCredentialsFor(connectionIdentifier: string): Promise<any> {
+    console.log('Detached server resolveCredentialsFor: resolving for', connectionIdentifier)
     const mapping = await readMapping()
     const profile = mapping.localCredential?.[connectionIdentifier] as LocalCredentialProfile
 
@@ -34,6 +35,7 @@ export async function resolveCredentialsFor(connectionIdentifier: string): Promi
                 if (!name) {
                     throw new Error(`Invalid IAM profile name for "${connectionIdentifier}"`)
                 }
+                console.log('Detached server: using IAM profile', name, '(dynamic resolution via fromIni)')
                 return fromIni({ profile: name })
             } else if ('smusProjectId' in profile) {
                 const { accessKey, secret, token } = mapping.smusProjects?.[profile.smusProjectId] || {}
@@ -55,6 +57,7 @@ export async function resolveCredentialsFor(connectionIdentifier: string): Promi
                 if (!accessKey || !secret || !token) {
                     throw new Error(`Missing SSO credentials for "${connectionIdentifier}"`)
                 }
+                console.log('Detached server: using SSO static credentials from mapping file')
                 return {
                     accessKeyId: accessKey,
                     secretAccessKey: secret,

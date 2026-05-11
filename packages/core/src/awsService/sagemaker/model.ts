@@ -193,8 +193,10 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     // save space credential mapping
     if (connectionType === 'sm_lc') {
         if (!isSMUS) {
+            getLogger().info('SageMaker prepareDevEnvConnection: persisting credentials for space connection (SSO/IAM via persistLocalCredentials)')
             await persistLocalCredentials(spaceArn)
         } else {
+            getLogger().info('SageMaker prepareDevEnvConnection: persisting credentials for space connection (SMUS via persistSmusProjectCreds)')
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
@@ -447,6 +449,8 @@ export async function stopLocalServer(ctx: vscode.ExtensionContext): Promise<voi
         } catch (err: any) {
             if (err.code === 'ESRCH') {
                 logger.warn(`no process found with PID ${pid}. It may have already exited.`)
+            } else if (err.code === 'EPERM') {
+                logger.warn(`permission denied killing PID ${pid}. Process may be elevated or in a different security context. Continuing.`)
             } else {
                 throw ToolkitError.chain(err, 'failed to stop local server')
             }

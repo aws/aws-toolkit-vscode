@@ -99,6 +99,12 @@ export class SessionStore {
             throw new Error(`No mapping found for connectionId: "${connectionId}"`)
         }
 
+        // Never downgrade from "fresh" to "pending" — prevents race condition where
+        // the browser callback (setSession) writes "fresh" before this completes.
+        if (entry.requests[requestId]?.status === 'fresh') {
+            return
+        }
+
         entry.requests[requestId] = {
             sessionId: '',
             token: '',
