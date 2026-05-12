@@ -340,7 +340,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             const userId = await datazoneClient.getUserId()
             this.logger.debug(`User id extracted from identity: ${userId}`)
             try {
-                if (userId?.includes('user-')) {
+                if (userId?.startsWith('user-')) {
                     userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
                 } else {
                     // SSO → IAM domain: userId is 'ROLE_ID:session-name', extract session name
