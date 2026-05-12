@@ -38,12 +38,12 @@ export class SmusAuthenticationMethodSelector {
 
         const iamOption: vscode.QuickPickItem = {
             label: '$(key) IAM Credential',
-            detail: 'Use IAM credentials to access resources in SageMaker Unified Studio IAM-based domains.',
+            detail: 'Use IAM credentials to access resources in your SageMaker Unified Studio domain.',
         }
 
         const ssoOption: vscode.QuickPickItem = {
             label: '$(organization) IAM Identity Center',
-            detail: 'Use Identity Center to access resources in SageMaker Unified Studio IdC-based domains.',
+            detail: 'Use Identity Center to access resources in your SageMaker Unified Studio domain.',
         }
 
         const options = [iamOption, ssoOption]

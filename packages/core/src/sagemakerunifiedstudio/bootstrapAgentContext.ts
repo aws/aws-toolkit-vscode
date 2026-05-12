@@ -12,6 +12,7 @@ import { agentsFile, contextFile, importStatement, notificationMessage, promptMe
 import { extractAccountIdFromResourceMetadata } from './shared/smusUtils'
 import { getResourceMetadata } from './shared/utils/resourceMetadataUtils'
 import { SmusAuthenticationProvider } from './auth/providers/smusAuthenticationProvider'
+import { getSmusDomainMode } from './shared/telemetry'
 
 function notifyContextUpdated(): void {
     void vscode.window.showInformationMessage(notificationMessage)
@@ -39,6 +40,7 @@ async function promptUserToAddSmusContext(accountId: string, domainId: string | 
         smusProjectRegion: projectRegion,
         smusSpaceKey: spaceKey,
         smusAuthMode: authProvider.activeConnection?.type,
+        smusDomainMode: getSmusDomainMode(),
         passive: true,
     }
 
