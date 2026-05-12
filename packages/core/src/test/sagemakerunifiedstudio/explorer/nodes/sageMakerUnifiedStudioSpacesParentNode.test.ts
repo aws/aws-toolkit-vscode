@@ -439,6 +439,146 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
             await assert.rejects(async () => await spacesNode['updateChildren'](), /Access denied to spaces/)
         })
+
+        it('uses extractSSOIdFromUserId when userId contains user- prefix', async function () {
+            const ssoUserId = 'ABCA4NU3S7PEOLDQPLXYZ:user-aaaabbbb-1234-5678-9012-ccccddddeeee'
+            mockDataZoneClient.getUserId.resolves(ssoUserId)
+            ;(SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).returns('aaaabbbb-1234-5678-9012-ccccddddeeee')
+
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'aaaabbbb-1234-5678-9012-ccccddddeeee' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            assert((SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).called)
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+        })
+
+        it('extracts session name from userId when userId does not contain user- prefix (SSO into IAM domain)', async function () {
+            const iamDomainUserId = 'AROAEXAMPLEROLEID:my-session-name'
+            mockDataZoneClient.getUserId.resolves(iamDomainUserId)
+
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'my-session-name' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+                [
+                    'space2',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'other-session' },
+                        DomainSpaceKey: 'space2',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+            assert(spacesNode['spaceApps'].has('space1'))
+            assert(!spacesNode['spaceApps'].has('space2'))
+        })
+
+        it('sets userProfileId to undefined when extractSSOIdFromUserId throws, filtering out all spaces', async function () {
+            mockDataZoneClient.getUserId.resolves('BADFORMAT:user-invalid')
+            ;(SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).throws(new Error('Invalid UserId format'))
+
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'some-user' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            // With strict filtering, undefined userProfileId matches no spaces
+            assert.strictEqual(spacesNode['spaceApps'].size, 0)
+        })
+
+        it('does not show all spaces when userProfileId is undefined (strict filtering)', async function () {
+            mockDataZoneClient.getUserId.resolves(undefined)
+
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-abc' },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+                [
+                    'space2',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-def' },
+                        DomainSpaceKey: 'space2',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            // Previously would show all spaces when userProfileId was undefined; now shows none
+            assert.strictEqual(spacesNode['spaceApps'].size, 0)
+        })
+
+        it('includes spaces with undefined OwnerUserProfileName when userProfileId is undefined', async function () {
+            mockDataZoneClient.getUserId.resolves(undefined)
+
+            const spaceApps = new Map([
+                [
+                    'space1',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: undefined },
+                        DomainSpaceKey: 'space1',
+                    },
+                ],
+                [
+                    'space2',
+                    {
+                        DomainId: 'domain-123',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-abc' },
+                        DomainSpaceKey: 'space2',
+                    },
+                ],
+            ])
+            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+
+            await spacesNode['updateChildren']()
+
+            // undefined === undefined is true, so space1 matches
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+            assert(spacesNode['spaceApps'].has('space1'))
+        })
     })
 
     describe('IAM mode error handling', function () {
