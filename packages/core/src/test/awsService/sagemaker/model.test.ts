@@ -15,7 +15,6 @@ import {
     getSshPrefix,
     isValidSshHostname,
     createValidSshSession,
-    extractRegionFromStreamUrl,
 } from '../../../awsService/sagemaker/model'
 import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
@@ -477,25 +476,5 @@ describe('createValidSshSession', function () {
         // always fails validation, causing createValidSshSession to be used
         const proposed = 'myworkspace_mynamespace_mycluster_us-east-1_123456789012'
         assert.strictEqual(isValidSshHostname(proposed), false)
-    })
-})
-
-describe('extractRegionFromStreamUrl', function () {
-    it('extracts region from a standard SSM stream URL', function () {
-        assert.strictEqual(
-            extractRegionFromStreamUrl('wss://ssmmessages.us-west-2.amazonaws.com/v1/data-channel/session-id'),
-            'us-west-2'
-        )
-    })
-
-    it('extracts region from a different region', function () {
-        assert.strictEqual(
-            extractRegionFromStreamUrl('wss://ssmmessages.eu-central-1.amazonaws.com/v1/data-channel/session-id'),
-            'eu-central-1'
-        )
-    })
-
-    it('throws for non-matching URL', function () {
-        assert.throws(() => extractRegionFromStreamUrl('wss://example.com/stream'), /Unable to get region/)
     })
 })
