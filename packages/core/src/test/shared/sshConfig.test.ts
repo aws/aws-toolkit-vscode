@@ -94,14 +94,14 @@ describe('VscodeRemoteSshConfig', async function () {
             assert.strictEqual(command, `'sagemaker_connect' '%n'`)
         })
 
-        it('uses %n token for hyperpod_connect to preserve hostname case', async function () {
+        it('uses %h token for hyperpod_connect', async function () {
             const hyperpodConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'hyperpod_connect')
             hyperpodConfig.testIsWin = false
 
             const result = await hyperpodConfig.getProxyCommandWrapper('hyperpod_connect')
             assert.ok(result.isOk())
             const command = result.unwrap()
-            assert.strictEqual(command, `'hyperpod_connect' '%n'`)
+            assert.strictEqual(command, `'hyperpod_connect' '%h'`)
         })
     })
 
