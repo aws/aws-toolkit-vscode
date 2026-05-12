@@ -7,10 +7,16 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { ResourcesManager } from '../../../../awsService/cloudformation/resources/resourcesManager'
 import { ResourceSelector } from '../../../../awsService/cloudformation/ui/resourceSelector'
-import { ResourceStateResult } from '../../../../awsService/cloudformation/resources/resourceRequestTypes'
+import {
+    ResourceStateResult,
+    ResourceStatePurpose,
+} from '../../../../awsService/cloudformation/resources/resourceRequestTypes'
 import { Range, SnippetString, TextEditor, window } from 'vscode'
 import { getLogger } from '../../../../shared/logger'
 import globals from '../../../../shared/extensionGlobals'
+import * as setContextModule from '../../../../shared/vscode/setContext'
+import { getTestWindow } from '../../../shared/vscode/window'
+import { SeverityLevel } from '../../../shared/vscode/message'
 
 describe('ResourcesManager - applyCompletionSnippet', () => {
     let sandbox: sinon.SinonSandbox
@@ -275,5 +281,136 @@ describe('ResourcesManager - removeResourceType', () => {
         assert.ok(globalStateStub.calledOnce)
         const [, updatedTypes] = globalStateStub.firstCall.args
         assert.deepStrictEqual(updatedTypes, ['AWS::S3::Bucket', 'AWS::Lambda::Function'])
+    })
+})
+
+describe('ResourcesManager - formatFailureReasons and renderResultMessage', () => {
+    let sandbox: sinon.SinonSandbox
+    let mockClient: any
+    let mockResourceSelector: ResourceSelector
+    let resourcesManager: ResourcesManager
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        mockClient = { sendRequest: sandbox.stub() }
+        mockResourceSelector = {} as ResourceSelector
+        resourcesManager = new ResourcesManager(mockClient, mockResourceSelector)
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should return empty string when failureReasons is undefined', () => {
+        const result = (resourcesManager as any).formatFailureReasons(undefined)
+        assert.strictEqual(result, '')
+    })
+
+    it('should return empty string when failureReasons is empty', () => {
+        const result = (resourcesManager as any).formatFailureReasons({})
+        assert.strictEqual(result, '')
+    })
+
+    it('should format single failure reason', () => {
+        const failureReasons = {
+            'AWS::S3::Bucket': { 'my-bucket': 'Resource not found' },
+        }
+        const result = (resourcesManager as any).formatFailureReasons(failureReasons)
+        assert.strictEqual(result, ': [my-bucket: Resource not found]')
+    })
+
+    it('should format multiple failure reasons across resource types', () => {
+        const failureReasons = {
+            'AWS::S3::Bucket': { 'my-bucket': 'Resource not found' },
+            'AWS::Lambda::Function': { 'my-func': 'Access denied' },
+        }
+        const result = (resourcesManager as any).formatFailureReasons(failureReasons)
+        assert.strictEqual(result, ': [my-bucket: Resource not found], [my-func: Access denied]')
+    })
+
+    it('should format multiple identifiers within same resource type', () => {
+        const failureReasons = {
+            'AWS::S3::Bucket': { 'bucket-1': 'Not found', 'bucket-2': 'Permission denied' },
+        }
+        const result = (resourcesManager as any).formatFailureReasons(failureReasons)
+        assert.strictEqual(result, ': [bucket-1: Not found], [bucket-2: Permission denied]')
+    })
+
+    it('should append failure reasons to warning message on partial failure', () => {
+        const failureReasons = { 'AWS::S3::Bucket': { 'my-bucket': 'Not found' } }
+        ;(resourcesManager as any).renderResultMessage(1, 1, ResourceStatePurpose.Import, failureReasons)
+        const message = getTestWindow().getFirstMessage()
+        assert.ok(message.message.includes('[my-bucket: Not found]'))
+        message.assertSeverity(SeverityLevel.Warning)
+    })
+
+    it('should append failure reasons to error message on full failure', () => {
+        const failureReasons = { 'AWS::S3::Bucket': { 'my-bucket': 'Access denied' } }
+        ;(resourcesManager as any).renderResultMessage(0, 1, ResourceStatePurpose.Import, failureReasons)
+        const message = getTestWindow().getFirstMessage()
+        assert.ok(message.message.includes('[my-bucket: Access denied]'))
+        message.assertSeverity(SeverityLevel.Error)
+    })
+
+    it('should not append reasons suffix when failureReasons is undefined', () => {
+        ;(resourcesManager as any).renderResultMessage(0, 1, ResourceStatePurpose.Import, undefined)
+        const message = getTestWindow().getFirstMessage()
+        assert.strictEqual(message.message, 'Failed to import 1 resource(s)')
+        message.assertSeverity(SeverityLevel.Error)
+    })
+
+    it('should show success message without reasons suffix', () => {
+        ;(resourcesManager as any).renderResultMessage(2, 0, ResourceStatePurpose.Import, undefined)
+        const message = getTestWindow().getFirstMessage()
+        assert.strictEqual(message.message, 'Successfully imported 2 resource(s)')
+        message.assertSeverity(SeverityLevel.Information)
+    })
+
+    it('should use cloned action with failure reasons', () => {
+        const failureReasons = { 'AWS::S3::Bucket': { 'my-bucket': 'Access denied' } }
+        ;(resourcesManager as any).renderResultMessage(0, 1, ResourceStatePurpose.Clone, failureReasons)
+        const message = getTestWindow().getFirstMessage()
+        assert.ok(message.message.includes('clone'))
+        assert.ok(message.message.includes('[my-bucket: Access denied]'))
+        message.assertSeverity(SeverityLevel.Error)
+    })
+
+    it('should show no resources cloned message', () => {
+        ;(resourcesManager as any).renderResultMessage(0, 0, ResourceStatePurpose.Clone, undefined)
+        const message = getTestWindow().getFirstMessage()
+        assert.strictEqual(message.message, 'No resources were cloned')
+        message.assertSeverity(SeverityLevel.Information)
+    })
+
+    describe('importResourceStates end-to-end', () => {
+        beforeEach(() => {
+            sandbox.stub(setContextModule, 'setContext').resolves()
+            sandbox.stub(window, 'activeTextEditor').get(() => ({
+                insertSnippet: sandbox.stub().resolves(true),
+                edit: sandbox.stub().resolves(true),
+                document: {
+                    uri: { toString: () => 'file:///test.yaml' },
+                    lineCount: 100,
+                    lineAt: sandbox.stub().returns({ range: { end: { line: 99, character: 0 } } }),
+                },
+            }))
+            sandbox.stub(getLogger(), 'warn')
+            sandbox.stub(getLogger(), 'info')
+        })
+
+        it('should pass failureReasons through the full import flow', async () => {
+            mockClient.sendRequest.resolves({
+                successfulImports: {},
+                failedImports: { 'AWS::S3::Bucket': ['my-bucket'] },
+                failureReasons: { 'AWS::S3::Bucket': { 'my-bucket': 'Resource not found in account' } },
+            })
+
+            const resourceNodes = [{ resourceType: 'AWS::S3::Bucket', resourceIdentifier: 'my-bucket' }] as any
+            await resourcesManager.importResourceStates(resourceNodes)
+
+            const messages = getTestWindow().shownMessages.filter((m) => m.message !== 'Importing Resource State')
+            assert.ok(messages.length > 0, `No non-progress messages shown`)
+            assert.ok(messages[0].message.includes('[my-bucket: Resource not found in account]'))
+        })
     })
 })

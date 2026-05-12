@@ -267,7 +267,7 @@ export class ResourcesManager {
                     }
                     await this.applyCompletionSnippet(result)
                     const [successCount, failureCount] = this.getSuccessAndFailureCount(result)
-                    this.renderResultMessage(successCount, failureCount, purpose)
+                    this.renderResultMessage(successCount, failureCount, purpose, result.failureReasons)
                 }
             )
         } catch (error) {
@@ -392,20 +392,39 @@ export class ResourcesManager {
         return this.getResourcesToImportInput(selections)
     }
 
-    private renderResultMessage(successCount: number, failureCount: number, purpose: ResourceStatePurpose) {
+    private renderResultMessage(
+        successCount: number,
+        failureCount: number,
+        purpose: ResourceStatePurpose,
+        failureReasons?: Record<string, Record<string, string>>
+    ) {
         const action = purpose === ResourceStatePurpose.Import ? 'imported' : 'cloned'
+        const reasonsSuffix = this.formatFailureReasons(failureReasons)
 
         if (successCount > 0 && failureCount === 0) {
             void window.showInformationMessage(`Successfully ${action} ${successCount} resource(s)`)
         } else if (successCount > 0 && failureCount > 0) {
             void window.showWarningMessage(
-                `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed`
+                `${action.charAt(0).toUpperCase() + action.slice(1)} ${successCount} resource(s), ${failureCount} failed${reasonsSuffix}`
             )
         } else if (failureCount > 0) {
-            showErrorMessage(`Failed to ${action.replace('ed', '')} ${failureCount} resource(s)`)
+            showErrorMessage(`Failed to ${action.replace('ed', '')} ${failureCount} resource(s)${reasonsSuffix}`)
         } else {
             void window.showInformationMessage(`No resources were ${action}`)
         }
+    }
+
+    private formatFailureReasons(failureReasons?: Record<string, Record<string, string>>): string {
+        if (!failureReasons) {
+            return ''
+        }
+        const reasons: string[] = []
+        for (const [, identifiers] of Object.entries(failureReasons)) {
+            for (const [id, reason] of Object.entries(identifiers)) {
+                reasons.push(`[${id}: ${reason}]`)
+            }
+        }
+        return reasons.length > 0 ? `: ${reasons.join(', ')}` : ''
     }
 
     private getResourcesArray(): ResourceList[] {
