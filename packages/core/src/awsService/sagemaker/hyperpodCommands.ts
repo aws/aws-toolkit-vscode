@@ -89,23 +89,14 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             session: workspaceConnection.sessionId || undefined,
         })
 
-        if (useSageMakerSshKiroExtension()) {
-            await startRemoteViaSageMakerSshKiro(
-                remoteEnv.SessionProcess,
-                remoteEnv.hostname,
-                '/home/sagemaker-user',
-                remoteEnv.vscPath,
-                'sagemaker-user'
-            )
-        } else {
-            await startVscodeRemote(
-                remoteEnv.SessionProcess,
-                remoteEnv.hostname,
-                '/home/sagemaker-user',
-                remoteEnv.vscPath,
-                'sagemaker-user'
-            )
-        }
+        const startRemote = useSageMakerSshKiroExtension() ? startRemoteViaSageMakerSshKiro : startVscodeRemote
+        await startRemote(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            '/home/sagemaker-user',
+            remoteEnv.vscPath,
+            'sagemaker-user'
+        )
 
         void vscode.window.showInformationMessage(
             `Connected to HyperPod dev space: ${node.devSpace.name} (${node.devSpace.namespace})`
