@@ -348,6 +348,8 @@ describe('DataZoneClient', () => {
             sinon
                 .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
                 .resolves({ id: 'env-1', name: 'Tooling' })
+            sinon.stub(dataZoneClient as any, 'getProjectDefaultEnvironmentCreds').resolves({})
+            sinon.stub(dataZoneClient as any, 'createProjectCredentialsDataZoneClient').returns(mockDataZone)
             sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
 
             const result = await dataZoneClient.getToolingEnvironment('project-123')

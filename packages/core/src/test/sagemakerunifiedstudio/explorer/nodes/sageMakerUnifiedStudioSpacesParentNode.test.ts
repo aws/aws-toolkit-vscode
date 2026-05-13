@@ -381,28 +381,24 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             } as any)
         })
 
-        it('filters spaces by current user ownership', async function () {
-            const spaceApps = new Map([
-                [
-                    'space1',
+        function stubSpaceApps(ownerProfiles: Record<string, string | undefined>) {
+            const spaceApps = new Map(
+                Object.entries(ownerProfiles).map(([key, owner]) => [
+                    key,
                     {
                         DomainId: 'domain-123',
-                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-12345' },
-                        DomainSpaceKey: 'space1',
+                        OwnershipSettingsSummary: { OwnerUserProfileName: owner },
+                        DomainSpaceKey: key,
                     },
-                ],
-                [
-                    'space2',
-                    {
-                        DomainId: 'domain-123',
-                        OwnershipSettingsSummary: { OwnerUserProfileName: 'other-user' },
-                        DomainSpaceKey: 'space2',
-                    },
-                ],
-            ])
+                ])
+            )
             const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
-
+            mockSagemakerClient.fetchSpaceAppsAndDomains.resetBehavior()
             mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+        }
+
+        it('filters spaces by current user ownership', async function () {
+            stubSpaceApps({ space1: 'user-12345', space2: 'other-user' })
 
             await spacesNode['updateChildren']()
 
@@ -412,19 +408,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
         })
 
         it('creates space nodes for filtered spaces', async function () {
-            const spaceApps = new Map([
-                [
-                    'space1',
-                    {
-                        DomainId: 'domain-123',
-                        OwnershipSettingsSummary: { OwnerUserProfileName: 'user-12345' },
-                        DomainSpaceKey: 'space1',
-                    },
-                ],
-            ])
-            const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
-
-            mockSagemakerClient.fetchSpaceAppsAndDomains.resolves([spaceApps, domains])
+            stubSpaceApps({ space1: 'user-12345' })
 
             await spacesNode['updateChildren']()
 
@@ -438,6 +422,67 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             mockSagemakerClient.fetchSpaceAppsAndDomains.rejects(accessDeniedError)
 
             await assert.rejects(async () => await spacesNode['updateChildren'](), /Access denied to spaces/)
+        })
+
+        it('uses extractSSOIdFromUserId when userId contains user- prefix', async function () {
+            const ssoUserId = 'ABCA4NU3S7PEOLDQPLXYZ:user-aaaabbbb-1234-5678-9012-ccccddddeeee'
+            mockDataZoneClient.getUserId.resolves(ssoUserId)
+            ;(SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).returns('aaaabbbb-1234-5678-9012-ccccddddeeee')
+
+            stubSpaceApps({ space1: 'aaaabbbb-1234-5678-9012-ccccddddeeee' })
+
+            await spacesNode['updateChildren']()
+
+            assert((SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).called)
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+        })
+
+        it('extracts session name from userId when userId does not contain user- prefix (SSO into IAM domain)', async function () {
+            const iamDomainUserId = 'AROAEXAMPLEROLEID:my-session-name'
+            mockDataZoneClient.getUserId.resolves(iamDomainUserId)
+
+            stubSpaceApps({ space1: 'my-session-name', space2: 'other-session' })
+
+            await spacesNode['updateChildren']()
+
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+            assert(spacesNode['spaceApps'].has('space1'))
+            assert(!spacesNode['spaceApps'].has('space2'))
+        })
+
+        it('sets userProfileId to undefined when extractSSOIdFromUserId throws, filtering out all spaces', async function () {
+            mockDataZoneClient.getUserId.resolves('BADFORMAT:user-invalid')
+            ;(SmusUtils.extractSSOIdFromUserId as sinon.SinonStub).throws(new Error('Invalid UserId format'))
+
+            stubSpaceApps({ space1: 'some-user' })
+
+            await spacesNode['updateChildren']()
+
+            // With strict filtering, undefined userProfileId matches no spaces
+            assert.strictEqual(spacesNode['spaceApps'].size, 0)
+        })
+
+        it('does not show all spaces when userProfileId is undefined (strict filtering)', async function () {
+            mockDataZoneClient.getUserId.resolves(undefined)
+
+            stubSpaceApps({ space1: 'user-abc', space2: 'user-def' })
+
+            await spacesNode['updateChildren']()
+
+            // Previously would show all spaces when userProfileId was undefined; now shows none
+            assert.strictEqual(spacesNode['spaceApps'].size, 0)
+        })
+
+        it('includes spaces with undefined OwnerUserProfileName when userProfileId is undefined', async function () {
+            mockDataZoneClient.getUserId.resolves(undefined)
+
+            stubSpaceApps({ space1: undefined, space2: 'user-abc' })
+
+            await spacesNode['updateChildren']()
+
+            // undefined === undefined is true, so space1 matches
+            assert.strictEqual(spacesNode['spaceApps'].size, 1)
+            assert(spacesNode['spaceApps'].has('space1'))
         })
     })
 
