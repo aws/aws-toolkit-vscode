@@ -205,7 +205,8 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     if (useSageMakerSshKiroExtension()) {
         // Skip SSH Config and known host changes when using the SageMaker SSH
         // Kiro uses the embedded SageMaker SSH Kiro extension which handles SSH connections differently
-        const scriptResult = await ensureConnectScript('sagemaker_connect')
+        const scriptName = connectionType === 'sm_hp' ? 'hyperpod_connect' : 'sagemaker_connect'
+        const scriptResult = await ensureConnectScript(scriptName)
         if (scriptResult.isErr()) {
             throw scriptResult
         }
