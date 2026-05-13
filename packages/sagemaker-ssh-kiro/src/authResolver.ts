@@ -89,8 +89,10 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
         )
 
         const isWindows = process.platform === 'win32'
-        const scriptName = `sagemaker_connect${isWindows ? '.ps1' : ''}`
-        const sagemakerConnectPath = path.join(awsToolkitGlobalStoragePath, scriptName)
+        const isHyperPod = hostname.startsWith('smhp_') || hostname.startsWith('smhpc_')
+        const scriptBase = isHyperPod ? 'hyperpod_connect' : 'sagemaker_connect'
+        const scriptName = `${scriptBase}${isWindows ? '.ps1' : ''}`
+        const connectScriptPath = path.join(awsToolkitGlobalStoragePath, scriptName)
         const proxyArgs = [hostname]
 
         return vscode.window.withProgress(
@@ -101,8 +103,8 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
             },
             async () => {
                 try {
-                    // Use the determined sagemaker_connect script with appropriate arguments
-                    const command = sagemakerConnectPath
+                    // Use the determined connect script with appropriate arguments
+                    const command = connectScriptPath
 
                     let options: cp.SpawnOptions = {
                         env: { ...process.env }, // Inherit environment variables from parent process
@@ -116,14 +118,14 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                             windowsHide: true,
                         }
 
-                        this.logger.info(`Spawning SageMaker Connect: powershell.exe ${allArgs.join(' ')}`)
+                        this.logger.info(`Spawning connect script: powershell.exe ${allArgs.join(' ')}`)
                         this.proxyCommandProcess = cp.spawn(
                             'powershell.exe',
                             allArgs,
                             options
                         ) as cp.ChildProcessWithoutNullStreams
                     } else {
-                        this.logger.info(`Spawning SageMaker Connect: ${command} with args: [${proxyArgs.join(',')}]`)
+                        this.logger.info(`Spawning connect script: ${command} with args: [${proxyArgs.join(',')}]`)
                         this.proxyCommandProcess = cp.spawn(
                             command,
                             proxyArgs,
@@ -145,7 +147,7 @@ export class SageMakerSshKiroResolver implements vscode.RemoteAuthorityResolver,
                     // This is used later in Promise.race() calls in order to fail fast while waiting for other operations if the connection closes prematurely
                     const rejectWhenProxyCommandExits = new Promise((resolve, reject) => {
                         this.proxyCommandProcess!.on('exit', () =>
-                            reject(new Error('SageMaker Connect script exited prematurely'))
+                            reject(new Error('Connect script exited prematurely'))
                         )
                     })
 
@@ -339,8 +341,10 @@ export function validateAuthority(authority: string): { hostname: string; user: 
         }
     }
 
-    if (!/^sm_[a-zA-Z0-9\._-]+$/.test(hostname)) {
-        throw new Error(`Invalid SageMaker hostname format: ${hostname}. Expected either 'sm_*' format.`)
+    if (!/^sm(hp)?c?_[a-zA-Z0-9\._-]+$/.test(hostname)) {
+        throw new Error(
+            `Invalid SageMaker hostname format: ${hostname}. Expected 'sm_*', 'smc_*', 'smhp_*', or 'smhpc_*' format.`
+        )
     }
 
     return { hostname, user }
