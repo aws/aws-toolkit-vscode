@@ -8,8 +8,9 @@ import os from 'os'
 import { join } from 'path'
 
 import { WriteQueue } from './writeQueue'
+import { SsmConnectionInfo } from '../types'
 
-export interface HyperpodSpaceMapping {
+export interface HyperpodLocalCredential {
     namespace: string
     clusterArn: string
     clusterName: string
@@ -17,12 +18,27 @@ export interface HyperpodSpaceMapping {
     certificateAuthorityData?: string
     region?: string
     accountId?: string
-    wsUrl?: string
-    token?: string
+    eksClusterName?: string
+    credentials?: {
+        accessKeyId: string
+        secretAccessKey: string
+        sessionToken?: string
+    }
+}
+
+export interface HyperpodDeepLinkEntry {
+    requests: {
+        [requestId: string]: SsmConnectionInfo & { status?: 'fresh' | 'consumed' | 'pending' }
+    }
 }
 
 export interface HyperpodMappings {
-    [connectionKey: string]: HyperpodSpaceMapping
+    localCredential?: {
+        [connectionKey: string]: HyperpodLocalCredential
+    }
+    deepLink?: {
+        [connectionKey: string]: HyperpodDeepLinkEntry
+    }
 }
 
 export const hyperpodMappingFilePath = join(os.homedir(), '.aws', '.hyperpod-space-profiles')
@@ -68,30 +84,46 @@ export function createConnectionKey(workspaceName: string, namespace: string, cl
     return `${workspaceName}:${namespace}:${clusterName}`
 }
 
-export async function storeHyperpodConnection(
-    workspaceName: string,
-    namespace: string,
-    clusterArn: string,
-    clusterName: string,
-    endpoint?: string,
-    certificateAuthorityData?: string,
-    region?: string,
-    wsUrl?: string,
-    token?: string
-): Promise<void> {
+export async function getHyperpodFreshEntry(connectionKey: string, requestId: string = 'initial-connection') {
     const mapping = await readHyperpodMapping()
-    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
-    const accountId = clusterArn.split(':')[4]
-    mapping[connectionKey] = {
-        namespace,
-        clusterArn,
-        clusterName,
-        endpoint,
-        certificateAuthorityData,
-        region,
-        accountId,
-        wsUrl,
-        token,
+    const entry = mapping.deepLink?.[connectionKey]
+    if (!entry?.requests) {
+        return undefined
     }
+
+    // Check initial-connection first (from deeplink store), then requestId
+    const initialReq = entry.requests['initial-connection']
+    if (initialReq?.status === 'fresh') {
+        await markHyperpodConsumed(connectionKey, 'initial-connection')
+        return initialReq
+    }
+
+    if (requestId !== 'initial-connection') {
+        const req = entry.requests[requestId]
+        if (req?.status === 'fresh') {
+            await markHyperpodConsumed(connectionKey, requestId)
+            return req
+        }
+    }
+
+    return undefined
+}
+
+export async function markHyperpodConsumed(connectionKey: string, requestId: string = 'initial-connection') {
+    const mapping = await readHyperpodMapping()
+    const entry = mapping.deepLink?.[connectionKey]
+    if (!entry?.requests?.[requestId]) {
+        return
+    }
+    entry.requests[requestId].status = 'consumed'
     await writeHyperpodMapping(mapping)
+}
+
+export async function getHyperpodRequestStatus(
+    connectionKey: string,
+    requestId: string = 'initial-connection'
+): Promise<'fresh' | 'consumed' | 'pending' | 'not-started'> {
+    const mapping = await readHyperpodMapping()
+    const entry = mapping.deepLink?.[connectionKey]
+    return entry?.requests?.[requestId]?.status ?? 'not-started'
 }

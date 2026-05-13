@@ -40,7 +40,7 @@ export class SshConfig {
     }
 
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
-        // Use %n for SageMaker to preserve original hostname case (avoids SSH canonicalization lowercasing and DNS lookup)
+        // Use %n to preserve original hostname (avoids SSH canonicalization lowercasing and DNS lookup)
         const hostnameToken = this.scriptPrefix === 'sagemaker_connect' ? '%n' : '%h'
 
         if (this.isWin()) {

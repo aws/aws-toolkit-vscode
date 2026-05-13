@@ -74,7 +74,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         const remoteEnv = await prepareDevEnvConnection({
             spaceArn: '',
             ctx: globals.context,
-            connectionType: 'sm_hp',
+            connectionType: 'smhp_lc',
             isSMUS: false,
             workspaceName: node.devSpace.name,
             clusterName: node.devSpace.cluster,
@@ -84,6 +84,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             accountId: node.hpCluster.clusterArn.split(':')[4],
             eksEndpoint: eksCluster?.endpoint,
             eksCertAuthData: eksCluster?.certificateAuthority?.data,
+            eksClusterName: eksCluster?.name,
             wsUrl: connectionUrl,
             token: workspaceConnection.token || undefined,
             session: workspaceConnection.sessionId || undefined,
