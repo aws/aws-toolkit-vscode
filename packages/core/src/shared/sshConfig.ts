@@ -220,7 +220,7 @@ Host ${this.configHostName}
     }
 
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.scriptPrefix === 'sagemaker_connect') {
+        if (this.scriptPrefix === 'sagemaker_connect' || this.scriptPrefix === 'hyperpod_connect') {
             return `${this.getSageMakerSSHConfig(proxyCommand)}`
         } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`

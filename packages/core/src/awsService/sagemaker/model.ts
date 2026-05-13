@@ -65,12 +65,12 @@ export function createValidSshSession(
     return components.join('_').substring(0, 253)
 }
 
-/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_' */
+/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_', 'smhpc_' */
 export function getSshPrefix(connectionType: string): string {
-    if (connectionType === 'sm_hp') {
-        return 'smhp_'
-    }
     const suffix = ideSuffix[getIdeType()] ?? ''
+    if (connectionType === 'sm_hp') {
+        return `smhp${suffix}_`
+    }
     return `sm${suffix}_`
 }
 
