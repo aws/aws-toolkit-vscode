@@ -65,12 +65,12 @@ export function createValidSshSession(
     return components.join('_').substring(0, 253)
 }
 
-/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_' */
+/** Returns the SSH prefix for a connection type, e.g. 'sm_', 'smc_', 'smhp_', 'smhpc_' */
 export function getSshPrefix(connectionType: string): string {
-    if (connectionType === 'sm_hp') {
-        return 'smhp_'
-    }
     const suffix = ideSuffix[getIdeType()] ?? ''
+    if (connectionType === 'sm_hp') {
+        return `smhp${suffix}_`
+    }
     return `sm${suffix}_`
 }
 
@@ -205,7 +205,8 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
     if (useSageMakerSshKiroExtension()) {
         // Skip SSH Config and known host changes when using the SageMaker SSH
         // Kiro uses the embedded SageMaker SSH Kiro extension which handles SSH connections differently
-        const scriptResult = await ensureConnectScript('sagemaker_connect')
+        const scriptName = connectionType === 'sm_hp' ? 'hyperpod_connect' : 'sagemaker_connect'
+        const scriptResult = await ensureConnectScript(scriptName)
         if (scriptResult.isErr()) {
             throw scriptResult
         }
