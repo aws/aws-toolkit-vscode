@@ -45,7 +45,7 @@ export function register(ctx: ExtContext) {
 
     async function hyperPodConnectHandler(params: ReturnType<typeof parseHyperpodConnectParams>) {
         await telemetry.sagemaker_deeplinkConnect.run(async () => {
-            const wsUrl = `${params.streamUrl}&cell-number=${params['cell-number']}`
+            const wsUrl = `${params.streamUrl}&cell-number=${encodeURIComponent(params['cell-number'])}`
             await deeplinkConnect(
                 ctx,
                 '',

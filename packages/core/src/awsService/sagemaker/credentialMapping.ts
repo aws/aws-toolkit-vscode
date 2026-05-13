@@ -13,6 +13,7 @@ import { Auth } from '../../auth/auth'
 import { SpaceMappings, SsmConnectionInfo } from './types'
 import { getLogger } from '../../shared/logger/logger'
 import { parseArn } from './utils'
+import { createConnectionKey, readHyperpodMapping, writeHyperpodMapping } from './detached-server/hyperpodMappingUtils'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
 import { isSmusSsoConnection } from '../../sagemakerunifiedstudio/auth/model'
@@ -218,4 +219,63 @@ export async function setSpaceCredentials(
     }
 
     await saveMappings(data)
+}
+
+/**
+ * Persists HyperPod connection info for the local server.
+ * Stores EKS metadata + credentials under localCredential (for LC/kubectl reconnection)
+ * and session tokens under deepLink (for deeplink async retrieval).
+ */
+export async function persistHyperpodConnection(
+    workspaceName: string,
+    namespace: string,
+    clusterArn: string,
+    clusterName: string,
+    endpoint?: string,
+    certificateAuthorityData?: string,
+    region?: string,
+    wsUrl?: string,
+    token?: string,
+    sessionId?: string,
+    eksClusterName?: string
+): Promise<void> {
+    const creds = await globals.awsContext.getCredentials()
+    const storedCreds = creds
+        ? { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey, sessionToken: creds.sessionToken }
+        : undefined
+
+    const connectionKey = createConnectionKey(workspaceName, namespace, clusterName)
+    const mapping = await readHyperpodMapping()
+    const accountId = clusterArn.split(':')[4]
+
+    // LC: EKS metadata + credentials for kubectl reconnection
+    mapping.localCredential ??= {}
+    mapping.localCredential[connectionKey] = {
+        namespace,
+        clusterArn,
+        clusterName,
+        endpoint,
+        certificateAuthorityData,
+        region,
+        accountId,
+        eksClusterName,
+        credentials: storedCreds,
+    }
+
+    // DL: session tokens for deeplink async retrieval
+    if (wsUrl && token) {
+        mapping.deepLink ??= {}
+        mapping.deepLink[connectionKey] = {
+            requests: {
+                'initial-connection': {
+                    sessionId: sessionId ?? '-',
+                    url: wsUrl,
+                    token: token,
+                    status: 'fresh',
+                },
+            },
+        }
+    }
+
+    await writeHyperpodMapping(mapping)
 }

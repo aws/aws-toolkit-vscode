@@ -9,6 +9,7 @@ import {
     persistLocalCredentials,
     persistSSMConnection,
     persistSmusProjectCreds,
+    persistHyperpodConnection,
     loadMappings,
     saveMappings,
     setSpaceIamProfile,
@@ -21,6 +22,7 @@ import { DevSettings, fs } from '../../../shared'
 import globals from '../../../shared/extensionGlobals'
 import { SagemakerUnifiedStudioSpaceNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
+import * as hyperpodMappingUtils from '../../../awsService/sagemaker/detached-server/hyperpodMappingUtils'
 
 describe('credentialMapping', () => {
     describe('persistLocalCredentials', () => {
@@ -513,6 +515,88 @@ describe('credentialMapping', () => {
                     },
                 },
             })
+        })
+    })
+
+    describe('persistHyperpodConnection', () => {
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('stores localCredential and deepLink sections', async () => {
+            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
+            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
+            sandbox.stub(globals, 'awsContext').value({
+                getCredentials: () =>
+                    Promise.resolve({
+                        accessKeyId: 'AKIA123',
+                        secretAccessKey: 'secret',
+                        sessionToken: 'token',
+                    }),
+            })
+
+            await persistHyperpodConnection(
+                'myspace',
+                'default',
+                'arn:aws:eks:us-east-2:123456789012:cluster/mycluster',
+                'mycluster',
+                'https://eks.endpoint',
+                'certdata',
+                'us-east-2',
+                'wss://stream.url',
+                'session-token',
+                'session-id',
+                'mycluster'
+            )
+
+            assert.ok(writeStub.calledOnce)
+            const written = writeStub.firstCall.args[0]
+            assert.strictEqual(written.localCredential?.['myspace:default:mycluster']?.clusterName, 'mycluster')
+            assert.strictEqual(
+                written.localCredential?.['myspace:default:mycluster']?.credentials?.accessKeyId,
+                'AKIA123'
+            )
+            assert.strictEqual(
+                written.deepLink?.['myspace:default:mycluster']?.requests['initial-connection']?.status,
+                'fresh'
+            )
+            assert.strictEqual(
+                written.deepLink?.['myspace:default:mycluster']?.requests['initial-connection']?.url,
+                'wss://stream.url'
+            )
+        })
+
+        it('does not write deepLink when wsUrl or token is missing', async () => {
+            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
+            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
+            sandbox.stub(globals, 'awsContext').value({
+                getCredentials: () => Promise.resolve(undefined),
+            })
+
+            await persistHyperpodConnection(
+                'myspace',
+                'default',
+                'arn:aws:eks:us-east-2:123456789012:cluster/mycluster',
+                'mycluster',
+                'https://eks.endpoint',
+                'certdata',
+                'us-east-2',
+                undefined,
+                undefined,
+                undefined,
+                'mycluster'
+            )
+
+            assert.ok(writeStub.calledOnce)
+            const written = writeStub.firstCall.args[0]
+            assert.strictEqual(written.localCredential?.['myspace:default:mycluster']?.clusterName, 'mycluster')
+            assert.strictEqual(written.deepLink, undefined)
         })
     })
 })
