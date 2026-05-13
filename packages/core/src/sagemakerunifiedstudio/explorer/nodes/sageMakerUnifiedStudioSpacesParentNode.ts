@@ -340,16 +340,14 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             const userId = await datazoneClient.getUserId()
             this.logger.debug(`User id extracted from identity: ${userId}`)
             try {
-                if (!getContext('aws.smus.isIamModeDomain')) {
+                if (userId?.includes('user-')) {
                     userProfileId = SmusUtils.extractSSOIdFromUserId(userId || '')
                 } else {
                     // SSO → IAM domain: userId is 'ROLE_ID:session-name', extract session name
                     userProfileId = userId?.split(':')[1]
                 }
             } catch {
-                // SSO login into IAM domain — ssoRedeemToken may not return DER-style session name
-                // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
-                this.logger.warn('Failed to extract SSO user profile ID from userId, showing all spaces')
+                this.logger.warn('Failed to extract SSO user profile ID from userId')
                 userProfileId = undefined
             }
         }
@@ -365,8 +363,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            // TODO: Remove fallback to showing all spaces once ssoRedeemToken returns user profile info
-            if (userProfileId === undefined || userProfileId === userProfile) {
+            if (userProfileId === userProfile) {
                 filteredSpaceApps.set(key, app)
             }
         }
