@@ -141,7 +141,7 @@ export async function deeplinkConnect(
             clusterName = parsed.resourceName
             region = parsed.region
             accountId = parsed.accountId
-            connectionType = 'sm_hp'
+            connectionType = 'smhp_dl'
         }
         const remoteEnv = await prepareDevEnvConnection({
             spaceArn: connectionIdentifier,
@@ -159,6 +159,7 @@ export async function deeplinkConnect(
             region,
             clusterArn: eksClusterArn,
             accountId,
+            eksClusterName: clusterName,
         })
 
         try {

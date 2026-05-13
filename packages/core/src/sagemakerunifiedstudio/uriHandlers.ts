@@ -8,8 +8,8 @@ import { SearchParams } from '../shared/vscode/uriHandler'
 import { ExtContext } from '../shared/extensions'
 import { deeplinkConnect } from '../awsService/sagemaker/commands'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { SmusAuthMode } from '../shared/telemetry/telemetry.gen'
 import { getLogger } from '../shared/logger/logger'
+import { recordDeeplinkConnectTelemetry } from './shared/telemetry'
 
 const amzHeaders = [
     'X-Amz-Security-Token',
@@ -32,7 +32,15 @@ const amzHeaders = [
 export function register(ctx: ExtContext) {
     async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
         await telemetry.smus_deeplinkConnect.run(async (span) => {
-            span.record(extractTelemetryMetadata(params))
+            recordDeeplinkConnectTelemetry(span, {
+                connectionIdentifier: params.connection_identifier,
+                smusDomainId: params.smus_domain_id,
+                smusDomainAccountId: params.smus_domain_account_id,
+                smusProjectId: params.smus_project_id,
+                smusDomainRegion: params.smus_domain_region,
+                smusAuthMode: params.smus_auth_mode,
+                smusDomainMode: params.smus_domain_mode,
+            })
 
             // WORKAROUND: The ws_url from the startSession API call contains a query parameter
             // 'cell-number' within itself. When the entire deeplink URL is processed by the URI
@@ -125,42 +133,10 @@ export function parseConnectParams(query: SearchParams) {
         'smus_domain_account_id',
         'smus_project_id',
         'smus_domain_region',
-        'smus_auth_mode'
+        'smus_auth_mode',
+        'smus_domain_mode'
     )
 
     const amzHeaderParams = query.getFromKeys(...amzHeaders)
     return { ...requiredParams, ...optionalParams, ...amzHeaderParams }
-}
-
-/**
- * Extracts telemetry metadata from URI parameters and space ARN.
- *
- * @param params Parsed URI parameters
- * @returns Telemetry metadata object
- */
-function extractTelemetryMetadata(params: ReturnType<typeof parseConnectParams>) {
-    // Extract metadata from space ARN
-    // ARN format: arn:aws:sagemaker:region:account-id:space/domain-id/space-name
-    const arnParts = params.connection_identifier.split(':')
-    const resourceParts = arnParts[5]?.split('/') // Gets "space/domain-id/space-name"
-
-    const projectRegion = arnParts[3] // region from ARN
-    const projectAccountId = arnParts[4] // account-id from ARN
-    const domainIdFromArn = resourceParts?.[1] // domain-id from ARN
-    const spaceName = resourceParts?.[2] // space-name from ARN
-
-    // Validate and cast smusAuthMode to the expected type
-    const authMode = params.smus_auth_mode
-    const smusAuthMode: SmusAuthMode | undefined = authMode === 'sso' || authMode === 'iam' ? authMode : undefined
-
-    return {
-        smusDomainId: params.smus_domain_id,
-        smusDomainAccountId: params.smus_domain_account_id,
-        smusProjectId: params.smus_project_id,
-        smusDomainRegion: params.smus_domain_region,
-        smusProjectRegion: projectRegion,
-        smusProjectAccountId: projectAccountId,
-        smusSpaceKey: domainIdFromArn && spaceName ? `${domainIdFromArn}/${spaceName}` : undefined,
-        smusAuthMode: smusAuthMode,
-    }
 }

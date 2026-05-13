@@ -11,8 +11,9 @@ import { SagemakerDevSpaceNode } from './explorer/sagemakerDevSpaceNode'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerHyperpodNode } from './explorer/sagemakerHyperpodNode'
-import { prepareDevEnvConnection } from './model'
+import { prepareDevEnvConnection, useSageMakerSshKiroExtension, startRemoteViaSageMakerSshKiro } from './model'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
+import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
@@ -53,6 +54,10 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         return
     }
 
+    if (useSageMakerSshKiroExtension()) {
+        await ensureSageMakerSshKiroExtension(globals.context)
+    }
+
     try {
         const kubectlClient = node.getParent().getKubectlClient(node.hpCluster.clusterName)
         if (!kubectlClient) {
@@ -69,7 +74,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         const remoteEnv = await prepareDevEnvConnection({
             spaceArn: '',
             ctx: globals.context,
-            connectionType: 'sm_hp',
+            connectionType: 'smhp_lc',
             isSMUS: false,
             workspaceName: node.devSpace.name,
             clusterName: node.devSpace.cluster,
@@ -79,12 +84,14 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
             accountId: node.hpCluster.clusterArn.split(':')[4],
             eksEndpoint: eksCluster?.endpoint,
             eksCertAuthData: eksCluster?.certificateAuthority?.data,
+            eksClusterName: eksCluster?.name,
             wsUrl: connectionUrl,
             token: workspaceConnection.token || undefined,
             session: workspaceConnection.sessionId || undefined,
         })
 
-        await startVscodeRemote(
+        const startRemote = useSageMakerSshKiroExtension() ? startRemoteViaSageMakerSshKiro : startVscodeRemote
+        await startRemote(
             remoteEnv.SessionProcess,
             remoteEnv.hostname,
             '/home/sagemaker-user',

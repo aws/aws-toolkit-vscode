@@ -15,7 +15,6 @@ import {
     getSshPrefix,
     isValidSshHostname,
     createValidSshSession,
-    extractRegionFromStreamUrl,
 } from '../../../awsService/sagemaker/model'
 import { removeKnownHost } from '../../../awsService/sagemaker/utils'
 import { assertLogsContain } from '../../globalSetup.test'
@@ -366,6 +365,20 @@ describe('SageMaker Model', () => {
             sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
             sinon.assert.calledOnce(mockProcessInstance.run)
         })
+
+        it('constructs correct workspace URI with HyperPod hostname', async function () {
+            await startRemoteViaSageMakerSshKiro(
+                mockProcessClass as any,
+                'smhp_myworkspace_mynamespace_mycluster_uswest2_123456789012',
+                '/home/sagemaker-user',
+                '/usr/bin/code',
+                'sagemaker-user'
+            )
+
+            const expectedUri = `vscode-remote://sagemaker-ssh-kiro+sagemaker-user@smhp_myworkspace_mynamespace_mycluster_uswest2_123456789012/home/sagemaker-user`
+            sinon.assert.calledOnceWithExactly(mockProcessClass, '/usr/bin/code', ['--folder-uri', expectedUri])
+            sinon.assert.calledOnce(mockProcessInstance.run)
+        })
     })
 })
 
@@ -392,9 +405,14 @@ describe('getSshPrefix', function () {
         assert.strictEqual(getSshPrefix('sm_dl'), 'smc_')
     })
 
-    it('returns smhp_ for hyperpod connection regardless of IDE', function () {
+    it('returns smhp_ for hyperpod connection on vscode', function () {
         sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
         assert.strictEqual(getSshPrefix('sm_hp'), 'smhp_')
+    })
+
+    it('returns smhpc_ for hyperpod connection on cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getSshPrefix('sm_hp'), 'smhpc_')
     })
 
     it('returns sm_ for unknown IDE type', function () {
@@ -477,25 +495,5 @@ describe('createValidSshSession', function () {
         // always fails validation, causing createValidSshSession to be used
         const proposed = 'myworkspace_mynamespace_mycluster_us-east-1_123456789012'
         assert.strictEqual(isValidSshHostname(proposed), false)
-    })
-})
-
-describe('extractRegionFromStreamUrl', function () {
-    it('extracts region from a standard SSM stream URL', function () {
-        assert.strictEqual(
-            extractRegionFromStreamUrl('wss://ssmmessages.us-west-2.amazonaws.com/v1/data-channel/session-id'),
-            'us-west-2'
-        )
-    })
-
-    it('extracts region from a different region', function () {
-        assert.strictEqual(
-            extractRegionFromStreamUrl('wss://ssmmessages.eu-central-1.amazonaws.com/v1/data-channel/session-id'),
-            'eu-central-1'
-        )
-    })
-
-    it('throws for non-matching URL', function () {
-        assert.throws(() => extractRegionFromStreamUrl('wss://example.com/stream'), /Unable to get region/)
     })
 })
