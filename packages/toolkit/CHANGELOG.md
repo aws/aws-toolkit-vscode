@@ -1,3 +1,7 @@
+## 4.5.0 2026-05-14
+
+- Miscellaneous non-user-facing changes
+
 ## 4.4.0 2026-05-07
 
 - **Feature** Add support for SSO and IAM role login into all Sagemaker Unified Studio domain types
