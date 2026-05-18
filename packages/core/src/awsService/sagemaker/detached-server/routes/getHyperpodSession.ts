@@ -104,12 +104,15 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
 
     try {
         const kubectlClient = await KubectlClient.createForCluster(eksCluster, hyperpodCluster, mapping.credentials)
-        const connection = await kubectlClient.createWorkspaceConnection(devSpace)
+        const connection = await kubectlClient.createWorkspaceConnection(
+            devSpace,
+            process.env['PARENT_IDE_TYPE'] ?? 'vscode'
+        )
 
         attemptCount.delete(connectionKey)
         lastAttemptTime.delete(connectionKey)
 
-        // Parse response URL if the API returns a vscode:// URL with embedded params
+        // Parse response URL if the API returns a deeplink URL with embedded params
         let streamUrl = connection.url
         let token = connection.token || ''
         let sessionId = connection.sessionId || ''

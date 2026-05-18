@@ -15,6 +15,7 @@ import { prepareDevEnvConnection, useSageMakerSshKiroExtension, startRemoteViaSa
 import { startVscodeRemote } from '../../shared/extensions/ssh'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import globals from '../../shared/extensionGlobals'
+import { getIdeType } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -68,7 +69,7 @@ export async function connectToHyperPodDevSpace(node: SagemakerDevSpaceNode): Pr
         const eksCluster = kubectlClient.getEksCluster()
 
         // Call createWorkspaceConnection to get presigned URL with credentials
-        const workspaceConnection = await kubectlClient.createWorkspaceConnection(node.devSpace)
+        const workspaceConnection = await kubectlClient.createWorkspaceConnection(node.devSpace, getIdeType())
         const connectionUrl = workspaceConnection.url
 
         const remoteEnv = await prepareDevEnvConnection({

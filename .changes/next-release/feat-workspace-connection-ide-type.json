@@ -1,0 +1,4 @@
+{
+  "type": "Feature",
+  "description": "HyperPod: Send correct IDE type (vscode-remote, cursor-remote, kiro-remote) when creating workspace connections, enabling proper multi-IDE support."
+}
