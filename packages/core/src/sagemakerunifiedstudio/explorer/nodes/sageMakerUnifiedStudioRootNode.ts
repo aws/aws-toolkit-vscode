@@ -13,9 +13,12 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { SageMakerUnifiedStudioProjectNode } from './sageMakerUnifiedStudioProjectNode'
 import { SageMakerUnifiedStudioAuthInfoNode } from './sageMakerUnifiedStudioAuthInfoNode'
-import { SmusErrorCodes, SmusUtils } from '../../shared/smusUtils'
+import { SmusErrorCodes, SmusUtils, isExpressDomain } from '../../shared/smusUtils'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
-import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
+import {
+    SmusAuthenticationProvider,
+    setSmusIamModeDomainContext,
+} from '../../auth/providers/smusAuthenticationProvider'
 import { ToolkitError } from '../../../../src/shared/errors'
 import { SmusAuthenticationMethod } from '../../auth/ui/authenticationMethodSelection'
 import { SmusAuthenticationOrchestrator } from '../../auth/authenticationOrchestrator'
@@ -637,7 +640,21 @@ export async function selectSMUSProject(projectNode?: SageMakerUnifiedStudioProj
                 !('type' in selectedProject) &&
                 projectNode
             ) {
-                await projectNode.setProject(selectedProject)
+                const project = selectedProject as DataZoneProject
+                await projectNode.setProject(project)
+
+                // Store the active project ID so it can be used in subsequent domain type checks
+                authProvider.setActiveProjectId(project.id)
+
+                // Check domain type (EXPRESS mode) now that we have a project ID
+                try {
+                    const isExpress = await isExpressDomain(datazoneClient, authProvider.getDomainId(), project.id)
+                    await setSmusIamModeDomainContext(isExpress)
+                    logger.debug(`Domain ${authProvider.getDomainId()} isExpressMode: ${isExpress}`)
+                } catch (err) {
+                    logger.warn(`Failed to check domain type: ${(err as Error).message}`)
+                }
+
                 await vscode.commands.executeCommand('aws.smus.rootView.refresh')
             }
 

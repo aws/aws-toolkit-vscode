@@ -24,10 +24,6 @@ describe('ProjectRoleCredentialsProvider', function () {
         secretAccessKey: 'project-secret-key',
         sessionToken: 'project-session-token',
         expiration: new Date(Date.now() + 14 * 60 * 1000), // 14 minutes as Date object
-        $metadata: {
-            httpStatusCode: 200,
-            requestId: 'test-request-id',
-        },
     }
 
     beforeEach(function () {
@@ -184,10 +180,6 @@ describe('ProjectRoleCredentialsProvider', function () {
         it('should handle missing credentials in response', async function () {
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves({
                 accessKeyId: undefined,
-                $metadata: {
-                    httpStatusCode: 200,
-                    requestId: 'test-request-id',
-                },
             })
 
             await assert.rejects(
@@ -203,10 +195,6 @@ describe('ProjectRoleCredentialsProvider', function () {
                 accessKeyId: '', // Invalid empty string
                 secretAccessKey: 'valid-secret',
                 sessionToken: 'valid-token',
-                $metadata: {
-                    httpStatusCode: 200,
-                    requestId: 'test-request-id',
-                },
             }
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(invalidResponse)
 
@@ -224,10 +212,6 @@ describe('ProjectRoleCredentialsProvider', function () {
                 secretAccessKey: 'project-secret-key',
                 sessionToken: 'project-session-token',
                 // No expiration field
-                $metadata: {
-                    httpStatusCode: 200,
-                    requestId: 'test-request-id',
-                },
             }
             mockDataZoneClient.getProjectDefaultEnvironmentCreds.resolves(responseWithoutExpiration)
 
