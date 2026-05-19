@@ -158,54 +158,69 @@ describe('DataZoneClient', () => {
     })
 
     describe('getProjectDefaultEnvironmentCreds', () => {
-        it('should get environment credentials for project', async () => {
+        it('should get IAM connection credentials for project', async () => {
             const mockCredentials = {
                 accessKeyId: 'AKIATEST',
                 secretAccessKey: 'secret',
                 sessionToken: 'token',
+                expiration: new Date(),
             }
 
-            const mockDataZone = {
-                listEnvironments: sinon.stub().resolves({
-                    items: [{ id: 'env-1', name: 'Tooling' }],
-                }),
-                getEnvironmentCredentials: sinon.stub().resolves(mockCredentials),
+            const mockFetchConnectionsResponse = {
+                items: [{ connectionId: 'conn-2', name: 'project.iam', type: 'IAM' }],
             }
 
-            // Mock getToolingEnvironmentForProject to return an environment
-            sinon
-                .stub(dataZoneClient as any, 'getToolingEnvironmentForProject')
-                .resolves({ id: 'env-1', name: 'Tooling' })
+            const mockConnectionWithCreds = {
+                connectionId: 'conn-2',
+                name: 'project.iam',
+                type: 'IAM',
+                connectionCredentials: mockCredentials,
+            }
 
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves(mockDataZone)
+            // Mock fetchConnections to return IAM connections
+            sinon.stub(dataZoneClient, 'fetchConnections').resolves(mockFetchConnectionsResponse as any)
+
+            // Mock getConnection to return connection with credentials
+            sinon.stub(dataZoneClient, 'getConnection').resolves(mockConnectionWithCreds as any)
 
             const result = await dataZoneClient.getProjectDefaultEnvironmentCreds('project-1')
 
             assert.deepStrictEqual(result, mockCredentials)
-            assert.ok(
-                mockDataZone.getEnvironmentCredentials.calledWith({
-                    domainIdentifier: testDomainId,
-                    environmentIdentifier: 'env-1',
-                })
-            )
         })
 
-        it('should throw error when tooling environment not found', async () => {
-            // Mock getToolingEnvironmentForProject to return undefined
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').resolves(undefined)
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
+        it('should throw error when IAM connection not found', async () => {
+            const mockFetchConnectionsResponse = {
+                items: [],
+            }
+
+            // Mock fetchConnections to return empty list
+            sinon.stub(dataZoneClient, 'fetchConnections').resolves(mockFetchConnectionsResponse as any)
 
             await assert.rejects(
                 () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
-                /No tooling environment found/
+                /No IAM connection/
             )
         })
 
-        it('should throw error when getToolingEnvironmentForProject fails', async () => {
-            sinon.stub(dataZoneClient as any, 'getToolingEnvironmentForProject').rejects(new Error('API Error'))
-            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({})
+        it('should throw error when connection credentials not available', async () => {
+            const mockFetchConnectionsResponse = {
+                items: [{ connectionId: 'conn-2', name: 'project.iam', type: 'IAM' }],
+            }
 
-            await assert.rejects(() => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'), /API Error/)
+            const mockConnectionWithoutCreds = {
+                connectionId: 'conn-2',
+                name: 'project.iam',
+                type: 'IAM',
+                // No connectionCredentials
+            }
+
+            sinon.stub(dataZoneClient, 'fetchConnections').resolves(mockFetchConnectionsResponse as any)
+            sinon.stub(dataZoneClient, 'getConnection').resolves(mockConnectionWithoutCreds as any)
+
+            await assert.rejects(
+                () => dataZoneClient.getProjectDefaultEnvironmentCreds('project-1'),
+                /credentials not available/
+            )
         })
     })
 
