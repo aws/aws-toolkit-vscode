@@ -574,7 +574,7 @@ export async function isExpressDomain(client: DataZoneClient, domainId: string, 
     const logger = getLogger('smus')
     try {
         const iamConnections = await client.fetchConnections(domainId, projectId, ConnectionType.IAM)
-        logger.debug(`isExpressDomain: iamConnections response: ${JSON.stringify(iamConnections)}`)
+        logger.debug('isExpressDomain: iamConnections response: %O', iamConnections)
 
         const defaultIam = iamConnections.items?.find((connection) => connection.name === 'default.iam')
         const projectIam = iamConnections.items?.find((connection) => connection.name === 'project.iam')
