@@ -9,7 +9,14 @@ import { getLogger } from '../../../shared/logger/logger'
 import { DataZoneConnection } from '../../shared/client/datazoneClient'
 import { S3Client } from '../../shared/client/s3Client'
 import { ConnectionClientStore } from '../../shared/client/connectionClientStore'
-import { NODE_ID_DELIMITER, NodeType, ConnectionType, NodeData, NO_DATA_FOUND_MESSAGE } from './types'
+import {
+    NODE_ID_DELIMITER,
+    NodeType,
+    ConnectionType,
+    NodeData,
+    NO_DATA_FOUND_MESSAGE,
+    DEFAULT_S3_SHARED_CONNECTION,
+} from './types'
 import { getLabel, isLeafNode, getIconForNodeType, getTooltip, createErrorItem } from './utils'
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import {
@@ -172,58 +179,14 @@ export function createS3ConnectionNode(
                                         parent: node,
                                     },
                                     async (bucketNode) => {
-                                        try {
-                                            const allPaths = []
-                                            let nextToken: string | undefined
-
-                                            do {
-                                                const result = await s3Client.listPaths(
-                                                    bucket.Name || '',
-                                                    undefined,
-                                                    nextToken
-                                                )
-                                                allPaths.push(...result.paths)
-                                                nextToken = result.nextToken
-                                            } while (nextToken)
-
-                                            if (allPaths.length === 0) {
-                                                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-                                            }
-
-                                            return allPaths.map((path) => {
-                                                const nodeId = `${path.bucket}-${path.prefix || 'root'}`
-
-                                                return new S3Node(
-                                                    {
-                                                        id: nodeId,
-                                                        nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                                        connectionType: ConnectionType.S3,
-                                                        value: path,
-                                                        path: {
-                                                            connection: connection.name,
-                                                            bucket: path.bucket,
-                                                            key: path.prefix,
-                                                            label: path.displayName,
-                                                        },
-                                                        parent: bucketNode,
-                                                    },
-                                                    path.isFolder
-                                                        ? createFolderChildrenProvider(s3Client, path)
-                                                        : undefined
-                                                )
-                                            })
-                                        } catch (err) {
-                                            logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                            const errorMessage = (err as Error).message
-                                            await handleCredExpiredError(err, true)
-                                            return [
-                                                createErrorItem(
-                                                    errorMessage,
-                                                    'bucket-contents-all-access',
-                                                    bucketNode.id
-                                                ) as S3Node,
-                                            ]
-                                        }
+                                        return listAndMapPaths(
+                                            s3Client,
+                                            bucket.Name || '',
+                                            undefined,
+                                            connection.name,
+                                            bucketNode,
+                                            'bucket-contents-all-access'
+                                        )
                                     }
                                 )
                             })
@@ -234,147 +197,80 @@ export function createS3ConnectionNode(
                             return [createErrorItem(errorMessage, 'list-buckets', node.id) as S3Node]
                         }
                     } else if (isDefaultConnection && s3Info.prefix) {
-                        // For default connections, show the full path as the first node
-                        const fullPath = `${s3Info.bucket}/${s3Info.prefix}`
+                        // For default connections with prefix:
+                        // - IAM (default.s3_shared): show just bucket, list from root so 'shared/' folder appears
+                        // - IDC (project.s3_default_folder): show bucket/prefix, list from prefix
+                        const isIamSharedConnection = connection.name === DEFAULT_S3_SHARED_CONNECTION
+                        const nodeLabel = isIamSharedConnection ? s3Info.bucket : `${s3Info.bucket}/${s3Info.prefix}`
+                        const listPrefix = isIamSharedConnection ? undefined : s3Info.prefix
+
                         return [
                             new S3Node(
                                 {
-                                    id: fullPath,
+                                    id: nodeLabel,
                                     nodeType: NodeType.S3_BUCKET,
                                     connectionType: ConnectionType.S3,
-                                    value: { bucket: s3Info.bucket, prefix: s3Info.prefix },
+                                    value: {
+                                        bucket: s3Info.bucket,
+                                        prefix: isIamSharedConnection ? undefined : s3Info.prefix,
+                                    },
                                     path: {
                                         connection: connection.name,
                                         bucket: s3Info.bucket,
-                                        key: s3Info.prefix,
-                                        label: fullPath,
+                                        key: isIamSharedConnection ? undefined : s3Info.prefix,
+                                        label: nodeLabel,
                                     },
                                     parent: node,
                                 },
                                 async (bucketNode) => {
-                                    try {
-                                        // List objects starting from the prefix
-                                        const allPaths = []
-                                        let nextToken: string | undefined
-
-                                        do {
-                                            const result = await s3Client.listPaths(
-                                                s3Info.bucket,
-                                                s3Info.prefix,
-                                                nextToken
-                                            )
-                                            allPaths.push(...result.paths)
-                                            nextToken = result.nextToken
-                                        } while (nextToken)
-
-                                        if (allPaths.length === 0) {
-                                            return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-                                        }
-
-                                        // Convert paths to nodes
-                                        return allPaths.map((path) => {
-                                            const nodeId = `${path.bucket}-${path.prefix || 'root'}`
-
-                                            return new S3Node(
-                                                {
-                                                    id: nodeId,
-                                                    nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                                    connectionType: ConnectionType.S3,
-                                                    value: path,
-                                                    path: {
-                                                        connection: connection.name,
-                                                        bucket: path.bucket,
-                                                        key: path.prefix,
-                                                        label: path.displayName,
-                                                    },
-                                                    parent: bucketNode,
-                                                },
-                                                path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                                            )
-                                        })
-                                    } catch (err) {
-                                        logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                        const errorMessage = (err as Error).message
-                                        await handleCredExpiredError(err, true)
-                                        return [
-                                            createErrorItem(
-                                                errorMessage,
-                                                'bucket-contents-default',
-                                                bucketNode.id
-                                            ) as S3Node,
-                                        ]
-                                    }
+                                    return listAndMapPaths(
+                                        s3Client,
+                                        s3Info.bucket,
+                                        listPrefix,
+                                        connection.name,
+                                        bucketNode,
+                                        'bucket-contents-default'
+                                    )
                                 }
                             ),
                         ]
                     } else {
-                        // For non-default connections, show bucket as the first node
+                        // For non-default connections, show bucket (with prefix path if present) as the first node
+                        // Exception: IAM's default.s3_shared should show just bucket and list from root
+                        const isIamSharedConnection = connection.name === DEFAULT_S3_SHARED_CONNECTION
+                        const bucketLabel =
+                            s3Info.prefix && !isIamSharedConnection
+                                ? `${s3Info.bucket}/${s3Info.prefix}`
+                                : s3Info.bucket
+                        const listPrefix = isIamSharedConnection ? undefined : s3Info.prefix
+
                         return [
                             new S3Node(
                                 {
-                                    id: s3Info.bucket,
+                                    id: bucketLabel,
                                     nodeType: NodeType.S3_BUCKET,
                                     connectionType: ConnectionType.S3,
-                                    value: { bucket: s3Info.bucket },
+                                    value: {
+                                        bucket: s3Info.bucket,
+                                        prefix: isIamSharedConnection ? undefined : s3Info.prefix,
+                                    },
                                     path: {
                                         connection: connection.name,
                                         bucket: s3Info.bucket,
+                                        key: isIamSharedConnection ? undefined : s3Info.prefix,
+                                        label: bucketLabel,
                                     },
                                     parent: node,
                                 },
                                 async (bucketNode) => {
-                                    try {
-                                        // List objects in the bucket
-                                        const allPaths = []
-                                        let nextToken: string | undefined
-
-                                        do {
-                                            const result = await s3Client.listPaths(
-                                                s3Info.bucket,
-                                                s3Info.prefix,
-                                                nextToken
-                                            )
-                                            allPaths.push(...result.paths)
-                                            nextToken = result.nextToken
-                                        } while (nextToken)
-
-                                        if (allPaths.length === 0) {
-                                            return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-                                        }
-
-                                        // Convert paths to nodes
-                                        return allPaths.map((path) => {
-                                            const nodeId = `${path.bucket}-${path.prefix || 'root'}`
-
-                                            return new S3Node(
-                                                {
-                                                    id: nodeId,
-                                                    nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                                                    connectionType: ConnectionType.S3,
-                                                    value: path,
-                                                    path: {
-                                                        connection: connection.name,
-                                                        bucket: path.bucket,
-                                                        key: path.prefix,
-                                                        label: path.displayName,
-                                                    },
-                                                    parent: bucketNode,
-                                                },
-                                                path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                                            )
-                                        })
-                                    } catch (err) {
-                                        logger.error(`Failed to list bucket contents: ${(err as Error).message}`)
-                                        const errorMessage = (err as Error).message
-                                        await handleCredExpiredError(err, true)
-                                        return [
-                                            createErrorItem(
-                                                errorMessage,
-                                                'bucket-contents-regular',
-                                                bucketNode.id
-                                            ) as S3Node,
-                                        ]
-                                    }
+                                    return listAndMapPaths(
+                                        s3Client,
+                                        s3Info.bucket,
+                                        listPrefix,
+                                        connection.name,
+                                        bucketNode,
+                                        'bucket-contents-regular'
+                                    )
                                 }
                             ),
                         ]
@@ -407,54 +303,72 @@ export async function createS3AccessGrantNodes(
 }
 
 /**
+ * Lists S3 paths and maps them to S3Node children. Shared by bucket-level and folder-level providers.
+ */
+async function listAndMapPaths(
+    s3Client: S3Client,
+    bucket: string,
+    prefix: string | undefined,
+    connectionName: string | undefined,
+    parentNode: S3Node,
+    errorContext: string
+): Promise<S3Node[]> {
+    const logger = getLogger('smus')
+    try {
+        const allPaths = []
+        let nextToken: string | undefined
+
+        do {
+            const result = await s3Client.listPaths(bucket, prefix, nextToken)
+            allPaths.push(...result.paths)
+            nextToken = result.nextToken
+        } while (nextToken)
+
+        if (allPaths.length === 0) {
+            return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
+        }
+
+        return allPaths.map((path) => {
+            const nodeId = `${path.bucket}-${path.prefix || 'root'}`
+
+            return new S3Node(
+                {
+                    id: nodeId,
+                    nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
+                    connectionType: ConnectionType.S3,
+                    value: path,
+                    path: {
+                        connection: connectionName,
+                        bucket: path.bucket,
+                        key: path.prefix,
+                        label: path.displayName,
+                    },
+                    parent: parentNode,
+                },
+                path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
+            )
+        })
+    } catch (err) {
+        logger.error(`Failed to list ${errorContext}: ${(err as Error).message}`)
+        const errorMessage = (err as Error).message
+        await handleCredExpiredError(err, true)
+        return [createErrorItem(errorMessage, errorContext, parentNode.id) as S3Node]
+    }
+}
+
+/**
  * Creates a children provider function for a folder node
  */
 function createFolderChildrenProvider(s3Client: S3Client, folderPath: any): (node: S3Node) => Promise<S3Node[]> {
-    const logger = getLogger('smus')
-
     return async (node: S3Node) => {
-        try {
-            // List objects in the folder
-            const allPaths = []
-            let nextToken: string | undefined
-
-            do {
-                const result = await s3Client.listPaths(folderPath.bucket, folderPath.prefix, nextToken)
-                allPaths.push(...result.paths)
-                nextToken = result.nextToken
-            } while (nextToken)
-
-            if (allPaths.length === 0) {
-                return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE) as S3Node]
-            }
-
-            // Convert paths to nodes
-            return allPaths.map((path) => {
-                const nodeId = `${path.bucket}-${path.prefix || 'root'}`
-
-                return new S3Node(
-                    {
-                        id: nodeId,
-                        nodeType: path.isFolder ? NodeType.S3_FOLDER : NodeType.S3_FILE,
-                        connectionType: ConnectionType.S3,
-                        value: path,
-                        path: {
-                            connection: node.data.path?.connection,
-                            bucket: path.bucket,
-                            key: path.prefix,
-                            label: path.displayName,
-                        },
-                        parent: node,
-                    },
-                    path.isFolder ? createFolderChildrenProvider(s3Client, path) : undefined
-                )
-            })
-        } catch (err) {
-            logger.error(`Failed to list folder contents: ${(err as Error).message}`)
-            const errorMessage = (err as Error).message
-            await handleCredExpiredError(err, true)
-            return [createErrorItem(errorMessage, 'folder-contents', node.id) as S3Node]
-        }
+        return listAndMapPaths(
+            s3Client,
+            folderPath.bucket,
+            folderPath.prefix,
+            node.data.path?.connection,
+            node,
+            'folder-contents'
+        )
     }
 }
 

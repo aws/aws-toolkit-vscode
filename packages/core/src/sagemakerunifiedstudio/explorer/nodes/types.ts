@@ -21,6 +21,15 @@ export const DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP = /^(project\.s3_default_fol
 export const S3_PROJECT_NON_GIT_PROJECT_REPOSITORY_LOCATION_NAME_REGEXP =
     /^(project\.non_git_project_repository_location)|(default\.s3_shared)$/
 
+// S3 connection name constants (matching MaxDomeFileExplorer)
+// https://code.amazon.com/packages/MaxDomeFileExplorer/blobs/heads/mainline/--/src/hooks/useGetInitialNodes.ts
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DEFAULT_S3_BUCKETS_CONNECTION = 'default.s3' // All buckets access (IAM domains)
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DEFAULT_S3_SHARED_CONNECTION = 'default.s3_shared' // Shared project folder (IAM domains)
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const IDC_S3_PROJECT_FOLDER_CONNECTION = 'project.s3_default_folder' // Project default folder (IDC domains)
+
 // Database object types
 export enum DatabaseObjects {
     EXTERNAL_TABLE = 'EXTERNAL_TABLE',
@@ -207,7 +216,7 @@ export const LEAF_NODE_TYPES = [
 ]
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const NO_DATA_FOUND_MESSAGE = '[No data found]'
+export const NO_DATA_FOUND_MESSAGE = 'No data'
 
 /**
  * Glue connection types
