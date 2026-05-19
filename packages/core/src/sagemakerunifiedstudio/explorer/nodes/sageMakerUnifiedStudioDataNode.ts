@@ -17,13 +17,13 @@ import { isFederatedConnection, createErrorItem, createDZClientForProject } from
 import { createPlaceholderItem } from '../../../shared/treeview/utils'
 import {
     ConnectionType,
-    DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP,
+    DEFAULT_S3_BUCKETS_CONNECTION,
+    DEFAULT_S3_SHARED_CONNECTION,
+    IDC_S3_PROJECT_FOLDER_CONNECTION,
     NO_DATA_FOUND_MESSAGE,
-    S3_PROJECT_NON_GIT_PROJECT_REPOSITORY_LOCATION_NAME_REGEXP,
 } from './types'
 import { SmusAuthenticationProvider } from '../../auth/providers/smusAuthenticationProvider'
 import { createFederatedConnectionNode } from './federatedConnectionStrategy'
-import { getContext } from '../../../shared/vscode/setContext'
 import { handleCredExpiredError } from '../../shared/credentialExpiryHandler'
 
 /**
@@ -113,26 +113,16 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             dataNodes.push(node)
         }
 
-        // TODO: After IAM/IDC data explorer parity, the conditional logic must be removed
-        // Add Redshift nodes second
-        if (!getContext('aws.smus.isIamModeDomain')) {
-            for (const connection of redshiftConnections) {
-                if (connection.name.startsWith('project.lakehouse')) {
-                    continue
-                }
-                if (isFederatedConnection(connection)) {
-                    continue
-                }
-                const node = await this.createRedshiftNode(project, connection, region)
-                dataNodes.push(node)
-            }
-        } else {
-            const federatedConnections = connections.filter((conn) => isFederatedConnection(conn))
-            if (federatedConnections.length > 0) {
-                const connectionsNode = this.createConnectionsParentNode(project, federatedConnections, region)
-                dataNodes.push(connectionsNode)
-            }
-        }
+        // Add Redshift nodes under Connections parent node
+        const filteredRedshiftConnections = redshiftConnections.filter(
+            (conn) => !conn.name.startsWith('project.lakehouse') && !isFederatedConnection(conn)
+        )
+        const federatedConnections = connections.filter((conn) => isFederatedConnection(conn))
+        const allConnectionsForParent = [...filteredRedshiftConnections, ...federatedConnections]
+
+        // Always show Connections node, it will display "No data" if empty
+        const connectionsNode = this.createConnectionsParentNode(project, allConnectionsForParent, region)
+        dataNodes.push(connectionsNode)
 
         // Add S3 Bucket parent node last
         if (s3Connections.length > 0) {
@@ -162,6 +152,9 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 connection.location?.awsRegion || region
             )
 
+            // Get the bucket children directly (skip the S3 wrapper node)
+            const bucketChildren = await s3ConnectionNode.getChildren()
+
             const accessGrantNodes = await createS3AccessGrantNodes(
                 connection,
                 connectionCredentialsProvider,
@@ -169,7 +162,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
                 connection.location?.awsAccountId
             )
 
-            return [s3ConnectionNode, ...accessGrantNodes]
+            return [...bucketChildren, ...accessGrantNodes]
         } catch (connErr) {
             const errorMessage = `Failed to get S3 connection - ${(connErr as Error).message}`
             this.logger.error(`Failed to get S3 connection details: ${(connErr as Error).message}`)
@@ -238,31 +231,109 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             getTreeItem: () => {
                 const item = new vscode.TreeItem('Buckets', vscode.TreeItemCollapsibleState.Collapsed)
                 item.contextValue = 'bucketFolder'
+                item.iconPath = getIcon('aws-s3-bucket')
                 return item
             },
             getChildren: async () => {
-                // Filter connections inside the bucket parent node
-                const defaultS3Connection = s3Connections.find((conn) =>
-                    DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP.test(conn.name)
-                )
-                const otherS3Connections = s3Connections.filter(
-                    (conn) =>
-                        !DATA_DEFAULT_S3_CONNECTION_NAME_REGEXP.test(conn.name) &&
-                        !S3_PROJECT_NON_GIT_PROJECT_REPOSITORY_LOCATION_NAME_REGEXP.test(conn.name)
+                // Find S3 connections by name (matching MaxDomeFileExplorer logic)
+                // https://code.amazon.com/packages/MaxDomeFileExplorer/blobs/heads/mainline/--/src/hooks/useGetInitialNodes.ts
+                const sharedConnection = s3Connections.find((conn) => conn.name === DEFAULT_S3_SHARED_CONNECTION)
+                const defaultConnection = s3Connections.find((conn) => conn.name === DEFAULT_S3_BUCKETS_CONNECTION)
+                const idcProjectFolderConnection = s3Connections.find(
+                    (conn) => conn.name === IDC_S3_PROJECT_FOLDER_CONNECTION
                 )
 
-                const s3Nodes: TreeNode[] = []
+                // Determine domain type: IAM domains have 'default.s3' connection
+                const isIamDomain = !!defaultConnection
 
-                // Add default connections first
-                if (defaultS3Connection) {
-                    const defaultS3Node = await this.createS3Node(project, defaultS3Connection, region)
-                    s3Nodes.push(...defaultS3Node)
+                // Project bucket: For IAM domains use 'default.s3_shared', for IDC domains use 'project.s3_default_folder'
+                const projectBucketConnection = isIamDomain ? sharedConnection : idcProjectFolderConnection
+
+                // Other Buckets: For IAM domains, use 'default.s3' connection (which lists all buckets)
+                // Plus any additional S3 connections that are not the known ones
+                const knownConnectionNames = new Set([
+                    DEFAULT_S3_BUCKETS_CONNECTION,
+                    DEFAULT_S3_SHARED_CONNECTION,
+                    IDC_S3_PROJECT_FOLDER_CONNECTION,
+                ])
+                const additionalConnections = s3Connections.filter((conn) => !knownConnectionNames.has(conn.name))
+
+                const bucketNodes: TreeNode[] = []
+
+                // Add "Project bucket" node if project bucket connection exists
+                if (projectBucketConnection) {
+                    const projectBucketNode = this.createProjectBucketNode(project, projectBucketConnection, region)
+                    bucketNodes.push(projectBucketNode)
                 }
 
-                // Add other connections
-                for (const connection of otherS3Connections) {
-                    const nodes = await this.createS3Node(project, connection, region)
-                    s3Nodes.push(...nodes)
+                // Add "Other Buckets" node only if default.s3 connection exists (IAM domains only)
+                if (defaultConnection) {
+                    const otherBucketsNode = this.createOtherBucketsNode(project, defaultConnection, region)
+                    bucketNodes.push(otherBucketsNode)
+                }
+
+                // Add additional connections as separate root nodes (not inside "Other Buckets")
+                for (const connection of additionalConnections) {
+                    const connectionNodes = await this.createS3Node(project, connection, region)
+                    bucketNodes.push(...connectionNodes)
+                }
+
+                if (bucketNodes.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE)]
+                }
+                return bucketNodes
+            },
+            getParent: () => this,
+        }
+    }
+
+    private createProjectBucketNode(
+        project: DataZoneProject,
+        defaultS3Connection: DataZoneConnection,
+        region: string
+    ): TreeNode {
+        return {
+            id: 'project-bucket',
+            resource: {},
+            getTreeItem: () => {
+                const item = new vscode.TreeItem('Project bucket', vscode.TreeItemCollapsibleState.Collapsed)
+                item.contextValue = 'projectBucketFolder'
+                item.iconPath = getIcon('aws-s3-bucket')
+                return item
+            },
+            getChildren: async () => {
+                const nodes = await this.createS3Node(project, defaultS3Connection, region)
+                if (nodes.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE)]
+                }
+                return nodes
+            },
+            getParent: () => this,
+        }
+    }
+
+    /**
+     * Creates the "Other buckets" node for IAM domains.
+     * Uses default.s3 connection to list all buckets.
+     */
+    private createOtherBucketsNode(
+        project: DataZoneProject,
+        defaultS3Connection: DataZoneConnection,
+        region: string
+    ): TreeNode {
+        return {
+            id: 'other-buckets',
+            resource: {},
+            getTreeItem: () => {
+                const item = new vscode.TreeItem('Other buckets', vscode.TreeItemCollapsibleState.Collapsed)
+                item.contextValue = 'otherBucketsFolder'
+                item.iconPath = getIcon('aws-s3-bucket')
+                return item
+            },
+            getChildren: async () => {
+                const s3Nodes = await this.createS3Node(project, defaultS3Connection, region)
+                if (s3Nodes.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE)]
                 }
                 return s3Nodes
             },
@@ -272,7 +343,7 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
 
     private createConnectionsParentNode(
         project: DataZoneProject,
-        federatedConnections: DataZoneConnection[],
+        allConnections: DataZoneConnection[],
         region: string
     ): TreeNode {
         return {
@@ -281,31 +352,39 @@ export class SageMakerUnifiedStudioDataNode implements TreeNode {
             getTreeItem: () => {
                 const item = new vscode.TreeItem('Connections', vscode.TreeItemCollapsibleState.Collapsed)
                 item.contextValue = 'connectionsFolder'
+                item.iconPath = getIcon('aws-sagemakerunifiedstudio-route-filled')
                 return item
             },
             getChildren: async () => {
                 const nodes: TreeNode[] = []
-                for (const connection of federatedConnections) {
+                for (const connection of allConnections) {
                     try {
-                        const connectionCredentialsProvider = await this.authProvider.getConnectionCredentialsProvider(
-                            connection.connectionId,
-                            project.id,
-                            connection.location?.awsRegion || region
-                        )
-                        const node = await createFederatedConnectionNode(
-                            connection,
-                            connectionCredentialsProvider,
-                            region
-                        )
-                        nodes.push(node)
+                        if (isFederatedConnection(connection)) {
+                            const connectionCredentialsProvider =
+                                await this.authProvider.getConnectionCredentialsProvider(
+                                    connection.connectionId,
+                                    project.id,
+                                    connection.location?.awsRegion || region
+                                )
+                            const node = await createFederatedConnectionNode(
+                                connection,
+                                connectionCredentialsProvider,
+                                region
+                            )
+                            nodes.push(node)
+                        } else {
+                            const node = await this.createRedshiftNode(project, connection, region)
+                            nodes.push(node)
+                        }
                     } catch (err) {
-                        const errorMessage = `Failed to create federated connection - ${(err as Error).message}`
-                        this.logger.error(
-                            `Failed to create federated connection ${connection.name}: ${(err as Error).message}`
-                        )
-                        nodes.push(createErrorItem(errorMessage, `federated-${connection.connectionId}`, this.id))
+                        const errorMessage = `Failed to create connection - ${(err as Error).message}`
+                        this.logger.error(`Failed to create connection ${connection.name}: ${(err as Error).message}`)
+                        nodes.push(createErrorItem(errorMessage, `connection-${connection.connectionId}`, this.id))
                         await handleCredExpiredError(err)
                     }
+                }
+                if (nodes.length === 0) {
+                    return [createPlaceholderItem(NO_DATA_FOUND_MESSAGE)]
                 }
                 return nodes
             },
