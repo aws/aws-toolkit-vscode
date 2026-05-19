@@ -124,8 +124,8 @@ export async function startHyperpodSpaceCommand(node: SagemakerDevSpaceNode): Pr
     }
     // Set transitional state immediately
     node.devSpace.status = 'Starting'
-    node.contextValue = 'awsSagemakerHyperpodDevSpaceTransitionalNode'
-    await node.refreshNode()
+    node.updateWorkspace()
+    await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 
     const kc = node.getParent().getKubectlClient(node.hpCluster.clusterName)
     if (!kc) {
@@ -154,8 +154,8 @@ export async function stopHyperPodSpaceCommand(node: SagemakerDevSpaceNode): Pro
 
     // Set transitional state immediately
     node.devSpace.status = 'Stopping'
-    node.contextValue = 'awsSagemakerHyperpodDevSpaceTransitionalNode'
-    await node.refreshNode()
+    node.updateWorkspace()
+    await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 
     const kc = node.getParent().getKubectlClient(node.hpCluster.clusterName)
     if (!kc) {
