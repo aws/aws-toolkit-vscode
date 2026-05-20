@@ -146,10 +146,13 @@ export class KubectlClient extends KubectlClientBase {
         }
     }
 
-    override async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
+    override async createWorkspaceConnection(
+        devSpace: HyperpodDevSpace,
+        ideType?: string
+    ): Promise<WorkspaceConnectionResult> {
         getLogger().info(`[Hyperpod] Creating workspace connection for space: ${devSpace.name}`)
         try {
-            const result = await super.createWorkspaceConnection(devSpace)
+            const result = await super.createWorkspaceConnection(devSpace, ideType)
             if (!result.url) {
                 throw new Error('No workspace connection URL returned')
             }

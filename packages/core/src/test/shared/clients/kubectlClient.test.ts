@@ -341,5 +341,65 @@ describe('KubectlClient', function () {
             assert.strictEqual(result.token, '')
             assert.strictEqual(result.sessionId, '')
         })
+
+        it('sends ideType-remote as workspaceConnectionType in request', async function () {
+            const client = await KubectlClient.createForCluster(eksCluster, hyperpodCluster, testCredentials)
+
+            const createStub = sinon.stub().resolves({
+                body: {
+                    status: {
+                        workspaceConnectionUrl: 'https://example.com',
+                        workspaceConnectionType: 'cursor-remote',
+                        tokenValue: 'tok',
+                        sessionId: 'sess',
+                    },
+                },
+            })
+            stubGetApi(client, { createNamespacedCustomObject: createStub })
+
+            await client.createWorkspaceConnection(testDevSpace, 'cursor')
+
+            const requestBody = createStub.firstCall.args[4]
+            assert.strictEqual(requestBody.spec.workspaceConnectionType, 'cursor-remote')
+        })
+
+        it('falls back to vscode-remote when IDE-specific type is rejected', async function () {
+            const client = await KubectlClient.createForCluster(eksCluster, hyperpodCluster, testCredentials)
+
+            const createStub = sinon.stub()
+            // First call (cursor-remote) fails
+            createStub.onFirstCall().rejects(new Error('invalid workspaceConnectionType'))
+            // Second call (vscode-remote fallback) succeeds
+            createStub.onSecondCall().resolves({
+                body: {
+                    status: {
+                        workspaceConnectionUrl: 'https://example.com',
+                        workspaceConnectionType: 'vscode-remote',
+                        tokenValue: 'tok',
+                        sessionId: 'sess',
+                    },
+                },
+            })
+            stubGetApi(client, { createNamespacedCustomObject: createStub })
+
+            const result = await client.createWorkspaceConnection(testDevSpace, 'cursor')
+
+            assert.strictEqual(createStub.callCount, 2)
+            assert.strictEqual(createStub.secondCall.args[4].spec.workspaceConnectionType, 'vscode-remote')
+            assert.strictEqual(result.type, 'vscode-remote')
+        })
+
+        it('does not fall back when ideType is already vscode', async function () {
+            const client = await KubectlClient.createForCluster(eksCluster, hyperpodCluster, testCredentials)
+
+            const createStub = sinon.stub().rejects(new Error('CRD not found'))
+            stubGetApi(client, { createNamespacedCustomObject: createStub })
+
+            await assert.rejects(
+                client.createWorkspaceConnection(testDevSpace, 'vscode'),
+                /Failed to create workspace connection/
+            )
+            assert.strictEqual(createStub.callCount, 1)
+        })
     })
 })
