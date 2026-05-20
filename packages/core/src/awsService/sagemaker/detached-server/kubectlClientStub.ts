@@ -45,49 +45,63 @@ export class KubectlClient {
         return this.k8sApi
     }
 
-    async createWorkspaceConnection(devSpace: HyperpodDevSpace): Promise<WorkspaceConnectionResult> {
+    async createWorkspaceConnection(
+        devSpace: HyperpodDevSpace,
+        ideType: string = 'vscode'
+    ): Promise<WorkspaceConnectionResult> {
         try {
-            await this.ensureValidToken()
-
-            const group = 'connection.workspace.jupyter.org'
-            const version = 'v1alpha1'
-            const plural = 'workspaceconnections'
-
-            const workspaceConnection = {
-                apiVersion: `${group}/${version}`,
-                kind: 'WorkspaceConnection',
-                metadata: {
-                    namespace: devSpace.namespace,
-                },
-                spec: {
-                    workspaceName: devSpace.name,
-                    workspaceConnectionType: 'vscode-remote',
-                },
-            }
-
-            const response = await this.getApi().createNamespacedCustomObject(
-                group,
-                version,
-                devSpace.namespace,
-                plural,
-                workspaceConnection
-            )
-
-            const body = response.body as any
-            const status = body.status
-            const presignedUrl = status?.workspaceConnectionUrl
-            const connectionType = status?.workspaceConnectionType
-            // tokenValue and sessionId may not be present in all API responses.
-            // When empty, the existing connection flow in model.ts falls back to parsing these from the presigned URL.
-            const token = status?.tokenValue ?? ''
-            const sessionId = status?.sessionId ?? ''
-
-            return { type: connectionType || 'vscode-remote', url: presignedUrl, token, sessionId }
+            return await this.doCreateWorkspaceConnection(devSpace, `${ideType}-remote`)
         } catch (error) {
+            // Fall back to vscode-remote if the IDE-specific type is not supported (older addon versions)
+            if (ideType !== 'vscode') {
+                return await this.doCreateWorkspaceConnection(devSpace, 'vscode-remote')
+            }
             throw new Error(
                 `Failed to create workspace connection: ${error instanceof Error ? error.message : String(error)}`
             )
         }
+    }
+
+    private async doCreateWorkspaceConnection(
+        devSpace: HyperpodDevSpace,
+        workspaceConnectionType: string
+    ): Promise<WorkspaceConnectionResult> {
+        await this.ensureValidToken()
+
+        const group = 'connection.workspace.jupyter.org'
+        const version = 'v1alpha1'
+        const plural = 'workspaceconnections'
+
+        const workspaceConnection = {
+            apiVersion: `${group}/${version}`,
+            kind: 'WorkspaceConnection',
+            metadata: {
+                namespace: devSpace.namespace,
+            },
+            spec: {
+                workspaceName: devSpace.name,
+                workspaceConnectionType,
+            },
+        }
+
+        const response = await this.getApi().createNamespacedCustomObject(
+            group,
+            version,
+            devSpace.namespace,
+            plural,
+            workspaceConnection
+        )
+
+        const body = response.body as any
+        const status = body.status
+        const presignedUrl = status?.workspaceConnectionUrl
+        const connectionType = status?.workspaceConnectionType
+        // tokenValue and sessionId may not be present in all API responses.
+        // When empty, getHyperpodSession.ts falls back to parsing these from the presigned URL.
+        const token = status?.tokenValue ?? ''
+        const sessionId = status?.sessionId ?? ''
+
+        return { type: connectionType || workspaceConnectionType, url: presignedUrl, token, sessionId }
     }
 
     protected async initKubeConfig(): Promise<void> {
