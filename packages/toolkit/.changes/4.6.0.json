@@ -1,0 +1,18 @@
+{
+	"date": "2026-05-21",
+	"version": "4.6.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "HyperPod: Kiro IDE can now connect to HyperPod dev spaces"
+		},
+		{
+			"type": "Feature",
+			"description": "HyperPod: Cursor IDE can now connect to HyperPod dev spaces"
+		},
+		{
+			"type": "Feature",
+			"description": "Support projects created from admin portal in SMUS IDC domains"
+		}
+	]
+}
