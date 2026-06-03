@@ -4,7 +4,8 @@
  */
 
 import { window } from 'vscode'
-import { LanguageClient } from 'vscode-languageclient/node'
+import { LanguageClient, ResponseError } from 'vscode-languageclient/node'
+import { ErrorCodes } from 'vscode-jsonrpc'
 import {
     getAuthoredResourceTypes,
     getAuthoredResourceTypesV2,
@@ -73,10 +74,13 @@ export class RelatedResourceSelector {
     private async getAuthoredResources(templateUri: string): Promise<AuthoredResource[]> {
         try {
             return await getAuthoredResourceTypesV2(this.client, templateUri)
-        } catch {
-            // Fall back to v1 for older language servers that don't support v2
-            const types = await getAuthoredResourceTypes(this.client, templateUri)
-            return types.map((type, index) => ({ logicalId: `Resource${index + 1}`, type }))
+        } catch (error) {
+            // Fall back to v1 only if the server doesn't support v2 (method not found)
+            if (error instanceof ResponseError && error.code === ErrorCodes.MethodNotFound) {
+                const types = await getAuthoredResourceTypes(this.client, templateUri)
+                return types.map((type, index) => ({ logicalId: `Resource${index + 1}`, type }))
+            }
+            throw error
         }
     }
 
