@@ -7,6 +7,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { ResponseError } from 'vscode-languageclient/node'
+import { ErrorCodes } from 'vscode-jsonrpc'
 import { RelatedResourceSelector } from '../../../../awsService/cloudformation/ui/relatedResourceSelector'
 import * as relatedResourcesApi from '../../../../awsService/cloudformation/relatedResources/relatedResourcesApi'
 
@@ -94,7 +95,7 @@ describe('RelatedResourceSelector', function () {
         })
 
         it('should fall back to v1 endpoint when v2 method not found', async function () {
-            getAuthoredResourceTypesV2Stub.rejects(new ResponseError(-32601, 'Method not found'))
+            getAuthoredResourceTypesV2Stub.rejects(new ResponseError(ErrorCodes.MethodNotFound, 'Method not found'))
             getAuthoredResourceTypesStub.resolves(['AWS::S3::Bucket', 'AWS::Lambda::Function'])
             showQuickPickStub.resolves('AWS::S3::Bucket')
 
@@ -102,6 +103,7 @@ describe('RelatedResourceSelector', function () {
 
             assert.ok(result)
             assert.strictEqual(result.type, 'AWS::S3::Bucket')
+            assert.strictEqual(result.logicalId, 'Resource1')
             assert.ok(getAuthoredResourceTypesStub.calledOnce)
         })
 
