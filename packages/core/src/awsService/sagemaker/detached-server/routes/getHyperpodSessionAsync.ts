@@ -8,6 +8,7 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { getHyperpodFreshEntry, getHyperpodRequestStatus } from '../hyperpodMappingUtils'
+import { handleGetHyperpodSession } from './getHyperpodSession'
 
 export async function handleGetHyperpodSessionAsync(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -37,9 +38,9 @@ export async function handleGetHyperpodSessionAsync(req: IncomingMessage, res: S
             return
         }
 
-        // not-started or consumed — session not available
-        res.writeHead(202, { 'Content-Type': 'text/plain' })
-        res.end('Session is not ready yet. Please retry in a few seconds.')
+        // consumed or not-started — fall back to localCredential/kubectl reconnection path
+        // which also handles browser-based reconnection via refreshUrl
+        await handleGetHyperpodSession(req, res)
     } catch (err) {
         console.error('Error handling HyperPod session async request:', err)
         res.writeHead(500, { 'Content-Type': 'text/plain' })

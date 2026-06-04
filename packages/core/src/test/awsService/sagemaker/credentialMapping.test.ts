@@ -598,5 +598,69 @@ describe('credentialMapping', () => {
             assert.strictEqual(written.localCredential?.['myspace:default:mycluster']?.clusterName, 'mycluster')
             assert.strictEqual(written.deepLink, undefined)
         })
+
+        it('stores refreshUrl in localCredential when provided', async () => {
+            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
+            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
+            sandbox.stub(globals, 'awsContext').value({
+                getCredentials: () => Promise.resolve(undefined),
+            })
+
+            await persistHyperpodConnection(
+                'myspace',
+                'default',
+                'arn:aws:eks:us-east-2:123456789012:cluster/mycluster',
+                'mycluster',
+                'https://eks.endpoint',
+                'certdata',
+                'us-east-2',
+                undefined,
+                undefined,
+                undefined,
+                'mycluster',
+                'https://studio.example.com/hyperPod/clusters/mycluster/myspace'
+            )
+
+            assert.ok(writeStub.calledOnce)
+            const written = writeStub.firstCall.args[0]
+            assert.strictEqual(
+                written.localCredential?.['myspace:default:mycluster']?.refreshUrl,
+                'https://studio.example.com/hyperPod/clusters/mycluster/myspace'
+            )
+        })
+
+        it('does not write deepLink when wsUrl is a presigned vscode:// URL (LC connections)', async () => {
+            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
+            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
+            sandbox.stub(globals, 'awsContext').value({
+                getCredentials: () =>
+                    Promise.resolve({
+                        accessKeyId: 'AKIA123',
+                        secretAccessKey: 'secret',
+                        sessionToken: 'token',
+                    }),
+            })
+
+            await persistHyperpodConnection(
+                'myspace',
+                'default',
+                'arn:aws:eks:us-east-2:123456789012:cluster/mycluster',
+                'mycluster',
+                'https://eks.endpoint',
+                'certdata',
+                'us-east-2',
+                'vscode://amazonwebservices.aws-toolkit-vscode/connect/workspace?streamUrl=wss://ssm.example.com',
+                'session-token',
+                'session-id',
+                'mycluster'
+            )
+
+            assert.ok(writeStub.calledOnce)
+            const written = writeStub.firstCall.args[0]
+            // localCredential should be stored
+            assert.strictEqual(written.localCredential?.['myspace:default:mycluster']?.clusterName, 'mycluster')
+            // deepLink should NOT be stored since wsUrl is vscode://, not wss://
+            assert.strictEqual(written.deepLink, undefined)
+        })
     })
 })

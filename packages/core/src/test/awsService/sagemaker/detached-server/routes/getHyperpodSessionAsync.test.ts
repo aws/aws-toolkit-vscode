@@ -8,6 +8,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { handleGetHyperpodSessionAsync } from '../../../../../awsService/sagemaker/detached-server/routes/getHyperpodSessionAsync'
 import * as hyperpodMappingUtils from '../../../../../awsService/sagemaker/detached-server/hyperpodMappingUtils'
+import * as getHyperpodSessionModule from '../../../../../awsService/sagemaker/detached-server/routes/getHyperpodSession'
 
 describe('handleGetHyperpodSessionAsync', () => {
     let resWriteHead: sinon.SinonSpy
@@ -16,6 +17,7 @@ describe('handleGetHyperpodSessionAsync', () => {
     let res: Partial<http.ServerResponse>
     let getFreshEntryStub: sinon.SinonStub
     let getStatusStub: sinon.SinonStub
+    let handleGetHyperpodSessionStub: sinon.SinonStub
 
     beforeEach(() => {
         resWriteHead = sinon.spy()
@@ -23,6 +25,7 @@ describe('handleGetHyperpodSessionAsync', () => {
         res = { writeHead: resWriteHead, end: resEnd }
         getFreshEntryStub = sinon.stub(hyperpodMappingUtils, 'getHyperpodFreshEntry')
         getStatusStub = sinon.stub(hyperpodMappingUtils, 'getHyperpodRequestStatus')
+        handleGetHyperpodSessionStub = sinon.stub(getHyperpodSessionModule, 'handleGetHyperpodSession').resolves()
     })
 
     afterEach(() => {
@@ -64,24 +67,26 @@ describe('handleGetHyperpodSessionAsync', () => {
         assert(resWriteHead.calledWith(204))
     })
 
-    it('returns 202 when status is not-started', async () => {
+    it('falls back to handleGetHyperpodSession when status is not-started', async () => {
         req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
         getFreshEntryStub.resolves(undefined)
         getStatusStub.resolves('not-started')
 
         await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-        assert(resWriteHead.calledWith(202))
+        assert(handleGetHyperpodSessionStub.calledOnce)
+        assert(handleGetHyperpodSessionStub.calledWith(req, res))
     })
 
-    it('returns 202 when status is consumed', async () => {
+    it('falls back to handleGetHyperpodSession when status is consumed', async () => {
         req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
         getFreshEntryStub.resolves(undefined)
         getStatusStub.resolves('consumed')
 
         await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-        assert(resWriteHead.calledWith(202))
+        assert(handleGetHyperpodSessionStub.calledOnce)
+        assert(handleGetHyperpodSessionStub.calledWith(req, res))
     })
 
     it('returns 500 on unexpected error', async () => {
