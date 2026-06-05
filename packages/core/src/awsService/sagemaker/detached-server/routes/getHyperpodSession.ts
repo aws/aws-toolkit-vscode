@@ -7,19 +7,15 @@
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
-import { readHyperpodMapping, HyperpodLocalCredential, getHyperpodFreshEntry } from '../hyperpodMappingUtils'
+import { readHyperpodMapping, HyperpodLocalCredential } from '../hyperpodMappingUtils'
 import { KubectlClient } from '../kubectlClientStub'
 import { HyperpodCluster, HyperpodDevSpace, EksClusterInfo } from '../hyperpodTypes'
 import { HttpError } from '@kubernetes/client-node'
-import { open, readServerInfo } from '../utils'
 
 const maxRetries = 8
 const attemptCount = new Map<string, number>()
 const lastAttemptTime = new Map<string, number>()
 const resetWindowMs = 10 * 60 * 1000
-
-// Track pending browser reconnections
-const pendingBrowserReconnects = new Map<string, { requestId: string; timestamp: number }>()
 
 export async function handleGetHyperpodSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -49,55 +45,6 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         return
     }
 
-    // Check if browser reconnection has delivered fresh credentials via deepLink store
-    const pending = pendingBrowserReconnects.get(connectionKey)
-    if (pending) {
-        try {
-            const freshEntry = await getHyperpodFreshEntry(connectionKey, pending.requestId)
-            if (freshEntry) {
-                pendingBrowserReconnects.delete(connectionKey)
-                attemptCount.delete(connectionKey)
-                lastAttemptTime.delete(connectionKey)
-                res.writeHead(200, { 'Content-Type': 'application/json' })
-                res.end(
-                    JSON.stringify({
-                        SessionId: freshEntry.sessionId,
-                        StreamUrl: freshEntry.url,
-                        TokenValue: freshEntry.token,
-                    })
-                )
-                return
-            }
-        } catch {
-            // Entry not ready yet, continue with normal flow
-        }
-
-        // Still waiting for browser reconnection
-        res.writeHead(202, { 'Content-Type': 'text/plain' })
-        res.end('Browser reconnection in progress. Please retry.')
-        return
-    }
-
-    // Check for fresh deepLink entry (initial connection from deeplink)
-    try {
-        const freshEntry = await getHyperpodFreshEntry(connectionKey)
-        if (freshEntry) {
-            attemptCount.delete(connectionKey)
-            lastAttemptTime.delete(connectionKey)
-            res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(
-                JSON.stringify({
-                    SessionId: freshEntry.sessionId,
-                    StreamUrl: freshEntry.url,
-                    TokenValue: freshEntry.token,
-                })
-            )
-            return
-        }
-    } catch {
-        // No fresh entry, continue with kubectl-based reconnection
-    }
-
     let mapping: HyperpodLocalCredential
     try {
         const allMappings = await readHyperpodMapping()
@@ -116,22 +63,12 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
     }
 
     if (!mapping.credentials) {
-        // No stored credentials — try browser-based reconnection if refreshUrl available
-        if (mapping.refreshUrl) {
-            await triggerBrowserReconnection(connectionKey, mapping, res)
-            return
-        }
         res.writeHead(401, { 'Content-Type': 'text/plain' })
         res.end('No stored credentials for this HyperPod connection. Please reconnect from the IDE.')
         return
     }
 
     if (!mapping.endpoint || !mapping.eksClusterName) {
-        // Missing EKS metadata — try browser-based reconnection if refreshUrl available
-        if (mapping.refreshUrl) {
-            await triggerBrowserReconnection(connectionKey, mapping, res)
-            return
-        }
         res.writeHead(422, { 'Content-Type': 'text/plain' })
         res.end('Missing EKS cluster metadata for this HyperPod connection. Please reconnect from the IDE.')
         return
@@ -220,48 +157,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
             err instanceof HttpError ? err : (err as any)?.cause instanceof HttpError ? (err as any).cause : undefined
         const statusCode = httpErr?.statusCode ?? 500
 
-        // On auth failures, try browser-based reconnection
-        if ((statusCode === 401 || statusCode === 403) && mapping.refreshUrl) {
-            await triggerBrowserReconnection(connectionKey, mapping, res)
-            return
-        }
-
         res.writeHead(statusCode, { 'Content-Type': 'text/plain' })
         res.end(`Failed to create workspace connection: ${(err as Error).message}`)
-    }
-}
-
-async function triggerBrowserReconnection(
-    connectionKey: string,
-    mapping: HyperpodLocalCredential,
-    res: ServerResponse
-): Promise<void> {
-    // Check if we already have a pending browser reconnection
-    const pending = pendingBrowserReconnects.get(connectionKey)
-    if (pending && Date.now() - pending.timestamp < 60000) {
-        res.writeHead(202, { 'Content-Type': 'text/plain' })
-        res.end('Browser reconnection in progress. Please retry.')
-        return
-    }
-
-    try {
-        const serverInfo = await readServerInfo()
-        const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
-
-        const callbackUrl = `http://localhost:${serverInfo.port}/refresh_token`
-        const separator = mapping.refreshUrl!.includes('?') ? '&' : '?'
-        const reconnectUrl = `${mapping.refreshUrl}${separator}reconnect_callback_url=${encodeURIComponent(callbackUrl)}&reconnect_request_id=${encodeURIComponent(requestId)}`
-
-        pendingBrowserReconnects.set(connectionKey, { requestId, timestamp: Date.now() })
-
-        console.log(`Opening browser for HyperPod reconnection: ${connectionKey}`)
-        await open(reconnectUrl)
-
-        res.writeHead(202, { 'Content-Type': 'text/plain' })
-        res.end('Browser reconnection initiated. Please retry.')
-    } catch (err) {
-        console.error(`Failed to trigger browser reconnection for ${connectionKey}:`, err)
-        res.writeHead(500, { 'Content-Type': 'text/plain' })
-        res.end(`Failed to initiate browser reconnection: ${(err as Error).message}`)
     }
 }
