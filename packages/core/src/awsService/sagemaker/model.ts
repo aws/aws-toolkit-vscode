@@ -267,8 +267,9 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
 
     logger.info(`connect script logs at ${vars.LOG_FILE_LOCATION}`)
 
+    const proxyVars = getLocalProxyEnv()
     const envProvider = async () => {
-        return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
+        return { [sshAgentSocketVariable]: await startSshAgent(), ...vars, ...proxyVars }
     }
     const SessionProcess = createBoundProcess(envProvider).extend({
         onStdout: (data: string) => remoteLogger(data),
@@ -310,12 +311,15 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
 
     await stopLocalServer(ctx)
 
+    const proxyEnv = getLocalProxyEnv()
+
     const child = spawnDetachedServer(process.execPath, [serverPath], {
         cwd: path.dirname(serverPath),
         detached: true,
         stdio: ['ignore', nodefs.openSync(outLog, 'a'), nodefs.openSync(errLog, 'a')],
         env: {
             ...process.env,
+            ...proxyEnv,
             SAGEMAKER_ENDPOINT: customEndpoint,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: infoFilePath,
             PARENT_IDE_TYPE: getIdeType(),
@@ -336,6 +340,25 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
     }
 
     throw new ToolkitError(`Timed out waiting for local server info file: ${infoFilePath}`)
+}
+
+function getLocalProxyEnv(): Record<string, string> {
+    const env: Record<string, string> = {}
+    const httpConfig = vscode.workspace.getConfiguration('http')
+    const proxyUrl = httpConfig.get<string>('proxy')
+    if (proxyUrl) {
+        env.HTTP_PROXY = proxyUrl
+        env.HTTPS_PROXY = proxyUrl
+    }
+    const noProxy = httpConfig.get<string>('noProxy')
+    if (noProxy) {
+        env.NO_PROXY = noProxy
+    }
+    const strictSSL = httpConfig.get<boolean>('proxyStrictSSL', true)
+    if (!strictSSL) {
+        env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+    return env
 }
 
 interface LocalServerInfo {
