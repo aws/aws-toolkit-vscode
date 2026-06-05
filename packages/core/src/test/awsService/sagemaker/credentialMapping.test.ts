@@ -529,16 +529,20 @@ describe('credentialMapping', () => {
             sandbox.restore()
         })
 
-        it('stores localCredential and deepLink sections', async () => {
+        function stubCredentials(creds?: { accessKeyId: string; secretAccessKey: string; sessionToken: string }) {
             sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
             const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
             sandbox.stub(globals, 'awsContext').value({
-                getCredentials: () =>
-                    Promise.resolve({
-                        accessKeyId: 'AKIA123',
-                        secretAccessKey: 'secret',
-                        sessionToken: 'token',
-                    }),
+                getCredentials: () => Promise.resolve(creds),
+            })
+            return writeStub
+        }
+
+        it('stores localCredential and deepLink sections', async () => {
+            const writeStub = stubCredentials({
+                accessKeyId: 'AKIA123',
+                secretAccessKey: 'secret',
+                sessionToken: 'token',
             })
 
             await persistHyperpodConnection(
@@ -573,11 +577,7 @@ describe('credentialMapping', () => {
         })
 
         it('does not write deepLink when wsUrl or token is missing', async () => {
-            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
-            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
-            sandbox.stub(globals, 'awsContext').value({
-                getCredentials: () => Promise.resolve(undefined),
-            })
+            const writeStub = stubCredentials(undefined)
 
             await persistHyperpodConnection(
                 'myspace',
@@ -600,11 +600,7 @@ describe('credentialMapping', () => {
         })
 
         it('stores refreshUrl in localCredential when provided', async () => {
-            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
-            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
-            sandbox.stub(globals, 'awsContext').value({
-                getCredentials: () => Promise.resolve(undefined),
-            })
+            const writeStub = stubCredentials(undefined)
 
             await persistHyperpodConnection(
                 'myspace',
@@ -630,15 +626,10 @@ describe('credentialMapping', () => {
         })
 
         it('does not write deepLink when wsUrl is a presigned vscode:// URL (LC connections)', async () => {
-            sandbox.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({})
-            const writeStub = sandbox.stub(hyperpodMappingUtils, 'writeHyperpodMapping').resolves()
-            sandbox.stub(globals, 'awsContext').value({
-                getCredentials: () =>
-                    Promise.resolve({
-                        accessKeyId: 'AKIA123',
-                        secretAccessKey: 'secret',
-                        sessionToken: 'token',
-                    }),
+            const writeStub = stubCredentials({
+                accessKeyId: 'AKIA123',
+                secretAccessKey: 'secret',
+                sessionToken: 'token',
             })
 
             await persistHyperpodConnection(
@@ -657,9 +648,7 @@ describe('credentialMapping', () => {
 
             assert.ok(writeStub.calledOnce)
             const written = writeStub.firstCall.args[0]
-            // localCredential should be stored
             assert.strictEqual(written.localCredential?.['myspace:default:mycluster']?.clusterName, 'mycluster')
-            // deepLink should NOT be stored since wsUrl is vscode://, not wss://
             assert.strictEqual(written.deepLink, undefined)
         })
     })
