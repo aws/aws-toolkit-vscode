@@ -79,5 +79,8 @@
         "jaro-winkler": "^0.2.8",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
+    },
+    "overrides": {
+        "jsonpath-plus": "^10.3.0"
     }
 }
