@@ -237,7 +237,8 @@ export async function persistHyperpodConnection(
     wsUrl?: string,
     token?: string,
     sessionId?: string,
-    eksClusterName?: string
+    eksClusterName?: string,
+    refreshUrl?: string
 ): Promise<void> {
     const creds = await globals.awsContext.getCredentials()
     const storedCreds = creds
@@ -259,11 +260,12 @@ export async function persistHyperpodConnection(
         region,
         accountId,
         eksClusterName,
+        refreshUrl,
         credentials: storedCreds,
     }
 
-    // DL: session tokens for deeplink async retrieval
-    if (wsUrl && token) {
+    // DL: session tokens for deeplink async retrieval (only for actual stream URLs, not presigned vscode:// URLs)
+    if (wsUrl && token && wsUrl.startsWith('wss://')) {
         mapping.deepLink ??= {}
         mapping.deepLink[connectionKey] = {
             requests: {

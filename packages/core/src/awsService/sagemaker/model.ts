@@ -133,6 +133,7 @@ export interface DevEnvConnectionOptions {
     eksEndpoint?: string
     eksCertAuthData?: string
     eksClusterName?: string
+    refreshUrl?: string
 }
 
 export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
@@ -156,6 +157,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
         eksEndpoint,
         eksCertAuthData,
         eksClusterName,
+        refreshUrl,
     } = opts
     const remoteLogger = configureRemoteConnectionLogger()
     // Skip Remote SSH extension check in Kiro since it uses embedded SageMaker SSH Kiro extension
@@ -210,7 +212,8 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
             wsUrl,
             token,
             session,
-            eksClusterName
+            eksClusterName,
+            refreshUrl
         )
     }
     await startLocalServer(ctx)

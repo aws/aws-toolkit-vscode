@@ -19,6 +19,8 @@ export interface HyperpodLocalCredential {
     region?: string
     accountId?: string
     eksClusterName?: string
+    /** Console URL for browser-based reconnection (mirrors StudioMFE pattern). */
+    refreshUrl?: string
     credentials?: {
         accessKeyId: string
         secretAccessKey: string
