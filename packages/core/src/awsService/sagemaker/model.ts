@@ -342,7 +342,7 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
     throw new ToolkitError(`Timed out waiting for local server info file: ${infoFilePath}`)
 }
 
-function getLocalProxyEnv(): Record<string, string> {
+export function getLocalProxyEnv(): Record<string, string> {
     const env: Record<string, string> = {}
     const httpConfig = vscode.workspace.getConfiguration('http')
     const proxyUrl = httpConfig.get<string>('proxy')
@@ -350,12 +350,13 @@ function getLocalProxyEnv(): Record<string, string> {
         env.HTTP_PROXY = proxyUrl
         env.HTTPS_PROXY = proxyUrl
     }
-    const noProxy = httpConfig.get<string>('noProxy')
-    if (noProxy) {
-        env.NO_PROXY = noProxy
+    const noProxy = httpConfig.get<string[]>('noProxy')
+    if (noProxy && noProxy.length > 0) {
+        env.NO_PROXY = noProxy.join(',')
     }
     const strictSSL = httpConfig.get<boolean>('proxyStrictSSL', true)
     if (!strictSSL) {
+        logger.warn('TLS certificate verification disabled due to http.proxyStrictSSL setting')
         env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
     return env
