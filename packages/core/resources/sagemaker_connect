@@ -108,14 +108,69 @@ if [[ "$CREDS_TYPE" != "lc" && "$CREDS_TYPE" != "dl" ]]; then
     exit 1
 fi
 
-# Validate required env var and file
+# Resolve SAGEMAKER_LOCAL_SERVER_FILE_PATH if not set (e.g., during window restore)
 if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
-    echo "[Error] SAGEMAKER_LOCAL_SERVER_FILE_PATH is not set"
-    exit 1
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    SAGEMAKER_LOCAL_SERVER_FILE_PATH="$SCRIPT_DIR/sagemaker-local-server-info.json"
+    export SAGEMAKER_LOCAL_SERVER_FILE_PATH
 fi
 
-if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
-    echo "[Error] File not found at SAGEMAKER_LOCAL_SERVER_FILE_PATH: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+# Resolve server start paths from info file if env vars are missing
+if [ -z "$SAGEMAKER_SERVER_SCRIPT_PATH" ] || [ -z "$SAGEMAKER_NODE_PATH" ]; then
+    if [ -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+        if [ -z "$SAGEMAKER_SERVER_SCRIPT_PATH" ]; then
+            SAGEMAKER_SERVER_SCRIPT_PATH=$(jq -r '.serverScriptPath // empty' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+        fi
+        if [ -z "$SAGEMAKER_NODE_PATH" ]; then
+            SAGEMAKER_NODE_PATH=$(jq -r '.nodePath // empty' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+        fi
+    fi
+fi
+
+# Check if the server is running by verifying the info file exists and the process is alive
+_ensure_server_running() {
+    if [ -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+        local pid
+        pid=$(jq -r '.pid' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+        if [ -n "$pid" ] && [ "$pid" != "null" ] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    # Server not running — attempt to start it
+    if [ -z "$SAGEMAKER_SERVER_SCRIPT_PATH" ] || [ -z "$SAGEMAKER_NODE_PATH" ]; then
+        echo "[Error] Server is not running and cannot be started (missing SAGEMAKER_SERVER_SCRIPT_PATH or SAGEMAKER_NODE_PATH)"
+        return 1
+    fi
+
+    if [ ! -f "$SAGEMAKER_SERVER_SCRIPT_PATH" ]; then
+        echo "[Error] Server script not found: $SAGEMAKER_SERVER_SCRIPT_PATH"
+        return 1
+    fi
+
+    echo "Detached server not running. Starting..."
+    nohup "$SAGEMAKER_NODE_PATH" "$SAGEMAKER_SERVER_SCRIPT_PATH" > /dev/null 2>&1 &
+
+    # Wait for the info file to appear (max 10 seconds)
+    local retries=20
+    while [ $retries -gt 0 ]; do
+        if [ -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+            local new_pid
+            new_pid=$(jq -r '.pid' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" 2>/dev/null)
+            if [ -n "$new_pid" ] && [ "$new_pid" != "null" ] && kill -0 "$new_pid" 2>/dev/null; then
+                echo "Detached server started (pid: $new_pid)"
+                return 0
+            fi
+        fi
+        sleep 0.5
+        retries=$((retries - 1))
+    done
+
+    echo "[Error] Timed out waiting for detached server to start"
+    return 1
+}
+
+if ! _ensure_server_running; then
     exit 1
 fi
 
@@ -138,8 +193,17 @@ else
     exit 1
 fi
 
+# Resolve AWS_SSM_CLI if not set (e.g., during window restore)
+if [ -z "$AWS_SSM_CLI" ]; then
+    SCRIPT_DIR_SSM="$(cd "$(dirname "$0")" && pwd)"
+    LOCAL_SSM="$SCRIPT_DIR_SSM/tools/Amazon/sessionmanagerplugin/bin/session-manager-plugin"
+    if [ -x "$LOCAL_SSM" ]; then
+        AWS_SSM_CLI="$LOCAL_SSM"
+    fi
+fi
+
 echo "Extracting AWS_SSM_CLI: $AWS_SSM_CLI"
 
 # Execute the session
-AWS_SSM_CLI="${AWS_SSM_CLI:=session-manager-plugin}" 
+AWS_SSM_CLI="${AWS_SSM_CLI:=session-manager-plugin}"
 exec "${AWS_SSM_CLI}" "$SSM_SESSION_JSON" "$REGION" StartSession

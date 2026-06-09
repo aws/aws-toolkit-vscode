@@ -128,19 +128,6 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
             return false
         }
     }
-
-    public async removeRemotePlatforms(predicate: (hostname: string) => boolean): Promise<number> {
-        const current = { ...this._getOrThrow('remotePlatform', {}) }
-        const stale = Object.keys(current).filter(predicate)
-        if (stale.length === 0) {
-            return 0
-        }
-        for (const key of stale) {
-            delete current[key]
-        }
-        await this.update('remotePlatform', current)
-        return stale.length
-    }
 }
 
 /**
@@ -191,14 +178,19 @@ export async function startVscodeRemote(
     })
 
     if (process.platform === 'win32') {
-        await Promise.all([
-            // TODO(sijaden): we should periodically clean this setting up, maybe
-            // by removing all hostnames that use the `aws-` prefix
-            await settings.setRemotePlatform(hostname, 'linux'),
+        // SageMaker/HyperPod connections need useLocalServer=true for window restore support.
+        // Other connections (EC2, CodeCatalyst) keep the original false behavior.
+        const isSageMakerHost = /^smc?_|^smhpc?_/.test(hostname)
 
-            // TODO(sijaden): revert this setting back to normal after the user connects
-            await settings.update('useLocalServer', false),
-        ])
+        await settings.setRemotePlatform(hostname, 'linux')
+        await settings.update('useLocalServer', isSageMakerHost)
+
+        if (isSageMakerHost) {
+            const currentSshPath = settings.get('path', '')
+            if (!currentSshPath) {
+                await settings.update('path', 'C:\\Windows\\System32\\OpenSSH\\ssh.exe')
+            }
+        }
     }
 
     await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()

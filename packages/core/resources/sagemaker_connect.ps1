@@ -107,7 +107,87 @@ if ($CREDS_TYPE -ne "lc" -and $CREDS_TYPE -ne "dl") {
     exit 1
 }
 
-# Read port from local info JSON
+# Resolve SAGEMAKER_LOCAL_SERVER_FILE_PATH if not set (e.g., during window restore)
+if (-not $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH = Join-Path $scriptDir "sagemaker-local-server-info.json"
+    Write-Host "Derived SAGEMAKER_LOCAL_SERVER_FILE_PATH: $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+}
+
+# Resolve server paths from info file if available
+if (Test-Path $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH) {
+    try {
+        $jsonContent = Get-Content $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH -Raw | ConvertFrom-Json
+        if (-not $env:SAGEMAKER_SERVER_SCRIPT_PATH -and $jsonContent.serverScriptPath) {
+            $env:SAGEMAKER_SERVER_SCRIPT_PATH = $jsonContent.serverScriptPath
+        }
+        if (-not $env:SAGEMAKER_NODE_PATH -and $jsonContent.nodePath) {
+            $env:SAGEMAKER_NODE_PATH = $jsonContent.nodePath
+        }
+    } catch {
+        # Info file may be stale or corrupted, continue anyway
+    }
+}
+
+# Ensure detached server is running
+function Ensure-ServerRunning {
+    if ((Test-Path $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH)) {
+        try {
+            $info = Get-Content $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH -Raw | ConvertFrom-Json
+            if ($info.pid) {
+                $proc = Get-Process -Id $info.pid -ErrorAction Stop
+                if ($proc) {
+                    Write-Host "Detached server is running (pid: $($info.pid))"
+                    return $true
+                }
+            }
+        } catch {
+            # Process not running
+        }
+    }
+
+    # Server not running - attempt to start it
+    if (-not $env:SAGEMAKER_SERVER_SCRIPT_PATH -or -not $env:SAGEMAKER_NODE_PATH) {
+        Write-Error "Server is not running and cannot be started (missing SAGEMAKER_SERVER_SCRIPT_PATH or SAGEMAKER_NODE_PATH)"
+        return $false
+    }
+
+    if (-not (Test-Path $env:SAGEMAKER_SERVER_SCRIPT_PATH)) {
+        Write-Error "Server script not found: $env:SAGEMAKER_SERVER_SCRIPT_PATH"
+        return $false
+    }
+
+    Write-Host "Detached server not running. Starting..."
+    Start-Process -FilePath $env:SAGEMAKER_NODE_PATH -ArgumentList "`"$($env:SAGEMAKER_SERVER_SCRIPT_PATH)`"" -WindowStyle Hidden
+
+    # Wait for the info file to appear (max 10 seconds)
+    for ($i = 0; $i -lt 20; $i++) {
+        Start-Sleep -Milliseconds 500
+        if (Test-Path $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH) {
+            try {
+                $newJson = Get-Content $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH -Raw | ConvertFrom-Json
+                if ($newJson.pid) {
+                    $newProc = Get-Process -Id $newJson.pid -ErrorAction Stop
+                    if ($newProc) {
+                        Write-Host "Detached server started (pid: $($newJson.pid))"
+                        return $true
+                    }
+                }
+            } catch {
+                # Not ready yet
+            }
+        }
+    }
+
+    Write-Error "Timed out waiting for detached server to start"
+    return $false
+}
+
+if (-not (Ensure-ServerRunning)) {
+    exit 1
+}
+
+# Read port from info file (after server is confirmed running)
 Write-Host "`nReading SAGEMAKER_LOCAL_SERVER_FILE_PATH: $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH"
 try {
     $jsonContent = Get-Content $env:SAGEMAKER_LOCAL_SERVER_FILE_PATH -Raw | ConvertFrom-Json
@@ -129,6 +209,15 @@ if ($CREDS_TYPE -eq "lc") {
     Get-SSMSessionInfo -CredentialsType "local" -AwsResourceArn $AWS_RESOURCE_ARN -LocalEndpointPort $LOCAL_ENDPOINT_PORT
 } elseif ($CREDS_TYPE -eq "dl") {
     Get-SSMSessionInfoAsync -CredentialsType "deeplink" -AwsResourceArn $AWS_RESOURCE_ARN -LocalEndpointPort $LOCAL_ENDPOINT_PORT
+}
+
+# Resolve AWS_SSM_CLI if not set (e.g., during window restore)
+if (-not $env:AWS_SSM_CLI) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $localSsm = Join-Path $scriptDir "tools\Amazon\sessionmanagerplugin\bin\session-manager-plugin.exe"
+    if (Test-Path $localSsm) {
+        $env:AWS_SSM_CLI = $localSsm
+    }
 }
 
 # Execute the session
