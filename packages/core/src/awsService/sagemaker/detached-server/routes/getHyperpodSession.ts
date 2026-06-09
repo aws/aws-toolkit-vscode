@@ -7,7 +7,7 @@
 /* eslint-disable aws-toolkits/no-console-log */
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
-import { readHyperpodMapping } from '../hyperpodMappingUtils'
+import { readHyperpodMapping, HyperpodLocalCredential } from '../hyperpodMappingUtils'
 import { KubectlClient } from '../kubectlClientStub'
 import { HyperpodCluster, HyperpodDevSpace, EksClusterInfo } from '../hyperpodTypes'
 import { HttpError } from '@kubernetes/client-node'
@@ -45,7 +45,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         return
     }
 
-    let mapping
+    let mapping: HyperpodLocalCredential
     try {
         const allMappings = await readHyperpodMapping()
         const entry = allMappings.localCredential?.[connectionKey]
@@ -156,6 +156,7 @@ export async function handleGetHyperpodSession(req: IncomingMessage, res: Server
         const httpErr =
             err instanceof HttpError ? err : (err as any)?.cause instanceof HttpError ? (err as any).cause : undefined
         const statusCode = httpErr?.statusCode ?? 500
+
         res.writeHead(statusCode, { 'Content-Type': 'text/plain' })
         res.end(`Failed to create workspace connection: ${(err as Error).message}`)
     }

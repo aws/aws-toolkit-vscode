@@ -106,7 +106,8 @@ export async function deeplinkConnect(
     workspaceName?: string,
     namespace?: string,
     eksClusterArn?: string,
-    isSMUS: boolean = false
+    isSMUS: boolean = false,
+    refreshUrl?: string
 ) {
     getLogger().debug(
         'sm:deeplinkConnect: connectionIdentifier: %s session: %s wsUrl: %s token: %s isSMUS: %s',
@@ -123,7 +124,8 @@ export async function deeplinkConnect(
         appType: ${appType},
         workspaceName: ${workspaceName},
         namespace: ${namespace},
-        eksClusterArn: ${eksClusterArn}`
+        eksClusterArn: ${eksClusterArn},
+        refreshUrl: ${refreshUrl}`
     )
 
     if (isRemoteWorkspace()) {
@@ -159,6 +161,7 @@ export async function deeplinkConnect(
             region,
             clusterArn: eksClusterArn,
             accountId,
+            refreshUrl,
             eksClusterName: clusterName,
         })
 
