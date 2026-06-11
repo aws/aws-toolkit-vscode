@@ -306,7 +306,10 @@ export class DefaultTelemetryService {
             }
         }
 
-        const commonMetadata = [{ Key: accountMetadataKey, Value: accountValue }]
+        const commonMetadata: { Key: string; Value: string }[] = []
+        if (!event?.Metadata?.some((m: any) => m?.Key === accountMetadataKey)) {
+            commonMetadata.push({ Key: accountMetadataKey, Value: accountValue })
+        }
         if (this.computeRegion) {
             commonMetadata.push({ Key: computeRegionKey, Value: this.computeRegion })
         }
