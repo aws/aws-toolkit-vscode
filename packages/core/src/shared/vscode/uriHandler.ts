@@ -48,8 +48,17 @@ export class UriHandler implements vscode.UriHandler {
 
         // Ensure '+' is treated as a literal plus sign, not a space, by encoding it as '%2B'
         // Also decode HTML entities like &amp; to & to ensure proper parameter parsing
+        // Decode %3D → = and %26 → & in the query string so URLSearchParams can parse
+        // individual params — OS protocol handlers for non-http schemes (cursor://, kiro://)
+        // percent-encode these delimiters before delivering the URI to the extension.
         const originalUri = uri.toString(true)
-        const uriString = originalUri.replace(/&amp;/g, '&').replace(/\+/g, '%2B')
+        let uriString = originalUri.replace(/&amp;/g, '&').replace(/\+/g, '%2B')
+        const qIdx = uriString.indexOf('?')
+        if (qIdx !== -1) {
+            const base = uriString.slice(0, qIdx + 1)
+            const query = uriString.slice(qIdx + 1).replace(/%3D/gi, '=').replace(/%26/gi, '&')
+            uriString = base + query
+        }
         const url = new URL(uriString)
         const params = new SearchParams(url.searchParams)
 
