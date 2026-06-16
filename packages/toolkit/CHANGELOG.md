@@ -1,3 +1,13 @@
+## 4.7.0 2026-06-11
+
+- Miscellaneous non-user-facing changes
+
+## 4.6.1 2026-05-21
+
+- **Feature** HyperPod: Kiro IDE can now connect to HyperPod dev spaces
+- **Feature** HyperPod: Cursor IDE can now connect to HyperPod dev spaces
+- **Feature** Support projects created from admin portal in SMUS IDC domains
+
 ## 4.5.0 2026-05-14
 
 - Miscellaneous non-user-facing changes
