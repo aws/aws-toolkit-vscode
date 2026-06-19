@@ -1,0 +1,4 @@
+{
+    "type": "Removal",
+    "description": "No longer prompts users to install Amazon Q on startup"
+}
