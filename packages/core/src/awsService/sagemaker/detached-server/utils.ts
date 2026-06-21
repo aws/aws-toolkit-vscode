@@ -12,9 +12,7 @@ import { SageMakerClient, StartSessionCommand } from '@amzn/sagemaker-client'
 import os from 'os'
 import { join } from 'path'
 import { SpaceMappings } from '../types'
-import open from 'open'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
-export { open }
 
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
 const tempFilePath = `${mappingFilePath}.tmp`
@@ -29,6 +27,11 @@ const writeQueue: Array<() => Promise<void>> = []
 // Backoff sequence: 1500ms, 2250ms, 3375ms
 // Retry timing: 1500ms, 3750ms, 7125ms
 const startSessionRetryStrategy = new ConfiguredRetryStrategy(3, (attempt: number) => 1000 * 1.5 ** attempt)
+
+export async function open(target: string) {
+    const { default: openTarget } = await import('open')
+    return openTarget(target)
+}
 
 /**
  * Reads the local endpoint info file (default or via env) and returns pid & port.
