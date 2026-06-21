@@ -6,7 +6,7 @@
 import vscode, { version } from 'vscode'
 import * as nls from 'vscode-nls'
 import { BaseLanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
-import { LanguageClient } from 'vscode-languageclient/node'
+import { LanguageClient } from 'vscode-languageclient/node.js'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import {

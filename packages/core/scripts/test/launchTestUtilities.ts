@@ -6,6 +6,8 @@
 import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
+import { mkdirSync } from 'fs'
+import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID } from '../../src/shared/extensions'
@@ -15,11 +17,18 @@ const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 
 const stable = 'stable'
 const minimum = 'minimum'
+const envvarTestTempBaseDir = 'AWS_TOOLKIT_TEST_TEMP_BASE_DIR'
+const envvarTestUserDir = 'AWS_TOOLKIT_TEST_USER_DIR'
+const envvarTestExtensionsDir = 'AWS_TOOLKIT_TEST_EXTENSIONS_DIR'
 
 const disableWorkspaceTrust = '--disable-workspace-trust'
 
 const suiteNames = ['integration', 'e2e', 'unit', 'web'] as const
 export type SuiteName = (typeof suiteNames)[number]
+type VSCodeTestDirectories = {
+    userDataDir: string
+    extensionsDir: string
+}
 
 /**
  * This is the generalized method that is used by different test suites (unit, integration, ...) in CI to
@@ -41,13 +50,15 @@ export async function runToolkitTests(
         }
 
         console.log(`Running ${suite} test suite...`)
+        const testDirectories = getVSCodeTestDirectories(suite)
 
         const args = await getVSCodeCliArgs({
-            vsCodeExecutablePath: await setupVSCodeTestInstance(suite),
+            vsCodeExecutablePath: await setupVSCodeTestInstance(suite, testDirectories),
             relativeTestEntryPoint,
             suite,
             workspaceFolder,
             env,
+            testDirectories,
         })
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)
@@ -70,6 +81,7 @@ async function getVSCodeCliArgs(params: {
     suite: SuiteName
     workspaceFolder?: string
     env?: Record<string, string>
+    testDirectories: VSCodeTestDirectories
 }): Promise<TestOptions> {
     const projectRootDir = process.cwd()
 
@@ -88,6 +100,7 @@ async function getVSCodeCliArgs(params: {
                 VSCODE_EXTENSION_ID.git,
                 VSCODE_EXTENSION_ID.remotessh,
             ],
+            testDirectories: params.testDirectories,
         })
         disableWorkspaceTrustArg = [disableWorkspaceTrust]
     } else {
@@ -100,10 +113,6 @@ async function getVSCodeCliArgs(params: {
     const workspacePath = join(projectRootDir, workspaceFolderLocation)
     // This tells VS Code to run the extension in a web environment, which mimics vscode.dev
     const webExtensionKind = params.suite === 'web' ? ['--extensionDevelopmentKind=web'] : []
-    const userDataDir = process.env.AWS_TOOLKIT_TEST_USER_DIR
-        ? [`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`]
-        : []
-
     return {
         vscodeExecutablePath: params.vsCodeExecutablePath,
         extensionDevelopmentPath: projectRootDir,
@@ -115,7 +124,8 @@ async function getVSCodeCliArgs(params: {
             workspacePath,
             ...disableWorkspaceTrustArg,
             ...webExtensionKind,
-            ...userDataDir,
+            `--user-data-dir=${params.testDirectories.userDataDir}`,
+            `--extensions-dir=${params.testDirectories.extensionsDir}`,
         ],
         extensionTestsEnv: {
             ['DEVELOPMENT_PATH']: projectRootDir,
@@ -137,7 +147,7 @@ async function getVSCodeCliArgs(params: {
  * The VS Code version under test can be altered by setting the environment variable
  * VSCODE_TEST_VERSION prior to running the tests.
  */
-async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
+async function setupVSCodeTestInstance(suite: SuiteName, testDirectories: VSCodeTestDirectories): Promise<string> {
     let vsCodeVersion = process.env[envvarVscodeTestVersion]
     if (!vsCodeVersion) {
         vsCodeVersion = stable
@@ -156,31 +166,33 @@ async function setupVSCodeTestInstance(suite: SuiteName): Promise<string> {
 
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(downloadOptions)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
-    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version'], testDirectories))
 
     // Only certain test suites require specific vscode extensions to be installed
     if (suite === 'e2e' || suite === 'integration') {
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
-        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python, testDirectories)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml, testDirectories)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go, testDirectories)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java, testDirectories)
+        await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug, testDirectories)
     }
 
     console.log('VS Code Test instance has been set up')
     return vsCodeExecutablePath
 }
 
-async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
+async function invokeVSCodeCli(
+    vsCodeExecutablePath: string,
+    args: string[],
+    testDirectories: VSCodeTestDirectories
+): Promise<string> {
     const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vsCodeExecutablePath)
-    let cmdArgs = [...cliArgs, ...args]
-
-    // Workaround: set --user-data-dir to avoid this error in CI:
-    // "You are trying to start Visual Studio Code as a super user …"
-    if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
-        cmdArgs = cmdArgs.filter((a) => !a.startsWith('--user-data-dir='))
-        cmdArgs.push(`--user-data-dir=${process.env.AWS_TOOLKIT_TEST_USER_DIR}`)
-    }
+    const cmdArgs = [...cliArgs, ...args]
+        .filter((a) => !a.startsWith('--user-data-dir=') && !a.startsWith('--extensions-dir='))
+        .concat([
+            `--user-data-dir=${testDirectories.userDataDir}`,
+            `--extensions-dir=${testDirectories.extensionsDir}`,
+        ])
 
     console.log(`Invoking vscode CLI command:\n    "${cli}" ${JSON.stringify(cmdArgs)}`)
     // Shell option must be true on windows to avoid security error: https://nodejs.org/en/blog/vulnerability/april-2024-security-releases-2
@@ -203,9 +215,13 @@ async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Pr
     return spawnResult.stdout
 }
 
-async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
+async function installVSCodeExtension(
+    vsCodeExecutablePath: string,
+    extensionIdentifier: string,
+    testDirectories: VSCodeTestDirectories
+): Promise<void> {
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
-    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier]))
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier], testDirectories))
 }
 
 /**
@@ -220,10 +236,10 @@ async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIde
  */
 async function getCliArgsToDisableExtensions(
     vsCodeExecutablePath: string,
-    params: { except: string[] }
+    params: { except: string[]; testDirectories: VSCodeTestDirectories }
 ): Promise<string[]> {
     console.log(`Disabling all VS Code extensions *except*: ${params.except}`)
-    const output = await invokeVSCodeCli(vsCodeExecutablePath, ['--list-extensions'])
+    const output = await invokeVSCodeCli(vsCodeExecutablePath, ['--list-extensions'], params.testDirectories)
     const foundExtensions = output.split('\n')
     const ids: string[] = []
     for (const extId of foundExtensions) {
@@ -242,4 +258,20 @@ function getMinVsCodeVersion(): string {
     const sanitizedVersion = vsCodeVersion.replace('^', '')
     console.log(`Using minimum VSCode version specified in package.json: ${sanitizedVersion}`)
     return sanitizedVersion
+}
+
+function getVSCodeTestDirectories(suite: SuiteName): VSCodeTestDirectories {
+    const tempBaseDir = resolve(process.env[envvarTestTempBaseDir] ?? join(tmpdir(), 'awstk-vscode-test'))
+    const runQualifier = process.env.GITHUB_RUN_ID ?? process.pid.toString()
+    const suiteDir = join(tempBaseDir, `${suite}-${runQualifier}`)
+
+    const userDataDir = resolve(process.env[envvarTestUserDir] ?? join(suiteDir, 'u'))
+    const extensionsDir = resolve(process.env[envvarTestExtensionsDir] ?? join(suiteDir, 'e'))
+    mkdirSync(userDataDir, { recursive: true })
+    mkdirSync(extensionsDir, { recursive: true })
+
+    return {
+        userDataDir,
+        extensionsDir,
+    }
 }
