@@ -17,23 +17,22 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-       notify:
+    notify:
         if: >
             github.repository == 'aws/aws-toolkit-vscode' &&
-            (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+            github.event_name == 'pull_request_target'
         runs-on: ubuntu-latest
         timeout-minutes: 10
         permissions:
             contents: read
+            issues: read
             pull-requests: write
         steps:
             - uses: actions/checkout@v4
+              if: github.event_name == 'pull_request_target'
               with:
                   fetch-depth: 1
                   persist-credentials: false
-              if: github.event_name == 'pull_request_target'
-              with:
-                  fetch-depth: 20
             - uses: actions/setup-node@v4
               if: github.event_name == 'pull_request_target'
               with:
