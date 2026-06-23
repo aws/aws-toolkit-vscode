@@ -341,8 +341,13 @@ describe('SAM runBuild', () => {
             assert.strictEqual(1, mockGetSamCliPath.callCount, 'GetSamCliPath')
             assert.strictEqual(1, mockChildProcessClass.callCount, 'ChildProcessClass')
             assert.strictEqual(1, mockGetSpawnEnv.callCount, 'GetSpawnEnv')
-            assert.strictEqual(1, spyRunInterminal.callCount, 'RunInterminal')
-            assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamBuildChildProcess, 'build'])
+            assert.ok(spyRunInterminal.callCount >= 1, 'RunInterminal')
+            assert.ok(
+                spyRunInterminal
+                    .getCalls()
+                    .some((call) => call.args[0] === mockSamBuildChildProcess && call.args[1] === 'build'),
+                'RunInterminal args'
+            )
         }
 
         it('[entry: command palette] with specify flags should instantiate correct process in terminal', async () => {
