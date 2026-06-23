@@ -43,7 +43,7 @@
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "^1.0.341",
-        "@playwright/browser-chromium": "^1.43.1",
+        "@playwright/browser-chromium": "^1.61.0",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",
         "@types/jaro-winkler": "^0.2.4",
