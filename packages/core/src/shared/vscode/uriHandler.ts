@@ -56,7 +56,10 @@ export class UriHandler implements vscode.UriHandler {
         const qIdx = uriString.indexOf('?')
         if (qIdx !== -1) {
             const base = uriString.slice(0, qIdx + 1)
-            const query = uriString.slice(qIdx + 1).replace(/%3D/gi, '=').replace(/%26/gi, '&')
+            const query = uriString
+                .slice(qIdx + 1)
+                .replace(/%3D/gi, '=')
+                .replace(/%26/gi, '&')
             uriString = base + query
         }
         const url = new URL(uriString)
