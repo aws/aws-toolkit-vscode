@@ -1,0 +1,4 @@
+{
+  "type": "Bug Fix",
+  "description": "Redshift SQL Notebook: Query results with HTML special characters in column names or cell values are now displayed safely instead of being interpreted as HTML."
+}
