@@ -662,7 +662,7 @@
         "lokijs": "^1.5.12",
         "markdown-it": "^13.0.2",
         "mime-types": "^2.1.32",
-        "node-fetch": "^2.7.0",
+        "node-fetch": "^3.3.2",
         "portfinder": "^1.0.32",
         "protobufjs": "^7.2.6",
         "semver": "^7.5.4",
