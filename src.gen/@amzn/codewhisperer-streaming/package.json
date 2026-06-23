@@ -39,7 +39,7 @@
         "@smithy/hash-node": "^4.0.1",
         "@smithy/invalid-dependency": "^4.0.1",
         "@smithy/middleware-content-length": "^4.0.1",
-        "@smithy/middleware-retry": "^4.0.3",
+        "@smithy/middleware-retry": "^4.7.2",
         "@smithy/middleware-serde": "^4.0.1",
         "@smithy/middleware-stack": "^4.0.1",
         "@smithy/node-config-provider": "^4.0.1",
@@ -57,7 +57,7 @@
         "@smithy/util-retry": "^4.0.1",
         "@smithy/util-utf8": "^4.0.0",
         "@types/uuid": "^9.0.1",
-        "uuid": "^9.0.1"
+        "uuid": "^14.0.1"
     },
     "devDependencies": {
         "@tsconfig/node18": "18.2.4",
