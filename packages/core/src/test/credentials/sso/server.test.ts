@@ -134,6 +134,24 @@ describe('AuthSSOServer', function () {
         assert.ok(isUserCancelledError(err.inner), 'CancellationError not thrown.')
     })
 
+    it('rejects path traversal in resource requests', async function () {
+        const address = server.getAddress()
+        assert.ok(address instanceof Object)
+        const baseUrl = `http://127.0.0.1:${address.port}`
+
+        const response = await request.fetch('GET', `${baseUrl}/resources/../../etc/passwd`).response
+        assert.strictEqual(response.status, 403)
+    })
+
+    it('rejects path traversal in default resource requests', async function () {
+        const address = server.getAddress()
+        assert.ok(address instanceof Object)
+        const baseUrl = `http://127.0.0.1:${address.port}`
+
+        const response = await request.fetch('GET', `${baseUrl}/../../etc/passwd`).response
+        assert.strictEqual(response.status, 403)
+    })
+
     it('initializes and closes instances', async function () {
         const newServer = AuthSSOServer.init('1234')
         assert.equal(AuthSSOServer.lastInstance, newServer)
