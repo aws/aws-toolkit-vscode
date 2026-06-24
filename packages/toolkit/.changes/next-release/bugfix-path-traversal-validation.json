@@ -1,0 +1,4 @@
+{
+  "type": "Bug Fix",
+  "description": "Added enhanced validation when handling user input filesystem paths for Application Composer, auth server, and CodeWhisperer Chat to ensure files are not read or written outside the intended directory."
+}
