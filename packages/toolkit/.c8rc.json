@@ -7,6 +7,8 @@
         "**/node_modules/**",
         "**/ssmServer.js",
         "**/ssmDocument/external *",
-        "**/cloudformation-languageserver/**"
+        "**/cloudformation-languageserver/**",
+        "**/.lsp-server/**",
+        "**\\\\.lsp-server\\\\**"
     ]
 }
