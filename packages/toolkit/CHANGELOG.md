@@ -1,3 +1,8 @@
+## 4.8.0 2026-06-25
+
+- **Bug Fix** Redshift SQL Notebook: Query results with HTML special characters in column names or cell values are now displayed safely instead of being interpreted as HTML.
+- **Bug Fix** Added enhanced validation when handling user input filesystem paths for Application Composer, auth server, and CodeWhisperer Chat to ensure files are not read or written outside the intended directory.
+
 ## 4.7.0 2026-06-11
 
 - Miscellaneous non-user-facing changes
