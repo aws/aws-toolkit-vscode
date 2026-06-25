@@ -655,7 +655,7 @@
         "i18n-ts": "^1.0.5",
         "immutable": "^4.3.0",
         "jaro-winkler": "^0.2.8",
-        "jose": "5.4.1",
+        "jose": "6.2.3",
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^3.2.0",
         "lodash": "^4.17.21",
