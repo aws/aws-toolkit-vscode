@@ -638,7 +638,7 @@
         "@svgdotjs/svg.js": "^3.0.16",
         "@vscode/debugprotocol": "^1.57.0",
         "@zip.js/zip.js": "^2.7.41",
-        "adm-zip": "^0.5.10",
+        "adm-zip": "^0.5.17",
         "amazon-states-language-service": "^1.16.1",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1692.0",
