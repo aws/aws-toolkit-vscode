@@ -20,8 +20,10 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-function getCdn(): string { 
-    return vscode.workspace.getConfiguration('aws.threatComposer').get('cdn', 'https://ide-toolkits.threat-composer.aws.dev')
+function getCdn(): string {
+    return vscode.workspace
+        .getConfiguration('aws.threatComposer')
+        .get('cdn', 'https://ide-toolkits.threat-composer.aws.dev')
 }
 let clientId = ''
 
@@ -43,19 +45,21 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const provider = new ThreatComposerEditorProvider(context)
 
         context.subscriptions.push(
-            vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent: vscode.configurationChangeEvent) => {
-                if (configurationChangeEvent.affectsConfiguration('aws.threatComposer.cdn')) {
-                    // Clear cached content
-                    provider.webviewHtml = ''
-                    // Closed all open Threat Composer editors
-                    for (const visualization of provider.managedVisualizations.values()) {
-                        const panel = visualization.getPanel()
-                        if (panel) {
-                            panel.dispose()
+            vscode.workspace.onDidChangeConfiguration(
+                async (configurationChangeEvent: vscode.ConfigurationChangeEvent) => {
+                    if (configurationChangeEvent.affectsConfiguration('aws.threatComposer.cdn')) {
+                        // Clear cached content
+                        provider.webviewHtml = ''
+                        // Closed all open Threat Composer editors
+                        for (const visualization of provider.managedVisualizations.values()) {
+                            const panel = visualization.getPanel()
+                            if (panel) {
+                                panel.dispose()
+                            }
                         }
                     }
                 }
-            })
+            )
         )
 
         return vscode.window.registerCustomEditorProvider(ThreatComposerEditorProvider.viewType, provider, {
