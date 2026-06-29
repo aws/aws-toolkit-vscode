@@ -21,7 +21,15 @@ const amzHeaders = [
 
 export function register(ctx: ExtContext) {
     async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
-        await telemetry.sagemaker_deeplinkConnect.run(async () => {
+        await telemetry.sagemaker_deeplinkConnect.run(async (span) => {
+            // Extract account metadata from space ARN
+            // ARN format: arn:aws:sagemaker:region:account-id:space/domain-id/space-name
+            const arnParts = params.connection_identifier.split(':')
+            span.record({
+                awsAccount: arnParts[4] || undefined,
+                awsRegion: arnParts[3] || undefined,
+            })
+
             let wsUrl = `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`
 
             for (const header of amzHeaders) {
@@ -44,7 +52,7 @@ export function register(ctx: ExtContext) {
     }
 
     async function hyperPodConnectHandler(params: ReturnType<typeof parseHyperpodConnectParams>) {
-        await telemetry.sagemaker_deeplinkConnect.run(async () => {
+        await telemetry.hyperpod_deeplinkConnect.run(async () => {
             const wsUrl = `${params.streamUrl}&cell-number=${encodeURIComponent(params['cell-number'])}`
             await deeplinkConnect(
                 ctx,

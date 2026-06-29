@@ -50,6 +50,47 @@ describe('RedshiftNotebookController', () => {
         notebookController._executeAll(cells, undefined, undefined)
         assert.strictEqual(executeAllStub.callCount, cells.length)
     })
+    describe('getAsTable', () => {
+        it('escapes HTML in column names and cell values', () => {
+            const html = notebookController.getAsTable(
+                { warehouseIdentifier: '<img src=x onerror=alert(1)>', database: '"><script>xss</script>' },
+                ['<script>alert("col")</script>', 'normal'],
+                [[{ stringValue: '<b>evil</b>' }, { stringValue: '&amp;<div>' }]]
+            )
+            assert(!html.includes('<script>'))
+            assert(!html.includes('<img src=x'))
+            assert(!html.includes('<b>evil'))
+            assert(!html.includes('<div>'))
+            assert(html.includes('&lt;script&gt;alert(&quot;col&quot;)&lt;/script&gt;'))
+            assert(html.includes('&lt;b&gt;evil&lt;/b&gt;'))
+            assert(html.includes('&amp;amp;&lt;div&gt;'))
+        })
+
+        it('escapes single quotes in connection params', () => {
+            const html = notebookController.getAsTable(
+                { warehouseIdentifier: "it's", database: "db'name" },
+                ['col'],
+                [[{ stringValue: 'val' }]]
+            )
+            assert(html.includes('it&#039;s'))
+            assert(html.includes('db&#039;name'))
+        })
+
+        it('returns message when no records', () => {
+            const html = notebookController.getAsTable({ warehouseIdentifier: 'wh', database: 'db' }, ['col'], [])
+            assert.strictEqual(html, '<p>No records to display</p>')
+        })
+
+        it('handles null cell values', () => {
+            const html = notebookController.getAsTable(
+                { warehouseIdentifier: 'wh', database: 'db' },
+                ['col'],
+                [[{ isNull: true }]]
+            )
+            assert(html.includes('<td></td>'))
+        })
+    })
+
     it('should execute a cell successfully', async () => {
         const executeCellStub = sinon.stub(notebookController, 'executeCell')
         executeCellStub.resolves(vscode.NotebookCellOutput)
