@@ -43,7 +43,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         const provider = new ThreatComposerEditorProvider(context)
 
         context.subscriptions.push(
-            vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent: vscode.configurationChangeEvent) => {
+            vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent: vscode.ConfigurationChangeEvent) => {
                 if (configurationChangeEvent.affectsConfiguration('aws.threatComposer.cdn')) {
                     // Clear cached content
                     provider.webviewHtml = ''
