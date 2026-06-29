@@ -123,10 +123,12 @@ export class AWSClientBuilderV3 {
 
     private keyAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): string {
         // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
+        const profileId = this.context.getCredentialProfileName()
         return [
             String(serviceOptions.serviceClient),
             JSON.stringify(serviceOptions.clientOptions),
             serviceOptions.region,
+            profileId,
             serviceOptions.userAgent ? '1' : '0',
             this.context.getCredentialEndpointUrl(), // It gets the valid endpoint at the moment of creation
             serviceOptions.settings ? JSON.stringify(serviceOptions.settings.get('endpoints', {})) : '',
