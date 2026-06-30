@@ -70,6 +70,21 @@ export async function handleGetHyperpodSessionAsync(req: IncomingMessage, res: S
     }
 }
 
+function isValidReconnectUrl(refreshUrl: string): boolean {
+    try {
+        const parsed = new URL(refreshUrl)
+        if (parsed.protocol === 'http:') {
+            return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+        }
+        if (parsed.protocol === 'https:') {
+            return parsed.hostname.endsWith('.sagemaker.aws') || parsed.hostname.endsWith('.asfiovnxocqpcry.com')
+        }
+        return false
+    } catch {
+        return false
+    }
+}
+
 async function triggerBrowserReconnectionAsync(connectionKey: string, res: ServerResponse): Promise<void> {
     try {
         const allMappings = await readHyperpodMapping()
@@ -78,6 +93,13 @@ async function triggerBrowserReconnectionAsync(connectionKey: string, res: Serve
         if (!mapping?.refreshUrl) {
             res.writeHead(202, { 'Content-Type': 'text/plain' })
             res.end('Session is not ready yet. Please retry in a few seconds.')
+            return
+        }
+
+        if (!isValidReconnectUrl(mapping.refreshUrl)) {
+            console.error(`Invalid refreshUrl for ${connectionKey}: ${mapping.refreshUrl}`)
+            res.writeHead(400, { 'Content-Type': 'text/plain' })
+            res.end('Invalid reconnection URL.')
             return
         }
 
