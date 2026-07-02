@@ -72,6 +72,8 @@ export interface LspVersion {
     serverVersion: string
     isDelisted: boolean
     targets: Target[]
+    /** If true, this version is the preferred version for its environment. */
+    latest?: boolean
     /**
      * I'm not sure if this **always** exists (couldn't find it in the spec)
      */
