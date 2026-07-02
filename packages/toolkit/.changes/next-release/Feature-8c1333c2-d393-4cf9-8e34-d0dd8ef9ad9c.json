@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`."
-}
