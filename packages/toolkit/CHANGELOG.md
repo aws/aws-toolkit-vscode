@@ -1,3 +1,7 @@
+## 4.9.0 2026-07-02
+
+- **Feature** Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`.
+
 ## 4.8.0 2026-06-25
 
 - **Bug Fix** Redshift SQL Notebook: Query results with HTML special characters in column names or cell values are now displayed safely instead of being interpreted as HTML.
