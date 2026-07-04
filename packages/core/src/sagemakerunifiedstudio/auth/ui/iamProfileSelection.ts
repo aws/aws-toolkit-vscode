@@ -13,11 +13,13 @@ import { getCredentialsFilename, getConfigFilename } from '../../../auth/credent
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
+import { tryConsoleLogin } from '../smusConsoleLogin'
 
 /**
  * Actions available in the credential management dialog
  */
 enum CredentialManagementAction {
+    AddNewProfileConsole = 'ADD_NEW_PROFILE_CONSOLE',
     EditCredentialsFile = 'EDIT_CREDENTIALS_FILE',
     EditConfigFile = 'EDIT_CONFIG_FILE',
     AddNewProfile = 'ADD_NEW_PROFILE',
@@ -414,6 +416,13 @@ export class SmusIamProfileSelector {
 
         const options: (vscode.QuickPickItem & { action: CredentialManagementAction })[] = [
             {
+                label: '$(globe) Add profile through console',
+                description: 'Authenticate via browser using AWS CLI',
+                detail: 'Opens a browser window for sign-in',
+                action: CredentialManagementAction.AddNewProfileConsole,
+            },
+
+            {
                 label: '$(file-text) Edit AWS Credentials File',
                 description: 'Open ~/.aws/credentials file for editing',
                 detail: 'Edit existing credential profiles or add new ones',
@@ -426,9 +435,9 @@ export class SmusIamProfileSelector {
                 action: CredentialManagementAction.EditConfigFile,
             },
             {
-                label: '$(add) Add New Profile',
+                label: '$(add) Add New Profile Manually',
                 description: 'Create a new AWS credential profile',
-                detail: 'Interactive setup for a new credential profile',
+                detail: 'Enter access key, secret key, and session token manually',
                 action: CredentialManagementAction.AddNewProfile,
             },
         ]
@@ -468,6 +477,12 @@ export class SmusIamProfileSelector {
                         }
 
                         switch (itemWithAction.action) {
+                            case CredentialManagementAction.AddNewProfileConsole: {
+                                const newProfile = await this.addNewProfileConsole()
+                                // Return the newly created profile data to use it directly
+                                resolve(newProfile)
+                                break
+                            }
                             case CredentialManagementAction.EditCredentialsFile: {
                                 const result = await this.openAwsFile('credentials')
                                 // If user clicked "Select Profile", restart profile selection
@@ -488,12 +503,7 @@ export class SmusIamProfileSelector {
                             }
                         }
                     } catch (error) {
-                        if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
-                            // User cancelled, don't treat as error
-                            reject(error)
-                        } else {
-                            reject(error)
-                        }
+                        reject(error)
                     }
                 })()
             })
@@ -564,6 +574,155 @@ export class SmusIamProfileSelector {
     }
 
     /**
+     * Console login flow to add a new AWS credential profile via browser-based authentication.
+     * Prompts for profile name and region, then delegates to authenticateWithConsoleLogin.
+     * Falls back to manual entry on failure.
+     * @returns Promise resolving to the newly created profile data
+     */
+    private static async addNewProfileConsole(): Promise<IamProfileSelection> {
+        const logger = this.logger
+
+        try {
+            logger.debug('Starting add new profile via console flow')
+
+            // Step 1: Collect profile name and region with back navigation
+            let currentStep = 1
+            let profileName = ''
+            let region = ''
+
+            while (currentStep <= 2) {
+                switch (currentStep) {
+                    case 1: {
+                        const result = await this.getProfileNameInput()
+                        if (result === 'BACK') {
+                            // User wants to go back to credential management menu
+                            throw new ToolkitError('User navigated back', {
+                                code: SmusErrorCodes.UserCancelled,
+                                cancelled: true,
+                            })
+                        }
+                        profileName = result
+                        currentStep = 2
+                        break
+                    }
+                    case 2: {
+                        const result = await this.showRegionSelection({
+                            title: 'Add Profile Through Console - Step 2 of 2',
+                            placeholder: 'Select the AWS region for this profile',
+                            returnBackOnCancel: true,
+                        })
+                        if (result === 'BACK') {
+                            currentStep = 1
+                        } else {
+                            region = result
+                            currentStep = 3
+                        }
+                        break
+                    }
+                }
+            }
+
+            // Step 2: Attempt console login
+            const loginSuccess = await tryConsoleLogin(profileName, region)
+
+            if (loginSuccess) {
+                return {
+                    profileName,
+                    region,
+                }
+            }
+
+            // Console login failed —> ask user if they want to fall back to manual entry
+            const fallbackChoice = await this.showManualEntryFallbackPrompt()
+
+            if (fallbackChoice === 'manual') {
+                // Fall back to manual entry with prefilled profile name and region
+                const profileData = await this.collectProfileData({ profileName, region })
+
+                if (profileData === 'BACK') {
+                    throw new ToolkitError('User navigated back from manual fallback', {
+                        code: SmusErrorCodes.UserCancelled,
+                        cancelled: true,
+                    })
+                }
+
+                // Write the manually entered profile to disk
+                await this.addProfileToCredentialsFile(
+                    profileData.profileName,
+                    profileData.accessKeyId,
+                    profileData.secretAccessKey,
+                    profileData.sessionToken,
+                    profileData.region
+                )
+
+                return {
+                    profileName: profileData.profileName,
+                    region: profileData.region,
+                }
+            }
+
+            // User declined manual entry —> go back
+            throw new ToolkitError('User declined manual fallback', {
+                code: SmusErrorCodes.UserCancelled,
+                cancelled: true,
+            })
+        } catch (error) {
+            if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
+                logger.debug('User cancelled add new profile via console flow')
+                throw error
+            }
+            logger.error('Failed to add new profile via console: %s', error)
+            throw new ToolkitError(`Failed to add new profile via console: ${(error as Error).message}`, {
+                code: 'AddProfileConsoleError',
+            })
+        }
+    }
+
+    /**
+     * Shows a QuickPick asking the user if they want to fall back to manual credential entry
+     * after console login fails.
+     * @returns 'manual' if user wants to enter credentials manually, 'cancel' otherwise
+     */
+    private static async showManualEntryFallbackPrompt(): Promise<'manual' | 'cancel'> {
+        const manualOption: vscode.QuickPickItem = {
+            label: '$(edit) Enter credentials manually',
+            detail: 'Enter access key, secret key, and session token manually',
+        }
+
+        const cancelOption: vscode.QuickPickItem = {
+            label: '$(close) Cancel',
+            detail: 'Return to credential management menu',
+        }
+
+        const quickPick = vscode.window.createQuickPick()
+        quickPick.title = 'Console login failed'
+        quickPick.placeholder = 'Would you like to enter credentials manually instead?'
+        quickPick.items = [manualOption, cancelOption]
+        quickPick.canSelectMany = false
+        quickPick.ignoreFocusOut = true
+
+        return new Promise((resolve) => {
+            let isCompleted = false
+
+            quickPick.onDidAccept(() => {
+                const selected = quickPick.selectedItems[0]
+                isCompleted = true
+                quickPick.dispose()
+                resolve(selected === manualOption ? 'manual' : 'cancel')
+            })
+
+            quickPick.onDidHide(() => {
+                if (!isCompleted) {
+                    quickPick.dispose()
+                    resolve('cancel')
+                }
+            })
+
+            quickPick.show()
+        })
+    }
+
+    /**
      * Interactive flow to add a new AWS credential profile with back navigation
      * @returns Promise resolving to the newly created profile data
      */
@@ -616,8 +775,11 @@ export class SmusIamProfileSelector {
 
     /**
      * Collects profile data through a multi-step flow with back navigation
+     * @param prefill Optional prefilled values (e.g., from console login fallback).
+     *               If profileName is prefilled, step 1 is skipped and back on step 2 returns 'BACK'.
+     *               If region is prefilled, step 5 is skipped.
      */
-    private static async collectProfileData(): Promise<
+    private static async collectProfileData(prefill?: { profileName?: string; region?: string }): Promise<
         | {
               profileName: string
               accessKeyId: string
@@ -627,14 +789,16 @@ export class SmusIamProfileSelector {
           }
         | 'BACK'
     > {
-        let currentStep = 1
-        let profileName = ''
+        let currentStep = prefill?.profileName ? 2 : 1
+        let profileName = prefill?.profileName ?? ''
         let accessKeyId = ''
         let secretAccessKey = ''
         let sessionToken = ''
-        let region = ''
+        let region = prefill?.region ?? ''
 
-        while (currentStep <= 5) {
+        const lastStep = prefill?.region ? 4 : 5
+
+        while (currentStep <= lastStep) {
             switch (currentStep) {
                 case 1: {
                     // Step 1: Profile Name
@@ -650,6 +814,10 @@ export class SmusIamProfileSelector {
                     // Step 2: Access Key ID
                     const result = await this.getAccessKeyIdInput()
                     if (result === 'BACK') {
+                        if (prefill?.profileName) {
+                            // Profile was prefilled, back here means exit entirely
+                            return 'BACK'
+                        }
                         currentStep = 1 // Go back to step 1
                     } else {
                         accessKeyId = result
@@ -702,7 +870,7 @@ export class SmusIamProfileSelector {
             accessKeyId,
             secretAccessKey,
             sessionToken: sessionToken || undefined,
-            region, // Region is always set since step 5 is required
+            region,
         }
     }
 
