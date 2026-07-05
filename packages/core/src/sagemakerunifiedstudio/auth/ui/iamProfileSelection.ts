@@ -14,6 +14,7 @@ import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
 import { tryConsoleLogin } from '../smusConsoleLogin'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 /**
  * Actions available in the credential management dialog
@@ -478,24 +479,28 @@ export class SmusIamProfileSelector {
 
                         switch (itemWithAction.action) {
                             case CredentialManagementAction.AddNewProfileConsole: {
+                                telemetry.smus_iamCredentialMethod.emit({ smusIamCredMethod: 'console' })
                                 const newProfile = await this.addNewProfileConsole()
                                 // Return the newly created profile data to use it directly
                                 resolve(newProfile)
                                 break
                             }
                             case CredentialManagementAction.EditCredentialsFile: {
+                                telemetry.smus_iamCredentialMethod.emit({ smusIamCredMethod: 'editCredentials' })
                                 const result = await this.openAwsFile('credentials')
                                 // If user clicked "Select Profile", restart profile selection
                                 resolve(result === 'RESTART_PROFILE_SELECTION')
                                 break
                             }
                             case CredentialManagementAction.EditConfigFile: {
+                                telemetry.smus_iamCredentialMethod.emit({ smusIamCredMethod: 'editConfig' })
                                 const result = await this.openAwsFile('config')
                                 // If user clicked "Select Profile", restart profile selection
                                 resolve(result === 'RESTART_PROFILE_SELECTION')
                                 break
                             }
                             case CredentialManagementAction.AddNewProfile: {
+                                telemetry.smus_iamCredentialMethod.emit({ smusIamCredMethod: 'manual' })
                                 const newProfile = await this.addNewProfile()
                                 // Return the newly created profile data to use it directly
                                 resolve(newProfile)
@@ -626,16 +631,21 @@ export class SmusIamProfileSelector {
             const loginSuccess = await tryConsoleLogin(profileName, region)
 
             if (loginSuccess) {
+                telemetry.smus_consoleLoginResult.emit({ smusConsoleLoginResult: true })
                 return {
                     profileName,
                     region,
                 }
             }
 
-            // Console login failed —> ask user if they want to fall back to manual entry
+            // Console login failed — ask user if they want to fall back to manual entry
             const fallbackChoice = await this.showManualEntryFallbackPrompt()
 
             if (fallbackChoice === 'manual') {
+                telemetry.smus_consoleLoginResult.emit({
+                    smusConsoleLoginResult: false,
+                    smusConsoleLoginFallback: true,
+                })
                 // Fall back to manual entry with prefilled profile name and region
                 const profileData = await this.collectProfileData({ profileName, region })
 
@@ -661,7 +671,8 @@ export class SmusIamProfileSelector {
                 }
             }
 
-            // User declined manual entry —> go back
+            // User declined manual entry — go back
+            telemetry.smus_consoleLoginResult.emit({ smusConsoleLoginResult: false, smusConsoleLoginFallback: false })
             throw new ToolkitError('User declined manual fallback', {
                 code: SmusErrorCodes.UserCancelled,
                 cancelled: true,
