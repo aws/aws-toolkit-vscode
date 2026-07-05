@@ -4,10 +4,6 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { authenticateWithConsoleLogin } from '../../auth/consoleSessionUtils'
-//import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
-//import fs from '../../shared/fs/fs'
-//import * as os from 'os'
 
 const logger = getLogger('smus')
 
@@ -17,6 +13,10 @@ const logger = getLogger('smus')
  */
 export async function tryConsoleLogin(profileName: string, region: string): Promise<boolean> {
     try {
+        // Dynamic import to avoid loading consoleSessionUtils at module parse time.
+        // consoleSessionUtils uses a package self-reference import ('aws-core-vscode/shared')
+        // that can fail in certain test runner configurations.
+        const { authenticateWithConsoleLogin } = await import('../../auth/consoleSessionUtils.js')
         await authenticateWithConsoleLogin(profileName, region)
         await removeConflictingCredentialKeys(profileName)
         return true
