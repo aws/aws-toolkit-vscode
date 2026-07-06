@@ -39,6 +39,14 @@ const legacySettingsTelemetryValueEnable = 'Enable'
 const TelemetryFlag = addTypeName('boolean', convertLegacy)
 export const telemetryClientIdEnvKey = '__TELEMETRY_CLIENT_ID'
 
+export const testClientId = 'ffffffff-ffff-ffff-ffff-ffffffffffff' // test/automation environments
+export const telemetryDisabledClientId = '11111111-1111-1111-1111-111111111111' // telemetry disabled
+export const nilClientId = '00000000-0000-0000-0000-000000000000' // client id could not be created or persisted
+
+export function isAnonymousClientId(clientId: string): boolean {
+    return [testClientId, telemetryDisabledClientId, nilClientId].includes(clientId)
+}
+
 export class TelemetryConfig {
     private readonly _toolkitConfig
     private readonly _amazonQConfig
@@ -169,10 +177,10 @@ export const getClientId = memoize(
         nonce?: string
     ) => {
         if (isTest ?? isAutomation()) {
-            return 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+            return testClientId
         }
         if (!isTelemetryEnabled) {
-            return '11111111-1111-1111-1111-111111111111'
+            return telemetryDisabledClientId
         }
         try {
             const globalClientId = process.env[telemetryClientIdEnvKey] // truly global across all extensions
@@ -208,8 +216,7 @@ export const getClientId = memoize(
             return clientId
         } catch (e) {
             getLogger().error('getClientId: failed to create client id: %O', e)
-            const clientId = '00000000-0000-0000-0000-000000000000'
-            return clientId
+            return nilClientId
         }
     }
 )
