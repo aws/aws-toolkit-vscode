@@ -16,12 +16,14 @@ const conflictingKeys = ['aws_access_key_id', 'aws_secret_access_key', 'aws_sess
 
 /**
  * Attempts browser-based console login via AWS CLI.
+ * Removes conflicting credential keys first (the CLI refuses to run if they exist),
+ * then calls authenticateWithConsoleLogin.
  * @returns true on success, false on failure
  */
 export async function tryConsoleLogin(profileName: string, region: string): Promise<boolean> {
     try {
-        await authenticateWithConsoleLogin(profileName, region)
         await removeConflictingCredentialKeys(profileName)
+        await authenticateWithConsoleLogin(profileName, region)
         return true
     } catch (e) {
         logger.debug(`Console login failed: ${(e as Error).message}`)
