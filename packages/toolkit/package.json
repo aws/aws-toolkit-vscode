@@ -235,6 +235,10 @@
                         "ssoCacheError": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "applicationComposerInitFail": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
