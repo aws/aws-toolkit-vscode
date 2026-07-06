@@ -624,7 +624,7 @@
         "@aws-sdk/s3-request-presigner": "<3.1076.0",
         "@aws-sdk/smithy-client": "^3.374.0",
         "@aws-sdk/util-arn-parser": "^3.972.18",
-        "@aws/mynah-ui": "^4.35.4",
+        "@aws/mynah-ui": "^4.40.3",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@kubernetes/client-node": "^1.4.0",
