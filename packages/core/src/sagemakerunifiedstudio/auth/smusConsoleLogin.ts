@@ -3,10 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import { getLogger } from '../../shared/logger/logger'
 import { authenticateWithConsoleLogin } from '../../auth/consoleSessionUtils'
+import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
+import fs from '../../shared/fs/fs'
 
 const logger = getLogger('smus')
+
+/** Credential keys that conflict with CLI cache-based credentials */
+const conflictingKeys = ['aws_access_key_id', 'aws_secret_access_key', 'aws_session_token']
 
 /**
  * Attempts browser-based console login via AWS CLI.
@@ -30,5 +36,50 @@ export async function tryConsoleLogin(profileName: string, region: string): Prom
  * written by `aws login` instead of stale keys in these files.
  */
 export async function removeConflictingCredentialKeys(profileName: string): Promise<void> {
-    // TODO
+    const filesToCheck = [getCredentialsFilename(), getConfigFilename()]
+
+    for (const filePath of filesToCheck) {
+        if (!(await fs.existsFile(filePath))) {
+            continue
+        }
+
+        const content = await fs.readFileText(filePath)
+        const lines = content.split(os.EOL)
+        const updatedLines: string[] = []
+
+        let inTargetProfile = false
+
+        for (const line of lines) {
+            const trimmed = line.trim()
+
+            // Detect profile headers
+            // credentials file: [profileName]
+            // config file: [profile profileName]
+            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                const header = trimmed.slice(1, -1).trim()
+                inTargetProfile = header === profileName || header === `profile ${profileName}`
+                updatedLines.push(line)
+                continue
+            }
+
+            // If we're in the target profile, skip conflicting keys
+            if (inTargetProfile) {
+                const key = trimmed.split(/\s*=\s*/)[0]
+                if (conflictingKeys.includes(key)) {
+                    logger.debug(`Removing conflicting key '${key}' from profile '${profileName}' in ${filePath}`)
+                    continue
+                }
+            }
+
+            updatedLines.push(line)
+        }
+
+        const updatedContent = updatedLines.join(os.EOL)
+
+        // Only write back if something changed
+        if (updatedContent !== content) {
+            await fs.writeFile(filePath, updatedContent)
+            logger.debug(`Removed conflicting credential keys from profile '${profileName}' in ${filePath}`)
+        }
+    }
 }
