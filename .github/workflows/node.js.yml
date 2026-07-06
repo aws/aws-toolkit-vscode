@@ -198,12 +198,18 @@ jobs:
                     - os: macos-latest
                       node-version: 18.x
                       vscode-version: stable
+                      test-user-dir: '/tmp/.vscode-test/user-data/'
                     - os: windows-latest
                       node-version: 20.x
                       vscode-version: stable
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            # Keep the VS Code user-data-dir path short on the POSIX runners. The default
+            # path under the checkout dir exceeds the Unix-domain-socket path limit (~103
+            # on macOS), so VS Code fails to launch with "listen EINVAL".
+            # Honored by launchTestUtilities.ts (adds --user-data-dir); empty = unset.
+            AWS_TOOLKIT_TEST_USER_DIR: ${{ matrix.test-user-dir }}
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
