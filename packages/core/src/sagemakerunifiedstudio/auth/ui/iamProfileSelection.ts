@@ -20,7 +20,6 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
  * Actions available in the credential management dialog
  */
 enum CredentialManagementAction {
-    AddNewProfileConsole = 'ADD_NEW_PROFILE_CONSOLE',
     EditCredentialsFile = 'EDIT_CREDENTIALS_FILE',
     EditConfigFile = 'EDIT_CONFIG_FILE',
     AddNewProfile = 'ADD_NEW_PROFILE',
@@ -31,6 +30,7 @@ enum CredentialManagementAction {
  */
 enum ProfileSelectionAction {
     SelectProfile = 'SELECT_PROFILE',
+    ConsoleLogin = 'CONSOLE_LOGIN',
     ManageCredentials = 'MANAGE_CREDENTIALS',
 }
 
@@ -130,6 +130,14 @@ export class SmusIamProfileSelector {
                 }
             })
 
+            // Add "Add profile through console" option
+            const consoleLoginItem: vscode.QuickPickItem & { action: ProfileSelectionAction } = {
+                label: '$(globe) Add profile through console',
+                description: 'Authenticate via browser using AWS CLI',
+                detail: 'Opens a browser window for sign-in',
+                action: ProfileSelectionAction.ConsoleLogin,
+            }
+
             // Add "Add or edit credentials" option
             const addCredentialsItem: vscode.QuickPickItem & { action: ProfileSelectionAction } = {
                 label: '$(add) Add or edit credentials',
@@ -138,7 +146,7 @@ export class SmusIamProfileSelector {
                 action: ProfileSelectionAction.ManageCredentials,
             }
 
-            const options = [...profileItems, addCredentialsItem]
+            const options = [...profileItems, consoleLoginItem, addCredentialsItem]
 
             const quickPick = vscode.window.createQuickPick()
             quickPick.title = 'Select an IAM Profile'
@@ -174,6 +182,30 @@ export class SmusIamProfileSelector {
                         action: ProfileSelectionAction
                         profileName?: string
                         region?: string
+                    }
+
+                    // Check if user selected "Add profile through console"
+                    if (itemWithAction.action === ProfileSelectionAction.ConsoleLogin) {
+                        void (async () => {
+                            try {
+                                telemetry.smus_iamCredentialMethod.emit({
+                                    smusIamCredMethod: 'console',
+                                    result: 'Succeeded',
+                                })
+                                const newProfile = await SmusIamProfileSelector.addNewProfileConsole()
+                                resolve(newProfile)
+                            } catch (error) {
+                                if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
+                                    resolve({
+                                        isEditing: true,
+                                        message: 'User cancelled console login.',
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
+                        })()
+                        return
                     }
 
                     // Check if user selected "Add or edit credentials"
@@ -417,13 +449,6 @@ export class SmusIamProfileSelector {
 
         const options: (vscode.QuickPickItem & { action: CredentialManagementAction })[] = [
             {
-                label: '$(globe) Add profile through console',
-                description: 'Authenticate via browser using AWS CLI',
-                detail: 'Opens a browser window for sign-in',
-                action: CredentialManagementAction.AddNewProfileConsole,
-            },
-
-            {
                 label: '$(file-text) Edit AWS Credentials File',
                 description: 'Open ~/.aws/credentials file for editing',
                 detail: 'Edit existing credential profiles or add new ones',
@@ -436,9 +461,9 @@ export class SmusIamProfileSelector {
                 action: CredentialManagementAction.EditConfigFile,
             },
             {
-                label: '$(add) Add New Profile Manually',
+                label: '$(add) Add New Profile',
                 description: 'Create a new AWS credential profile',
-                detail: 'Enter access key, secret key, and session token manually',
+                detail: 'Interactive setup for a new credential profile',
                 action: CredentialManagementAction.AddNewProfile,
             },
         ]
@@ -478,16 +503,6 @@ export class SmusIamProfileSelector {
                         }
 
                         switch (itemWithAction.action) {
-                            case CredentialManagementAction.AddNewProfileConsole: {
-                                telemetry.smus_iamCredentialMethod.emit({
-                                    smusIamCredMethod: 'console',
-                                    result: 'Succeeded',
-                                })
-                                const newProfile = await this.addNewProfileConsole()
-                                // Return the newly created profile data to use it directly
-                                resolve(newProfile)
-                                break
-                            }
                             case CredentialManagementAction.EditCredentialsFile: {
                                 telemetry.smus_iamCredentialMethod.emit({
                                     smusIamCredMethod: 'editCredentials',
