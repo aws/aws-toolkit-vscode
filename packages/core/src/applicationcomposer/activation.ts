@@ -22,9 +22,10 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         // The webview HTML could not be fetched, skip infrastrucuture composer activation
         void showViewLogsMessage(
             localize(
-                "AWS.ApplicationComposer.visualization.errors.rendering",
-                "There was an error rendering Infrastructure Composer, check logs for details"
-            ), 'error'
+                'AWS.ApplicationComposer.visualization.errors.rendering',
+                'There was an error rendering Infrastructure Composer, check logs for details'
+            ),
+            'error'
         )
         getLogger().error('Failed to initalise Infrastructure Composer: skipping initialization : ${err}')
         return
