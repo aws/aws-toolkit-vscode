@@ -24,10 +24,72 @@ export async function tryConsoleLogin(profileName: string, region: string): Prom
     try {
         await removeConflictingCredentialKeys(profileName)
         await authenticateWithConsoleLogin(profileName, region)
+        await ensureProfileHasRegion(profileName, region)
         return true
     } catch (e) {
         logger.debug(`Console login failed: ${(e as Error).message}`)
         return false
+    }
+}
+
+/**
+ * Ensures the profile in ~/.aws/config has a region field.
+ * `aws login` does not write region to the profile, which causes the SDK's
+ * credential-provider-login to default to us-east-1 for session refresh.
+ */
+async function ensureProfileHasRegion(profileName: string, region: string): Promise<void> {
+    const configPath = getConfigFilename()
+
+    if (!(await fs.existsFile(configPath))) {
+        return
+    }
+
+    const content = await fs.readFileText(configPath)
+    const lines = content.split(os.EOL)
+    const updatedLines: string[] = []
+
+    let inTargetProfile = false
+    let regionFound = false
+    let lastNonEmptyIndexInProfile = -1
+
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim()
+
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            // If we just left the target profile without finding a region, insert after last non-empty line
+            if (inTargetProfile && !regionFound && lastNonEmptyIndexInProfile >= 0) {
+                updatedLines.splice(lastNonEmptyIndexInProfile + 1, 0, `region = ${region}`)
+            }
+
+            const header = trimmed.slice(1, -1).trim()
+            inTargetProfile = header === profileName || header === `profile ${profileName}`
+            regionFound = false
+            lastNonEmptyIndexInProfile = -1
+            updatedLines.push(lines[i])
+            continue
+        }
+
+        if (inTargetProfile) {
+            if (trimmed.startsWith('region')) {
+                regionFound = true
+            }
+            if (trimmed !== '') {
+                lastNonEmptyIndexInProfile = updatedLines.length
+            }
+        }
+
+        updatedLines.push(lines[i])
+    }
+
+    // Handle case where target profile is the last section
+    if (inTargetProfile && !regionFound && lastNonEmptyIndexInProfile >= 0) {
+        updatedLines.splice(lastNonEmptyIndexInProfile + 1, 0, `region = ${region}`)
+    }
+
+    const updatedContent = updatedLines.join(os.EOL)
+    if (updatedContent !== content) {
+        await fs.writeFile(configPath, updatedContent)
+        logger.debug(`Wrote region '${region}' to profile '${profileName}' in config`)
     }
 }
 
