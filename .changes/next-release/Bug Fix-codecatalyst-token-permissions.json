@@ -1,0 +1,4 @@
+{
+  "type": "Bug Fix",
+  "description": "CodeCatalyst: Dev Environment connection token stored with insecure file permissions"
+}
