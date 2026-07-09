@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached"
-}
