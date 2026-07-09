@@ -52,6 +52,11 @@ export interface IamProfileSelection {
 }
 
 /**
+ * Steps in the console login wizard flow
+ */
+type ConsoleLoginStep = 'profileEntry' | 'regionEntry' | 'login'
+
+/**
  * Result indicating user chose to edit credential files
  */
 export interface IamProfileEditingInProgress {
@@ -193,7 +198,13 @@ export class SmusIamProfileSelector {
                                     result: 'Succeeded',
                                 })
                                 const newProfile = await SmusIamProfileSelector.addNewProfileConsole()
-                                resolve(newProfile)
+                                if (newProfile === 'BACK') {
+                                    // User navigated back, re-show profile selection
+                                    const result = await SmusIamProfileSelector.showIamProfileSelection()
+                                    resolve(result)
+                                } else {
+                                    resolve(newProfile)
+                                }
                             } catch (error) {
                                 if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
                                     resolve({
@@ -611,50 +622,46 @@ export class SmusIamProfileSelector {
      * Falls back to manual entry on failure.
      * @returns Promise resolving to the newly created profile data
      */
-    private static async addNewProfileConsole(): Promise<IamProfileSelection> {
+    private static async addNewProfileConsole(): Promise<IamProfileSelection | 'BACK'> {
         const logger = this.logger
 
         try {
             logger.debug('Starting add new profile via console flow')
 
-            // Step 1: Collect profile name and region with back navigation
-            let currentStep = 1
+            // Collect profile name and region with back navigation
+            let currentStep: ConsoleLoginStep = 'profileEntry'
             let profileName = ''
             let region = ''
 
-            while (currentStep <= 2) {
+            while (currentStep !== 'login') {
                 switch (currentStep) {
-                    case 1: {
+                    case 'profileEntry': {
                         const result = await this.getProfileNameInput()
                         if (result === 'BACK') {
-                            // User wants to go back to credential management menu
-                            throw new ToolkitError('User navigated back', {
-                                code: SmusErrorCodes.UserCancelled,
-                                cancelled: true,
-                            })
+                            return 'BACK'
                         }
                         profileName = result
-                        currentStep = 2
+                        currentStep = 'regionEntry'
                         break
                     }
-                    case 2: {
+                    case 'regionEntry': {
                         const result = await this.showRegionSelection({
                             title: 'Add Profile Through Console - Step 2 of 2',
                             placeholder: 'Select the AWS region for this profile',
                             returnBackOnCancel: true,
                         })
                         if (result === 'BACK') {
-                            currentStep = 1
+                            currentStep = 'profileEntry'
                         } else {
                             region = result
-                            currentStep = 3
+                            currentStep = 'login'
                         }
                         break
                     }
                 }
             }
 
-            // Step 2: Attempt console login
+            // Attempt console login
             const loginSuccess = await tryConsoleLogin(profileName, region)
 
             if (loginSuccess) {
