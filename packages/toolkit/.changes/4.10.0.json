@@ -1,0 +1,10 @@
+{
+	"date": "2026-07-09",
+	"version": "4.10.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached"
+		}
+	]
+}
