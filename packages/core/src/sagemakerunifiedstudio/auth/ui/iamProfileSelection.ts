@@ -13,7 +13,7 @@ import { getCredentialsFilename, getConfigFilename } from '../../../auth/credent
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
-import { tryConsoleLogin } from '../smusConsoleLogin'
+import { tryConsoleLogin, checkConflictingCredentialKeys } from '../smusConsoleLogin'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 /**
@@ -636,7 +636,7 @@ export class SmusIamProfileSelector {
             while (currentStep !== 'login') {
                 switch (currentStep) {
                     case 'profileEntry': {
-                        const result = await this.getProfileNameInput()
+                        const result = await this.getProfileNameInput('Add Profile Through Console - Step 1 of 2')
                         if (result === 'BACK') {
                             return 'BACK'
                         }
@@ -661,6 +661,16 @@ export class SmusIamProfileSelector {
                 }
             }
 
+            // Check for conflicting credential keys before attempting console login
+            const hasConflictingKeys = await checkConflictingCredentialKeys(profileName)
+
+            if (hasConflictingKeys) {
+                void vscode.window.showWarningMessage(
+                    `Profile has conflicting credentials. Console login is not available.`
+                )
+                return this.fallbackToManualEntry(profileName, region)
+            }
+
             // Attempt console login
             const loginSuccess = await tryConsoleLogin(profileName, region)
 
@@ -672,50 +682,8 @@ export class SmusIamProfileSelector {
                 }
             }
 
-            // Console login failed — ask user if they want to fall back to manual entry
-            const fallbackChoice = await this.showManualEntryFallbackPrompt()
-
-            if (fallbackChoice === 'manual') {
-                telemetry.smus_consoleLoginResult.emit({
-                    smusConsoleLoginResult: false,
-                    smusConsoleLoginFallback: true,
-                    result: 'Succeeded',
-                })
-                // Fall back to manual entry with prefilled profile name and region
-                const profileData = await this.collectProfileData({ profileName, region })
-
-                if (profileData === 'BACK') {
-                    throw new ToolkitError('User navigated back from manual fallback', {
-                        code: SmusErrorCodes.UserCancelled,
-                        cancelled: true,
-                    })
-                }
-
-                // Write the manually entered profile to disk
-                await this.addProfileToCredentialsFile(
-                    profileData.profileName,
-                    profileData.accessKeyId,
-                    profileData.secretAccessKey,
-                    profileData.sessionToken,
-                    profileData.region
-                )
-
-                return {
-                    profileName: profileData.profileName,
-                    region: profileData.region,
-                }
-            }
-
-            // User declined manual entry — go back
-            telemetry.smus_consoleLoginResult.emit({
-                smusConsoleLoginResult: false,
-                smusConsoleLoginFallback: false,
-                result: 'Succeeded',
-            })
-            throw new ToolkitError('User declined manual fallback', {
-                code: SmusErrorCodes.UserCancelled,
-                cancelled: true,
-            })
+            // Console login failed — fall back to manual entry (prompts user)
+            return this.fallbackToManualEntry(profileName, region)
         } catch (error) {
             if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
                 logger.debug('User cancelled add new profile via console flow')
@@ -725,6 +693,55 @@ export class SmusIamProfileSelector {
             throw new ToolkitError(`Failed to add new profile via console: ${(error as Error).message}`, {
                 code: 'AddProfileConsoleError',
             })
+        }
+    }
+
+    /**
+     * Prompts the user to fall back to manual credential entry, then collects and writes credentials.
+     * Used when console login is not possible (conflicting keys) or fails.
+     * @throws ToolkitError with UserCancelled if the user declines or navigates back
+     */
+    private static async fallbackToManualEntry(profileName: string, region: string): Promise<IamProfileSelection> {
+        const fallbackChoice = await this.showManualEntryFallbackPrompt()
+
+        if (fallbackChoice !== 'manual') {
+            telemetry.smus_consoleLoginResult.emit({
+                smusConsoleLoginResult: false,
+                smusConsoleLoginFallback: false,
+                result: 'Succeeded',
+            })
+            throw new ToolkitError('User declined manual fallback', {
+                code: SmusErrorCodes.UserCancelled,
+                cancelled: true,
+            })
+        }
+
+        telemetry.smus_consoleLoginResult.emit({
+            smusConsoleLoginResult: false,
+            smusConsoleLoginFallback: true,
+            result: 'Succeeded',
+        })
+
+        const profileData = await this.collectProfileData({ profileName, region })
+
+        if (profileData === 'BACK') {
+            throw new ToolkitError('User navigated back from manual fallback', {
+                code: SmusErrorCodes.UserCancelled,
+                cancelled: true,
+            })
+        }
+
+        await this.addProfileToCredentialsFile(
+            profileData.profileName,
+            profileData.accessKeyId,
+            profileData.secretAccessKey,
+            profileData.sessionToken,
+            profileData.region
+        )
+
+        return {
+            profileName: profileData.profileName,
+            region: profileData.region,
         }
     }
 
@@ -847,6 +864,7 @@ export class SmusIamProfileSelector {
         let region = prefill?.region ?? ''
 
         const lastStep = prefill?.region ? 4 : 5
+        const isFallback = !!(prefill?.profileName && prefill?.region)
 
         while (currentStep <= lastStep) {
             switch (currentStep) {
@@ -862,7 +880,8 @@ export class SmusIamProfileSelector {
                 }
                 case 2: {
                     // Step 2: Access Key ID
-                    const result = await this.getAccessKeyIdInput()
+                    const stepLabel = isFallback ? 'Step 1 of 3' : 'Step 2 of 5'
+                    const result = await this.getAccessKeyIdInput(`Add New AWS Profile - ${stepLabel}`)
                     if (result === 'BACK') {
                         if (prefill?.profileName) {
                             // Profile was prefilled, back here means exit entirely
@@ -877,7 +896,8 @@ export class SmusIamProfileSelector {
                 }
                 case 3: {
                     // Step 3: Secret Access Key
-                    const result = await this.getSecretAccessKeyInput()
+                    const stepLabel = isFallback ? 'Step 2 of 3' : 'Step 3 of 5'
+                    const result = await this.getSecretAccessKeyInput(`Add New AWS Profile - ${stepLabel}`)
                     if (result === 'BACK') {
                         currentStep = 2 // Go back to step 2
                     } else {
@@ -888,7 +908,8 @@ export class SmusIamProfileSelector {
                 }
                 case 4: {
                     // Step 4: Session Token (optional)
-                    const result = await this.getSessionTokenInput()
+                    const stepLabel = isFallback ? 'Step 3 of 3' : 'Step 4 of 5'
+                    const result = await this.getSessionTokenInput(`Add New AWS Profile - ${stepLabel}`)
                     if (result === 'BACK') {
                         currentStep = 3 // Go back to step 3
                     } else {
@@ -927,10 +948,10 @@ export class SmusIamProfileSelector {
     /**
      * Gets profile name input with back navigation and existing profile validation
      */
-    private static async getProfileNameInput(): Promise<string | 'BACK'> {
+    private static async getProfileNameInput(title?: string): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
-                'Add New AWS Profile - Step 1 of 5',
+                title ?? 'Add New AWS Profile - Step 1 of 5',
                 'Type a profile name (e.g., my-profile, dev, prod)'
             )
             quickPick.items = []
@@ -1053,7 +1074,7 @@ export class SmusIamProfileSelector {
                             resolve(value)
                         } else {
                             // User cancelled, restart the input
-                            const result = await this.getProfileNameInput()
+                            const result = await this.getProfileNameInput(title)
                             resolve(result)
                         }
                         return
@@ -1081,10 +1102,10 @@ export class SmusIamProfileSelector {
     /**
      * Gets access key ID input with back navigation
      */
-    private static async getAccessKeyIdInput(): Promise<string | 'BACK'> {
+    private static async getAccessKeyIdInput(title?: string): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
-                'Add New AWS Profile - Step 2 of 5',
+                title ?? 'Add New AWS Profile - Step 2 of 5',
                 'Type your AWS Access Key ID (e.g., AKIAIOSFODNN7EXAMPLE)'
             )
             quickPick.items = []
@@ -1183,10 +1204,10 @@ export class SmusIamProfileSelector {
     /**
      * Gets secret access key input with back navigation
      */
-    private static async getSecretAccessKeyInput(): Promise<string | 'BACK'> {
+    private static async getSecretAccessKeyInput(title?: string): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
-                'Add New AWS Profile - Step 3 of 5',
+                title ?? 'Add New AWS Profile - Step 3 of 5',
                 'Type your AWS Secret Access Key (will be hidden when typing)'
             )
             quickPick.items = []
@@ -1253,10 +1274,10 @@ export class SmusIamProfileSelector {
     /**
      * Gets session token input with back navigation
      */
-    private static async getSessionTokenInput(): Promise<string | 'BACK'> {
+    private static async getSessionTokenInput(title?: string): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
-                'Add New AWS Profile - Step 4 of 5',
+                title ?? 'Add New AWS Profile - Step 4 of 5',
                 'Enter your AWS Session Token (optional for temporary credentials)'
             )
 

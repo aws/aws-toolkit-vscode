@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as os from 'os'
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { authenticateWithConsoleLogin } from '../../auth/consoleSessionUtils'
 import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
+import { parseIni } from '../../auth/credentials/sharedCredentials'
 import fs from '../../shared/fs/fs'
 
 const logger = getLogger('smus')
@@ -16,15 +17,11 @@ const conflictingKeys = ['aws_access_key_id', 'aws_secret_access_key', 'aws_sess
 
 /**
  * Attempts browser-based console login via AWS CLI.
- * Removes conflicting credential keys first (the CLI refuses to run if they exist),
- * then calls authenticateWithConsoleLogin.
  * @returns true on success, false on failure
  */
 export async function tryConsoleLogin(profileName: string, region: string): Promise<boolean> {
     try {
-        await removeConflictingCredentialKeys(profileName)
         await authenticateWithConsoleLogin(profileName, region)
-        await ensureProfileHasRegion(profileName, region)
         return true
     } catch (e) {
         logger.debug(`Console login failed: ${(e as Error).message}`)
@@ -33,73 +30,14 @@ export async function tryConsoleLogin(profileName: string, region: string): Prom
 }
 
 /**
- * Ensures the profile in ~/.aws/config has a region field.
- * `aws login` does not write region to the profile, which causes the SDK's
- * credential-provider-login to default to us-east-1 for session refresh.
+ * Checks whether a profile in ~/.aws/credentials or ~/.aws/config contains
+ * conflicting credential keys (aws_access_key_id, aws_secret_access_key,
+ * aws_session_token). These keys conflict with the CLI's cache-based credentials
+ * from `aws login` and prevent the credential provider from working correctly.
+ *
+ * @returns true if conflicting keys are detected, false otherwise
  */
-async function ensureProfileHasRegion(profileName: string, region: string): Promise<void> {
-    const configPath = getConfigFilename()
-
-    if (!(await fs.existsFile(configPath))) {
-        return
-    }
-
-    const content = await fs.readFileText(configPath)
-    const lines = content.split(os.EOL)
-    const updatedLines: string[] = []
-
-    let inTargetProfile = false
-    let regionFound = false
-    let lastNonEmptyIndexInProfile = -1
-
-    for (let i = 0; i < lines.length; i++) {
-        const trimmed = lines[i].trim()
-
-        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-            // If we just left the target profile without finding a region, insert after last non-empty line
-            if (inTargetProfile && !regionFound && lastNonEmptyIndexInProfile >= 0) {
-                updatedLines.splice(lastNonEmptyIndexInProfile + 1, 0, `region = ${region}`)
-            }
-
-            const header = trimmed.slice(1, -1).trim()
-            inTargetProfile = header === profileName || header === `profile ${profileName}`
-            regionFound = false
-            lastNonEmptyIndexInProfile = -1
-            updatedLines.push(lines[i])
-            continue
-        }
-
-        if (inTargetProfile) {
-            if (trimmed.startsWith('region')) {
-                regionFound = true
-            }
-            if (trimmed !== '') {
-                lastNonEmptyIndexInProfile = updatedLines.length
-            }
-        }
-
-        updatedLines.push(lines[i])
-    }
-
-    // Handle case where target profile is the last section
-    if (inTargetProfile && !regionFound && lastNonEmptyIndexInProfile >= 0) {
-        updatedLines.splice(lastNonEmptyIndexInProfile + 1, 0, `region = ${region}`)
-    }
-
-    const updatedContent = updatedLines.join(os.EOL)
-    if (updatedContent !== content) {
-        await fs.writeFile(configPath, updatedContent)
-        logger.debug(`Wrote region '${region}' to profile '${profileName}' in config`)
-    }
-}
-
-/**
- * Removes conflicting credential keys (aws_access_key_id, aws_secret_access_key,
- * aws_session_token) from a profile in ~/.aws/credentials and ~/.aws/config.
- * This ensures the credential provider chain picks up cached credentials
- * written by `aws login` instead of stale keys in these files.
- */
-export async function removeConflictingCredentialKeys(profileName: string): Promise<void> {
+export async function checkConflictingCredentialKeys(profileName: string): Promise<boolean> {
     const filesToCheck = [getCredentialsFilename(), getConfigFilename()]
 
     for (const filePath of filesToCheck) {
@@ -107,43 +45,32 @@ export async function removeConflictingCredentialKeys(profileName: string): Prom
             continue
         }
 
-        const content = await fs.readFileText(filePath)
-        const lines = content.split(os.EOL)
-        const updatedLines: string[] = []
+        try {
+            const content = await fs.readFileText(filePath)
+            const sections = parseIni(content, vscode.Uri.file(filePath))
 
-        let inTargetProfile = false
+            // Find profile section matching this profile name
+            const profileSection = sections.find(
+                (section) => section.type === 'profile' && section.name === profileName
+            )
 
-        for (const line of lines) {
-            const trimmed = line.trim()
-
-            // Detect profile headers
-            // credentials file: [profileName]
-            // config file: [profile profileName]
-            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                const header = trimmed.slice(1, -1).trim()
-                inTargetProfile = header === profileName || header === `profile ${profileName}`
-                updatedLines.push(line)
+            if (!profileSection) {
                 continue
             }
 
-            // If we're in the target profile, skip conflicting keys
-            if (inTargetProfile) {
-                const key = trimmed.split(/\s*=\s*/)[0]
-                if (conflictingKeys.includes(key)) {
-                    logger.debug(`Removing conflicting key '${key}' from profile '${profileName}' in ${filePath}`)
-                    continue
+            // Check if any assignment keys conflict
+            for (const assignment of profileSection.assignments) {
+                if (conflictingKeys.includes(assignment.key)) {
+                    logger.info(
+                        `Conflicting credential key '${assignment.key}' found for profile '${profileName}' in ${filePath}`
+                    )
+                    return true
                 }
             }
-
-            updatedLines.push(line)
-        }
-
-        const updatedContent = updatedLines.join(os.EOL)
-
-        // Only write back if something changed
-        if (updatedContent !== content) {
-            await fs.writeFile(filePath, updatedContent)
-            logger.debug(`Removed conflicting credential keys from profile '${profileName}' in ${filePath}`)
+        } catch (e) {
+            logger.debug(`Failed to parse ${filePath} for conflicting keys check: ${(e as Error).message}`)
         }
     }
+
+    return false
 }
