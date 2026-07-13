@@ -85,15 +85,11 @@ export class SmusAuthenticationOrchestrator {
             // At this point, we have a profile selected
             this.logger.debug(`Selected profile: ${profileSelection.profileName}, region: ${profileSelection.region}`)
 
-            // Skip validation if credentials were just authenticated via console login CLI —
-            // the stale in-memory SDK file cache may serve an expired token even though a fresh
-            // one was just written to disk by the CLI.
-            if (!profileSelection.fromConsoleLogin) {
-                const validation = await authProvider.validateIamProfile(profileSelection.profileName)
-                if (!validation.isValid) {
-                    this.logger.debug(`Profile validation failed: ${validation.error}`)
-                    return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
-                }
+            // Validate the selected profile
+            const validation = await authProvider.validateIamProfile(profileSelection.profileName)
+            if (!validation.isValid) {
+                this.logger.debug(`Profile validation failed: ${validation.error}`)
+                return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
             }
 
             // Discovering domains with IAM sign-in enabled using IAM credentials. If no domain is discovered, throw an error.

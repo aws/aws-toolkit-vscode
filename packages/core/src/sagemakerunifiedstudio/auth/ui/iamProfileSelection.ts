@@ -49,8 +49,6 @@ enum SessionTokenAction {
 export interface IamProfileSelection {
     profileName: string
     region: string
-    /** Indicates the profile was just authenticated via console login CLI — skip credential validation */
-    fromConsoleLogin?: boolean
 }
 
 /**
@@ -681,7 +679,6 @@ export class SmusIamProfileSelector {
                 return {
                     profileName,
                     region,
-                    fromConsoleLogin: true,
                 }
             }
 
