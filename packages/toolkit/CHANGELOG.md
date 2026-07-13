@@ -1,3 +1,7 @@
+## 4.10.0 2026-07-09
+
+- **Feature** Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached
+
 ## 4.9.0 2026-07-02
 
 - **Feature** Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`.
