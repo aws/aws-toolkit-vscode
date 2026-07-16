@@ -13,7 +13,7 @@ import { getCredentialsFilename, getConfigFilename } from '../../../auth/credent
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
-import { tryConsoleLogin, checkConflictingCredentialKeys } from '../smusConsoleLogin'
+import { tryConsoleLogin, checkConflictingCredentialKeys, ConflictingKeysFile } from '../smusConsoleLogin'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 /**
@@ -52,7 +52,7 @@ export interface IamProfileSelection {
 }
 
 /**
- * Steps in the console login wizard flow
+ * Steps in the console login flow
  */
 type ConsoleLoginStep = 'profileEntry' | 'regionEntry' | 'login'
 
@@ -636,7 +636,10 @@ export class SmusIamProfileSelector {
             while (currentStep !== 'login') {
                 switch (currentStep) {
                     case 'profileEntry': {
-                        const result = await this.getProfileNameInput('Add Profile Through Console - Step 1 of 2')
+                        const result = await this.getProfileNameInput(
+                            'Add Profile Through Console - Step 1 of 2',
+                            false
+                        )
                         if (result === 'BACK') {
                             return 'BACK'
                         }
@@ -661,14 +664,44 @@ export class SmusIamProfileSelector {
                 }
             }
 
-            // Check for conflicting credential keys before attempting console login
-            const hasConflictingKeys = await checkConflictingCredentialKeys(profileName)
+            // Check for conflicting credential keys before attempting console login.
+            // A profile with static credential keys can't be used for `aws login`. Since the
+            // profile name is arbitrary, offer to use a different name (re-checking each one),
+            // open the offending file to remove the keys, or enter credentials manually.
+            let conflictFile = await checkConflictingCredentialKeys(profileName)
 
-            if (hasConflictingKeys) {
-                void vscode.window.showWarningMessage(
-                    `Profile has conflicting credentials. Console login is not available.`
-                )
-                return this.fallbackToManualEntry(profileName, region)
+            // Only alert on a fresh conflict (initial detection or a newly chosen name), not
+            // when the user simply backed out of a sub-prompt.
+            let notifyConflict = true
+            while (conflictFile) {
+                if (notifyConflict) {
+                    void vscode.window.showErrorMessage(
+                        `Profile has conflicting credential keys in ~/.aws/${conflictFile}.`
+                    )
+                }
+                notifyConflict = false
+
+                const choice = await this.showConflictingKeysPrompt(profileName, conflictFile)
+                if (choice === 'BACK') {
+                    return 'BACK'
+                }
+                if (choice === 'openFile') {
+                    // Open the offending file so the user can remove the conflicting keys,
+                    // then exit the flow, and they can retry sign-in once the file is fixed.
+                    await this.openAwsFile(conflictFile)
+                    throw new ToolkitError(
+                        `Opened your AWS ${conflictFile} file. Remove the conflicting credential keys from profile "${profileName}", then try signing in again.`,
+                        { code: SmusErrorCodes.UserCancelled, cancelled: true }
+                    )
+                }
+                // 'differentName': prompt for a new name. Back from name entry keeps the same
+                // profile and re-shows the prompt without a fresh error notification.
+                const newName = await this.getProfileNameInput('Use a Different Profile Name', false)
+                if (newName !== 'BACK') {
+                    profileName = newName
+                    conflictFile = await checkConflictingCredentialKeys(profileName)
+                    notifyConflict = true
+                }
             }
 
             // Attempt console login
@@ -682,8 +715,33 @@ export class SmusIamProfileSelector {
                 }
             }
 
-            // Console login failed — fall back to manual entry (prompts user)
-            return this.fallbackToManualEntry(profileName, region)
+            // Console login failed — offer manual entry. Back from the fields returns to this
+            // prompt rather than exiting the flow.
+            let manualResult: IamProfileSelection | undefined
+            while (manualResult === undefined) {
+                const fallbackChoice = await this.showManualEntryFallbackPrompt()
+                if (fallbackChoice !== 'manual') {
+                    telemetry.smus_consoleLoginResult.emit({
+                        smusConsoleLoginResult: false,
+                        smusConsoleLoginFallback: false,
+                        result: 'Succeeded',
+                    })
+                    throw new ToolkitError('User declined manual fallback', {
+                        code: SmusErrorCodes.UserCancelled,
+                        cancelled: true,
+                    })
+                }
+                telemetry.smus_consoleLoginResult.emit({
+                    smusConsoleLoginResult: false,
+                    smusConsoleLoginFallback: true,
+                    result: 'Succeeded',
+                })
+                const result = await this.fallbackToManualEntry(profileName, region)
+                if (result !== 'BACK') {
+                    manualResult = result
+                }
+            }
+            return manualResult
         } catch (error) {
             if (error instanceof ToolkitError && error.code === SmusErrorCodes.UserCancelled) {
                 logger.debug('User cancelled add new profile via console flow')
@@ -697,38 +755,19 @@ export class SmusIamProfileSelector {
     }
 
     /**
-     * Prompts the user to fall back to manual credential entry, then collects and writes credentials.
-     * Used when console login is not possible (conflicting keys) or fails.
-     * @throws ToolkitError with UserCancelled if the user declines or navigates back
+     * Collects manual credential fields for a profile and writes it to the credentials file.
+     * Callers that need a "fall back to manual entry?" confirmation must prompt first
+     * (see showManualEntryFallbackPrompt).
+     * @returns the created profile, or 'BACK' if the user navigated back from the fields
      */
-    private static async fallbackToManualEntry(profileName: string, region: string): Promise<IamProfileSelection> {
-        const fallbackChoice = await this.showManualEntryFallbackPrompt()
-
-        if (fallbackChoice !== 'manual') {
-            telemetry.smus_consoleLoginResult.emit({
-                smusConsoleLoginResult: false,
-                smusConsoleLoginFallback: false,
-                result: 'Succeeded',
-            })
-            throw new ToolkitError('User declined manual fallback', {
-                code: SmusErrorCodes.UserCancelled,
-                cancelled: true,
-            })
-        }
-
-        telemetry.smus_consoleLoginResult.emit({
-            smusConsoleLoginResult: false,
-            smusConsoleLoginFallback: true,
-            result: 'Succeeded',
-        })
-
+    private static async fallbackToManualEntry(
+        profileName: string,
+        region: string
+    ): Promise<IamProfileSelection | 'BACK'> {
         const profileData = await this.collectProfileData({ profileName, region })
 
         if (profileData === 'BACK') {
-            throw new ToolkitError('User navigated back from manual fallback', {
-                code: SmusErrorCodes.UserCancelled,
-                cancelled: true,
-            })
+            return 'BACK'
         }
 
         await this.addProfileToCredentialsFile(
@@ -782,6 +821,64 @@ export class SmusIamProfileSelector {
                 if (!isCompleted) {
                     quickPick.dispose()
                     resolve('cancel')
+                }
+            })
+
+            quickPick.show()
+        })
+    }
+
+    /**
+     * Shown when the chosen profile name has conflicting credential keys (static keys that
+     * would break `aws login`). Offers the two non-destructive options: use a different
+     * profile name (name is arbitrary, so this avoids touching the user's existing
+     * profile), or open the offending file to remove the keys.
+     *
+     * @param conflictFile the file ('credentials' or 'config') that holds the conflicting keys
+     * @returns 'differentName' to re-prompt for a new name, 'openFile' to open the file, or 'BACK'
+     */
+    private static async showConflictingKeysPrompt(
+        profileName: string,
+        conflictFile: ConflictingKeysFile
+    ): Promise<'differentName' | 'openFile' | 'BACK'> {
+        const differentNameOption: vscode.QuickPickItem = {
+            label: '$(edit) Use a different profile name',
+            detail: 'Create the console login under a new profile name, leaving your existing profile untouched',
+        }
+
+        const openFileOption: vscode.QuickPickItem = {
+            label: `$(file) Open the ${conflictFile} file to remove the keys`,
+            detail: `Open ~/.aws/${conflictFile} so you can delete the conflicting keys, then retry`,
+        }
+
+        const quickPick = this.createInputQuickPick(
+            `Profile "${profileName}" has conflicting credentials`,
+            'Console login needs a profile without static credential keys'
+        )
+        quickPick.items = [differentNameOption, openFileOption]
+
+        return new Promise((resolve) => {
+            let isCompleted = false
+
+            quickPick.onDidAccept(() => {
+                const selected = quickPick.selectedItems[0]
+                isCompleted = true
+                quickPick.dispose()
+                resolve(selected === openFileOption ? 'openFile' : 'differentName')
+            })
+
+            quickPick.onDidTriggerButton((button) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    isCompleted = true
+                    quickPick.dispose()
+                    resolve('BACK')
+                }
+            })
+
+            quickPick.onDidHide(() => {
+                if (!isCompleted) {
+                    quickPick.dispose()
+                    resolve('BACK')
                 }
             })
 
@@ -946,9 +1043,12 @@ export class SmusIamProfileSelector {
     }
 
     /**
-     * Gets profile name input with back navigation and existing profile validation
+     * Gets profile name input with back navigation and existing profile validation.
+     * @param warnIfExists when true (default), warns and asks to confirm before reusing an
+     *   existing profile name. Pass false for the console login flow, where `aws login`
+     *   writes to the token cache and does not overwrite existing credentials.
      */
-    private static async getProfileNameInput(title?: string): Promise<string | 'BACK'> {
+    private static async getProfileNameInput(title?: string, warnIfExists: boolean = true): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
                 title ?? 'Add New AWS Profile - Step 1 of 5',
@@ -1010,7 +1110,7 @@ export class SmusIamProfileSelector {
                         const profiles = await loadSharedCredentialsProfiles()
                         const profileExists = profiles[value] !== undefined
 
-                        if (profileExists) {
+                        if (profileExists && warnIfExists) {
                             quickPick.items = [
                                 {
                                     label: `${value}`,
@@ -1059,7 +1159,7 @@ export class SmusIamProfileSelector {
                     const profiles = await loadSharedCredentialsProfiles()
                     const profileExists = profiles[value] !== undefined
 
-                    if (profileExists) {
+                    if (profileExists && warnIfExists) {
                         isCompleted = true
                         quickPick.dispose()
 
@@ -1074,7 +1174,7 @@ export class SmusIamProfileSelector {
                             resolve(value)
                         } else {
                             // User cancelled, restart the input
-                            const result = await this.getProfileNameInput(title)
+                            const result = await this.getProfileNameInput(title, warnIfExists)
                             resolve(result)
                         }
                         return
