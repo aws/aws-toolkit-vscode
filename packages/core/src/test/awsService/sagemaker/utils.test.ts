@@ -4,11 +4,13 @@
  */
 
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
-import { generateSpaceStatus, ActivityCheckInterval } from '../../../awsService/sagemaker/utils'
+import { generateSpaceStatus, getSmSsmEnv, ActivityCheckInterval } from '../../../awsService/sagemaker/utils'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import * as path from 'path'
 import { fs } from '../../../shared/fs/fs'
 import * as utils from '../../../awsService/sagemaker/utils'
+import globals from '../../../shared/extensionGlobals'
 
 describe('generateSpaceStatus', function () {
     it('returns Failed if space status is Failed', function () {
@@ -146,5 +148,41 @@ describe('checkTerminalActivity', function () {
         // Should continue and find activity on second file
         assert.strictEqual(fsStatStub.callCount, 2)
         assert.strictEqual(fsWriteFileStub.callCount, 1)
+    })
+})
+
+describe('getSmSsmEnv', function () {
+    it('includes SAGEMAKER_SERVER_SCRIPT_PATH derived from extension path', function () {
+        const env = getSmSsmEnv('/usr/bin/ssm-plugin', '/tmp/server-info.json')
+        const expectedPath = path.join(
+            globals.context.asAbsolutePath('dist/src/awsService/sagemaker/detached-server/'),
+            'server.js'
+        )
+        assert.strictEqual(env.SAGEMAKER_SERVER_SCRIPT_PATH, expectedPath)
+    })
+
+    it('includes SAGEMAKER_NODE_PATH set to current process.execPath', function () {
+        const env = getSmSsmEnv('/usr/bin/ssm-plugin', '/tmp/server-info.json')
+        assert.strictEqual(env.SAGEMAKER_NODE_PATH, process.execPath)
+    })
+
+    it('includes AWS_SSM_CLI from ssmPath argument', function () {
+        const env = getSmSsmEnv('/custom/ssm-path', '/tmp/server-info.json')
+        assert.strictEqual(env.AWS_SSM_CLI, '/custom/ssm-path')
+    })
+
+    it('includes SAGEMAKER_LOCAL_SERVER_FILE_PATH from argument', function () {
+        const env = getSmSsmEnv('/usr/bin/ssm-plugin', '/custom/info-path.json')
+        assert.strictEqual(env.SAGEMAKER_LOCAL_SERVER_FILE_PATH, '/custom/info-path.json')
+    })
+
+    it('includes LOG_FILE_LOCATION', function () {
+        const env = getSmSsmEnv('/usr/bin/ssm-plugin', '/tmp/server-info.json')
+        assert.ok(env.LOG_FILE_LOCATION, 'LOG_FILE_LOCATION should be set')
+    })
+
+    it('merges with process.env', function () {
+        const env = getSmSsmEnv('/usr/bin/ssm-plugin', '/tmp/server-info.json')
+        assert.strictEqual(env.PATH, process.env.PATH)
     })
 })

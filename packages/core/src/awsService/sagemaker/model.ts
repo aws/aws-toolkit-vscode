@@ -392,8 +392,8 @@ export async function stopLocalServer(ctx: vscode.ExtensionContext): Promise<voi
             process.kill(pid)
             logger.debug(`stopped local server with PID ${pid}`)
         } catch (err: any) {
-            if (err.code === 'ESRCH') {
-                logger.warn(`no process found with PID ${pid}. It may have already exited.`)
+            if (err.code === 'ESRCH' || err.code === 'EPERM') {
+                logger.warn(`cannot stop PID ${pid} (${err.code}). Proceeding with new server.`)
             } else {
                 throw ToolkitError.chain(err, 'failed to stop local server')
             }

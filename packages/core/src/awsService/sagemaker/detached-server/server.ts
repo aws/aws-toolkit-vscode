@@ -67,7 +67,12 @@ server.listen(0, '127.0.0.1', async () => {
             return
         }
 
-        const data = { pid, port }
+        const data = {
+            pid,
+            port,
+            nodePath: process.execPath,
+            serverScriptPath: __filename,
+        }
         console.log(`Writing local endpoint info to ${filePath}`)
 
         fs.writeFileSync(filePath, JSON.stringify(data, undefined, 2), 'utf-8')
