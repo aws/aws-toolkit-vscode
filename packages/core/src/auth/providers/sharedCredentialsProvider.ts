@@ -490,7 +490,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const defaultRegion = this.getDefaultRegion() ?? 'us-east-1'
         const baseProvider = fromLoginCredentials({
             profile: this.profileName,
-            ignoreCache: true,
             clientConfig: {
                 // Console session profiles created by 'aws login' may not have a region property
                 // The AWS CLI's philosophy is to treat global options like --region as per-invocation overrides
