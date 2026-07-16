@@ -29,18 +29,24 @@ export async function tryConsoleLogin(profileName: string, region: string): Prom
     }
 }
 
+/** Which AWS shared file a conflict was found in. */
+export type ConflictingKeysFile = 'credentials' | 'config'
+
 /**
  * Checks whether a profile in ~/.aws/credentials or ~/.aws/config contains
  * conflicting credential keys (aws_access_key_id, aws_secret_access_key,
  * aws_session_token). These keys conflict with the CLI's cache-based credentials
- * from `aws login` and prevent the credential provider from working correctly.
+ * from `aws login` and the CLI itself fails to run if these conflicts are present
  *
- * @returns true if conflicting keys are detected, false otherwise
+ * @returns the file ('credentials' or 'config') containing the conflict, or undefined if none
  */
-export async function checkConflictingCredentialKeys(profileName: string): Promise<boolean> {
-    const filesToCheck = [getCredentialsFilename(), getConfigFilename()]
+export async function checkConflictingCredentialKeys(profileName: string): Promise<ConflictingKeysFile | undefined> {
+    const filesToCheck: { path: string; type: ConflictingKeysFile }[] = [
+        { path: getCredentialsFilename(), type: 'credentials' },
+        { path: getConfigFilename(), type: 'config' },
+    ]
 
-    for (const filePath of filesToCheck) {
+    for (const { path: filePath, type } of filesToCheck) {
         if (!(await fs.existsFile(filePath))) {
             continue
         }
@@ -64,7 +70,7 @@ export async function checkConflictingCredentialKeys(profileName: string): Promi
                     logger.info(
                         `Conflicting credential key '${assignment.key}' found for profile '${profileName}' in ${filePath}`
                     )
-                    return true
+                    return type
                 }
             }
         } catch (e) {
@@ -72,5 +78,5 @@ export async function checkConflictingCredentialKeys(profileName: string): Promi
         }
     }
 
-    return false
+    return undefined
 }
