@@ -1,0 +1,4 @@
+{
+  "type": "Bug Fix",
+  "description": "Infrastructure Composer: A failure to initialize (eg when 'https://ide-toolkits.app-composer.aws.dev' is not reachable) no longer prevents the rest of Toolkit from activating."
+}
