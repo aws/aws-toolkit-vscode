@@ -32,6 +32,9 @@ let client: LanguageClient | undefined
 let outputChannel: vscode.OutputChannel | undefined
 /** Message kinds surfaced since the last (re)start, so we notify at most once. */
 const notified = new Set<string>()
+/** Serializes (re)starts into a queue-of-one so overlapping triggers never leak a client. */
+let restartInFlight: Promise<void> = Promise.resolve()
+let restartQueued = false
 
 /**
  * Wire the CDK language server. Registers listeners synchronously and starts
@@ -54,18 +57,35 @@ export function activateCdkLsp(context: vscode.ExtensionContext): void {
             // A CDK project appeared where we weren't serving one. Ignore vendored
             // fixtures under node_modules.
             if (!client && !uri.fsPath.includes(`${path.sep}node_modules${path.sep}`)) {
-                void restartClient(context)
+                scheduleRestart(context)
             }
         }),
-        vscode.workspace.onDidChangeWorkspaceFolders(() => void restartClient(context)),
+        vscode.workspace.onDidChangeWorkspaceFolders(() => scheduleRestart(context)),
         vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('aws.cdk.appDir') || e.affectsConfiguration('aws.cdk.cliPath')) {
-                void restartClient(context)
+                scheduleRestart(context)
             }
         })
     )
 
-    void restartClient(context)
+    scheduleRestart(context)
+}
+
+/**
+ * Serialize (re)starts into a queue-of-one. Overlapping triggers (activation,
+ * config/folder changes, a new cdk.json) must not run two starts concurrently,
+ * or the second would overwrite `client` and leak the first. A burst coalesces
+ * into at most one trailing restart, which observes the latest state.
+ */
+function scheduleRestart(context: vscode.ExtensionContext): void {
+    if (restartQueued) {
+        return
+    }
+    restartQueued = true
+    restartInFlight = restartInFlight.then(() => {
+        restartQueued = false
+        return restartClient(context)
+    })
 }
 
 export async function deactivateCdkLsp(): Promise<void> {
