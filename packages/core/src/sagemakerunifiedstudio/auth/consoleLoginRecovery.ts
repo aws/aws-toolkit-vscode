@@ -10,6 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
 import { SmusAuthenticationProvider } from './providers/smusAuthenticationProvider'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import globals from '../../shared/extensionGlobals'
 
 const logger = getLogger('smus')
 
@@ -24,7 +25,7 @@ const logger = getLogger('smus')
  * the user doesn't have to re-drive the flow.
  */
 
-const pendingSignInKey = 'smus.pendingSignIn'
+const pendingSignInKey = 'aws.smus.pendingSignIn'
 
 /** How recently a console login must have succeeded for detection to trigger. */
 const recentLoginWindowMs = 5 * 60 * 1000
@@ -132,11 +133,7 @@ export async function detectPoisonedCache(error: unknown): Promise<boolean> {
  *
  * @returns true if the reload was initiated, false if the user declined
  */
-export async function promptReloadAndResume(
-    memento: vscode.Memento,
-    profileName: string,
-    region: string
-): Promise<boolean> {
+export async function promptReloadAndResume(profileName: string, region: string): Promise<boolean> {
     const reload = 'Reload'
     const response = await vscode.window.showInformationMessage(
         `Sign-in for profile "${profileName}" needs a window reload to complete. Save your work before continuing. Reload now?`,
@@ -148,7 +145,7 @@ export async function promptReloadAndResume(
     }
 
     const pending: PendingSignIn = { profileName, region, attempted: false }
-    await memento.update(pendingSignInKey, pending)
+    await globals.globalState.update(pendingSignInKey, pending)
     logger.info(`consoleLoginRecovery: reloading window to recover stale credentials for profile ${profileName}`)
     await vscode.commands.executeCommand('workbench.action.reloadWindow')
     return true
@@ -166,8 +163,7 @@ export async function tryResumePendingSignIn(
     context: vscode.ExtensionContext,
     authProvider: SmusAuthenticationProvider
 ): Promise<void> {
-    const memento = context.globalState
-    const pending = memento.get<PendingSignIn>(pendingSignInKey)
+    const pending = globals.globalState.get<PendingSignIn>(pendingSignInKey)
     if (!pending?.profileName || !pending.region) {
         return
     }
@@ -175,7 +171,7 @@ export async function tryResumePendingSignIn(
     if (pending.attempted) {
         // The previous resume attempt did not complete successfully — do not loop.
         logger.warn('consoleLoginRecovery: previous resume attempt did not succeed; clearing marker')
-        await memento.update(pendingSignInKey, undefined)
+        await globals.globalState.update(pendingSignInKey, undefined)
         void vscode.window.showErrorMessage(
             `Couldn't restore your SageMaker Unified Studio sign-in for profile "${pending.profileName}". Please sign in again.`
         )
@@ -184,7 +180,7 @@ export async function tryResumePendingSignIn(
 
     // Stamp the loop-guard before doing anything that can fail, so a crash or another
     // reload mid-attempt can never lead to a second automatic attempt.
-    await memento.update(pendingSignInKey, { ...pending, attempted: true })
+    await globals.globalState.update(pendingSignInKey, { ...pending, attempted: true })
 
     logger.info(`consoleLoginRecovery: resuming sign-in for profile ${pending.profileName} after reload`)
     try {
@@ -214,6 +210,6 @@ export async function tryResumePendingSignIn(
             `Couldn't restore your SageMaker Unified Studio sign-in for profile "${pending.profileName}". Please sign in again.`
         )
     } finally {
-        await memento.update(pendingSignInKey, undefined)
+        await globals.globalState.update(pendingSignInKey, undefined)
     }
 }

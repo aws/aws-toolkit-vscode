@@ -99,11 +99,7 @@ export class SmusAuthenticationOrchestrator {
                 // is poisoned. Offer a window reload that auto-resumes this sign-in.
                 if (await detectPoisonedCache(validation.error)) {
                     this.logger.info('Poisoned credential cache detected during profile validation')
-                    const reloading = await promptReloadAndResume(
-                        context.globalState,
-                        profileSelection.profileName,
-                        profileSelection.region
-                    )
+                    const reloading = await promptReloadAndResume(profileSelection.profileName, profileSelection.region)
                     if (reloading) {
                         throw new ToolkitError('Reloading window to recover console credentials', {
                             code: SmusErrorCodes.UserCancelled,
@@ -197,11 +193,7 @@ export class SmusAuthenticationOrchestrator {
             const isCancelled = error instanceof ToolkitError && error.cancelled
             if (attemptedSelection && !isCancelled && (await detectPoisonedCache(error))) {
                 this.logger.info('Poisoned credential cache detected during IAM authentication')
-                const reloading = await promptReloadAndResume(
-                    context.globalState,
-                    attemptedSelection.profileName,
-                    attemptedSelection.region
-                )
+                const reloading = await promptReloadAndResume(attemptedSelection.profileName, attemptedSelection.region)
                 if (reloading) {
                     throw new ToolkitError('Reloading window to recover console credentials', {
                         code: SmusErrorCodes.UserCancelled,
