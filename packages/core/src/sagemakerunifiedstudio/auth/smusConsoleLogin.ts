@@ -83,3 +83,40 @@ export async function checkConflictingCredentialKeys(profileName: string): Promi
 
     return undefined
 }
+
+/**
+ * Reads ~/.aws/credentials and ~/.aws/config once and returns the set of profile names that
+ * contain conflicting credential keys (aws_access_key_id, aws_secret_access_key,
+ * aws_session_token). These profiles can't be used for `aws login` console sessions.
+ *
+ * Computed once up front so the profile-name input can flag a conflicting name inline as the
+ * user types, without hitting the filesystem on every keystroke.
+ */
+export async function getConflictingProfileNames(): Promise<Set<string>> {
+    const conflicting = new Set<string>()
+    const filesToCheck = [getCredentialsFilename(), getConfigFilename()]
+
+    for (const filePath of filesToCheck) {
+        if (!(await fs.existsFile(filePath))) {
+            continue
+        }
+
+        try {
+            const content = await fs.readFileText(filePath)
+            const sections = parseIni(content, vscode.Uri.file(filePath))
+
+            for (const section of sections) {
+                if (section.type !== 'profile') {
+                    continue
+                }
+                if (section.assignments.some((assignment) => conflictingKeys.includes(assignment.key))) {
+                    conflicting.add(section.name)
+                }
+            }
+        } catch (e) {
+            logger.debug(`Failed to parse ${filePath} for conflicting profile names: ${(e as Error).message}`)
+        }
+    }
+
+    return conflicting
+}
