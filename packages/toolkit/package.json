@@ -123,6 +123,18 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
+                "aws.cdk.cliPath": {
+                    "type": "string",
+                    "scope": "machine",
+                    "default": "",
+                    "markdownDescription": "%AWS.configuration.description.cdk.cliPath%"
+                },
+                "aws.cdk.appDir": {
+                    "type": "string",
+                    "scope": "window",
+                    "default": "",
+                    "markdownDescription": "%AWS.configuration.description.cdk.appDir%"
+                },
                 "aws.samcli.lambdaTimeout": {
                     "type": "number",
                     "default": 90000,
