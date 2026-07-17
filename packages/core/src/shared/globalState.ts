@@ -50,6 +50,7 @@ export type globalKey =
     | 'aws.amazonq.customization.overrideV2'
     | 'aws.smus.authenticationPreferences'
     | 'aws.smus.recentDomains'
+    | 'aws.smus.pendingSignIn'
     | 'aws.amazonq.regionProfiles'
     | 'aws.amazonq.regionProfiles.cache'
     // Deprecated/legacy names. New keys should start with "aws.".
