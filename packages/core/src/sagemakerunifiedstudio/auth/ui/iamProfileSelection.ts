@@ -13,7 +13,12 @@ import { getCredentialsFilename, getConfigFilename } from '../../../auth/credent
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
-import { tryConsoleLogin, checkConflictingCredentialKeys, ConflictingKeysFile } from '../smusConsoleLogin'
+import {
+    tryConsoleLogin,
+    checkConflictingCredentialKeys,
+    ConflictingKeysFile,
+    getConflictingProfileNames,
+} from '../smusConsoleLogin'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 /**
@@ -628,6 +633,10 @@ export class SmusIamProfileSelector {
         try {
             logger.debug('Starting add new profile via console flow')
 
+            // Profiles with static credential keys can't be used for console login. Compute the
+            // set once up front so step 1 can flag such a name inline as the user types.
+            const conflictingProfiles = await getConflictingProfileNames()
+
             // Collect profile name and region with back navigation
             let currentStep: ConsoleLoginStep = 'profileEntry'
             let profileName = ''
@@ -638,7 +647,8 @@ export class SmusIamProfileSelector {
                     case 'profileEntry': {
                         const result = await this.getProfileNameInput(
                             'Add Profile Through Console - Step 1 of 2',
-                            false
+                            false,
+                            conflictingProfiles
                         )
                         if (result === 'BACK') {
                             return 'BACK'
@@ -696,7 +706,11 @@ export class SmusIamProfileSelector {
                 }
                 // 'differentName': prompt for a new name. Back from name entry keeps the same
                 // profile and re-shows the prompt without a fresh error notification.
-                const newName = await this.getProfileNameInput('Use a Different Profile Name', false)
+                const newName = await this.getProfileNameInput(
+                    'Use a Different Profile Name',
+                    false,
+                    conflictingProfiles
+                )
                 if (newName !== 'BACK') {
                     profileName = newName
                     conflictFile = await checkConflictingCredentialKeys(profileName)
@@ -1047,8 +1061,15 @@ export class SmusIamProfileSelector {
      * @param warnIfExists when true (default), warns and asks to confirm before reusing an
      *   existing profile name. Pass false for the console login flow, where `aws login`
      *   writes to the token cache and does not overwrite existing credentials.
+     * @param conflictingProfiles optional set of profile names that have conflicting credential
+     *   keys and therefore can't be used for console login. When the typed name is in this set,
+     *   the picker flags it inline. Used by the console login flow.
      */
-    private static async getProfileNameInput(title?: string, warnIfExists: boolean = true): Promise<string | 'BACK'> {
+    private static async getProfileNameInput(
+        title?: string,
+        warnIfExists: boolean = true,
+        conflictingProfiles?: ReadonlySet<string>
+    ): Promise<string | 'BACK'> {
         return new Promise((resolve) => {
             const quickPick = this.createInputQuickPick(
                 title ?? 'Add New AWS Profile - Step 1 of 5',
@@ -1102,6 +1123,16 @@ export class SmusIamProfileSelector {
                             label: `${value}`,
                             description: `$(info) Too short (${value.length}/2 min)`,
                             detail: 'Profile names should be at least 2 characters long',
+                        },
+                    ]
+                } else if (conflictingProfiles?.has(value)) {
+                    // Profile has static credential keys that conflict with `aws login`.
+                    // Warn inline; the conflict is still handled downstream if they proceed.
+                    quickPick.items = [
+                        {
+                            label: `${value}`,
+                            description: '$(warning) Conflicting credentials',
+                            detail: 'This profile has static keys that conflict with console login',
                         },
                     ]
                 } else {
