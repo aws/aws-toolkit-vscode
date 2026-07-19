@@ -660,7 +660,7 @@
         "jsonc-parser": "^3.2.0",
         "lodash": "^4.17.21",
         "lokijs": "^1.5.12",
-        "markdown-it": "^13.0.2",
+        "markdown-it": "^14.3.0",
         "mime-types": "^2.1.32",
         "node-fetch": "^3.3.2",
         "portfinder": "^1.0.32",
