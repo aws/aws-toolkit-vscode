@@ -4,6 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
+import { workspace } from 'vscode'
 
 import {
     AccountInfo,
@@ -29,7 +30,6 @@ import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../
 import { getLogger } from '../../shared/logger/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { AwsClientResponseError, isClientFault } from '../../shared/errors'
-import { DevSettings } from '../../shared/settings'
 import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
@@ -132,7 +132,7 @@ export class OidcClient {
     public static create(region: string) {
         const client = new SSOOIDC({
             region,
-            endpoint: DevSettings.instance.get('endpoints', {})['ssooidc'],
+            endpoint: getUserScopedEndpoint('ssooidc'),
             retryStrategy: new StandardRetryStrategy(
                 () => Promise.resolve(3), // Maximum number of retries
                 { retryDecider: defaultRetryDecider }
@@ -259,12 +259,43 @@ export class SsoClient {
         return new this(
             new SSO({
                 region,
-                endpoint: DevSettings.instance.get('endpoints', {})['sso'],
+                endpoint: getUserScopedEndpoint('sso'),
                 customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
             }),
             provider
         )
     }
+}
+
+/**
+ * Gets an endpoint override from user-level settings ONLY, ignoring workspace and
+ * workspace-folder scoped values.
+ *
+ * @param serviceKey The service identifier (e.g. 'ssooidc', 'sso')
+ * @returns The endpoint URL if set in user-level settings, otherwise undefined
+ */
+export function getUserScopedEndpoint(serviceKey: string): string | undefined {
+    const config = workspace.getConfiguration('aws.dev')
+    const inspected = config.inspect<Record<string, string>>('endpoints')
+
+    // Only use globalValue (user-level settings). Never trust workspace or workspace-folder values
+    // for authentication endpoints.
+    const endpoints = inspected?.globalValue
+
+    if (inspected?.workspaceValue?.['ssooidc'] || inspected?.workspaceValue?.['sso']) {
+        getLogger().warn(
+            'auth: Ignoring workspace-scoped aws.dev.endpoints for SSO/OIDC services. ' +
+                'These settings must be configured in user-level settings for security.'
+        )
+    }
+    if (inspected?.workspaceFolderValue?.['ssooidc'] || inspected?.workspaceFolderValue?.['sso']) {
+        getLogger().warn(
+            'auth: Ignoring workspace-folder-scoped aws.dev.endpoints for SSO/OIDC services. ' +
+                'These settings must be configured in user-level settings for security.'
+        )
+    }
+
+    return endpoints?.[serviceKey]
 }
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
