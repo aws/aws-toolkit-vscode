@@ -129,6 +129,53 @@ describe('ConstructNode', function () {
         assert.strictEqual(childNodes[0] instanceof ConstructNode, true, 'Expected child node to be a ConstructNode')
     })
 
+    it('opens the source location on click when the source map has an entry', function () {
+        const sourceFile = path.join('/', 'project', 'lib', 'my-stack.ts')
+        const sourceMap = new Map([[constructTreePath, { sourceLocation: { file: sourceFile, line: 12, column: 5 } }]])
+        const construct = treeUtils.generateConstructTreeEntity(label, constructTreePath)
+
+        const item = new ConstructNode(location, construct, sourceMap).getTreeItem()
+
+        assert.ok(item.command, 'Expected a command to open source')
+        assert.strictEqual(item.command.command, 'vscode.open')
+        const [uri, options] = item.command.arguments as [vscode.Uri, vscode.TextDocumentShowOptions]
+        assert.strictEqual(uri.fsPath, vscode.Uri.file(sourceFile).fsPath)
+        // SourceLocation is 1-based; vscode.Position is 0-based.
+        assert.strictEqual(options.selection?.start.line, 11)
+        assert.strictEqual(options.selection?.start.character, 4)
+    })
+
+    it('sets no command when the source map has no entry for the construct', function () {
+        const sourceMap = new Map([['some/other/path', { sourceLocation: { file: '/x.ts', line: 1, column: 1 } }]])
+        const construct = treeUtils.generateConstructTreeEntity(label, constructTreePath)
+
+        const item = new ConstructNode(location, construct, sourceMap).getTreeItem()
+
+        assert.strictEqual(item.command, undefined)
+    })
+
+    it('marks nodes with a template file and exposes the template target', function () {
+        const templateFile = path.join('/', 'project', 'cdk.out', 'Stack.template.json')
+        const sourceMap = new Map([[constructTreePath, { templateFile, templateOffset: 42 }]])
+        const construct = treeUtils.generateConstructTreeEntity(label, constructTreePath)
+
+        const node = new ConstructNode(location, construct, sourceMap)
+        const item = node.getTreeItem()
+
+        assert.ok((item.contextValue ?? '').endsWith('WithTemplate'), 'Expected a WithTemplate context value')
+        assert.strictEqual(node.resource.templateFile, templateFile)
+        assert.strictEqual(node.resource.templateOffset, 42)
+    })
+
+    it('does not mark nodes that have no template file', function () {
+        const sourceMap = new Map([[constructTreePath, { sourceLocation: { file: '/x.ts', line: 1, column: 1 } }]])
+        const construct = treeUtils.generateConstructTreeEntity(label, constructTreePath)
+
+        const item = new ConstructNode(location, construct, sourceMap).getTreeItem()
+
+        assert.strictEqual(item.contextValue, 'awsCdkConstructNode')
+    })
+
     function generateTestNode(displayLabel: string): ConstructNode {
         return new ConstructNode(location, treeUtils.generateConstructTreeEntity(displayLabel, constructTreePath))
     }

@@ -10,6 +10,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
+    State,
     TransportKind,
 } from 'vscode-languageclient/node'
 import { getLogger } from '../../../shared/logger/logger'
@@ -90,6 +91,15 @@ function scheduleRestart(context: vscode.ExtensionContext): void {
 
 export async function deactivateCdkLsp(): Promise<void> {
     await stopClient()
+}
+
+/**
+ * The running CDK language server client, if one is started. Exposed so tree
+ * features can query server routes (e.g. `cdk/getConstructTree`); undefined when
+ * no CDK app is served or the server has not started yet.
+ */
+export function getCdkLanguageClient(): LanguageClient | undefined {
+    return client
 }
 
 /** Resolve the single CDK app directory to serve, or undefined to stay off. */
@@ -178,6 +188,17 @@ async function restartClient(context: vscode.ExtensionContext): Promise<void> {
         }
 
         client = new LanguageClient('cdkLsp', 'CDK Language Server', serverOptions, clientOptions)
+        // The CDK tree can render before the server is ready to answer
+        // cdk/getConstructTree (its source map comes back empty until then), which
+        // otherwise forces a manual refresh. Refresh the tree whenever the client
+        // reaches Running so source links and template icons appear on their own
+        // (also covers reconnects). Guarded: the refresh command may not be
+        // registered yet on a very early start.
+        client.onDidChangeState((e) => {
+            if (e.newState === State.Running) {
+                void vscode.commands.executeCommand('aws.cdk.refresh').then(undefined, () => {})
+            }
+        })
         logger.info(`Starting \`cdk lsp\` for ${appDir} (cdk ${version} via ${resolved.source})`)
         await client.start()
         telemetry.cdk_startLanguageServer.emit({

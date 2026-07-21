@@ -243,6 +243,7 @@
     "AWS.command.stepFunctions.publishStateMachine": "Publish state machine to Step Functions",
     "AWS.command.stepFunctions.openWithWorkflowStudio": "Open with Workflow Studio",
     "AWS.command.cdk.previewStateMachine": "Render state machine graph from CDK application",
+    "AWS.command.cdk.openTemplate": "Open CloudFormation Template",
     "AWS.command.copyLogResource": "Copy Log Stream or Group",
     "AWS.command.saveCurrentLogDataContent": "Save Log to File",
     "AWS.command.cwl.changeFilterPattern": "Search by Pattern...",
