@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker: Spaces with unsupported app types (e.g. Canvas) are no longer shown in the explorer tree."
+}

@@ -25,10 +25,10 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
     ]
 
     const spaceDetails: SpaceDetails[] = [
-        { SpaceName: 'space1', DomainId: 'domain1' },
-        { SpaceName: 'space2', DomainId: 'domain2' },
-        { SpaceName: 'space3', DomainId: 'domain2' },
-        { SpaceName: 'space4', DomainId: 'domain3' },
+        { SpaceName: 'space1', DomainId: 'domain1', SpaceSettingsSummary: { AppType: 'CodeEditor' } },
+        { SpaceName: 'space2', DomainId: 'domain2', SpaceSettingsSummary: { AppType: 'CodeEditor' } },
+        { SpaceName: 'space3', DomainId: 'domain2', SpaceSettingsSummary: { AppType: 'JupyterLab' } },
+        { SpaceName: 'space4', DomainId: 'domain3', SpaceSettingsSummary: { AppType: 'JupyterLab' } },
     ]
 
     const domain1: DescribeDomainResponse = { DomainId: 'domain1', DomainName: 'domainName1' }
@@ -138,9 +138,9 @@ describe('SagemakerClient.listSpaceApps', function () {
     ]
 
     const spaceDetails: SpaceDetails[] = [
-        { SpaceName: 'space1', DomainId: 'domain1' },
-        { SpaceName: 'space2', DomainId: 'domain2' },
-        { SpaceName: 'space3', DomainId: 'domain2' },
+        { SpaceName: 'space1', DomainId: 'domain1', SpaceSettingsSummary: { AppType: AppType.CodeEditor } },
+        { SpaceName: 'space2', DomainId: 'domain2', SpaceSettingsSummary: { AppType: AppType.JupyterLab } },
+        { SpaceName: 'space3', DomainId: 'domain2', SpaceSettingsSummary: { AppType: AppType.JupyterLab } },
     ]
 
     beforeEach(function () {
@@ -171,6 +171,39 @@ describe('SagemakerClient.listSpaceApps', function () {
 
         sinon.assert.calledWith(listAppsStub, { DomainIdEquals: 'domain1' })
         sinon.assert.calledWith(listSpacesStub, { DomainIdEquals: 'domain1' })
+    })
+
+    it('filters out spaces with non-IDE app types', async function () {
+        const newClient = new SagemakerClient(region)
+        sinon.stub(newClient, 'listApps').returns(intoCollection([[]]))
+        sinon.stub(newClient, 'listSpaces').returns(
+            intoCollection([
+                [
+                    {
+                        SpaceName: 'jupyterlab-space',
+                        DomainId: 'domain1',
+                        SpaceSettingsSummary: { AppType: AppType.JupyterLab },
+                    },
+                    {
+                        SpaceName: 'canvas-space',
+                        DomainId: 'domain1',
+                        SpaceSettingsSummary: { AppType: AppType.Canvas },
+                    },
+                    {
+                        SpaceName: 'codeeditor-space',
+                        DomainId: 'domain1',
+                        SpaceSettingsSummary: { AppType: AppType.CodeEditor },
+                    },
+                ],
+            ])
+        )
+
+        const spaceApps = await newClient.listSpaceApps()
+
+        assert.strictEqual(spaceApps.size, 2)
+        assert.ok(spaceApps.has('domain1__jupyterlab-space'))
+        assert.ok(!spaceApps.has('domain1__canvas-space'))
+        assert.ok(spaceApps.has('domain1__codeeditor-space'))
     })
 })
 

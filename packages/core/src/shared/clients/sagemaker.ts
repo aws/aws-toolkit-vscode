@@ -324,6 +324,11 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
         const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces(options)
             .flatten()
             .filter((space) => !!space.DomainId && !!space.SpaceName)
+            .filter(
+                (space) =>
+                    space.SpaceSettingsSummary?.AppType === AppType.JupyterLab ||
+                    space.SpaceSettingsSummary?.AppType === AppType.CodeEditor
+            )
             .map((space) => {
                 const key = getDomainSpaceKey(space.DomainId || '', space.SpaceName || '')
                 return { ...space, App: appMap.get(key), DomainSpaceKey: key }
