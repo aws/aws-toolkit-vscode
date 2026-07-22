@@ -35,25 +35,26 @@ export interface ResolvedCdkCli {
  * Build the environment the spawned `cdk lsp` (and its synth subprocess) needs.
  *
  * `cdk lsp` synthesizes the user's app as a child process (npx/ts-node, python,
- * mvn), so it must inherit a login-shell PATH even when VS Code was launched
- * from the Dock. We reuse the toolkit's shell resolver:
- *  - `mergeResolvedShellPath` folds the login-shell PATH into process.env.PATH.
- *  - JAVA_HOME is NOT carried by that merge, so we pull it from the full
- *    resolved env for Java synth. Both calls hit the same 5-min cache, so only
- *    one shell spawn happens.
+ * mvn), so it must inherit the user's login-shell environment even when VS Code
+ * was launched from the Dock. We reuse the toolkit's shell resolver:
+ *  - `getResolvedShellEnv` returns the full login-shell env (PATH, JAVA_HOME,
+ *    MAVEN_OPTS, pyenv, ...), or undefined on Windows / when already launched
+ *    from a terminal / on failure.
+ *  - `mergeResolvedShellPath` folds the shell PATH into process.env.PATH as a
+ *    union, so VS Code's own PATH entries survive an rc file that resets PATH.
+ *
+ * The resolved env is spread underneath the merged env, so the extension-host
+ * env wins on collisions and PATH stays the union, while every other shell var
+ * fills in. Both calls share the resolver's 5-min cache, so only one shell
+ * spawn happens.
  *
  * We do NOT inject AWS credentials: synth does not need them (only context
  * lookups do), and triggering an auth prompt on editor open is unacceptable.
  */
 export async function buildCdkSpawnEnv(): Promise<NodeJS.ProcessEnv> {
     const merged = await mergeResolvedShellPath(process.env)
-    const env: NodeJS.ProcessEnv = { ...merged }
-
     const resolved = await getResolvedShellEnv(process.env)
-    if (resolved?.JAVA_HOME && !env.JAVA_HOME) {
-        env.JAVA_HOME = resolved.JAVA_HOME
-    }
-    return env
+    return resolved ? { ...resolved, ...merged } : merged
 }
 
 /**
@@ -90,6 +91,8 @@ export async function resolveCdkCli(appDir: string, env: NodeJS.ProcessEnv): Pro
 
 /** Walk up from appDir looking for node_modules/.bin/cdk. */
 async function findInNodeModules(appDir: string): Promise<string | undefined> {
+    // npm only writes a `.cmd` shim into node_modules/.bin (plus a `.ps1` and a POSIX
+    // shell script); `.cmd` is the only one Node can spawn on Windows.
     const binName = process.platform === 'win32' ? 'cdk.cmd' : 'cdk'
     let dir = appDir
     // Walk up to the filesystem root.
@@ -109,7 +112,9 @@ async function findInNodeModules(appDir: string): Promise<string | undefined> {
 /** `which`-style scan of env.PATH for an executable. */
 async function findOnPath(name: string, env: NodeJS.ProcessEnv): Promise<string | undefined> {
     const rawPath = env.PATH ?? process.env.PATH ?? ''
-    const exts = process.platform === 'win32' ? ['.cmd', '.exe', '.bat', ''] : ['']
+    // A cdk on PATH may be an npm `.cmd` shim, a native `.exe`, or a POSIX binary;
+    // npm never produces a `.bat`.
+    const exts = process.platform === 'win32' ? ['.cmd', '.exe', ''] : ['']
     for (const dir of rawPath.split(path.delimiter)) {
         if (!dir) {
             continue

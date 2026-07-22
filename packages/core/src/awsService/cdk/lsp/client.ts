@@ -154,11 +154,16 @@ async function restartClient(context: vscode.ExtensionContext): Promise<void> {
             return
         }
 
+        // On Windows the resolved cdk is a `.cmd` shim, which child_process.spawn
+        // (used by vscode-languageclient) can only run through a shell. shell:true
+        // routes it via cmd.exe; quoting the command keeps a path with spaces
+        // (C:\Users\First Last\...) parseable, since spawn+shell does not quote args.
+        const isWindows = process.platform === 'win32'
         const executable: Executable = {
-            command: resolved.command,
+            command: isWindows ? `"${resolved.command}"` : resolved.command,
             args: ['lsp'],
             transport: TransportKind.stdio,
-            options: { cwd: appDir, env },
+            options: { cwd: appDir, env, shell: isWindows },
         }
         const serverOptions: ServerOptions = { run: executable, debug: executable }
 
