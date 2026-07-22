@@ -524,7 +524,7 @@
         "@aws/language-server-runtimes-types": "^0.1.47",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
-        "@types/adm-zip": "^0.4.34",
+        "@types/adm-zip": "^0.5.8",
         "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
         "@types/circular-dependency-plugin": "^5.0.8",
