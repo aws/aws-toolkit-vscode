@@ -68,7 +68,7 @@ describe('getFamily', function () {
 
 describe('runtimes', function () {
     it('cloud9', function () {
-        assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), [
+        const cloud9Runtimes = [
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
@@ -83,35 +83,24 @@ describe('runtimes', function () {
             'python3.7',
             'python3.8',
             'python3.9',
-        ])
-        assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
-            'nodejs14.x',
-            'nodejs16.x',
-            'nodejs18.x',
-            'nodejs20.x',
-            'nodejs22.x',
-            'nodejs24.x',
-            'python3.10',
-            'python3.11',
-            'python3.12',
-            'python3.13',
-            'python3.14',
-            'python3.7',
-            'python3.8',
-            'python3.9',
-        ])
+        ]
+        assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), cloud9Runtimes)
+        assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), cloud9Runtimes)
     })
     it('vscode', function () {
-        assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
+        const zipRuntimes = [
             'dotnet6',
             'dotnet8',
             'go1.x',
             'java11',
+            'java11.al2023',
             'java17',
+            'java17.al2023',
             'java21',
             'java25',
             'java8',
             'java8.al2',
+            'java8.al2023',
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
@@ -126,33 +115,9 @@ describe('runtimes', function () {
             'python3.7',
             'python3.8',
             'python3.9',
-        ])
-        assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), [
-            'dotnet5.0',
-            'dotnet6',
-            'dotnet8',
-            'go1.x',
-            'java11',
-            'java17',
-            'java21',
-            'java25',
-            'java8',
-            'java8.al2',
-            'nodejs14.x',
-            'nodejs16.x',
-            'nodejs18.x',
-            'nodejs20.x',
-            'nodejs22.x',
-            'nodejs24.x',
-            'python3.10',
-            'python3.11',
-            'python3.12',
-            'python3.13',
-            'python3.14',
-            'python3.7',
-            'python3.8',
-            'python3.9',
-        ])
+        ]
+        assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), zipRuntimes)
+        assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), ['dotnet5.0', ...zipRuntimes])
     })
 })
 
