@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { SageMakerUnifiedStudioComputeNode } from './sageMakerUnifiedStudioComputeNode'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
-import { DescribeDomainResponse } from '@amzn/sagemaker-client'
+import { AppType, DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { getDomainUserProfileKey } from '../../../awsService/sagemaker/utils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
@@ -23,6 +23,12 @@ import { createDZClientBaseOnDomainMode } from './utils'
 import { SmusIamConnection } from '../../auth/model'
 import { DataZoneCustomClientHelper } from '../../shared/client/datazoneCustomClientHelper'
 import { ToolkitError } from '../../../shared/errors'
+
+const supportedSpaceAppTypes = new Set<string>([AppType.JupyterLab.toLowerCase(), AppType.CodeEditor.toLowerCase()])
+
+function isSupportedSpaceApp(app: SagemakerSpaceApp): boolean {
+    return supportedSpaceAppTypes.has(app.SpaceSettingsSummary?.AppType?.toLowerCase() ?? '')
+}
 
 export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
     public readonly id = 'smusSpacesParentNode'
@@ -363,7 +369,7 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         const filteredSpaceApps = new Map<string, SagemakerSpaceApp>()
         for (const [key, app] of spaceApps.entries()) {
             const userProfile = app.OwnershipSettingsSummary?.OwnerUserProfileName
-            if (userProfileId === userProfile) {
+            if (userProfileId === userProfile && isSupportedSpaceApp(app)) {
                 filteredSpaceApps.set(key, app)
             }
         }

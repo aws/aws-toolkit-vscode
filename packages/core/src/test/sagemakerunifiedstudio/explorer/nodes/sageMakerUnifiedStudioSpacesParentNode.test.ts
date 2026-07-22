@@ -6,6 +6,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
+import { AppType } from '@amzn/sagemaker-client'
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
 import { SagemakerUnifiedStudioSpaceNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
@@ -381,16 +382,27 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             } as any)
         })
 
-        function stubSpaceApps(ownerProfiles: Record<string, string | undefined>) {
+        function stubSpaceApps(
+            spaces: Record<string, string | undefined | { owner?: string; appType?: string | undefined }>
+        ) {
             const spaceApps = new Map(
-                Object.entries(ownerProfiles).map(([key, owner]) => [
-                    key,
-                    {
-                        DomainId: 'domain-123',
-                        OwnershipSettingsSummary: { OwnerUserProfileName: owner },
-                        DomainSpaceKey: key,
-                    },
-                ])
+                Object.entries(spaces).map(([key, space]) => {
+                    const config = typeof space === 'object' && space !== null ? space : { owner: space }
+                    const appType = Object.prototype.hasOwnProperty.call(config, 'appType')
+                        ? config.appType
+                        : AppType.JupyterLab
+
+                    return [
+                        key,
+                        {
+                            DomainId: 'domain-123',
+                            SpaceName: key,
+                            OwnershipSettingsSummary: { OwnerUserProfileName: config.owner },
+                            SpaceSettingsSummary: { AppType: appType },
+                            DomainSpaceKey: key,
+                        },
+                    ]
+                })
             )
             const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
             mockSagemakerClient.fetchSpaceAppsAndDomains.resetBehavior()
@@ -405,6 +417,25 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(spacesNode['spaceApps'].size, 1)
             assert(spacesNode['spaceApps'].has('space1'))
             assert(!spacesNode['spaceApps'].has('space2'))
+        })
+
+        it('filters spaces to supported local IDE app types', async function () {
+            stubSpaceApps({
+                jupyterLabSpace: { owner: 'user-12345', appType: AppType.JupyterLab },
+                codeEditorSpace: { owner: 'user-12345', appType: AppType.CodeEditor },
+                lowercaseJupyterLabSpace: { owner: 'user-12345', appType: 'jupyterlab' },
+                mixedCaseCodeEditorSpace: { owner: 'user-12345', appType: 'cOdEeDiToR' },
+                canvasSpace: { owner: 'user-12345', appType: 'Canvas' },
+                missingAppTypeSpace: { owner: 'user-12345', appType: undefined },
+                otherUserCodeEditorSpace: { owner: 'other-user', appType: AppType.CodeEditor },
+            })
+
+            await spacesNode['updateChildren']()
+
+            assert.deepStrictEqual(
+                [...spacesNode['spaceApps'].keys()],
+                ['jupyterLabSpace', 'codeEditorSpace', 'lowercaseJupyterLabSpace', 'mixedCaseCodeEditorSpace']
+            )
         })
 
         it('creates space nodes for filtered spaces', async function () {
