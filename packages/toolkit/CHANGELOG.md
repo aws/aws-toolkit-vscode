@@ -1,3 +1,7 @@
+## 4.11.0 2026-07-23
+
+- Miscellaneous non-user-facing changes
+
 ## 4.10.0 2026-07-09
 
 - **Feature** Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached
