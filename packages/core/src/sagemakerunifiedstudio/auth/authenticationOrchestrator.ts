@@ -22,7 +22,6 @@ import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClien
 import { DomainSummary } from '@amzn/datazone-custom-client'
 import { recordAuthTelemetry } from '../shared/telemetry'
 import { updateRecentDomains, removeDomainFromCache } from './utils/domainCache'
-import { detectPoisonedCache, promptReloadAndResume } from './consoleLoginRecovery'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
 
@@ -53,8 +52,6 @@ export class SmusAuthenticationOrchestrator {
         existingProfileName?: string,
         existingRegion?: string
     ): Promise<SmusAuthenticationResult> {
-        // Held outside the try so the catch can offer stale-cache recovery for the profile
-        let attemptedSelection: IamProfileSelection | undefined
         try {
             let profileSelection: IamProfileSelection | IamProfileEditingInProgress | IamProfileBackNavigation
 
@@ -87,27 +84,11 @@ export class SmusAuthenticationOrchestrator {
 
             // At this point, we have a profile selected
             this.logger.debug(`Selected profile: ${profileSelection.profileName}, region: ${profileSelection.region}`)
-            attemptedSelection = profileSelection
 
             // Validate the selected profile
             const validation = await authProvider.validateIamProfile(profileSelection.profileName)
             if (!validation.isValid) {
                 this.logger.debug(`Profile validation failed: ${validation.error}`)
-
-                // Stale-cache recovery: a console login just succeeded (fresh token on disk),
-                // yet validation failed with a token error — the SDK's in-memory token cache
-                // is poisoned. Offer a window reload that auto-resumes this sign-in.
-                if (await detectPoisonedCache(validation.error)) {
-                    this.logger.info('Poisoned credential cache detected during profile validation')
-                    const reloading = await promptReloadAndResume(profileSelection.profileName, profileSelection.region)
-                    if (reloading) {
-                        throw new ToolkitError('Reloading window to recover console credentials', {
-                            code: SmusErrorCodes.UserCancelled,
-                            cancelled: true,
-                        })
-                    }
-                }
-
                 return { status: 'INVALID_PROFILE', error: validation.error || 'Profile validation failed' }
             }
 
@@ -188,20 +169,6 @@ export class SmusAuthenticationOrchestrator {
             // Return success to complete the authentication flow gracefully
             return { status: 'SUCCESS' }
         } catch (error) {
-            // Stale-cache recovery for failures past validation (e.g. domain discovery):
-            // same poisoned-cache signature check as above, on the thrown error.
-            const isCancelled = error instanceof ToolkitError && error.cancelled
-            if (attemptedSelection && !isCancelled && (await detectPoisonedCache(error))) {
-                this.logger.info('Poisoned credential cache detected during IAM authentication')
-                const reloading = await promptReloadAndResume(attemptedSelection.profileName, attemptedSelection.region)
-                if (reloading) {
-                    throw new ToolkitError('Reloading window to recover console credentials', {
-                        code: SmusErrorCodes.UserCancelled,
-                        cancelled: true,
-                    })
-                }
-            }
-
             // Handle user cancellation (including editing mode)
             if (
                 error instanceof ToolkitError &&

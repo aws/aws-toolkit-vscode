@@ -9,7 +9,6 @@ import { authenticateWithConsoleLogin } from '../../auth/consoleSessionUtils'
 import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { parseIni } from '../../auth/credentials/sharedCredentials'
 import fs from '../../shared/fs/fs'
-import { recordConsoleLoginSuccess } from './consoleLoginRecovery'
 
 const logger = getLogger('smus')
 
@@ -23,8 +22,6 @@ const conflictingKeys = ['aws_access_key_id', 'aws_secret_access_key', 'aws_sess
 export async function tryConsoleLogin(profileName: string, region: string): Promise<boolean> {
     try {
         await authenticateWithConsoleLogin(profileName, region)
-        // Detection signal for the stale-cache recovery: the disk token is now known-fresh.
-        recordConsoleLoginSuccess()
         return true
     } catch (e) {
         logger.debug(`Console login failed: ${(e as Error).message}`)

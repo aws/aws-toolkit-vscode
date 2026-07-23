@@ -25,7 +25,6 @@ import { createAgentsFile } from '../bootstrapAgentContext'
 import { recordSpaceTelemetry } from '../shared/telemetry'
 import { DataZoneClient } from '../shared/client/datazoneClient'
 import { handleCredExpiredError } from '../shared/credentialExpiryHandler'
-import { tryResumePendingSignIn } from '../auth/consoleLoginRecovery'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     // Initialize the SMUS authentication provider
@@ -37,12 +36,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     // Set initial auth context after restore
     void setSmusConnectedContext(smusAuthProvider.isConnected())
     logger.debug('Authentication provider initialized')
-
-    // Stale-cache recovery: if the previous session reloaded the window to recover console
-    // credentials, resume that sign-in automatically (no user clicks). Non-blocking.
-    tryResumePendingSignIn(extensionContext, smusAuthProvider).catch((e) => {
-        logger.error('Failed to resume pending sign-in: %O', e)
-    })
 
     // Create the SMUS projects tree view
     const smusRootNode = new SageMakerUnifiedStudioRootNode(smusAuthProvider, extensionContext)
