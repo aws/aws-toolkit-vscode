@@ -339,6 +339,22 @@
             "description": "SMUS domain mode (IDC or IAM)"
         },
         {
+            "name": "smusIamCredMethod",
+            "type": "string",
+            "allowedValues": ["console", "manual", "editCredentials", "editConfig"],
+            "description": "The credential management method selected by the user in the SMUS IAM auth flow"
+        },
+        {
+            "name": "smusConsoleLoginResult",
+            "type": "boolean",
+            "description": "Whether the SMUS console login attempt via AWS CLI succeeded"
+        },
+        {
+            "name": "smusConsoleLoginFallback",
+            "type": "boolean",
+            "description": "Whether the user chose manual credential entry after console login failure"
+        },
+        {
             "name": "smusAcceptAgentContextAction",
             "type": "string",
             "allowedValues": ["accepted", "declined", "dismissed"],
@@ -1914,6 +1930,30 @@
                 },
                 {
                     "type": "smusAcceptAgentContextAction",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_iamCredentialMethod",
+            "description": "Emitted when a user selects a credential management method in the SMUS IAM auth flow",
+            "metadata": [
+                {
+                    "type": "smusIamCredMethod",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "smus_consoleLoginResult",
+            "description": "Emitted after an SMUS console login attempt completes",
+            "metadata": [
+                {
+                    "type": "smusConsoleLoginResult",
+                    "required": true
+                },
+                {
+                    "type": "smusConsoleLoginFallback",
                     "required": false
                 }
             ]

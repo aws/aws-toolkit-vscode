@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { parseKnownFiles } from '@smithy/shared-ini-file-loader'
-import { globals } from 'aws-core-vscode/shared'
+import globals from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger/logger'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { getOrInstallCli, updateAwsCli } from '../shared/utilities/cliUtils'
