@@ -399,5 +399,107 @@ describe('SageMaker Commands', () => {
                 assert(mockTryRemoteConnection.calledOnce)
             })
         })
+
+        describe('handleIdcDomainConnect', () => {
+            let mockOpenExternal: sinon.SinonStub
+            let mockGetIdeType: sinon.SinonStub
+            let SagemakerSpaceNodeClass: any
+
+            beforeEach(() => {
+                mockOpenExternal = sandbox.stub().resolves(true)
+                sandbox.replace(require('vscode').env, 'openExternal', mockOpenExternal)
+                sandbox.replace(require('vscode').env, 'uriScheme', 'vscode')
+
+                mockGetIdeType = sandbox.stub().returns('vscode')
+                sandbox.replace(require('../../../shared/extensionUtilities'), 'getIdeType', mockGetIdeType)
+
+                SagemakerSpaceNodeClass =
+                    require('../../../awsService/sagemaker/explorer/sagemakerSpaceNode').SagemakerSpaceNode
+
+                const freshModule = require('../../../awsService/sagemaker/commands')
+                openRemoteConnect = freshModule.openRemoteConnect
+            })
+
+            it('redirects to Studio UI for IdC (SSO) domains', async () => {
+                const idcNode = Object.create(SagemakerSpaceNodeClass.prototype)
+                Object.assign(idcNode, {
+                    regionCode: 'us-west-2',
+                    spaceApp: {
+                        DomainId: 'd-abc123',
+                        SpaceName: 'my-space',
+                        OwnershipSettingsSummary: {
+                            OwnerUserProfileName: 'user-profile-1',
+                        },
+                        SpaceSettingsSummary: {
+                            AppType: 'JupyterLab',
+                            RemoteAccess: 'ENABLED',
+                        },
+                    },
+                    parent: {
+                        domainUserProfiles: new Map([['d-abc123|user-profile-1', { domain: { AuthMode: 'SSO' } }]]),
+                    },
+                    getStatus: sandbox.stub().returns('Running'),
+                    getSpaceArn: sandbox
+                        .stub()
+                        .resolves('arn:aws:sagemaker:us-west-2:123456789:space/d-abc123/my-space'),
+                })
+
+                await openRemoteConnect(idcNode, {} as any, mockClient)
+
+                assert(mockOpenExternal.calledOnce)
+                const url = mockOpenExternal.firstCall.args[0].toString()
+                assert(url.includes('studio-d-abc123.studio.us-west-2.sagemaker.aws/remote-connect'))
+                assert(url.includes('spaceArn='))
+                assert(url.includes('appType=JupyterLab'))
+                assert(url.includes('ide=vscode'))
+                assert(url.includes('callbackScheme=vscode'))
+                // Should NOT call tryRemoteConnection for IdC domains
+                assert(mockTryRemoteConnection.notCalled)
+            })
+
+            it('does not redirect for IAM domains', async () => {
+                const iamNode = Object.create(SagemakerSpaceNodeClass.prototype)
+                Object.assign(iamNode, {
+                    regionCode: 'us-west-2',
+                    spaceApp: {
+                        DomainId: 'd-iam456',
+                        SpaceName: 'iam-space',
+                        OwnershipSettingsSummary: {
+                            OwnerUserProfileName: 'iam-user',
+                        },
+                        SpaceSettingsSummary: {
+                            AppType: 'JupyterLab',
+                            RemoteAccess: 'ENABLED',
+                        },
+                    },
+                    parent: {
+                        domainUserProfiles: new Map([['d-iam456|iam-user', { domain: { AuthMode: 'IAM' } }]]),
+                    },
+                    getStatus: sandbox.stub().returns('Running'),
+                    getSpaceArn: sandbox
+                        .stub()
+                        .resolves('arn:aws:sagemaker:us-west-2:123456789:space/d-iam456/iam-space'),
+                })
+
+                await openRemoteConnect(iamNode, {} as any, mockClient)
+
+                // Should NOT open external browser for IAM
+                assert(mockOpenExternal.notCalled)
+                // Should call tryRemoteConnection directly
+                assert(mockTryRemoteConnection.calledOnce)
+            })
+
+            it('does not redirect for SMUS nodes', async () => {
+                // mockNode without SagemakerSpaceNode prototype — simulates SMUS node
+                mockNode.spaceApp.SpaceSettingsSummary.RemoteAccess = 'ENABLED'
+
+                await openRemoteConnect(mockNode, {} as any, mockClient)
+
+                // Should NOT open external browser for SMUS
+                assert(mockOpenExternal.notCalled)
+                // Should call tryRemoteConnection directly
+                assert(mockTryRemoteConnection.calledOnce)
+            })
+        })
     })
 })

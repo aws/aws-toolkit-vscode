@@ -5,6 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as path from 'path'
+import { randomUUID } from 'crypto'
+import { fs } from '../../shared/fs/fs'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
 import { DomainKeyDelimiter } from './utils'
@@ -15,6 +18,7 @@ import { isRemoteWorkspace } from '../../shared/vscode/env'
 import _ from 'lodash'
 import {
     prepareDevEnvConnection,
+    startLocalServer,
     startRemoteViaSageMakerSshKiro,
     tryRemoteConnection,
     useSageMakerSshKiroExtension,
@@ -35,7 +39,8 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
-import { parseArn } from './utils'
+import { getDomainUserProfileKey, parseArn } from './utils'
+import { getIdeType } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -276,6 +281,11 @@ export async function openRemoteConnect(
         const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
         const nodeStatus = node.getStatus()
 
+        // For IdC (SSO) domains, redirect to Studio UI for session creation
+        if (isIdcDomain(node)) {
+            return await handleIdcDomainConnect(node as SagemakerSpaceNode)
+        }
+
         // Route to appropriate handler based on space state
         if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
             return await handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
@@ -496,5 +506,72 @@ async function handleRunningSpaceWithEnabledAccess(
         async (progress) => {
             await tryRemoteConnection(node, ctx, progress)
         }
+    )
+}
+
+/**
+ * Checks if the domain associated with a space node uses IdC (SSO) authentication.
+ */
+function isIdcDomain(node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode): boolean {
+    if (!(node instanceof SagemakerSpaceNode)) {
+        return false
+    }
+
+    const domainId = node.spaceApp.DomainId
+    const userProfile = node.spaceApp.OwnershipSettingsSummary?.OwnerUserProfileName
+    if (!domainId || !userProfile) {
+        return false
+    }
+
+    const key = getDomainUserProfileKey(domainId, userProfile)
+    const metadata = node.parent.domainUserProfiles.get(key)
+    return metadata?.domain?.AuthMode === 'SSO'
+}
+
+/**
+ * Handles connection for IdC (SSO) domains by redirecting to the Studio UI
+ * /remote-connect page, which validates the IdC session and creates the
+ * remote session via LLAPS.
+ */
+async function handleIdcDomainConnect(node: SagemakerSpaceNode) {
+    const spaceArn = await node.getSpaceArn()
+    if (!spaceArn) {
+        void vscode.window.showErrorMessage('Unable to determine Space ARN.')
+        return
+    }
+    const domainId = node.spaceApp.DomainId!
+    const appType = node.spaceApp.SpaceSettingsSummary?.AppType || 'JupyterLab'
+    const region = node.regionCode
+
+    // Ensure detached server is running so it can receive the callback
+    const ctx = ExtContext.instance
+    await startLocalServer(ctx.extensionContext)
+
+    // Read the server port from the info file
+    const infoFilePath = path.join(ctx.extensionContext.globalStorageUri.fsPath, 'sagemaker-local-server-info.json')
+    const infoContent = await fs.readFileText(infoFilePath)
+    const serverInfo = JSON.parse(infoContent) as { pid: number; port: number }
+
+    // Generate a correlation ID for this request
+    const requestId = randomUUID()
+
+    // Build the Studio URL with callbackUrl pointing to our local server
+    const callbackUrl = `http://localhost:${serverInfo.port}/refresh_token`
+    const studioUrl =
+        `https://studio-${domainId}.studio.${region}.sagemaker.aws/remote-connect` +
+        `?spaceArn=${encodeURIComponent(spaceArn)}` +
+        `&appType=${encodeURIComponent(appType)}` +
+        `&callbackUrl=${encodeURIComponent(callbackUrl)}` +
+        `&requestId=${encodeURIComponent(requestId)}`
+
+    const opened = await vscode.env.openExternal(vscode.Uri.parse(studioUrl))
+    if (!opened) {
+        void vscode.window.showErrorMessage('Failed to open browser. Please navigate to the Studio UI manually.')
+        return
+    }
+
+    void vscode.window.showInformationMessage(
+        'Complete authentication in your browser to connect to the Space. ' +
+            'The connection will be established automatically once authenticated.'
     )
 }
