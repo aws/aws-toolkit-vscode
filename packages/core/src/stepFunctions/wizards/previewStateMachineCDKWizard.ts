@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { CdkAppLocation, getApp } from '../../awsService/cdk/explorer/cdkProject'
-import { ConstructNode, isStateMachine } from '../../awsService/cdk/explorer/nodes/constructNode'
+import { isStateMachine } from '../../awsService/cdk/explorer/nodes/constructNode'
 import { detectCdkProjects } from '../../awsService/cdk/explorer/detectCdkProjects'
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
@@ -76,7 +76,7 @@ function createResourcePrompter(location: CdkAppLocation) {
 
 interface State {
     readonly location: CdkAppLocation
-    readonly resource: ConstructNode['resource']
+    readonly resource: { readonly construct: ConstructTreeEntity; readonly location: vscode.Uri }
 }
 
 export class PreviewStateMachineCDKWizard extends Wizard<State> {
