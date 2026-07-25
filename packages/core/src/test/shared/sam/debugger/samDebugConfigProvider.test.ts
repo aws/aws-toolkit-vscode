@@ -2244,6 +2244,50 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
+        it('target=code: python 3.14 debug manifest merges fixture requirements.txt (Snyk-pinned urllib3)', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.14-plain-sam-app')
+            )
+            const requirementsPath = path.join(appDir, 'hello_world', 'requirements.txt')
+            const originalManifestText = await fs.readFileText(requirementsPath)
+
+            // Guard the fixture's exact contents. makePythonDebugManifest() (pythonSamDebug.ts)
+            // only appends "debugpy" when it is not already present in requirements.txt, so this
+            // also serves as a negative-case check that the fixture hasn't drifted to already
+            // include it.
+            assert.strictEqual(
+                originalManifestText,
+                'requests\nurllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability'
+            )
+            assert.ok(!originalManifestText.includes('debugpy'))
+
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'Test debugconfig',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                },
+                lambda: {
+                    runtime: 'python3.14',
+                    payload: {
+                        path: 'events/event.json',
+                    },
+                },
+            }
+
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+
+            // The generated debug manifest ("debug-requirements.txt") must preserve the fixture's
+            // pinned "urllib3" dependency (and its Snyk vulnerability-remediation comment) verbatim,
+            // with "debugpy" appended for the debug session.
+            assert.ok(actual.manifestPath)
+            await assertFileText(actual.manifestPath!, `${originalManifestText}${os.EOL}debugpy>=1.0,<2`)
+        })
+
         it('target=template: python 3.14 (deep project tree)', async function () {
             // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
