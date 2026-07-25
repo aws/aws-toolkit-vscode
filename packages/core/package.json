@@ -664,7 +664,7 @@
         "mime-types": "^2.1.32",
         "node-fetch": "^3.3.2",
         "portfinder": "^1.0.32",
-        "protobufjs": "^7.2.6",
+        "protobufjs": "^7.6.5",
         "semver": "^7.5.4",
         "stream-buffers": "^3.0.2",
         "strip-ansi": "^5.2.0",
