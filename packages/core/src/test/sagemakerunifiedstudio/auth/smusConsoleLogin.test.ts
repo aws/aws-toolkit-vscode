@@ -15,7 +15,12 @@ import { SmusErrorCodes } from '../../../sagemakerunifiedstudio/shared/smusUtils
 import {
     checkConflictingCredentialKeys,
     getConflictingProfileNames,
+    tryConsoleLogin,
+    persistPendingConsoleSignIn,
+    consumePendingConsoleSignIn,
 } from '../../../sagemakerunifiedstudio/auth/smusConsoleLogin'
+import globals from '../../../shared/extensionGlobals'
+import * as consoleSessionUtils from '../../../auth/consoleSessionUtils'
 
 describe('SMUS Console Login', function () {
     let sandbox: sinon.SinonSandbox
@@ -355,5 +360,130 @@ describe('getConflictingProfileNames', function () {
         assert.ok(result.has('from-creds'))
         assert.ok(result.has('from-config'))
         assert.strictEqual(result.size, 2)
+    })
+})
+
+describe('tryConsoleLogin pending sign-in persistence', function () {
+    let sandbox: sinon.SinonSandbox
+    let tempFolder: string
+    let credentialsPath: string
+    let configPath: string
+
+    beforeEach(async function () {
+        sandbox = sinon.createSandbox()
+        tempFolder = await makeTemporaryToolkitFolder()
+        credentialsPath = path.join(tempFolder, 'credentials')
+        configPath = path.join(tempFolder, 'config')
+
+        sandbox.stub(process, 'env').value({
+            AWS_SHARED_CREDENTIALS_FILE: credentialsPath,
+            AWS_CONFIG_FILE: configPath,
+        } as EnvironmentVariables)
+    })
+
+    afterEach(async function () {
+        await globals.globalState.update('aws.smus.pendingSignIn', undefined)
+        await fs.delete(tempFolder, { recursive: true })
+        sandbox.restore()
+    })
+
+    it('persists a pending sign-in when a new login_session profile is created', async function () {
+        // No existing profile on disk -> aws login is about to create a new login_session.
+        sandbox.stub(consoleSessionUtils, 'authenticateWithConsoleLogin').resolves()
+
+        const ok = await tryConsoleLogin('brand-new', 'us-west-2')
+
+        assert.strictEqual(ok, true)
+        const marker = globals.globalState.get<any>('aws.smus.pendingSignIn')
+        assert.ok(marker, 'expected a pending sign-in marker to be persisted')
+        assert.strictEqual(marker.profileName, 'brand-new')
+        assert.strictEqual(marker.region, 'us-west-2')
+        assert.strictEqual(typeof marker.at, 'number')
+    })
+
+    it('does not persist when the profile is already a console-login profile', async function () {
+        // Existing profile already carries login_session -> no new session, no stale-cache issue.
+        await fs.writeFile(credentialsPath, '[profile existing]\nlogin_session = arn:aws:iam::123456789012:user/x\n')
+        sandbox.stub(consoleSessionUtils, 'authenticateWithConsoleLogin').resolves()
+
+        const ok = await tryConsoleLogin('existing', 'us-west-2')
+
+        assert.strictEqual(ok, true)
+        assert.strictEqual(globals.globalState.get('aws.smus.pendingSignIn'), undefined)
+    })
+
+    it('does not persist when the CLI login fails', async function () {
+        sandbox.stub(consoleSessionUtils, 'authenticateWithConsoleLogin').rejects(new Error('cli failed'))
+
+        const ok = await tryConsoleLogin('brand-new', 'us-west-2')
+
+        assert.strictEqual(ok, false)
+        assert.strictEqual(globals.globalState.get('aws.smus.pendingSignIn'), undefined)
+    })
+})
+
+describe('pending console sign-in marker', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(async function () {
+        await globals.globalState.update('aws.smus.pendingSignIn', undefined)
+        sandbox.restore()
+    })
+
+    it('persist then consume returns the marker and clears it (consume-once)', async function () {
+        await persistPendingConsoleSignIn('p1', 'us-east-1')
+
+        const first = await consumePendingConsoleSignIn()
+        assert.ok(first)
+        assert.strictEqual(first?.profileName, 'p1')
+        assert.strictEqual(first?.region, 'us-east-1')
+
+        const second = await consumePendingConsoleSignIn()
+        assert.strictEqual(second, undefined, 'marker should be cleared after the first consume')
+    })
+
+    it('returns undefined when there is no marker', async function () {
+        const result = await consumePendingConsoleSignIn()
+        assert.strictEqual(result, undefined)
+    })
+
+    it('discards a stale marker older than the max age', async function () {
+        await globals.globalState.update('aws.smus.pendingSignIn', {
+            profileName: 'p1',
+            region: 'us-east-1',
+            at: Date.now() - 6 * 60 * 1000, // older than the 5-minute window
+        })
+
+        const result = await consumePendingConsoleSignIn()
+        assert.strictEqual(result, undefined)
+        assert.strictEqual(
+            globals.globalState.get('aws.smus.pendingSignIn'),
+            undefined,
+            'stale marker should be cleared'
+        )
+    })
+
+    it('discards a marker missing the timestamp', async function () {
+        await globals.globalState.update('aws.smus.pendingSignIn', {
+            profileName: 'p1',
+            region: 'us-east-1',
+        })
+
+        const result = await consumePendingConsoleSignIn()
+        assert.strictEqual(result, undefined)
+    })
+
+    it('discards a marker missing profileName or region', async function () {
+        await globals.globalState.update('aws.smus.pendingSignIn', {
+            region: 'us-east-1',
+            at: Date.now(),
+        })
+
+        const result = await consumePendingConsoleSignIn()
+        assert.strictEqual(result, undefined)
     })
 })
