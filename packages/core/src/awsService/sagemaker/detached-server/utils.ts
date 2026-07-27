@@ -10,7 +10,7 @@ import { ServerInfo } from '../types'
 import { promises as fs } from 'fs'
 import { SageMakerClient, StartSessionCommand } from '@amzn/sagemaker-client'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
-import HttpsProxyAgent from 'https-proxy-agent'
+import { HttpsProxyAgent } from 'https-proxy-agent'
 import os from 'os'
 import { join } from 'path'
 import { SpaceMappings } from '../types'
@@ -81,7 +81,7 @@ export async function startSagemakerSession({ region, connectionIdentifier, cred
     const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${region}.amazonaws.com`
     const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
     const requestHandler = proxy
-        ? new NodeHttpHandler({ httpsAgent: HttpsProxyAgent(proxy), httpAgent: HttpsProxyAgent(proxy) })
+        ? new NodeHttpHandler({ httpsAgent: new HttpsProxyAgent(proxy), httpAgent: new HttpsProxyAgent(proxy) })
         : undefined
     const client = new SageMakerClient({
         region,
