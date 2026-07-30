@@ -58,7 +58,8 @@ export async function readServerInfo(): Promise<ServerInfo> {
 
 export function parseArn(arn: string): { region: string; accountId: string; resourceName: string } {
     const cleanedArn = arn.includes('@') ? arn.split('@')[1] : arn
-    const regex = /^arn:aws:[^:]+:(?<region>[^:]+):(?<account_id>\d+):(space|cluster)[/:].+$/i
+    // Match all AWS partitions (aws, aws-cn, aws-us-gov, etc.)
+    const regex = /^arn:aws[a-z-]*:[^:]+:(?<region>[^:]+):(?<account_id>\d+):(space|cluster)[/:].+$/i
     const match = cleanedArn.match(regex)
 
     if (!match?.groups) {
@@ -78,7 +79,10 @@ export function parseArn(arn: string): { region: string; accountId: string; reso
 }
 
 export async function startSagemakerSession({ region, connectionIdentifier, credentials }: any) {
-    const endpoint = process.env.SAGEMAKER_ENDPOINT || `https://sagemaker.${region}.amazonaws.com`
+    // Only override the endpoint when explicitly configured. Otherwise let the SDK's
+    // endpoint resolver derive the correct host for the region's partition (e.g. aws-us-gov),
+    // rather than hardcoding the commercial `amazonaws.com` DNS suffix.
+    const endpoint = process.env.SAGEMAKER_ENDPOINT
     const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
     const requestHandler = proxy
         ? new NodeHttpHandler({ httpsAgent: HttpsProxyAgent(proxy), httpAgent: HttpsProxyAgent(proxy) })
@@ -86,7 +90,7 @@ export async function startSagemakerSession({ region, connectionIdentifier, cred
     const client = new SageMakerClient({
         region,
         credentials,
-        endpoint,
+        ...(endpoint ? { endpoint } : {}),
         retryStrategy: startSessionRetryStrategy,
         requestHandler,
     })
