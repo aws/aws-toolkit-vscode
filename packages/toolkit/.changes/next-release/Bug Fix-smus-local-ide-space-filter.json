@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Hide unsupported SageMaker Unified Studio spaces from the Local IDE space list."
-}

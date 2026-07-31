@@ -1,3 +1,7 @@
+## 4.12.0 2026-07-30
+
+- **Bug Fix** Hide unsupported SageMaker Unified Studio spaces from the Local IDE space list.
+
 ## 4.11.0 2026-07-23
 
 - Miscellaneous non-user-facing changes
