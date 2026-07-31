@@ -32,7 +32,7 @@ export class AppNode implements TreeNode {
 
             const constructsInTree = successfulApp.constructTree.tree.children
             if (constructsInTree) {
-                constructs.push(...generateConstructNodes(this.location, constructsInTree))
+                constructs.push(...generateConstructNodes(this.location, constructsInTree, successfulApp.sourceMap))
             }
 
             // indicate that App exists, but it is empty

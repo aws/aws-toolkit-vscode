@@ -123,6 +123,18 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
+                "aws.cdk.cliPath": {
+                    "type": "string",
+                    "scope": "machine",
+                    "default": "",
+                    "markdownDescription": "%AWS.configuration.description.cdk.cliPath%"
+                },
+                "aws.cdk.appDir": {
+                    "type": "string",
+                    "scope": "window",
+                    "default": "",
+                    "markdownDescription": "%AWS.configuration.description.cdk.appDir%"
+                },
                 "aws.samcli.lambdaTimeout": {
                     "type": "number",
                     "default": 90000,
@@ -1214,6 +1226,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.cdk.openTemplate",
+                    "when": "false"
+                },
+                {
                     "command": "aws.appBuilder.refresh",
                     "when": "false"
                 },
@@ -2178,6 +2194,16 @@
                     "command": "aws.cdk.renderStateMachineGraph",
                     "when": "viewItem == awsCdkStateMachineNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.cdk.openTemplate",
+                    "when": "view == aws.cdk && viewItem =~ /WithTemplate$/",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "aws.cdk.openTemplate",
+                    "when": "view == aws.cdk && viewItem =~ /WithTemplate$/",
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.executeStateMachine",
@@ -4267,6 +4293,12 @@
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "AWS",
                 "icon": "$(aws-stepfunctions-preview)"
+            },
+            {
+                "command": "aws.cdk.openTemplate",
+                "title": "%AWS.command.cdk.openTemplate%",
+                "category": "AWS",
+                "icon": "$(go-to-file)"
             },
             {
                 "command": "aws.toolkit.aboutExtension",

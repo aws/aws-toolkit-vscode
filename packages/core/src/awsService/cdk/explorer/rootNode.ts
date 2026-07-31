@@ -12,6 +12,7 @@ import { localize, openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../../shared/vscode/commands2'
 import { detectCdkProjects } from './detectCdkProjects'
 import { AppNode } from './nodes/appNode'
+import { openCdkTemplate } from './openTemplate'
 
 export async function getAppNodes(): Promise<TreeNode[]> {
     const appsFound = await detectCdkProjects(vscode.workspace.workspaceFolders)
@@ -35,6 +36,9 @@ export class CdkRootNode implements TreeNode {
             void openUrl(vscode.Uri.parse(cdkDocumentationUrl))
             telemetry.aws_help.emit({ name: 'cdk' })
         })
+        // Open a construct's resource in its synthesized template (inline icon on
+        // nodes the language server mapped to a template resource).
+        Commands.register('aws.cdk.openTemplate', (input?: unknown) => openCdkTemplate(input))
         this._refreshCdkExplorer = (provider?: ResourceTreeDataProvider) =>
             Commands.register('aws.cdk.refresh', () => {
                 this.refresh()
