@@ -343,6 +343,17 @@
             "type": "string",
             "allowedValues": ["accepted", "declined", "dismissed"],
             "description": "Whether the user accepted, declined or dismissed the smus context prompt to add to AGENTS.md"
+        },
+        {
+            "name": "cdkCliSource",
+            "type": "string",
+            "allowedValues": ["setting", "nodeModules", "path"],
+            "description": "Where the CDK CLI was found in the discovery ladder (setting override, workspace node_modules, or shell PATH)."
+        },
+        {
+            "name": "cdkCliVersion",
+            "type": "string",
+            "description": "Version of the discovered AWS CDK CLI."
         }
     ],
     "metrics": [
@@ -1916,6 +1927,16 @@
                     "type": "smusAcceptAgentContextAction",
                     "required": false
                 }
+            ]
+        },
+        {
+            "name": "cdk_startLanguageServer",
+            "description": "Result of starting the CDK language server (`cdk lsp`) discovered from the user's installed CDK CLI.",
+            "metadata": [
+                { "type": "result" },
+                { "type": "reason", "required": false },
+                { "type": "cdkCliSource", "required": false },
+                { "type": "cdkCliVersion", "required": false }
             ]
         }
     ]
