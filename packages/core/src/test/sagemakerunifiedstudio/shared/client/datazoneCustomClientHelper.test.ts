@@ -929,6 +929,105 @@ describe('DataZoneCustomClientHelper', () => {
                 searchStub.restore()
             }
         })
+
+        it('should NOT match when session name is a substring of principalId session (regression)', async function () {
+            // Regression: old .includes() logic would match "foo" against "foo-bar".
+            // The fix uses endsWith(`:${sessionName}`) so "foo" must NOT match ":foo-bar".
+            const fooArn = 'arn:aws:sts::123456789012:assumed-role/AdminRole/foo'
+            const searchStub = sinon.stub(client, 'searchUserProfiles')
+            searchStub.resolves({
+                items: [
+                    {
+                        id: 'up_foobar_profile',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI123456789EXAMPLE:foo-bar',
+                                sessionName: 'foo-bar',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const result = await client.getUserProfileIdForSession(mockDomainId, fooArn)
+            assert.strictEqual(result, '', 'substring "foo" must not match principalId ending in ":foo-bar"')
+        })
+
+        it('should disambiguate by exact principalId suffix, not substring match', async function () {
+            // Two profiles share the same role but have different sessions.
+            // Session "foo" must resolve to the profile whose principalId ends in ":foo",
+            // not the one ending in ":foo-bar" (which the old .includes() matched first).
+            const fooArn = 'arn:aws:sts::123456789012:assumed-role/AdminRole/foo'
+            const searchStub = sinon.stub(client, 'searchUserProfiles')
+            searchStub.resolves({
+                items: [
+                    {
+                        id: 'up_foobar_profile',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI123456789EXAMPLE:foo-bar',
+                            },
+                        },
+                    },
+                    {
+                        id: 'up_foo_profile',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI987654321EXAMPLE:foo',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const result = await client.getUserProfileIdForSession(mockDomainId, fooArn)
+            assert.strictEqual(result, 'up_foo_profile')
+        })
+
+        it('should disambiguate by exact sessionName field, not substring match', async function () {
+            // Two profiles with sessionName field set — "foo" must match sessionName === "foo",
+            // not the one with sessionName "foo-bar".
+            const fooArn = 'arn:aws:sts::123456789012:assumed-role/AdminRole/foo'
+            const searchStub = sinon.stub(client, 'searchUserProfiles')
+            searchStub.resolves({
+                items: [
+                    {
+                        id: 'up_foobar_profile',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI123456789EXAMPLE',
+                                sessionName: 'foo-bar',
+                            },
+                        },
+                    },
+                    {
+                        id: 'up_foo_profile',
+                        status: 'ACTIVATED',
+                        details: {
+                            iam: {
+                                arn: 'arn:aws:iam::123456789012:role/AdminRole',
+                                principalId: 'AIDAI987654321EXAMPLE',
+                                sessionName: 'foo',
+                            },
+                        },
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const result = await client.getUserProfileIdForSession(mockDomainId, fooArn)
+            assert.strictEqual(result, 'up_foo_profile')
+        })
     })
 
     describe('Project and Space Filtering', () => {
