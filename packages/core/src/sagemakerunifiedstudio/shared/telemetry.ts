@@ -99,7 +99,7 @@ export async function recordSpaceTelemetry(
         try {
             const dzClient = await createDZClientBaseOnDomainMode(authProvider)
             const toolingEnv = await dzClient.getToolingEnvironment(projectId)
-            span.record({ smusProjectRegion: toolingEnv.awsAccountRegion })
+            span.record({ smusProjectRegion: toolingEnv.awsAccountRegion ?? notSet })
         } catch (err) {
             span.record({ smusProjectRegion: notSet })
             logger.warn(`Failed to get project region for telemetry: ${(err as Error).message}`)
