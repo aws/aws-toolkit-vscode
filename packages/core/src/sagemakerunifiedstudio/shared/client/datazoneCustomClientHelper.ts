@@ -548,8 +548,8 @@ export class DataZoneCustomClientHelper {
                     // Match based on session name (role ARN already filtered by searchText)
                     // principalId format: PRINCIPAL_ID:SESSION_NAME
                     const matchesSession =
-                        profile.details?.iam?.principalId?.includes(sessionName) ||
-                        profile.details?.iam?.sessionName?.includes(sessionName)
+                        profile.details?.iam?.sessionName === sessionName ||
+                        profile.details?.iam?.principalId?.endsWith(`:${sessionName}`)
 
                     if (matchesSession) {
                         this.logger.info(

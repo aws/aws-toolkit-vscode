@@ -22,6 +22,8 @@ import { DataZoneCustomClientHelper } from '../shared/client/datazoneCustomClien
 import { DomainSummary } from '@amzn/datazone-custom-client'
 import { recordAuthTelemetry } from '../shared/telemetry'
 import { updateRecentDomains, removeDomainFromCache } from './utils/domainCache'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { consumePendingConsoleSignIn } from './smusConsoleLogin'
 
 export type SmusAuthenticationMethod = 'sso' | 'iam'
 
@@ -182,6 +184,46 @@ export class SmusAuthenticationOrchestrator {
                 throw error
             }
         }
+    }
+
+    /**
+     * Called once on SMUS activation. If a console login in the previous window created a new
+     * `login_session` profile that the SDK's cached config couldn't see (requiring a window
+     * reload to pick up), a resume marker was persisted before that reload. Pick it up and
+     * continue the sign-in for the saved profile/region — skipping profile selection and going
+     * straight to validation and domain discovery.
+     *
+     * The marker is consumed (read + cleared) before the resume runs, so a resume that itself
+     * fails can never leave a marker behind to trigger another reload.
+     */
+    public static async resumePendingConsoleSignIn(
+        context: vscode.ExtensionContext,
+        authProvider: SmusAuthenticationProvider
+    ): Promise<void> {
+        const pending = await consumePendingConsoleSignIn()
+        if (!pending) {
+            return
+        }
+
+        this.logger.info(`Resuming console sign-in for profile ${pending.profileName} after window reload`)
+        await telemetry.smus_login.run(async (span) => {
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Reconnecting to SageMaker Unified Studio...',
+                },
+                async () => {
+                    const result = await this.handleIamAuthentication(
+                        authProvider,
+                        span,
+                        context,
+                        pending.profileName,
+                        pending.region
+                    )
+                    this.logger.info(`Console sign-in resume finished with status ${result.status}`)
+                }
+            )
+        })
     }
 
     /**
