@@ -1,3 +1,7 @@
+## 4.13.0 2026-08-06
+
+- **Feature** Add profile through console option for IAM auth in SMUS
+
 ## 4.12.0 2026-07-30
 
 - **Bug Fix** Hide unsupported SageMaker Unified Studio spaces from the Local IDE space list.
