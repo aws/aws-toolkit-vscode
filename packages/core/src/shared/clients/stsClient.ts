@@ -4,18 +4,21 @@
  */
 
 import { STSClient, AssumeRoleCommand, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
-import type { AssumeRoleRequest, AssumeRoleResponse, GetCallerIdentityResponse } from '@aws-sdk/client-sts'
+import type {
+    AssumeRoleRequest,
+    AssumeRoleResponse,
+    GetCallerIdentityCommandOutput,
+} from '@aws-sdk/client-sts'
 import { AwsCredentialIdentityProvider } from '@smithy/types'
 import { Credentials } from '@aws-sdk/types'
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 // Extended response type that includes captured HTTP headers (added by global middleware)
+export type GetCallerIdentityResponse = Omit<GetCallerIdentityCommandOutput, '$metadata'>
 export interface GetCallerIdentityResponseWithHeaders extends GetCallerIdentityResponse {
     $httpHeaders?: Record<string, string>
 }
-
-export type { GetCallerIdentityResponse }
 export type StsClient = ClassToInterfaceType<DefaultStsClient>
 
 // Helper function to convert Credentials to AwsCredentialIdentityProvider
