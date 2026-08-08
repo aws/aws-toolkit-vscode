@@ -655,7 +655,7 @@
         "highlight.js": "^11.9.0",
         "http2": "^3.3.7",
         "i18n-ts": "^1.0.5",
-        "immutable": "^4.3.0",
+        "immutable": "^4.3.9",
         "jaro-winkler": "^0.2.8",
         "jose": "6.2.3",
         "js-yaml": "^4.3.1",
