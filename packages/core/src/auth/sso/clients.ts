@@ -159,9 +159,10 @@ type ExtractOverload<T, U> = T extends {
     (...args: infer P3): infer R3
 }
     ? (this: U, ...args: P1) => R1
-    : never
+    : T extends (...args: infer P) => infer R
+      ? (this: U, ...args: P) => R
+      : never
 
-// Removes all methods that use callbacks instead of promises
 type PromisifyClient<T> = {
     [P in keyof T]: T[P] extends (...args: any[]) => any ? ExtractOverload<T[P], PromisifyClient<T>> : T[P]
 }

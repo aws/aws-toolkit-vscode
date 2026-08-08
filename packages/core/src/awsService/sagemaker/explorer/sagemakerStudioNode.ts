@@ -4,10 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { GetCallerIdentityResponse } from 'aws-sdk/clients/sts'
 import { DescribeDomainResponse } from '@amzn/sagemaker-client'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../shared/clients/sagemaker'
-import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { DefaultStsClient, GetCallerIdentityResponse } from '../../../shared/clients/stsClient'
 import globals from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
