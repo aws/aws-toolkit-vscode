@@ -197,14 +197,14 @@ jobs:
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/vscode-test-cache'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/vscode-test-user-data'
             AWS_TOOLKIT_TEST_TEMP_BASE_DIR: ${{ runner.temp }}/awstk-vscode-test
         steps:
             - uses: actions/checkout@v7
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v6
               with:
-                  node-version: ${{ matrix.node-version }}
-            - name: Setup CloudFormation LSP
               shell: bash
               run: bash packages/core/src/testE2E/cloudformation/setup-local-lsp.sh
             - run: npm ci

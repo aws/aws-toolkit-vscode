@@ -161,7 +161,7 @@ async function setupVSCodeTestInstance(suite: SuiteName, testDirectories: VSCode
     const downloadOptions = {
         platform,
         version: vsCodeVersion,
-        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? '../../.vscode-test',
+        cachePath: process.env.AWS_TOOLKIT_TEST_CACHE_DIR ?? join(tmpdir(), 'vscode-test-cache'),
     }
 
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(downloadOptions)
