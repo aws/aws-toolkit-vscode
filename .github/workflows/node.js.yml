@@ -12,6 +12,9 @@ on:
         # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
         branches: [master, feature/*, staging]
 
+permissions:
+    contents: read
+
 # Cancel old jobs when a pull request is updated.
 concurrency:
     group: ${{ github.head_ref || github.run_id }}
