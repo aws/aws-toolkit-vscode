@@ -63,5 +63,5 @@ export async function handleRefreshToken(req: IncomingMessage, res: ServerRespon
     }
 
     res.writeHead(200)
-    res.end('Session token refreshed successfully')
+    res.end('Reconnection successful. You can close this tab and return to your IDE.')
 }

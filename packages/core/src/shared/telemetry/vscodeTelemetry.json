@@ -359,6 +359,11 @@
             "type": "string",
             "allowedValues": ["accepted", "declined", "dismissed"],
             "description": "Whether the user accepted, declined or dismissed the smus context prompt to add to AGENTS.md"
+        },
+        {
+            "name": "isSmus",
+            "type": "boolean",
+            "description": "Whether the operation is for a SageMaker Unified Studio connection"
         }
     ],
     "metrics": [
@@ -395,6 +400,24 @@
             "metadata": [
                 {
                     "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_reconnect",
+            "description": "Reconnect a dropped SageMaker deeplink SSH/SSM session",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "isSmus"
+                },
+                {
+                    "type": "duration"
+                },
+                {
+                    "type": "reason"
                 }
             ]
         },

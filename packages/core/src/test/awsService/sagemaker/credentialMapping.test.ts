@@ -221,7 +221,7 @@ describe('credentialMapping', () => {
             })
         })
 
-        it('stores undefined refreshUrl when isSMUS=true', async () => {
+        it('stores undefined refreshUrl when isSMUS=true and no providedRefreshUrl (older console)', async () => {
             sandbox.stub(DevSettings.instance, 'get').returns({})
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
@@ -231,7 +231,7 @@ describe('credentialMapping', () => {
             const raw = writeStub.firstCall.args[1]
             const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
 
-            // Verify refreshUrl is undefined for SMUS connections
+            // No providedRefreshUrl → refreshUrl stays undefined (connection cannot refresh)
             assert.strictEqual(data.deepLink?.[appArn]?.refreshUrl, undefined)
 
             // Verify SSM connection info is stored correctly
@@ -241,6 +241,61 @@ describe('credentialMapping', () => {
                 token: 'token-xyz',
                 status: 'fresh',
             })
+        })
+
+        it('persists the console-supplied refreshUrl when isSMUS=true', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            const reconnectBaseUrl =
+                'https://d-abc123xyz789.sagemaker-gamma.us-west-2.on.aws/projects/4m8bqfexample/code-spaces'
+
+            await persistSSMConnection(
+                appArn,
+                domain,
+                'sess-smus',
+                'wss://smus-ws',
+                'token-smus',
+                'jupyterlab',
+                true,
+                reconnectBaseUrl
+            )
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            // The SMUS URL is used verbatim — no derivation, no hardcoded stage.
+            assert.strictEqual(data.deepLink?.[appArn]?.refreshUrl, reconnectBaseUrl)
+            assert.strictEqual(data.deepLink?.[appArn]?.isSMUS, true)
+            assert.deepStrictEqual(data.deepLink?.[appArn]?.requests['initial-connection'], {
+                sessionId: 'sess-smus',
+                url: 'wss://smus-ws',
+                token: 'token-smus',
+                status: 'fresh',
+            })
+        })
+
+        it('ignores a provided refreshUrl when isSMUS=false and derives the SageMaker AI URL', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(
+                appArn,
+                domain,
+                'sess-ai',
+                'wss://sm-ws',
+                'token-ai',
+                'jupyterlab',
+                false,
+                'https://should-be-ignored.example.com/projects/p/code-spaces'
+            )
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            assertRefreshUrlMatches(data.deepLink?.[appArn]?.refreshUrl, 'studio.us-west-2.sagemaker.aws')
         })
 
         it('stores valid refreshUrl when isSMUS=false (SageMaker AI behavior)', async () => {
@@ -288,6 +343,19 @@ describe('credentialMapping', () => {
                 token: 'token-def',
                 status: 'fresh',
             })
+        })
+
+        it('persists isSMUS: false when called with isSMUS=false', async function () {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await persistSSMConnection(appArn, domain, 'sess-sm', 'wss://sm-ws', 'token-sm', 'jupyterlab', false)
+
+            const raw = writeStub.firstCall.args[1]
+            const data = JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+
+            assert.strictEqual(data.deepLink?.[appArn]?.isSMUS, false)
         })
     })
 

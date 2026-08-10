@@ -24,13 +24,18 @@ function stubSagemakerBrowserFlow() {
 describe('handleGetSessionAsync', () => {
     let ctx: RouteTestContext
 
+    let openErrorPageStub: sinon.SinonStub
+
     beforeEach(() => {
         ctx = createRouteTestContext()
         sinon.stub(SessionStore.prototype, 'getFreshEntry').callsFake(ctx.storeStub.getFreshEntry)
         sinon.stub(SessionStore.prototype, 'getStatus').callsFake(ctx.storeStub.getStatus)
         sinon.stub(SessionStore.prototype, 'getRefreshUrl').callsFake(ctx.storeStub.getRefreshUrl)
+        sinon.stub(SessionStore.prototype, 'getIsSMUS').callsFake(ctx.storeStub.getIsSMUS)
+        sinon.stub(SessionStore.prototype, 'getAutoRefreshEnabled').callsFake(ctx.storeStub.getAutoRefreshEnabled)
         sinon.stub(SessionStore.prototype, 'markPending').callsFake(ctx.storeStub.markPending)
         sinon.stub(SessionStore.prototype, 'cleanupExpiredConnection').callsFake(ctx.storeStub.cleanupExpiredConnection)
+        openErrorPageStub = sinon.stub(errorPage, 'openErrorPage').resolves()
     })
 
     it('responds with 400 if required query parameters are missing', async () => {
@@ -94,13 +99,6 @@ describe('handleGetSessionAsync', () => {
     })
 
     describe('SMUS session expiration handling', () => {
-        let openErrorPageStub: sinon.SinonStub
-
-        beforeEach(() => {
-            // Stub the openErrorPage function to prevent actual browser opening
-            openErrorPageStub = sinon.stub(errorPage, 'openErrorPage').resolves()
-        })
-
         it('handles SMUS session expiration when refreshUrl is undefined', async () => {
             ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
 
@@ -142,6 +140,23 @@ describe('handleGetSessionAsync', () => {
             assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
         })
 
+        it('returns 400 when SMUS and autoRefreshEnabled is false (gate OFF)', async () => {
+            ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+
+            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+            ctx.storeStub.getRefreshUrl.returns(Promise.resolve(undefined))
+            ctx.storeStub.getAutoRefreshEnabled.returns(Promise.resolve(false))
+            ctx.storeStub.cleanupExpiredConnection.resolves()
+
+            await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+            assert(ctx.resWriteHead.calledWith(400))
+            const actualJson = JSON.parse(ctx.resEnd.firstCall.args[0])
+            assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
+            assert(ctx.storeStub.cleanupExpiredConnection.calledOnce)
+        })
+
         it('responds with 202 when refreshUrl is valid (existing SageMaker AI flow)', async () => {
             ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
 
@@ -158,6 +173,61 @@ describe('handleGetSessionAsync', () => {
             assert(ctx.resWriteHead.calledWith(202))
             assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
             assert(ctx.storeStub.markPending.calledWith('abc', 'req123'))
+        })
+
+        it('proceeds to refresh flow when SMUS and autoRefreshEnabled is true (gate ON)', async () => {
+            ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+
+            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+            ctx.storeStub.getRefreshUrl.returns(Promise.resolve(undefined))
+            ctx.storeStub.getAutoRefreshEnabled.returns(Promise.resolve(true))
+            ctx.storeStub.getIsSMUS.returns(Promise.resolve(true))
+            ctx.storeStub.markPending.returns(Promise.resolve())
+
+            stubSagemakerBrowserFlow()
+            await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+            assert(ctx.resWriteHead.calledWith(202))
+            assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
+            assert(ctx.storeStub.cleanupExpiredConnection.notCalled)
+        })
+
+        it('returns 400 when SMUS has refreshUrl but autoRefreshEnabled is false (gate blocks reconnect)', async () => {
+            ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+
+            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+            ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://smus-console.example.com/refresh'))
+            ctx.storeStub.getAutoRefreshEnabled.returns(Promise.resolve(false))
+            ctx.storeStub.getIsSMUS.returns(Promise.resolve(true))
+            ctx.storeStub.cleanupExpiredConnection.resolves()
+
+            await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+            assert(ctx.resWriteHead.calledWith(400))
+            const actualJson = JSON.parse(ctx.resEnd.firstCall.args[0])
+            assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
+            assert(ctx.storeStub.cleanupExpiredConnection.calledOnce)
+        })
+
+        it('SM-AI always reconnects when refreshUrl exists regardless of autoRefreshEnabled', async () => {
+            ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+
+            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+            ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
+            ctx.storeStub.getAutoRefreshEnabled.returns(Promise.resolve(false))
+            ctx.storeStub.getIsSMUS.returns(Promise.resolve(false))
+            ctx.storeStub.markPending.returns(Promise.resolve())
+
+            stubSagemakerBrowserFlow()
+
+            await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+            assert(ctx.resWriteHead.calledWith(202))
+            assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
+            assert(ctx.storeStub.cleanupExpiredConnection.notCalled)
         })
 
         it('does not call cleanupExpiredConnection for SageMaker AI connections', async () => {

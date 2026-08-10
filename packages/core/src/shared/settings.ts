@@ -784,6 +784,7 @@ const devSettings = {
     webAuth: Boolean,
     notificationsPollInterval: Number,
     datazoneScope: String,
+    smusDeeplinkAutoRefresh: Boolean,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings

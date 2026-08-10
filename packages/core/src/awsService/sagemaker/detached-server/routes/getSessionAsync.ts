@@ -49,10 +49,16 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
             return
         } else if (status === 'not-started') {
             const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
+            const autoRefreshEnabled = await store.getAutoRefreshEnabled(connectionIdentifier)
 
-            // Check if this is a SMUS connection (no refreshUrl available)
-            if (refreshUrl === undefined) {
-                console.log(`SMUS session expired for connection: ${connectionIdentifier}`)
+            const isSMUS = await store.getIsSMUS(connectionIdentifier)
+
+            // SMUS: gate reconnect on the smusDeeplinkAutoRefresh DevSetting.
+            // SM-AI: always reconnect if refreshUrl exists (unaffected by the setting).
+            const canReconnect = isSMUS ? autoRefreshEnabled : refreshUrl !== undefined
+
+            if (!canReconnect) {
+                console.log(`Session expired for connection: ${connectionIdentifier} (isSMUS=${isSMUS})`)
 
                 // Clean up the expired connection entry
                 try {
@@ -74,15 +80,20 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
                 return
             }
 
-            // Continue with existing SageMaker AI refresh flow
+            // Continue with refresh flow (SM-AI or SMUS)
             const serverInfo = await readServerInfo()
             const { resourceName: spaceName } = parseArn(connectionIdentifier)
 
-            const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
+            const baseUrl = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
                 connectionIdentifier
-            )}&reconnect_request_id=${encodeURIComponent(requestId)}&reconnect_callback_url=${encodeURIComponent(
-                `http://localhost:${serverInfo.port}/refresh_token`
-            )}`
+            )}&reconnect_request_id=${encodeURIComponent(requestId)}`
+
+            // SMUS sends only port (Maxdome WAF blocks localhost URLs); SM AI sends full callback URL.
+            const url = isSMUS
+                ? `${baseUrl}&reconnect_callback_port=${encodeURIComponent(String(serverInfo.port))}`
+                : `${baseUrl}&reconnect_callback_url=${encodeURIComponent(
+                      `http://localhost:${serverInfo.port}/refresh_token`
+                  )}`
 
             await open(url)
             res.writeHead(202, { 'Content-Type': 'text/plain' })

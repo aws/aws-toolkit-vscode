@@ -17,6 +17,10 @@ export type LocalCredentialProfile =
 export interface DeeplinkSession {
     requests: Record<string, SsmConnectionInfo>
     refreshUrl?: string
+    /** Whether this is a SMUS connection (vs SageMaker AI). */
+    isSMUS?: boolean
+    /** Gates SMUS auto-refresh in the detached server. */
+    autoRefreshEnabled?: boolean
 }
 
 export interface SsmConnectionInfo {

@@ -94,7 +94,8 @@ export async function persistSmusProjectCreds(spaceArn: string, node: SagemakerU
  * @param wsUrl - SSM WebSocket URL.
  * @param token - Bearer token for the session.
  * @param appType - Application type (e.g., 'jupyterlab', 'codeeditor').
- * @param isSMUS - If true, skip refreshUrl construction (SMUS connections cannot refresh).
+ * @param isSMUS - If true, use providedRefreshUrl instead of deriving one from region/endpoint.
+ * @param providedRefreshUrl - Console-supplied refresh URL for SMUS connections; ignored for SM-AI.
  */
 export async function persistSSMConnection(
     spaceArn: string,
@@ -103,9 +104,11 @@ export async function persistSSMConnection(
     wsUrl?: string,
     token?: string,
     appType?: string,
-    isSMUS?: boolean
+    isSMUS?: boolean,
+    providedRefreshUrl?: string
 ): Promise<void> {
-    let refreshUrl: string | undefined
+    // SageMaker AI derives its refresh URL below; SMUS uses the console-supplied one as-is.
+    let refreshUrl: string | undefined = providedRefreshUrl
 
     if (!isSMUS) {
         // Construct refreshUrl for SageMaker AI connections
@@ -136,13 +139,21 @@ export async function persistSSMConnection(
 
         refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
     }
-    // For SMUS connections, refreshUrl remains undefined
+    // For SMUS, refreshUrl is the console-supplied `providedRefreshUrl` (undefined = cannot refresh).
 
-    await setSpaceCredentials(spaceArn, refreshUrl, {
-        sessionId: session ?? '-',
-        url: wsUrl ?? '-',
-        token: token ?? '-',
-    })
+    const autoRefreshEnabled = isSMUS ? DevSettings.instance.get('smusDeeplinkAutoRefresh', false) : undefined
+
+    await setSpaceCredentials(
+        spaceArn,
+        refreshUrl,
+        {
+            sessionId: session ?? '-',
+            url: wsUrl ?? '-',
+            token: token ?? '-',
+        },
+        isSMUS,
+        autoRefreshEnabled
+    )
 }
 
 /**
@@ -197,19 +208,25 @@ export async function setSmusSpaceProfile(
  * Stores SSM connection information for a given space, typically from a deep link session.
  * This initializes the request as 'fresh' and includes a refresh URL if provided.
  * @param spaceArn - The arn of the SageMaker space.
- * @param refreshUrl - URL to use for refreshing session tokens (undefined for SMUS connections).
+ * @param refreshUrl - URL to use for refreshing session tokens (undefined for SMUS connections without auto-refresh).
  * @param credentials - The session information used to initiate the connection.
+ * @param isSMUS - Whether this is a SMUS connection (vs SageMaker AI).
+ * @param autoRefreshEnabled - Gates SMUS auto-refresh in the detached server.
  */
 export async function setSpaceCredentials(
     spaceArn: string,
     refreshUrl: string | undefined,
-    credentials: SsmConnectionInfo
+    credentials: SsmConnectionInfo,
+    isSMUS?: boolean,
+    autoRefreshEnabled?: boolean
 ): Promise<void> {
     const data = await loadMappings()
     data.deepLink ??= {}
 
     data.deepLink[spaceArn] = {
         refreshUrl,
+        isSMUS,
+        autoRefreshEnabled,
         requests: {
             'initial-connection': {
                 ...credentials,

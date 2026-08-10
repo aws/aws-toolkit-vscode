@@ -24,6 +24,28 @@ export class SessionStore {
         return entry.refreshUrl
     }
 
+    /** Returns true if this is a SMUS connection. Defaults to false for legacy entries. */
+    async getIsSMUS(connectionId: string): Promise<boolean> {
+        const mapping = await readMapping()
+
+        if (!mapping.deepLink) {
+            throw new Error('No deepLink mapping found')
+        }
+
+        const entry = mapping.deepLink[connectionId]
+        if (!entry) {
+            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
+        }
+
+        return entry.isSMUS ?? false
+    }
+
+    async getAutoRefreshEnabled(connectionId: string): Promise<boolean> {
+        const mapping = await readMapping()
+        const entry = mapping.deepLink?.[connectionId]
+        return entry?.autoRefreshEnabled === true
+    }
+
     async getFreshEntry(connectionId: string, requestId: string) {
         const mapping = await readMapping()
 
