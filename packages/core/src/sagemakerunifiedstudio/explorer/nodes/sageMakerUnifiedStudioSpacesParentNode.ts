@@ -87,6 +87,13 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
             ) {
                 return await this.getNoUserProfileChildren()
             }
+            // Handle missing SageMaker domain (custom blueprints may not provision one)
+            if (
+                error instanceof ToolkitError &&
+                (error.code === SmusErrorCodes.NoSageMakerDomain || error.code === SmusErrorCodes.RegionNotFound)
+            ) {
+                return this.getNoSpacesFoundChildren()
+            }
             if (error.message.includes('Failed to retrieve user profile information')) {
                 return this.getUserProfileErrorChildren(error.message)
             }
@@ -213,19 +220,31 @@ export class SageMakerUnifiedStudioSpacesParentNode implements TreeNode {
         }
 
         const toolingEnv = await datazoneClient.getToolingEnvironment(this.projectId)
+
+        if (!toolingEnv.awsAccountRegion) {
+            throw new ToolkitError('Tooling environment does not have AWS account region information', {
+                code: SmusErrorCodes.RegionNotFound,
+            })
+        }
+
         this.spaceAwsAccountRegion = toolingEnv.awsAccountRegion
         if (toolingEnv.provisionedResources) {
             for (const resource of toolingEnv.provisionedResources) {
                 if (resource.name === 'sageMakerDomainId') {
                     if (!resource.value) {
-                        throw new Error('SageMaker domain ID not found in tooling environment')
+                        throw new ToolkitError(
+                            "Spaces are unavailable — this project's tooling environment has no SageMaker domain",
+                            { code: SmusErrorCodes.NoSageMakerDomain }
+                        )
                     }
                     getLogger('smus').debug(`Found SageMaker domain ID: ${resource.value}`)
                     return resource.value
                 }
             }
         }
-        throw new Error('No SageMaker domain found in the tooling environment')
+        throw new ToolkitError("Spaces are unavailable — this project's tooling environment has no SageMaker domain", {
+            code: SmusErrorCodes.NoSageMakerDomain,
+        })
     }
 
     private async updatePendingNodes() {

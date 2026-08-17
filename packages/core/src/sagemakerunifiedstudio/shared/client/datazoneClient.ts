@@ -104,9 +104,6 @@ export interface DataZoneConnection {
     glueConnectionName?: string
 }
 
-// Constants for DataZone environment configuration
-const sageMakerProviderName = 'Amazon SageMaker'
-
 /**
  * Client for interacting with AWS DataZone API
  *
@@ -844,48 +841,48 @@ export class DataZoneClient {
     }
 
     /**
-     * Gets the tooling blueprint for a domain.
-     * Finds the tooling environment for a project by listing blueprints matching "Tooling"
-     * (which returns both Tooling and ToolingLite) and checking which one has an environment.
-     * A project can only have either a Tooling or ToolingLite environment.
-     * @param datazoneClient The DataZone client
+     * Finds the tooling environment for a project by resolving the IAM connection's
+     * environmentId. This works regardless of whether the tooling environment was created
+     * from a managed blueprint (Tooling/ToolingLite) or a custom blueprint.
+     *
+     * Resolution order: `project.iam` (IdC domains) → `default.iam` (IAM domains, guaranteed present).
+     *
+     * @param _datazoneClient Unused — retained for signature compatibility with callers
      * @param domainId The domain identifier
      * @param projectId The project identifier
-     * @returns The tooling environment, or undefined if not found
+     * @returns The tooling environment details, or undefined if no IAM connection found
      */
     private async getToolingEnvironmentForProject(
-        datazoneClient: DataZone,
+        _datazoneClient: DataZone,
         domainId: string,
         projectId: string
-    ): Promise<import('@aws-sdk/client-datazone').EnvironmentSummary | undefined> {
+    ): Promise<GetEnvironmentCommandOutput | undefined> {
         try {
-            // prefix search - will return both Tooling and ToolingLite
-            const blueprintResult = await datazoneClient.listEnvironmentBlueprints({
-                domainIdentifier: domainId,
-                managed: true,
-                name: 'Tooling',
-            })
+            // Find the IAM connection — its environmentId points to the tooling environment
+            const response = await this.fetchConnections(domainId, projectId, ConnectionType.IAM)
+            const iamConnection =
+                response.items?.find((conn) => conn.name === 'project.iam') ??
+                response.items?.find((conn) => conn.name === 'default.iam')
 
-            if (!blueprintResult.items?.length) {
+            if (!iamConnection?.environmentId) {
+                this.logger.debug(
+                    `No IAM connection with environmentId found for domain ${domainId}, project ${projectId}`
+                )
                 return undefined
             }
 
-            for (const blueprint of blueprintResult.items) {
-                const envResult = await datazoneClient.listEnvironments({
-                    domainIdentifier: domainId,
-                    projectIdentifier: projectId,
-                    environmentBlueprintIdentifier: blueprint.id,
-                    provider: sageMakerProviderName,
-                })
-                if (envResult.items?.length) {
-                    this.logger.debug(
-                        `Found tooling environment ${envResult.items[0].id} via blueprint ${blueprint.name}`
-                    )
-                    return envResult.items[0]
-                }
-            }
+            this.logger.debug(
+                `Found tooling environment ${iamConnection.environmentId} via IAM connection '${iamConnection.name}'`
+            )
 
-            return undefined
+            // Use getEnvironment to retrieve the full environment details
+            const datazoneClient = await this.getDataZoneClient()
+            const env = await datazoneClient.getEnvironment({
+                domainIdentifier: domainId,
+                identifier: iamConnection.environmentId,
+            })
+
+            return env
         } catch (err) {
             this.logger.error('Failed to get tooling environment for domain %s: %s', domainId, (err as Error).message)
             throw new ToolkitError('Failed to get tooling environment', { code: 'ToolingEnvironmentError' })
