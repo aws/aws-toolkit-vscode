@@ -207,7 +207,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             )
         })
 
-        it('throws error when SageMaker domain ID not found in resources', async function () {
+        it('throws ToolkitError with NoSageMakerDomain code when sageMakerDomainId not in provisioned resources', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
             mockDataZoneClient.getToolingEnvironment.resolves({
                 projectId: 'project-123',
@@ -220,7 +220,11 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
             await assert.rejects(
                 async () => await spacesNode.getSageMakerDomainId(),
-                /No SageMaker domain found in the tooling environment/
+                (err: any) => {
+                    assert(err instanceof ToolkitError)
+                    assert.strictEqual(err.code, SmusErrorCodes.NoSageMakerDomain)
+                    return true
+                }
             )
         })
 
@@ -289,6 +293,28 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children.length, 1)
             assert.strictEqual(children[0].id, 'smusNoSpaces')
         })
+
+        function assertNoSpacesFoundForError(errorCode: string, errorMessage: string) {
+            it(`returns no spaces found node when ${errorCode} error is thrown`, async function () {
+                updateChildrenStub.rejects(new ToolkitError(errorMessage, { code: errorCode }))
+
+                const children = await spacesNode.getChildren()
+
+                assert.strictEqual(children.length, 1)
+                assert.strictEqual(children[0].id, 'smusNoSpaces')
+                const treeItem = await children[0].getTreeItem()
+                assert.strictEqual(treeItem.label, '[No Spaces found]')
+            })
+        }
+
+        assertNoSpacesFoundForError(
+            SmusErrorCodes.NoSageMakerDomain,
+            "Spaces are unavailable — this project's tooling environment has no SageMaker domain"
+        )
+        assertNoSpacesFoundForError(
+            SmusErrorCodes.RegionNotFound,
+            'Tooling environment does not have AWS account region information'
+        )
 
         it('returns access denied node when AccessDeniedException is thrown', async function () {
             const accessDeniedError = new Error('Access denied')
