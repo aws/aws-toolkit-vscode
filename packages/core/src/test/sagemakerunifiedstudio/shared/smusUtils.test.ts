@@ -858,4 +858,23 @@ describe('isExpressDomain', () => {
         assert.strictEqual(result, true)
         assert.ok(mockClient.fetchConnections.calledOnceWith('test-domain-id', 'test-project-id', ConnectionType.IAM))
     })
+
+    it('should return true when both default.iam and project.iam exist (migrated domain)', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [
+                { name: 'default.iam', environmentId: 'env-1' },
+                { name: 'project.iam', environmentId: 'env-2' },
+            ],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id', 'test-project-id')
+        assert.strictEqual(result, true)
+    })
+
+    it('should return false when only project.iam exists (IdC domain)', async () => {
+        mockClient.fetchConnections.resolves({
+            items: [{ name: 'project.iam', environmentId: 'env-1' }],
+        })
+        const result = await isExpressDomain(mockClient as any, 'test-domain-id', 'test-project-id')
+        assert.strictEqual(result, false)
+    })
 })

@@ -132,7 +132,9 @@ export class SageMakerUnifiedStudioProjectNode implements TreeNode {
                 const spaceAwsAccountRegion = toolingEnv.awsAccountRegion
 
                 if (!spaceAwsAccountRegion) {
-                    throw new Error('No AWS account region found in tooling environment')
+                    throw new ToolkitError('Tooling environment does not have AWS account region information', {
+                        code: SmusErrorCodes.RegionNotFound,
+                    })
                 }
                 if (this.isFirstTimeSelection && !this.hasShownFirstTimeMessage) {
                     this.hasShownFirstTimeMessage = true
