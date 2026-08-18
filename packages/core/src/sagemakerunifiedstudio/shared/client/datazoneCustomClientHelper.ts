@@ -542,7 +542,7 @@ export class DataZoneCustomClientHelper {
                     `DataZoneCustomClientHelper: Received ${response.items.length} user profiles matching role ARN in current page (total checked: ${totalProfilesChecked})`
                 )
 
-                // Find exact match in current page using client-side filtering for session name
+                // Find exact match in current page using client-side filtering for session name and status
                 // Server-side filtering by role ARN should have already reduced the result set significantly
                 for (const profile of response.items) {
                     // Match based on session name (role ARN already filtered by searchText)
@@ -551,9 +551,13 @@ export class DataZoneCustomClientHelper {
                         profile.details?.iam?.sessionName === sessionName ||
                         profile.details?.iam?.principalId?.endsWith(`:${sessionName}`)
 
-                    if (matchesSession) {
+                    // Only return profiles with ACTIVATED status to avoid returning deactivated profiles
+                    // when multiple profiles exist for the same IAM role session
+                    const isActivated = profile.status === 'ACTIVATED'
+
+                    if (matchesSession && isActivated) {
                         this.logger.info(
-                            `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} (role: ${iamRoleArn}, session: ${sessionName}) after checking ${totalProfilesChecked} profiles`
+                            `DataZoneCustomClientHelper: Found matching user profile with ID: ${profile.id} (role: ${iamRoleArn}, session: ${sessionName}, status: ${profile.status}) after checking ${totalProfilesChecked} profiles`
                         )
                         return profile.id!
                     }
@@ -562,9 +566,8 @@ export class DataZoneCustomClientHelper {
                 nextToken = response.nextToken
             } while (nextToken)
 
-            // No matching profile found after checking all pages
             this.logger.error(
-                `DataZoneCustomClientHelper: No user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
+                `DataZoneCustomClientHelper: No ACTIVATED user profile found for role: ${iamRoleArn} with session: ${sessionName} after checking ${totalProfilesChecked} profiles`
             )
             return ''
         } catch (err) {
