@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker Unified Studio: only activated user profiles are used for space filtering."
+}
