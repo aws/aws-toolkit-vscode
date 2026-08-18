@@ -1,4 +1,0 @@
-{
-  "type": "Bug Fix",
-  "description": "Cloudformation Language Server: prevent workspace level settings from overriding the code path used to load the language server js file, which could cause code execution when trusting a specially crafted VSCode workspace."
-}
