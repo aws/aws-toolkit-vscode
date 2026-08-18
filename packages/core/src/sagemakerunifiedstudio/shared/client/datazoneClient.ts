@@ -856,7 +856,7 @@ export class DataZoneClient {
         _datazoneClient: DataZone,
         domainId: string,
         projectId: string
-    ): Promise<GetEnvironmentCommandOutput | undefined> {
+    ): Promise<{ id: string } | undefined> {
         try {
             // Find the IAM connection — its environmentId points to the tooling environment
             const response = await this.fetchConnections(domainId, projectId, ConnectionType.IAM)
@@ -875,14 +875,10 @@ export class DataZoneClient {
                 `Found tooling environment ${iamConnection.environmentId} via IAM connection '${iamConnection.name}'`
             )
 
-            // Use getEnvironment to retrieve the full environment details
-            const datazoneClient = await this.getDataZoneClient()
-            const env = await datazoneClient.getEnvironment({
-                domainIdentifier: domainId,
-                identifier: iamConnection.environmentId,
-            })
-
-            return env
+            // Do not call getEnvironment here. The scoped-down admin creds used on the
+            // SSO + IAM domain path lack that permission. getEnvironmentDetails() fetches
+            // project creds before calling it downstream.
+            return { id: iamConnection.environmentId }
         } catch (err) {
             this.logger.error('Failed to get tooling environment for domain %s: %s', domainId, (err as Error).message)
             throw new ToolkitError('Failed to get tooling environment', { code: 'ToolingEnvironmentError' })
