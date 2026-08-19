@@ -199,7 +199,7 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS)
+        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS, refreshUrl)
     } else if (connectionType.startsWith('smhp_')) {
         await persistHyperpodConnection(
             workspaceName!,

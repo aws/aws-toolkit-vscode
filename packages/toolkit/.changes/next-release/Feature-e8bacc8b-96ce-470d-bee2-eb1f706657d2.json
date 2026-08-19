@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SageMaker Unified Studio: Automatically reconnect a deeplink-connected Space by refreshing credentials in the browser when the SSH tunnel drops."
+}

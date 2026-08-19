@@ -9,6 +9,7 @@ import assert from 'assert'
 import { UriHandler } from '../../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../../shared/extensionIds'
 import { register } from '../../../awsService/sagemaker/uriHandlers'
+import { amzHeaderParams, assertAmzHeadersInUrl } from './uriHandlerTestUtils'
 
 function createConnectUri(params: { [key: string]: string }): vscode.Uri {
     const query = Object.entries(params)
@@ -106,30 +107,14 @@ describe('SageMaker URI handler', function () {
             ws_url: 'wss://example.com',
             'cell-number': 'test123',
             token: 'my-token',
-            'X-Amz-Security-Token': 'fake/token+with=special',
-            'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-            'X-Amz-Date': '20240101T120000Z',
-            'X-Amz-SignedHeaders': 'host',
-            'X-Amz-Credential': 'AKIATEST/20240101/us-west-2/ssmmessages/aws4_request',
-            'X-Amz-Expires': '60',
-            'X-Amz-Signature': 'fakesignature123',
+            ...amzHeaderParams,
         }
 
         const uri = createConnectUri(params)
         await handler.handleUri(uri)
 
         assert.ok(deeplinkConnectStub.calledOnce)
-        const actualUrl = deeplinkConnectStub.firstCall.args[3]
-
-        // Verify all AMZ headers are included and properly encoded
-        assert.ok(actualUrl.includes('cell-number=test123'))
-        assert.ok(actualUrl.includes('X-Amz-Security-Token=fake%2Ftoken%2Bwith%3Dspecial'))
-        assert.ok(actualUrl.includes('X-Amz-Algorithm=AWS4-HMAC-SHA256'))
-        assert.ok(actualUrl.includes('X-Amz-Date=20240101T120000Z'))
-        assert.ok(actualUrl.includes('X-Amz-SignedHeaders=host'))
-        assert.ok(actualUrl.includes('X-Amz-Credential=AKIATEST%2F20240101%2Fus-west-2%2Fssmmessages%2Faws4_request'))
-        assert.ok(actualUrl.includes('X-Amz-Expires=60'))
-        assert.ok(actualUrl.includes('X-Amz-Signature=fakesignature123'))
+        assertAmzHeadersInUrl(deeplinkConnectStub.firstCall.args[3], 'test123')
     })
 
     it('works without AMZ headers', async function () {

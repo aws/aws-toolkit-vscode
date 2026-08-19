@@ -50,9 +50,8 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
         } else if (status === 'not-started') {
             const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
 
-            // Check if this is a SMUS connection (no refreshUrl available)
-            if (refreshUrl === undefined) {
-                console.log(`SMUS session expired for connection: ${connectionIdentifier}`)
+            if (!refreshUrl) {
+                console.log(`Session expired for connection: ${connectionIdentifier}`)
 
                 // Clean up the expired connection entry
                 try {
@@ -74,15 +73,21 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
                 return
             }
 
-            // Continue with existing SageMaker AI refresh flow
+            // Open the browser to refresh the session.
+            const isSMUS = await store.getIsSMUS(connectionIdentifier)
             const serverInfo = await readServerInfo()
             const { resourceName: spaceName } = parseArn(connectionIdentifier)
 
-            const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
+            const baseUrl = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
                 connectionIdentifier
-            )}&reconnect_request_id=${encodeURIComponent(requestId)}&reconnect_callback_url=${encodeURIComponent(
-                `http://localhost:${serverInfo.port}/refresh_token`
-            )}`
+            )}&reconnect_request_id=${encodeURIComponent(requestId)}`
+
+            // SMUS sends only port (Maxdome WAF blocks localhost URLs); SM AI sends full callback URL.
+            const url = isSMUS
+                ? `${baseUrl}&reconnect_callback_port=${encodeURIComponent(String(serverInfo.port))}`
+                : `${baseUrl}&reconnect_callback_url=${encodeURIComponent(
+                      `http://localhost:${serverInfo.port}/refresh_token`
+                  )}`
 
             await open(url)
             res.writeHead(202, { 'Content-Type': 'text/plain' })
