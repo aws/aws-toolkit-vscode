@@ -8,7 +8,7 @@ import * as path from 'path'
 import { BaseLspInstaller } from '../../../shared/lsp/baseLspInstaller'
 import { ResourcePaths } from '../../../shared/lsp/types'
 import { fs } from '../../../shared/fs/fs'
-import { createTestWorkspaceFolder } from '../../testUtil'
+import { TempTestDir } from './lspTestFixtures'
 
 /**
  * Concrete test implementation of BaseLspInstaller for testing invalidation.
@@ -70,24 +70,23 @@ class TestLspInstaller extends BaseLspInstaller {
 }
 
 describe('BaseLspInstaller post-install verification', function () {
-    let testDir: string
+    const tmpDir = new TempTestDir()
 
     beforeEach(async function () {
-        const folder = await createTestWorkspaceFolder()
-        testDir = folder.uri.fsPath
+        await tmpDir.setup()
     })
 
     afterEach(async function () {
-        await fs.delete(testDir, { force: true, recursive: true })
+        await tmpDir.teardown()
     })
 
     it('runs postInstall before verifying the optional file list', async function () {
-        const assetDir = path.join(testDir, 'language-servers', 'test-lsp', '1.0.0')
+        const assetDir = path.join(tmpDir.path, 'language-servers', 'test-lsp', '1.0.0')
         const requiredFile = path.join(assetDir, 'server.js')
         await fs.mkdir(assetDir)
         await fs.writeFile(requiredFile, 'content')
         let hookCalled = false
-        const installer = new TestLspInstaller(testDir, ['server.js'], async () => {
+        const installer = new TestLspInstaller(tmpDir.path, ['server.js'], async () => {
             hookCalled = true
             await fs.delete(requiredFile)
         })
@@ -101,27 +100,26 @@ describe('BaseLspInstaller post-install verification', function () {
 
     it('does not require verification files when none are configured', async function () {
         let hookCalled = false
-        const installer = new TestLspInstaller(testDir, [], async () => {
+        const installer = new TestLspInstaller(tmpDir.path, [], async () => {
             hookCalled = true
         })
 
-        await assert.doesNotReject(installer.runPostInstallForTest(testDir))
+        await assert.doesNotReject(installer.runPostInstallForTest(tmpDir.path))
         assert.strictEqual(hookCalled, true)
     })
 })
 
 describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
-    let testDir: string
+    const tmpDir = new TempTestDir()
     let installer: TestLspInstaller
 
     beforeEach(async function () {
-        const folder = await createTestWorkspaceFolder()
-        testDir = folder.uri.fsPath
-        installer = new TestLspInstaller(testDir)
+        await tmpDir.setup()
+        installer = new TestLspInstaller(tmpDir.path)
     })
 
     afterEach(async function () {
-        await fs.delete(testDir, { force: true, recursive: true })
+        await tmpDir.teardown()
     })
 
     it('clears resolved installation from memory', async function () {
@@ -153,7 +151,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
     })
 
     it('does NOT delete override/external installation', async function () {
-        const externalDir = path.join(testDir, 'external-server')
+        const externalDir = path.join(tmpDir.path, 'external-server')
         await fs.mkdir(externalDir)
         await fs.writeFile(path.join(externalDir, 'server.js'), 'content')
 
@@ -166,7 +164,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
     })
 
     it('does NOT delete directories outside of installDir', async function () {
-        const outsideDir = path.join(testDir, 'outside-managed-dir')
+        const outsideDir = path.join(tmpDir.path, 'outside-managed-dir')
         await fs.mkdir(outsideDir)
         await fs.writeFile(path.join(outsideDir, 'server.js'), 'content')
 
