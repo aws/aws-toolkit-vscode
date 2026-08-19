@@ -21,19 +21,55 @@ function stubSagemakerBrowserFlow() {
     sinon.stub(utils, 'open').resolves()
 }
 
-describe('handleGetSessionAsync', () => {
+describe('handleGetSessionAsync', function () {
     let ctx: RouteTestContext
 
-    beforeEach(() => {
+    let openErrorPageStub: sinon.SinonStub
+
+    beforeEach(function () {
         ctx = createRouteTestContext()
         sinon.stub(SessionStore.prototype, 'getFreshEntry').callsFake(ctx.storeStub.getFreshEntry)
         sinon.stub(SessionStore.prototype, 'getStatus').callsFake(ctx.storeStub.getStatus)
         sinon.stub(SessionStore.prototype, 'getRefreshUrl').callsFake(ctx.storeStub.getRefreshUrl)
+        sinon.stub(SessionStore.prototype, 'getIsSMUS').callsFake(ctx.storeStub.getIsSMUS)
         sinon.stub(SessionStore.prototype, 'markPending').callsFake(ctx.storeStub.markPending)
         sinon.stub(SessionStore.prototype, 'cleanupExpiredConnection').callsFake(ctx.storeStub.cleanupExpiredConnection)
+        openErrorPageStub = sinon.stub(errorPage, 'openErrorPage').resolves()
     })
 
-    it('responds with 400 if required query parameters are missing', async () => {
+    /** Stubs a not-started session that has a valid refreshUrl (reconnect flow). */
+    function stubNotStartedWithRefreshUrl(refreshUrl = 'https://example.com/refresh') {
+        ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+        ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+        ctx.storeStub.getRefreshUrl.returns(Promise.resolve(refreshUrl))
+        ctx.storeStub.markPending.returns(Promise.resolve())
+        stubSagemakerBrowserFlow()
+    }
+
+    /** Stubs a not-started session with no refreshUrl (expiration scenario). */
+    function stubNotStartedExpired() {
+        ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+        ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
+        ctx.storeStub.getRefreshUrl.returns(Promise.resolve(undefined))
+        ctx.storeStub.cleanupExpiredConnection.resolves()
+    }
+
+    /** Asserts the response is a 202 pending reconnect with markPending called. */
+    function assertPendingReconnectResponse() {
+        assert(ctx.resWriteHead.calledWith(202))
+        assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
+        assert(ctx.storeStub.markPending.calledWith('abc', 'req123'))
+    }
+
+    /** Asserts the response is a 400 expired-session error with cleanup invoked. */
+    function assertExpiredSessionResponse() {
+        assert(ctx.resWriteHead.calledWith(400))
+        const actualJson = JSON.parse(ctx.resEnd.firstCall.args[0])
+        assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
+        assert(ctx.storeStub.cleanupExpiredConnection.calledOnce)
+    }
+
+    it('responds with 400 if required query parameters are missing', async function () {
         ctx.req = { url: '/session_async?connection_identifier=abc' } // missing request_id
         await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
 
@@ -41,7 +77,7 @@ describe('handleGetSessionAsync', () => {
         assert(ctx.resEnd.calledWithMatch(/Missing required query parameters/))
     })
 
-    it('responds with 200 and session data if freshEntry exists', async () => {
+    it('responds with 200 and session data if freshEntry exists', async function () {
         ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
         ctx.storeStub.getFreshEntry.returns(Promise.resolve({ sessionId: 'sid', token: 'tok', url: 'wss://test' }))
 
@@ -56,7 +92,7 @@ describe('handleGetSessionAsync', () => {
         })
     })
 
-    it('responds with 204 if session is pending', async () => {
+    it('responds with 204 if session is pending', async function () {
         ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
         ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
         ctx.storeStub.getStatus.returns(Promise.resolve('pending'))
@@ -67,23 +103,27 @@ describe('handleGetSessionAsync', () => {
         assert(ctx.resEnd.calledOnce)
     })
 
-    it('responds with 202 if status is not-started and opens browser', async () => {
+    it('responds with 202 and opens browser when refreshUrl exists (SM-AI)', async function () {
         ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+        stubNotStartedWithRefreshUrl()
+        ctx.storeStub.getIsSMUS.returns(Promise.resolve(false))
 
-        ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-        ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
-        ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
-        ctx.storeStub.markPending.returns(Promise.resolve())
-
-        stubSagemakerBrowserFlow()
         await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
 
-        assert(ctx.resWriteHead.calledWith(202))
-        assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
-        assert(ctx.storeStub.markPending.calledWith('abc', 'req123'))
+        assertPendingReconnectResponse()
     })
 
-    it('responds with 500 if unexpected error occurs', async () => {
+    it('responds with 202 and opens browser when refreshUrl exists (SMUS)', async function () {
+        ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+        stubNotStartedWithRefreshUrl('https://smus-console.example.com/refresh')
+        ctx.storeStub.getIsSMUS.returns(Promise.resolve(true))
+
+        await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
+
+        assertPendingReconnectResponse()
+    })
+
+    it('responds with 500 if unexpected error occurs', async function () {
         ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
         ctx.storeStub.getFreshEntry.throws(new Error('fail'))
 
@@ -93,33 +133,18 @@ describe('handleGetSessionAsync', () => {
         assert(ctx.resEnd.calledWith('Unexpected error'))
     })
 
-    describe('SMUS session expiration handling', () => {
-        let openErrorPageStub: sinon.SinonStub
-
-        beforeEach(() => {
-            // Stub the openErrorPage function to prevent actual browser opening
-            openErrorPageStub = sinon.stub(errorPage, 'openErrorPage').resolves()
-        })
-
-        it('handles SMUS session expiration when refreshUrl is undefined', async () => {
+    describe('session expiration handling', function () {
+        it('returns 400 and opens error page when refreshUrl is undefined', async function () {
             ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-
-            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
-            ctx.storeStub.getRefreshUrl.returns(Promise.resolve(undefined)) // SMUS case: no refreshUrl
-            ctx.storeStub.cleanupExpiredConnection.resolves()
+            stubNotStartedExpired()
 
             await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
 
-            // Verify HTTP 400 response with correct error structure
-            assert(ctx.resWriteHead.calledWith(400))
-            const actualJson = JSON.parse(ctx.resEnd.firstCall.args[0])
-            assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
-            assert.strictEqual(actualJson.message, SmusDeeplinkSessionExpiredError.shortMessage)
-
-            // Verify cleanup was called
-            assert(ctx.storeStub.cleanupExpiredConnection.calledOnce)
+            assertExpiredSessionResponse()
             assert(ctx.storeStub.cleanupExpiredConnection.calledWith('abc'))
+
+            const actualJson = JSON.parse(ctx.resEnd.firstCall.args[0])
+            assert.strictEqual(actualJson.message, SmusDeeplinkSessionExpiredError.shortMessage)
 
             // Verify error page was opened with correct message
             assert(openErrorPageStub.calledOnce)
@@ -127,7 +152,7 @@ describe('handleGetSessionAsync', () => {
             assert.strictEqual(openErrorPageStub.firstCall.args[1], SmusDeeplinkSessionExpiredError.message)
         })
 
-        it('responds with 400 even if cleanup fails', async () => {
+        it('responds with 400 even if cleanup fails', async function () {
             ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
 
             ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
@@ -142,43 +167,18 @@ describe('handleGetSessionAsync', () => {
             assert.strictEqual(actualJson.error, SmusDeeplinkSessionExpiredError.code)
         })
 
-        it('responds with 202 when refreshUrl is valid (existing SageMaker AI flow)', async () => {
+        it('does not call cleanupExpiredConnection when refreshUrl exists', async function () {
             ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-
-            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
-            ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh')) // Valid refreshUrl
-            ctx.storeStub.markPending.returns(Promise.resolve())
-
-            stubSagemakerBrowserFlow()
-
-            await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
-
-            // Verify SageMaker AI flow still works correctly
-            assert(ctx.resWriteHead.calledWith(202))
-            assert(ctx.resEnd.calledWithMatch(/Session is not ready yet/))
-            assert(ctx.storeStub.markPending.calledWith('abc', 'req123'))
-        })
-
-        it('does not call cleanupExpiredConnection for SageMaker AI connections', async () => {
-            ctx.req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-
-            ctx.storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-            ctx.storeStub.getStatus.returns(Promise.resolve('not-started'))
-            ctx.storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
-            ctx.storeStub.markPending.returns(Promise.resolve())
+            stubNotStartedWithRefreshUrl()
             ctx.storeStub.cleanupExpiredConnection.resolves()
 
-            stubSagemakerBrowserFlow()
-
             await handleGetSessionAsync(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
 
-            // Verify cleanup was NOT called
             assert(ctx.storeStub.cleanupExpiredConnection.notCalled)
         })
     })
 
-    afterEach(() => {
+    afterEach(function () {
         sinon.restore()
     })
 })

@@ -52,7 +52,7 @@ describe('handleRefreshToken', () => {
         await handleRefreshToken(ctx.req as http.IncomingMessage, ctx.res as http.ServerResponse)
 
         assert(ctx.resWriteHead.calledWith(200))
-        assert(ctx.resEnd.calledWith('Session token refreshed successfully'))
+        assert(ctx.resEnd.calledWith('Reconnection successful. You can close this tab and return to your IDE.'))
         assert(
             ctx.storeStub.setSession.calledWith('abc', 'req123', {
                 sessionId: 'sess123',
