@@ -6,8 +6,9 @@
 import { dirname } from 'path'
 import { LspServerProviderI } from './lspServerProvider'
 import { CfnLspInstaller } from './lspInstaller'
+import { LspInstallationInvalidator } from '../../../shared/lsp/lspLauncher'
 
-export class RemoteLspServerProvider implements LspServerProviderI {
+export class RemoteLspServerProvider implements LspServerProviderI, LspInstallationInvalidator {
     private installer = new CfnLspInstaller()
     private serverPath?: string
 
@@ -31,5 +32,10 @@ export class RemoteLspServerProvider implements LspServerProviderI {
 
     async serverRootDir(): Promise<string> {
         return dirname(await this.serverExecutable())
+    }
+
+    async invalidateResolvedInstallation(): Promise<void> {
+        this.serverPath = undefined
+        await this.installer.invalidateResolvedInstallation()
     }
 }
