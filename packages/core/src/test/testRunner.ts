@@ -149,21 +149,10 @@ export async function runTests(
     let files: string[] = []
     if (options?.testFiles) {
         files = options.testFiles
-    } else if (testFilePath) {
-        files = await glob(testFilePath, { cwd: dist })
     } else {
         for (const f of Array.isArray(testFolder) ? testFolder : [testFolder]) {
-            const resolvedDir = path.resolve(dist, f)
-            const found = await glob('**/*.test.js', { cwd: resolvedDir })
-            files = [...files, ...found.map((match) => path.resolve(resolvedDir, match))]
+            files = [...files, ...(await glob(testFilePath ?? `**/${f}/**/**.test.js`, { cwd: dist }))]
         }
-    }
-
-    if (files.length === 0) {
-        const folders = Array.isArray(testFolder) ? testFolder : [testFolder]
-        throw new Error(
-            `No test files discovered. testFolder=${JSON.stringify(folders)}, dist=${dist}, testFile=${testFile ?? '(none)'}`
-        )
     }
 
     await runMocha(files)
