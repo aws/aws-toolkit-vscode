@@ -19,11 +19,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
      *
      * @param url URL to fetch a response body from via the `get` call
      * @param params Additional params for the fetcher
-     * @param {boolean} params.showUrl Whether or not to the URL in log statements.
+     * @param {boolean} params.showUrl Whether or not to show the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
-     * @param {number} params.retries The number of retries a get request should make if one fails
-     * @param {boolean} params.throwOnError True if we want to throw if there's request error, defaul to false
+     * @param {boolean} params.throwOnError Whether to throw on request errors. Defaults to false.
      */
     public constructor(
         private readonly url: string,

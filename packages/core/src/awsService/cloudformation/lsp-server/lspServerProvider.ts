@@ -6,6 +6,7 @@
 import { Disposable } from 'vscode'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
+import { LspInstallationInvalidator } from '../../../shared/lsp/lspLauncher'
 
 export interface LspServerResolverI {
     serverExecutable(): Promise<string>
@@ -17,7 +18,7 @@ export interface LspServerProviderI extends LspServerResolverI {
     name(): string
 }
 
-export class LspServerProvider implements LspServerResolverI, Disposable {
+export class LspServerProvider implements LspServerResolverI, LspInstallationInvalidator, Disposable {
     private readonly matchedProviders: LspServerProviderI[]
     private _serverExecutable?: string
     private _serverRootDir?: string
@@ -45,10 +46,26 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
         return this._serverRootDir!
     }
 
-    private async evaluateProviders() {
+    /**
+     * Invalidates cached resolution and propagates to providers that support it.
+     */
+    async invalidateResolvedInstallation(): Promise<void> {
+        this._serverExecutable = undefined
+        this._serverRootDir = undefined
+
+        for (const provider of this.matchedProviders) {
+            if ('invalidateResolvedInstallation' in provider) {
+                await (provider as LspInstallationInvalidator).invalidateResolvedInstallation()
+            }
+        }
+    }
+
+    private async evaluateProviders(): Promise<void> {
         if (this._serverExecutable && this._serverRootDir) {
             return
         }
+
+        const errors: Array<{ provider: string; error: unknown }> = []
 
         for (const provider of this.matchedProviders) {
             try {
@@ -62,8 +79,16 @@ export class LspServerProvider implements LspServerResolverI, Disposable {
                 getLogger('awsCfnLsp').error(
                     ToolkitError.chain(err, `Failed to resolve CloudFormation LSP provider ${provider.name()}`)
                 )
+                errors.push({ provider: provider.name(), error: err })
             }
         }
+
+        // All providers failed — throw instead of leaving undefined state
+        const providerNames = errors.map((e) => e.provider).join(', ')
+        throw new ToolkitError(`All CloudFormation LSP providers failed: [${providerNames}]`, {
+            code: 'AllProvidersFailed',
+            cause: errors[errors.length - 1]?.error as Error,
+        })
     }
 
     dispose() {}

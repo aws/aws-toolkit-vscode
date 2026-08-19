@@ -6,7 +6,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import { Manifest, ManifestResolver } from '../../../shared'
-import { assertTelemetry } from '../../testUtil'
+import { getMetrics, partialDeepCompare } from '../../testUtil'
 import { ManifestLocation } from '../../../shared/telemetry'
 
 const manifestSchemaVersion = '1.0.0'
@@ -14,8 +14,6 @@ const serverName = 'myLS'
 
 /**
  * Helper function generating valid manifest results for tests.
- * @param location
- * @returns
  */
 function manifestResult(location: ManifestLocation): Manifest {
     return {
@@ -25,6 +23,15 @@ function manifestResult(location: ManifestLocation): Manifest {
         artifactDescription: 'artifact-description',
         isManifestDeprecated: false,
         versions: [],
+    }
+}
+
+function assertServerTelemetry(expected: Record<string, unknown> | Record<string, unknown>[]): void {
+    const expectedMetrics = Array.isArray(expected) ? expected : [expected]
+    const actualMetrics = getMetrics('languageServer_setup').filter((metric) => metric.id === serverName)
+    assert.ok(actualMetrics.length >= expectedMetrics.length)
+    for (const [index, metric] of expectedMetrics.entries()) {
+        partialDeepCompare(actualMetrics[index], metric)
     }
 }
 
@@ -46,7 +53,7 @@ describe('manifestResolver', function () {
 
         const r = await new ManifestResolver('remote-manifest.com', serverName, '').resolve()
         assert.strictEqual(r.location, 'remote')
-        assertTelemetry('languageServer_setup', {
+        assertServerTelemetry({
             manifestLocation: 'remote',
             manifestSchemaVersion,
             languageServerSetupStage: 'getManifest',
@@ -61,7 +68,7 @@ describe('manifestResolver', function () {
 
         const r = await new ManifestResolver('remote-manifest.com', serverName, '').resolve()
         assert.strictEqual(r.location, 'cache')
-        assertTelemetry('languageServer_setup', [
+        assertServerTelemetry([
             {
                 manifestLocation: 'remote',
                 languageServerSetupStage: 'getManifest',
@@ -83,7 +90,7 @@ describe('manifestResolver', function () {
         localStub.rejects(new Error('failed to fetch'))
 
         await assert.rejects(new ManifestResolver('remote-manifest.com', serverName, '').resolve(), /failed to fetch/)
-        assertTelemetry('languageServer_setup', [
+        assertServerTelemetry([
             {
                 manifestLocation: 'remote',
                 languageServerSetupStage: 'getManifest',
@@ -97,5 +104,16 @@ describe('manifestResolver', function () {
                 result: 'Failed',
             },
         ])
+    })
+
+    it('accepts config object constructor', async function () {
+        remoteStub.resolves(manifestResult('remote'))
+
+        const r = await new ManifestResolver({
+            manifestUrl: 'https://example.com/manifest.json',
+            lsName: serverName,
+            cacheDir: '/tmp/test-cache',
+        }).resolve()
+        assert.strictEqual(r.location, 'remote')
     })
 })
