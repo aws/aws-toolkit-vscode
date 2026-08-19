@@ -68,7 +68,8 @@ export function register(ctx: ExtContext) {
                 undefined,
                 undefined,
                 undefined,
-                true // isSMUS=true for SMUS connections
+                true, // isSMUS
+                params.reconnect_base_url
             )
         })
     }
@@ -95,6 +96,7 @@ export function register(ctx: ExtContext) {
  * - smus_project_id: SMUS project identifier
  * - smus_domain_region: SMUS domain region
  * - smus_auth_mode: Authentication mode (sso or iam)
+ * - reconnect_base_url: Console base URL for session reconnect (absent on older consoles)
  *
  * Note: The ws_url from startSession API originally includes cell-number as a query parameter.
  * However, when the deeplink URL is processed, the URI handler extracts cell-number as a
@@ -134,7 +136,8 @@ export function parseConnectParams(query: SearchParams) {
         'smus_project_id',
         'smus_domain_region',
         'smus_auth_mode',
-        'smus_domain_mode'
+        'smus_domain_mode',
+        'reconnect_base_url'
     )
 
     const amzHeaderParams = query.getFromKeys(...amzHeaders)
