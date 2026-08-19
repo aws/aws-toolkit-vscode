@@ -107,36 +107,36 @@ describe('LspLauncher', function () {
     })
 
     describe('retry on failure', function () {
-        it('retries exactly once after first start failure', async function () {
+        /**
+         * Creates a clientFactory that fails for the first N calls then succeeds.
+         * Returns the factory stub and a callCount accessor.
+         */
+        function failingThenSucceedingFactory(failCount: number) {
             let callCount = 0
-            const clientFactory = sandbox.stub().callsFake(async () => {
+            const factory = sandbox.stub().callsFake(async () => {
                 callCount++
-                if (callCount === 1) {
-                    return createMockClient(true) // first call fails
+                if (callCount <= failCount) {
+                    return createMockClient(true)
                 }
-                return createMockClient(false) // second call succeeds
+                return createMockClient(false)
             })
+            return { factory, getCallCount: () => callCount }
+        }
 
-            const config = createConfig({ clientFactory })
+        it('retries exactly once after first start failure', async function () {
+            const { factory, getCallCount } = failingThenSucceedingFactory(1)
+            const config = createConfig({ clientFactory: factory })
             const launcher = new LspLauncher(config)
 
             const client = await launcher.start()
 
             assert.ok(client)
-            assert.strictEqual(callCount, 2)
+            assert.strictEqual(getCallCount(), 2)
         })
 
         it('invalidates installation before retry', async function () {
-            let callCount = 0
-            const clientFactory = sandbox.stub().callsFake(async () => {
-                callCount++
-                if (callCount === 1) {
-                    return createMockClient(true)
-                }
-                return createMockClient(false)
-            })
-
-            const config = createConfig({ clientFactory })
+            const { factory } = failingThenSucceedingFactory(1)
+            const config = createConfig({ clientFactory: factory })
             const launcher = new LspLauncher(config)
 
             await launcher.start()

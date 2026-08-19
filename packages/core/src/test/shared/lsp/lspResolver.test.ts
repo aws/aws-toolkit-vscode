@@ -8,49 +8,20 @@ import * as path from 'path'
 import * as os from 'os'
 import { Range } from 'semver'
 import { LanguageServerResolver } from '../../../shared/lsp/lspResolver'
-import { Manifest, LspVersion } from '../../../shared/lsp/types'
-import { TargetPlatform } from '../../../shared/lsp/utils/targetResolver'
+import { LspVersion } from '../../../shared/lsp/types'
 import { fs } from '../../../shared/fs/fs'
-import { createTestWorkspaceFolder } from '../../testUtil'
 import AdmZip from 'adm-zip'
-
-function createManifest(versions: LspVersion[]): Manifest {
-    return {
-        manifestSchemaVersion: '1.0',
-        artifactId: 'test-server',
-        artifactDescription: 'Test Language Server',
-        isManifestDeprecated: false,
-        versions,
-    }
-}
-
-function createVersion(
-    serverVersion: string,
-    opts?: { platform?: string; arch?: string; hashes?: string[]; filename?: string; isDelisted?: boolean }
-): LspVersion {
-    return {
-        serverVersion,
-        isDelisted: opts?.isDelisted ?? false,
-        targets: [
-            {
-                platform: opts?.platform ?? process.platform,
-                arch: opts?.arch ?? process.arch,
-                contents: [
-                    {
-                        filename: opts?.filename ?? `server-${serverVersion}.zip`,
-                        url: `https://example.com/server-${serverVersion}.zip`,
-                        hashes: opts?.hashes ?? [],
-                        bytes: 1024,
-                    },
-                ],
-            },
-        ],
-    }
-}
+import {
+    createManifest,
+    createVersion,
+    createPlatformVersion,
+    createResolver,
+    lspTestDefaults,
+    TempTestDir,
+} from './lspTestFixtures'
 
 describe('LanguageServerResolver', function () {
-    const lsName = 'test-server'
-    const manifestUrl = 'https://example.com/manifest.json'
+    const { lsName, manifestUrl } = lspTestDefaults
 
     describe('version selection - highest semver always wins', function () {
         it('selects highest semver version from manifest', function () {
@@ -121,62 +92,24 @@ describe('LanguageServerResolver', function () {
 
     describe('platform target - win32 default', function () {
         it('uses process.platform directly (win32 not windows)', function () {
-            // Create a version with win32 platform
-            const version: LspVersion = {
-                serverVersion: '1.0.0',
-                isDelisted: false,
-                targets: [
-                    {
-                        platform: 'win32',
-                        arch: 'x64',
-                        contents: [{ filename: 'server.zip', url: 'http://x', hashes: [], bytes: 100 }],
-                    },
-                ],
-            }
+            const version = createPlatformVersion('1.0.0', 'win32', 'x64')
             const manifest = createManifest([version])
 
-            // Only resolves if platform matching uses win32
-            const resolver = new LanguageServerResolver(
-                manifest,
-                lsName,
-                new Range('>=1.0.0', { includePrerelease: true }),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test',
-                [],
-                () => ({ platform: 'win32', arch: 'x64' }) // simulate win32
-            )
+            const resolver = createResolver(manifest, {
+                targetPlatformResolver: () => ({ platform: 'win32', arch: 'x64' }),
+            })
 
             // Should not throw — found the target
             assert.ok(resolver)
         })
 
         it('does NOT match windows platform name (legacy format)', async function () {
-            const version: LspVersion = {
-                serverVersion: '1.0.0',
-                isDelisted: false,
-                targets: [
-                    {
-                        platform: 'windows', // legacy format
-                        arch: 'x64',
-                        contents: [{ filename: 'server.zip', url: 'http://x', hashes: [], bytes: 100 }],
-                    },
-                ],
-            }
+            const version = createPlatformVersion('1.0.0', 'windows', 'x64')
             const manifest = createManifest([version])
 
-            const resolver = new LanguageServerResolver(
-                manifest,
-                lsName,
-                new Range('>=1.0.0', { includePrerelease: true }),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test',
-                [],
-                () => ({ platform: 'win32', arch: 'x64' }) // default uses win32
-            )
+            const resolver = createResolver(manifest, {
+                targetPlatformResolver: () => ({ platform: 'win32', arch: 'x64' }),
+            })
 
             // Should throw — no matching target for win32 when manifest has 'windows'
             await assert.rejects(resolver.resolve(), /Unable to find a language server/)
@@ -185,30 +118,12 @@ describe('LanguageServerResolver', function () {
 
     describe('platform target - legacy Linux override', function () {
         it('resolves linuxglib2.28 when targetPlatformResolver returns it', function () {
-            const version: LspVersion = {
-                serverVersion: '1.0.0',
-                isDelisted: false,
-                targets: [
-                    {
-                        platform: 'linuxglib2.28',
-                        arch: 'x64',
-                        contents: [{ filename: 'server.zip', url: 'http://x', hashes: [], bytes: 100 }],
-                    },
-                ],
-            }
+            const version = createPlatformVersion('1.0.0', 'linuxglib2.28', 'x64')
             const manifest = createManifest([version])
 
-            const resolver = new LanguageServerResolver(
-                manifest,
-                lsName,
-                new Range('>=1.0.0', { includePrerelease: true }),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test',
-                [],
-                () => ({ platform: 'linuxglib2.28', arch: 'x64' }) // legacy linux
-            )
+            const resolver = createResolver(manifest, {
+                targetPlatformResolver: () => ({ platform: 'linuxglib2.28', arch: 'x64' }),
+            })
 
             assert.ok(resolver)
         })
@@ -216,58 +131,38 @@ describe('LanguageServerResolver', function () {
 
     describe('platform target - custom override', function () {
         it('uses client-supplied target platform resolver', function () {
-            const version: LspVersion = {
-                serverVersion: '1.0.0',
-                isDelisted: false,
-                targets: [
-                    {
-                        platform: 'custom-os',
-                        arch: 'custom-arch',
-                        contents: [{ filename: 'server.zip', url: 'http://x', hashes: [], bytes: 100 }],
-                    },
-                ],
-            }
+            const version = createPlatformVersion('1.0.0', 'custom-os', 'custom-arch')
             const manifest = createManifest([version])
 
-            const customResolver = (): TargetPlatform => ({ platform: 'custom-os', arch: 'custom-arch' })
-            const resolver = new LanguageServerResolver(
-                manifest,
-                lsName,
-                new Range('>=1.0.0', { includePrerelease: true }),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test',
-                [],
-                customResolver
-            )
+            const resolver = createResolver(manifest, {
+                targetPlatformResolver: () => ({ platform: 'custom-os', arch: 'custom-arch' }),
+            })
 
             assert.ok(resolver)
         })
     })
 
     describe('managed cache validation', function () {
-        let testDir: string
+        const tmpDir = new TempTestDir()
 
         beforeEach(async function () {
-            const folder = await createTestWorkspaceFolder()
-            testDir = folder.uri.fsPath
+            await tmpDir.setup()
         })
 
         afterEach(async function () {
-            await fs.delete(testDir, { force: true, recursive: true })
+            await tmpDir.teardown()
         })
 
         it('accepts complete nested bundles and rejects missing required directories', async function () {
             const version = createVersion('1.2.0')
             const resolver = LanguageServerResolver.fromConfig(createManifest([version]), {
-                lsName,
-                versionRange: new Range('>=1.0.0', { includePrerelease: true }),
-                manifestUrl,
-                baseDir: testDir,
+                lsName: lspTestDefaults.lsName,
+                versionRange: lspTestDefaults.versionRange,
+                manifestUrl: lspTestDefaults.manifestUrl,
+                baseDir: tmpDir.path,
                 requiredFiles: ['server.js', 'bin', 'node_modules'],
             })
-            const versionDir = path.join(testDir, '1.2.0')
+            const versionDir = path.join(tmpDir.path, '1.2.0')
             const bundleDir = path.join(versionDir, 'server-1.2.0')
             await fs.mkdir(path.join(bundleDir, 'bin'))
             await fs.mkdir(path.join(bundleDir, 'node_modules'))
@@ -281,23 +176,23 @@ describe('LanguageServerResolver', function () {
     })
 
     describe('hash verification', function () {
+        function hashResolver(defaultAlgorithm = 'sha384'): LanguageServerResolver {
+            return new LanguageServerResolver(
+                createManifest([]),
+                lspTestDefaults.lsName,
+                new Range('>=1.0.0'),
+                lspTestDefaults.manifestUrl,
+                undefined,
+                defaultAlgorithm,
+                lspTestDefaults.baseDir
+            )
+        }
+
         it('verifies single-prefix algorithm:digest format (sha256)', async function () {
             const data = Buffer.from('test content')
-            // Compute raw hex using Node crypto directly (not the shared createHash which prefixes)
             const rawHex = require('crypto').createHash('sha256').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384', // default algorithm — different from what we pass
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // algorithm:digest format should work regardless of default
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, [`sha256:${rawHex}`]), true)
         })
 
@@ -305,17 +200,7 @@ describe('LanguageServerResolver', function () {
             const data = Buffer.from('sha384 test content')
             const rawHex = require('crypto').createHash('sha384').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha256', // configured to sha256 — but explicit prefix overrides
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
+            const verifyHash = (hashResolver('sha256') as any).verifyHash.bind(hashResolver('sha256'))
             assert.strictEqual(verifyHash(data, [`sha384:${rawHex}`]), true)
         })
 
@@ -323,18 +208,7 @@ describe('LanguageServerResolver', function () {
             const data = Buffer.from('test content 2')
             const rawHex = require('crypto').createHash('sha384').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // Raw hex without prefix — should use configured algorithm (sha384)
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, [rawHex]), true)
         })
 
@@ -342,20 +216,8 @@ describe('LanguageServerResolver', function () {
             const data = Buffer.from('case insensitive test')
             const rawHex = require('crypto').createHash('sha256').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // Upper-case the expected digest
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, [`sha256:${rawHex.toUpperCase()}`]), true)
-            // Upper-case algorithm name
             assert.strictEqual(verifyHash(data, [`SHA256:${rawHex}`]), true)
         })
 
@@ -363,89 +225,35 @@ describe('LanguageServerResolver', function () {
             const data = Buffer.from('multi hash test')
             const rawHex = require('crypto').createHash('sha256').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // First hash is wrong, second is correct
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, ['sha256:wrong', `sha256:${rawHex}`]), true)
         })
 
         it('fails when no hash matches (mismatch)', async function () {
             const data = Buffer.from('no match')
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, ['sha256:wrong1', 'sha384:wrong2']), false)
         })
 
         it('skips verification when no hashes provided (empty array)', async function () {
             const data = Buffer.from('no hashes')
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // Empty array = no hashes = skip verification = pass
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, []), true)
         })
 
         it('skips verification when all hashes use unsupported algorithms', async function () {
             const data = Buffer.from('unsupported algo')
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // Only unsupported algorithms — nothing computable = skip verification = pass
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, ['unsupported_algo:abc123', 'fake_hash:xyz']), true)
         })
 
         it('fails when mixed unsupported + valid but no match', async function () {
             const data = Buffer.from('mixed algos')
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // One unsupported + one valid but wrong digest — at least one supported was computed, must match
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, ['unsupported_algo:abc123', 'sha256:wrongdigest']), false)
         })
 
@@ -453,18 +261,7 @@ describe('LanguageServerResolver', function () {
             const data = Buffer.from('mixed algos pass')
             const rawHex = require('crypto').createHash('sha256').update(data).digest('hex') // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                '/tmp/test'
-            )
-
-            const verifyHash = (resolver as any).verifyHash.bind(resolver)
-            // One unsupported + one valid matching hash
+            const verifyHash = (hashResolver() as any).verifyHash.bind(hashResolver())
             assert.strictEqual(verifyHash(data, ['unsupported_algo:abc123', `sha256:${rawHex}`]), true)
         })
     })
@@ -545,36 +342,27 @@ describe('LanguageServerResolver', function () {
     })
 
     describe('zip extraction and zip-slip rejection', function () {
-        let testDir: string
+        const tmpDir = new TempTestDir()
 
         beforeEach(async function () {
-            const folder = await createTestWorkspaceFolder()
-            testDir = folder.uri.fsPath
+            await tmpDir.setup()
         })
 
         afterEach(async function () {
-            await fs.delete(testDir, { force: true, recursive: true })
+            await tmpDir.teardown()
         })
 
         it('extracts valid zip content', async function () {
             const zip = new AdmZip()
             zip.addFile('server.js', Buffer.from('console.log("hello")'))
             zip.addFile('package.json', Buffer.from('{}'))
-            const zipPath = path.join(testDir, 'server.zip')
+            const zipPath = path.join(tmpDir.path, 'server.zip')
             zip.writeZip(zipPath)
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                testDir
-            )
+            const resolver = createResolver(createManifest([]), { baseDir: tmpDir.path })
 
             // Test zip extraction via private method
-            const result = (resolver as any).copyZipContents([zipPath], testDir)
+            const result = (resolver as any).copyZipContents([zipPath], tmpDir.path)
             assert.strictEqual(result, true)
 
             // Verify extracted files exist
@@ -587,44 +375,28 @@ describe('LanguageServerResolver', function () {
             const zip = new AdmZip()
             // Add entry with path traversal
             zip.addFile('../../../etc/malicious.txt', Buffer.from('evil'))
-            const zipPath = path.join(testDir, 'malicious.zip')
+            const zipPath = path.join(tmpDir.path, 'malicious.zip')
             zip.writeZip(zipPath)
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                testDir
-            )
+            const resolver = createResolver(createManifest([]), { baseDir: tmpDir.path })
 
-            const result = (resolver as any).copyZipContents([zipPath], testDir)
+            const result = (resolver as any).copyZipContents([zipPath], tmpDir.path)
             assert.strictEqual(result, false)
         })
 
         it('deletes zip files after extraction', async function () {
             const zip = new AdmZip()
             zip.addFile('test.js', Buffer.from('content'))
-            const zipPath = path.join(testDir, 'bundle.zip')
+            const zipPath = path.join(tmpDir.path, 'bundle.zip')
             zip.writeZip(zipPath)
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                testDir
-            )
+            const resolver = createResolver(createManifest([]), { baseDir: tmpDir.path })
 
             // First extract
-            ;(resolver as any).copyZipContents([zipPath], testDir)
+            ;(resolver as any).copyZipContents([zipPath], tmpDir.path)
 
             // Then delete zips
-            await (resolver as any).deleteZipFiles(testDir)
+            await (resolver as any).deleteZipFiles(tmpDir.path)
 
             // Zip should be deleted
             assert.ok(!(await fs.existsFile(zipPath)))
@@ -632,52 +404,39 @@ describe('LanguageServerResolver', function () {
     })
 
     describe('required files validation', function () {
-        let testDir: string
+        const tmpDir = new TempTestDir()
 
         beforeEach(async function () {
-            const folder = await createTestWorkspaceFolder()
-            testDir = folder.uri.fsPath
+            await tmpDir.setup()
         })
 
         afterEach(async function () {
-            await fs.delete(testDir, { force: true, recursive: true })
+            await tmpDir.teardown()
         })
 
         it('passes when all required files exist', async function () {
-            await fs.writeFile(path.join(testDir, 'server.js'), 'content')
-            await fs.mkdir(path.join(testDir, 'node_modules'))
+            await fs.writeFile(path.join(tmpDir.path, 'server.js'), 'content')
+            await fs.mkdir(path.join(tmpDir.path, 'node_modules'))
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                testDir,
-                ['server.js', 'node_modules']
-            )
+            const resolver = createResolver(createManifest([]), {
+                baseDir: tmpDir.path,
+                requiredFiles: ['server.js', 'node_modules'],
+            })
 
-            await assert.doesNotReject((resolver as any).validateRequiredFiles(testDir))
+            await assert.doesNotReject((resolver as any).validateRequiredFiles(tmpDir.path))
         })
 
         it('throws when required files are missing', async function () {
-            await fs.writeFile(path.join(testDir, 'server.js'), 'content')
+            await fs.writeFile(path.join(tmpDir.path, 'server.js'), 'content')
             // node_modules is missing
 
-            const resolver = new LanguageServerResolver(
-                createManifest([]),
-                lsName,
-                new Range('>=1.0.0'),
-                manifestUrl,
-                undefined,
-                'sha384',
-                testDir,
-                ['server.js', 'node_modules']
-            )
+            const resolver = createResolver(createManifest([]), {
+                baseDir: tmpDir.path,
+                requiredFiles: ['server.js', 'node_modules'],
+            })
 
             await assert.rejects(
-                (resolver as any).validateRequiredFiles(testDir),
+                (resolver as any).validateRequiredFiles(tmpDir.path),
                 /Required files missing.*node_modules/
             )
         })

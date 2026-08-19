@@ -10,6 +10,7 @@ import { ManifestResolver, ManifestResolverConfig, ManifestAdapter } from '../..
 import { fs } from '../../../shared/fs/fs'
 import { Manifest } from '../../../shared/lsp/types'
 import { AmazonQPromptSettings } from '../../../shared/settings'
+import { validManifestJson, channelKeyedManifestJson, deprecatedManifestJson } from './lspTestFixtures'
 
 describe('ManifestResolver - retry, atomic save, and adapter', function () {
     let sandbox: sinon.SinonSandbox
@@ -20,13 +21,7 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
     let renameStub: sinon.SinonStub
     let deleteStub: sinon.SinonStub
 
-    const validManifest = JSON.stringify({
-        manifestSchemaVersion: '1.0',
-        artifactId: 'test-lsp',
-        artifactDescription: 'Test LSP',
-        isManifestDeprecated: false,
-        versions: [],
-    })
+    const validManifest = validManifestJson
 
     function makeConfig(overrides?: Partial<ManifestResolverConfig>): ManifestResolverConfig {
         return {
@@ -182,24 +177,11 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
     })
 
     describe('adapter hook for channel-keyed manifests', function () {
-        const channelKeyedManifest = JSON.stringify({
-            manifestSchemaVersion: '2.0',
-            artifactId: 'cfn-lsp',
-            artifactDescription: 'CFN LSP',
-            isManifestDeprecated: false,
-            alpha: [
-                { serverVersion: '1.0.0-alpha', isDelisted: false, targets: [] },
-                { serverVersion: '1.1.0-alpha', isDelisted: false, targets: [] },
-            ],
-            beta: [{ serverVersion: '1.0.0-beta', isDelisted: false, targets: [] }],
-            prod: [{ serverVersion: '1.0.0', isDelisted: false, targets: [] }],
-        })
+        const channelKeyedManifest = channelKeyedManifestJson
 
-        it('applies adapter to transform channel-keyed manifest', async function () {
-            const fetchFn = sandbox.stub().resolves(new Response(channelKeyedManifest, { status: 200 }))
-            const sleepFn = sandbox.stub().resolves()
-
-            const adapter: ManifestAdapter = {
+        /** Creates a ManifestAdapter that selects the given channel from a channel-keyed manifest. */
+        function channelAdapter(channel: string): ManifestAdapter {
+            return {
                 adapt(raw: unknown): Manifest {
                     const obj = raw as Record<string, unknown>
                     return {
@@ -207,10 +189,17 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
                         artifactId: obj.artifactId as string,
                         artifactDescription: obj.artifactDescription as string,
                         isManifestDeprecated: obj.isManifestDeprecated as boolean,
-                        versions: obj['alpha'] as Manifest['versions'],
+                        versions: obj[channel] as Manifest['versions'],
                     }
                 },
             }
+        }
+
+        it('applies adapter to transform channel-keyed manifest', async function () {
+            const fetchFn = sandbox.stub().resolves(new Response(channelKeyedManifest, { status: 200 }))
+            const sleepFn = sandbox.stub().resolves()
+
+            const adapter = channelAdapter('alpha')
 
             const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn, adapter }))
             const result = await resolver.resolve()
@@ -226,18 +215,7 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
             existsFileStub.resolves(true)
             readFileTextStub.resolves(channelKeyedManifest)
 
-            const adapter: ManifestAdapter = {
-                adapt(raw: unknown): Manifest {
-                    const obj = raw as Record<string, unknown>
-                    return {
-                        manifestSchemaVersion: obj.manifestSchemaVersion as string,
-                        artifactId: obj.artifactId as string,
-                        artifactDescription: obj.artifactDescription as string,
-                        isManifestDeprecated: obj.isManifestDeprecated as boolean,
-                        versions: obj['prod'] as Manifest['versions'],
-                    }
-                },
-            }
+            const adapter = channelAdapter('prod')
 
             const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn, adapter }))
             const result = await resolver.resolve()
@@ -324,13 +302,7 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
     })
 
     describe('deprecation check', function () {
-        const deprecatedManifest = JSON.stringify({
-            manifestSchemaVersion: '1.0',
-            artifactId: 'test-lsp',
-            artifactDescription: 'Test LSP',
-            isManifestDeprecated: true,
-            versions: [],
-        })
+        const deprecatedManifest = deprecatedManifestJson
 
         it('logs deprecation warning with suppressPrefix when manifest is deprecated (remote)', async function () {
             const fetchFn = sandbox.stub().resolves(new Response(deprecatedManifest, { status: 200 }))
