@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Updated the AWS SDK credential provider so credentials refreshed by re-running `aws login` are recognized without restarting the IDE."
-}
