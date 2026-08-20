@@ -1,3 +1,10 @@
+## 4.14.0 2026-08-20
+
+- **Bug Fix** SageMaker Unified Studio: Fixed Spaces not appearing in the tree view after signing in with SSO to an IAM-based domain (caught in pre-release).
+- **Bug Fix** Updated the AWS SDK credential provider so credentials refreshed by re-running `aws login` are recognized without restarting the IDE.
+- **Bug Fix** SageMaker Unified Studio: only activated user profiles are used for space filtering.
+- **Feature** SageMaker Unified Studio: Automatically reconnect a deeplink-connected Space by refreshing credentials in the browser when the SSH tunnel drops.
+
 ## 4.13.0 2026-08-06
 
 - **Feature** Add profile through console option for IAM auth in SMUS
