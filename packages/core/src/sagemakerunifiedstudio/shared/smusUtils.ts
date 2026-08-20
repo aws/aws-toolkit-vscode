@@ -602,8 +602,9 @@ export async function isExpressDomain(client: DataZoneClient, domainId: string, 
 
 /**
  * Extracts the account ID from a SageMaker ARN.
- * Supports formats like:
+ * Supports all AWS partitions (aws, aws-cn, aws-us-gov, etc.), e.g.:
  *   arn:aws:sagemaker:<region>:<account_id>:app/*
+ *   arn:aws-us-gov:sagemaker:<region>:<account_id>:space/*
  *
  * @param arn - The full SageMaker ARN string
  * @returns The account ID from the ARN
@@ -611,7 +612,7 @@ export async function isExpressDomain(client: DataZoneClient, domainId: string, 
  */
 export function extractAccountIdFromSageMakerArn(arn: string): string {
     // Match the ARN components to extract account ID
-    const regex = /^arn:aws:sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space)\/.+$/i
+    const regex = /^arn:(?<partition>aws[a-z-]*):sagemaker:(?<region>[^:]+):(?<accountId>\d+):(app|space)\/.+$/i
     const match = arn.match(regex)
 
     if (!match?.groups) {
