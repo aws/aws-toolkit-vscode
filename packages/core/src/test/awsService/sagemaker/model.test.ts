@@ -146,14 +146,25 @@ describe('SageMaker Model', () => {
 
             await stopLocalServer(ctx)
 
-            assertLogsContain(`no process found with PID ${validPid}. It may have already exited.`, false, 'warn')
+            assertLogsContain(`cannot stop PID ${validPid} (ESRCH). Proceeding with new server.`, false, 'warn')
         })
 
-        it('throws ToolkitError when killing process fails for another reason', async function () {
+        it('logs warning when permission denied (EPERM) and proceeds', async function () {
             sandbox.stub(fs, 'existsFile').resolves(true)
             sandbox.stub(fs, 'readFileText').resolves(validJson)
             sandbox.stub(fs, 'delete').resolves()
             sandbox.stub(process, 'kill').throws({ code: 'EPERM', message: 'permission denied' })
+
+            await stopLocalServer(ctx)
+
+            assertLogsContain(`cannot stop PID ${validPid} (EPERM). Proceeding with new server.`, false, 'warn')
+        })
+
+        it('throws ToolkitError when killing process fails for unknown reason', async function () {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(validJson)
+            sandbox.stub(fs, 'delete').resolves()
+            sandbox.stub(process, 'kill').throws({ code: 'EINVAL', message: 'invalid signal' })
 
             try {
                 await stopLocalServer(ctx)

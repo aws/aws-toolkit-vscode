@@ -13,6 +13,7 @@ import { sshLogFileLocation } from '../../shared/sshConfig'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
+import globals from '../../shared/extensionGlobals'
 
 export const DomainKeyDelimiter = '__'
 export { parseArn } from './detached-server/utils'
@@ -88,10 +89,16 @@ export function getSpaceAppsForUserProfile(
 }
 
 export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): NodeJS.ProcessEnv {
+    const serverScriptPath = path.join(
+        globals.context.asAbsolutePath('dist/src/awsService/sagemaker/detached-server/'),
+        'server.js'
+    )
     return Object.assign(
         {
             AWS_SSM_CLI: ssmPath,
             SAGEMAKER_LOCAL_SERVER_FILE_PATH: sagemakerLocalServerPath,
+            SAGEMAKER_SERVER_SCRIPT_PATH: serverScriptPath,
+            SAGEMAKER_NODE_PATH: process.execPath,
             LOG_FILE_LOCATION: sshLogFileLocation('sagemaker', 'connect'),
         },
         process.env
