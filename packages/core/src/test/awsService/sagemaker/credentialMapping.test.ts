@@ -16,6 +16,9 @@ import {
     setSpaceSsoProfile,
     setSmusSpaceProfile,
     setSpaceCredentials,
+    buildStudioRemoteConnectUrl,
+    preRegisterIdcConnection,
+    getIdcConnectionStatus,
 } from '../../../awsService/sagemaker/credentialMapping'
 import { Auth } from '../../../auth'
 import { DevSettings, fs } from '../../../shared'
@@ -25,6 +28,230 @@ import { SageMakerUnifiedStudioSpacesParentNode } from '../../../sagemakerunifie
 import * as hyperpodMappingUtils from '../../../awsService/sagemaker/detached-server/hyperpodMappingUtils'
 
 describe('credentialMapping', () => {
+    describe('buildStudioRemoteConnectUrl', () => {
+        const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/my-space'
+        const baseParams = {
+            spaceArn,
+            domain: 'd-abc123',
+            region: 'us-west-2',
+            appType: 'JupyterLab',
+            callbackUrl: 'http://localhost:54321/refresh_token',
+        }
+
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('targets the prod Studio host when no dev endpoint is set', () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+
+            const url = buildStudioRemoteConnectUrl(baseParams)
+
+            assert.ok(
+                url.startsWith('https://studio-d-abc123.studio.us-west-2.sagemaker.aws/remote-connect?'),
+                `unexpected host: ${url}`
+            )
+        })
+
+        it('targets the devo Studio host for a beta endpoint', () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({ sagemaker: 'https://beta.whatever' })
+
+            const url = buildStudioRemoteConnectUrl(baseParams)
+
+            assert.ok(
+                url.startsWith('https://studio-d-abc123.devo.studio.us-west-2.asfiovnxocqpcry.com/remote-connect?'),
+                `unexpected host: ${url}`
+            )
+        })
+
+        it('uses the region argument rather than the region embedded in the space ARN', () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+
+            const url = buildStudioRemoteConnectUrl({ ...baseParams, region: 'eu-west-1' })
+
+            assert.ok(url.includes('studio.eu-west-1.sagemaker.aws'), `unexpected host: ${url}`)
+        })
+
+        it('url-encodes the callback parameters and omits requestId', () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+
+            const url = buildStudioRemoteConnectUrl(baseParams)
+            const query = new URLSearchParams(url.slice(url.indexOf('?') + 1))
+
+            // The ARN's colons and slashes must be escaped, not passed through raw.
+            assert.ok(!url.includes('arn:aws:sagemaker'), 'spaceArn was not encoded')
+            assert.strictEqual(query.get('spaceArn'), spaceArn)
+            assert.strictEqual(query.get('appType'), 'JupyterLab')
+            assert.strictEqual(query.get('callbackUrl'), baseParams.callbackUrl)
+            assert.strictEqual(query.has('requestId'), false)
+        })
+
+        it('points callbackUrl at the supplied local server port', () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+
+            const url = buildStudioRemoteConnectUrl({
+                ...baseParams,
+                callbackUrl: 'http://localhost:9999/refresh_token',
+            })
+            const query = new URLSearchParams(url.slice(url.indexOf('?') + 1))
+
+            assert.strictEqual(query.get('callbackUrl'), 'http://localhost:9999/refresh_token')
+        })
+    })
+
+    describe('preRegisterIdcConnection', () => {
+        const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/my-space'
+
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        function writtenData(writeStub: sinon.SinonStub) {
+            const raw = writeStub.firstCall.args[1]
+            return JSON.parse(typeof raw === 'string' ? raw : raw.toString())
+        }
+
+        it("seeds a pending 'initial-connection' entry for the space", async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await preRegisterIdcConnection(spaceArn, 'd-abc123', 'JupyterLab')
+
+            const entry = writtenData(writeStub).deepLink?.[spaceArn]
+            assert.ok(entry, 'expected a deepLink entry for the space')
+            assert.deepStrictEqual(entry.requests['initial-connection'], {
+                sessionId: '',
+                token: '',
+                url: '',
+                status: 'pending',
+            })
+        })
+
+        it('stores a jupyterlab refresh URL for a JupyterLab space', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await preRegisterIdcConnection(spaceArn, 'd-abc123', 'JupyterLab')
+
+            assert.strictEqual(
+                writtenData(writeStub).deepLink[spaceArn].refreshUrl,
+                'https://studio-d-abc123.studio.us-west-2.sagemaker.aws/jupyterlab'
+            )
+        })
+
+        it('stores a code-editor refresh URL for a CodeEditor space', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await preRegisterIdcConnection(spaceArn, 'd-abc123', 'CodeEditor')
+
+            assert.strictEqual(
+                writtenData(writeStub).deepLink[spaceArn].refreshUrl,
+                'https://studio-d-abc123.studio.us-west-2.sagemaker.aws/code-editor'
+            )
+        })
+
+        it('leaves deepLink entries for other spaces intact', async () => {
+            const otherArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/other-space'
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(
+                JSON.stringify({
+                    deepLink: {
+                        [otherArn]: { refreshUrl: 'https://example.com/other', requests: {} },
+                    },
+                })
+            )
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            await preRegisterIdcConnection(spaceArn, 'd-abc123', 'JupyterLab')
+
+            const data = writtenData(writeStub)
+            assert.strictEqual(data.deepLink[otherArn].refreshUrl, 'https://example.com/other')
+            assert.ok(data.deepLink[spaceArn], 'expected the new entry to be added alongside')
+        })
+    })
+
+    describe('getIdcConnectionStatus', () => {
+        const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/my-space'
+
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        function stubMappings(data: unknown) {
+            sandbox.stub(fs, 'existsFile').resolves(true)
+            sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(data))
+        }
+
+        it("returns the status of the 'initial-connection' request", async () => {
+            stubMappings({
+                deepLink: {
+                    [spaceArn]: {
+                        refreshUrl: 'https://example.com',
+                        requests: { 'initial-connection': { status: 'fresh' } },
+                    },
+                },
+            })
+
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), 'fresh')
+        })
+
+        it('returns undefined when no mappings file exists', async () => {
+            sandbox.stub(fs, 'existsFile').resolves(false)
+
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), undefined)
+        })
+
+        it('returns undefined when the space has no deepLink entry', async () => {
+            stubMappings({ deepLink: {} })
+
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), undefined)
+        })
+
+        it("returns undefined when the entry has no 'initial-connection' request", async () => {
+            stubMappings({
+                deepLink: { [spaceArn]: { refreshUrl: 'https://example.com', requests: {} } },
+            })
+
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), undefined)
+        })
+
+        it('does not consume or modify the entry, so polling is safe', async () => {
+            stubMappings({
+                deepLink: {
+                    [spaceArn]: {
+                        refreshUrl: 'https://example.com',
+                        requests: { 'initial-connection': { status: 'pending' } },
+                    },
+                },
+            })
+            const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), 'pending')
+            assert.strictEqual(await getIdcConnectionStatus(spaceArn), 'pending')
+            assert.ok(writeStub.notCalled, 'reading the status must not write mappings')
+        })
+    })
+
     describe('persistLocalCredentials', () => {
         const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-f0lwireyzpjp/test-space'
 

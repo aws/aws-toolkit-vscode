@@ -10,6 +10,8 @@ export abstract class SagemakerConstants {
     static readonly FilterHyperpodPlaceholderKey = 'aws.filterHyperpodSpacesPlaceholder'
     static readonly FilterHyperpodPlaceholderMessage = 'Filter dev spaces by name spaces or cluster (unselect to hide)'
     static readonly PlaceHolderMessage = '[No Sagemaker Spaces Found]'
+    static readonly IdcNoOwnedSpacesMessage = '[No spaces owned by your user profile]'
+    static readonly IdcUnresolvedProfileMessage = '[Unable to determine your Studio user profile]'
     static readonly EnableIdentityFilteringSetting = 'aws.sagemaker.studio.spaces.enableIdentityFiltering'
     static readonly SelectedDomainUsersState = 'aws.sagemaker.selectedDomainUsers'
     static readonly FilterPlaceholderKey = 'aws.filterSagemakerSpacesPlaceholder'

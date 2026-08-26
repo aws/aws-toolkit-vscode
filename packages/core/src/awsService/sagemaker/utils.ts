@@ -13,6 +13,7 @@ import { sshLogFileLocation } from '../../shared/sshConfig'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
+import type { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export const DomainKeyDelimiter = '__'
 export { parseArn } from './detached-server/utils'
@@ -85,6 +86,37 @@ export function getSpaceAppsForUserProfile(
 
         return result
     }, [] as string[])
+}
+
+/**
+ * Shows a multi-select QuickPick of explorer filter options and, when the selection changes,
+ * persists it and refreshes the node.
+ *
+ * Shared by the Studio user-profile filter and the HyperPod cluster/namespace filter, which
+ * differ only in how their items are built and where the selection is stored.
+ */
+export async function promptAndApplyExplorerFilter(
+    node: AWSTreeNodeBase,
+    items: (vscode.QuickPickItem & { key: string })[],
+    placeholder: string,
+    previousSelection: Set<string>,
+    saveSelection: (selection: string[]) => void
+): Promise<void> {
+    const result = await vscode.window.showQuickPick(items, {
+        placeHolder: placeholder,
+        canPickMany: true,
+        matchOnDetail: true,
+    })
+
+    if (!result) {
+        return // User canceled.
+    }
+
+    const newSelection = result.map((r) => r.key)
+    if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
+        saveSelection(newSelection)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
+    }
 }
 
 export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): NodeJS.ProcessEnv {

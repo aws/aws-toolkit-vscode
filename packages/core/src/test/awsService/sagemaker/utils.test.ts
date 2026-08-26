@@ -7,6 +7,8 @@ import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { generateSpaceStatus, ActivityCheckInterval } from '../../../awsService/sagemaker/utils'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
+import * as vscode from 'vscode'
+import { getTestWindow } from '../../shared/vscode/window'
 import { fs } from '../../../shared/fs/fs'
 import * as utils from '../../../awsService/sagemaker/utils'
 
@@ -146,5 +148,88 @@ describe('checkTerminalActivity', function () {
         // Should continue and find activity on second file
         assert.strictEqual(fsStatStub.callCount, 2)
         assert.strictEqual(fsWriteFileStub.callCount, 1)
+    })
+})
+
+describe('promptAndApplyExplorerFilter', function () {
+    let executeCommandStub: sinon.SinonStub
+    let saveSelection: sinon.SinonStub
+    const node = { label: 'test-node' } as any
+
+    const items = [
+        { label: 'a', key: 'k-a' },
+        { label: 'b', key: 'k-b' },
+    ]
+
+    beforeEach(function () {
+        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
+        saveSelection = sinon.stub()
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('shows the items and placeholder in the QuickPick', async function () {
+        let seenItems: readonly vscode.QuickPickItem[] = []
+        let seenPlaceholder: string | undefined
+        getTestWindow().onDidShowQuickPick((picker) => {
+            seenItems = picker.items
+            seenPlaceholder = picker.placeholder
+            picker.dispose()
+        })
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'pick something', new Set(), saveSelection)
+
+        assert.deepStrictEqual(
+            seenItems.map((i) => i.label),
+            ['a', 'b']
+        )
+        assert.strictEqual(seenPlaceholder, 'pick something')
+    })
+
+    it('does nothing when the user cancels', async function () {
+        getTestWindow().onDidShowQuickPick((picker) => picker.dispose())
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'p', new Set(['k-a']), saveSelection)
+
+        assert.strictEqual(saveSelection.callCount, 0, 'Cancel must not persist a selection')
+        assert.strictEqual(executeCommandStub.callCount, 0, 'Cancel must not refresh the tree')
+    })
+
+    it('saves and refreshes when the selection grows', async function () {
+        getTestWindow().onDidShowQuickPick((picker) => picker.acceptItems(...picker.items))
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'p', new Set(['k-a']), saveSelection)
+
+        assert.deepStrictEqual(saveSelection.firstCall.args[0], ['k-a', 'k-b'])
+        assert.ok(executeCommandStub.calledOnceWith('aws.refreshAwsExplorerNode', node))
+    })
+
+    it('saves and refreshes when the selection shrinks', async function () {
+        getTestWindow().onDidShowQuickPick((picker) => picker.acceptItems(picker.items[0]))
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'p', new Set(['k-a', 'k-b']), saveSelection)
+
+        assert.deepStrictEqual(saveSelection.firstCall.args[0], ['k-a'])
+        assert.strictEqual(executeCommandStub.callCount, 1)
+    })
+
+    it('saves and refreshes when the selection swaps a key but keeps the same size', async function () {
+        getTestWindow().onDidShowQuickPick((picker) => picker.acceptItems(picker.items[1]))
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'p', new Set(['k-a']), saveSelection)
+
+        assert.deepStrictEqual(saveSelection.firstCall.args[0], ['k-b'])
+        assert.strictEqual(executeCommandStub.callCount, 1, 'Same-size but different keys is still a change')
+    })
+
+    it('does not save or refresh when the selection is unchanged', async function () {
+        getTestWindow().onDidShowQuickPick((picker) => picker.acceptItems(...picker.items))
+
+        await utils.promptAndApplyExplorerFilter(node, items, 'p', new Set(['k-a', 'k-b']), saveSelection)
+
+        assert.strictEqual(saveSelection.callCount, 0, 'Unchanged selection must not be persisted')
+        assert.strictEqual(executeCommandStub.callCount, 0, 'Unchanged selection must not refresh the tree')
     })
 })
