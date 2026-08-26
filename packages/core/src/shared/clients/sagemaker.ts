@@ -22,6 +22,9 @@ import {
     DescribeSpaceCommand,
     DescribeSpaceCommandInput,
     DescribeSpaceCommandOutput,
+    DescribeUserProfileCommand,
+    DescribeUserProfileCommandInput,
+    DescribeUserProfileCommandOutput,
     ListAppsCommandInput,
     ListSpacesCommandInput,
     ResourceSpec,
@@ -131,6 +134,59 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
 
     public describeSpace(request: DescribeSpaceCommandInput): Promise<DescribeSpaceCommandOutput> {
         return this.makeRequest(DescribeSpaceCommand, request)
+    }
+
+    public describeUserProfile(request: DescribeUserProfileCommandInput): Promise<DescribeUserProfileCommandOutput> {
+        return this.makeRequest(DescribeUserProfileCommand, request)
+    }
+
+    /**
+     * Resolves which candidate user profiles are bound to the supplied IAM Identity Center user,
+     * using the authoritative `SingleSignOnUserValue` binding that SageMaker records on the user
+     * profile at creation time.
+     *
+     * Returns the matching user profile names keyed by domain. A domain with no match is omitted,
+     * which callers must treat as "this IdC user owns nothing in that domain" (fail closed) rather
+     * than as "unknown, show everything".
+     */
+    public async resolveUserProfilesForSsoUser(
+        userProfilesByDomain: ReadonlyMap<string, ReadonlySet<string>>,
+        ssoUserValue: string
+    ): Promise<Map<string, string[]>> {
+        const result = new Map<string, string[]>()
+        const target = ssoUserValue.toLowerCase()
+
+        for (const [domainId, userProfileNames] of userProfilesByDomain) {
+            const matched: string[] = []
+            for (const userProfileName of userProfileNames) {
+                try {
+                    const response = await this.describeUserProfile({
+                        DomainId: domainId,
+                        UserProfileName: userProfileName,
+                    })
+                    if (response.SingleSignOnUserValue?.toLowerCase() === target) {
+                        matched.push(userProfileName)
+                    }
+                } catch (err) {
+                    getLogger().error(
+                        'SagemakerClient: failed to describe a user profile in domain %s: %O',
+                        domainId,
+                        err
+                    )
+                }
+            }
+
+            if (matched.length > 0) {
+                result.set(domainId, matched)
+            } else {
+                getLogger().warn(
+                    'SagemakerClient: no user profile in domain %s has SingleSignOnUserValue matching the signed-in IdC user. Spaces in this domain will be hidden.',
+                    domainId
+                )
+            }
+        }
+
+        return result
     }
 
     public updateSpace(request: UpdateSpaceCommandInput): Promise<UpdateSpaceCommandOutput> {
