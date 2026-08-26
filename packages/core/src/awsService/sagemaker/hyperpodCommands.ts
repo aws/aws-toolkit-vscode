@@ -16,6 +16,7 @@ import { startVscodeRemote } from '../../shared/extensions/ssh'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
 import globals from '../../shared/extensionGlobals'
 import { getIdeType } from '../../shared/extensionUtilities'
+import { promptAndApplyExplorerFilter } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -207,19 +208,7 @@ export async function filterDevSpacesByNamespaceCluster(hpNode: SagemakerHyperpo
         SagemakerConstants.FilterHyperpodPlaceholderKey,
         SagemakerConstants.FilterHyperpodPlaceholderMessage
     )
-    const result = await vscode.window.showQuickPick(items, {
-        placeHolder: placeholder,
-        canPickMany: true,
-        matchOnDetail: true,
-    })
-
-    if (!result) {
-        return // User canceled
-    }
-
-    const newSelection = result.map((r) => r.key)
-    if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
-        hpNode.saveSelectedClusterNamespaces(newSelection)
-        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', hpNode)
-    }
+    await promptAndApplyExplorerFilter(hpNode, items, placeholder, previousSelection, (selection) =>
+        hpNode.saveSelectedClusterNamespaces(selection)
+    )
 }
