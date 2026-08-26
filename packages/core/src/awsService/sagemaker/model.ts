@@ -199,7 +199,15 @@ export async function prepareDevEnvConnection(opts: DevEnvConnectionOptions) {
             await persistSmusProjectCreds(spaceArn, node as SagemakerUnifiedStudioSpaceNode)
         }
     } else if (connectionType === 'sm_dl') {
-        await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS, refreshUrl)
+        // The deeplink flow supplies real SSM creds up-front, so persist them as 'fresh' for
+        // immediate use by the ProxyCommand. The IdC /remote-connect flow supplies NO session
+        // here: creds arrive asynchronously via the browser -> /refresh_token callback, and
+        // preRegisterIdcConnection has already seeded a 'pending' entry. Persisting with an
+        // undefined session would write placeholder '-' creds as 'fresh', clobbering that
+        // pending entry and making the ProxyCommand consume invalid creds on its first poll.
+        if (session) {
+            await persistSSMConnection(spaceArn, domain ?? '', session, wsUrl, token, appType, isSMUS, refreshUrl)
+        }
     } else if (connectionType.startsWith('smhp_')) {
         await persistHyperpodConnection(
             workspaceName!,

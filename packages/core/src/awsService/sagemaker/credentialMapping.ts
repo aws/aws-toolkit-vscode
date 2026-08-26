@@ -97,6 +97,67 @@ export async function persistSmusProjectCreds(spaceArn: string, node: SagemakerU
  * @param isSMUS - If true, use providedRefreshUrl instead of deriving one from region/endpoint.
  * @param providedRefreshUrl - Console-supplied refresh URL for SMUS connections; ignored for SM-AI.
  */
+
+/**
+ * Constructs the Studio refresh URL for a given space.
+ * Used by both persistSSMConnection and preRegisterIdcConnection.
+ */
+/**
+ * Resolves the stage-appropriate Studio base domain (prod / devo / gamma) from the
+ * SageMaker endpoint dev setting. Shared by the reconnect refresh URL and the IdC
+ * /remote-connect flow so both target the same environment.
+ */
+export function buildStudioBaseDomain(region: string): string {
+    const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
+
+    let envSubdomain: string
+    if (endpoint.includes('beta')) {
+        envSubdomain = 'devo'
+    } else if (endpoint.includes('gamma')) {
+        envSubdomain = 'loadtest'
+    } else {
+        envSubdomain = 'studio'
+    }
+
+    return envSubdomain === 'studio'
+        ? `studio.${region}.sagemaker.aws`
+        : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
+}
+
+function buildStudioRefreshUrl(spaceArn: string, domain: string, appType?: string): string {
+    const { region } = parseArn(spaceArn)
+
+    let appSubDomain = 'jupyterlab'
+    if (appType && appType.toLowerCase() === 'codeeditor') {
+        appSubDomain = 'code-editor'
+    }
+
+    return `https://studio-${domain}.${buildStudioBaseDomain(region)}/${appSubDomain}`
+}
+
+/**
+ * Builds the Studio `/remote-connect` URL the Toolkit opens in the browser for IdC (SSO)
+ * domains. The page validates the IdC session, asks LLAPS to create the remote session, and
+ * POSTs the credentials back to `callbackUrl`.
+ *
+ * @param callbackUrl Must point at the *currently live* detached callback server. The server's
+ * port rotates when it restarts, so read the port immediately before calling this.
+ */
+export function buildStudioRemoteConnectUrl(params: {
+    spaceArn: string
+    domain: string
+    region: string
+    appType: string
+    callbackUrl: string
+}): string {
+    return (
+        `https://studio-${params.domain}.${buildStudioBaseDomain(params.region)}/remote-connect` +
+        `?spaceArn=${encodeURIComponent(params.spaceArn)}` +
+        `&appType=${encodeURIComponent(params.appType)}` +
+        `&callbackUrl=${encodeURIComponent(params.callbackUrl)}`
+    )
+}
+
 export async function persistSSMConnection(
     spaceArn: string,
     domain: string,
@@ -111,33 +172,7 @@ export async function persistSSMConnection(
     let refreshUrl: string | undefined = providedRefreshUrl
 
     if (!isSMUS) {
-        // Construct refreshUrl for SageMaker AI connections
-        const { region } = parseArn(spaceArn)
-        const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
-
-        let appSubDomain = 'jupyterlab'
-        if (appType && appType.toLowerCase() === 'codeeditor') {
-            appSubDomain = 'code-editor'
-        }
-
-        let envSubdomain: string
-
-        if (endpoint.includes('beta')) {
-            envSubdomain = 'devo'
-        } else if (endpoint.includes('gamma')) {
-            envSubdomain = 'loadtest'
-        } else {
-            envSubdomain = 'studio'
-        }
-
-        // Use the standard AWS domain for 'studio' (prod).
-        // For non-prod environments, use the obfuscated domain 'asfiovnxocqpcry.com'.
-        const baseDomain =
-            envSubdomain === 'studio'
-                ? `studio.${region}.sagemaker.aws`
-                : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
-
-        refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
+        refreshUrl = buildStudioRefreshUrl(spaceArn, domain, appType)
     }
     // For SMUS, refreshUrl is the console-supplied `providedRefreshUrl` (undefined = cannot refresh).
 
@@ -151,6 +186,43 @@ export async function persistSSMConnection(
         },
         isSMUS
     )
+}
+
+/**
+ * Pre-registers a deepLink entry for an IdC domain connection with 'pending' status.
+ * Called before opening the browser for IdC authentication so that:
+ * 1. /refresh_token can find and update the entry when the browser redirects back
+ * 2. ProxyCommand gets HTTP 204 (pending) and retries until real creds arrive via /refresh_token
+ *
+ * Unlike persistSSMConnection which stores with 'fresh' status (for immediate use),
+ * this stores with 'pending' status because creds arrive asynchronously via browser redirect.
+ *
+ * @param spaceArn - The Space ARN to register
+ * @param domain - The domain ID (e.g. 'd-iignhvvcwrql')
+ * @param appType - The app type (e.g. 'JupyterLab', 'CodeEditor')
+ */
+export async function preRegisterIdcConnection(spaceArn: string, domain: string, appType: string): Promise<void> {
+    const refreshUrl = buildStudioRefreshUrl(spaceArn, domain, appType)
+
+    const data = await loadMappings()
+    data.deepLink ??= {}
+    data.deepLink[spaceArn] = {
+        refreshUrl,
+        requests: {
+            'initial-connection': { sessionId: '', token: '', url: '', status: 'pending' },
+        },
+    }
+    await saveMappings(data)
+}
+
+/**
+ * Returns the status of the 'initial-connection' entry for an IdC domain connect, or undefined
+ * if none exists. Read-only (does not consume the entry), so callers can poll for the browser
+ * callback to deposit fresh creds without racing the ProxyCommand's getFreshEntry consumption.
+ */
+export async function getIdcConnectionStatus(spaceArn: string): Promise<string | undefined> {
+    const data = await loadMappings()
+    return data.deepLink?.[spaceArn]?.requests?.['initial-connection']?.status
 }
 
 /**

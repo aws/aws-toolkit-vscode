@@ -186,6 +186,98 @@ describe('SageMaker Model', () => {
         })
     })
 
+    describe('prepareDevEnvConnection', function () {
+        /**
+         * These tests pin the `if (session)` guard on the 'sm_dl' branch. They assert only on
+         * whether persistSSMConnection is called; everything after that point (SSH config, local
+         * server startup) needs infrastructure that isn't stubbed here and is expected to reject.
+         */
+        const spaceArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-abc123/my-space'
+        const ctx = {
+            globalStorageUri: vscode.Uri.file(path.join(os.tmpdir(), 'test-storage')),
+            extensionPath: path.join(os.tmpdir(), 'extension'),
+            asAbsolutePath: (relPath: string) => path.join(path.join(os.tmpdir(), 'extension'), relPath),
+        } as vscode.ExtensionContext
+
+        let sandbox: sinon.SinonSandbox
+        let persistStub: sinon.SinonStub
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+
+            // ensureDependencies() returns a Result that prepareDevEnvConnection immediately
+            // unwraps; supply the ssm/vsc/ssh paths it expects.
+            sandbox.replace(require('../../../shared/remoteSession'), 'ensureDependencies', () =>
+                Promise.resolve({ unwrap: () => ({ ssm: 'ssm', vsc: 'vsc', ssh: 'ssh' }) })
+            )
+
+            persistStub = sandbox.stub().resolves()
+            sandbox.replace(
+                require('../../../awsService/sagemaker/credentialMapping'),
+                'persistSSMConnection',
+                persistStub
+            )
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        async function runIgnoringDownstream(opts: any) {
+            const { prepareDevEnvConnection } = require('../../../awsService/sagemaker/model')
+            try {
+                await prepareDevEnvConnection(opts)
+            } catch {
+                // intentionally ignored -- see the note on this describe block
+            }
+        }
+
+        it('persists the connection when the deeplink flow supplies a session', async function () {
+            await runIgnoringDownstream({
+                spaceArn,
+                ctx,
+                connectionType: 'sm_dl',
+                domain: 'd-abc123',
+                appType: 'JupyterLab',
+                session: 'session-id',
+                wsUrl: 'wss://example.com',
+                token: 'token',
+            })
+
+            assert.ok(persistStub.calledOnce, 'a supplied session must be persisted for the ProxyCommand')
+            assert.strictEqual(persistStub.firstCall.args[2], 'session-id')
+        })
+
+        it('does not persist when the IdC flow supplies no session', async function () {
+            // The IdC /remote-connect flow has no creds yet -- they arrive later via the browser
+            // callback, and preRegisterIdcConnection has already seeded a 'pending' entry.
+            // Persisting here would write placeholder creds as 'fresh' and clobber it.
+            await runIgnoringDownstream({
+                spaceArn,
+                ctx,
+                connectionType: 'sm_dl',
+                domain: 'd-abc123',
+                appType: 'JupyterLab',
+                session: undefined,
+            })
+
+            assert.ok(persistStub.notCalled, 'must not clobber the pending entry when there is no session')
+        })
+
+        it('does not persist when the session is an empty string', async function () {
+            await runIgnoringDownstream({
+                spaceArn,
+                ctx,
+                connectionType: 'sm_dl',
+                domain: 'd-abc123',
+                appType: 'JupyterLab',
+                session: '',
+            })
+
+            assert.ok(persistStub.notCalled)
+        })
+    })
+
     describe('removeKnownHost', function () {
         const knownHostsPath = path.join(os.homedir(), '.ssh', 'known_hosts')
         const hostname = 'test.host.com'

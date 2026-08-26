@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as path from 'path'
+import { fs } from '../../shared/fs/fs'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
 import { DomainKeyDelimiter } from './utils'
@@ -20,10 +22,12 @@ import {
     useSageMakerSshKiroExtension,
 } from './model'
 import { ensureSageMakerSshKiroExtension } from './sagemakerSshKiroUtils'
+import { preRegisterIdcConnection, buildStudioRemoteConnectUrl, getIdcConnectionStatus } from './credentialMapping'
 import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { AccessDeniedException } from '@amzn/sagemaker-client'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import {
     ConnectFromRemoteWorkspaceMessage,
@@ -35,7 +39,7 @@ import {
 } from './constants'
 import { SagemakerUnifiedStudioSpaceNode } from '../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
 import { node } from 'webpack'
-import { parseArn } from './utils'
+import { getDomainUserProfileKey, parseArn } from './utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -276,6 +280,11 @@ export async function openRemoteConnect(
         const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
         const nodeStatus = node.getStatus()
 
+        // For IdC (SSO) domains, redirect to Studio UI for session creation
+        if (isIdcDomain(node)) {
+            return await handleIdcDomainConnect(node as SagemakerSpaceNode, ctx, sageMakerClient)
+        }
+
         // Route to appropriate handler based on space state
         if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
             return await handleRunningSpaceWithDisabledAccess(node, ctx, spaceName, sageMakerClient)
@@ -344,6 +353,102 @@ export async function checkInstanceTypeUpgradeNeeded(
 }
 
 /**
+ * Asks the user to confirm the app restart that enabling remote access requires, naming the
+ * instance-type change when one is needed.
+ *
+ * Consent MUST be obtained here, at the call site, because {@link restartSpaceWithRemoteAccess}
+ * passes `skipInstanceTypePrompts: true` to `startSpace` -- that flag asserts the user has
+ * already agreed to any instance-type change, it does not mean "never ask".
+ *
+ * @returns false if the user declined. Callers MUST NOT proceed to connect.
+ */
+async function confirmRemoteAccessRestart(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    spaceName: string,
+    sageMakerClient?: SagemakerClient
+): Promise<boolean> {
+    const instanceTypeInfo = await checkInstanceTypeUpgradeNeeded(node, sageMakerClient)
+
+    const prompt = instanceTypeInfo.upgradeNeeded
+        ? InstanceTypeInsufficientMemoryMessage(
+              spaceName,
+              instanceTypeInfo.currentType!,
+              instanceTypeInfo.recommendedType!
+          )
+        : // Only remote access needs to be enabled.
+          RemoteAccessRequiredMessage
+
+    return await showConfirmationMessage({
+        prompt,
+        confirm: 'Restart Space and Connect',
+        cancel: 'Cancel',
+        type: 'warning',
+    })
+}
+
+/**
+ * Stops the space's running app and restarts it with remote access enabled.
+ *
+ * The app MUST be stopped first: `RemoteAccess` and `InstanceType` are space settings that
+ * cannot be changed while an app is live, and `startSpace` ends in
+ * `createApp({ AppName: 'default' })`, which fails when an app of that name already exists.
+ *
+ * Requires prior consent via {@link confirmRemoteAccessRestart}, since this skips `startSpace`'s
+ * own instance-type prompts.
+ */
+async function restartSpaceWithRemoteAccess(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    spaceName: string,
+    client: SagemakerClient,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
+): Promise<void> {
+    progress.report({ message: 'Stopping the space' })
+
+    await client.deleteApp({
+        DomainId: node.spaceApp.DomainId!,
+        SpaceName: spaceName,
+        AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
+        AppName: node.spaceApp.App?.AppName,
+    })
+
+    progress.report({ message: 'Starting the space' })
+
+    // Skip prompts: confirmRemoteAccessRestart already obtained consent.
+    await client.startSpace(spaceName, node.spaceApp.DomainId!, true)
+    await tryRefreshNode(node)
+    await client.waitForAppInService(
+        node.spaceApp.DomainId!,
+        spaceName,
+        node.spaceApp.SpaceSettingsSummary!.AppType!,
+        progress
+    )
+}
+
+/**
+ * Starts a stopped space and waits for its app to come into service.
+ *
+ * No skip flag is passed: `startSpace` prompts for any required instance-type change itself, so
+ * the user is still asked before a larger instance is selected.
+ */
+async function startStoppedSpaceAndWait(
+    node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode,
+    spaceName: string,
+    client: SagemakerClient,
+    progress: vscode.Progress<{ message?: string; increment?: number }>
+): Promise<void> {
+    progress.report({ message: 'Starting the space' })
+
+    await client.startSpace(spaceName, node.spaceApp.DomainId!)
+    await tryRefreshNode(node)
+    await client.waitForAppInService(
+        node.spaceApp.DomainId!,
+        spaceName,
+        node.spaceApp.SpaceSettingsSummary!.AppType!,
+        progress
+    )
+}
+
+/**
  * Handles connecting to a running space with disabled remote access
  * Requires stopping the space, enabling remote access, and restarting
  */
@@ -353,29 +458,7 @@ async function handleRunningSpaceWithDisabledAccess(
     spaceName: string,
     sageMakerClient?: SagemakerClient
 ) {
-    // Check if instance type upgrade will be needed
-    const instanceTypeInfo = await checkInstanceTypeUpgradeNeeded(node, sageMakerClient)
-
-    let prompt: string
-    if (instanceTypeInfo.upgradeNeeded) {
-        prompt = InstanceTypeInsufficientMemoryMessage(
-            spaceName,
-            instanceTypeInfo.currentType!,
-            instanceTypeInfo.recommendedType!
-        )
-    } else {
-        // Only remote access needs to be enabled
-        prompt = RemoteAccessRequiredMessage
-    }
-
-    const confirmed = await showConfirmationMessage({
-        prompt,
-        confirm: 'Restart Space and Connect',
-        cancel: 'Cancel',
-        type: 'warning',
-    })
-
-    if (!confirmed) {
+    if (!(await confirmRemoteAccessRestart(node, spaceName, sageMakerClient))) {
         return
     }
 
@@ -390,29 +473,7 @@ async function handleRunningSpaceWithDisabledAccess(
         },
         async (progress) => {
             try {
-                // Show initial progress message
-                progress.report({ message: 'Stopping the space' })
-
-                // Stop the running space
-                await client.deleteApp({
-                    DomainId: node.spaceApp.DomainId!,
-                    SpaceName: spaceName,
-                    AppType: node.spaceApp.SpaceSettingsSummary!.AppType!,
-                    AppName: node.spaceApp.App?.AppName,
-                })
-
-                // Update progress message
-                progress.report({ message: 'Starting the space' })
-
-                // Start the space with remote access enabled (skip prompts since user already consented)
-                await client.startSpace(spaceName, node.spaceApp.DomainId!, true)
-                await tryRefreshNode(node)
-                await client.waitForAppInService(
-                    node.spaceApp.DomainId!,
-                    spaceName,
-                    node.spaceApp.SpaceSettingsSummary!.AppType!,
-                    progress
-                )
+                await restartSpaceWithRemoteAccess(node, spaceName, client, progress)
                 await tryRemoteConnection(node, ctx, progress)
             } catch (err: any) {
                 // Suppress errors that don't need additional error messages:
@@ -497,4 +558,188 @@ async function handleRunningSpaceWithEnabledAccess(
             await tryRemoteConnection(node, ctx, progress)
         }
     )
+}
+
+/**
+ * Checks if the domain associated with a space node uses IdC (SSO) authentication.
+ */
+function isIdcDomain(node: SagemakerSpaceNode | SagemakerUnifiedStudioSpaceNode): boolean {
+    if (!(node instanceof SagemakerSpaceNode)) {
+        return false
+    }
+
+    const domainId = node.spaceApp.DomainId
+    const userProfile = node.spaceApp.OwnershipSettingsSummary?.OwnerUserProfileName
+    if (!domainId || !userProfile) {
+        return false
+    }
+
+    const key = getDomainUserProfileKey(domainId, userProfile)
+    const metadata = node.parent.domainUserProfiles.get(key)
+    return metadata?.domain?.AuthMode === 'SSO'
+}
+
+/**
+ * Handles connection for IdC (SSO) domains by redirecting to the Studio UI
+ * /remote-connect page, which validates the IdC session and creates the
+ * remote session via LLAPS.
+ */
+async function handleIdcDomainConnect(
+    node: SagemakerSpaceNode,
+    ctx: vscode.ExtensionContext,
+    sageMakerClient?: SagemakerClient
+) {
+    const spaceArn = await node.getSpaceArn()
+    if (!spaceArn) {
+        void vscode.window.showErrorMessage('Unable to determine Space ARN.')
+        return
+    }
+    const domainId = node.spaceApp.DomainId!
+    const appType = node.spaceApp.SpaceSettingsSummary?.AppType || 'JupyterLab'
+    const region = node.regionCode
+
+    // Ensure the space app is running (and remote access enabled) before opening the
+    // browser. Without a running app there is no SSM target, so LLAPS StartSession fails
+    // with a 500.
+    //
+    // The routing below deliberately mirrors openRemoteConnect's IAM dispatch so IdC and IAM
+    // behave identically for the same space state.
+    const client = sageMakerClient || new SagemakerClient(region)
+    const spaceName = node.spaceApp.SpaceName!
+    const remoteAccess = node.spaceApp.SpaceSettingsSummary?.RemoteAccess
+    const nodeStatus = node.getStatus()
+
+    const progressOptions = {
+        location: vscode.ProgressLocation.Notification,
+        cancellable: false,
+        title: `Preparing ${spaceName}`,
+    }
+
+    if (nodeStatus === SpaceStatus.RUNNING && remoteAccess !== RemoteAccess.ENABLED) {
+        // Remote access cannot be turned on while the app is live, so the app must be stopped
+        // and recreated. Ask first -- the restart may also move the space to a larger instance.
+        if (!(await confirmRemoteAccessRestart(node, spaceName, client))) {
+            return
+        }
+        await vscode.window.withProgress(progressOptions, async (progress) =>
+            restartSpaceWithRemoteAccess(node, spaceName, client, progress)
+        )
+    } else if (nodeStatus === SpaceStatus.STOPPED) {
+        // startSpace enables remote access on its own (it recomputes needsRemoteAccess from
+        // describeSpace) and prompts for any instance-type change, so no consent is needed here.
+        await vscode.window.withProgress(progressOptions, async (progress) =>
+            startStoppedSpaceAndWait(node, spaceName, client, progress)
+        )
+    } else if (nodeStatus !== SpaceStatus.RUNNING) {
+        // Starting / Stopping: the app is mid-transition. Issuing deleteApp or createApp now
+        // would fail, so surface the state instead of acting on it.
+        void vscode.window.showErrorMessage(
+            `Space "${spaceName}" is ${nodeStatus}. Wait for it to finish, then try connecting again.`
+        )
+        return
+    }
+    // Running with remote access already enabled: nothing to prepare.
+
+    // Seed the pending 'initial-connection' entry so /refresh_token can update it and the
+    // ProxyCommand gets 204 (pending) until the browser posts real creds.
+    await preRegisterIdcConnection(spaceArn, domainId, appType)
+
+    // Prepare SSH config + start the SINGLE detached callback server + persist the pending
+    // SSM connection. This must be the ONLY startLocalServer call: starting one earlier made
+    // prepareDevEnvConnection's internal restart rotate the port, leaving the browser's
+    // callbackUrl pointing at a dead server.
+    const remoteEnv = await prepareDevEnvConnection({
+        spaceArn,
+        ctx,
+        connectionType: 'sm_dl',
+        isSMUS: false,
+        node,
+        domain: domainId,
+        appType,
+    })
+
+    // Read the port of the server prepareDevEnvConnection just started (the live one).
+    const infoFilePath = path.join(ctx.globalStorageUri.fsPath, 'sagemaker-local-server-info.json')
+    const infoContent = await fs.readFileText(infoFilePath)
+    const serverInfo = JSON.parse(infoContent) as { pid: number; port: number }
+
+    // Build the Studio URL whose callbackUrl points at THAT server, then open the browser.
+    const callbackUrl = `http://localhost:${serverInfo.port}/refresh_token`
+    const studioUrl = buildStudioRemoteConnectUrl({
+        spaceArn,
+        domain: domainId,
+        region,
+        appType,
+        callbackUrl,
+    })
+
+    const opened = await vscode.env.openExternal(vscode.Uri.parse(studioUrl))
+    if (!opened) {
+        void vscode.window.showErrorMessage('Failed to open browser. Please navigate to the Studio UI manually.')
+        return
+    }
+
+    void vscode.window.showInformationMessage(
+        'Complete authentication in your browser to connect to the Space. ' +
+            'The connection will be established automatically once authenticated.'
+    )
+
+    // Wait for the browser to complete IdC auth and post the session before opening the remote
+    // window. If the user is already authenticated, creds arrive within seconds and the window
+    // opens right after the redirect page. If not, the user completes IdC login first (which can
+    // take longer than the ProxyCommand's poll budget) -- opening the window only after creds
+    // land avoids a premature 'connecting' window racing a slow login. It also means the
+    // ProxyCommand's first poll gets fresh creds immediately (no reconnect-URL/second-tab path).
+    const authResult = await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: true,
+            title: `Connecting to ${spaceName}`,
+        },
+        async (progress, token): Promise<'authenticated' | 'cancelled' | 'timeout'> => {
+            progress.report({ message: 'Waiting for authentication in the browser...' })
+            const authTimeoutMs = 5 * 60 * 1000
+            const pollIntervalMs = 2000
+            const start = Date.now()
+            while (Date.now() - start < authTimeoutMs) {
+                if (token.isCancellationRequested) {
+                    return 'cancelled'
+                }
+                if ((await getIdcConnectionStatus(spaceArn)) === 'fresh') {
+                    return 'authenticated'
+                }
+                await sleep(pollIntervalMs)
+            }
+            return 'timeout'
+        }
+    )
+
+    if (authResult === 'timeout') {
+        // Auth never completed within the window. A late sign-in would post creds with no window
+        // to receive them, so surface a clear retry hint instead of a silent dead-end.
+        void vscode.window.showErrorMessage(
+            `Timed out waiting for authentication to connect to ${spaceName}. Click Connect to try again.`
+        )
+        return
+    }
+    if (authResult !== 'authenticated') {
+        // User cancelled the connection; exit quietly without opening a window.
+        return
+    }
+
+    // Creds are ready. Open the remote window; its ProxyCommand's first poll gets them immediately.
+    const remotePath = '/home/sagemaker-user'
+    const username = 'sagemaker-user'
+    if (useSageMakerSshKiroExtension()) {
+        await ensureSageMakerSshKiroExtension(ctx)
+        await startRemoteViaSageMakerSshKiro(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            remotePath,
+            remoteEnv.vscPath,
+            username
+        )
+    } else {
+        await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, remotePath, remoteEnv.vscPath, username)
+    }
 }
