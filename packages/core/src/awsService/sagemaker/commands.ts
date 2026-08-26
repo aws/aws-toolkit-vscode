@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { SagemakerConstants } from './explorer/constants'
 import { SagemakerStudioNode } from './explorer/sagemakerStudioNode'
-import { DomainKeyDelimiter } from './utils'
+import { DomainKeyDelimiter, promptAndApplyExplorerFilter } from './utils'
 import { startVscodeRemote } from '../../shared/extensions/ssh'
 import { getLogger } from '../../shared/logger/logger'
 import { SagemakerSpaceNode, tryRefreshNode } from './explorer/sagemakerSpaceNode'
@@ -65,9 +65,20 @@ export async function filterSpaceAppsByDomainUserProfiles(studioNode: SagemakerS
     )
 
     const previousSelection = await studioNode.getSelectedDomainUsers()
+
+    // For IdC callers the selection can only ever narrow to profiles bound to their own IdC
+    // identity, so offering other profiles in the picker would present choices that are silently
+    // discarded. Restrict the options to what the caller actually owns.
+    const selectableKeys = studioNode.isIdcCaller()
+        ? new Set(await studioNode.getDefaultSelectedDomainUsers())
+        : undefined
+
     const items: (vscode.QuickPickItem & { key: string })[] = []
 
     for (const [key, userMetadata] of sortedDomainUserProfiles) {
+        if (selectableKeys && !selectableKeys.has(key)) {
+            continue
+        }
         const [_, userProfile] = key.split(DomainKeyDelimiter)
         items.push({
             label: userProfile,
@@ -77,22 +88,16 @@ export async function filterSpaceAppsByDomainUserProfiles(studioNode: SagemakerS
         })
     }
 
+    if (items.length === 0) {
+        getLogger().info(SagemakerConstants.NoSpaceToFilter)
+        void vscode.window.showInformationMessage(SagemakerConstants.NoSpaceToFilter)
+        return
+    }
+
     const placeholder = localize(SagemakerConstants.FilterPlaceholderKey, SagemakerConstants.FilterPlaceholderMessage)
-    const result = await vscode.window.showQuickPick(items, {
-        placeHolder: placeholder,
-        canPickMany: true,
-        matchOnDetail: true,
-    })
-
-    if (!result) {
-        return // User canceled.
-    }
-
-    const newSelection = result.map((r) => r.key)
-    if (newSelection.length !== previousSelection.size || newSelection.some((key) => !previousSelection.has(key))) {
-        studioNode.saveSelectedDomainUsers(newSelection)
-        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', studioNode)
-    }
+    await promptAndApplyExplorerFilter(studioNode, items, placeholder, previousSelection, (selection) =>
+        studioNode.saveSelectedDomainUsers(selection)
+    )
 }
 
 export async function deeplinkConnect(
