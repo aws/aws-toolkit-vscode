@@ -1,3 +1,7 @@
+## 4.15.0 2026-08-27
+
+- Miscellaneous non-user-facing changes
+
 ## 4.14.0 2026-08-20
 
 - **Bug Fix** SageMaker Unified Studio: Fixed Spaces not appearing in the tree view after signing in with SSO to an IAM-based domain (caught in pre-release).
