@@ -1,6 +1,7 @@
 ## 4.15.0 2026-08-27
 
-- Miscellaneous non-user-facing changes
+- **Feature** SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication.
+- **Feature** SageMaker Studio: filter listed Spaces to those belonging to the signed-in IAM Identity Center user.
 
 ## 4.14.0 2026-08-20
 
