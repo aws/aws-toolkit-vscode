@@ -112,7 +112,7 @@ async function startClient(context: ExtensionContext) {
     const serverRootDir = await serverProvider.serverRootDir()
 
     const envOptions = {
-        NODE_OPTIONS: '--enable-source-maps',
+        NODE_OPTIONS: '--enable-source-maps --max-old-space-size=384',
     }
 
     const serverOptions: ServerOptions = {
