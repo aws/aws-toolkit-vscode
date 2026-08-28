@@ -1,0 +1,14 @@
+{
+	"date": "2026-08-27",
+	"version": "4.15.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication."
+		},
+		{
+			"type": "Feature",
+			"description": "SageMaker Studio: filter listed Spaces to those belonging to the signed-in IAM Identity Center user."
+		}
+	]
+}
