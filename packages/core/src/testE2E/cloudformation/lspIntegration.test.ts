@@ -32,9 +32,86 @@ describe('CloudFormation LSP Integration E2E', function () {
 
         testDir = await mkdtemp(path.join(os.tmpdir(), 'cfn-lsp-test-'))
         console.log('Waiting for LSP server to be ready...')
-        await new Promise((resolve) => setTimeout(resolve, 10000))
-        console.log('Lsp wait time over...')
+        await waitForLspReady()
+        console.log('LSP server is ready')
     })
+
+    /**
+     * Poll for LSP readiness by opening a CFN document with independent resource
+     * type and property completion positions. Require both the exact resource type
+     * and property used by the E2E assertions so generic/YAML word completion cannot
+     * produce a false positive before CloudFormation schemas are ready.
+     * Times out with a diagnostic message after a bounded period.
+     */
+    async function waitForLspReady(): Promise<void> {
+        const readinessTimeoutMs = 30_000
+        const pollIntervalMs = 500
+        const probeContent = [
+            'AWSTemplateFormatVersion: "2010-09-09"',
+            'Resources:',
+            '  TypeProbe:',
+            '    Type: ',
+            '  PropertyProbe:',
+            '    Type: AWS::S3::Bucket',
+            '    Properties:',
+            '      ',
+        ].join('\n')
+        const probeFile = path.join(testDir, '__lsp_readiness_probe.yaml')
+
+        await writeFile(probeFile, probeContent, 'utf-8')
+        const probeUri = vscode.Uri.file(probeFile)
+        const probeDoc = await vscode.workspace.openTextDocument(probeUri)
+        await vscode.window.showTextDocument(probeDoc)
+
+        const typePosition = new vscode.Position(3, 10)
+        const propertyPosition = new vscode.Position(7, 6)
+        const deadline = Date.now() + readinessTimeoutMs
+        let ready = false
+        let lastTypeLabels: string[] = []
+        let lastPropertyLabels: string[] = []
+
+        const completionLabels = (completions: vscode.CompletionList | undefined): string[] =>
+            completions?.items.map((item) => (typeof item.label === 'string' ? item.label : item.label.label)) ?? []
+
+        try {
+            while (Date.now() < deadline) {
+                const typeCompletions = await vscode.commands.executeCommand<vscode.CompletionList>(
+                    'vscode.executeCompletionItemProvider',
+                    probeUri,
+                    typePosition
+                )
+                const propertyCompletions = await vscode.commands.executeCommand<vscode.CompletionList>(
+                    'vscode.executeCompletionItemProvider',
+                    probeUri,
+                    propertyPosition
+                )
+
+                lastTypeLabels = completionLabels(typeCompletions)
+                lastPropertyLabels = completionLabels(propertyCompletions)
+
+                const hasResourceType = lastTypeLabels.some((label) => label.includes('AWS::AccessAnalyzer::Analyzer'))
+                const hasProperty = lastPropertyLabels.some((label) => label.includes('BucketName'))
+                if (hasResourceType && hasProperty) {
+                    ready = true
+                    break
+                }
+
+                await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+            }
+        } finally {
+            await vscode.window.showTextDocument(probeDoc)
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+
+        if (!ready) {
+            assert.fail(
+                `LSP server did not become schema-ready within ${readinessTimeoutMs}ms. ` +
+                    `Expected resource type AWS::AccessAnalyzer::Analyzer and property BucketName. ` +
+                    `Last type labels: [${lastTypeLabels.slice(0, 15).join(', ')}]. ` +
+                    `Last property labels: [${lastPropertyLabels.slice(0, 15).join(', ')}]`
+            )
+        }
+    }
 
     after(async function () {
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')

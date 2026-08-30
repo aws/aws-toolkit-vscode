@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BaseLspInstaller } from '../../../shared/lsp/baseLspInstaller'
-import { GitHubManifestAdapter } from './githubManifestAdapter'
+import { BaseLspInstaller, ResolveManifest } from '../../../shared/lsp/baseLspInstaller'
+import { ManifestResolver, ManifestAdapter } from '../../../shared/lsp/manifestResolver'
 import { fs } from '../../../shared/fs/fs'
-import { CfnLspName, CfnLspServerEnvType, CfnLspServerFile } from './lspServerConfig'
+import { CfnLspName, CfnLspServerFile, RequiredFiles, CfnLspServerEnvType } from './lspServerConfig'
 import { isAutomation, isBeta, isDebugInstance } from '../../../shared/vscode/env'
 import { dirname, join } from 'path'
 import { getLogger } from '../../../shared/logger/logger'
-import { ResourcePaths } from '../../../shared/lsp/types'
+import { ResourcePaths, Manifest } from '../../../shared/lsp/types'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
-import globals from '../../../shared/extensionGlobals'
+import { CfnLspVersion } from './utils'
 import { toString } from '../utils'
 
 function determineEnvironment(): CfnLspServerEnvType {
@@ -24,56 +24,80 @@ function determineEnvironment(): CfnLspServerEnvType {
     return 'prod'
 }
 
-export class CfnLspInstaller extends BaseLspInstaller {
-    private readonly githubManifest = new GitHubManifestAdapter(
-        'aws-cloudformation',
-        'cloudformation-languageserver',
-        determineEnvironment()
-    )
+const cfnManifestUrl =
+    'https://raw.githubusercontent.com/aws-cloudformation/cloudformation-languageserver/refs/heads/main/assets/release-manifest.json'
 
-    constructor() {
+/**
+ * Manifest adapter for CloudFormation LSP.
+ * Transforms the channel-keyed raw manifest (with alpha/beta/prod keys)
+ * into a normalized Manifest with only the relevant environment's versions.
+ */
+class CfnManifestAdapter implements ManifestAdapter {
+    constructor(private readonly environment: CfnLspServerEnvType) {}
+
+    adapt(raw: unknown): Manifest {
+        const rawObj = raw as Record<string, unknown>
+
+        // The CFN manifest has environment-keyed version arrays
+        const envVersions = rawObj[this.environment] as CfnLspVersion[] | undefined
+        if (envVersions && Array.isArray(envVersions)) {
+            getLogger('awsCfnLsp').info(
+                `Adapted CloudFormation LSP manifest for ${this.environment}: ${envVersions.length} versions`
+            )
+            return {
+                manifestSchemaVersion: (rawObj.manifestSchemaVersion as string) ?? '1.0',
+                artifactId: (rawObj.artifactId as string) ?? CfnLspName,
+                artifactDescription: (rawObj.artifactDescription as string) ?? 'CloudFormation Language Server',
+                isManifestDeprecated: (rawObj.isManifestDeprecated as boolean) ?? false,
+                versions: envVersions,
+            }
+        }
+
+        // Fallback to the generic flat shape only when a top-level versions array exists.
+        if (!Array.isArray(rawObj.versions)) {
+            throw new TypeError(
+                "Manifest must contain versions for the requested environment or a top-level 'versions' array"
+            )
+        }
+        return raw as Manifest
+    }
+}
+
+function createCfnManifestResolver(environment: CfnLspServerEnvType, baseRoot: string): ResolveManifest {
+    return () => {
+        const cacheDir = join(baseRoot, 'language-servers', CfnLspName)
+        return new ManifestResolver({
+            manifestUrl: cfnManifestUrl,
+            lsName: CfnLspName,
+            cacheDir,
+            adapter: new CfnManifestAdapter(environment),
+        }).resolve()
+    }
+}
+
+export interface CfnLspInstallerOptions {
+    /**
+     * Optional base root directory for language server downloads.
+     * Default: `<platformCacheDir>/aws/toolkits`
+     */
+    baseRoot?: string
+}
+
+export class CfnLspInstaller extends BaseLspInstaller {
+    constructor(options?: CfnLspInstallerOptions) {
+        const environment = determineEnvironment()
+        const baseRoot = options?.baseRoot ?? join(fs.getCacheDir(), 'aws', 'toolkits')
+
         super(
             {
-                manifestUrl: 'github',
+                manifestUrl: cfnManifestUrl,
                 supportedVersions: '<2.0.0',
                 id: CfnLspName,
-                suppressPromptPrefix: 'cfnLsp',
+                baseDir: baseRoot,
+                requiredFiles: RequiredFiles,
             },
             'awsCfnLsp',
-            {
-                resolve: async () => {
-                    const log = getLogger('awsCfnLsp')
-                    const cfnManifestStorageKey = 'aws.cloudformation.lsp.manifest'
-
-                    try {
-                        const manifest = await this.githubManifest.getManifest()
-                        log.info(
-                            `Creating CloudFormation LSP manifest for ${this.githubManifest.environment}`,
-                            manifest.versions.map((v) => v.serverVersion)
-                        )
-
-                        // Cache in CloudFormation-specific global state storage
-                        globals.globalState.tryUpdate(cfnManifestStorageKey, {
-                            content: JSON.stringify(manifest),
-                        })
-
-                        return manifest
-                    } catch (error) {
-                        log.warn(`GitHub fetch failed, trying cached manifest: ${error}`)
-
-                        // Try cached manifest from CloudFormation-specific storage
-                        const manifestData = globals.globalState.tryGet(cfnManifestStorageKey, Object, {})
-
-                        if (manifestData?.content) {
-                            log.debug('Using cached manifest for offline mode')
-                            return JSON.parse(manifestData.content)
-                        }
-
-                        log.error('No cached manifest found')
-                        throw error
-                    }
-                },
-            } as any,
+            createCfnManifestResolver(environment, baseRoot),
             'sha256'
         )
     }
@@ -81,7 +105,10 @@ export class CfnLspInstaller extends BaseLspInstaller {
     protected async postInstall(assetDirectory: string): Promise<void> {
         const resourcePaths = this.resourcePaths(assetDirectory)
         const rootDir = dirname(resourcePaths.lsp)
-        await fs.chmod(join(rootDir, 'bin', process.platform === 'win32' ? 'cfn-init.exe' : 'cfn-init'), 0o755)
+        const cfnInitPath = join(rootDir, 'bin', process.platform === 'win32' ? 'cfn-init.exe' : 'cfn-init')
+        if (await fs.existsFile(cfnInitPath)) {
+            await fs.chmod(cfnInitPath, 0o755)
+        }
     }
 
     protected resourcePaths(assetDirectory?: string): ResourcePaths {
