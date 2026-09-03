@@ -219,6 +219,19 @@
                         {{ `${region.name} (${region.id})` }}
                     </option>
                 </select>
+                <div class="form-group topMargin">
+                    <div class="toggle-container">
+                        <label class="toggle-label">
+                            <input
+                                type="checkbox"
+                                id="useDeviceCodeFlow"
+                                name="useDeviceCodeFlow"
+                                v-model="useDeviceCodeFlow"
+                            />
+                            <span class="toggle-text">Use device code flow</span>
+                        </label>
+                    </div>
+                </div>
                 <button
                     class="continue-button topMargin"
                     :disabled="shouldDisableSsoContinue()"
@@ -438,6 +451,7 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            useDeviceCodeFlow: false,
         }
     },
     async created() {
@@ -540,7 +554,12 @@ export default defineComponent({
                 this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
 
-                const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
+                const error = await client.startEnterpriseSetup(
+                    this.startUrl,
+                    this.selectedRegion,
+                    this.app,
+                    this.useDeviceCodeFlow
+                )
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -961,8 +980,21 @@ body.vscode-light #logo-text {
     width: 10px;
 }
 
-.help-link__label {
-    margin: 0;
-    padding: 0 0 0 2px;
+.toggle-container {
+    margin-bottom: 10px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.toggle-label input[type='checkbox'] {
+    margin-right: 8px;
+}
+
+.toggle-text {
+    font-size: var(--font-size-sm);
 }
 </style>

@@ -62,7 +62,7 @@ describe('Amazon Q Login', function () {
     })
 
     it('signs into IdC and emits telemetry', async function () {
-        await backend.startEnterpriseSetup(startUrl, region)
+        await backend.startEnterpriseSetup(startUrl, region, 'AMAZONQ')
 
         assert.ok(isIdcSsoConnection(auth.activeConnection))
         assert.deepStrictEqual(auth.activeConnection.scopes, amazonQScopes)
