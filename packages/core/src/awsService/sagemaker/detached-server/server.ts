@@ -19,6 +19,10 @@ import { execFile } from 'child_process'
 
 const pollInterval = 30 * 60 * 100 // 30 minutes
 
+// Allow a large process table: the default execFile maxBuffer (1 MiB) can be exceeded by `ps`
+// output when other processes have large argv, causing the liveness check to fail spuriously.
+const psMaxBuffer = 1024 * 1024 * 64
+
 /**
  * Generic IDE process patterns for detection across all VS Code forks.
  * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
@@ -84,7 +88,7 @@ function checkVSCodeWindows(): Promise<boolean> {
 
         if (platform === 'win32') {
             // Check for any VS Code fork process
-            execFile('tasklist', [], (err, stdout) => {
+            execFile('tasklist', [], { maxBuffer: psMaxBuffer }, (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
@@ -92,7 +96,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                 resolve(ideProcessPatterns.windows.test(stdout))
             })
         } else if (platform === 'darwin') {
-            execFile('ps', ['aux'], (err, stdout) => {
+            execFile('ps', ['aux'], { maxBuffer: psMaxBuffer }, (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
@@ -102,7 +106,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                 resolve(found)
             })
         } else {
-            execFile('ps', ['-A', '-o', 'comm'], (err, stdout) => {
+            execFile('ps', ['-A', '-o', 'comm'], { maxBuffer: psMaxBuffer }, (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
