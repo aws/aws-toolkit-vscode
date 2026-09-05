@@ -64,9 +64,12 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
 export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'java17',
+    'java17.al2023' as Runtime,
     'java11',
+    'java11.al2023' as Runtime,
     'java8',
     'java8.al2',
+    'java8.al2023' as Runtime,
     'java21',
     'java25' as Runtime,
 ])
@@ -132,8 +135,11 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
     'nodejs16.x',
     'nodejs14.x',
     'java17',
+    'java17.al2023' as Runtime,
     'java11',
+    'java11.al2023' as Runtime,
     'java8.al2',
+    'java8.al2023' as Runtime,
 ])
 
 // Cloud9 supports a subset of runtimes for debugging.
