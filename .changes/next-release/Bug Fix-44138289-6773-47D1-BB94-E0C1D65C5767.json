@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Application Builder walkthrough: the LocalStack \"Learn more\" link was shown as raw text instead of a clickable link."
+}
