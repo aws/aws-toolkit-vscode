@@ -4,11 +4,13 @@
  */
 
 import fs from '../fs/fs'
+import * as nodeFs from 'fs/promises' // eslint-disable-line no-restricted-imports
 import { ToolkitError } from '../errors'
 import * as semver from 'semver'
 import * as path from 'path'
 import { FileType } from 'vscode'
 import AdmZip from 'adm-zip'
+import crossFetch from 'cross-fetch'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
@@ -220,7 +222,8 @@ export interface LspResolverConfig {
 
 interface PlannedWrite {
     relativePath: string
-    data?: Buffer
+    /** Lazy so a ZIP's entries are decompressed one at a time instead of all held in memory. */
+    data?: () => Buffer
     mode?: number
 }
 
@@ -388,15 +391,33 @@ export class LanguageServerResolver {
             )
 
             await fs.mkdir(versionDir)
+            // Node fs, not the `fs` wrapper: the wrapper's mkdir/writeFile are extension-host RPCs, one per file.
+            const createdDirs = new Set<string>([path.resolve(versionDir)])
+            const ensureDir = async (dir: string) => {
+                const resolved = path.resolve(dir)
+                if (createdDirs.has(resolved)) {
+                    return
+                }
+                await nodeFs.mkdir(resolved, { recursive: true })
+                createdDirs.add(resolved)
+            }
             for (const entry of plan) {
                 const destination = path.join(versionDir, entry.relativePath)
                 if (entry.data === undefined) {
-                    await fs.mkdir(destination)
+                    await ensureDir(destination)
                 } else {
-                    await fs.mkdir(path.dirname(destination))
-                    await fs.writeFile(destination, entry.data)
+                    await ensureDir(path.dirname(destination))
+                    let data: Buffer
+                    try {
+                        data = entry.data()
+                    } catch (e) {
+                        throw new ToolkitError(`Failed to extract "${entry.relativePath}": ${e}`, {
+                            code: extractionFailedCode,
+                        })
+                    }
+                    await nodeFs.writeFile(destination, data)
                     if (entry.mode !== undefined && process.platform !== 'win32') {
-                        await fs.chmod(destination, entry.mode)
+                        await nodeFs.chmod(destination, entry.mode)
                     }
                 }
             }
@@ -412,7 +433,7 @@ export class LanguageServerResolver {
      * Preflights the full downloaded set into an ordered list of writes rooted at the version
      * directory: a non-ZIP content becomes one file; a ZIP content is expanded into its entries.
      * Every path is validated up front, so a rejected set writes nothing. ZIP archives are never
-     * persisted — their bytes stay in memory and only the extracted entries reach disk.
+     * persisted — only the extracted entries reach disk.
      */
     private buildInstallPlan(
         versionDir: string,
@@ -442,15 +463,11 @@ export class LanguageServerResolver {
                     if (entry.isDirectory) {
                         planned.push({ relativePath })
                     } else {
-                        let entryData: Buffer
-                        try {
-                            entryData = entry.getData()
-                        } catch (e) {
-                            throw new ToolkitError(`Failed to extract "${entry.entryName}": ${e}`, {
-                                code: extractionFailedCode,
-                            })
-                        }
-                        planned.push({ relativePath, data: entryData, mode: zipEntryPosixMode(entry.attr) })
+                        planned.push({
+                            relativePath,
+                            data: () => entry.getData(),
+                            mode: zipEntryPosixMode(entry.attr),
+                        })
                     }
                 }
             } else {
@@ -462,7 +479,7 @@ export class LanguageServerResolver {
                         code: extractionFailedCode,
                     })
                 }
-                planned.push({ relativePath, data })
+                planned.push({ relativePath, data: () => data })
             }
         }
         return planned
@@ -533,14 +550,6 @@ export class LanguageServerResolver {
 
     private async validateInstall(directory: string): Promise<void> {
         await requireServerAndRequiredFiles(directory, this.serverFilename, this.requiredFiles)
-    }
-
-    async isValidCacheDirectory(localCacheDirectory: string): Promise<boolean> {
-        const directoryVersion = semver.parse(path.basename(localCacheDirectory))
-        if (!directoryVersion || !versionSatisfiesRange(directoryVersion, this.versionRange)) {
-            return false
-        }
-        return hasServerAndRequiredFiles(localCacheDirectory, this.serverFilename, this.requiredFiles)
     }
 
     private async hasValidLocalCache(localCacheDirectory: string): Promise<boolean> {
@@ -640,7 +649,7 @@ export class LanguageServerResolver {
             disposables.push(progressTimeout.token.onCancellationRequested(() => abortController.abort()))
         }
         try {
-            const response = await globalThis.fetch(url, { signal: abortController.signal })
+            const response = await crossFetch(url, { signal: abortController.signal })
             return response
         } finally {
             for (const disposable of disposables) {
@@ -695,11 +704,12 @@ function isZipFilename(filename: string): boolean {
 
 /**
  * POSIX permission bits recorded in a ZIP entry's external attributes — the high 16 bits hold the
- * Unix `st_mode`, of which only the rwx (owner/group/other) permission bits are kept. A missing
- * Unix mode yields 0, matching JetBrains' application of an empty POSIX permission set.
+ * Unix `st_mode`, of which only the rwx (owner/group/other) permission bits are kept. `undefined`
+ * when no Unix mode was recorded (e.g. archives built on Windows), so the file keeps umask defaults.
  */
-export function zipEntryPosixMode(externalAttributes: number): number {
-    return (externalAttributes >>> 16) & 0o777
+export function zipEntryPosixMode(externalAttributes: number): number | undefined {
+    const mode = (externalAttributes >>> 16) & 0o777
+    return mode === 0 ? undefined : mode
 }
 
 function addSuppressed(error: unknown, suppressed: unknown): void {

@@ -7,58 +7,69 @@ import assert from 'assert'
 import sinon from 'sinon'
 import path from 'path'
 import * as env from '../../../../shared/vscode/env'
-import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
+import { fs } from '../../../../shared/fs/fs'
 import { DevLspServerProvider } from '../../../../awsService/cloudformation/lsp-server/devLspServerProvider'
 import { RemoteLspServerProvider } from '../../../../awsService/cloudformation/lsp-server/remoteLspServerProvider'
 import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-server/lspServerConfig'
 import { ExtensionContext } from 'vscode'
+import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('DevLspServerProvider', function () {
     let sandbox: sinon.SinonSandbox
+    const tmpDir = new TempTestDir()
 
-    beforeEach(function () {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
+        await tmpDir.setup()
     })
 
-    afterEach(function () {
+    afterEach(async function () {
         sandbox.restore()
+        await tmpDir.teardown()
     })
 
     function fakeContext(extensionPath: string): ExtensionContext {
         return { extensionPath } as unknown as ExtensionContext
     }
 
+    /** Extension path is three levels below `root`; the provider scans `root`'s children for a dev bundle. */
+    async function createExtensionPath(root: string): Promise<string> {
+        const extensionPath = path.join(root, 'aws-toolkit-vscode', 'packages', 'toolkit')
+        await fs.mkdir(extensionPath)
+        return extensionPath
+    }
+
+    async function createDevServer(root: string, siblingName: string): Promise<string> {
+        const serverPath = path.join(root, siblingName, 'bundle', 'development', CfnLspServerFile)
+        await fs.mkdir(path.dirname(serverPath))
+        await fs.writeFile(serverPath, 'server')
+        return serverPath
+    }
+
     describe('canProvide', function () {
-        it('returns false when not a debug instance', function () {
+        it('returns false when not a debug instance, even if a dev server exists', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(false)
-            sandbox.stub(nodeFs, 'existsSync').returns(true)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            await createDevServer(tmpDir.path, 'cfn-lsp')
 
-            const provider = new DevLspServerProvider(fakeContext('/some/path'))
+            const provider = new DevLspServerProvider(fakeContext(extensionPath))
             assert.strictEqual(provider.canProvide(), false)
         })
 
-        it('returns false when debug instance but no server found', function () {
+        it('returns false when debug instance but no server found', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            sandbox.stub(nodeFs, 'existsSync').returns(false)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            await fs.mkdir(path.join(tmpDir.path, 'unrelated-sibling'))
 
-            const provider = new DevLspServerProvider(fakeContext('/some/path'))
+            const provider = new DevLspServerProvider(fakeContext(extensionPath))
             assert.strictEqual(provider.canProvide(), false)
         })
 
-        it('returns true when debug instance and server found in sibling directory', function () {
+        it('returns true when debug instance and server found in sibling directory', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            // existsSync: first for extensionPath validation, then for the server file
-            const existsStub = sandbox.stub(nodeFs, 'existsSync')
-            existsStub.returns(true)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            await createDevServer(tmpDir.path, 'cfn-lsp')
 
-            // readdirSync: list sibling dirs in the bounded parent
-            sandbox
-                .stub(nodeFs, 'readdirSync')
-                .returns([
-                    { name: 'cfn-lsp', isDirectory: () => true, isFile: () => false } as unknown as nodeFs.Dirent,
-                ] as unknown as nodeFs.Dirent[])
-
-            const extensionPath = '/workspace/packages/toolkit'
             const provider = new DevLspServerProvider(fakeContext(extensionPath))
             assert.strictEqual(provider.canProvide(), true)
         })
@@ -67,49 +78,30 @@ describe('DevLspServerProvider', function () {
     describe('name', function () {
         it('returns DevLspServerProvider', function () {
             sandbox.stub(env, 'isDebugInstance').returns(false)
-            const provider = new DevLspServerProvider(fakeContext('/some/path'))
+            const provider = new DevLspServerProvider(fakeContext(tmpDir.path))
             assert.strictEqual(provider.name(), 'DevLspServerProvider')
         })
     })
 
     describe('serverExecutable', function () {
-        it('returns path to server when available', async function () {
+        it('returns the discovered dev server path', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            const existsStub = sandbox.stub(nodeFs, 'existsSync')
-            existsStub.returns(true)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            const serverPath = await createDevServer(tmpDir.path, 'cfn-lsp-repo')
 
-            const parentDir = '/workspace'
-            sandbox
-                .stub(nodeFs, 'readdirSync')
-                .returns([
-                    { name: 'cfn-lsp-repo', isDirectory: () => true, isFile: () => false } as unknown as nodeFs.Dirent,
-                ] as unknown as nodeFs.Dirent[])
-
-            // extensionPath is 3 levels deep from parentDir
-            const extensionPath = path.join(parentDir, 'a', 'b', 'c')
             const provider = new DevLspServerProvider(fakeContext(extensionPath))
 
             assert.ok(provider.canProvide())
-            const result = await provider.serverExecutable()
-            assert.ok(result.endsWith(CfnLspServerFile))
-            assert.ok(result.includes('bundle'))
-            assert.ok(result.includes('development'))
+            assert.strictEqual(await provider.serverExecutable(), serverPath)
         })
     })
 
     describe('serverRootDir', function () {
         it('returns dirname of serverExecutable', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            const existsStub = sandbox.stub(nodeFs, 'existsSync')
-            existsStub.returns(true)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            await createDevServer(tmpDir.path, 'lsp-dir')
 
-            sandbox
-                .stub(nodeFs, 'readdirSync')
-                .returns([
-                    { name: 'lsp-dir', isDirectory: () => true, isFile: () => false } as unknown as nodeFs.Dirent,
-                ] as unknown as nodeFs.Dirent[])
-
-            const extensionPath = '/workspace/a/b/c'
             const provider = new DevLspServerProvider(fakeContext(extensionPath))
 
             assert.ok(provider.canProvide())
@@ -122,23 +114,26 @@ describe('DevLspServerProvider', function () {
     describe('edge cases', function () {
         it('returns false for empty extensionPath', function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            sandbox.stub(nodeFs, 'existsSync').returns(false)
 
             const provider = new DevLspServerProvider(fakeContext(''))
             assert.strictEqual(provider.canProvide(), false)
         })
 
-        it('throws when multiple server locations found', function () {
+        it('returns false for a non-existent extensionPath', function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
-            sandbox.stub(nodeFs, 'existsSync').callsFake((candidate) => candidate.toString().length > 0)
 
-            const siblingDirectories = ['lsp-a', 'lsp-b'].map(
-                (name) => ({ name, isDirectory: () => true, isFile: () => false }) as unknown as nodeFs.Dirent
-            )
-            sandbox.stub(nodeFs, 'readdirSync').returns(siblingDirectories as unknown as nodeFs.Dirent[])
+            const provider = new DevLspServerProvider(fakeContext(path.join(tmpDir.path, 'does-not-exist')))
+            assert.strictEqual(provider.canProvide(), false)
+        })
+
+        it('throws when multiple server locations found', async function () {
+            sandbox.stub(env, 'isDebugInstance').returns(true)
+            const extensionPath = await createExtensionPath(tmpDir.path)
+            await createDevServer(tmpDir.path, 'lsp-a')
+            await createDevServer(tmpDir.path, 'lsp-b')
 
             assert.throws(() => {
-                new DevLspServerProvider(fakeContext('/workspace/a/b/c'))
+                new DevLspServerProvider(fakeContext(extensionPath))
             }, /Found 2 locations/)
         })
     })

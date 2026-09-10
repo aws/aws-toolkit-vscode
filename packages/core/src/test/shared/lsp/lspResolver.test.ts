@@ -167,13 +167,15 @@ describe('LanguageServerResolver', function () {
         })
 
         it('accepts complete nested bundles and rejects missing required directories', async function () {
-            const version = createVersion('1.2.0')
-            const resolver = new LanguageServerResolver(createManifest([version]), {
-                lsName: lspTestDefaults.lsName,
-                versionRange: lspTestDefaults.versionRange,
-                serverFilename: 'server.js',
+            let fetchCalls = 0
+            const resolver = createResolver(createManifest([createVersion('1.2.0')]), {
                 storageDir: tmpDir.path,
                 requiredFiles: ['bin', 'node_modules'],
+                fetchFn: async () => {
+                    fetchCalls++
+                    throw new Error('offline')
+                },
+                sleepFn: async () => {},
             })
             const versionDir = path.join(tmpDir.path, '1.2.0')
             const bundleDir = path.join(versionDir, 'server-1.2.0')
@@ -181,10 +183,14 @@ describe('LanguageServerResolver', function () {
             await fs.mkdir(path.join(bundleDir, 'node_modules'))
             await fs.writeFile(path.join(bundleDir, 'server.js'), 'server')
 
-            assert.strictEqual(await resolver.isValidCacheDirectory(versionDir), true)
+            const cached = await resolver.resolve()
+            assert.strictEqual(cached.location, 'cache')
+            assert.strictEqual(cached.assetDirectory, versionDir)
+            assert.strictEqual(fetchCalls, 0)
 
             await fs.delete(path.join(bundleDir, 'node_modules'), { force: true, recursive: true })
-            assert.strictEqual(await resolver.isValidCacheDirectory(versionDir), false)
+            await assert.rejects(resolver.resolve())
+            assert.ok(fetchCalls > 0)
         })
     })
 
@@ -664,9 +670,9 @@ describe('zipEntryPosixMode', function () {
         assert.strictEqual(zipEntryPosixMode((0o104755 << 16) >>> 0), 0o755)
     })
 
-    it('returns zero when no Unix mode is recorded', function () {
-        assert.strictEqual(zipEntryPosixMode(0), 0)
-        assert.strictEqual(zipEntryPosixMode(0x20), 0)
+    it('returns undefined when no Unix mode is recorded, so default permissions are kept', function () {
+        assert.strictEqual(zipEntryPosixMode(0), undefined)
+        assert.strictEqual(zipEntryPosixMode(0x20), undefined)
     })
 })
 

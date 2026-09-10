@@ -5,13 +5,16 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
+import path from 'path'
 import {
     LspServerProvider,
     LspServerProviderI,
 } from '../../../../awsService/cloudformation/lsp-server/lspServerProvider'
 import { SettingsLspServerProvider } from '../../../../awsService/cloudformation/lsp-server/settingsLspServerProvider'
+import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-server/lspServerConfig'
 import * as env from '../../../../shared/vscode/env'
-import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
+import { fs } from '../../../../shared/fs/fs'
+import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('LspServerProvider', function () {
     let sandbox: sinon.SinonSandbox
@@ -139,20 +142,28 @@ describe('LspServerProvider', function () {
 
 describe('SettingsLspServerProvider', function () {
     let sandbox: sinon.SinonSandbox
+    const tmpDir = new TempTestDir()
+    let existingPath: string
+    let missingPath: string
 
-    beforeEach(function () {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
+        await tmpDir.setup()
+        existingPath = path.join(tmpDir.path, 'lsp-server')
+        await fs.mkdir(existingPath)
+        missingPath = path.join(tmpDir.path, 'does-not-exist')
     })
 
-    afterEach(function () {
+    afterEach(async function () {
         sandbox.restore()
+        await tmpDir.teardown()
     })
 
     describe('canProvide', function () {
         it('returns false when neither debug nor automation', function () {
             sandbox.stub(env, 'isDebugInstance').returns(false)
             sandbox.stub(env, 'isAutomation').returns(false)
-            const provider = new SettingsLspServerProvider({ path: '/some/path' })
+            const provider = new SettingsLspServerProvider({ path: existingPath })
             assert.strictEqual(provider.canProvide(), false)
         })
 
@@ -173,24 +184,21 @@ describe('SettingsLspServerProvider', function () {
         it('returns false when path does not exist on disk', function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
             sandbox.stub(env, 'isAutomation').returns(false)
-            sandbox.stub(nodeFs, 'existsSync').returns(false)
-            const provider = new SettingsLspServerProvider({ path: '/nonexistent/path' })
+            const provider = new SettingsLspServerProvider({ path: missingPath })
             assert.strictEqual(provider.canProvide(), false)
         })
 
         it('returns true when isDebugInstance AND path exists', function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
             sandbox.stub(env, 'isAutomation').returns(false)
-            sandbox.stub(nodeFs, 'existsSync').returns(true)
-            const provider = new SettingsLspServerProvider({ path: '/valid/path' })
+            const provider = new SettingsLspServerProvider({ path: existingPath })
             assert.strictEqual(provider.canProvide(), true)
         })
 
         it('returns true when isAutomation AND path exists (debug=false)', function () {
             sandbox.stub(env, 'isDebugInstance').returns(false)
             sandbox.stub(env, 'isAutomation').returns(true)
-            sandbox.stub(nodeFs, 'existsSync').returns(true)
-            const provider = new SettingsLspServerProvider({ path: '/ci/lsp-server' })
+            const provider = new SettingsLspServerProvider({ path: existingPath })
             assert.strictEqual(provider.canProvide(), true)
         })
 
@@ -204,8 +212,7 @@ describe('SettingsLspServerProvider', function () {
         it('returns false when isAutomation but path does not exist on disk', function () {
             sandbox.stub(env, 'isDebugInstance').returns(false)
             sandbox.stub(env, 'isAutomation').returns(true)
-            sandbox.stub(nodeFs, 'existsSync').returns(false)
-            const provider = new SettingsLspServerProvider({ path: '/nonexistent/ci/path' })
+            const provider = new SettingsLspServerProvider({ path: missingPath })
             assert.strictEqual(provider.canProvide(), false)
         })
     })
@@ -214,11 +221,9 @@ describe('SettingsLspServerProvider', function () {
         it('joins path with CfnLspServerFile', async function () {
             sandbox.stub(env, 'isDebugInstance').returns(true)
             sandbox.stub(env, 'isAutomation').returns(false)
-            sandbox.stub(nodeFs, 'existsSync').returns(true)
-            const provider = new SettingsLspServerProvider({ path: '/my/server' })
+            const provider = new SettingsLspServerProvider({ path: existingPath })
             const exe = await provider.serverExecutable()
-            assert.ok(exe.startsWith('/my/server/'))
-            assert.ok(exe.endsWith('cfn-lsp-server-standalone.js'))
+            assert.strictEqual(exe, path.join(existingPath, CfnLspServerFile))
         })
 
         it('throws when path is not configured', async function () {

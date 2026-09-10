@@ -17,6 +17,7 @@ import {
 import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-server/lspServerConfig'
 import * as env from '../../../../shared/vscode/env'
 import { fs } from '../../../../shared/fs/fs'
+import globals from '../../../../shared/extensionGlobals'
 import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('CloudFormation LSP determineEnvironment', function () {
@@ -280,6 +281,10 @@ describe('withExecutableBits', function () {
     it('is idempotent when execute bits are already set', function () {
         assert.strictEqual(withExecutableBits(0o755), 0o755)
     })
+
+    it('drops file-type bits reported by stat() so only permission bits reach chmod', function () {
+        assert.strictEqual(withExecutableBits(0o100644), 0o755)
+    })
 })
 
 describe('CfnLspInstaller.cleanupAfterResolveWithLegacy', function () {
@@ -306,5 +311,15 @@ describe('CfnLspInstaller.cleanupAfterResolveWithLegacy', function () {
         assert.ok(legacyStub.calledOnce, 'legacy-location hook must run')
         assert.ok(cleanupStub.calledOnce, 'post-resolve cleanup must run')
         assert.ok(legacyStub.calledBefore(cleanupStub), 'legacy hook runs before post-resolve cleanup')
+    })
+
+    it('clears the legacy globalState manifest cache', async function () {
+        await globals.globalState.update('aws.cloudformation.lsp.manifest', { content: '{}' })
+        const inst = new CfnLspInstaller({ storageDir: tmpDir.path })
+        sandbox.stub(inst, 'cleanupAfterResolve').resolves()
+
+        await inst.cleanupAfterResolveWithLegacy()
+
+        assert.strictEqual(globals.globalState.get('aws.cloudformation.lsp.manifest'), undefined)
     })
 })

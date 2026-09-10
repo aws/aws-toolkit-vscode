@@ -13,9 +13,12 @@ import { getLogger } from '../../../shared/logger/logger'
 import { ResourcePaths, Manifest } from '../../../shared/lsp/types'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import { CfnLspVersion } from './utils'
+import globals from '../../../shared/extensionGlobals'
 
 const cfnManifestUrl =
     'https://raw.githubusercontent.com/aws-cloudformation/cloudformation-languageserver/main/assets/release-manifest.json'
+
+const legacyManifestStateKey = 'aws.cloudformation.lsp.manifest'
 
 export function determineEnvironment(): CfnLspServerEnvType {
     const override = process.env.CFN_LSP_ENVIRONMENT?.trim().toLowerCase()
@@ -97,6 +100,9 @@ export class CfnLspInstaller extends BaseLspInstaller {
 
     private cleanupLegacyStorageDir(): void {
         // TODO: Delete the legacy <cache>/aws/toolkits/language-servers location in a future release.
+        if (globals.globalState.get(legacyManifestStateKey) !== undefined) {
+            globals.globalState.tryUpdate(legacyManifestStateKey, undefined)
+        }
     }
 
     protected async postInstall(assetDirectory: string): Promise<void> {
@@ -140,7 +146,8 @@ export class CfnLspInstaller extends BaseLspInstaller {
 }
 
 export function withExecutableBits(mode: number): number {
-    return mode | 0o111
+    // stat().mode includes file-type bits; chmod only takes permission bits.
+    return (mode & 0o7777) | 0o111
 }
 
 function isDirectoryFollowingSymlinks(path: string): boolean {

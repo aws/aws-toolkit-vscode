@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import crossFetch from 'cross-fetch'
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
 import { Manifest } from './types'
@@ -53,7 +54,8 @@ export class ManifestResolver {
         this.cacheDir = config.cacheDir
         this.adapter = config.adapter
         this.suppressPrefix = config.suppressPrefix
-        this.fetchFn = config.fetchFn ?? globalThis.fetch
+        // cross-fetch uses Node's http stack, which VS Code proxies; undici `fetch` is only proxied on newer VS Code.
+        this.fetchFn = config.fetchFn ?? crossFetch
         this.sleepFn = config.sleepFn ?? defaultSleep
         this.manifestPath = path.join(this.cacheDir, 'manifest.json')
     }
