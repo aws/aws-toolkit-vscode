@@ -18,6 +18,38 @@ export function formatMessage(message: string): string {
     return `${ExtensionId}: ${message}`
 }
 
+export function startupFailureMessage(error: unknown): string | undefined {
+    const messages: Record<string, string> = {
+        ManifestFetchFailed: 'Failed to fetch CloudFormation LSP manifest. Check your network connection.',
+        NoCompatibleVersion: 'No compatible CloudFormation LSP version found for your platform.',
+        RemoteDownloadFailed: 'Failed to download CloudFormation LSP. Check your network connection.',
+        ExtractionFailed: 'Failed to extract CloudFormation LSP.',
+        HashIntegrityFailed: 'Downloaded file integrity check failed. The file may be corrupted.',
+    }
+    const code = findErrorCode(error)
+    return code && messages[code] ? formatMessage(messages[code]) : undefined
+}
+
+function findErrorCode(error: unknown): string | undefined {
+    let current = error
+    while (current instanceof Error) {
+        const code = (current as Error & { code?: unknown }).code
+        if (typeof code === 'string') {
+            if (
+                code === 'ManifestFetchFailed' ||
+                code === 'NoCompatibleVersion' ||
+                code === 'RemoteDownloadFailed' ||
+                code === 'ExtractionFailed' ||
+                code === 'HashIntegrityFailed'
+            ) {
+                return code
+            }
+        }
+        current = (current as Error & { cause?: unknown }).cause
+    }
+    return undefined
+}
+
 export function commandKey(key: string): string {
     return `${ExtensionConfigKey}.${key}`
 }

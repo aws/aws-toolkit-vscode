@@ -10,52 +10,25 @@ import { ToolkitError } from '../errors'
 
 const logger = getLogger('lsp')
 
-/**
- * Minimal interface for resolving an LSP server's executable path.
- */
 export interface LspServerResolver {
     serverExecutable(): Promise<string>
     serverRootDir(): Promise<string>
 }
 
-/**
- * Minimal interface for invalidating a resolved LSP installation.
- * Typically implemented by BaseLspInstaller or a remote provider wrapper.
- * May return a Promise when invalidation requires async cleanup (e.g. deleting files).
- */
 export interface LspInstallationInvalidator {
     invalidateResolvedInstallation(): void | Promise<void>
 }
 
-/**
- * Factory that creates a LanguageClient given a server executable path.
- * The launcher calls this to build the client before starting it.
- */
 export type LanguageClientFactory = (serverPath: string, serverRootDir: string) => Promise<LanguageClient>
 
 export interface LspLauncherConfig {
-    /** Display name for logging. */
     name: string
-    /** Resolves server path and root dir. */
     resolver: LspServerResolver
-    /** Called to invalidate a resolved installation when restart is needed. */
     invalidator: LspInstallationInvalidator
-    /** Factory that creates a LanguageClient from server path. */
     clientFactory: LanguageClientFactory
-    /** Called after client.start() succeeds. Optional post-start hook. */
     onStarted?: (client: LanguageClient) => Promise<void>
 }
 
-/**
- * Generic shared LspLauncher.
- *
- * - Deduplicates concurrent start() calls (only one in-flight at a time)
- * - Returns existing running client on subsequent start() calls
- * - Starts LanguageClient via clientFactory
- * - If start() rejects, cleans up client, invalidates the resolved install,
- *   reruns invalidation/resolver, and retries start exactly once
- * - Exposes stop() and dispose() for lifecycle management
- */
 export class LspLauncher implements Disposable {
     private client?: LanguageClient
     private startPromise?: Promise<LanguageClient>
@@ -92,61 +65,68 @@ export class LspLauncher implements Disposable {
     }
 
     private async doStart(): Promise<LanguageClient> {
-        try {
-            return await this.attemptStart()
-        } catch (firstErr) {
-            logger.warn(`${this.config.name}: first start attempt failed, retrying after invalidation: ${firstErr}`)
-            await this.config.invalidator.invalidateResolvedInstallation()
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            const isFinalAttempt = attempt === 2
 
+            const serverPath = await this.config.resolver.serverExecutable()
+            const serverRootDir = await this.config.resolver.serverRootDir()
+
+            logger.info(`${this.config.name}: creating client for server at ${serverPath}`)
+
+            let candidate: LanguageClient | undefined
             try {
-                return await this.attemptStart()
-            } catch (retryErr) {
-                throw new ToolkitError(
-                    `${this.config.name}: failed to start language server after retry: ${retryErr}`,
-                    { code: 'LspStartFailed', cause: retryErr as Error }
-                )
+                candidate = await this.config.clientFactory(serverPath, serverRootDir)
+                await candidate.start()
+            } catch (startErr) {
+                if (candidate) {
+                    await bestEffortStopDispose(candidate, this.config.name)
+                }
+
+                if (isFinalAttempt) {
+                    throw new ToolkitError(
+                        `${this.config.name}: failed to start language server after retry: ${startErr}`,
+                        { code: 'LspStartFailed', cause: startErr as Error }
+                    )
+                }
+
+                logger.warn(`${this.config.name}: process start failed, invalidating and retrying once: ${startErr}`)
+                await this.config.invalidator.invalidateResolvedInstallation()
+                continue
             }
-        }
-    }
 
-    private async attemptStart(): Promise<LanguageClient> {
-        const serverPath = await this.config.resolver.serverExecutable()
-        const serverRootDir = await this.config.resolver.serverRootDir()
-
-        logger.info(`${this.config.name}: creating client for server at ${serverPath}`)
-        const candidate = await this.config.clientFactory(serverPath, serverRootDir)
-
-        try {
-            await candidate.start()
-        } catch (startErr) {
-            try {
-                await candidate.stop()
-            } catch {
-                // ignore stop errors during cleanup
+            if (this.disposed) {
+                await bestEffortStopDispose(candidate, this.config.name)
+                throw new ToolkitError(`${this.config.name}: launcher disposed during start`, {
+                    code: 'LspLauncherDisposed',
+                })
             }
-            try {
-                await candidate.dispose()
-            } catch {
-                // ignore dispose errors during cleanup
+
+            this.client = candidate
+            logger.info(`${this.config.name}: language client started successfully`)
+
+            if (this.config.onStarted) {
+                try {
+                    await this.config.onStarted(candidate)
+                } catch (onStartedErr) {
+                    logger.warn(`${this.config.name}: onStarted hook failed, cleaning up client: ${onStartedErr}`)
+                    await this.cleanupClient()
+                    throw onStartedErr
+                }
             }
-            throw startErr
-        }
 
-        // Client started successfully
-        this.client = candidate
-        logger.info(`${this.config.name}: language client started successfully`)
-
-        if (this.config.onStarted) {
-            try {
-                await this.config.onStarted(candidate)
-            } catch (onStartedErr) {
-                logger.warn(`${this.config.name}: onStarted hook failed, cleaning up client: ${onStartedErr}`)
+            if (this.disposed) {
                 await this.cleanupClient()
-                throw onStartedErr
+                throw new ToolkitError(`${this.config.name}: launcher disposed during start`, {
+                    code: 'LspLauncherDisposed',
+                })
             }
+
+            return candidate
         }
 
-        return candidate
+        throw new ToolkitError(`${this.config.name}: language server start did not complete`, {
+            code: 'LspStartFailed',
+        })
     }
 
     private async cleanupClient(): Promise<void> {
@@ -168,16 +148,10 @@ export class LspLauncher implements Disposable {
         }
     }
 
-    /**
-     * Stop the running language client.
-     */
     async stop(): Promise<void> {
         await this.cleanupClient()
     }
 
-    /**
-     * Returns the current LanguageClient if started, or undefined.
-     */
     getClient(): LanguageClient | undefined {
         return this.client
     }
@@ -185,5 +159,18 @@ export class LspLauncher implements Disposable {
     dispose(): void {
         this.disposed = true
         void this.stop()
+    }
+}
+
+async function bestEffortStopDispose(client: LanguageClient, name: string): Promise<void> {
+    try {
+        await client.stop()
+    } catch (err) {
+        logger.warn(`${name}: error stopping failed candidate client: ${err}`)
+    }
+    try {
+        await client.dispose()
+    } catch (err) {
+        logger.warn(`${name}: error disposing failed candidate client: ${err}`)
     }
 }

@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Uri } from 'vscode'
-import { cleanLspDownloads, fs, getDownloadedVersions } from '../../../../shared'
+import { FileType, Uri } from 'vscode'
+import sinon from 'sinon'
+import { cleanLspDownloads } from '../../../../shared/lsp/utils/cleanup'
+import { fs } from '../../../../shared/fs/fs'
 import { createTestWorkspaceFolder } from '../../../testUtil'
 import path from 'path'
 import assert from 'assert'
@@ -43,7 +45,7 @@ describe('cleanLSPDownloads', function () {
 
     it('retains current version + highest valid fallback', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads('2.1.1', [], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('2.1.1', installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 2)
@@ -52,72 +54,41 @@ describe('cleanLSPDownloads', function () {
         assert.strictEqual(deleted.length, 2)
     })
 
-    it('deletes delisted versions', async function () {
-        await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '2.1.1',
-            [{ serverVersion: '1.1.1', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
+    it('retains a complete older version regardless of any manifest delisting', async function () {
+        await fakeInstallVersions(['1.0.0', '1.5.0'], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('1.5.0', installationDir.fsPath)
 
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 2)
-        assert.ok(result.includes('2.1.1'))
-        assert.ok(result.includes('1.0.1'))
-        assert.strictEqual(deleted.length, 2)
-    })
-
-    it('handles case where less than 2 versions are not delisted', async function () {
-        await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.1',
-            [
-                { serverVersion: '1.1.1', isDelisted: true, targets: [] },
-                { serverVersion: '2.1.1', isDelisted: true, targets: [] },
-                { serverVersion: '1.0.0', isDelisted: true, targets: [] },
-            ],
-            installationDir.fsPath
-        )
-
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 1)
-        assert.ok(result.includes('1.0.1'))
-        assert.strictEqual(deleted.length, 3)
+        const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
+        assert.deepStrictEqual(result.sort(), ['1.0.0', '1.5.0'])
+        assert.deepStrictEqual(deleted, [])
     })
 
     it('handles case where less than 2 versions exist', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads('1.0.0', [], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('1.0.0', installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 1)
         assert.strictEqual(deleted.length, 0)
     })
 
-    it('does not install delisted version when no other option exists', async function () {
+    it('retains the active version even when it is the only install', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.0',
-            [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
+        const deleted = await cleanLspDownloads('1.0.0', installationDir.fsPath)
 
-        const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
-        assert.strictEqual(result.length, 0)
-        assert.strictEqual(deleted.length, 1)
+        const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
+        assert.deepStrictEqual(result, ['1.0.0'])
+        assert.deepStrictEqual(deleted, [])
     })
 
-    it('ignores invalid versions', async function () {
+    it('removes invalid/unparseable version directories', async function () {
         await fakeInstallVersions(['1.0.0', '.DS_STORE'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads(
-            '1.0.0',
-            [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
-            installationDir.fsPath
-        )
+        const deleted = await cleanLspDownloads('1.0.0', installationDir.fsPath)
 
-        const result = await getDownloadedVersions(installationDir.fsPath)
-        assert.strictEqual(result.length, 0)
+        const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
+        assert.deepStrictEqual(result, ['1.0.0'])
         assert.strictEqual(deleted.length, 1)
+        assert.ok(deleted.includes('.DS_STORE'))
     })
 
     it('skips empty directories as invalid fallback candidates', async function () {
@@ -128,7 +99,7 @@ describe('cleanLSPDownloads', function () {
             await fs.delete(path.join(emptyDir, name))
         }
 
-        const deleted = await cleanLspDownloads('3.0.0', [], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('3.0.0', installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
         assert.ok(result.includes('3.0.0'))
@@ -141,7 +112,7 @@ describe('cleanLSPDownloads', function () {
         await fakeInstallVersion('2.0.0', installationDir.fsPath, true)
         await fakeInstallVersion('3.0.0', installationDir.fsPath)
 
-        const deleted = await cleanLspDownloads('3.0.0', [], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('3.0.0', installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
         assert.ok(result.includes('3.0.0'))
@@ -155,7 +126,7 @@ describe('cleanLSPDownloads', function () {
             return !versionDir.includes('2.0.0')
         }
 
-        const deleted = await cleanLspDownloads('3.0.0', [], installationDir.fsPath, validator)
+        const deleted = await cleanLspDownloads('3.0.0', installationDir.fsPath, validator)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
         assert.ok(result.includes('3.0.0'))
@@ -173,7 +144,7 @@ describe('cleanLSPDownloads', function () {
             return !versionDir.includes('3.0.0')
         }
 
-        const deleted = await cleanLspDownloads('4.0.0', [], installationDir.fsPath, validator)
+        const deleted = await cleanLspDownloads('4.0.0', installationDir.fsPath, validator)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
         // Should retain 4.0.0 (current) and 2.0.0 (highest valid fallback)
@@ -182,5 +153,46 @@ describe('cleanLSPDownloads', function () {
         assert.ok(!result.includes('3.0.0'), 'invalid non-empty newer dir should be deleted')
         assert.ok(!result.includes('1.0.0'), 'lower valid version should be deleted')
         assert.strictEqual(deleted.length, 2)
+    })
+
+    it('considers a directory symlink but unlinks it without recursive traversal', async function () {
+        const sandbox = sinon.createSandbox()
+        try {
+            sandbox.stub(fs, 'readdir').resolves([
+                ['1.0.0', FileType.Directory],
+                ['1.1.0', FileType.Directory],
+                ['1.5.0', FileType.Directory | FileType.SymbolicLink],
+                ['2.0.0', FileType.Directory],
+            ])
+            const deleteStub = sandbox.stub(fs, 'delete').resolves()
+            const validator = async (versionDir: string): Promise<boolean> => versionDir.endsWith('1.1.0')
+
+            const deleted = await cleanLspDownloads('2.0.0', installationDir.fsPath, validator)
+
+            assert.ok(deleted.includes('1.5.0'))
+            assert.ok(deleted.includes('1.0.0'))
+            assert.ok(!deleted.includes('1.1.0'))
+
+            const symlinkCall = deleteStub
+                .getCalls()
+                .find((call) => (call.args[0] as string).endsWith(`${path.sep}1.5.0`))
+            const realDirCall = deleteStub
+                .getCalls()
+                .find((call) => (call.args[0] as string).endsWith(`${path.sep}1.0.0`))
+            assert.strictEqual(symlinkCall?.args[1]?.recursive, false)
+            assert.strictEqual(realDirCall?.args[1]?.recursive, true)
+        } finally {
+            sandbox.restore()
+        }
+    })
+
+    it('validates and deletes a lone invalid non-current candidate', async function () {
+        await fakeInstallVersion('2.0.0', installationDir.fsPath, true)
+
+        const deleted = await cleanLspDownloads('3.0.0', installationDir.fsPath)
+
+        const result = (await fs.readdir(installationDir.fsPath)).map(([filename]) => filename)
+        assert.ok(!result.includes('2.0.0'), 'lone invalid non-current candidate should be deleted')
+        assert.strictEqual(deleted.length, 1)
     })
 })

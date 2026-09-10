@@ -13,7 +13,7 @@ export interface LspResult {
     location: LanguageServerLocation
     /** Example: `"3.3.0"` */
     version: string
-    /** Example: `"<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0"` */
+    /** Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0"` */
     assetDirectory: string
 }
 
@@ -21,21 +21,21 @@ export interface LspResult {
  * Example:
  * ```
  * resourcePaths = {
- *     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
- *     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
- *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+ *     lsp = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
+ *     node = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node'
+ *     ui = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
  * }
  * ```
  */
 export interface ResourcePaths {
     /**
      * Path to `.js` bundle to be executed by `node`.
-     * Example: `"<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js"`
+     * Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js"`
      */
     lsp: string
     /**
      * Path to `node` (or `node.exe`) executable/binary.
-     * Example: `"<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node"`
+     * Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node"`
      */
     node: string
 }
@@ -45,9 +45,9 @@ export interface LspResolution<T extends ResourcePaths> extends LspResult {
      * Example:
      * ```
      * resourcePaths = {
-     *     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
-     *     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
-     *     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+     *     lsp = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
+     *     node = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node'
+     *     ui = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
      * }
      * ```
      */

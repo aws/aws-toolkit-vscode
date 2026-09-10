@@ -170,16 +170,19 @@ describe('RemoteLspServerProvider', function () {
     })
 
     describe('serverExecutable', function () {
-        it('resolves via installer on first call', async function () {
+        it('resolves and runs legacy-location cleanup on first call', async function () {
             const provider = new RemoteLspServerProvider()
-            // Stub the installer's resolve method
+            const installer = (provider as any).installer
             const installerStub = sandbox
-                .stub((provider as any).installer, 'resolve')
+                .stub(installer, 'resolve')
                 .resolves({ resourcePaths: { lsp: '/installed/server.js', node: '/usr/bin/node' } })
+            const cleanupStub = sandbox.stub(installer, 'cleanupAfterResolveWithLegacy').resolves()
 
             const result = await provider.serverExecutable()
+
             assert.strictEqual(result, '/installed/server.js')
             assert.ok(installerStub.calledOnce)
+            assert.ok(cleanupStub.calledOnce)
         })
 
         it('caches resolved path on subsequent calls', async function () {

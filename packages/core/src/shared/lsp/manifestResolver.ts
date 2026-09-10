@@ -13,42 +13,26 @@ import * as path from 'path'
 import * as crypto from 'crypto'
 import * as localizedText from '../localizedText'
 import { AmazonQPromptSettings, amazonQPrompts } from '../settings'
+import { Timeout } from '../utilities/timeoutUtils'
+import { oneMinute } from '../datetime'
 
 const logger = getLogger('lsp')
 
 const maxRetries = 3
-const baseDelayMs = 1000
+const baseDelayMs = 500
+
+const manifestRequestTimeout = oneMinute
 
 export interface ManifestResolverConfig {
-    /** URL to fetch the raw manifest JSON from. */
     manifestUrl: string
-    /** Display name for the language server (used in log messages). */
     lsName: string
-    /** Filesystem directory where manifest.json is cached. */
     cacheDir: string
-    /**
-     * Optional adapter that transforms raw JSON into a normalized Manifest.
-     * When provided, the raw JSON is parsed as `unknown` and passed to this hook
-     * BEFORE being cached to disk.
-     */
     adapter?: ManifestAdapter
-    /**
-     * Prompt key prefix for user-facing deprecation suppression.
-     * Combined with "LspManifestMessage" to form the full prompt key
-     * (e.g. "cfnLsp" → "cfnLspLspManifestMessage").
-     * If the resulting key does not exist in amazonQPrompts, deprecation
-     * is logged without user toast.
-     */
     suppressPrefix?: string
-    /** Injectable fetch function for testing. Defaults to global `fetch`. */
     fetchFn?: typeof fetch
-    /** Injectable sleep function for testing. Defaults to `setTimeout`-based delay. */
     sleepFn?: (ms: number) => Promise<void>
 }
 
-/**
- * Adapter interface for transforming raw manifest JSON into a normalized Manifest.
- */
 export interface ManifestAdapter {
     adapt(raw: unknown): Manifest
 }
@@ -63,27 +47,14 @@ export class ManifestResolver {
     private readonly fetchFn: typeof fetch
     private readonly sleepFn: (ms: number) => Promise<void>
 
-    constructor(config: ManifestResolverConfig)
-    /** @deprecated Use the config object constructor. */
-    constructor(manifestUrl: string, lsName: string, suppressPrefix: string)
-    constructor(configOrUrl: ManifestResolverConfig | string, lsName?: string, suppressPrefix?: string) {
-        if (typeof configOrUrl === 'string') {
-            this.manifestUrl = configOrUrl
-            this.lsName = lsName!
-            this.cacheDir = path.join(fs.getCacheDir(), 'aws', 'toolkits', 'language-servers', lsName!)
-            this.adapter = undefined
-            this.suppressPrefix = suppressPrefix || undefined
-            this.fetchFn = globalThis.fetch
-            this.sleepFn = defaultSleep
-        } else {
-            this.manifestUrl = configOrUrl.manifestUrl
-            this.lsName = configOrUrl.lsName
-            this.cacheDir = configOrUrl.cacheDir
-            this.adapter = configOrUrl.adapter
-            this.suppressPrefix = configOrUrl.suppressPrefix
-            this.fetchFn = configOrUrl.fetchFn ?? globalThis.fetch
-            this.sleepFn = configOrUrl.sleepFn ?? defaultSleep
-        }
+    constructor(config: ManifestResolverConfig) {
+        this.manifestUrl = config.manifestUrl
+        this.lsName = config.lsName
+        this.cacheDir = config.cacheDir
+        this.adapter = config.adapter
+        this.suppressPrefix = config.suppressPrefix
+        this.fetchFn = config.fetchFn ?? globalThis.fetch
+        this.sleepFn = config.sleepFn ?? defaultSleep
         this.manifestPath = path.join(this.cacheDir, 'manifest.json')
     }
 
@@ -110,10 +81,6 @@ export class ManifestResolver {
         }
     }
 
-    /**
-     * Uses existing AmazonQPromptSettings infrastructure for deprecation suppression.
-     * If the prompt key does not exist in the registered settings, logs without toast.
-     */
     private async checkDeprecation(manifest: Manifest): Promise<void> {
         if (!this.suppressPrefix) {
             if (manifest.isManifestDeprecated) {
@@ -149,22 +116,22 @@ export class ManifestResolver {
     }
 
     private async fetchRemoteManifest(): Promise<Manifest> {
+        const content = await this.fetchManifestContentWithRetries()
+
+        const manifest = this.parseAndAdapt(content)
+        await this.saveManifestAtomic(content)
+        manifest.location = 'remote'
+        return manifest
+    }
+
+    private async fetchManifestContentWithRetries(): Promise<string> {
         let lastError: Error | undefined
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                const response = await this.fetchFn(this.manifestUrl)
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-                }
-
-                const content = await response.text()
+                const content = await this.fetchManifestOnce()
                 logger.debug(`Fetched "${this.lsName}" manifest (attempt ${attempt}): ${this.manifestUrl}`)
-
-                const manifest = this.parseAndAdapt(content)
-                await this.saveManifestAtomic(content)
-                manifest.location = 'remote'
-                return manifest
+                return content
             } catch (err) {
                 lastError = err instanceof Error ? err : new Error(String(err))
                 logger.warn(
@@ -182,6 +149,22 @@ export class ManifestResolver {
             `Failed to fetch "${this.lsName}" manifest after ${maxRetries} attempts: ${lastError?.message}`,
             { cause: lastError }
         )
+    }
+
+    private async fetchManifestOnce(): Promise<string> {
+        const timeout = new Timeout(manifestRequestTimeout)
+        const abortController = new AbortController()
+        const disposable = timeout.token.onCancellationRequested(() => abortController.abort())
+        try {
+            const response = await this.fetchFn(this.manifestUrl, { signal: abortController.signal })
+            if (response.status !== 200) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+            }
+            return await response.text()
+        } finally {
+            disposable.dispose()
+            timeout.dispose()
+        }
     }
 
     private async getLocalManifest(): Promise<Manifest> {

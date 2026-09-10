@@ -15,9 +15,8 @@ import { createTestWorkspaceFolder } from '../../testUtil'
  */
 export const lspTestDefaults = {
     lsName: 'test-server',
-    manifestUrl: 'https://example.com/manifest.json',
-    baseDir: '/tmp/test',
-    hashAlgorithm: 'sha384' as const,
+    storageDir: '/tmp/test',
+    serverFilename: 'server.js',
     versionRange: new Range('>=1.0.0', { includePrerelease: true }),
 } as const
 
@@ -91,26 +90,24 @@ export function createPlatformVersion(
 export function createResolver(
     manifest: Manifest,
     opts?: {
-        baseDir?: string
+        storageDir?: string
+        serverFilename?: string
         requiredFiles?: string[]
         targetPlatformResolver?: () => TargetPlatform
         fetchFn?: (...args: any[]) => Promise<any>
         sleepFn?: (ms: number) => Promise<void>
     }
 ): LanguageServerResolver {
-    return new LanguageServerResolver(
-        manifest,
-        lspTestDefaults.lsName,
-        lspTestDefaults.versionRange,
-        lspTestDefaults.manifestUrl,
-        undefined,
-        lspTestDefaults.hashAlgorithm,
-        opts?.baseDir ?? lspTestDefaults.baseDir,
-        opts?.requiredFiles ?? [],
-        opts?.targetPlatformResolver,
-        opts?.fetchFn as any,
-        opts?.sleepFn
-    )
+    return new LanguageServerResolver(manifest, {
+        lsName: lspTestDefaults.lsName,
+        versionRange: lspTestDefaults.versionRange,
+        serverFilename: opts?.serverFilename ?? lspTestDefaults.serverFilename,
+        storageDir: opts?.storageDir ?? lspTestDefaults.storageDir,
+        requiredFiles: opts?.requiredFiles ?? [],
+        targetPlatformResolver: opts?.targetPlatformResolver,
+        fetchFn: opts?.fetchFn as any,
+        sleepFn: opts?.sleepFn,
+    })
 }
 
 /**

@@ -190,7 +190,7 @@ describe('LspLauncher', function () {
     })
 
     describe('onStarted failure cleanup', function () {
-        it('cleans up started client when onStarted hook fails', async function () {
+        it('propagates onStarted failure without invalidation/retry, cleaning up the client', async function () {
             const client = createMockClient(false)
             const clientFactory = sandbox.stub().resolves(client)
             const onStarted = sandbox.stub().rejects(new Error('onStarted hook exploded'))
@@ -198,27 +198,16 @@ describe('LspLauncher', function () {
             const config = createConfig({ clientFactory, onStarted })
             const launcher = new LspLauncher(config)
 
-            // First attempt fails due to onStarted, then retry should succeed
-            const retryClient = createMockClient(false)
-            ;(config.clientFactory as sinon.SinonStub)
-                .onFirstCall()
-                .resolves(client)
-                .onSecondCall()
-                .resolves(retryClient)
-            ;(config.onStarted as sinon.SinonStub)
-                .onFirstCall()
-                .rejects(new Error('hook failed'))
-                .onSecondCall()
-                .resolves()
-
-            const result = await launcher.start()
+            await assert.rejects(launcher.start(), /onStarted hook exploded/)
 
             assert.ok((client.stop as sinon.SinonStub).calledOnce)
             assert.ok((client.dispose as sinon.SinonStub).calledOnce)
-            assert.strictEqual(result, retryClient)
+            assert.strictEqual((clientFactory as sinon.SinonStub).callCount, 1)
+            assert.strictEqual((config.invalidator.invalidateResolvedInstallation as sinon.SinonStub).callCount, 0)
+            assert.strictEqual(launcher.getClient(), undefined)
         })
 
-        it('does not leak partial state when onStarted fails and retry also fails', async function () {
+        it('does not leak partial state when onStarted fails', async function () {
             const client = createMockClient(false)
             const onStarted = sandbox.stub().rejects(new Error('hook always fails'))
             const clientFactory = sandbox.stub().resolves(client)
@@ -234,6 +223,22 @@ describe('LspLauncher', function () {
 
             // Client should have no residual state
             assert.strictEqual(launcher.getClient(), undefined)
+        })
+    })
+
+    describe('non-process-start failures propagate without repair', function () {
+        it('does not invalidate or create a client when the resolver fails', async function () {
+            const resolver: LspServerResolver = {
+                serverExecutable: sandbox.stub().rejects(new Error('resolve/install failed')),
+                serverRootDir: sandbox.stub().resolves('/path/to'),
+            }
+            const config = createConfig({ resolver })
+            const launcher = new LspLauncher(config)
+
+            await assert.rejects(launcher.start(), /resolve\/install failed/)
+
+            assert.strictEqual((config.invalidator.invalidateResolvedInstallation as sinon.SinonStub).callCount, 0)
+            assert.strictEqual((config.clientFactory as sinon.SinonStub).callCount, 0)
         })
     })
 
@@ -307,6 +312,62 @@ describe('LspLauncher', function () {
             // dispose is fire-and-forget; just ensure no errors
             // And subsequent start should throw
             await assert.rejects(launcher.start(), /cannot start a disposed launcher/)
+        })
+    })
+
+    describe('dispose during in-flight start', function () {
+        it('stops and does not retain a client that finishes after disposal', async function () {
+            let releaseStart!: () => void
+            const startGate = new Promise<void>((resolve) => {
+                releaseStart = resolve
+            })
+            const client = {
+                start: sandbox.stub().callsFake(async () => {
+                    await startGate
+                }),
+                stop: sandbox.stub().resolves(),
+                dispose: sandbox.stub().resolves(),
+            } as unknown as LanguageClient
+            const clientFactory = sandbox.stub().resolves(client)
+            const launcher = new LspLauncher(createConfig({ clientFactory }))
+
+            const startCall = launcher.start()
+            launcher.dispose()
+            releaseStart()
+
+            await assert.rejects(startCall, /disposed during start/)
+            assert.ok((client.stop as sinon.SinonStub).calledOnce)
+            assert.ok((client.dispose as sinon.SinonStub).calledOnce)
+            assert.strictEqual(launcher.getClient(), undefined)
+        })
+
+        it('does not return a client when disposal races with onStarted', async function () {
+            let releaseHook!: () => void
+            let markHookStarted!: () => void
+            const hookStarted = new Promise<void>((resolve) => {
+                markHookStarted = resolve
+            })
+            const hookGate = new Promise<void>((resolve) => {
+                releaseHook = resolve
+            })
+            const client = createMockClient()
+            const onStarted = sandbox.stub().callsFake(async () => {
+                markHookStarted()
+                await hookGate
+            })
+            const launcher = new LspLauncher(
+                createConfig({ clientFactory: sandbox.stub().resolves(client), onStarted })
+            )
+
+            const startCall = launcher.start()
+            await hookStarted
+            launcher.dispose()
+            releaseHook()
+
+            await assert.rejects(startCall, /disposed during start/)
+            assert.ok((client.stop as sinon.SinonStub).calledOnce)
+            assert.ok((client.dispose as sinon.SinonStub).calledOnce)
+            assert.strictEqual(launcher.getClient(), undefined)
         })
     })
 })

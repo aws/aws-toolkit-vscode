@@ -13,7 +13,7 @@ import {
     CloseHandlerResult,
 } from 'vscode-languageclient/node'
 import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
-import { formatMessage, toString } from './utils'
+import { formatMessage, toString, startupFailureMessage } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -371,6 +371,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
         await startClient(context)
     } catch (err) {
         getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'CloudFormation language server failed to start'))
+        const message = startupFailureMessage(err)
+        if (message) {
+            void window.showErrorMessage(message)
+        }
     }
 }
 

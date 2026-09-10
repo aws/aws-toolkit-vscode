@@ -7,7 +7,6 @@ import fs from '../fs/fs'
 import { ToolkitError } from '../errors'
 import * as semver from 'semver'
 import * as path from 'path'
-import * as crypto from 'crypto'
 import { FileType } from 'vscode'
 import AdmZip from 'adm-zip'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
@@ -17,152 +16,241 @@ import { showProgressWithTimeout } from '../../shared/utilities/messages'
 import { Timeout } from '../utilities/timeoutUtils'
 import { oneMinute } from '../datetime'
 import vscode from 'vscode'
-import { TargetPlatformResolver, defaultTargetPlatformResolver, findCompatibleTarget } from './utils/targetResolver'
+import {
+    TargetPlatform,
+    TargetPlatformResolver,
+    defaultTargetPlatformResolver,
+    findCompatibleTarget,
+} from './utils/targetResolver'
 
-// max timeout for downloading remote LSP assets. Some assets are large (100+ MB) so this needs to be large for slow connections.
-// Since the user can cancel this one we can let it run very long.
 const remoteDownloadTimeout = oneMinute * 30
 
-/**
- * Number of outer retry attempts for bundle download.
- */
+const artifactRequestTimeout = oneMinute * 5
+
 const downloadMaxRetries = 3
 
-/**
- * Base delay in milliseconds for exponential backoff between download attempts.
- */
-const downloadBaseDelayMs = 2000
+const downloadBaseDelayMs = 500
 
-/** Verifies an optional file list relative to the install root or its extracted bundle directory. */
-export async function verifyRequiredFiles(directory: string, requiredFiles: readonly string[]): Promise<void> {
-    if (requiredFiles.length === 0) {
-        return
-    }
+const noCompatibleVersionCode = 'NoCompatibleVersion'
+const hashIntegrityFailedCode = 'HashIntegrityFailed'
+const downloadFailedCode = 'RemoteDownloadFailed'
+const extractionFailedCode = 'ExtractionFailed'
 
-    const missing: string[] = []
-    for (const requiredFile of requiredFiles) {
-        const filePath = path.join(directory, requiredFile)
-        const exists = (await fs.existsFile(filePath)) || (await fs.existsDir(filePath))
-        if (!exists && !(await findFileInSubdirs(directory, requiredFile))) {
-            missing.push(requiredFile)
-        }
-    }
-
-    if (missing.length > 0) {
-        throw new ToolkitError(`Required files missing after install: ${missing.join(', ')}`, {
-            code: 'MissingRequiredFiles',
-        })
-    }
+function errorCode(err: unknown): string | undefined {
+    return err instanceof ToolkitError ? err.code : undefined
 }
 
-async function findFileInSubdirs(baseDir: string, filename: string): Promise<boolean> {
-    const entries = await fs.readdir(baseDir)
-    for (const [name, type] of entries) {
-        if (type === FileType.Directory) {
-            const candidate = path.join(baseDir, name, filename)
-            if ((await fs.existsFile(candidate)) || (await fs.existsDir(candidate))) {
-                return true
+function shouldPropagateWithoutFallback(err: unknown): boolean {
+    const code = errorCode(err)
+    return code === hashIntegrityFailedCode || code === noCompatibleVersionCode
+}
+
+async function pathExists(p: string): Promise<boolean> {
+    return (await fs.existsFile(p)) || (await fs.existsDir(p))
+}
+
+export async function findServerFile(versionDir: string, serverFilename: string): Promise<string | undefined> {
+    const direct = path.join(versionDir, serverFilename)
+    if (await fs.existsFile(direct)) {
+        return direct
+    }
+    if (!(await fs.existsDir(versionDir))) {
+        return undefined
+    }
+    for (const [name, type] of await fs.readdir(versionDir)) {
+        if ((type & FileType.Directory) !== 0) {
+            const nested = path.join(versionDir, name, serverFilename)
+            if (await fs.existsFile(nested)) {
+                return nested
             }
         }
     }
-    return false
+    return undefined
+}
+
+export async function requireServerAndRequiredFiles(
+    versionDir: string,
+    serverFilename: string,
+    requiredFiles: readonly string[]
+): Promise<string> {
+    const serverFile = await findServerFile(versionDir, serverFilename)
+    if (!serverFile) {
+        throw new ToolkitError(`Server file "${serverFilename}" not found after install`, {
+            code: extractionFailedCode,
+        })
+    }
+
+    const serverRoot = path.dirname(serverFile)
+    const missing: string[] = []
+    for (const requiredFile of requiredFiles) {
+        if (!(await pathExists(path.join(serverRoot, requiredFile)))) {
+            missing.push(requiredFile)
+        }
+    }
+    if (missing.length > 0) {
+        throw new ToolkitError(`Required files missing after install: ${missing.join(', ')}`, {
+            code: extractionFailedCode,
+        })
+    }
+    return serverFile
+}
+
+export async function hasServerAndRequiredFiles(
+    versionDir: string,
+    serverFilename: string,
+    requiredFiles: readonly string[]
+): Promise<boolean> {
+    const serverFile = await findServerFile(versionDir, serverFilename)
+    if (!serverFile) {
+        return false
+    }
+    const serverRoot = path.dirname(serverFile)
+    for (const requiredFile of requiredFiles) {
+        if (!(await pathExists(path.join(serverRoot, requiredFile)))) {
+            return false
+        }
+    }
+    return true
+}
+
+/**
+ * Range membership matching JetBrains `SemVerRange.satisfiedBy`: the inequality comparators
+ * (`<` `<=` `>` `>=`) compare the candidate's core `major.minor.patch` and ignore its prerelease,
+ * while equality compares the full version. So `<2.0.0` rejects `2.0.0-beta.1` yet admits
+ * `1.5.0-beta.1`. node-semver's `includePrerelease` cannot express this: it admits `2.0.0-beta.1`
+ * against `<2.0.0` because that prerelease sorts below `2.0.0`.
+ */
+export function versionSatisfiesRange(version: string | semver.SemVer, range: semver.Range): boolean {
+    const parsed = typeof version === 'string' ? semver.parse(version) : version
+    if (!parsed) {
+        return false
+    }
+    const core = new semver.SemVer(`${parsed.major}.${parsed.minor}.${parsed.patch}`)
+    return range.set.some((comparators) =>
+        comparators.every((comparator) => {
+            // The `*` / any comparator carries no concrete bound (its `semver` is a sentinel).
+            if (!(comparator.semver instanceof semver.SemVer)) {
+                return true
+            }
+            const bound = comparator.semver
+            switch (comparator.operator) {
+                case '':
+                case '=':
+                    return semver.eq(parsed, bound)
+                case '<':
+                    return semver.lt(core, bound)
+                case '<=':
+                    return semver.lte(core, bound)
+                case '>':
+                    return semver.gt(core, bound)
+                case '>=':
+                    return semver.gte(core, bound)
+                default:
+                    return false
+            }
+        })
+    )
+}
+
+export async function findHighestCompleteInstalledServer(
+    storageDir: string,
+    versionRange: semver.Range,
+    serverFilename: string,
+    requiredFiles: readonly string[]
+): Promise<{ directory: string; version: string } | undefined> {
+    if (!(await fs.existsDir(storageDir))) {
+        return undefined
+    }
+
+    const candidates = (await fs.readdir(storageDir))
+        .filter(([, filetype]) => (filetype & FileType.Directory) !== 0)
+        .map(([name]) => ({ name, parsed: semver.parse(name) }))
+        .filter((c): c is { name: string; parsed: semver.SemVer } => c.parsed !== null)
+        .filter((c) => versionSatisfiesRange(c.parsed, versionRange))
+        .sort((a, b) => semver.compare(b.parsed, a.parsed))
+
+    for (const candidate of candidates) {
+        const directory = path.join(storageDir, candidate.name)
+        if (await hasServerAndRequiredFiles(directory, serverFilename, requiredFiles)) {
+            return { directory, version: candidate.name }
+        }
+    }
+
+    return undefined
+}
+
+function normalizeArchivePath(name: string): string {
+    return name.replace(/\\/g, '/')
+}
+
+export function zipEntryEscapesRoot(entryName: string): boolean {
+    try {
+        resolveWithinRoot(path.resolve(path.sep, 'lsp-install-root'), normalizeArchivePath(entryName))
+        return false
+    } catch {
+        return true
+    }
+}
+
+function resolveWithinRoot(root: string, relativePath: string): string {
+    const normalizedRoot = path.resolve(root)
+    const destination = path.resolve(normalizedRoot, relativePath)
+    if (destination === normalizedRoot || !destination.startsWith(`${normalizedRoot}${path.sep}`)) {
+        throw new Error(`Path escapes install root: ${relativePath}`)
+    }
+    return destination
+}
+
+interface ArtifactFetchResponse {
+    status: number
+    arrayBuffer(): Promise<ArrayBuffer>
 }
 
 export interface LspResolverConfig {
-    /** Display name of the language server. */
     lsName: string
-    /** Semver range for compatible versions. */
     versionRange: semver.Range
-    /** URL for progress/error messages. */
-    manifestUrl: string
-    /** Optional custom download message. */
+    serverFilename: string
     downloadMessage?: string
-    /** Hash algorithm for integrity verification when only raw digest is provided. Default: 'sha384'. */
-    hashAlgorithm?: string
-    /**
-     * Base filesystem directory for this language server's downloads.
-     * Default: `<platformCacheDir>/aws/toolkits/language-servers/<lsName>`
-     */
-    baseDir?: string
-    /**
-     * Optional files that must exist for cache/publication integrity and are verified again after postInstall.
-     */
+    storageDir?: string
     requiredFiles?: string[]
-    /**
-     * Custom target platform resolver. If not provided, uses default which returns
-     * process.platform (e.g. `win32`) and detects legacy Linux -> `linuxglib2.28`.
-     */
     targetPlatformResolver?: TargetPlatformResolver
-    /**
-     * Injectable fetch function for testing. Defaults to HttpResourceFetcher.
-     */
-    fetchFn?: (url: string, timeout: Timeout) => Promise<{ ok: boolean; arrayBuffer(): Promise<ArrayBuffer> }>
-    /**
-     * Injectable sleep function for testing. Defaults to setTimeout-based delay.
-     */
+    fetchFn?: (url: string, timeout: Timeout) => Promise<ArtifactFetchResponse>
     sleepFn?: (ms: number) => Promise<void>
 }
 
+interface PlannedWrite {
+    relativePath: string
+    data?: Buffer
+    mode?: number
+}
+
 export class LanguageServerResolver {
+    private readonly lsName: string
+    private readonly versionRange: semver.Range
+    private readonly serverFilename: string
     private readonly downloadMessage: string
-    private readonly hashAlgorithm: string
-    private readonly baseDir: string
+    private readonly storageDir: string
     private readonly requiredFiles: string[]
     private readonly targetPlatformResolver: TargetPlatformResolver
     private readonly fetchFn?: LspResolverConfig['fetchFn']
     private readonly sleepFn: (ms: number) => Promise<void>
+    private resolvedTargetPlatform?: TargetPlatform
 
     constructor(
         private readonly manifest: Manifest,
-        private readonly lsName: string,
-        private readonly versionRange: semver.Range,
-        private readonly manifestUrl: string,
-        /**
-         * Custom message to show user when downloading, if undefined it will use the default.
-         */
-        downloadMessage?: string,
-        hashAlgorithm?: string,
-        baseDir?: string,
-        requiredFiles?: string[],
-        targetPlatformResolver?: TargetPlatformResolver,
-        fetchFn?: LspResolverConfig['fetchFn'],
-        sleepFn?: (ms: number) => Promise<void>
+        config: LspResolverConfig
     ) {
-        this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
-        this.hashAlgorithm = hashAlgorithm ?? 'sha384'
-        this.baseDir = baseDir ?? path.join(fs.getCacheDir(), 'aws', 'toolkits', 'language-servers', this.lsName)
-        this.requiredFiles = requiredFiles ?? []
-        this.targetPlatformResolver = targetPlatformResolver ?? defaultTargetPlatformResolver
-        this.fetchFn = fetchFn
-        this.sleepFn = sleepFn ?? defaultSleep
+        this.lsName = config.lsName
+        this.versionRange = config.versionRange
+        this.serverFilename = config.serverFilename
+        this.downloadMessage = config.downloadMessage ?? `Updating '${config.lsName}' language server`
+        this.storageDir = config.storageDir ?? path.join(fs.getCacheDir(), 'aws', 'language-servers', config.lsName)
+        this.requiredFiles = config.requiredFiles ?? []
+        this.targetPlatformResolver = config.targetPlatformResolver ?? defaultTargetPlatformResolver
+        this.fetchFn = config.fetchFn
+        this.sleepFn = config.sleepFn ?? defaultSleep
     }
 
-    /**
-     * Construct from a config object (preferred for new code).
-     */
-    static fromConfig(manifest: Manifest, config: LspResolverConfig): LanguageServerResolver {
-        return new LanguageServerResolver(
-            manifest,
-            config.lsName,
-            config.versionRange,
-            config.manifestUrl,
-            config.downloadMessage,
-            config.hashAlgorithm,
-            config.baseDir,
-            config.requiredFiles,
-            config.targetPlatformResolver,
-            config.fetchFn,
-            config.sleepFn
-        )
-    }
-
-    /**
-     * Downloads and sets up the Language Server, attempting different locations in order:
-     * 1. Local cache
-     * 2. Remote download (with 3 outer retries and exponential backoff)
-     * 3. Fallback version
-     * @throws ToolkitError if no compatible version can be found
-     */
     async resolve() {
         function getServerVersion(result: LspResult) {
             return {
@@ -173,64 +261,63 @@ export class LanguageServerResolver {
         const targetContents = this.getLSPTargetContents(latestVersion)
         const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-        const serverResolvers: StageResolver<LspResult>[] = [
+        const primaryResolvers: StageResolver<LspResult>[] = [
             {
-                // 1: Use the current local ("cached") LSP server bundle, if any.
-                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion),
                 telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
             },
             {
-                // 2: Download the latest LSP server bundle with retries.
                 resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
                 telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
             },
-            {
-                // 3: If the download fails, try an older, cached version.
-                resolve: async () => await this.getFallbackServer(latestVersion),
-                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
-            },
         ]
 
-        const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+        let resolved: LspResult
+        try {
+            resolved = await tryStageResolvers('getServer', primaryResolvers, getServerVersion)
+        } catch (err) {
+            if (shouldPropagateWithoutFallback(err)) {
+                throw err
+            }
+            const fallbackResolvers: StageResolver<LspResult>[] = [
+                {
+                    resolve: async () => await this.getFallbackServer(err),
+                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+                },
+            ]
+            resolved = await tryStageResolvers('getServer', fallbackResolvers, getServerVersion)
+        }
+
         logger.info('Finished preparing "%s" LSP server: %O', this.lsName, resolved.assetDirectory)
         return resolved
     }
 
-    /** Finds an older, cached version of the LSP server bundle. */
-    private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
-        const cachedVersions = await this.getCachedVersions()
-        if (cachedVersions.length === 0) {
-            throw new ToolkitError(
-                `Unable to download dependencies from ${this.manifestUrl}. Check your network connectivity or firewall configuration and then try again.`,
-                {
-                    code: 'NetworkConnectivityError',
-                }
-            )
-        }
-
-        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion, cachedVersions)
-        if (!fallbackDirectory) {
-            throw new ToolkitError('Unable to find a compatible version of the Language Server', {
-                code: 'IncompatibleVersion',
-            })
-        }
-
-        const version = path.basename(fallbackDirectory)
-        logger.info(
-            `Unable to install ${this.lsName} language server v${latestVersion.serverVersion}. Launching a previous version from ${fallbackDirectory}`
+    private async getFallbackServer(cause: unknown): Promise<LspResult> {
+        const fallback = await findHighestCompleteInstalledServer(
+            this.storageDir,
+            this.versionRange,
+            this.serverFilename,
+            this.requiredFiles
         )
-
-        return {
-            location: 'fallback',
-            version: version,
-            assetDirectory: fallbackDirectory,
+        if (fallback) {
+            logger.info(
+                `Unable to install latest ${this.lsName} language server. Launching previous version from ${fallback.directory}`
+            )
+            return {
+                location: 'fallback',
+                version: fallback.version,
+                assetDirectory: fallback.directory,
+            }
         }
+
+        if (cause instanceof Error) {
+            throw cause
+        }
+        throw new ToolkitError(`Failed to install "${this.lsName}" language server`, {
+            code: downloadFailedCode,
+        })
     }
 
-    /**
-     * Show a toast notification with progress bar for lsp remote download.
-     * Returns a timeout to be passed down into httpFetcher to handle user cancellation.
-     */
     private async showDownloadProgress() {
         const timeout = new Timeout(remoteDownloadTimeout)
         void showProgressWithTimeout(
@@ -245,481 +332,231 @@ export class LanguageServerResolver {
         return timeout
     }
 
-    /**
-     * Downloads the latest LSP server bundle with exactly 3 outer attempts
-     * and exponential backoff. Each attempt performs atomic install.
-     */
     private async fetchRemoteServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
         targetContents: TargetContent[]
     ): Promise<LspResult> {
-        let lastError: Error | undefined
-
-        for (let attempt = 1; attempt <= downloadMaxRetries; attempt++) {
-            const timeout = await this.showDownloadProgress()
-            try {
-                const success = await this.downloadRemoteTargetContent(targetContents, latestVersion, timeout)
-                if (success) {
-                    return {
-                        location: 'remote',
-                        version: latestVersion.serverVersion,
-                        assetDirectory: cacheDirectory,
-                    }
-                }
-                lastError = new Error('Download verification failed')
-            } catch (err) {
-                lastError = err instanceof Error ? err : new Error(String(err))
-                logger.warn(
-                    `Download attempt ${attempt}/${downloadMaxRetries} failed for "${this.lsName}": ${lastError.message}`
-                )
-            } finally {
-                timeout.dispose()
+        const timeout = await this.showDownloadProgress()
+        try {
+            await this.downloadRemoteTargetContent(targetContents, latestVersion, timeout)
+            return {
+                location: 'remote',
+                version: latestVersion.serverVersion,
+                assetDirectory: cacheDirectory,
             }
-
-            if (attempt < downloadMaxRetries) {
-                const delay = downloadBaseDelayMs * Math.pow(2, attempt - 1)
-                await this.sleepFn(delay)
-            }
+        } finally {
+            timeout.dispose()
         }
-
-        throw new ToolkitError(
-            `Failed to download "${this.lsName}" server after ${downloadMaxRetries} attempts: ${lastError?.message}`,
-            { code: 'RemoteDownloadFailed', cause: lastError }
-        )
     }
 
-    /** Gets the current local ("cached") LSP server bundle. */
-    private async getLocalServer(
-        cacheDirectory: string,
-        latestVersion: LspVersion,
-        targetContents: TargetContent[]
-    ): Promise<LspResult> {
-        if (await this.hasValidLocalCache(cacheDirectory, targetContents)) {
+    private async getLocalServer(cacheDirectory: string, latestVersion: LspVersion): Promise<LspResult> {
+        if (await this.hasValidLocalCache(cacheDirectory)) {
             return {
                 location: 'cache',
                 version: latestVersion.serverVersion,
                 assetDirectory: cacheDirectory,
             }
-        } else {
-            // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, { force: true, recursive: true })
-            }
-            throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
         }
+        // Reject without deleting: the in-place remote install overwrites this directory and owns
+        // cleanup, removing it entirely only when a fresh install fails.
+        throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
     }
 
-    /**
-     * Get all of the compatible language server versions from the manifest
-     */
-    private compatibleManifestLspVersion() {
-        return this.manifest.versions.filter((x) => this.isCompatibleVersion(x))
-    }
-
-    /**
-     * Returns the path to the most compatible cached LSP version that can serve as a fallback
-     **/
-    private async getFallbackDir(version: string, cachedVersions: string[]) {
-        const compatibleLspVersions = this.compatibleManifestLspVersion()
-
-        const expectedVersion = semver.parse(version)
-        if (!expectedVersion) {
-            return undefined
-        }
-
-        const sortedCachedLspVersions = compatibleLspVersions
-            .filter((v) => this.isValidCachedVersion(v, cachedVersions, expectedVersion))
-            .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))
-
-        const fallbackDir = (
-            await Promise.all(sortedCachedLspVersions.map((ver) => this.getValidLocalCacheDirectory(ver)))
-        ).filter((v) => v !== undefined)
-        return fallbackDir.length > 0 ? fallbackDir[0] : undefined
-    }
-
-    private async getCachedVersions() {
-        if (!(await fs.existsDir(this.baseDir))) {
-            return []
-        }
-        return (await fs.readdir(this.baseDir))
-            .filter(([_, filetype]) => filetype === FileType.Directory)
-            .map(([pathName, _]) => semver.parse(pathName))
-            .filter((ver): ver is semver.SemVer => ver !== null)
-            .map((x) => x.version)
-    }
-
-    /**
-     * Validate the local cache directory of the given lsp version (matches expected hash)
-     * If valid return cache directory, else return undefined
-     */
-    private async getValidLocalCacheDirectory(version: LspVersion) {
-        const targetContents = this.getTargetContents(version)
-        if (targetContents === undefined || targetContents.length === 0) {
-            return undefined
-        }
-
-        const cacheDir = this.getDownloadDirectory(version.serverVersion)
-        const hasValidCache = await this.hasValidLocalCache(cacheDir, targetContents)
-
-        return hasValidCache ? cacheDir : undefined
-    }
-
-    /**
-     * Determines if a cached LSP version is valid for use as a fallback.
-     */
-    private isValidCachedVersion(version: LspVersion, cachedVersions: string[], expectedVersion: semver.SemVer) {
-        const serverVersion = semver.parse(version.serverVersion) as semver.SemVer
-        return cachedVersions.includes(serverVersion.version) && semver.lte(serverVersion, expectedVersion)
-    }
-
-    /**
-     * Download and unzip all of the contents into the download directory.
-     * Installs atomically: downloads to a unique PID/random temp dir, validates required files
-     * BEFORE the final rename, deletes zip files, then renames to final location.
-     * Never deletes a valid final install before the rename succeeds.
-     * If another process wins the race, validates the winner's install.
-     */
-    private async downloadRemoteTargetContent(contents: TargetContent[], lspVersion: LspVersion, timeout: Timeout) {
-        const downloadDirectory = this.getDownloadDirectory(lspVersion.serverVersion)
-        const randomSuffix = crypto.randomBytes(8).toString('hex')
-        const tempDirectory = `${downloadDirectory}.${process.pid}-${randomSuffix}`
-
-        // Clean up any leftover temp from a previous crash with same PID (unlikely but safe)
-        if (await fs.existsDir(tempDirectory)) {
-            await fs.delete(tempDirectory, { force: true, recursive: true })
-        }
-        await fs.mkdir(tempDirectory)
+    private async downloadRemoteTargetContent(
+        contents: TargetContent[],
+        lspVersion: LspVersion,
+        timeout: Timeout
+    ): Promise<void> {
+        const versionDir = this.getDownloadDirectory(lspVersion.serverVersion)
 
         try {
-            const fetchTasks = contents.map(async (content) => {
-                const res = await this.doFetch(content.url, timeout)
-                return { res, hashes: content.hashes, filename: content.filename }
-            })
-            const fetchResults = await Promise.all(fetchTasks)
-
-            const verifyTasks = fetchResults
-                .filter((fetchResult) => fetchResult.res && fetchResult.res.ok)
-                .map(async (fetchResult) => {
-                    const arrBuffer = await fetchResult.res!.arrayBuffer()
-                    const data = Buffer.from(arrBuffer)
-
-                    // Skip hash verification if no hashes provided
-                    if (!fetchResult.hashes || fetchResult.hashes.length === 0) {
-                        return { filename: fetchResult.filename, data }
-                    }
-
-                    // Verify hash - any valid matching hash passes
-                    if (this.verifyHash(data, fetchResult.hashes)) {
-                        return { filename: fetchResult.filename, data }
-                    }
-
-                    logger.error('Invalid hash for %s', fetchResult.filename)
-                    return undefined
-                })
-
-            const verified = (await Promise.all(verifyTasks)).filter(
-                (r): r is { filename: string; data: Buffer } => r !== undefined
-            )
-            if (verified.length !== contents.length) {
-                return false
+            const downloaded: { content: TargetContent; data: Buffer }[] = []
+            for (const content of contents) {
+                const data = await this.downloadContent(content, timeout)
+                this.verifyDownloadedSize(content, data)
+                this.verifyContentIntegrity(content, data)
+                downloaded.push({ content, data })
             }
 
-            const filesToDownload = await lspSetupStage('validate', async () => verified)
+            const plan = await lspSetupStage('validate', async () => this.buildInstallPlan(versionDir, downloaded))
 
             // We were instructed by legal to show this message
             const thirdPartyLicenses = lspVersion.thirdPartyLicenses
             logger.info(
-                `Installing '${this.lsName}' Language Server v${lspVersion.serverVersion} to: ${downloadDirectory}${thirdPartyLicenses ? ` (Attribution notice can be found at ${thirdPartyLicenses})` : ''}`
+                `Installing '${this.lsName}' Language Server v${lspVersion.serverVersion} to: ${versionDir}${thirdPartyLicenses ? ` (Attribution notice can be found at ${thirdPartyLicenses})` : ''}`
             )
 
-            for (const file of filesToDownload) {
-                await fs.writeFile(`${tempDirectory}/${file.filename}`, file.data)
-            }
-
-            const extractionOk = await this.extractZipFilesFromRemote(tempDirectory)
-            if (!extractionOk) {
-                await fs.delete(tempDirectory, { force: true, recursive: true })
-                return false
-            }
-
-            // Delete zip files after successful extraction
-            await this.deleteZipFiles(tempDirectory)
-
-            // Validate required files BEFORE final rename
-            if (this.requiredFiles.length > 0) {
-                await this.validateRequiredFiles(tempDirectory)
-            }
-
-            // Atomic rename: move temp dir to final location
-            // NEVER delete a valid final install before rename succeeds
-            if (await fs.existsDir(downloadDirectory)) {
-                // Another process won the race — validate the winner
-                if (await this.validateWinnerInstall(downloadDirectory)) {
-                    // Winner's install is valid; clean up our temp and use the winner
-                    await fs.delete(tempDirectory, { force: true, recursive: true })
-                    return true
-                }
-                // Winner's install is invalid; remove it and proceed with our install
-                await fs.delete(downloadDirectory, { force: true, recursive: true })
-            }
-
-            try {
-                await fs.rename(tempDirectory, downloadDirectory)
-            } catch (renameErr) {
-                // Race condition: another process renamed at the same instant
-                if (await fs.existsDir(downloadDirectory)) {
-                    if (await this.validateWinnerInstall(downloadDirectory)) {
-                        await fs.delete(tempDirectory, { force: true, recursive: true })
-                        return true
+            await fs.mkdir(versionDir)
+            for (const entry of plan) {
+                const destination = path.join(versionDir, entry.relativePath)
+                if (entry.data === undefined) {
+                    await fs.mkdir(destination)
+                } else {
+                    await fs.mkdir(path.dirname(destination))
+                    await fs.writeFile(destination, entry.data)
+                    if (entry.mode !== undefined && process.platform !== 'win32') {
+                        await fs.chmod(destination, entry.mode)
                     }
                 }
-                throw renameErr
             }
 
-            return true
+            await this.validateInstall(versionDir)
         } catch (err) {
-            // Clean up temp dir on failure
-            if (await fs.existsDir(tempDirectory)) {
-                await fs.delete(tempDirectory, { force: true, recursive: true })
-            }
+            await this.removeFailedInstall(versionDir, err)
             throw err
         }
     }
 
     /**
-     * Verifies hash for downloaded content.
-     * Supports hashes in `algorithm:digest` format (e.g. "sha256:abc123")
-     * and legacy raw hex digest (uses configured algorithm).
-     *
-     * Semantics:
-     * - No hashes, or no parseable/supported hash entries → skip verification (return true).
-     * - At least one supported hash was computed → at least one must match (case-insensitive).
+     * Preflights the full downloaded set into an ordered list of writes rooted at the version
+     * directory: a non-ZIP content becomes one file; a ZIP content is expanded into its entries.
+     * Every path is validated up front, so a rejected set writes nothing. ZIP archives are never
+     * persisted — their bytes stay in memory and only the extracted entries reach disk.
      */
+    private buildInstallPlan(
+        versionDir: string,
+        downloaded: { content: TargetContent; data: Buffer }[]
+    ): PlannedWrite[] {
+        const planned: PlannedWrite[] = []
+        for (const { content, data } of downloaded) {
+            if (isZipFilename(content.filename)) {
+                let entries
+                try {
+                    entries = new AdmZip(data).getEntries()
+                } catch (e) {
+                    throw new ToolkitError(`Failed to read "${content.filename}" archive: ${e}`, {
+                        code: extractionFailedCode,
+                    })
+                }
+                for (const entry of entries) {
+                    const normalizedEntryName = normalizeArchivePath(entry.entryName)
+                    let relativePath: string
+                    try {
+                        relativePath = path.relative(versionDir, resolveWithinRoot(versionDir, normalizedEntryName))
+                    } catch {
+                        throw new ToolkitError(`Refusing to extract entry outside install root: ${entry.entryName}`, {
+                            code: extractionFailedCode,
+                        })
+                    }
+                    if (entry.isDirectory) {
+                        planned.push({ relativePath })
+                    } else {
+                        let entryData: Buffer
+                        try {
+                            entryData = entry.getData()
+                        } catch (e) {
+                            throw new ToolkitError(`Failed to extract "${entry.entryName}": ${e}`, {
+                                code: extractionFailedCode,
+                            })
+                        }
+                        planned.push({ relativePath, data: entryData, mode: zipEntryPosixMode(entry.attr) })
+                    }
+                }
+            } else {
+                let relativePath: string
+                try {
+                    relativePath = path.relative(versionDir, resolveWithinRoot(versionDir, content.filename))
+                } catch {
+                    throw new ToolkitError(`Refusing to write content outside install root: ${content.filename}`, {
+                        code: extractionFailedCode,
+                    })
+                }
+                planned.push({ relativePath, data })
+            }
+        }
+        return planned
+    }
+
+    /**
+     * Recursively removes a failed install directory. If cleanup itself fails, the original error is
+     * preserved: the cleanup failure is attached to it and logged, never rethrown in its place. This
+     * mirrors JetBrains removeFailedInstall/addSuppressed as closely as JS allows.
+     */
+    private async removeFailedInstall(versionDir: string, cause: unknown): Promise<void> {
+        try {
+            await fs.delete(versionDir, { force: true, recursive: true })
+        } catch (cleanupErr) {
+            logger.error(`Failed to remove failed install at ${versionDir}: ${cleanupErr}`)
+            addSuppressed(cause, cleanupErr)
+        }
+    }
+
+    private verifyDownloadedSize(content: TargetContent, data: Buffer): void {
+        if (content.bytes > 0 && data.length !== content.bytes) {
+            throw new ToolkitError(
+                `Downloaded size mismatch for ${this.lsName}/${content.filename}: expected ${content.bytes} bytes, got ${data.length}`,
+                { code: downloadFailedCode }
+            )
+        }
+    }
+
+    private verifyContentIntegrity(content: TargetContent, data: Buffer): void {
+        const hashes = content.hashes ?? []
+        if (hashes.length === 0) {
+            return
+        }
+        if (!this.verifyHash(data, hashes)) {
+            logger.error('Invalid hash for %s', content.filename)
+            throw new ToolkitError(`Hash verification failed for ${this.lsName}/${content.filename}`, {
+                code: hashIntegrityFailedCode,
+            })
+        }
+    }
+
     private verifyHash(data: Buffer, hashes: string[]): boolean {
-        let computedAny = false
+        if (hashes.length === 0) {
+            return true
+        }
 
         for (const hashEntry of hashes) {
-            if (!hashEntry) {
+            const parsed = parseHashEntry(hashEntry)
+            if (!parsed) {
                 continue
             }
 
-            let algorithm: string
-            let expectedDigest: string
-
-            if (hashEntry.includes(':')) {
-                // Parse algorithm:digest format
-                const colonIdx = hashEntry.indexOf(':')
-                algorithm = hashEntry.substring(0, colonIdx).toLowerCase()
-                expectedDigest = hashEntry.substring(colonIdx + 1)
-            } else {
-                // Legacy raw hex digest — use configured algorithm
-                algorithm = this.hashAlgorithm
-                expectedDigest = hashEntry
-            }
-
             try {
-                // createHash returns "algorithm:hex" — extract just the hex portion
-                const fullHash = createHash(algorithm, data)
+                const fullHash = createHash(parsed.algorithm, data)
                 const colonPos = fullHash.indexOf(':')
                 const actualDigest = colonPos >= 0 ? fullHash.substring(colonPos + 1) : fullHash
-                computedAny = true
 
-                if (actualDigest.toLowerCase() === expectedDigest.toLowerCase()) {
+                if (actualDigest.toLowerCase() === parsed.digest.toLowerCase()) {
                     return true
                 }
             } catch {
-                // Invalid/unsupported algorithm; skip this hash entry
-                logger.warn(`Unsupported hash algorithm "${algorithm}", skipping`)
+                logger.warn(`Unsupported hash algorithm "${parsed.algorithm}", skipping`)
             }
         }
 
-        // If we never successfully computed any hash (all unsupported or empty), skip verification
-        return !computedAny
+        return false
     }
 
-    /** Validates that a race winner's install directory has required files. */
-    private async validateWinnerInstall(directory: string): Promise<boolean> {
-        if (this.requiredFiles.length === 0) {
-            return true
-        }
-        try {
-            await this.validateRequiredFiles(directory)
-            return true
-        } catch {
-            return false
-        }
+    private async validateInstall(directory: string): Promise<void> {
+        await requireServerAndRequiredFiles(directory, this.serverFilename, this.requiredFiles)
     }
 
-    /** Remove zip files after successful extraction. */
-    private async deleteZipFiles(directory: string) {
-        const entries = await fs.readdir(directory)
-        for (const [fileName] of entries) {
-            if (fileName.endsWith('.zip')) {
-                await fs.delete(path.join(directory, fileName))
-            }
-        }
-    }
-
-    /** Validate that all configured files exist in the install directory. */
-    private async validateRequiredFiles(directory: string): Promise<void> {
-        await verifyRequiredFiles(directory, this.requiredFiles)
-    }
-
-    private async extractZipFilesFromRemote(downloadDirectory: string) {
-        const zips = (await fs.readdir(downloadDirectory))
-            .filter(([fileName, _]) => fileName.endsWith('.zip'))
-            .map(([fileName, _]) => `${downloadDirectory}/${fileName}`)
-
-        if (zips.length === 0) {
-            return true
-        }
-
-        return this.copyZipContents(zips, downloadDirectory)
-    }
-    /** Validates an installed version against the current manifest target and configured required files. */
     async isValidCacheDirectory(localCacheDirectory: string): Promise<boolean> {
         const directoryVersion = semver.parse(path.basename(localCacheDirectory))
-        if (!directoryVersion) {
+        if (!directoryVersion || !versionSatisfiesRange(directoryVersion, this.versionRange)) {
             return false
         }
-
-        const manifestVersion = this.compatibleManifestLspVersion().find((version) => {
-            const parsedVersion = semver.parse(version.serverVersion)
-            return parsedVersion?.compare(directoryVersion) === 0
-        })
-        if (!manifestVersion) {
-            return false
-        }
-
-        const targetContents = this.getTargetContents(manifestVersion)
-        return targetContents !== undefined && this.hasValidLocalCache(localCacheDirectory, targetContents)
+        return hasServerAndRequiredFiles(localCacheDirectory, this.serverFilename, this.requiredFiles)
     }
 
-    private async hasValidLocalCache(localCacheDirectory: string, targetContents: TargetContent[]) {
-        if (!(await fs.existsDir(localCacheDirectory))) {
-            return false
-        }
-
-        // Validate required files if configured
-        if (this.requiredFiles.length > 0) {
-            try {
-                await this.validateRequiredFiles(localCacheDirectory)
-            } catch {
-                return false
-            }
-            return true
-        }
-
-        // For non-zip content, check the files are present
-        const nonZipContents = targetContents.filter((c) => !c.filename.endsWith('.zip'))
-        for (const content of nonZipContents) {
-            const filePath = `${localCacheDirectory}/${content.filename}`
-            if (!(await fs.existsFile(filePath))) {
-                return false
-            }
-        }
-
-        // For zip contents, verify extracted folders exist
-        return this.ensureUnzippedFoldersMatchZip(localCacheDirectory, targetContents)
+    private async hasValidLocalCache(localCacheDirectory: string): Promise<boolean> {
+        return hasServerAndRequiredFiles(localCacheDirectory, this.serverFilename, this.requiredFiles)
     }
 
-    /**
-     * Ensures zip files in cache have an unzipped folder of the same name
-     * with the same content files (by name)
-     */
-    private ensureUnzippedFoldersMatchZip(localCacheDirectory: string, targetContents: TargetContent[]) {
-        const zipPaths = targetContents
-            .filter((x) => x.filename.endsWith('.zip'))
-            .map((y) => `${localCacheDirectory}/${y.filename}`)
-
-        if (zipPaths.length === 0) {
-            return true
-        }
-
-        // Check if extracted directories exist (zip files may have been deleted)
-        for (const zipPath of zipPaths) {
-            const extractPath = zipPath.replace('.zip', '')
-            try {
-                const zipExists = require('fs').existsSync(zipPath) // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
-                const dirExists = require('fs').existsSync(extractPath) // eslint-disable-line no-restricted-imports, @typescript-eslint/no-require-imports
-
-                if (!zipExists && !dirExists) {
-                    return false
-                }
-                if (zipExists && !dirExists) {
-                    // Need to re-extract
-                    return this.copyZipContents([zipPath], localCacheDirectory)
-                }
-            } catch {
-                return false
-            }
-        }
-        return true
-    }
-
-    /**
-     * Extracts zip contents with zip-slip/path traversal preflight.
-     * Validates all entries before extraction to ensure no paths escape the target directory.
-     */
-    private copyZipContents(zips: string[], _baseDirectory: string) {
-        const unzips = zips.map((zip) => {
-            try {
-                const zipFile = new AdmZip(zip)
-                const extractPath = zip.replace('.zip', '')
-                const resolvedExtractPath = path.resolve(extractPath)
-
-                // Preflight: check all entries for zip-slip/path traversal
-                const entries = zipFile.getEntries()
-                for (const entry of entries) {
-                    const entryPath = path.resolve(resolvedExtractPath, entry.entryName)
-                    if (!entryPath.startsWith(resolvedExtractPath + path.sep) && entryPath !== resolvedExtractPath) {
-                        logger.error(
-                            `Zip-slip detected in "${zip}": entry "${entry.entryName}" would extract outside target directory`
-                        )
-                        return false
-                    }
-                }
-
-                /**
-                 * Avoid overwriting existing files during extraction to prevent file corruption.
-                 * On Mac ARM64 when a language server is already running in one VS Code window,
-                 * attempting to extract and overwrite its files from another window can cause
-                 * the newly started language server to crash with 'EXC_CRASH (SIGKILL (Code Signature Invalid))'.
-                 */
-                zipFile.extractAllTo(extractPath, false)
-            } catch (e) {
-                logger.error(`Failed to extract zip: ${e}`)
-                return false
-            }
-            return true
-        })
-
-        return unzips.every(Boolean)
-    }
-
-    /**
-     * Parses the toolkit lsp version object retrieved from the version manifest to determine
-     * lsp contents
-     */
-    private getLSPTargetContents(version: LspVersion) {
+    private getLSPTargetContents(version: LspVersion): TargetContent[] {
         const lspTarget = this.getCompatibleLspTarget(version)
         if (!lspTarget) {
-            throw new ToolkitError("No language server target found matching the system's architecture and platform")
+            throw new ToolkitError("No language server target found matching the system's architecture and platform", {
+                code: noCompatibleVersionCode,
+            })
         }
-
-        const targetContents = lspTarget.contents
-        if (!targetContents) {
-            throw new ToolkitError('No matching target contents found')
-        }
-        return targetContents
+        return lspTarget.contents ?? []
     }
 
-    /**
-     * Get the latest language server version matching the toolkit compatible version range,
-     * not de-listed and contains the required target contents.
-     * Always picks the highest semver version — never prefers an older version with a `latest` flag.
-     */
     private latestCompatibleLspVersion() {
         if (this.manifest === null) {
             throw new ToolkitError('No valid manifest')
@@ -727,95 +564,147 @@ export class LanguageServerResolver {
 
         const latestCompatibleVersion =
             this.manifest.versions
-                .filter((ver) => this.isCompatibleVersion(ver) && this.hasRequiredTargetContent(ver))
+                .filter((ver) => this.isCompatibleVersion(ver) && this.hasCompatibleTarget(ver))
                 .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))[0] ?? undefined
 
         if (latestCompatibleVersion === undefined) {
             throw new ToolkitError(
-                `Unable to find a language server that satisfies one or more of these conditions: version in range [${this.versionRange.range}], matching system's architecture and platform`
+                `Unable to find a language server that satisfies one or more of these conditions: version in range [${this.versionRange.range}], matching system's architecture and platform`,
+                { code: noCompatibleVersionCode }
             )
         }
 
         return latestCompatibleVersion
     }
 
-    /**
-     * Determine if the given lsp version is toolkit compatible
-     */
     private isCompatibleVersion(version: LspVersion) {
         if (semver.parse(version.serverVersion) === null) {
             return false
         }
 
-        return (
-            semver.satisfies(version.serverVersion, this.versionRange, {
-                includePrerelease: true,
-            }) && !version.isDelisted
+        return versionSatisfiesRange(version.serverVersion, this.versionRange) && !version.isDelisted
+    }
+
+    private hasCompatibleTarget(version: LspVersion) {
+        return this.getCompatibleLspTarget(version) !== undefined
+    }
+
+    private getCompatibleLspTarget(version: LspVersion) {
+        return findCompatibleTarget(version, this.getTargetPlatform())
+    }
+
+    private getTargetPlatform(): TargetPlatform {
+        if (!this.resolvedTargetPlatform) {
+            this.resolvedTargetPlatform = this.targetPlatformResolver()
+        }
+        return this.resolvedTargetPlatform
+    }
+
+    private async downloadContent(content: TargetContent, progressTimeout: Timeout): Promise<Buffer> {
+        let lastError: Error | undefined
+        for (let attempt = 1; attempt <= downloadMaxRetries; attempt++) {
+            const requestTimeout = new Timeout(artifactRequestTimeout)
+            try {
+                const response = await this.doFetch(content.url, requestTimeout, progressTimeout)
+                if (response.status !== 200) {
+                    throw new Error(`Failed to download "${content.filename}": HTTP ${response.status}`)
+                }
+                return Buffer.from(await response.arrayBuffer())
+            } catch (err) {
+                lastError = err instanceof Error ? err : new Error(String(err))
+                if (attempt < downloadMaxRetries) {
+                    await this.sleepFn(downloadBaseDelayMs * Math.pow(2, attempt - 1))
+                }
+            } finally {
+                requestTimeout.dispose()
+            }
+        }
+        throw new ToolkitError(
+            `Failed to download "${content.filename}" after ${downloadMaxRetries} attempts: ${lastError?.message}`,
+            { code: downloadFailedCode, cause: lastError }
         )
     }
 
-    private hasRequiredTargetContent(version: LspVersion) {
-        const targetContents = this.getTargetContents(version)
-        return targetContents !== undefined && targetContents.length > 0
-    }
-
-    private getTargetContents(version: LspVersion) {
-        const target = this.getCompatibleLspTarget(version)
-        return target?.contents
-    }
-
-    /**
-     * Gets the compatible target using the configured target platform resolver.
-     * Uses process.platform directly (e.g. `win32`) — NOT the legacy `windows` mapping.
-     */
-    private getCompatibleLspTarget(version: LspVersion) {
-        const targetPlatform = this.targetPlatformResolver()
-        return findCompatibleTarget(version, targetPlatform)
-    }
-
-    /**
-     * Gets platform-specific "cache" dir ("$LOCALAPPDATA/aws/…" or "~/.cache/aws/…").
-     */
-    public static defaultDir() {
-        return path.join(fs.getCacheDir(), 'aws', 'toolkits', 'language-servers')
-    }
-
-    defaultDownloadFolder() {
-        return this.baseDir
-    }
-
-    /**
-     * Performs a single, one-shot network request for a URL.
-     * If a custom fetchFn was injected, uses that; otherwise uses the global `fetch` API
-     * with AbortSignal for timeout cancellation.
-     *
-     * This deliberately makes exactly ONE HTTP request per call — no internal retries.
-     * Outer retry logic is handled by fetchRemoteServer's 3-attempt loop.
-     */
     private async doFetch(
         url: string,
-        timeout: Timeout
-    ): Promise<{ ok: boolean; arrayBuffer(): Promise<ArrayBuffer> }> {
+        requestTimeout: Timeout,
+        progressTimeout?: Timeout
+    ): Promise<ArtifactFetchResponse> {
         if (this.fetchFn) {
-            return this.fetchFn(url, timeout)
+            return this.fetchFn(url, requestTimeout)
         }
 
-        // Default one-shot fetch using global fetch + AbortSignal from Timeout
         const abortController = new AbortController()
-        const disposable = timeout.token.onCancellationRequested(() => abortController.abort())
+        const disposables = [requestTimeout.token.onCancellationRequested(() => abortController.abort())]
+        if (progressTimeout) {
+            disposables.push(progressTimeout.token.onCancellationRequested(() => abortController.abort()))
+        }
         try {
             const response = await globalThis.fetch(url, { signal: abortController.signal })
             return response
         } finally {
-            disposable.dispose()
+            for (const disposable of disposables) {
+                disposable.dispose()
+            }
         }
     }
 
-    private getDownloadDirectory(version: string) {
-        return path.join(this.baseDir, version)
+    private getDownloadDirectory(version: string): string {
+        return path.join(this.storageDir, this.safeVersionDirectorySegment(version))
     }
+
+    private safeVersionDirectorySegment(version: string): string {
+        const reject = (reason: string) =>
+            new ToolkitError(`Unsafe language server version "${version}": ${reason}`, {
+                code: noCompatibleVersionCode,
+            })
+
+        if (semver.parse(version) === null) {
+            throw reject('not valid semver')
+        }
+        if (version.includes('/') || version.includes('\\') || path.isAbsolute(version)) {
+            throw reject('contains a path separator')
+        }
+        if (path.dirname(path.resolve(this.storageDir, version)) !== path.resolve(this.storageDir)) {
+            throw reject('escapes the storage directory')
+        }
+        return version
+    }
+}
+
+function parseHashEntry(hashEntry: string): { algorithm: string; digest: string } | undefined {
+    const colonIdx = hashEntry.indexOf(':')
+    if (colonIdx <= 0) {
+        return undefined
+    }
+    const algorithm = hashEntry.substring(0, colonIdx).toLowerCase()
+    const digest = hashEntry.substring(colonIdx + 1)
+    if (!algorithm || !digest) {
+        return undefined
+    }
+    return { algorithm, digest }
 }
 
 function defaultSleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isZipFilename(filename: string): boolean {
+    return filename.toLowerCase().endsWith('.zip')
+}
+
+/**
+ * POSIX permission bits recorded in a ZIP entry's external attributes — the high 16 bits hold the
+ * Unix `st_mode`, of which only the rwx (owner/group/other) permission bits are kept. A missing
+ * Unix mode yields 0, matching JetBrains' application of an empty POSIX permission set.
+ */
+export function zipEntryPosixMode(externalAttributes: number): number {
+    return (externalAttributes >>> 16) & 0o777
+}
+
+function addSuppressed(error: unknown, suppressed: unknown): void {
+    if (error instanceof Error) {
+        const withSuppressed = error as Error & { suppressed?: unknown[] }
+        withSuppressed.suppressed = [...(withSuppressed.suppressed ?? []), suppressed]
+    }
 }

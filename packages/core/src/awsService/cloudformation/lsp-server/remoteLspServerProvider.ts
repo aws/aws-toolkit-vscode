@@ -26,6 +26,7 @@ export class RemoteLspServerProvider implements LspServerProviderI, LspInstallat
         }
 
         const result = await this.installer.resolve()
+        await this.installer.cleanupAfterResolveWithLegacy()
         this.serverPath = result.resourcePaths.lsp
         return this.serverPath
     }

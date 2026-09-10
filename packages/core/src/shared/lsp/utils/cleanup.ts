@@ -4,24 +4,18 @@
  */
 
 import path from 'path'
-import { LspVersion } from '../types'
+import { FileType } from 'vscode'
 import { fs } from '../../../shared/fs/fs'
-import { partition } from '../../../shared/utilities/tsUtils'
 import { parse, SemVer } from 'semver'
 
-export async function getDownloadedVersions(installLocation: string) {
-    return (await fs.readdir(installLocation)).filter((x) => parse(x[0]) !== null).map(([f, _], __) => f)
+function isDirectoryEntry(filetype: FileType): boolean {
+    return (filetype & FileType.Directory) !== 0
 }
 
-function isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {
-    return manifestVersions.find((v) => v.serverVersion === targetVersion)?.isDelisted ?? false
+function isSymbolicLink(filetype: FileType): boolean {
+    return (filetype & FileType.SymbolicLink) !== 0
 }
 
-/**
- * Callback that determines whether a cached version directory is valid.
- * Receives the full path to the version directory.
- * Default: directory exists and is non-empty.
- */
 export type CacheValidator = (versionDir: string) => Promise<boolean>
 
 async function defaultCacheValidator(versionDir: string): Promise<boolean> {
@@ -36,48 +30,21 @@ async function defaultCacheValidator(versionDir: string): Promise<boolean> {
     }
 }
 
-/**
- * Delete all delisted versions and retain:
- * 1. The current (latestInstalledVersion) — always kept
- * 2. The highest VALID fallback version (non-delisted, parseable semver, passes validator)
- *
- * Everything else is deleted.
- *
- * @param latestInstalledVersion The version that was just installed/is currently active
- * @param manifestVersions The versions list from the manifest (for delisted checks)
- * @param downloadDirectory The parent directory containing version subdirectories
- * @param validator Optional callback for cache directory validation; defaults to non-empty check
- * @returns Array of deleted version strings
- */
 export async function cleanLspDownloads(
     latestInstalledVersion: string,
-    manifestVersions: LspVersion[],
     downloadDirectory: string,
     validator?: CacheValidator
 ): Promise<string[]> {
     const validate = validator ?? defaultCacheValidator
-    const downloadedVersions = await getDownloadedVersions(downloadDirectory)
-    const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
-        isDelisted(manifestVersions, v)
-    )
+    const directories = (await fs.readdir(downloadDirectory)).filter(([, filetype]) => isDirectoryEntry(filetype))
     const deletedVersions: string[] = []
 
-    for (const v of delistedVersions) {
-        await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-        deletedVersions.push(v)
-    }
-
-    if (remainingVersions.length <= 1) {
-        return deletedVersions
-    }
-
-    // Find the highest VALID fallback (not the current version, passes validation)
-    const candidateFallbacks = remainingVersions
-        .filter((v) => v !== latestInstalledVersion)
-        .map((v) => ({ version: v, semver: parse(v) }))
+    const candidateFallbacks = directories
+        .map(([name]) => name)
+        .filter((name) => name !== latestInstalledVersion)
+        .map((name) => ({ version: name, semver: parse(name) }))
         .filter((v): v is { version: string; semver: SemVer } => v.semver !== null)
-
-    candidateFallbacks.sort((a, b) => b.semver.compare(a.semver))
+        .sort((a, b) => b.semver.compare(a.semver))
 
     let highestValidFallback: string | undefined
     for (const candidate of candidateFallbacks) {
@@ -87,17 +54,19 @@ export async function cleanLspDownloads(
         }
     }
 
-    // Retain set: current + highest valid fallback
     const retainSet = new Set<string>([latestInstalledVersion])
     if (highestValidFallback) {
         retainSet.add(highestValidFallback)
     }
 
-    for (const v of remainingVersions) {
-        if (!retainSet.has(v)) {
-            await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-            deletedVersions.push(v)
+    for (const [name, filetype] of directories) {
+        if (retainSet.has(name)) {
+            continue
         }
+        // A directory symlink is unlinked (recursive: false) so its target survives; a real directory
+        // is removed recursively.
+        await fs.delete(path.join(downloadDirectory, name), { force: true, recursive: !isSymbolicLink(filetype) })
+        deletedVersions.push(name)
     }
 
     return deletedVersions

@@ -62,6 +62,18 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
             assert.strictEqual(sleepFn.callCount, 0)
         })
 
+        it('passes an AbortSignal to fetch for the per-request timeout', async function () {
+            const fetchFn = sandbox.stub().resolves(new Response(validManifest, { status: 200 }))
+            const sleepFn = sandbox.stub().resolves()
+
+            const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn }))
+            await resolver.resolve()
+
+            sinon.assert.calledOnce(fetchFn)
+            const init = fetchFn.getCall(0).args[1]
+            assert.ok(init && init.signal instanceof AbortSignal, 'manifest fetch must receive an AbortSignal')
+        })
+
         it('retries exactly 3 times before falling to cache', async function () {
             const fetchFn = sandbox.stub().rejects(new Error('network error'))
             const sleepFn = sandbox.stub().resolves()
@@ -83,9 +95,20 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
             const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn }))
             await assert.rejects(resolver.resolve())
 
-            // backoff: 1000ms * 2^0 = 1000, 1000ms * 2^1 = 2000
-            assert.strictEqual(sleepFn.getCall(0).args[0], 1000)
-            assert.strictEqual(sleepFn.getCall(1).args[0], 2000)
+            assert.strictEqual(sleepFn.getCall(0).args[0], 500)
+            assert.strictEqual(sleepFn.getCall(1).args[0], 1000)
+        })
+
+        it('does not re-fetch when a successfully fetched manifest is malformed', async function () {
+            const fetchFn = sandbox.stub().resolves(new Response('this is not json', { status: 200 }))
+            const sleepFn = sandbox.stub().resolves()
+            existsFileStub.resolves(false)
+
+            const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn }))
+            await assert.rejects(resolver.resolve(), /Cached .* manifest not found/)
+
+            assert.strictEqual(fetchFn.callCount, 1)
+            assert.strictEqual(sleepFn.callCount, 0)
         })
 
         it('succeeds on second attempt after first fails', async function () {
@@ -132,6 +155,19 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
             await assert.rejects(resolver.resolve(), /Cached .* manifest not found/)
 
             assert.strictEqual(fetchFn.callCount, 3)
+        })
+
+        it('rejects a 206 partial response and retries (only HTTP 200 is accepted)', async function () {
+            const fetchFn = sandbox
+                .stub()
+                .resolves(new Response('partial', { status: 206, statusText: 'Partial Content' }))
+            const sleepFn = sandbox.stub().resolves()
+            existsFileStub.resolves(false)
+
+            const resolver = new ManifestResolver(makeConfig({ fetchFn, sleepFn }))
+            await assert.rejects(resolver.resolve(), /Cached .* manifest not found/)
+
+            assert.strictEqual(fetchFn.callCount, 3, 'a non-200 status must be retried the full 3 attempts')
         })
     })
 
@@ -286,21 +322,6 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
         })
     })
 
-    describe('legacy constructor', function () {
-        it('computes cacheDir from platform cache', async function () {
-            // Stub global fetch for legacy constructor
-            sandbox.stub(globalThis, 'fetch').resolves(new Response(validManifest, { status: 200 }))
-
-            const resolver = new ManifestResolver('https://example.com/manifest.json', 'my-server', 'myPrefix')
-            await resolver.resolve()
-
-            // Verify it wrote to a path containing the server name
-            const writeCall = writeFileStub.getCall(0)
-            assert.ok(writeCall.args[0].includes('my-server'))
-            assert.ok(writeCall.args[0].includes('manifest.json'))
-        })
-    })
-
     describe('deprecation check', function () {
         const deprecatedManifest = deprecatedManifestJson
 
@@ -367,15 +388,6 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
             const result = await resolver.resolve()
 
             assert.strictEqual(result.isManifestDeprecated, false)
-        })
-
-        it('preserves legacy constructor suppressPrefix behavior', async function () {
-            sandbox.stub(globalThis, 'fetch').resolves(new Response(deprecatedManifest, { status: 200 }))
-
-            const resolver = new ManifestResolver('https://example.com/manifest.json', 'my-server', 'myPrefix')
-            const result = await resolver.resolve()
-
-            assert.strictEqual(result.isManifestDeprecated, true)
         })
     })
 })
