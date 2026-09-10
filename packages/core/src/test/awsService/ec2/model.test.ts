@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2Connecter, getRemoveLinesCommand } from '../../../awsService/ec2/model'
+import { Ec2Connecter, getRemoveLinesCommand, getSsmPluginArgs } from '../../../awsService/ec2/model'
 import { SsmClient } from '../../../shared/clients/ssm'
 import { Ec2Client } from '../../../shared/clients/ec2'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
@@ -20,6 +20,29 @@ import { isMac, isWin } from '../../../shared/vscode/env'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { assertLogsContain } from '../../globalSetup.test'
 import { InstanceStateName } from '@aws-sdk/client-ec2'
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
+
+describe('getSsmPluginArgs', function () {
+    it('uses the modern Session Manager plugin invocation format', function () {
+        const session: StartSessionResponse = {
+            SessionId: 'test-session',
+            StreamUrl: 'wss://test-stream',
+            TokenValue: 'test-token',
+        }
+        const selection = { instanceId: 'i-1234567890abcdef0', region: 'us-west-2' }
+
+        const args = getSsmPluginArgs(session, selection, 'https://ssm.us-west-2.amazonaws.com/')
+
+        assert.deepStrictEqual(args, [
+            JSON.stringify(session),
+            'us-west-2',
+            'StartSession',
+            '',
+            JSON.stringify({ Target: 'i-1234567890abcdef0' }),
+            'https://ssm.us-west-2.amazonaws.com/',
+        ])
+    })
+})
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
