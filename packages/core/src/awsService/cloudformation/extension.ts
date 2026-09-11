@@ -4,16 +4,8 @@
  */
 
 import { ExtensionContext, window, languages, commands, Disposable } from 'vscode'
-import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind,
-    ErrorHandlerResult,
-    CloseHandlerResult,
-} from 'vscode-languageclient/node'
-import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
-import { formatMessage, toString } from './utils'
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node'
+import { formatMessage, toString, startupFailureMessage, clientIdForInitialization } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -70,11 +62,12 @@ import { RelatedResourceSelector } from './ui/relatedResourceSelector'
 
 import { StackActionCodeLensProvider } from './codelens/stackActionCodeLensProvider'
 import { registerStatusBarCommand } from './ui/statusBar'
-import { getClientId, isAnonymousClientId } from '../../shared/telemetry/util'
+import { getClientId } from '../../shared/telemetry/util'
 import { SettingsLspServerProvider } from './lsp-server/settingsLspServerProvider'
 import { DevLspServerProvider } from './lsp-server/devLspServerProvider'
 import { RemoteLspServerProvider } from './lsp-server/remoteLspServerProvider'
 import { LspServerProvider } from './lsp-server/lspServerProvider'
+import { LspLauncher, LanguageClientFactory } from '../../shared/lsp/lspLauncher'
 import { getLogger } from '../../shared/logger/logger'
 import { ChangeSetsManager } from './stacks/changeSetsManager'
 import { CfnEnvironmentManager } from './cfn-init/cfnEnvironmentManager'
@@ -85,10 +78,92 @@ import { CfnEnvironmentFileSelector } from './ui/cfnEnvironmentFileSelector'
 import { fs } from '../../shared/fs/fs'
 import { ToolkitError } from '../../shared/errors'
 
-let client: LanguageClient
+let launcher: LspLauncher | undefined
 let clientDisposables: Disposable[] = []
+let statusBarRegistered = false
 
-async function startClient(context: ExtensionContext) {
+const serverStoppedMessage = formatMessage(
+    'CloudFormation language server stopped unexpectedly. Restart it to continue using CloudFormation features.'
+)
+const restartServerAction = 'Restart Server'
+
+function createClientFactory(
+    telemetryEnabled: boolean,
+    clientId: string,
+    cfnLspConfig: Record<string, string | undefined>
+): LanguageClientFactory {
+    return async ({ serverPath, errorHandler }): Promise<LanguageClient> => {
+        if (!(await fs.existsFile(serverPath))) {
+            throw new Error(`CloudFormation LSP ${serverPath} not found`)
+        }
+        getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverPath}`)
+
+        const envOptions = {
+            NODE_OPTIONS: '--enable-source-maps',
+        }
+
+        const serverOptions: ServerOptions = {
+            run: {
+                module: serverPath,
+                transport: TransportKind.ipc,
+                options: {
+                    env: envOptions,
+                },
+            },
+            debug: {
+                module: serverPath,
+                transport: TransportKind.ipc,
+                options: {
+                    execArgv: ['--no-lazy'],
+                    env: envOptions,
+                },
+            },
+        }
+
+        const clientOptions: LanguageClientOptions = {
+            documentSelector: [
+                { scheme: 'file', language: 'plaintext' },
+                { scheme: 'file', language: 'cloudformation' },
+                { scheme: 'file', language: 'template' },
+                { scheme: 'file', language: 'json' },
+                { scheme: 'file', language: 'yaml' },
+                { scheme: 'file', pattern: '**/*.txt' },
+                { scheme: 'file', pattern: '**/*.template' },
+                { scheme: 'file', pattern: '**/*.cfn' },
+                { scheme: 'file', pattern: '**/*.json' },
+                { scheme: 'file', pattern: '**/*.yaml' },
+            ],
+            initializationOptions: {
+                handledSchemaProtocols: ['file'],
+                aws: {
+                    clientInfo: {
+                        extension: {
+                            name: 'toolkit-vscode',
+                            version: extensionVersion,
+                        },
+                        clientId: clientIdForInitialization(telemetryEnabled, clientId),
+                    },
+                    telemetryEnabled: telemetryEnabled,
+                    ...(cfnLspConfig.cloudformationEndpoint && {
+                        cloudformation: {
+                            endpoint: cfnLspConfig.cloudformationEndpoint,
+                        },
+                    }),
+                    encryption: {
+                        key: encryptionKey.toString('base64'),
+                        mode: 'JWT',
+                    },
+                },
+            },
+            // Close/error policy is shared across toolkit language servers (LspServerLifecycleController).
+            errorHandler,
+        }
+
+        return new LanguageClient(ExtensionId, ExtensionName, serverOptions, clientOptions)
+    }
+}
+
+async function startClient(context: ExtensionContext): Promise<void> {
     const cfnTelemetrySettings = new CloudFormationTelemetrySettings()
     const telemetryEnabled = await handleTelemetryOptIn(context, cfnTelemetrySettings)
 
@@ -104,87 +179,50 @@ async function startClient(context: ExtensionContext) {
         new SettingsLspServerProvider(cfnLspConfig),
         new RemoteLspServerProvider(),
     ])
-    const serverFile = await serverProvider.serverExecutable()
-    if (!(await fs.existsFile(serverFile))) {
-        throw new Error(`CloudFormation LSP ${serverFile} not found`)
+
+    const clientFactory = createClientFactory(telemetryEnabled, clientId, cfnLspConfig)
+
+    const sessionLauncher = new LspLauncher({
+        name: 'CloudFormation LSP',
+        resolver: serverProvider,
+        invalidator: serverProvider,
+        clientFactory,
+        onError: (error, message) => {
+            void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
+        },
+        // The shared close policy is DoNotRestart: a crash after `initialize` is not an installation problem,
+        // so the server is not repaired or restarted automatically. Tell the user and offer the restart command.
+        onServerStopped: () => {
+            // Ignore a stop reported for a session that a restart or deactivation has already replaced.
+            if (launcher !== sessionLauncher) {
+                return
+            }
+            getLogger('awsCfnLsp').error('CloudFormation language server stopped unexpectedly')
+            void window.showErrorMessage(serverStoppedMessage, restartServerAction).then((selection) => {
+                if (selection === restartServerAction) {
+                    void commands.executeCommand(commandKey('server.restartServer'))
+                }
+            })
+        },
+    })
+    launcher = sessionLauncher
+
+    try {
+        const client = await sessionLauncher.start()
+        await setupPostStart(client, serverProvider)
+    } catch (error) {
+        // A restart may already have replaced this session; only tear down what this call started.
+        if (launcher === sessionLauncher) {
+            await disposeClientSession()
+        }
+        throw error
     }
-    getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverFile}`)
+}
+
+async function setupPostStart(client: LanguageClient, serverProvider: LspServerProvider): Promise<void> {
     const serverRootDir = await serverProvider.serverRootDir()
 
-    const envOptions = {
-        NODE_OPTIONS: '--enable-source-maps',
-    }
-
-    const serverOptions: ServerOptions = {
-        run: {
-            module: serverFile,
-            transport: TransportKind.ipc,
-            options: {
-                env: envOptions,
-            },
-        },
-        debug: {
-            module: serverFile,
-            transport: TransportKind.ipc,
-            options: {
-                execArgv: ['--no-lazy'],
-                env: envOptions,
-            },
-        },
-    }
-
-    const clientOptions: LanguageClientOptions = {
-        documentSelector: [
-            { scheme: 'file', language: 'plaintext' },
-            { scheme: 'file', language: 'cloudformation' },
-            { scheme: 'file', language: 'template' },
-            { scheme: 'file', language: 'json' },
-            { scheme: 'file', language: 'yaml' },
-            { scheme: 'file', pattern: '**/*.txt' },
-            { scheme: 'file', pattern: '**/*.template' },
-            { scheme: 'file', pattern: '**/*.cfn' },
-            { scheme: 'file', pattern: '**/*.json' },
-            { scheme: 'file', pattern: '**/*.yaml' },
-        ],
-        initializationOptions: {
-            handledSchemaProtocols: ['file'],
-            aws: {
-                clientInfo: {
-                    extension: {
-                        name: 'toolkit-vscode',
-                        version: extensionVersion,
-                    },
-                    clientId: isAnonymousClientId(clientId) ? undefined : clientId, // Only forward a real client id, otherwise let server handle it
-                },
-                telemetryEnabled: telemetryEnabled,
-                ...(cfnLspConfig.cloudformationEndpoint && {
-                    cloudformation: {
-                        endpoint: cfnLspConfig.cloudformationEndpoint,
-                    },
-                }),
-                encryption: {
-                    key: encryptionKey.toString('base64'),
-                    mode: 'JWT',
-                },
-            },
-        },
-        errorHandler: {
-            error: (error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult => {
-                void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
-                return { action: ErrorAction.Continue }
-            },
-            closed: (): CloseHandlerResult => {
-                return { action: CloseAction.DoNotRestart }
-            },
-        },
-    }
-
-    client = new LanguageClient(ExtensionId, ExtensionName, serverOptions, clientOptions)
-
     const stacksManager = new StacksManager(client)
-
-    await client.start()
-
     const documentManager = new DocumentManager(client)
     const resourceSelector = new ResourceSelector(client)
     const resourcesManager = new ResourcesManager(client, resourceSelector)
@@ -298,27 +336,36 @@ async function startClient(context: ExtensionContext) {
         addRelatedResourcesCommand(relatedResourcesManager),
         credentialsService,
         serverProvider,
-        { dispose: () => client?.stop() },
     ]
 
-    registerStatusBarCommand()
+    if (!statusBarRegistered) {
+        registerStatusBarCommand()
+        statusBarRegistered = true
+    }
 
-    context.subscriptions.push(...clientDisposables)
     await credentialsService.initialize(client)
 }
 
-async function restartClient(context: ExtensionContext) {
-    // Dispose all client-related resources
+async function disposeClientSession(): Promise<void> {
     for (const disposable of clientDisposables) {
         disposable.dispose()
     }
     clientDisposables = []
 
-    // Start new client
+    const currentLauncher = launcher
+    launcher = undefined
+    if (currentLauncher) {
+        await currentLauncher.stop()
+        currentLauncher.dispose()
+    }
+}
+
+async function restartClient(context: ExtensionContext): Promise<void> {
+    await disposeClientSession()
     await startClient(context)
 }
 
-export async function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext): Promise<void> {
     context.subscriptions.push(
         commands.registerCommand(commandKey('server.restartServer'), async () => {
             try {
@@ -328,20 +375,27 @@ export async function activate(context: ExtensionContext) {
                     formatMessage(`Failed to restart CloudFormation language server: ${toString(error)}`)
                 )
             }
-        })
+        }),
+        // The client and its UI are owned by the session (so "Restart Server" can replace them), but the
+        // extension lifetime must still shut the server down gracefully on deactivation.
+        { dispose: () => void disposeClientSession() }
     )
 
     try {
         await startClient(context)
     } catch (err) {
         getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'CloudFormation language server failed to start'))
+        const message = startupFailureMessage(err)
+        if (message) {
+            void window.showErrorMessage(message)
+        }
     }
 }
 
-export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
-        return undefined
+export async function deactivate(): Promise<void> {
+    try {
+        await disposeClientSession()
+    } catch (err) {
+        getLogger('awsCfnLsp').warn(`Failed to stop CloudFormation language server on deactivate: ${err}`)
     }
-
-    return client.stop()
 }

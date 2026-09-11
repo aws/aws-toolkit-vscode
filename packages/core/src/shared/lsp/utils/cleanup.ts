@@ -4,57 +4,69 @@
  */
 
 import path from 'path'
-import { LspVersion } from '../types'
+import { FileType } from 'vscode'
 import { fs } from '../../../shared/fs/fs'
-import { partition } from '../../../shared/utilities/tsUtils'
-import { parse, sort } from 'semver'
+import { parse, SemVer } from 'semver'
 
-export async function getDownloadedVersions(installLocation: string) {
-    return (await fs.readdir(installLocation)).filter((x) => parse(x[0]) !== null).map(([f, _], __) => f)
+function isDirectoryEntry(filetype: FileType): boolean {
+    return (filetype & FileType.Directory) !== 0
 }
 
-function isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {
-    return manifestVersions.find((v) => v.serverVersion === targetVersion)?.isDelisted ?? false
+function isSymbolicLink(filetype: FileType): boolean {
+    return (filetype & FileType.SymbolicLink) !== 0
 }
 
-/**
- * Delete all delisted versions and keep the two newest versions that remain
- * @param manifestVersions
- * @param downloadDirectory
- * @returns array of deleted versions.
- */
+export type CacheValidator = (versionDir: string) => Promise<boolean>
+
+async function defaultCacheValidator(versionDir: string): Promise<boolean> {
+    try {
+        if (!(await fs.existsDir(versionDir))) {
+            return false
+        }
+        const entries = await fs.readdir(versionDir)
+        return entries.length > 0
+    } catch {
+        return false
+    }
+}
+
 export async function cleanLspDownloads(
     latestInstalledVersion: string,
-    manifestVersions: LspVersion[],
-    downloadDirectory: string
+    downloadDirectory: string,
+    validator?: CacheValidator
 ): Promise<string[]> {
-    const downloadedVersions = await getDownloadedVersions(downloadDirectory)
-    const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
-        isDelisted(manifestVersions, v)
-    )
+    const validate = validator ?? defaultCacheValidator
+    const directories = (await fs.readdir(downloadDirectory)).filter(([, filetype]) => isDirectoryEntry(filetype))
     const deletedVersions: string[] = []
 
-    for (const v of delistedVersions) {
-        await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-        deletedVersions.push(v)
+    const candidateFallbacks = directories
+        .map(([name]) => name)
+        .filter((name) => name !== latestInstalledVersion)
+        .map((name) => ({ version: name, semver: parse(name) }))
+        .filter((v): v is { version: string; semver: SemVer } => v.semver !== null)
+        .sort((a, b) => b.semver.compare(a.semver))
+
+    let highestValidFallback: string | undefined
+    for (const candidate of candidateFallbacks) {
+        if (await validate(path.join(downloadDirectory, candidate.version))) {
+            highestValidFallback = candidate.version
+            break
+        }
     }
 
-    if (remainingVersions.length <= 2) {
-        return deletedVersions
+    const retainSet = new Set<string>([latestInstalledVersion])
+    if (highestValidFallback) {
+        retainSet.add(highestValidFallback)
     }
 
-    for (const v of sort(remainingVersions).slice(0, -2)) {
-        /**
-         * When switching between different manifests, the following edge case can occur:
-         * A newly downloaded version might chronologically be older than all previously downloaded versions,
-         * even though it's marked as the latest version in its own manifest.
-         * In such cases, we skip the cleanup process to preserve this version. Otherwise we will get an EPIPE error
-         */
-        if (v === latestInstalledVersion) {
+    for (const [name, filetype] of directories) {
+        if (retainSet.has(name)) {
             continue
         }
-        await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
-        deletedVersions.push(v)
+        // A directory symlink is unlinked (recursive: false) so its target survives; a real directory
+        // is removed recursively.
+        await fs.delete(path.join(downloadDirectory, name), { force: true, recursive: !isSymbolicLink(filetype) })
+        deletedVersions.push(name)
     }
 
     return deletedVersions

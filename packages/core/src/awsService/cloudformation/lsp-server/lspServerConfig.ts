@@ -5,13 +5,7 @@
 
 export const CfnLspName = 'cloudformation-languageserver'
 export const CfnLspServerFile = 'cfn-lsp-server-standalone.js'
-export const CfnLspServerStorageName = '.aws-cfn-storage'
-export const RequiredFiles = [
-    'node_modules',
-    'cfn-lsp-server-standalone.js',
-    'package.json',
-    'pyodide-worker.js',
-    'assets',
-]
+
+export const RequiredFiles = ['bin', 'node_modules']
 
 export type CfnLspServerEnvType = 'alpha' | 'beta' | 'prod'
