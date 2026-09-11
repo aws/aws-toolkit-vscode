@@ -5,6 +5,7 @@
 
 import { ExtensionConfigKey, ExtensionId } from './extensionConfig'
 import { Position } from 'vscode'
+import { isAnonymousClientId } from '../../shared/telemetry/util'
 
 export function toString(value: unknown): string {
     if (value === undefined || !['object', 'function'].includes(typeof value)) {
@@ -16,6 +17,14 @@ export function toString(value: unknown): string {
 
 export function formatMessage(message: string): string {
     return `${ExtensionId}: ${message}`
+}
+
+/**
+ * A placeholder id is never forwarded so the server can assign its own; `getClientId` is memoized,
+ * so the telemetry preference is checked here as well.
+ */
+export function clientIdForInitialization(telemetryEnabled: boolean, clientId: string): string | undefined {
+    return telemetryEnabled && !isAnonymousClientId(clientId) ? clientId : undefined
 }
 
 export function startupFailureMessage(error: unknown): string | undefined {

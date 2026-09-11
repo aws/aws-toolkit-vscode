@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import sinon from 'sinon'
 import path from 'path'
 import {
     LspServerProvider,
@@ -14,18 +13,10 @@ import { SettingsLspServerProvider } from '../../../../awsService/cloudformation
 import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-server/lspServerConfig'
 import * as env from '../../../../shared/vscode/env'
 import { fs } from '../../../../shared/fs/fs'
-import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
+import { useSandbox, useTempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('LspServerProvider', function () {
-    let sandbox: sinon.SinonSandbox
-
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(function () {
-        sandbox.restore()
-    })
+    const sandbox = useSandbox()
 
     function createMockProvider(
         name: string,
@@ -141,22 +132,15 @@ describe('LspServerProvider', function () {
 })
 
 describe('SettingsLspServerProvider', function () {
-    let sandbox: sinon.SinonSandbox
-    const tmpDir = new TempTestDir()
+    const sandbox = useSandbox()
+    const tmpDir = useTempTestDir()
     let existingPath: string
     let missingPath: string
 
     beforeEach(async function () {
-        sandbox = sinon.createSandbox()
-        await tmpDir.setup()
         existingPath = path.join(tmpDir.path, 'lsp-server')
         await fs.mkdir(existingPath)
         missingPath = path.join(tmpDir.path, 'does-not-exist')
-    })
-
-    afterEach(async function () {
-        sandbox.restore()
-        await tmpDir.teardown()
     })
 
     describe('canProvide', function () {

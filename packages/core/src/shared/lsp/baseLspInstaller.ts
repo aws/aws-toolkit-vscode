@@ -40,8 +40,10 @@ export abstract class BaseLspInstaller<
     T extends ResourcePaths = ResourcePaths,
     Config extends LspInstallerConfig = LspInstallerConfig,
 > {
-    private logger: Logger
+    private readonly logger: Logger
     private readonly installDir: string
+    private readonly versionRange: Range
+    private readonly requiredFiles: readonly string[]
     private resolvedInstallation?: LspResolution<T>
 
     constructor(
@@ -51,10 +53,14 @@ export abstract class BaseLspInstaller<
     ) {
         this.logger = getLogger(loggerName)
         this.installDir = config.storageDir ?? nodePath.join(fs.getCacheDir(), 'aws', 'language-servers', config.name)
+        this.versionRange = new Range(config.supportedVersionRange, { includePrerelease: true })
+        this.requiredFiles = config.requiredFiles ?? []
     }
 
     async resolve(): Promise<LspResolution<T>> {
-        const { name, manifestUrl, supportedVersionRange, localBundleRoot, serverFilename } = this.config
+        this.resolvedInstallation = undefined
+
+        const { name, manifestUrl, localBundleRoot, serverFilename } = this.config
         if (localBundleRoot) {
             const serverPath = nodePath.join(localBundleRoot, serverFilename)
             if (!(await fs.existsFile(serverPath))) {
@@ -63,7 +69,7 @@ export abstract class BaseLspInstaller<
                     { code: 'LspLocalBundleInvalid' }
                 )
             }
-            const resourcePaths = this.resourcePaths(localBundleRoot)
+            const resourcePaths = await this.resourcePaths(localBundleRoot)
             const overrideMsg = `Using language server override location: ${localBundleRoot}`
             this.logger.info(overrideMsg)
             void vscode.window.showInformationMessage(overrideMsg)
@@ -99,17 +105,19 @@ export abstract class BaseLspInstaller<
 
         const serverResolver = new LanguageServerResolver(manifest, {
             lsName: name,
-            versionRange: new Range(supportedVersionRange, { includePrerelease: true }),
+            versionRange: this.versionRange,
             serverFilename,
             downloadMessage: this.downloadMessageOverride,
             storageDir: this.installDir,
-            requiredFiles: this.config.requiredFiles,
+            requiredFiles: this.requiredFiles,
             targetPlatformResolver: this.config.targetPlatformResolver,
         })
         let installationResult
         try {
             installationResult = await serverResolver.resolve()
         } catch (err) {
+            // Unlike JetBrains, a stale cached manifest with no compatible version is treated as being
+            // offline: an already-installed server is preferable to failing until the network returns.
             if (manifest.location === 'cache' && err instanceof ToolkitError && err.code === 'NoCompatibleVersion') {
                 const offline = await this.resolveFromInstalledServers()
                 if (offline) {
@@ -144,7 +152,7 @@ export abstract class BaseLspInstaller<
 
         const resolution: LspResolution<T> = {
             ...installationResult,
-            resourcePaths: this.resourcePaths(assetDirectory),
+            resourcePaths: await this.resourcePaths(assetDirectory),
         }
         this.resolvedInstallation = resolution
         return resolution
@@ -157,10 +165,8 @@ export abstract class BaseLspInstaller<
         }
 
         try {
-            const range = new Range(this.config.supportedVersionRange, { includePrerelease: true })
-            const requiredFiles = this.config.requiredFiles ?? []
             const deletedVersions = await cleanLspDownloads(resolved.version, this.installDir, (dir) =>
-                this.isValidInstalledDirectory(dir, range, requiredFiles)
+                this.isValidInstalledDirectory(dir)
             )
             if (deletedVersions.length > 0) {
                 this.logger.debug(`cleaning old LSP versions: deleted ${deletedVersions.length} versions`)
@@ -171,14 +177,11 @@ export abstract class BaseLspInstaller<
     }
 
     private async resolveFromInstalledServers(): Promise<LspResolution<T> | undefined> {
-        const range = new Range(this.config.supportedVersionRange, { includePrerelease: true })
-        const requiredFiles = this.config.requiredFiles ?? []
-
         const found = await findHighestCompleteInstalledServer(
             this.installDir,
-            range,
+            this.versionRange,
             this.config.serverFilename,
-            requiredFiles
+            this.requiredFiles
         )
         if (!found) {
             return undefined
@@ -192,22 +195,18 @@ export abstract class BaseLspInstaller<
             location: 'fallback',
             version: found.version,
             assetDirectory: found.directory,
-            resourcePaths: this.resourcePaths(found.directory),
+            resourcePaths: await this.resourcePaths(found.directory),
         }
         this.resolvedInstallation = resolution
         return resolution
     }
 
-    private async isValidInstalledDirectory(
-        versionDir: string,
-        range: Range,
-        requiredFiles: readonly string[]
-    ): Promise<boolean> {
+    private async isValidInstalledDirectory(versionDir: string): Promise<boolean> {
         const version = parse(nodePath.basename(versionDir))
-        if (!version || !versionSatisfiesRange(version, range)) {
+        if (!version || !versionSatisfiesRange(version, this.versionRange)) {
             return false
         }
-        return hasServerAndRequiredFiles(versionDir, this.config.serverFilename, requiredFiles)
+        return hasServerAndRequiredFiles(versionDir, this.config.serverFilename, this.requiredFiles)
     }
 
     private async removeFailedInstall(versionDir: string, cause: Error): Promise<void> {
@@ -250,11 +249,11 @@ export abstract class BaseLspInstaller<
 
     protected async runPostInstall(assetDirectory: string): Promise<void> {
         await this.postInstall(assetDirectory)
-        await requireServerAndRequiredFiles(assetDirectory, this.config.serverFilename, this.config.requiredFiles ?? [])
+        await requireServerAndRequiredFiles(assetDirectory, this.config.serverFilename, this.requiredFiles)
     }
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
-    protected abstract resourcePaths(assetDirectory: string): T
+    protected abstract resourcePaths(assetDirectory: string): Promise<T>
 }
 
 function addSuppressed(error: Error, suppressed: unknown): void {

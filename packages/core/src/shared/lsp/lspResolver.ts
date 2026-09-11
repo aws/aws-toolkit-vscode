@@ -185,15 +185,6 @@ function normalizeArchivePath(name: string): string {
     return name.replace(/\\/g, '/')
 }
 
-export function zipEntryEscapesRoot(entryName: string): boolean {
-    try {
-        resolveWithinRoot(path.resolve(path.sep, 'lsp-install-root'), normalizeArchivePath(entryName))
-        return false
-    } catch {
-        return true
-    }
-}
-
 function resolveWithinRoot(root: string, relativePath: string): string {
     const normalizedRoot = path.resolve(root)
     const destination = path.resolve(normalizedRoot, relativePath)
@@ -208,15 +199,17 @@ interface ArtifactFetchResponse {
     arrayBuffer(): Promise<ArrayBuffer>
 }
 
+export type ArtifactFetch = (url: string, init: { signal: AbortSignal }) => Promise<ArtifactFetchResponse>
+
 export interface LspResolverConfig {
     lsName: string
     versionRange: semver.Range
     serverFilename: string
     downloadMessage?: string
     storageDir?: string
-    requiredFiles?: string[]
+    requiredFiles?: readonly string[]
     targetPlatformResolver?: TargetPlatformResolver
-    fetchFn?: (url: string, timeout: Timeout) => Promise<ArtifactFetchResponse>
+    fetchFn?: ArtifactFetch
     sleepFn?: (ms: number) => Promise<void>
 }
 
@@ -233,9 +226,9 @@ export class LanguageServerResolver {
     private readonly serverFilename: string
     private readonly downloadMessage: string
     private readonly storageDir: string
-    private readonly requiredFiles: string[]
+    private readonly requiredFiles: readonly string[]
     private readonly targetPlatformResolver: TargetPlatformResolver
-    private readonly fetchFn?: LspResolverConfig['fetchFn']
+    private readonly fetchFn: ArtifactFetch
     private readonly sleepFn: (ms: number) => Promise<void>
     private resolvedTargetPlatform?: TargetPlatform
 
@@ -250,7 +243,7 @@ export class LanguageServerResolver {
         this.storageDir = config.storageDir ?? path.join(fs.getCacheDir(), 'aws', 'language-servers', config.lsName)
         this.requiredFiles = config.requiredFiles ?? []
         this.targetPlatformResolver = config.targetPlatformResolver ?? defaultTargetPlatformResolver
-        this.fetchFn = config.fetchFn
+        this.fetchFn = config.fetchFn ?? crossFetch
         this.sleepFn = config.sleepFn ?? defaultSleep
     }
 
@@ -637,20 +630,15 @@ export class LanguageServerResolver {
     private async doFetch(
         url: string,
         requestTimeout: Timeout,
-        progressTimeout?: Timeout
+        progressTimeout: Timeout
     ): Promise<ArtifactFetchResponse> {
-        if (this.fetchFn) {
-            return this.fetchFn(url, requestTimeout)
-        }
-
         const abortController = new AbortController()
-        const disposables = [requestTimeout.token.onCancellationRequested(() => abortController.abort())]
-        if (progressTimeout) {
-            disposables.push(progressTimeout.token.onCancellationRequested(() => abortController.abort()))
-        }
+        const disposables = [
+            requestTimeout.token.onCancellationRequested(() => abortController.abort()),
+            progressTimeout.token.onCancellationRequested(() => abortController.abort()),
+        ]
         try {
-            const response = await crossFetch(url, { signal: abortController.signal })
-            return response
+            return await this.fetchFn(url, { signal: abortController.signal })
         } finally {
             for (const disposable of disposables) {
                 disposable.dispose()

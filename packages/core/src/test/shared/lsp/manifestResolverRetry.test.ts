@@ -279,6 +279,52 @@ describe('ManifestResolver - retry, atomic save, and adapter', function () {
         })
     })
 
+    describe('manifest shape validation', function () {
+        function manifestWithVersion(version: unknown): string {
+            return JSON.stringify({ ...JSON.parse(validManifestJson), versions: [version] })
+        }
+
+        it('rejects a version entry without a targets array and falls back to the cached manifest', async function () {
+            const fetchFn = sandbox
+                .stub()
+                .resolves(new Response(manifestWithVersion({ serverVersion: '1.0.0' }), { status: 200 }))
+            existsFileStub.resolves(true)
+            readFileTextStub.resolves(validManifest)
+
+            const result = await new ManifestResolver(makeConfig({ fetchFn })).resolve()
+
+            assert.strictEqual(result.location, 'cache')
+            assert.strictEqual(fetchFn.callCount, 1)
+        })
+
+        it('rejects a version entry without a serverVersion string', function () {
+            const resolver = new ManifestResolver(makeConfig())
+
+            assert.throws(
+                () => (resolver as any).parseAndAdapt(manifestWithVersion({ targets: [] })),
+                /missing a 'serverVersion' string/
+            )
+        })
+
+        it('rejects a target that is not an object', function () {
+            const resolver = new ManifestResolver(makeConfig())
+
+            assert.throws(
+                () => (resolver as any).parseAndAdapt(manifestWithVersion({ serverVersion: '1.0.0', targets: ['x'] })),
+                /"1.0.0" is missing a 'targets' array/
+            )
+        })
+
+        it('validates the manifest produced by an adapter', function () {
+            const adapter: ManifestAdapter = {
+                adapt: () => ({ versions: [{ serverVersion: '1.0.0' }] }) as unknown as Manifest,
+            }
+            const resolver = new ManifestResolver(makeConfig({ adapter }))
+
+            assert.throws(() => (resolver as any).parseAndAdapt(validManifest), /"1.0.0" is missing a 'targets' array/)
+        })
+    })
+
     describe('filesystem cache fallback', function () {
         it('falls back to cached manifest when remote fails', async function () {
             const fetchFn = sandbox.stub().rejects(new Error('network error'))

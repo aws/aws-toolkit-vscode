@@ -6,19 +6,14 @@
 import { Disposable } from 'vscode'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
-import { LspInstallationInvalidator } from '../../../shared/lsp/lspLauncher'
+import { LspInstallationInvalidator, LspServerResolver } from '../../../shared/lsp/lspLauncher'
 
-export interface LspServerResolverI {
-    serverExecutable(): Promise<string>
-    serverRootDir(): Promise<string>
-}
-
-export interface LspServerProviderI extends LspServerResolverI {
+export interface LspServerProviderI extends LspServerResolver {
     canProvide(): boolean
     name(): string
 }
 
-export class LspServerProvider implements LspServerResolverI, LspInstallationInvalidator, Disposable {
+export class LspServerProvider implements LspServerResolver, LspInstallationInvalidator, Disposable {
     private readonly matchedProviders: LspServerProviderI[]
     private _serverExecutable?: string
     private _serverRootDir?: string

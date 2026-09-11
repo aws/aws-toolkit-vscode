@@ -4,29 +4,19 @@
  */
 
 import assert from 'assert'
-import sinon from 'sinon'
 import path from 'path'
 import * as env from '../../../../shared/vscode/env'
 import { fs } from '../../../../shared/fs/fs'
 import { DevLspServerProvider } from '../../../../awsService/cloudformation/lsp-server/devLspServerProvider'
 import { RemoteLspServerProvider } from '../../../../awsService/cloudformation/lsp-server/remoteLspServerProvider'
+import { CfnLspInstaller } from '../../../../awsService/cloudformation/lsp-server/lspInstaller'
 import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-server/lspServerConfig'
 import { ExtensionContext } from 'vscode'
-import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
+import { useSandbox, useTempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('DevLspServerProvider', function () {
-    let sandbox: sinon.SinonSandbox
-    const tmpDir = new TempTestDir()
-
-    beforeEach(async function () {
-        sandbox = sinon.createSandbox()
-        await tmpDir.setup()
-    })
-
-    afterEach(async function () {
-        sandbox.restore()
-        await tmpDir.teardown()
-    })
+    const sandbox = useSandbox()
+    const tmpDir = useTempTestDir()
 
     function fakeContext(extensionPath: string): ExtensionContext {
         return { extensionPath } as unknown as ExtensionContext
@@ -140,15 +130,23 @@ describe('DevLspServerProvider', function () {
 })
 
 describe('RemoteLspServerProvider', function () {
-    let sandbox: sinon.SinonSandbox
+    const sandbox = useSandbox()
 
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-    })
+    function stubInstaller(...lspPaths: string[]) {
+        const resolve = sandbox.stub<[], Promise<{ resourcePaths: { lsp: string; node: string } }>>()
+        for (const [index, lsp] of lspPaths.entries()) {
+            resolve.onCall(index).resolves({ resourcePaths: { lsp, node: '/usr/bin/node' } })
+        }
+        return {
+            resolve,
+            cleanupAfterResolveWithLegacy: sandbox.stub().resolves(),
+            invalidateResolvedInstallation: sandbox.stub().resolves(),
+        }
+    }
 
-    afterEach(function () {
-        sandbox.restore()
-    })
+    function providerWith(installer: ReturnType<typeof stubInstaller>): RemoteLspServerProvider {
+        return new RemoteLspServerProvider(() => installer as unknown as CfnLspInstaller)
+    }
 
     describe('name', function () {
         it('returns RemoteLspServerProvider', function () {
@@ -166,77 +164,71 @@ describe('RemoteLspServerProvider', function () {
 
     describe('serverExecutable', function () {
         it('resolves and runs legacy-location cleanup on first call', async function () {
-            const provider = new RemoteLspServerProvider()
-            const installer = (provider as any).installer
-            const installerStub = sandbox
-                .stub(installer, 'resolve')
-                .resolves({ resourcePaths: { lsp: '/installed/server.js', node: '/usr/bin/node' } })
-            const cleanupStub = sandbox.stub(installer, 'cleanupAfterResolveWithLegacy').resolves()
+            const installer = stubInstaller('/installed/server.js')
 
-            const result = await provider.serverExecutable()
+            const result = await providerWith(installer).serverExecutable()
 
             assert.strictEqual(result, '/installed/server.js')
-            assert.ok(installerStub.calledOnce)
-            assert.ok(cleanupStub.calledOnce)
+            assert.ok(installer.resolve.calledOnce)
+            assert.ok(installer.cleanupAfterResolveWithLegacy.calledOnce)
         })
 
         it('caches resolved path on subsequent calls', async function () {
-            const provider = new RemoteLspServerProvider()
-            const installerStub = sandbox
-                .stub((provider as any).installer, 'resolve')
-                .resolves({ resourcePaths: { lsp: '/cached/server.js', node: '/usr/bin/node' } })
+            const installer = stubInstaller('/cached/server.js')
+            const provider = providerWith(installer)
 
             await provider.serverExecutable()
             const result = await provider.serverExecutable()
 
             assert.strictEqual(result, '/cached/server.js')
-            assert.strictEqual(installerStub.callCount, 1)
+            assert.strictEqual(installer.resolve.callCount, 1)
+        })
+
+        it('does not construct the installer until a server is requested', async function () {
+            const createInstaller = sandbox.stub().returns(stubInstaller('/lazy/server.js'))
+            const provider = new RemoteLspServerProvider(createInstaller)
+
+            assert.strictEqual(createInstaller.called, false)
+            await provider.serverExecutable()
+            assert.ok(createInstaller.calledOnce)
+        })
+
+        it('surfaces an installer construction failure from serverExecutable', async function () {
+            const provider = new RemoteLspServerProvider(() => {
+                throw new Error('LOCALAPPDATA environment variable not set')
+            })
+
+            await assert.rejects(provider.serverExecutable(), /LOCALAPPDATA/)
         })
     })
 
     describe('serverRootDir', function () {
         it('returns dirname of the resolved executable', async function () {
-            const provider = new RemoteLspServerProvider()
-            sandbox
-                .stub((provider as any).installer, 'resolve')
-                .resolves({ resourcePaths: { lsp: '/some/dir/server.js', node: '/usr/bin/node' } })
-
-            const rootDir = await provider.serverRootDir()
+            const rootDir = await providerWith(stubInstaller('/some/dir/server.js')).serverRootDir()
             assert.strictEqual(rootDir, '/some/dir')
         })
     })
 
     describe('invalidateResolvedInstallation', function () {
         it('clears cached path so next call re-resolves', async function () {
-            const provider = new RemoteLspServerProvider()
-            const installerStub = sandbox.stub((provider as any).installer, 'resolve')
-            installerStub
-                .onFirstCall()
-                .resolves({ resourcePaths: { lsp: '/v1/server.js', node: '/usr/bin/node' } })
-                .onSecondCall()
-                .resolves({ resourcePaths: { lsp: '/v2/server.js', node: '/usr/bin/node' } })
-
-            const installerInvalidateStub = sandbox
-                .stub((provider as any).installer, 'invalidateResolvedInstallation')
-                .resolves()
+            const installer = stubInstaller('/v1/server.js', '/v2/server.js')
+            const provider = providerWith(installer)
 
             await provider.serverExecutable()
             await provider.invalidateResolvedInstallation()
             const result = await provider.serverExecutable()
 
             assert.strictEqual(result, '/v2/server.js')
-            assert.strictEqual(installerStub.callCount, 2)
-            assert.ok(installerInvalidateStub.calledOnce)
+            assert.strictEqual(installer.resolve.callCount, 2)
+            assert.ok(installer.invalidateResolvedInstallation.calledOnce)
         })
 
-        it('propagates to installer invalidateResolvedInstallation', async function () {
-            const provider = new RemoteLspServerProvider()
-            const installerInvalidateStub = sandbox
-                .stub((provider as any).installer, 'invalidateResolvedInstallation')
-                .resolves()
+        it('is a no-op before any server has been resolved', async function () {
+            const createInstaller = sandbox.stub().returns(stubInstaller())
 
-            await provider.invalidateResolvedInstallation()
-            assert.ok(installerInvalidateStub.calledOnce)
+            await new RemoteLspServerProvider(createInstaller).invalidateResolvedInstallation()
+
+            assert.strictEqual(createInstaller.called, false)
         })
     })
 })

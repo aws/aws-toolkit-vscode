@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import sinon from 'sinon'
 import * as path from 'path'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import {
@@ -18,19 +17,17 @@ import { CfnLspServerFile } from '../../../../awsService/cloudformation/lsp-serv
 import * as env from '../../../../shared/vscode/env'
 import { fs } from '../../../../shared/fs/fs'
 import globals from '../../../../shared/extensionGlobals'
-import { TempTestDir } from '../../../shared/lsp/lspTestFixtures'
+import { useSandbox, useTempTestDir } from '../../../shared/lsp/lspTestFixtures'
 
 describe('CloudFormation LSP determineEnvironment', function () {
-    let sandbox: sinon.SinonSandbox
+    const sandbox = useSandbox()
     const originalOverride = process.env.CFN_LSP_ENVIRONMENT
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
         delete process.env.CFN_LSP_ENVIRONMENT
     })
 
     afterEach(function () {
-        sandbox.restore()
         if (originalOverride === undefined) {
             delete process.env.CFN_LSP_ENVIRONMENT
         } else {
@@ -146,15 +143,7 @@ describe('CfnManifestAdapter', function () {
 })
 
 describe('CfnLspInstaller.resourcePaths', function () {
-    const tmpDir = new TempTestDir()
-
-    beforeEach(async function () {
-        await tmpDir.setup()
-    })
-
-    afterEach(async function () {
-        await tmpDir.teardown()
-    })
+    const tmpDir = useTempTestDir()
 
     function installer(): CfnLspInstaller {
         return new CfnLspInstaller({ storageDir: tmpDir.path })
@@ -165,7 +154,7 @@ describe('CfnLspInstaller.resourcePaths', function () {
         await fs.mkdir(assetDir)
         await fs.writeFile(path.join(assetDir, CfnLspServerFile), 'server')
 
-        const paths = (installer() as any).resourcePaths(assetDir)
+        const paths = await (installer() as any).resourcePaths(assetDir)
         assert.strictEqual(paths.lsp, path.join(assetDir, CfnLspServerFile))
     })
 
@@ -175,7 +164,7 @@ describe('CfnLspInstaller.resourcePaths', function () {
         await fs.mkdir(bundleDir)
         await fs.writeFile(path.join(bundleDir, CfnLspServerFile), 'server')
 
-        const paths = (installer() as any).resourcePaths(assetDir)
+        const paths = await (installer() as any).resourcePaths(assetDir)
         assert.strictEqual(paths.lsp, path.join(bundleDir, CfnLspServerFile))
     })
 
@@ -184,7 +173,7 @@ describe('CfnLspInstaller.resourcePaths', function () {
         await fs.mkdir(path.join(assetDir, 'child-a'))
         await fs.mkdir(path.join(assetDir, 'child-b'))
 
-        assert.throws(() => (installer() as any).resourcePaths(assetDir), /server file not found/)
+        await assert.rejects((installer() as any).resourcePaths(assetDir), /server file not found/)
     })
 
     it('follows a nested directory symlink when locating the server (Files.isDirectory parity)', async function () {
@@ -199,24 +188,14 @@ describe('CfnLspInstaller.resourcePaths', function () {
         await fs.mkdir(assetDir)
         nodeFs.symlinkSync(realBundle, path.join(assetDir, 'linked-bundle'))
 
-        const paths = (installer() as any).resourcePaths(assetDir)
+        const paths = await (installer() as any).resourcePaths(assetDir)
         assert.strictEqual(paths.lsp, path.join(assetDir, 'linked-bundle', CfnLspServerFile))
     })
 })
 
 describe('CfnLspInstaller.postInstall (cfn-init chmod)', function () {
-    let sandbox: sinon.SinonSandbox
-    const tmpDir = new TempTestDir()
-
-    beforeEach(async function () {
-        sandbox = sinon.createSandbox()
-        await tmpDir.setup()
-    })
-
-    afterEach(async function () {
-        sandbox.restore()
-        await tmpDir.teardown()
-    })
+    const sandbox = useSandbox()
+    const tmpDir = useTempTestDir()
 
     async function makeBundle(): Promise<string> {
         const assetDir = path.join(tmpDir.path, 'asset')
@@ -288,18 +267,8 @@ describe('withExecutableBits', function () {
 })
 
 describe('CfnLspInstaller.cleanupAfterResolveWithLegacy', function () {
-    let sandbox: sinon.SinonSandbox
-    const tmpDir = new TempTestDir()
-
-    beforeEach(async function () {
-        sandbox = sinon.createSandbox()
-        await tmpDir.setup()
-    })
-
-    afterEach(async function () {
-        sandbox.restore()
-        await tmpDir.teardown()
-    })
+    const sandbox = useSandbox()
+    const tmpDir = useTempTestDir()
 
     it('invokes the legacy-location hook and then post-resolve cleanup', async function () {
         const inst = new CfnLspInstaller({ storageDir: tmpDir.path })

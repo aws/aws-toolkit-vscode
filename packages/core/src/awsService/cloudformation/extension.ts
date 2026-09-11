@@ -13,7 +13,7 @@ import {
     CloseHandlerResult,
 } from 'vscode-languageclient/node'
 import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
-import { formatMessage, toString, startupFailureMessage } from './utils'
+import { formatMessage, toString, startupFailureMessage, clientIdForInitialization } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -70,7 +70,7 @@ import { RelatedResourceSelector } from './ui/relatedResourceSelector'
 
 import { StackActionCodeLensProvider } from './codelens/stackActionCodeLensProvider'
 import { registerStatusBarCommand } from './ui/statusBar'
-import { getClientId, isAnonymousClientId } from '../../shared/telemetry/util'
+import { getClientId } from '../../shared/telemetry/util'
 import { SettingsLspServerProvider } from './lsp-server/settingsLspServerProvider'
 import { DevLspServerProvider } from './lsp-server/devLspServerProvider'
 import { RemoteLspServerProvider } from './lsp-server/remoteLspServerProvider'
@@ -144,7 +144,7 @@ function createClientFactory(
                             name: 'toolkit-vscode',
                             version: extensionVersion,
                         },
-                        clientId: telemetryEnabled && !isAnonymousClientId(clientId) ? clientId : undefined,
+                        clientId: clientIdForInitialization(telemetryEnabled, clientId),
                     },
                     telemetryEnabled: telemetryEnabled,
                     ...(cfnLspConfig.cloudformationEndpoint && {
@@ -192,18 +192,22 @@ async function startClient(context: ExtensionContext): Promise<void> {
 
     const clientFactory = createClientFactory(telemetryEnabled, clientId, cfnLspConfig)
 
-    launcher = new LspLauncher({
+    const sessionLauncher = new LspLauncher({
         name: 'CloudFormation LSP',
         resolver: serverProvider,
         invalidator: serverProvider,
         clientFactory,
     })
+    launcher = sessionLauncher
 
     try {
-        const client = await launcher.start()
+        const client = await sessionLauncher.start()
         await setupPostStart(client, serverProvider)
     } catch (error) {
-        await disposeClientSession()
+        // A restart may already have replaced this session; only tear down what this call started.
+        if (launcher === sessionLauncher) {
+            await disposeClientSession()
+        }
         throw error
     }
 }

@@ -5,13 +5,14 @@
 
 import { BaseLspInstaller, LspInstallerConfig, ResolveManifest } from '../../../shared/lsp/baseLspInstaller'
 import { ManifestResolver, ManifestAdapter } from '../../../shared/lsp/manifestResolver'
+import { findServerFile } from '../../../shared/lsp/lspResolver'
 import { fs } from '../../../shared/fs/fs'
 import { CfnLspName, CfnLspServerFile, RequiredFiles, CfnLspServerEnvType } from './lspServerConfig'
 import { isAutomation } from '../../../shared/vscode/env'
 import { dirname, join } from 'path'
 import { getLogger } from '../../../shared/logger/logger'
 import { ResourcePaths, Manifest } from '../../../shared/lsp/types'
-import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
+import { stat } from 'fs/promises' // eslint-disable-line no-restricted-imports
 import { CfnLspVersion } from './utils'
 import globals from '../../../shared/extensionGlobals'
 
@@ -33,6 +34,11 @@ export function cfnLocalBundleRoot(rawPath = process.env.CFN_LSP_BUNDLE): string
     return trimmed ? trimmed : undefined
 }
 
+/**
+ * Shared with the JetBrains toolkit so both IDEs reuse one download. Each IDE also prunes this
+ * directory to "current + one fallback", so a version installed by one IDE may be removed by the
+ * other; the launcher's invalidate-and-retry covers that case.
+ */
 export function cfnStorageDir(): string {
     return join(fs.getCacheDir(), 'aws', 'language-servers', CfnLspName)
 }
@@ -110,14 +116,17 @@ export class CfnLspInstaller extends BaseLspInstaller {
             return
         }
 
-        const rootDir = dirname(this.resourcePaths(assetDirectory).lsp)
-        const cfnInitPath = join(rootDir, 'bin', 'cfn-init')
+        const serverFile = await findServerFile(assetDirectory, CfnLspServerFile)
+        if (!serverFile) {
+            return
+        }
+        const cfnInitPath = join(dirname(serverFile), 'bin', 'cfn-init')
 
         try {
             if (await fs.existsFile(cfnInitPath)) {
                 // Match Java File.setExecutable(true, false): keep the existing read/write bits and
                 // add execute for owner, group, and others, rather than forcing 0o755.
-                const currentMode = nodeFs.statSync(cfnInitPath).mode
+                const currentMode = (await stat(cfnInitPath)).mode
                 await fs.chmod(cfnInitPath, withExecutableBits(currentMode))
             }
         } catch (err) {
@@ -125,35 +134,16 @@ export class CfnLspInstaller extends BaseLspInstaller {
         }
     }
 
-    protected resourcePaths(assetDirectory: string): ResourcePaths {
-        const directServer = join(assetDirectory, CfnLspServerFile)
-        if (nodeFs.existsSync(directServer)) {
-            return { lsp: directServer, node: process.execPath }
-        }
-
-        const nestedServer = nodeFs
-            .readdirSync(assetDirectory)
-            .filter((name) => isDirectoryFollowingSymlinks(join(assetDirectory, name)))
-            .map((name) => join(assetDirectory, name, CfnLspServerFile))
-            .find((candidate) => nodeFs.existsSync(candidate))
-
-        if (!nestedServer) {
+    protected async resourcePaths(assetDirectory: string): Promise<ResourcePaths> {
+        const serverFile = await findServerFile(assetDirectory, CfnLspServerFile)
+        if (!serverFile) {
             throw new Error(`CloudFormation LSP server file not found under ${assetDirectory}`)
         }
-
-        return { lsp: nestedServer, node: process.execPath }
+        return { lsp: serverFile, node: process.execPath }
     }
 }
 
 export function withExecutableBits(mode: number): number {
     // stat().mode includes file-type bits; chmod only takes permission bits.
     return (mode & 0o7777) | 0o111
-}
-
-function isDirectoryFollowingSymlinks(path: string): boolean {
-    try {
-        return nodeFs.statSync(path).isDirectory()
-    } catch {
-        return false
-    }
 }

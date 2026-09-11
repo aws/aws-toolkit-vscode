@@ -4,7 +4,8 @@
  */
 
 import assert from 'assert'
-import { startupFailureMessage } from '../../../awsService/cloudformation/utils'
+import { clientIdForInitialization, startupFailureMessage } from '../../../awsService/cloudformation/utils'
+import { nilClientId, telemetryDisabledClientId, testClientId } from '../../../shared/telemetry/util'
 
 describe('CloudFormation startupFailureMessage', function () {
     const cases = [
@@ -27,4 +28,22 @@ describe('CloudFormation startupFailureMessage', function () {
     it('does not map an unclassified process-start error', function () {
         assert.strictEqual(startupFailureMessage(new Error('boom')), undefined)
     })
+})
+
+describe('CloudFormation clientIdForInitialization', function () {
+    const realClientId = '2f1b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
+
+    it('forwards a real client id when telemetry is enabled', function () {
+        assert.strictEqual(clientIdForInitialization(true, realClientId), realClientId)
+    })
+
+    it('withholds the client id when telemetry is disabled', function () {
+        assert.strictEqual(clientIdForInitialization(false, realClientId), undefined)
+    })
+
+    for (const placeholder of [testClientId, telemetryDisabledClientId, nilClientId]) {
+        it(`withholds the placeholder id ${placeholder}`, function () {
+            assert.strictEqual(clientIdForInitialization(true, placeholder), undefined)
+        })
+    }
 })

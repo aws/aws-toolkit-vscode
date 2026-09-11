@@ -4,6 +4,7 @@
  */
 
 import { Range } from 'semver'
+import sinon from 'sinon'
 import { Manifest, LspVersion } from '../../../shared/lsp/types'
 import { TargetPlatform } from '../../../shared/lsp/utils/targetResolver'
 import { LanguageServerResolver } from '../../../shared/lsp/lspResolver'
@@ -137,6 +138,21 @@ export class TempTestDir {
             this._dir = undefined
         }
     }
+}
+
+/** Registers `beforeEach`/`afterEach` hooks for a per-test temp directory. Call inside `describe`. */
+export function useTempTestDir(): TempTestDir {
+    const tmpDir = new TempTestDir()
+    beforeEach(() => tmpDir.setup())
+    afterEach(() => tmpDir.teardown())
+    return tmpDir
+}
+
+/** Registers an `afterEach` hook that restores the returned sandbox. Call inside `describe`. */
+export function useSandbox(): sinon.SinonSandbox {
+    const sandbox = sinon.createSandbox()
+    afterEach(() => sandbox.restore())
+    return sandbox
 }
 
 /**

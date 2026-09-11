@@ -9,8 +9,10 @@ import { CfnLspInstaller } from './lspInstaller'
 import { LspInstallationInvalidator } from '../../../shared/lsp/lspLauncher'
 
 export class RemoteLspServerProvider implements LspServerProviderI, LspInstallationInvalidator {
-    private installer = new CfnLspInstaller()
+    private installer?: CfnLspInstaller
     private serverPath?: string
+
+    constructor(private readonly createInstaller: () => CfnLspInstaller = () => new CfnLspInstaller()) {}
 
     name(): string {
         return 'RemoteLspServerProvider'
@@ -25,8 +27,9 @@ export class RemoteLspServerProvider implements LspServerProviderI, LspInstallat
             return this.serverPath
         }
 
-        const result = await this.installer.resolve()
-        await this.installer.cleanupAfterResolveWithLegacy()
+        const installer = this.getInstaller()
+        const result = await installer.resolve()
+        await installer.cleanupAfterResolveWithLegacy()
         this.serverPath = result.resourcePaths.lsp
         return this.serverPath
     }
@@ -37,6 +40,15 @@ export class RemoteLspServerProvider implements LspServerProviderI, LspInstallat
 
     async invalidateResolvedInstallation(): Promise<void> {
         this.serverPath = undefined
-        await this.installer.invalidateResolvedInstallation()
+        await this.installer?.invalidateResolvedInstallation()
+    }
+
+    /**
+     * Created on first use so that a failure to locate the cache directory surfaces as a provider
+     * resolution error instead of failing construction of the provider chain.
+     */
+    private getInstaller(): CfnLspInstaller {
+        this.installer ??= this.createInstaller()
+        return this.installer
     }
 }

@@ -9,7 +9,7 @@ import sinon from 'sinon'
 import { BaseLspInstaller, ResolveManifest } from '../../../shared/lsp/baseLspInstaller'
 import { Manifest, ResourcePaths } from '../../../shared/lsp/types'
 import { fs } from '../../../shared/fs/fs'
-import { TempTestDir } from './lspTestFixtures'
+import { TempTestDir, useTempTestDir } from './lspTestFixtures'
 
 /**
  * Concrete test implementation of BaseLspInstaller for testing invalidation.
@@ -46,7 +46,7 @@ class TestLspInstaller extends BaseLspInstaller {
         return this.runPostInstall(assetDirectory)
     }
 
-    protected resourcePaths(assetDirectory: string): ResourcePaths {
+    protected async resourcePaths(assetDirectory: string): Promise<ResourcePaths> {
         return {
             lsp: path.join(assetDirectory, 'server.js'),
             node: process.execPath,
@@ -57,13 +57,13 @@ class TestLspInstaller extends BaseLspInstaller {
      * Simulate a resolved installation for testing purposes.
      * Sets the internal resolvedInstallation directly.
      */
-    simulateResolution(assetDir: string, location: 'cache' | 'remote' | 'fallback' | 'override'): void {
+    async simulateResolution(assetDir: string, location: 'cache' | 'remote' | 'fallback' | 'override'): Promise<void> {
         // Access private field via casting for testing
         ;(this as any).resolvedInstallation = {
             assetDirectory: assetDir,
             location,
             version: '1.0.0',
-            resourcePaths: this.resourcePaths(assetDir),
+            resourcePaths: await this.resourcePaths(assetDir),
         }
     }
 
@@ -144,7 +144,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         await fs.mkdir(assetDir)
         await fs.writeFile(path.join(assetDir, 'server.js'), 'content')
 
-        installer.simulateResolution(assetDir, 'cache')
+        await installer.simulateResolution(assetDir, 'cache')
         assert.ok(installer.getResolvedInstallation())
 
         await installer.invalidateResolvedInstallation()
@@ -158,7 +158,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         await fs.mkdir(assetDir)
         await fs.writeFile(path.join(assetDir, 'server.js'), 'content')
 
-        installer.simulateResolution(assetDir, 'cache')
+        await installer.simulateResolution(assetDir, 'cache')
 
         await installer.invalidateResolvedInstallation()
 
@@ -171,7 +171,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         await fs.mkdir(externalDir)
         await fs.writeFile(path.join(externalDir, 'server.js'), 'content')
 
-        installer.simulateResolution(externalDir, 'override')
+        await installer.simulateResolution(externalDir, 'override')
 
         await installer.invalidateResolvedInstallation()
 
@@ -185,7 +185,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         await fs.writeFile(path.join(outsideDir, 'server.js'), 'content')
 
         try {
-            installer.simulateResolution(outsideDir, 'remote')
+            await installer.simulateResolution(outsideDir, 'remote')
             await installer.invalidateResolvedInstallation()
             assert.strictEqual(await fs.existsDir(outsideDir), true)
         } finally {
@@ -198,7 +198,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         const assetDir = path.join(installDir, '1.0.0')
         // Don't create it — simulate it was already cleaned up
 
-        installer.simulateResolution(assetDir, 'remote')
+        await installer.simulateResolution(assetDir, 'remote')
 
         // Should not throw
         await installer.invalidateResolvedInstallation()
@@ -217,7 +217,7 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
         await fs.mkdir(assetDir)
         await fs.writeFile(path.join(assetDir, 'server.js'), 'broken content')
 
-        installer.simulateResolution(assetDir, 'cache')
+        await installer.simulateResolution(assetDir, 'cache')
 
         await installer.invalidateResolvedInstallation()
 
@@ -228,53 +228,59 @@ describe('BaseLspInstaller.invalidateResolvedInstallation', function () {
 })
 
 describe('BaseLspInstaller offline manifest fallback', function () {
-    const tmpDir = new TempTestDir()
+    const tmpDir = useTempTestDir()
 
-    beforeEach(async function () {
-        await tmpDir.setup()
-    })
-
-    afterEach(async function () {
-        await tmpDir.teardown()
-    })
-
-    it('resolves the highest complete installed server when no manifest is available', async function () {
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            ['server.js'],
-            async () => {},
-            async () => {
-                throw new Error('offline')
-            }
-        )
-        const installDir = installer.getTestInstallDir()
-        await fs.mkdir(path.join(installDir, '1.0.0'))
-        await fs.writeFile(path.join(installDir, '1.0.0', 'server.js'), 'content')
-
-        const resolution = await installer.resolve()
-
-        assert.strictEqual(resolution.location, 'fallback')
-        assert.strictEqual(resolution.version, '1.0.0')
-        assert.strictEqual(resolution.resourcePaths.lsp, path.join(installDir, '1.0.0', 'server.js'))
-    })
-
-    it('uses an installed server when a cached manifest has no compatible version', async function () {
-        const cachedManifest: Manifest = {
+    function emptyManifest(location: 'cache' | 'remote'): Manifest {
+        return {
             manifestSchemaVersion: '1.0',
             artifactId: 'test-lsp',
             artifactDescription: 'test',
             isManifestDeprecated: false,
             versions: [],
-            location: 'cache',
+            location,
         }
-        const installer = new TestLspInstaller(
+    }
+
+    function offlineInstaller(
+        requiredFiles: string[] = ['server.js'],
+        postInstall: (assetDirectory: string) => Promise<void> = async () => {},
+        error = 'offline'
+    ): TestLspInstaller {
+        return new TestLspInstaller(tmpDir.path, requiredFiles, postInstall, async () => {
+            throw new Error(error)
+        })
+    }
+
+    function installerWithManifest(manifest: Manifest): TestLspInstaller {
+        return new TestLspInstaller(
             tmpDir.path,
             [],
             async () => {},
-            async () => cachedManifest
+            async () => manifest
         )
-        await fs.mkdir(path.join(tmpDir.path, '1.0.0'))
-        await fs.writeFile(path.join(tmpDir.path, '1.0.0', 'server.js'), 'content')
+    }
+
+    async function installServer(installDir: string, version: string): Promise<string> {
+        const serverPath = path.join(installDir, version, 'server.js')
+        await fs.mkdir(path.dirname(serverPath))
+        await fs.writeFile(serverPath, 'content')
+        return serverPath
+    }
+
+    it('resolves the highest complete installed server when no manifest is available', async function () {
+        const installer = offlineInstaller()
+        const serverPath = await installServer(installer.getTestInstallDir(), '1.0.0')
+
+        const resolution = await installer.resolve()
+
+        assert.strictEqual(resolution.location, 'fallback')
+        assert.strictEqual(resolution.version, '1.0.0')
+        assert.strictEqual(resolution.resourcePaths.lsp, serverPath)
+    })
+
+    it('uses an installed server when a cached manifest has no compatible version', async function () {
+        const installer = installerWithManifest(emptyManifest('cache'))
+        await installServer(tmpDir.path, '1.0.0')
 
         const resolution = await installer.resolve()
 
@@ -283,54 +289,20 @@ describe('BaseLspInstaller offline manifest fallback', function () {
     })
 
     it('reports manifest failure when a cached manifest has no compatible version or installed fallback', async function () {
-        const cachedManifest: Manifest = {
-            manifestSchemaVersion: '1.0',
-            artifactId: 'test-lsp',
-            artifactDescription: 'test',
-            isManifestDeprecated: false,
-            versions: [],
-            location: 'cache',
-        }
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            [],
-            async () => {},
-            async () => cachedManifest
-        )
+        const installer = installerWithManifest(emptyManifest('cache'))
 
         await assert.rejects(installer.resolve(), (err: any) => err.code === 'ManifestFetchFailed')
     })
 
     it('does not use an installed server when a fresh manifest has no compatible version', async function () {
-        const remoteManifest: Manifest = {
-            manifestSchemaVersion: '1.0',
-            artifactId: 'test-lsp',
-            artifactDescription: 'test',
-            isManifestDeprecated: false,
-            versions: [],
-            location: 'remote',
-        }
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            [],
-            async () => {},
-            async () => remoteManifest
-        )
-        await fs.mkdir(path.join(tmpDir.path, '1.0.0'))
-        await fs.writeFile(path.join(tmpDir.path, '1.0.0', 'server.js'), 'content')
+        const installer = installerWithManifest(emptyManifest('remote'))
+        await installServer(tmpDir.path, '1.0.0')
 
         await assert.rejects(installer.resolve(), (err: any) => err.code === 'NoCompatibleVersion')
     })
 
     it('rethrows the manifest error when no usable server is installed', async function () {
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            ['server.js'],
-            async () => {},
-            async () => {
-                throw new Error('offline-and-empty')
-            }
-        )
+        const installer = offlineInstaller(['server.js'], async () => {}, 'offline-and-empty')
 
         await assert.rejects(
             installer.resolve(),
@@ -338,21 +310,25 @@ describe('BaseLspInstaller offline manifest fallback', function () {
         )
     })
 
+    it('clears a previous resolution when a later resolve fails', async function () {
+        const installer = offlineInstaller()
+        const serverPath = await installServer(installer.getTestInstallDir(), '1.0.0')
+        await installer.resolve()
+        assert.strictEqual(installer.getResolvedInstallation()?.version, '1.0.0')
+
+        await fs.delete(path.dirname(serverPath), { recursive: true })
+        await assert.rejects(installer.resolve(), (err: any) => err.code === 'ManifestFetchFailed')
+
+        assert.strictEqual(installer.getResolvedInstallation(), undefined)
+    })
+
     it('runs postInstall on the offline fallback candidate', async function () {
         let hookedDir: string | undefined
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            ['server.js'],
-            async (assetDirectory) => {
-                hookedDir = assetDirectory
-            },
-            async () => {
-                throw new Error('offline')
-            }
-        )
+        const installer = offlineInstaller(['server.js'], async (assetDirectory) => {
+            hookedDir = assetDirectory
+        })
         const installDir = installer.getTestInstallDir()
-        await fs.mkdir(path.join(installDir, '1.0.0'))
-        await fs.writeFile(path.join(installDir, '1.0.0', 'server.js'), 'content')
+        await installServer(installDir, '1.0.0')
 
         const resolution = await installer.resolve()
 
@@ -361,40 +337,24 @@ describe('BaseLspInstaller offline manifest fallback', function () {
     })
 
     it('skips an install missing the server file and selects the highest complete one', async function () {
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            ['node_modules'],
-            async () => {},
-            async () => {
-                throw new Error('offline')
-            }
-        )
+        const installer = offlineInstaller(['node_modules'])
         const installDir = installer.getTestInstallDir()
 
         await fs.mkdir(path.join(installDir, '1.5.0', 'node_modules'))
         await fs.mkdir(path.join(installDir, '1.0.0', 'node_modules'))
-        await fs.writeFile(path.join(installDir, '1.0.0', 'server.js'), 'content')
+        const serverPath = await installServer(installDir, '1.0.0')
 
         const resolution = await installer.resolve()
 
         assert.strictEqual(resolution.version, '1.0.0')
-        assert.strictEqual(resolution.resourcePaths.lsp, path.join(installDir, '1.0.0', 'server.js'))
+        assert.strictEqual(resolution.resourcePaths.lsp, serverPath)
     })
 
     it('defers version cleanup to cleanupAfterResolve (offline fallback path)', async function () {
-        const installer = new TestLspInstaller(
-            tmpDir.path,
-            ['server.js'],
-            async () => {},
-            async () => {
-                throw new Error('offline')
-            }
-        )
+        const installer = offlineInstaller()
         const installDir = installer.getTestInstallDir()
-        for (const v of ['1.0.0', '1.5.0']) {
-            await fs.mkdir(path.join(installDir, v))
-            await fs.writeFile(path.join(installDir, v, 'server.js'), 'content')
-        }
+        await installServer(installDir, '1.0.0')
+        await installServer(installDir, '1.5.0')
         await fs.mkdir(path.join(installDir, '1.2.0'))
 
         const resolution = await installer.resolve()
@@ -482,7 +442,7 @@ describe('BaseLspInstaller.cleanupAfterResolve', function () {
         const installDir = installer.getTestInstallDir()
         await fs.mkdir(path.join(installDir, '1.0.0'))
         await fs.mkdir(path.join(installDir, '2.0.0'))
-        installer.simulateResolution(path.join(installDir, '1.0.0'), 'override')
+        await installer.simulateResolution(path.join(installDir, '1.0.0'), 'override')
 
         await installer.cleanupAfterResolve()
 
@@ -496,7 +456,7 @@ describe('BaseLspInstaller.cleanupAfterResolve', function () {
             const installer = new TestLspInstaller(tmpDir.path)
             const installDir = installer.getTestInstallDir()
             await fs.mkdir(path.join(installDir, '1.0.0'))
-            installer.simulateResolution(path.join(installDir, '1.0.0'), 'cache')
+            await installer.simulateResolution(path.join(installDir, '1.0.0'), 'cache')
 
             sandbox.stub(fs, 'readdir').rejects(new Error('disk on fire'))
 

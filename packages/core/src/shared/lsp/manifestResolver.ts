@@ -193,13 +193,9 @@ export class ManifestResolver {
     private parseAndAdapt(content: string): Manifest {
         try {
             const raw = JSON.parse(content) as unknown
-            if (this.adapter) {
-                return this.adapter.adapt(raw)
-            }
-            if (raw === null || typeof raw !== 'object' || !Array.isArray((raw as Record<string, unknown>).versions)) {
-                throw new Error("Manifest must contain a top-level 'versions' array")
-            }
-            return raw as Manifest
+            const manifest: unknown = this.adapter ? this.adapter.adapt(raw) : raw
+            assertManifestShape(manifest)
+            return manifest
         } catch (error) {
             throw new ToolkitError(
                 `Failed to parse "${this.lsName}" manifest: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -231,4 +227,27 @@ export class ManifestResolver {
 
 function defaultSleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object'
+}
+
+/**
+ * Rejects the whole manifest when any version cannot be evaluated for compatibility, so a malformed
+ * manifest falls through to the cached manifest and installed servers instead of surfacing a
+ * TypeError during version selection.
+ */
+function assertManifestShape(manifest: unknown): asserts manifest is Manifest {
+    if (!isRecord(manifest) || !Array.isArray(manifest.versions)) {
+        throw new Error("Manifest must contain a top-level 'versions' array")
+    }
+    for (const version of manifest.versions as unknown[]) {
+        if (!isRecord(version) || typeof version.serverVersion !== 'string') {
+            throw new Error("Manifest version entry is missing a 'serverVersion' string")
+        }
+        if (!Array.isArray(version.targets) || !version.targets.every(isRecord)) {
+            throw new Error(`Manifest version "${version.serverVersion}" is missing a 'targets' array`)
+        }
+    }
 }

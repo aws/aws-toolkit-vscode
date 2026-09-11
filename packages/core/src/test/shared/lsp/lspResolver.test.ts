@@ -12,13 +12,11 @@ import {
     findHighestCompleteInstalledServer,
     requireServerAndRequiredFiles,
     versionSatisfiesRange,
-    zipEntryEscapesRoot,
     zipEntryPosixMode,
 } from '../../../shared/lsp/lspResolver'
 import { LspVersion } from '../../../shared/lsp/types'
 import { fs } from '../../../shared/fs/fs'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
-import { Timeout } from '../../../shared/utilities/timeoutUtils'
 import AdmZip from 'adm-zip'
 import {
     createManifest,
@@ -505,6 +503,39 @@ describe('LanguageServerResolver', function () {
             assert.ok(!(await fs.existsDir(path.join(tmpDir.path, '1.0.0'))))
         })
 
+        const escapingEntryNames = ['a/../../b', '/etc/passwd', '..\\..\\evil', '\\\\server\\share\\x']
+        if (process.platform === 'win32') {
+            escapingEntryNames.push('C:\\Windows\\x', 'C:/Windows/x')
+        }
+        for (const entryName of escapingEntryNames) {
+            it(`rejects the escaping entry "${entryName}" after separator normalization`, async function () {
+                const zip = new AdmZip()
+                zip.addFile('server.js', Buffer.from('ok'))
+                zip.addFile(entryName, Buffer.from('evil'))
+
+                await assert.rejects(zipResolver(zip.toBuffer()).resolve(), { code: 'ExtractionFailed' })
+
+                assert.ok(!(await fs.existsDir(path.join(tmpDir.path, '1.0.0'))))
+            })
+        }
+
+        it('extracts entries whose normalized path stays inside the version dir', async function () {
+            const zip = new AdmZip()
+            zip.addFile('server.js', Buffer.from('ok'))
+            zip.addFile('a/../b.txt', Buffer.from('b'))
+            zip.addFile('./c.txt', Buffer.from('c'))
+            zip.addFile('foo\\bar.txt', Buffer.from('bar'))
+            zip.addFile('dir/', Buffer.alloc(0))
+
+            await zipResolver(zip.toBuffer()).resolve()
+
+            const versionDir = path.join(tmpDir.path, '1.0.0')
+            assert.ok(await fs.existsFile(path.join(versionDir, 'b.txt')))
+            assert.ok(await fs.existsFile(path.join(versionDir, 'c.txt')))
+            assert.ok(await fs.existsFile(path.join(versionDir, 'foo', 'bar.txt')))
+            assert.ok(await fs.existsDir(path.join(versionDir, 'dir')))
+        })
+
         it('preserves executable and read-only POSIX permissions from ZIP external attributes', async function () {
             if (process.platform === 'win32') {
                 this.skip()
@@ -636,28 +667,6 @@ function recordingFetch(
         return { status: 200, arrayBuffer: async () => toArrayBuffer(Buffer.from('non-zip-body')) }
     }
 }
-
-describe('zipEntryEscapesRoot', function () {
-    it('rejects paths that escape after backslash normalization', function () {
-        const unsafe = ['../evil', 'a/../../b', '/etc/passwd', '..\\..\\evil', '\\\\server\\share\\x']
-        if (process.platform === 'win32') {
-            unsafe.push('C:\\Windows\\x', 'C:/Windows/x')
-        }
-        for (const entry of unsafe) {
-            assert.strictEqual(zipEntryEscapesRoot(entry), true, `expected "${entry}" to be rejected`)
-        }
-    })
-
-    it('accepts paths that remain inside the install root', function () {
-        const safe = ['server.js', 'a/b/c', 'a/../b', './x', 'dir/', 'foo\\bar']
-        if (process.platform !== 'win32') {
-            safe.push('C:\\Windows\\x', 'C:/Windows/x')
-        }
-        for (const entry of safe) {
-            assert.strictEqual(zipEntryEscapesRoot(entry), false, `expected "${entry}" to be accepted`)
-        }
-    })
-})
 
 describe('zipEntryPosixMode', function () {
     it('extracts the rwx permission bits from a ZIP entry external attribute', function () {
@@ -873,20 +882,20 @@ describe('LanguageServerResolver - download integrity and fallback (parity)', fu
         assert.strictEqual(fetchCount, 0, 'a matching target with empty contents downloads nothing')
     })
 
-    it('creates a per-request timeout instance for each artifact fetch', async function () {
-        const receivedTimeouts: unknown[] = []
-        const resolver = makeResolver(createManifest([nonZipVersion('1.0.0')]), async (_url: string, t: unknown) => {
-            receivedTimeouts.push(t)
+    it('passes a distinct AbortSignal to each artifact fetch', async function () {
+        const receivedSignals: unknown[] = []
+        const version = nonZipVersion('1.0.0')
+        version.targets[0].contents.push({ ...version.targets[0].contents[0], filename: 'second.txt' })
+        const resolver = makeResolver(createManifest([version]), async (_url: string, init: { signal: unknown }) => {
+            receivedSignals.push(init.signal)
             return { status: 200, arrayBuffer: async () => toArrayBuffer(Buffer.from('body')) }
         })
 
         await resolver.resolve()
 
-        assert.ok(receivedTimeouts.length >= 1)
-        assert.ok(
-            receivedTimeouts.every((t) => t instanceof Timeout),
-            'each artifact fetch must receive a per-request Timeout'
-        )
+        assert.strictEqual(receivedSignals.length, 2)
+        assert.ok(receivedSignals.every((signal) => signal instanceof AbortSignal))
+        assert.notStrictEqual(receivedSignals[0], receivedSignals[1])
     })
 
     it('retains unrelated pre-existing files when overwriting a version dir in place', async function () {
