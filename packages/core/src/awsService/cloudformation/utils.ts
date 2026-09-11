@@ -27,36 +27,45 @@ export function clientIdForInitialization(telemetryEnabled: boolean, clientId: s
     return telemetryEnabled && !isAnonymousClientId(clientId) ? clientId : undefined
 }
 
-export function startupFailureMessage(error: unknown): string | undefined {
-    const messages: Record<string, string> = {
-        ManifestFetchFailed: 'Failed to fetch CloudFormation LSP manifest. Check your network connection.',
-        NoCompatibleVersion: 'No compatible CloudFormation LSP version found for your platform.',
-        RemoteDownloadFailed: 'Failed to download CloudFormation LSP. Check your network connection.',
-        ExtractionFailed: 'Failed to extract CloudFormation LSP.',
-        HashIntegrityFailed: 'Downloaded file integrity check failed. The file may be corrupted.',
-    }
-    const code = findErrorCode(error)
-    return code && messages[code] ? formatMessage(messages[code]) : undefined
+const installFailureMessages: Record<string, string> = {
+    ManifestFetchFailed: 'Failed to fetch CloudFormation LSP manifest. Check your network connection.',
+    NoCompatibleVersion: 'No compatible CloudFormation LSP version found for your platform.',
+    RemoteDownloadFailed: 'Failed to download CloudFormation LSP. Check your network connection.',
+    ExtractionFailed: 'Failed to extract CloudFormation LSP.',
+    HashIntegrityFailed: 'Downloaded file integrity check failed. The file may be corrupted.',
 }
 
-function findErrorCode(error: unknown): string | undefined {
+/** Emitted by `LspLauncher` when the server process could not be started even after a reinstall. */
+const startFailedCode = 'LspStartFailed'
+const startFailedMessage = 'CloudFormation language server failed to start. See the AWS Toolkit logs for details.'
+
+/**
+ * Maps a startup error to a user-facing message. Install errors (which identify a cause the user can
+ * act on) take precedence over the generic process-start failure anywhere in the `cause` chain.
+ */
+export function startupFailureMessage(error: unknown): string | undefined {
+    const codes = collectErrorCodes(error)
+    const installCode = codes.find((code) => code in installFailureMessages)
+    if (installCode) {
+        return formatMessage(installFailureMessages[installCode])
+    }
+    if (codes.includes(startFailedCode)) {
+        return formatMessage(startFailedMessage)
+    }
+    return undefined
+}
+
+function collectErrorCodes(error: unknown): string[] {
+    const codes: string[] = []
     let current = error
     while (current instanceof Error) {
         const code = (current as Error & { code?: unknown }).code
         if (typeof code === 'string') {
-            if (
-                code === 'ManifestFetchFailed' ||
-                code === 'NoCompatibleVersion' ||
-                code === 'RemoteDownloadFailed' ||
-                code === 'ExtractionFailed' ||
-                code === 'HashIntegrityFailed'
-            ) {
-                return code
-            }
+            codes.push(code)
         }
         current = (current as Error & { cause?: unknown }).cause
     }
-    return undefined
+    return codes
 }
 
 export function commandKey(key: string): string {

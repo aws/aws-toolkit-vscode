@@ -10,8 +10,9 @@ import {
     LspLauncherConfig,
     LspInstallationInvalidator,
     LspServerResolver,
+    LanguageClientFactoryContext,
 } from '../../../shared/lsp/lspLauncher'
-import { LanguageClient } from 'vscode-languageclient/node'
+import { CloseAction, ErrorAction, LanguageClient } from 'vscode-languageclient/node'
 
 describe('LspLauncher', function () {
     let sandbox: sinon.SinonSandbox
@@ -63,13 +64,58 @@ describe('LspLauncher', function () {
             assert.ok((client.start as sinon.SinonStub).calledOnce)
         })
 
-        it('calls clientFactory with server path and root dir', async function () {
+        it('calls clientFactory with server path, root dir, and the shared error handler', async function () {
             const config = createConfig()
             const launcher = new LspLauncher(config)
 
             await launcher.start()
 
-            assert.ok((config.clientFactory as sinon.SinonStub).calledWith('/path/to/server.js', '/path/to'))
+            const [context] = (config.clientFactory as sinon.SinonStub).firstCall.args as [LanguageClientFactoryContext]
+            assert.strictEqual(context.serverPath, '/path/to/server.js')
+            assert.strictEqual(context.serverRootDir, '/path/to')
+            assert.strictEqual(typeof context.errorHandler.error, 'function')
+            assert.strictEqual(typeof context.errorHandler.closed, 'function')
+        })
+
+        it('routes client errors to onError and keeps the client running', async function () {
+            const onError = sandbox.stub()
+            const config = createConfig({ onError })
+            const launcher = new LspLauncher(config)
+            await launcher.start()
+            const [{ errorHandler }] = (config.clientFactory as sinon.SinonStub).firstCall.args as [
+                LanguageClientFactoryContext,
+            ]
+
+            const err = new Error('transport')
+            const result = await errorHandler.error(err, undefined, 1)
+
+            assert.ok(onError.calledOnceWith(err, undefined, 1))
+            assert.strictEqual(result.action, ErrorAction.Continue)
+        })
+
+        it('reports an unexpected close after start to onServerStopped and does not auto-restart', async function () {
+            const onServerStopped = sandbox.stub()
+            const config = createConfig({ onServerStopped })
+            const launcher = new LspLauncher(config)
+            await launcher.start()
+            const [{ errorHandler }] = (config.clientFactory as sinon.SinonStub).firstCall.args as [
+                LanguageClientFactoryContext,
+            ]
+
+            const result = await errorHandler.closed()
+
+            assert.ok(onServerStopped.calledOnce)
+            assert.strictEqual(result.action, CloseAction.DoNotRestart)
+        })
+
+        it('does not report a stop that the launcher itself requested', async function () {
+            const onServerStopped = sandbox.stub()
+            const launcher = new LspLauncher(createConfig({ onServerStopped }))
+            await launcher.start()
+
+            await launcher.stop()
+
+            assert.strictEqual(onServerStopped.callCount, 0)
         })
 
         it('calls onStarted hook after successful start', async function () {
@@ -368,6 +414,41 @@ describe('LspLauncher', function () {
             assert.ok((client.stop as sinon.SinonStub).calledOnce)
             assert.ok((client.dispose as sinon.SinonStub).calledOnce)
             assert.strictEqual(launcher.getClient(), undefined)
+        })
+
+        it('does not re-resolve (re-download) the server when disposed during invalidate-and-retry', async function () {
+            let releaseInvalidate!: () => void
+            let markInvalidateStarted!: () => void
+            const invalidateStarted = new Promise<void>((resolve) => {
+                markInvalidateStarted = resolve
+            })
+            const invalidateGate = new Promise<void>((resolve) => {
+                releaseInvalidate = resolve
+            })
+            const serverExecutable = sandbox.stub().resolves('/path/to/server.js')
+            const invalidator: LspInstallationInvalidator = {
+                invalidateResolvedInstallation: sandbox.stub().callsFake(async () => {
+                    markInvalidateStarted()
+                    await invalidateGate
+                }),
+            }
+            const clientFactory = sandbox.stub().resolves(createMockClient(true))
+            const launcher = new LspLauncher(
+                createConfig({
+                    resolver: { serverExecutable, serverRootDir: sandbox.stub().resolves('/path/to') },
+                    invalidator,
+                    clientFactory,
+                })
+            )
+
+            const startCall = launcher.start()
+            await invalidateStarted
+            launcher.dispose()
+            releaseInvalidate()
+
+            await assert.rejects(startCall, /disposed during start/)
+            assert.strictEqual(serverExecutable.callCount, 1, 'the retry must not resolve the server again')
+            assert.strictEqual(clientFactory.callCount, 1, 'the retry must not create another client')
         })
     })
 })

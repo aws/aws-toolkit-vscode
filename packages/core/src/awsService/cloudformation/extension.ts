@@ -4,15 +4,7 @@
  */
 
 import { ExtensionContext, window, languages, commands, Disposable } from 'vscode'
-import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind,
-    ErrorHandlerResult,
-    CloseHandlerResult,
-} from 'vscode-languageclient/node'
-import { CloseAction, ErrorAction, Message } from 'vscode-languageclient/node'
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node'
 import { formatMessage, toString, startupFailureMessage, clientIdForInitialization } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
@@ -95,7 +87,7 @@ function createClientFactory(
     clientId: string,
     cfnLspConfig: Record<string, string | undefined>
 ): LanguageClientFactory {
-    return async (serverPath: string, _serverRootDir: string): Promise<LanguageClient> => {
+    return async ({ serverPath, errorHandler }): Promise<LanguageClient> => {
         if (!(await fs.existsFile(serverPath))) {
             throw new Error(`CloudFormation LSP ${serverPath} not found`)
         }
@@ -158,15 +150,8 @@ function createClientFactory(
                     },
                 },
             },
-            errorHandler: {
-                error: (error: Error, message: Message | undefined, _count: number | undefined): ErrorHandlerResult => {
-                    void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
-                    return { action: ErrorAction.Continue }
-                },
-                closed: (): CloseHandlerResult => {
-                    return { action: CloseAction.DoNotRestart }
-                },
-            },
+            // Close/error policy is shared across toolkit language servers (LspServerLifecycleController).
+            errorHandler,
         }
 
         return new LanguageClient(ExtensionId, ExtensionName, serverOptions, clientOptions)
@@ -197,6 +182,9 @@ async function startClient(context: ExtensionContext): Promise<void> {
         resolver: serverProvider,
         invalidator: serverProvider,
         clientFactory,
+        onError: (error, message) => {
+            void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
+        },
     })
     launcher = sessionLauncher
 
@@ -368,7 +356,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
                     formatMessage(`Failed to restart CloudFormation language server: ${toString(error)}`)
                 )
             }
-        })
+        }),
+        // The client and its UI are owned by the session (so "Restart Server" can replace them), but the
+        // extension lifetime must still shut the server down gracefully on deactivation.
+        { dispose: () => void disposeClientSession() }
     )
 
     try {
@@ -383,5 +374,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
 }
 
 export async function deactivate(): Promise<void> {
-    await disposeClientSession()
+    try {
+        await disposeClientSession()
+    } catch (err) {
+        getLogger('awsCfnLsp').warn(`Failed to stop CloudFormation language server on deactivate: ${err}`)
+    }
 }

@@ -991,6 +991,66 @@ describe('LanguageServerResolver - download integrity and fallback (parity)', fu
             sandbox.restore()
         }
     })
+
+    describe('filesystem failures while writing the install (JetBrains: EXTRACTION_FAILED)', function () {
+        const sandbox = sinon.createSandbox()
+        // The resolver writes through `fs/promises` directly; stub the real module so its live binding sees it.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-imports
+        const fsPromises = require('fs/promises') as typeof import('fs/promises')
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        function eacces(): NodeJS.ErrnoException {
+            return Object.assign(new Error('EACCES: permission denied, open server.js'), { code: 'EACCES' })
+        }
+
+        it('classifies a raw write error as ExtractionFailed with the original error as cause', async function () {
+            const ioError = eacces()
+            sandbox.stub(fsPromises, 'writeFile').rejects(ioError)
+            const resolver = makeResolver(createManifest([nonZipVersion('1.0.0')]), async () => ({
+                status: 200,
+                arrayBuffer: async () => toArrayBuffer(Buffer.from('body')),
+            }))
+
+            await assert.rejects(resolver.resolve(), (err: any) => {
+                assert.strictEqual(err.code, 'ExtractionFailed', 'a filesystem failure must be a coded install error')
+                assert.strictEqual(err.cause, ioError, 'the raw error must be preserved as the cause')
+                return true
+            })
+            assert.ok(!(await fs.existsDir(path.join(tmpDir.path, '1.0.0'))), 'the failed install must be removed')
+        })
+
+        it('falls back to an installed server when the write phase fails', async function () {
+            await installFakeServer(tmpDir.path, '1.5.0', ['server.js'])
+            sandbox.stub(fsPromises, 'writeFile').rejects(eacces())
+            const resolver = makeResolver(createManifest([nonZipVersion('1.9.0')]), async () => ({
+                status: 200,
+                arrayBuffer: async () => toArrayBuffer(Buffer.from('body')),
+            }))
+
+            const result = await resolver.resolve()
+
+            assert.strictEqual(result.location, 'fallback')
+            assert.strictEqual(result.version, '1.5.0')
+            assert.ok(!(await fs.existsDir(path.join(tmpDir.path, '1.9.0'))), 'the failed install must be removed')
+        })
+
+        it('does not re-wrap an already coded install error', async function () {
+            const version = createVersion('1.9.0', { filename: 'server.js', hashes: ['sha256:deadbeef'] })
+            version.targets[0].contents[0].bytes = 0
+            const resolver = makeResolver(createManifest([version]), async () => ({
+                status: 200,
+                arrayBuffer: async () => toArrayBuffer(Buffer.from('payload')),
+            }))
+
+            await assert.rejects(resolver.resolve(), (err: any) => {
+                assert.strictEqual(err.code, 'HashIntegrityFailed')
+                return true
+            })
+        })
+    })
 })
 
 describe('version directory path guard', function () {

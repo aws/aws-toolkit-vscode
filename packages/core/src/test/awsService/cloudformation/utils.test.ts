@@ -28,6 +28,22 @@ describe('CloudFormation startupFailureMessage', function () {
     it('does not map an unclassified process-start error', function () {
         assert.strictEqual(startupFailureMessage(new Error('boom')), undefined)
     })
+
+    it('maps LspStartFailed (server could not start after a reinstall) to a generic message', function () {
+        const err = Object.assign(new Error('start failed'), { code: 'LspStartFailed', cause: new Error('spawn') })
+        assert.ok(startupFailureMessage(err)?.includes('failed to start'))
+    })
+
+    it('prefers an install cause over the generic start failure', function () {
+        const cause = Object.assign(new Error('cause'), { code: 'ExtractionFailed' })
+        const err = Object.assign(new Error('start failed'), { code: 'LspStartFailed', cause })
+        assert.ok(startupFailureMessage(err)?.includes('Failed to extract CloudFormation LSP'))
+    })
+
+    it('ignores unrelated codes such as EACCES in the cause chain', function () {
+        const cause = Object.assign(new Error('EACCES'), { code: 'EACCES' })
+        assert.strictEqual(startupFailureMessage(Object.assign(new Error('wrapper'), { cause })), undefined)
+    })
 })
 
 describe('CloudFormation clientIdForInitialization', function () {

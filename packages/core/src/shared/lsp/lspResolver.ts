@@ -417,8 +417,18 @@ export class LanguageServerResolver {
 
             await this.validateInstall(versionDir)
         } catch (err) {
-            await this.removeFailedInstall(versionDir, err)
-            throw err
+            // Coded errors (download, hash, extraction) keep their code so the fallback policy sees them.
+            // Anything else here is a filesystem failure while writing the install (EACCES, ENOSPC, EROFS,
+            // ...), which JetBrains classifies as EXTRACTION_FAILED so it is user-visible and fallback-eligible.
+            const installError =
+                err instanceof ToolkitError
+                    ? err
+                    : new ToolkitError(`Failed to install "${this.lsName}" to ${versionDir}: ${err}`, {
+                          code: extractionFailedCode,
+                          cause: err instanceof Error ? err : undefined,
+                      })
+            await this.removeFailedInstall(versionDir, installError)
+            throw installError
         }
     }
 
@@ -609,6 +619,8 @@ export class LanguageServerResolver {
             try {
                 const response = await this.doFetch(content.url, requestTimeout, progressTimeout)
                 if (response.status !== 200) {
+                    // Drain the body so the connection is released instead of held until GC.
+                    void response.arrayBuffer().catch(() => {})
                     throw new Error(`Failed to download "${content.filename}": HTTP ${response.status}`)
                 }
                 return Buffer.from(await response.arrayBuffer())

@@ -160,6 +160,8 @@ export class ManifestResolver {
         try {
             const response = await this.fetchFn(this.manifestUrl, { signal: abortController.signal })
             if (response.status !== 200) {
+                // Drain the body so the connection is released instead of held until GC.
+                void response.text().catch(() => {})
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`)
             }
             return await response.text()
