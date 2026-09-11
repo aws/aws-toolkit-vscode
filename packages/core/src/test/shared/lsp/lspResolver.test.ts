@@ -15,6 +15,7 @@ import {
     zipEntryPosixMode,
 } from '../../../shared/lsp/lspResolver'
 import { LspVersion } from '../../../shared/lsp/types'
+import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
 import * as nodeFs from 'fs' // eslint-disable-line no-restricted-imports
 import AdmZip from 'adm-zip'
@@ -1047,6 +1048,25 @@ describe('LanguageServerResolver - download integrity and fallback (parity)', fu
 
             await assert.rejects(resolver.resolve(), (err: any) => {
                 assert.strictEqual(err.code, 'HashIntegrityFailed')
+                return true
+            })
+        })
+
+        it('reclassifies a coded non-install ToolkitError from the fs wrapper as ExtractionFailed', async function () {
+            // The `fs` wrapper converts EACCES into a `ToolkitError` with code `InvalidPermissions` (PermissionsError).
+            // That code is not an install code, so it must be wrapped as ExtractionFailed like any other write failure.
+            const permissionsError = new ToolkitError('cache dir has incorrect permissions', {
+                code: 'InvalidPermissions',
+            })
+            sandbox.stub(fs, 'mkdir').rejects(permissionsError)
+            const resolver = makeResolver(createManifest([nonZipVersion('1.0.0')]), async () => ({
+                status: 200,
+                arrayBuffer: async () => toArrayBuffer(Buffer.from('body')),
+            }))
+
+            await assert.rejects(resolver.resolve(), (err: any) => {
+                assert.strictEqual(err.code, 'ExtractionFailed', 'a coded non-install error must be reclassified')
+                assert.strictEqual(err.cause, permissionsError, 'the original error must be preserved as the cause')
                 return true
             })
         })

@@ -42,6 +42,19 @@ function errorCode(err: unknown): string | undefined {
     return err instanceof ToolkitError ? err.code : undefined
 }
 
+const installErrorCodes: ReadonlySet<string> = new Set([
+    noCompatibleVersionCode,
+    hashIntegrityFailedCode,
+    downloadFailedCode,
+    extractionFailedCode,
+])
+
+/** Whether `err` already carries one of the install error codes the fallback policy and user messaging understand. */
+function isInstallError(err: unknown): err is ToolkitError {
+    const code = errorCode(err)
+    return code !== undefined && installErrorCodes.has(code)
+}
+
 function shouldPropagateWithoutFallback(err: unknown): boolean {
     const code = errorCode(err)
     return code === hashIntegrityFailedCode || code === noCompatibleVersionCode
@@ -417,16 +430,16 @@ export class LanguageServerResolver {
 
             await this.validateInstall(versionDir)
         } catch (err) {
-            // Coded errors (download, hash, extraction) keep their code so the fallback policy sees them.
-            // Anything else here is a filesystem failure while writing the install (EACCES, ENOSPC, EROFS,
-            // ...), which JetBrains classifies as EXTRACTION_FAILED so it is user-visible and fallback-eligible.
-            const installError =
-                err instanceof ToolkitError
-                    ? err
-                    : new ToolkitError(`Failed to install "${this.lsName}" to ${versionDir}: ${err}`, {
-                          code: extractionFailedCode,
-                          cause: err instanceof Error ? err : undefined,
-                      })
+            // Coded install errors (download, hash, extraction) keep their code so the fallback policy sees them.
+            // Anything else here is a filesystem failure while writing the install (EACCES, ENOSPC, EROFS, ...),
+            // including the `fs` wrapper's own coded errors such as `InvalidPermissions`. JetBrains classifies all
+            // of these as EXTRACTION_FAILED so they are user-visible and fallback-eligible; do the same here.
+            const installError = isInstallError(err)
+                ? err
+                : new ToolkitError(`Failed to install "${this.lsName}" to ${versionDir}: ${err}`, {
+                      code: extractionFailedCode,
+                      cause: err instanceof Error ? err : undefined,
+                  })
             await this.removeFailedInstall(versionDir, installError)
             throw installError
         }

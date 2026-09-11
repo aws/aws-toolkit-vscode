@@ -82,6 +82,11 @@ let launcher: LspLauncher | undefined
 let clientDisposables: Disposable[] = []
 let statusBarRegistered = false
 
+const serverStoppedMessage = formatMessage(
+    'CloudFormation language server stopped unexpectedly. Restart it to continue using CloudFormation features.'
+)
+const restartServerAction = 'Restart Server'
+
 function createClientFactory(
     telemetryEnabled: boolean,
     clientId: string,
@@ -184,6 +189,20 @@ async function startClient(context: ExtensionContext): Promise<void> {
         clientFactory,
         onError: (error, message) => {
             void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
+        },
+        // The shared close policy is DoNotRestart: a crash after `initialize` is not an installation problem,
+        // so the server is not repaired or restarted automatically. Tell the user and offer the restart command.
+        onServerStopped: () => {
+            // Ignore a stop reported for a session that a restart or deactivation has already replaced.
+            if (launcher !== sessionLauncher) {
+                return
+            }
+            getLogger('awsCfnLsp').error('CloudFormation language server stopped unexpectedly')
+            void window.showErrorMessage(serverStoppedMessage, restartServerAction).then((selection) => {
+                if (selection === restartServerAction) {
+                    void commands.executeCommand(commandKey('server.restartServer'))
+                }
+            })
         },
     })
     launcher = sessionLauncher
