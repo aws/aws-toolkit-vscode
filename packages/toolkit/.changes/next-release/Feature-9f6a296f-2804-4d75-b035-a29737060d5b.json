@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CloudFormation: More reliable language server installation. Manifest and bundle downloads are retried, downloads are verified before use, a previously installed version is used when the network is unavailable, and a broken installation is repaired automatically on startup."
+}
