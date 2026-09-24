@@ -101,7 +101,7 @@ jobs:
                   TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
               run: git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
 
-            - run: npm install -g jscpd@5.3.1
+            - run: npm install -g jscpd
 
             - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
 
