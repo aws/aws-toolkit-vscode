@@ -611,7 +611,7 @@ describe('LanguageServerResolver', function () {
         it('places version installs directly under the provided storageDir', function () {
             const resolver = new LanguageServerResolver(createManifest([createVersion('1.0.0')]), {
                 lsName,
-                versionRange: new Range('>=1.0.0', { includePrerelease: true }),
+                versionRange: new Range('>=1.0.0'),
                 serverFilename: 'server.js',
                 storageDir: path.join('/custom', 'path'),
             })
@@ -622,7 +622,7 @@ describe('LanguageServerResolver', function () {
         it('defaults to platform cache/aws/language-servers/<name> with no toolkits segment', function () {
             const resolver = new LanguageServerResolver(createManifest([createVersion('1.0.0')]), {
                 lsName,
-                versionRange: new Range('>=1.0.0', { includePrerelease: true }),
+                versionRange: new Range('>=1.0.0'),
                 serverFilename: 'server.js',
             })
 
@@ -747,30 +747,20 @@ describe('findHighestCompleteInstalledServer', function () {
         await fs.mkdir(path.join(tmpDir.path, '1.5.0'))
         await installFakeServer(tmpDir.path, '2.5.0', ['server.js'])
 
-        const found = await findHighestCompleteInstalledServer(
-            tmpDir.path,
-            new Range('<2.0.0', { includePrerelease: true }),
-            'server.js',
-            []
-        )
+        const found = await findHighestCompleteInstalledServer(tmpDir.path, new Range('<2.0.0'), 'server.js', [])
         assert.strictEqual(found?.version, '1.4.0')
     })
 
     it('returns undefined when nothing complete is installed', async function () {
         await fs.mkdir(path.join(tmpDir.path, '1.0.0'))
-        const found = await findHighestCompleteInstalledServer(
-            tmpDir.path,
-            new Range('<2.0.0', { includePrerelease: true }),
-            'server.js',
-            []
-        )
+        const found = await findHighestCompleteInstalledServer(tmpDir.path, new Range('<2.0.0'), 'server.js', [])
         assert.strictEqual(found, undefined)
     })
 })
 
 describe('LanguageServerResolver - download integrity and fallback (parity)', function () {
     const { lsName } = lspTestDefaults
-    const range = new Range('>=1.0.0 <2.0.0', { includePrerelease: true })
+    const range = new Range('>=1.0.0 <2.0.0')
     const tmpDir = new TempTestDir()
 
     beforeEach(async function () {
@@ -993,7 +983,7 @@ describe('LanguageServerResolver - download integrity and fallback (parity)', fu
         }
     })
 
-    describe('filesystem failures while writing the install (JetBrains: EXTRACTION_FAILED)', function () {
+    describe('filesystem failures while writing the install are reported as ExtractionFailed', function () {
         const sandbox = sinon.createSandbox()
         // The resolver writes through `fs/promises` directly; stub the real module so its live binding sees it.
         // eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-imports
@@ -1108,7 +1098,7 @@ describe('version directory path guard', function () {
     })
 })
 
-describe('semver range parity (JetBrains SemVerRange.satisfiedBy)', function () {
+describe('semver range membership compares core versions on inequality comparators', function () {
     const { lsName } = lspTestDefaults
     const tmpDir = new TempTestDir()
 
@@ -1134,7 +1124,7 @@ describe('semver range parity (JetBrains SemVerRange.satisfiedBy)', function () 
     ]
     for (const [version, range, expected] of cases) {
         it(`versionSatisfiesRange: ${version} vs ${range} => ${expected}`, function () {
-            assert.strictEqual(versionSatisfiesRange(version, new Range(range, { includePrerelease: true })), expected)
+            assert.strictEqual(versionSatisfiesRange(version, new Range(range)), expected)
         })
     }
 
@@ -1149,7 +1139,7 @@ describe('semver range parity (JetBrains SemVerRange.satisfiedBy)', function () 
     ): LanguageServerResolver {
         return new LanguageServerResolver(createManifest(versions), {
             lsName,
-            versionRange: new Range('<2.0.0', { includePrerelease: true }),
+            versionRange: new Range('<2.0.0'),
             serverFilename: 'server.js',
             storageDir: tmpDir.path,
             fetchFn: (fetchFn ?? recordingFetch(requested)) as any,

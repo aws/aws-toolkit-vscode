@@ -18,7 +18,7 @@ export const lspTestDefaults = {
     lsName: 'test-server',
     storageDir: '/tmp/test',
     serverFilename: 'server.js',
-    versionRange: new Range('>=1.0.0', { includePrerelease: true }),
+    versionRange: new Range('>=1.0.0'),
 } as const
 
 /**

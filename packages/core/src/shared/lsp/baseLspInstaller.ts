@@ -48,12 +48,14 @@ export abstract class BaseLspInstaller<
 
     constructor(
         protected config: Config,
-        loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp' | 'awsCfnLsp'>,
+        loggerName: LogTopic,
         private readonly resolveManifest?: ResolveManifest
     ) {
         this.logger = getLogger(loggerName)
         this.installDir = config.storageDir ?? nodePath.join(fs.getCacheDir(), 'aws', 'language-servers', config.name)
-        this.versionRange = new Range(config.supportedVersionRange, { includePrerelease: true })
+        // Parsed only for its comparators: membership is decided by `versionSatisfiesRange`, which compares core
+        // versions only (`2.0.0-rc.1` is *out* of `<2.0.0`), so no node-semver options apply.
+        this.versionRange = new Range(config.supportedVersionRange)
         this.requiredFiles = config.requiredFiles ?? []
     }
 
@@ -116,8 +118,8 @@ export abstract class BaseLspInstaller<
         try {
             installationResult = await serverResolver.resolve()
         } catch (err) {
-            // Unlike JetBrains, a stale cached manifest with no compatible version is treated as being
-            // offline: an already-installed server is preferable to failing until the network returns.
+            // A stale cached manifest with no compatible version is treated as being offline: an
+            // already-installed server is preferable to failing until the network returns.
             if (manifest.location === 'cache' && err instanceof ToolkitError && err.code === 'NoCompatibleVersion') {
                 const offline = await this.resolveFromInstalledServers()
                 if (offline) {

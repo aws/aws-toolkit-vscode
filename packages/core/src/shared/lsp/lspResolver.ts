@@ -129,11 +129,10 @@ export async function hasServerAndRequiredFiles(
 }
 
 /**
- * Range membership matching JetBrains `SemVerRange.satisfiedBy`: the inequality comparators
- * (`<` `<=` `>` `>=`) compare the candidate's core `major.minor.patch` and ignore its prerelease,
- * while equality compares the full version. So `<2.0.0` rejects `2.0.0-beta.1` yet admits
- * `1.5.0-beta.1`. node-semver's `includePrerelease` cannot express this: it admits `2.0.0-beta.1`
- * against `<2.0.0` because that prerelease sorts below `2.0.0`.
+ * Range membership where the inequality comparators (`<` `<=` `>` `>=`) compare the candidate's core
+ * `major.minor.patch` and ignore its prerelease, while equality compares the full version. So `<2.0.0`
+ * rejects `2.0.0-beta.1` yet admits `1.5.0-beta.1`. node-semver's `includePrerelease` cannot express
+ * this: it admits `2.0.0-beta.1` against `<2.0.0` because that prerelease sorts below `2.0.0`.
  */
 export function versionSatisfiesRange(version: string | semver.SemVer, range: semver.Range): boolean {
     const parsed = typeof version === 'string' ? semver.parse(version) : version
@@ -432,8 +431,8 @@ export class LanguageServerResolver {
         } catch (err) {
             // Coded install errors (download, hash, extraction) keep their code so the fallback policy sees them.
             // Anything else here is a filesystem failure while writing the install (EACCES, ENOSPC, EROFS, ...),
-            // including the `fs` wrapper's own coded errors such as `InvalidPermissions`. JetBrains classifies all
-            // of these as EXTRACTION_FAILED so they are user-visible and fallback-eligible; do the same here.
+            // including the `fs` wrapper's own coded errors such as `InvalidPermissions`. All of these are reported
+            // as `ExtractionFailed` so they are user-visible and fallback-eligible.
             const installError = isInstallError(err)
                 ? err
                 : new ToolkitError(`Failed to install "${this.lsName}" to ${versionDir}: ${err}`, {
@@ -503,8 +502,7 @@ export class LanguageServerResolver {
 
     /**
      * Recursively removes a failed install directory. If cleanup itself fails, the original error is
-     * preserved: the cleanup failure is attached to it and logged, never rethrown in its place. This
-     * mirrors JetBrains removeFailedInstall/addSuppressed as closely as JS allows.
+     * preserved: the cleanup failure is attached to it and logged, never rethrown in its place.
      */
     private async removeFailedInstall(versionDir: string, cause: unknown): Promise<void> {
         try {

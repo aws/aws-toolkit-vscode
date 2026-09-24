@@ -9,8 +9,7 @@ import { CloseAction, ErrorAction } from 'vscode-languageclient/node'
 import { LspServerLifecycleController, LspServerLifecycleConfig } from '../../../shared/lsp/lspServerLifecycle'
 
 /**
- * Mirrors the JetBrains `LspServerLifecycleControllerTest` cases that apply to VS Code, where
- * `startProcess` spans the `initialize` handshake.
+ * Startup-recovery cases for VS Code, where `startProcess` spans the `initialize` handshake.
  */
 describe('LspServerLifecycleController', function () {
     let sandbox: sinon.SinonSandbox

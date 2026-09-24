@@ -33,7 +33,7 @@ export interface LspServerLifecycleConfig<T, R = void> extends LspServerLifecycl
      * Locates the server, installing it if necessary, and returns what {@link startProcess} needs.
      * Runs before every start attempt so a repair re-resolves (and re-downloads) the server.
      * Failures are installation problems that a reinstall cannot fix, so they are never repaired and
-     * propagate unchanged — the structural equivalent of JetBrains' `shouldRepair = { it !is LspInstallException }`.
+     * propagate unchanged.
      */
     resolveServer: () => Promise<R>
     /**
@@ -47,8 +47,7 @@ export interface LspServerLifecycleConfig<T, R = void> extends LspServerLifecycl
 }
 
 /**
- * Reusable startup-recovery policy for managed language servers, the VS Code counterpart of the
- * JetBrains toolkit's `LspServerLifecycleController`:
+ * Reusable startup-recovery policy for managed language servers:
  *
  * - {@link launchWithRetry}: a process-start failure invalidates the installation and retries exactly
  *   once. A second failure surfaces as `LspStartFailed` with the underlying error as `cause`.

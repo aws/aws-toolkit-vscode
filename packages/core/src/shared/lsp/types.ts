@@ -11,9 +11,9 @@ export const logger = getLogger('lsp')
 export interface LspResult {
     /** Example: `"cache"` */
     location: LanguageServerLocation
-    /** Example: `"3.3.0"` */
+    /** Example: `"1.2.0"` */
     version: string
-    /** Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0"` */
+    /** Example: `"<cachedir>/aws/language-servers/cloudformation-languageserver/1.2.0"` */
     assetDirectory: string
 }
 
@@ -21,21 +21,20 @@ export interface LspResult {
  * Example:
  * ```
  * resourcePaths = {
- *     lsp = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
- *     node = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node'
- *     ui = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+ *     lsp = '<cachedir>/aws/language-servers/cloudformation-languageserver/1.2.0/cfn-lsp-server-standalone.js'
+ *     node = process.execPath
  * }
  * ```
  */
 export interface ResourcePaths {
     /**
      * Path to `.js` bundle to be executed by `node`.
-     * Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js"`
+     * Example: `"<cachedir>/aws/language-servers/cloudformation-languageserver/1.2.0/cfn-lsp-server-standalone.js"`
      */
     lsp: string
     /**
-     * Path to `node` (or `node.exe`) executable/binary.
-     * Example: `"<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node"`
+     * Path to the `node` (or `node.exe`) executable that runs the server. The extension host's own Node
+     * (`process.execPath`) is used; `vscode-languageclient` forks it in node mode.
      */
     node: string
 }
@@ -45,9 +44,8 @@ export interface LspResolution<T extends ResourcePaths> extends LspResult {
      * Example:
      * ```
      * resourcePaths = {
-     *     lsp = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
-     *     node = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/servers/node'
-     *     ui = '<cachedir>/aws/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+     *     lsp = '<cachedir>/aws/language-servers/cloudformation-languageserver/1.2.0/cfn-lsp-server-standalone.js'
+     *     node = process.execPath
      * }
      * ```
      */

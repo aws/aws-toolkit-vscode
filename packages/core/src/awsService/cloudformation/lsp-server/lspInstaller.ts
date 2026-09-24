@@ -11,9 +11,8 @@ import { CfnLspName, CfnLspServerFile, RequiredFiles, CfnLspServerEnvType } from
 import { isAutomation } from '../../../shared/vscode/env'
 import { dirname, join } from 'path'
 import { getLogger } from '../../../shared/logger/logger'
-import { ResourcePaths, Manifest } from '../../../shared/lsp/types'
+import { ResourcePaths, Manifest, LspVersion } from '../../../shared/lsp/types'
 import { stat } from 'fs/promises' // eslint-disable-line no-restricted-imports
-import { CfnLspVersion } from './utils'
 import globals from '../../../shared/extensionGlobals'
 
 const cfnManifestUrl =
@@ -35,9 +34,9 @@ export function cfnLocalBundleRoot(rawPath = process.env.CFN_LSP_BUNDLE): string
 }
 
 /**
- * Shared with the JetBrains toolkit so both IDEs reuse one download. Each IDE also prunes this
- * directory to "current + one fallback", so a version installed by one IDE may be removed by the
- * other; the launcher's invalidate-and-retry covers that case.
+ * Shared with the other AWS Toolkits so every IDE reuses one download. Each toolkit also prunes this
+ * directory to "current + one fallback", so a version installed by one may be removed by another;
+ * the launcher's invalidate-and-retry covers that case.
  */
 export function cfnStorageDir(): string {
     return join(fs.getCacheDir(), 'aws', 'language-servers', CfnLspName)
@@ -78,7 +77,7 @@ export class CfnManifestAdapter implements ManifestAdapter {
             artifactId: (rawObj.artifactId as string) ?? CfnLspName,
             artifactDescription: (rawObj.artifactDescription as string) ?? 'CloudFormation Language Server',
             isManifestDeprecated: (rawObj.isManifestDeprecated as boolean) ?? false,
-            versions: envVersions as CfnLspVersion[],
+            versions: envVersions as LspVersion[],
         }
     }
 }

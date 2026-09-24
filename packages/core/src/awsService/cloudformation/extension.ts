@@ -4,7 +4,7 @@
  */
 
 import { ExtensionContext, window, languages, commands, Disposable } from 'vscode'
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node'
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
 import { formatMessage, toString, startupFailureMessage, clientIdForInitialization } from './utils'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
@@ -67,6 +67,7 @@ import { SettingsLspServerProvider } from './lsp-server/settingsLspServerProvide
 import { DevLspServerProvider } from './lsp-server/devLspServerProvider'
 import { RemoteLspServerProvider } from './lsp-server/remoteLspServerProvider'
 import { LspServerProvider } from './lsp-server/lspServerProvider'
+import { CfnDocumentSelector, cfnServerOptions } from './lsp-server/lspClientConfig'
 import { LspLauncher, LanguageClientFactory } from '../../shared/lsp/lspLauncher'
 import { getLogger } from '../../shared/logger/logger'
 import { ChangeSetsManager } from './stacks/changeSetsManager'
@@ -98,41 +99,8 @@ function createClientFactory(
         }
         getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverPath}`)
 
-        const envOptions = {
-            NODE_OPTIONS: '--enable-source-maps',
-        }
-
-        const serverOptions: ServerOptions = {
-            run: {
-                module: serverPath,
-                transport: TransportKind.ipc,
-                options: {
-                    env: envOptions,
-                },
-            },
-            debug: {
-                module: serverPath,
-                transport: TransportKind.ipc,
-                options: {
-                    execArgv: ['--no-lazy'],
-                    env: envOptions,
-                },
-            },
-        }
-
         const clientOptions: LanguageClientOptions = {
-            documentSelector: [
-                { scheme: 'file', language: 'plaintext' },
-                { scheme: 'file', language: 'cloudformation' },
-                { scheme: 'file', language: 'template' },
-                { scheme: 'file', language: 'json' },
-                { scheme: 'file', language: 'yaml' },
-                { scheme: 'file', pattern: '**/*.txt' },
-                { scheme: 'file', pattern: '**/*.template' },
-                { scheme: 'file', pattern: '**/*.cfn' },
-                { scheme: 'file', pattern: '**/*.json' },
-                { scheme: 'file', pattern: '**/*.yaml' },
-            ],
+            documentSelector: CfnDocumentSelector,
             initializationOptions: {
                 handledSchemaProtocols: ['file'],
                 aws: {
@@ -159,7 +127,7 @@ function createClientFactory(
             errorHandler,
         }
 
-        return new LanguageClient(ExtensionId, ExtensionName, serverOptions, clientOptions)
+        return new LanguageClient(ExtensionId, ExtensionName, cfnServerOptions(serverPath), clientOptions)
     }
 }
 
