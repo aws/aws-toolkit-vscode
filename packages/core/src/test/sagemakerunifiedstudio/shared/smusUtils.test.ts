@@ -606,6 +606,13 @@ describe('extractAccountIdFromSageMakerArn', () => {
 
             assert.strictEqual(result, '123456789012')
         })
+
+        it('should extract account ID from a GovCloud (aws-us-gov) partition ARN', () => {
+            const arn = 'arn:aws-us-gov:sagemaker:us-gov-west-1:123456789012:space/domain-id/my-space'
+            const result = extractAccountIdFromSageMakerArn(arn)
+
+            assert.strictEqual(result, '123456789012')
+        })
     })
 
     describe('invalid ARN formats', () => {

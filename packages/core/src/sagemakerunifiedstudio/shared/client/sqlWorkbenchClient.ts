@@ -19,6 +19,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { getRedshiftTypeFromHost } from '../../explorer/nodes/utils'
 import { RedshiftType } from '../../explorer/nodes/types'
 import { ConnectionCredentialsProvider } from '../../auth/providers/connectionCredentialsProvider'
+import globals from '../../../shared/extensionGlobals'
+import { defaultDnsSuffix, defaultPartition } from '../../../shared/regions/regionProvider'
 
 /**
  * Connection configuration for SQL Workbench
@@ -33,7 +35,8 @@ export type ConnectionConfig = DatabaseConnectionConfiguration
  * @returns SQL Workbench ARN
  */
 export async function generateSqlWorkbenchArn(region: string, accountId: string): Promise<string> {
-    return `arn:aws:sqlworkbench:${region}:${accountId}:connection/${uuidv4()}`
+    const partition = globals.regionProvider.getPartitionId(region) ?? defaultPartition
+    return `arn:${partition}:sqlworkbench:${region}:${accountId}:connection/${uuidv4()}`
 }
 
 /**
@@ -248,7 +251,8 @@ export class SQLWorkbenchClient {
      * @returns SQL Workbench endpoint URL
      */
     private getSQLWorkbenchEndpoint(region: string): string {
-        return `https://api-v2.sqlworkbench.${region}.amazonaws.com`
+        const dnsSuffix = globals.regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
+        return `https://api-v2.sqlworkbench.${region}.${dnsSuffix}`
     }
 
     /**

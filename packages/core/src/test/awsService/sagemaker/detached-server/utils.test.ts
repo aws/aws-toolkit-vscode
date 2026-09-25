@@ -33,6 +33,16 @@ describe('parseArn', () => {
         })
     })
 
+    it('parses a GovCloud (aws-us-gov) partition ARN', () => {
+        const arn = 'arn:aws-us-gov:sagemaker:us-gov-west-1:123456789012:space/domain-name/my-space-name'
+        const result = parseArn(arn)
+        assert.deepStrictEqual(result, {
+            region: 'us-gov-west-1',
+            accountId: '123456789012',
+            resourceName: 'my-space-name',
+        })
+    })
+
     it('throws on malformed ARN', () => {
         const invalidArn = 'arn:aws:invalid:format'
         assert.throws(() => parseArn(invalidArn), /Invalid ARN format/)
