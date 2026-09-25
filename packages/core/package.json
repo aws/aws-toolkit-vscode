@@ -658,7 +658,7 @@
         "immutable": "^4.3.9",
         "jaro-winkler": "^0.2.8",
         "jose": "6.2.3",
-        "js-yaml": "^4.3.1",
+        "js-yaml": "^4.3.2",
         "jsonc-parser": "^3.2.0",
         "lodash": "^4.17.21",
         "lokijs": "^1.5.12",
