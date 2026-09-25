@@ -562,7 +562,7 @@
         "jsdom": "^23.0.1",
         "json-schema-to-typescript": "^13.1.1",
         "marked": "^13.0.1",
-        "mocha": "^10.1.0",
+        "mocha": "^10.8.2",
         "mocha-junit-reporter": "^2.2.1",
         "mocha-multi-reporters": "^1.5.1",
         "readline-sync": "^1.4.9",
