@@ -10,7 +10,7 @@
     },
     "devDependencies": {
         "@types/eslint": "^8.56.0",
-        "mocha": "^10.1.0"
+        "mocha": "^10.8.2"
     },
     "engines": {
         "npm": "^10.1.0"
