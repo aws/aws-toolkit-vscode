@@ -64,6 +64,32 @@ export function onceChanged<T, U extends any[]>(fn: (...args: U) => T): (...args
 }
 
 /**
+ * Creates a function that runs only if the args changed versus the previous invocation,
+ * using a custom comparator function for argument comparison.
+ *
+ * @param fn The function to wrap
+ * @param comparator Function that returns true if arguments are equal
+ */
+export function onceChangedWithComparator<T, U extends any[]>(
+    fn: (...args: U) => T,
+    comparator: (prev: U, current: U) => boolean
+): (...args: U) => T {
+    let val: T
+    let ran = false
+    let prevArgs: U
+
+    return (...args) => {
+        if (ran && comparator(prevArgs, args)) {
+            return val
+        }
+        val = fn(...args)
+        ran = true
+        prevArgs = args
+        return val
+    }
+}
+
+/**
  * Creates a new function that stores the result of a call.
  *
  * @note This uses an extremely simple mechanism for creating keys from parameters.

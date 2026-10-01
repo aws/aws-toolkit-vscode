@@ -6,7 +6,7 @@ A [build script](../scripts/generateIcons.ts) generates extension artifacts in [
 
 -   `resources/fonts/aws-toolkit-icons.woff`
 -   `resources/css/icons.css`
--   `contributes.icons` in [amazonq package.json](../packages/amazonq/package.json) and [toolkit package.json](../packages/toolkit/package.json)
+-   `contributes.icons` in [toolkit package.json](../packages/toolkit/package.json)
 
 This script should be ran using `npm run generateIcons` after making updates. Any changes made to `package.json` should be committed with the relevant icons. Type checking in `core/` relies on the entries in `core/package.json`. However, the individual extensions require entries in their `package.json`s as well. Currently, resources (including icons) are shared between `core/` and the individual extensions. If `contributes.icons` in each of the extensions does not match the entry in `core/`, then CI will fail.
 

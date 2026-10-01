@@ -1,0 +1,14 @@
+{
+	"date": "2026-04-09",
+	"version": "4.0.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "HyperPod: Improved connection reliability with automatic token refresh and fixed connection failures on Windows."
+		},
+		{
+			"type": "Feature",
+			"description": "CloudFormation Language Server: templates exceeding 51KB now automatically enforce S3 upload instead of silently failing at deployment"
+		}
+	]
+}

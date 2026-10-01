@@ -230,7 +230,7 @@ more options.
 
 ### Coverage report
 
-You can find the coverage report at `./coverage/amazonq/lcov-report/index.html` and `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
+You can find the coverage report at `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
 
 ### CodeCatalyst Blueprints
 
@@ -400,6 +400,8 @@ If you need to report an issue attach these to give the most detailed informatio
 
 Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
 
+**Note:** The `ssooidc` and `sso` endpoint overrides are only read from **user-level settings** (not workspace or folder settings). Set them via `Preferences: Open User Settings (JSON)` in VS Code.
+
 Example:
 
 ```json
@@ -526,6 +528,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 #### Step functions
 
 -   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
+
+#### CloudFormation LSP
+
+-   `__CLOUDFORMATIONLSP_PATH`: for aws.dev.cloudformationLsp.path
+-   `__CLOUDFORMATIONLSP_CLOUDFORMATION_ENDPOINT`: for aws.dev.cloudformationLsp.cloudformationEndpoint
 
 #### CI/Testing
 

@@ -1,0 +1,10 @@
+{
+	"date": "2025-11-21",
+	"version": "3.87.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Support IAM based domains for SageMaker Unified Studio"
+		}
+	]
+}

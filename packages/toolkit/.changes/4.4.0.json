@@ -1,0 +1,10 @@
+{
+	"date": "2026-05-07",
+	"version": "4.4.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Add support for SSO and IAM role login into all Sagemaker Unified Studio domain types"
+		}
+	]
+}

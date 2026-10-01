@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import sinon = require('sinon')
+import { mockClient } from 'aws-sdk-client-mock'
 import { RedshiftDatabaseNode } from '../../../../awsService/redshift/explorer/redshiftDatabaseNode'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftDataClient, ListSchemasCommand } from '@aws-sdk/client-redshift-data'
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import assert = require('assert')
@@ -14,44 +14,37 @@ import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBa
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftDatabaseNode', function () {
-    const sandbox = sinon.createSandbox()
-    const mockRedshiftData = <RedshiftData>{}
-    const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
+    const mockRedshiftData = mockClient(RedshiftDataClient)
+    const redshiftClient = new DefaultRedshiftClient('us-east-1', () => mockRedshiftData as any, undefined, undefined)
     const connectionParams = new ConnectionParams(
         ConnectionType.TempCreds,
         'testDb1',
         'warehouseId',
         RedshiftWarehouseType.PROVISIONED
     )
-    let listSchemasStub: sinon.SinonStub
 
     describe('getChildren', function () {
-        beforeEach(function () {
-            listSchemasStub = sandbox.stub()
-            mockRedshiftData.listSchemas = listSchemasStub
-        })
-
         afterEach(function () {
-            sandbox.reset()
+            mockRedshiftData.reset()
         })
 
         it('loads schemas successfully', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.resolve({ Schemas: ['schema1'] }) })
+            mockRedshiftData.on(ListSchemasCommand).resolves({ Schemas: ['schema1'] })
             const childNodes = await node.getChildren()
             verifyChildNodes(childNodes, false)
         })
 
         it('loads schemas and shows load more node when there are more schemas', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.resolve({ Schemas: ['schema1'], NextToken: 'next' }) })
+            mockRedshiftData.on(ListSchemasCommand).resolves({ Schemas: ['schema1'], NextToken: 'next' })
             const childNodes = await node.getChildren()
             verifyChildNodes(childNodes, true)
         })
 
         it('shows error node when listSchema fails', async () => {
             const node = new RedshiftDatabaseNode('testDB1', redshiftClient, connectionParams)
-            listSchemasStub.returns({ promise: () => Promise.reject('Failed') })
+            mockRedshiftData.on(ListSchemasCommand).rejects('Failed')
             const childNodes = await node.getChildren()
             assert.strictEqual(childNodes.length, 1)
             assert.strictEqual(childNodes[0].contextValue, 'awsErrorNode')

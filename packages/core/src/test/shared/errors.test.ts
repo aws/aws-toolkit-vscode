@@ -683,6 +683,49 @@ describe('util', function () {
         assert.deepStrictEqual(scrubNames('unix ~jdoe123/.aws/config failed', fakeUser), 'unix ~x/.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ../../.aws/config failed', fakeUser), 'unix ../../.aws/config failed')
         assert.deepStrictEqual(scrubNames('unix ~/.aws/config failed', fakeUser), 'unix ~/.aws/config failed')
+
+        // Profile name scrubbing - tests all three patterns
+
+        // Pattern 1: profile name with space separator
+        const profileTest1 = scrubNames('Error with profile my-profile', fakeUser)
+        assert.deepStrictEqual(profileTest1, 'Error with profile [REDACTED]', 'Should handle space-separated profile')
+        assert.ok(!profileTest1.includes('my-profile'), 'Original profile name should not appear')
+
+        // Pattern 2: profile name with single quotes
+        const profileTest2 = scrubNames("Failed to load profile 'production-admin'", fakeUser)
+        assert.deepStrictEqual(profileTest2, 'Failed to load profile [REDACTED]', 'Should handle single-quoted profile')
+        assert.ok(!profileTest2.includes('production-admin'), 'Original profile name should not appear')
+        assert.ok(!profileTest2.includes("'"), 'Closing quote should be removed')
+
+        // Pattern 2: profile name with double quotes
+        const profileTest3 = scrubNames('Using profile "staging-env" for authentication', fakeUser)
+        assert.deepStrictEqual(
+            profileTest3,
+            'Using profile [REDACTED] for authentication',
+            'Should handle double-quoted profile'
+        )
+        assert.ok(!profileTest3.includes('staging-env'), 'Original profile name should not appear')
+        assert.ok(!profileTest3.includes('"'), 'Closing quote should be removed')
+
+        // Pattern 3: profile name with colon separator
+        const profileTest4 = scrubNames('Profile: dev-account not found', fakeUser)
+        assert.deepStrictEqual(profileTest4, 'Profile [REDACTED] not found', 'Should handle colon-separated profile')
+        assert.ok(!profileTest4.includes('dev-account'), 'Original profile name should not appear')
+
+        // Case preservation tests
+        const profileTest5 = scrubNames('PROFILE: admin-user failed', fakeUser)
+        assert.deepStrictEqual(profileTest5, 'PROFILE [REDACTED] failed', 'Should preserve uppercase PROFILE')
+
+        const profileTest6 = scrubNames("Profile 'test-123' is invalid", fakeUser)
+        assert.deepStrictEqual(profileTest6, 'Profile [REDACTED] is invalid', 'Should preserve capitalized Profile')
+
+        // Multiple profiles in one message
+        const profileTest7 = scrubNames("Switching from profile 'old-profile' to profile 'new-profile'", fakeUser)
+        assert.ok(
+            !profileTest7.includes('old-profile') && !profileTest7.includes('new-profile'),
+            'Should redact multiple profiles'
+        )
+        assert.ok(profileTest7.includes('[REDACTED]'), 'Should contain redaction markers')
     })
 })
 

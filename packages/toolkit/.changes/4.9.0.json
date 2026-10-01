@@ -1,0 +1,10 @@
+{
+	"date": "2026-07-02",
+	"version": "4.9.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`."
+		}
+	]
+}

@@ -22,6 +22,11 @@ export class TabBarController {
     private loadedChats: boolean = false
     private searchTimeout: NodeJS.Timeout | undefined = undefined
     private readonly DebounceTime = 300 // milliseconds
+    // The Uri where chats will be saved is passed through multiple components. In order to prevent intermediate
+    // components from manipulating the save destination, we record the user-chosen location the moment the user
+    // clicks the save button and validate that the passed-through value still matches when we get to the point
+    // of performing the export.
+    private readonly pendingSaveUris = new Set<string>()
 
     constructor(messenger: Messenger) {
         this.messenger = messenger
@@ -132,6 +137,10 @@ export class TabBarController {
     }
 
     async processSaveChat(message: SaveChatMessage) {
+        if (!this.pendingSaveUris.delete(message.uri)) {
+            void vscode.window.showErrorMessage('An error occurred while exporting your chat.')
+            return
+        }
         try {
             await fs.writeFile(message.uri, message.serializedChat)
         } catch (error) {
@@ -175,6 +184,7 @@ export class TabBarController {
         if (saveUri) {
             // Determine format from file extension
             const format = saveUri.fsPath.endsWith('.md') ? 'markdown' : 'html'
+            this.pendingSaveUris.add(saveUri.fsPath)
             this.messenger.sendSerializeTabMessage(message.tabID, saveUri.fsPath, format)
         }
     }

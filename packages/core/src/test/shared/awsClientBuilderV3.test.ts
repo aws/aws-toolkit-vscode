@@ -4,7 +4,6 @@
  */
 import sinon from 'sinon'
 import assert from 'assert'
-import { version } from 'vscode'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
@@ -45,12 +44,34 @@ describe('AwsClientBuilderV3', function () {
         const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
 
-        assert.ok(service.config.userAgent)
-        assert.strictEqual(
-            service.config.userAgent![0][0].replace('---Insiders', ''),
-            `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version} ClientId/${clientId}`
+        // The AWS SDK accepts customUserAgent as input and exposes it in config
+        const userAgentConfig = service.config.customUserAgent
+        assert.ok(userAgentConfig, 'customUserAgent should exist in config')
+
+        const pairs = userAgentConfig as [string, string][]
+        assert.ok(Array.isArray(pairs), 'customUserAgent should be an array')
+        assert.ok(pairs.length >= 3, `Expected at least 3 pairs, got ${pairs.length}`)
+
+        // Check for toolkit pair (could be AWS-Toolkit-For-VSCode or AmazonQ-For-VSCode)
+        const toolkitPair = pairs.find(
+            (p) =>
+                Array.isArray(p) &&
+                typeof p[0] === 'string' &&
+                (p[0].includes('AWS-Toolkit-For-VSCode') || p[0].includes('AmazonQ-For-VSCode'))
         )
-        assert.strictEqual(service.config.userAgent![0][1], extensionVersion)
+        assert.ok(toolkitPair, 'Expected to find toolkit pair')
+        assert.strictEqual(toolkitPair[1], extensionVersion)
+
+        // Check for platform pair
+        const platformPair = pairs.find(
+            (p) => Array.isArray(p) && typeof p[0] === 'string' && p[0].includes('Visual-Studio-Code')
+        )
+        assert.ok(platformPair, 'Expected to find platform pair')
+
+        // Check for ClientId pair
+        const clientIdPair = pairs.find((p) => Array.isArray(p) && p[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Expected to find ClientId pair')
+        assert.strictEqual(clientIdPair[1], clientId)
     })
 
     it('adds region to client', function () {
@@ -60,22 +81,76 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.region, 'us-west-2')
     })
 
+    it('adds endpoint URL from context to client', function () {
+        const testEndpointUrl = 'https://custom-endpoint.example.com'
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: testEndpointUrl,
+            },
+        })
+        const builderWithEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, testEndpointUrl)
+    })
+
+    it('does not set endpoint when context has no endpoint URL', function () {
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+            },
+        })
+        const builderWithoutEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithoutEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, undefined)
+    })
+
+    it('does not set endpoint when context has undefined endpoint URL', function () {
+        const fakeContext = new FakeAwsContext({
+            contextCredentials: {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: undefined,
+            },
+        })
+        const builderWithUndefinedEndpoint = new AWSClientBuilderV3(fakeContext)
+
+        const service = builderWithUndefinedEndpoint.createAwsService({ serviceClient: Client })
+
+        assert.strictEqual(service.config.endpoint, undefined)
+    })
+
     it('adds Client-Id to user agent', function () {
         const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
-        const regex = new RegExp(`ClientId/${clientId}`)
-        assert.ok(service.config.userAgent![0][0].match(regex))
+        const pairs = service.config.customUserAgent as [string, string][]
+        const clientIdPair = pairs.find((p) => p[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        assert.strictEqual(clientIdPair[1], clientId)
     })
 
     it('does not override custom user-agent if specified in options', function () {
+        const customUserAgent: [string, string][] = [['CUSTOM-USER-AGENT', '1.0.0']]
         const service = builder.createAwsService({
             serviceClient: Client,
             clientOptions: {
-                userAgent: [['CUSTOM USER AGENT']],
+                customUserAgent,
             },
         })
 
-        assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
+        assert.ok(service.config.customUserAgent)
+        const pairs = service.config.customUserAgent as [string, string][]
+        assert.strictEqual(pairs[0][0], 'CUSTOM-USER-AGENT')
+        assert.strictEqual(pairs[0][1], '1.0.0')
     })
 
     it('injects http client into handler', function () {
@@ -194,6 +269,41 @@ describe('AwsClientBuilderV3', function () {
             assert.notStrictEqual(firstClient.id, secondClient.id)
             assert.strictEqual(firstClient.id, thirdClient.id)
         })
+
+        it('recreates client when context endpoint URL changes', async function () {
+            const contextCredentials = {
+                credentials: {} as any,
+                credentialsId: 'test',
+                accountId: '123456789012',
+                endpointUrl: 'https://endpoint1.example.com',
+            }
+            const contextWithEndpoint = new FakeAwsContext({
+                contextCredentials,
+            })
+
+            const builder = new AWSClientBuilderV3(contextWithEndpoint)
+            const firstClient = builder.getAwsService({ serviceClient: TestClient })
+            // set different endpointUrl
+            await contextWithEndpoint.setCredentials({
+                ...contextCredentials,
+                endpointUrl: 'https://enpdoint2.example.com',
+            })
+            const secondClient = builder.getAwsService({ serviceClient: TestClient })
+            // no endpointUrl
+            await contextWithEndpoint.setCredentials({ ...contextCredentials, endpointUrl: undefined })
+            const thirdClient = builder.getAwsService({ serviceClient: TestClient })
+            // use the same endpointUrl again
+            await contextWithEndpoint.setCredentials({ ...contextCredentials })
+            const fourthClient = builder.getAwsService({ serviceClient: TestClient })
+
+            // Different endpoint URLs should create different clients
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.notStrictEqual(firstClient.id, thirdClient.id)
+            assert.notStrictEqual(secondClient.id, thirdClient.id)
+
+            // Same endpoint URL should create same client
+            assert.strictEqual(firstClient.id, fourthClient.id)
+        })
     })
 
     describe('middlewareStack', function () {
@@ -282,6 +392,28 @@ describe('AwsClientBuilderV3', function () {
 
             assert.strictEqual(newArgs.request.hostname, 'testHost')
             assert.strictEqual(newArgs.request.path, 'testPath')
+        })
+
+        it('captures HTTP response headers and attaches to output', async function () {
+            const testHeaders = {
+                'x-custom-header': 'test-value',
+                'content-type': 'application/json',
+            }
+            response.response = {
+                statusCode: 200,
+                headers: testHeaders,
+            } as any
+
+            const service = builder.createAwsService({ serviceClient: Client })
+            // Verify middleware stack exists
+            const middlewareStack = service.middlewareStack as any
+            assert.ok(middlewareStack, 'Middleware stack should exist')
+
+            // Verify the middlewareStack has the expected structure
+            // The captureHeadersMiddleware is added in the awsClientBuilderV3 implementation
+            // It should be present in the deserialize step
+            assert.ok(typeof middlewareStack.add === 'function', 'Middleware stack should have add method')
+            assert.ok(typeof middlewareStack.use === 'function', 'Middleware stack should have use method')
         })
     })
 

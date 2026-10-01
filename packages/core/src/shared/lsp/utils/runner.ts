@@ -11,7 +11,7 @@
 // Disable because this is a language server.
 /* eslint-disable aws-toolkits/no-console-log */
 
-import { CancellationToken, ErrorCodes, ResponseError } from 'vscode-languageserver'
+import { CancellationToken, LSPErrorCodes, ResponseError } from 'vscode-languageserver'
 
 export function formatError(message: string, err: any): string {
     if (err instanceof Error) {
@@ -90,5 +90,5 @@ export function runSafe<T, E>(
 function cancelValue<E>() {
     console.log('cancelled')
 
-    return new ResponseError<E>(ErrorCodes.RequestCancelled, 'Request cancelled')
+    return new ResponseError<E>(LSPErrorCodes.RequestCancelled, 'Request cancelled')
 }

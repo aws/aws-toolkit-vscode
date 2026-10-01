@@ -166,6 +166,8 @@ export class DiffModel {
             throw new Error(CodeWhispererConstants.noChangesMadeMessage)
         }
 
+        getLogger().info(`CodeTransformation: parsing patch file at ${pathToDiff}`)
+
         let changedFiles = parsePatch(diffContents)
         // exclude dependency_upgrade.yml from patch application
         changedFiles = changedFiles.filter((file) => !file.oldFileName?.includes('dependency_upgrade'))

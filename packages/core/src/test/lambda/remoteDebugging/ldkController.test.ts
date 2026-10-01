@@ -6,14 +6,15 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import {
     RemoteDebugController,
-    DebugConfig,
     activateRemoteDebugging,
     revertExistingConfig,
-    getLambdaSnapshot,
+    tryAutoDetectOutFile,
+    validateSourceMapFiles,
 } from '../../../lambda/remoteDebugging/ldkController'
+import { getLambdaSnapshot, type DebugConfig } from '../../../lambda/remoteDebugging/lambdaDebugger'
 import { LdkClient } from '../../../lambda/remoteDebugging/ldkClient'
 import globals from '../../../shared/extensionGlobals'
 import * as messages from '../../../shared/utilities/messages'
@@ -29,6 +30,10 @@ import {
     setupDebuggingState,
     setupMockCleanupOperations,
 } from './testUtils'
+import { getRemoteDebugLayer } from '../../../lambda/remoteDebugging/remoteLambdaDebugger'
+import { fs } from '../../../shared/fs/fs'
+import * as detectCdkProjects from '../../../awsService/cdk/explorer/detectCdkProjects'
+import * as glob from 'glob'
 
 describe('RemoteDebugController', () => {
     let sandbox: sinon.SinonSandbox
@@ -98,6 +103,10 @@ describe('RemoteDebugController', () => {
             assert.strictEqual(controller.supportCodeDownload(undefined), false, 'Should not support undefined runtime')
         })
 
+        it('should not support code download for hot-reloading LocalStack functions', () => {
+            assert.strictEqual(controller.supportCodeDownload('nodejs18.x', 'hot-reloading-hash-not-available'), false)
+        })
+
         it('should support remote debug for node, python, and java runtimes', () => {
             assert.strictEqual(controller.supportRuntimeRemoteDebug('nodejs18.x'), true, 'Should support Node.js')
             assert.strictEqual(controller.supportRuntimeRemoteDebug('python3.9'), true, 'Should support Python')
@@ -111,7 +120,7 @@ describe('RemoteDebugController', () => {
         })
 
         it('should get remote debug layer for supported regions and architectures', () => {
-            const result = controller.getRemoteDebugLayer('us-east-1', ['x86_64'])
+            const result = getRemoteDebugLayer('us-east-1', ['x86_64'])
 
             assert.strictEqual(typeof result, 'string', 'Should return layer ARN for supported region and architecture')
             assert(result?.includes('us-east-1'), 'Should contain the region in the ARN')
@@ -119,14 +128,14 @@ describe('RemoteDebugController', () => {
         })
 
         it('should return undefined for unsupported regions', () => {
-            const result = controller.getRemoteDebugLayer('unsupported-region', ['x86_64'])
+            const result = getRemoteDebugLayer('unsupported-region', ['x86_64'])
 
             assert.strictEqual(result, undefined, 'Should return undefined for unsupported region')
         })
 
         it('should return undefined when region or architectures are undefined', () => {
-            assert.strictEqual(controller.getRemoteDebugLayer(undefined, ['x86_64']), undefined)
-            assert.strictEqual(controller.getRemoteDebugLayer('us-west-2', undefined), undefined)
+            assert.strictEqual(getRemoteDebugLayer(undefined, ['x86_64']), undefined)
+            assert.strictEqual(getRemoteDebugLayer('us-west-2', undefined), undefined)
         })
     })
 
@@ -196,7 +205,7 @@ describe('RemoteDebugController', () => {
 
     describe('Debug Session Management', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({
@@ -235,7 +244,7 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Succeeded',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
@@ -297,7 +306,7 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Succeeded',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":true,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
@@ -402,7 +411,7 @@ describe('RemoteDebugController', () => {
 
     describe('Telemetry Verification', () => {
         let mockConfig: DebugConfig
-        let mockFunctionConfig: Lambda.FunctionConfiguration
+        let mockFunctionConfig: FunctionConfiguration
 
         beforeEach(() => {
             mockConfig = createMockDebugConfig({
@@ -436,10 +445,296 @@ describe('RemoteDebugController', () => {
             assertTelemetry('lambda_remoteDebugStart', {
                 result: 'Failed',
                 source: 'remoteDebug',
-                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6"}',
+                action: '{"port":9229,"remoteRoot":"/var/task","skipFiles":[],"shouldPublishVersion":false,"lambdaTimeout":900,"layerArn":"arn:aws:lambda:us-west-2:123456789012:layer:LDKLayerX86:6","isLambdaRemote":true}',
                 runtimeString: 'nodejs18.x',
             })
         })
+    })
+})
+
+describe('tryAutoDetectOutFile', () => {
+    let sandbox: sinon.SinonSandbox
+
+    // Common test constants
+    const testFunctionName = 'TestFunction'
+    const testSamProjectRoot = vscode.Uri.file('/path/to/sam-project')
+    const testSamLogicalId = 'MyFunction'
+    const testCdkProjectRoot = vscode.Uri.file('/path/to/cdk-project')
+    const testCdkAssetPath = 'asset.728566f9cc2388f3c89a024fd2e887b4d82715454a0fc478f57d7d034364fdd5'
+    const testCdkOutDir = vscode.Uri.joinPath(testCdkProjectRoot, 'cdk.out')
+    const testMockWorkspaceFolder: vscode.WorkspaceFolder = {
+        uri: testCdkProjectRoot,
+        name: 'cdk-project',
+        index: 0,
+    }
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should return undefined for non-TypeScript files', async () => {
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.js', // JavaScript file, not TypeScript
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, undefined, 'Should return undefined for non-TypeScript files')
+    })
+
+    it('should return undefined when handlerFile is not provided', async () => {
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: undefined,
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, undefined, 'Should return undefined when handlerFile is not provided')
+    })
+
+    it('should detect SAM build path when SAM parameters are provided', async () => {
+        const expectedPath = vscode.Uri.joinPath(testSamProjectRoot, '.aws-sam', 'build', testSamLogicalId)
+
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.ts',
+            samProjectRoot: testSamProjectRoot,
+            samFunctionLogicalId: testSamLogicalId,
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        // Mock fs.exists to return true for SAM build path
+        sandbox.stub(fs, 'exists').resolves(true)
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, expectedPath.fsPath, 'Should return SAM build path')
+    })
+
+    it('should return undefined when SAM build path does not exist', async () => {
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.ts',
+            samProjectRoot: testSamProjectRoot,
+            samFunctionLogicalId: testSamLogicalId,
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        // Mock fs.exists to return false
+        sandbox.stub(fs, 'exists').resolves(false)
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, undefined, 'Should return undefined when SAM build path does not exist')
+    })
+
+    it('should detect CDK asset path from template.json', async () => {
+        const expectedAssetDir = vscode.Uri.joinPath(testCdkOutDir, testCdkAssetPath)
+
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/cdk-project/src/handler.ts',
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig({
+            FunctionName: testFunctionName,
+        })
+
+        // Mock workspace folder
+        sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(testMockWorkspaceFolder)
+
+        // Mock CDK project detection
+        const detectCdkProjectsStub = sandbox.stub(detectCdkProjects, 'detectCdkProjects')
+        detectCdkProjectsStub.resolves([
+            {
+                cdkJsonUri: vscode.Uri.joinPath(testMockWorkspaceFolder.uri, 'cdk.json'),
+                treeUri: vscode.Uri.joinPath(testCdkOutDir, 'tree.json'),
+            },
+        ])
+
+        // Mock finding template files
+        sandbox
+            .stub(vscode.workspace, 'findFiles')
+            .resolves([vscode.Uri.joinPath(testCdkOutDir, 'stack.template.json')])
+
+        // Mock reading template file
+        const mockTemplate = {
+            Resources: {
+                MyFunctionB75F74F2: {
+                    Type: 'AWS::Lambda::Function',
+                    Properties: {
+                        FunctionName: testFunctionName,
+                    },
+                    Metadata: {
+                        'aws:asset:path': testCdkAssetPath,
+                    },
+                },
+            },
+        }
+        const readTextStub = sandbox.stub(fs, 'readFileText')
+        readTextStub.resolves(JSON.stringify(mockTemplate))
+        sandbox.stub(fs, 'exists').resolves(true)
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, expectedAssetDir.fsPath, 'Should return CDK asset directory path')
+
+        const functionNonExistConfig: FunctionConfiguration = createMockFunctionConfig({
+            FunctionName: 'NonExistentFunction',
+        })
+        const result2 = await tryAutoDetectOutFile(debugConfig, functionNonExistConfig)
+
+        assert.strictEqual(result2, undefined, 'Should return undefined when function not found in template')
+
+        readTextStub.resolves('{ invalid json }')
+
+        const result3 = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result3, undefined, 'Should return undefined on template parsing error')
+    })
+
+    it('should return undefined when no workspace folder is found', async () => {
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.ts',
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        // Mock no workspace folder
+        sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, undefined, 'Should return undefined when no workspace folder')
+    })
+
+    it('should prioritize SAM detection over CDK detection', async () => {
+        const samPath = vscode.Uri.joinPath(testSamProjectRoot, '.aws-sam', 'build', testSamLogicalId)
+
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.ts',
+            samProjectRoot: testSamProjectRoot,
+            samFunctionLogicalId: testSamLogicalId,
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig({
+            FunctionName: testFunctionName,
+        })
+
+        // Mock fs.exists to return true for SAM path
+        const existsStub = sandbox.stub(fs, 'exists')
+        existsStub.withArgs(samPath).resolves(true)
+
+        // Even though we could detect CDK, SAM should be prioritized
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, samPath.fsPath, 'Should prioritize SAM detection over CDK')
+    })
+
+    it('should handle .tsx TypeScript files', async () => {
+        const expectedPath = vscode.Uri.joinPath(testSamProjectRoot, '.aws-sam', 'build', testSamLogicalId)
+
+        const debugConfig: DebugConfig = createMockDebugConfig({
+            handlerFile: '/path/to/handler.tsx', // TSX file
+            samProjectRoot: testSamProjectRoot,
+            samFunctionLogicalId: testSamLogicalId,
+        })
+        const functionConfig: FunctionConfiguration = createMockFunctionConfig()
+
+        // Mock fs.exists to return true
+        sandbox.stub(fs, 'exists').resolves(true)
+
+        const result = await tryAutoDetectOutFile(debugConfig, functionConfig)
+
+        assert.strictEqual(result, expectedPath.fsPath, 'Should handle .tsx files')
+    })
+})
+
+describe('Source Map Pattern Extraction', () => {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('should extract temp patterns from source map files', async () => {
+        assert(vscode.workspace.workspaceFolders?.[0]?.uri, 'Test env should have a workdir')
+        const testPath = vscode.Uri.joinPath(vscode.workspace.workspaceFolders?.[0]?.uri, 'remote-debug-ts-app').fsPath
+
+        // Call validateSourceMapFiles which will extract temp patterns
+        const result = await validateSourceMapFiles([`${testPath}/*`])
+
+        assert(result.isValid, 'Should find valid source map files')
+        assert(result.tempPatterns.has('tmp5bmwuffn'), 'Should extract temp pattern tmp5bmwuffn from source map')
+    })
+
+    it('should handle multiple temp patterns in source maps', async () => {
+        // Create a mock source map with multiple temp patterns
+        // Updated to use lowercase and underscore patterns matching Python's tempfile.mkdtemp()
+        const mockSourceMap = {
+            version: 3,
+            file: 'index.js',
+            sources: [
+                '../../../../../../tmpa1b2c3d4/index.ts',
+                '../../../../../../tmpx9y8_7w6/utils.ts',
+                '../../../../../../tmp_test123/helper.ts',
+                '/var/task/regular-path.ts', // This should not match
+            ],
+            mappings: 'AAAA',
+        }
+
+        // Mock fs.readFileText to return our mock source map
+        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockSourceMap))
+
+        // Call extractTempPatternsFromSourceMaps directly (we need to export it first)
+        // For now, we'll test through validateSourceMapFiles
+
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should be valid')
+        assert(result.tempPatterns.has('tmpa1b2c3d4'), 'Should extract first temp pattern')
+        assert(result.tempPatterns.has('tmpx9y8_7w6'), 'Should extract second temp pattern')
+        assert(result.tempPatterns.has('tmp_test123'), 'Should extract third temp pattern')
+        assert.strictEqual(result.tempPatterns.size, 3, 'Should have exactly 3 temp patterns')
+    })
+
+    it('should handle source maps without temp patterns', async () => {
+        // Create a mock source map without temp patterns
+        const mockSourceMap = {
+            version: 3,
+            file: 'index.js',
+            sources: ['./index.ts', '../utils/helper.ts'],
+            mappings: 'AAAA',
+        }
+
+        // Mock fs.readFileText
+        sandbox.stub(fs, 'readFileText').resolves(JSON.stringify(mockSourceMap))
+
+        // Mock glob
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should be valid even without temp patterns')
+        assert.strictEqual(result.tempPatterns.size, 0, 'Should have no temp patterns')
+    })
+
+    it('should handle malformed source map files gracefully', async () => {
+        // Mock fs.readFileText to return invalid JSON
+        sandbox.stub(fs, 'readFileText').resolves('{ invalid json }')
+
+        sandbox.stub(glob, 'glob').resolves(['/test/path/index.js', '/test/path/index.js.map'])
+
+        const result = await validateSourceMapFiles(['/test/path/*'])
+
+        assert(result.isValid, 'Should still be valid despite malformed source map')
+        assert.strictEqual(result.tempPatterns.size, 0, 'Should have no temp patterns when parsing fails')
     })
 })
 

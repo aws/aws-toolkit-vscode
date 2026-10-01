@@ -8,37 +8,39 @@ import { readMapping, writeMapping } from './utils'
 
 export type SessionStatus = 'pending' | 'fresh' | 'consumed' | 'not-started'
 
+/**
+ * Reads the mapping file and resolves the deepLink entry for the given connectionId.
+ * Throws if the mapping or entry is missing.
+ */
+async function resolveDeepLinkEntry(connectionId: string) {
+    const mapping = await readMapping()
+
+    if (!mapping.deepLink) {
+        throw new Error('No deepLink mapping found')
+    }
+
+    const entry = mapping.deepLink[connectionId]
+    if (!entry) {
+        throw new Error(`No mapping found for connectionId: "${connectionId}"`)
+    }
+
+    return { mapping, entry }
+}
+
 export class SessionStore {
-    async getRefreshUrl(connectionId: string) {
-        const mapping = await readMapping()
-
-        if (!mapping.deepLink) {
-            throw new Error('No deepLink mapping found')
-        }
-
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
-
-        if (!entry.refreshUrl) {
-            throw new Error(`No refreshUrl found for connectionId: "${connectionId}"`)
-        }
-
+    async getRefreshUrl(connectionId: string): Promise<string | undefined> {
+        const { entry } = await resolveDeepLinkEntry(connectionId)
         return entry.refreshUrl
     }
 
+    /** Returns true if this is a SMUS connection. Defaults to false for legacy entries. */
+    async getIsSMUS(connectionId: string): Promise<boolean> {
+        const { entry } = await resolveDeepLinkEntry(connectionId)
+        return entry.isSMUS ?? false
+    }
+
     async getFreshEntry(connectionId: string, requestId: string) {
-        const mapping = await readMapping()
-
-        if (!mapping.deepLink) {
-            throw new Error('No deepLink mapping found')
-        }
-
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
+        const { mapping, entry } = await resolveDeepLinkEntry(connectionId)
 
         const requests = entry.requests
         const initialEntry = requests['initial-connection']
@@ -58,30 +60,13 @@ export class SessionStore {
     }
 
     async getStatus(connectionId: string, requestId: string) {
-        const mapping = await readMapping()
-
-        if (!mapping.deepLink) {
-            throw new Error('No deepLink mapping found')
-        }
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
-
+        const { entry } = await resolveDeepLinkEntry(connectionId)
         const status = entry.requests?.[requestId]?.status
         return status ?? 'not-started'
     }
 
     async markConsumed(connectionId: string, requestId: string) {
-        const mapping = await readMapping()
-
-        if (!mapping.deepLink) {
-            throw new Error('No deepLink mapping found')
-        }
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
+        const { mapping, entry } = await resolveDeepLinkEntry(connectionId)
 
         const requests = entry.requests
         if (!requests[requestId]) {
@@ -93,15 +78,7 @@ export class SessionStore {
     }
 
     async markPending(connectionId: string, requestId: string) {
-        const mapping = await readMapping()
-
-        if (!mapping.deepLink) {
-            throw new Error('No deepLink mapping found')
-        }
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
-        }
+        const { mapping, entry } = await resolveDeepLinkEntry(connectionId)
 
         entry.requests[requestId] = {
             sessionId: '',
@@ -113,16 +90,22 @@ export class SessionStore {
         await writeMapping(mapping)
     }
 
-    async setSession(connectionId: string, requestId: string, ssmConnectionInfo: SsmConnectionInfo) {
+    async cleanupExpiredConnection(connectionId: string) {
         const mapping = await readMapping()
 
         if (!mapping.deepLink) {
             throw new Error('No deepLink mapping found')
         }
-        const entry = mapping.deepLink[connectionId]
-        if (!entry) {
-            throw new Error(`No mapping found for connectionId: "${connectionId}"`)
+
+        // Remove the entire connection entry for the expired space
+        if (mapping.deepLink[connectionId]) {
+            delete mapping.deepLink[connectionId]
+            await writeMapping(mapping)
         }
+    }
+
+    async setSession(connectionId: string, requestId: string, ssmConnectionInfo: SsmConnectionInfo) {
+        const { mapping, entry } = await resolveDeepLinkEntry(connectionId)
 
         entry.requests[requestId] = {
             sessionId: ssmConnectionInfo.sessionId,

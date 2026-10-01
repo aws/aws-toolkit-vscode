@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { StackSummary } from 'aws-sdk/clients/cloudformation'
+import { StackSummary } from '@aws-sdk/client-cloudformation'
 import { getAwsConsoleUrl } from '../../awsConsole'
 import { CloudFormationClient } from '../../clients/cloudFormation'
 import * as vscode from 'vscode'
@@ -13,9 +13,10 @@ import { getRecentResponse } from '../../sam/utils'
 
 export const localize = nls.loadMessageBundle()
 
-const canPickStack = (s: StackSummary) => s.StackStatus.endsWith('_COMPLETE')
+const canPickStack = (s: StackSummary) => s.StackStatus?.endsWith('_COMPLETE')
 const canShowStack = (s: StackSummary) =>
-    (s.StackStatus.endsWith('_COMPLETE') || s.StackStatus.endsWith('_IN_PROGRESS')) && !s.StackStatus.includes('DELETE')
+    (s.StackStatus?.endsWith('_COMPLETE') || s.StackStatus?.endsWith('_IN_PROGRESS')) &&
+    !s.StackStatus.includes('DELETE')
 
 /**
  * Creates a quick pick prompter for choosing a CloudFormation stack

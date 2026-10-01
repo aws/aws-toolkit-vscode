@@ -2,8 +2,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
-import { Ec2Node } from './explorer/ec2ParentNode'
+import { Ec2Node, Ec2ParentNode } from './explorer/ec2ParentNode'
 import { Ec2Instance, Ec2Client } from '../../shared/clients/ec2'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { ec2LogSchema } from './ec2LogDocumentProvider'
@@ -58,4 +59,34 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
 
 export async function openLogDocument(node?: Ec2InstanceNode): Promise<void> {
     return await showFile(ec2LogSchema.form(await getSelection(node)))
+}
+
+export async function filterByTag(node?: Ec2ParentNode): Promise<void> {
+    if (!node) {
+        return
+    }
+
+    const input = await vscode.window.showInputBox({
+        placeHolder: 'key=value (e.g. Env=prod)',
+    })
+
+    if (input === undefined) {
+        return
+    }
+
+    const trimmed = input.trim()
+    let key: string
+    let value: string
+
+    const eqIndex = trimmed.indexOf('=')
+    if (eqIndex === -1) {
+        key = trimmed
+        value = ''
+    } else {
+        key = trimmed.substring(0, eqIndex)
+        value = trimmed.substring(eqIndex + 1)
+    }
+
+    node.setTagFilter(key, value)
+    await node.refreshNode()
 }

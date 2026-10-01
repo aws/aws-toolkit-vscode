@@ -39,6 +39,8 @@ export const Features = {
     dataCollectionFeature: 'IDEProjectContextDataCollection',
     projectContextFeature: 'ProjectContextV2',
     workspaceContextFeature: 'WorkspaceContext',
+    preFlareRollbackBIDFeature: 'PreflareRollbackExperiment_BID',
+    preFlareRollbackIDCFeature: 'PreflareRollbackExperiment_IDC',
     test: 'testFeature',
     highlightCommand: 'highlightCommand',
 } as const
@@ -103,6 +105,16 @@ export class FeatureConfigProvider {
 
             default:
                 return 'control'
+        }
+    }
+
+    getPreFlareRollbackGroup(): 'control' | 'treatment' | 'default' {
+        const variationBid = this.featureConfigs.get(Features.preFlareRollbackBIDFeature)?.variation
+        const variationIdc = this.featureConfigs.get(Features.preFlareRollbackIDCFeature)?.variation
+        if (variationBid === 'TREATMENT' || variationIdc === 'TREATMENT') {
+            return 'treatment'
+        } else {
+            return 'control'
         }
     }
 

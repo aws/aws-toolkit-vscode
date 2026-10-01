@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -154,20 +154,13 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
     // unfortunately new 'Image'-base images did not standardize the paths
     // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
     switch (runtime) {
-        case 'python3.7':
-            return { python: '/var/lang/bin/python3.7', bootstrap: '/var/runtime/bootstrap' }
-        case 'python3.8':
-            return { python: '/var/lang/bin/python3.8', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.9':
-            return { python: '/var/lang/bin/python3.9', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.10':
-            return { python: '/var/lang/bin/python3.10', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.11':
-            return { python: '/var/lang/bin/python3.11', bootstrap: '/var/runtime/bootstrap.py' }
         case 'python3.12':
-            return { python: '/var/lang/bin/python3.12', bootstrap: '/var/runtime/bootstrap.py' }
-        case 'python3.13':
-            return { python: '/var/lang/bin/python3.13', bootstrap: '/var/runtime/bootstrap.py' }
+        case 'python3.13' as Runtime:
+        case 'python3.14' as Runtime:
+            return { python: `/var/lang/bin/${runtime}`, bootstrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }

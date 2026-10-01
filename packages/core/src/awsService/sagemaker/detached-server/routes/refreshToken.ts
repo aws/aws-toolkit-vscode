@@ -8,6 +8,7 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
+import { readHyperpodMapping, writeHyperpodMapping } from '../hyperpodMappingUtils'
 
 export async function handleRefreshToken(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -33,7 +34,27 @@ export async function handleRefreshToken(req: IncomingMessage, res: ServerRespon
     }
 
     try {
-        await store.setSession(connectionIdentifier, requestId, { sessionId, token, url: wsUrl })
+        // Ensure deepLink entry exists for HyperPod connection keys (format: name:namespace:cluster)
+        const isHyperpodKey = !connectionIdentifier.startsWith('arn:') && connectionIdentifier.split(':').length === 3
+        if (isHyperpodKey) {
+            // HyperPod connections use the hyperpod mapping file (.hyperpod-space-profiles)
+            const mapping = await readHyperpodMapping()
+            if (!mapping.deepLink) {
+                mapping.deepLink = {}
+            }
+            if (!mapping.deepLink[connectionIdentifier]) {
+                mapping.deepLink[connectionIdentifier] = { requests: {} }
+            }
+            mapping.deepLink[connectionIdentifier].requests[requestId] = {
+                sessionId,
+                token,
+                url: wsUrl,
+                status: 'fresh',
+            }
+            await writeHyperpodMapping(mapping)
+        } else {
+            await store.setSession(connectionIdentifier, requestId, { sessionId, token, url: wsUrl })
+        }
     } catch (err) {
         console.error('Failed to save session token:', err)
         res.writeHead(500, { 'Content-Type': 'text/plain' })

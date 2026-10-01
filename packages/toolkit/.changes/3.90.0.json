@@ -1,0 +1,26 @@
+{
+	"date": "2025-12-09",
+	"version": "3.90.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SageMaker: SSH configuration errors now display line numbers and include an \"Open SSH Config\" button"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes"
+		},
+		{
+			"type": "Feature",
+			"description": "CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first"
+		},
+		{
+			"type": "Feature",
+			"description": "feat(lambda): add support for lmi function resource node"
+		}
+	]
+}

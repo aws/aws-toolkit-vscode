@@ -13,6 +13,7 @@ export interface AwsContextCredentials {
     readonly credentialsId: string
     readonly accountId?: string
     readonly defaultRegion?: string
+    readonly endpointUrl?: string
 }
 
 /** AWS Toolkit context change */
@@ -104,6 +105,13 @@ export class DefaultAwsContext implements AwsContext {
         }
 
         return this.currentCredentials?.defaultRegion ?? defaultRegion
+    }
+
+    /**
+     * Gets the endpoint URL configured for the current credentials profile, if any.
+     */
+    public getCredentialEndpointUrl(): string | undefined {
+        return this.currentCredentials?.endpointUrl
     }
 
     private emitEvent() {

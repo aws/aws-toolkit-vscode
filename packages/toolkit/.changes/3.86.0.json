@@ -1,0 +1,10 @@
+{
+	"date": "2025-11-21",
+	"version": "3.86.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters"
+		}
+	]
+}

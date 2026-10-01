@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { getIcon } from '../../shared/icons'
@@ -21,18 +21,28 @@ import { LambdaFunctionFileNode } from './lambdaFunctionFileNode'
 
 export const contextValueLambdaFunction = 'awsRegionFunctionNode'
 export const contextValueLambdaFunctionImportable = 'awsRegionFunctionNodeDownloadable'
+// Without "Convert to SAM application"
+export const contextValueLambdaFunctionDownloadOnly = 'awsRegionFunctionNodeDownloadableOnly'
+
+function isLambdaFunctionDownloadable(contextValue?: string): boolean {
+    return (
+        contextValue === contextValueLambdaFunctionImportable || contextValue === contextValueLambdaFunctionDownloadOnly
+    )
+}
 
 export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
-        public configuration: Lambda.FunctionConfiguration,
+        public configuration: FunctionConfiguration,
         public override readonly contextValue?: string,
-        public localDir?: string
+        public localDir?: string,
+        public projectRoot?: vscode.Uri,
+        public logicalId?: string
     ) {
         super(
             `${configuration.FunctionArn}`,
-            contextValue === contextValueLambdaFunctionImportable
+            isLambdaFunctionDownloadable(contextValue)
                 ? vscode.TreeItemCollapsibleState.Collapsed
                 : vscode.TreeItemCollapsibleState.None
         )
@@ -42,7 +52,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
         this.contextValue = contextValue
     }
 
-    public update(configuration: Lambda.FunctionConfiguration): void {
+    public update(configuration: FunctionConfiguration): void {
         this.configuration = configuration
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`
@@ -72,7 +82,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        if (!(this.contextValue === contextValueLambdaFunctionImportable)) {
+        if (!isLambdaFunctionDownloadable(this.contextValue)) {
             return []
         }
 

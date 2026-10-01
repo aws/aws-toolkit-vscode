@@ -75,7 +75,7 @@ The following will explain how to get your latest local development changes runn
 1. Build the extension. We need the Web mode entrypoint file to exist.
 2. OPTIONAL: Start up your browser with security disabled. Certain functionalities do not support CORS and will fail otherwise.
     - On MacOS from the CLI is similar to `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security`
-3. `cd` to the extension you want to test in `packages/`. Eg: `packages/amazonq/`.
+3. `cd` to the extension you want to test in `packages/`. Eg: `packages/toolkit/`.
     - We need to do this since the following command hosts your build from the `cwd`.
 4. Follow the [VS Code documentation](https://code.visualstudio.com/api/extension-guides/web-extensions#test-your-web-extension-in-vscode.dev) for setting up certs, serving your the latest changes, and installing the extension to `vscode.dev`.
 

@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
+import { DocumentFormat, DocumentVersionInfo } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import { DocumentItemNode } from '../explorer/documentItemNode'
 import { AwsContext } from '../../shared/awsContext'
@@ -16,7 +16,7 @@ import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
+export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: DocumentFormat) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
@@ -65,7 +65,7 @@ export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: A
     await openDocumentItem(node, awsContext, 'YAML')
 }
 
-async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
+async function promptUserforDocumentVersion(versions: DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
     for (const version of versions) {

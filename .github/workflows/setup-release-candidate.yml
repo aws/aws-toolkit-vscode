@@ -31,6 +31,12 @@ jobs:
               run: |
                   echo "BRANCH_NAME=release/rc-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
 
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate license attribution
+              run: npm run scan-licenses
+
             - name: Create RC Branch
               env:
                   BRANCH_NAME: ${{ steps.branch-name.outputs.BRANCH_NAME }}
@@ -40,6 +46,11 @@ jobs:
 
                   # Create RC branch from specified commit
                   git checkout -b $BRANCH_NAME
+
+                  # Add generated license files
+                  git add LICENSE-THIRD-PARTY
+                  # If there are no changes, then we don't need a new attribution commit
+                  git commit -m "Update third-party license attribution for $BRANCH_NAME" || true
 
                   # Push RC branch
                   git push origin $BRANCH_NAME

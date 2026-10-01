@@ -1,0 +1,369 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { ExtensionContext, window, languages, commands, Disposable } from 'vscode'
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient/node'
+import { formatMessage, toString, startupFailureMessage, clientIdForInitialization } from './utils'
+import globals from '../../shared/extensionGlobals'
+import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
+import { DevSettings } from '../../shared/settings'
+import {
+    deployTemplateCommand,
+    rerunValidateAndDeployCommand,
+    importResourceStateCommand,
+    cloneResourceStateCommand,
+    addResourceTypesCommand,
+    removeResourceTypeCommand,
+    refreshAllResourcesCommand,
+    refreshResourceListCommand,
+    copyResourceIdentifierCommand,
+    focusDiffCommand,
+    getStackManagementInfoCommand,
+    extractToParameterPositionCursorCommand,
+    loadMoreResourcesCommand,
+    loadMoreStacksCommand,
+    searchResourceCommand,
+    executeChangeSetCommand,
+    addRelatedResourcesCommand,
+    refreshChangeSetsCommand,
+    loadMoreChangeSetsCommand,
+    viewStackCommand,
+    createProjectCommand,
+    addEnvironmentCommand,
+    removeEnvironmentCommand,
+    deleteChangeSetCommand,
+    viewChangeSetCommand,
+    deployTemplateFromStacksMenuCommand,
+    selectEnvironmentCommand,
+} from './commands/cfnCommands'
+import { openStackTemplateCommand } from './commands/openStackTemplate'
+import { selectRegionCommand } from './commands/regionCommands'
+import { AwsCredentialsService, encryptionKey } from './auth/credentials'
+import { ExtensionId, ExtensionName, CloudFormationTelemetrySettings } from './extensionConfig'
+import { commandKey } from './utils'
+import { CloudFormationExplorer } from './explorer/explorer'
+import { handleTelemetryOptIn } from './telemetryOptIn'
+
+import { refreshCommand, StacksManager } from './stacks/stacksManager'
+import { StackOverviewWebviewProvider } from './ui/stackOverviewWebviewProvider'
+import { StackEventsWebviewProvider } from './ui/stackEventsWebviewProvider'
+import { StackOutputsWebviewProvider } from './ui/stackOutputsWebviewProvider'
+import { DiffWebviewProvider } from './ui/diffWebviewProvider'
+import { StackResourcesWebviewProvider } from './ui/stackResourcesWebviewProvider'
+import { StackViewCoordinator } from './ui/stackViewCoordinator'
+import { DocumentManager } from './documents/documentManager'
+
+import { ResourcesManager } from './resources/resourcesManager'
+import { ResourceSelector } from './ui/resourceSelector'
+import { RelatedResourcesManager } from './relatedResources/relatedResourcesManager'
+import { RelatedResourceSelector } from './ui/relatedResourceSelector'
+
+import { StackActionCodeLensProvider } from './codelens/stackActionCodeLensProvider'
+import { registerStatusBarCommand } from './ui/statusBar'
+import { getClientId } from '../../shared/telemetry/util'
+import { SettingsLspServerProvider } from './lsp-server/settingsLspServerProvider'
+import { DevLspServerProvider } from './lsp-server/devLspServerProvider'
+import { RemoteLspServerProvider } from './lsp-server/remoteLspServerProvider'
+import { LspServerProvider } from './lsp-server/lspServerProvider'
+import { CfnDocumentSelector, cfnServerOptions } from './lsp-server/lspClientConfig'
+import { LspLauncher, LanguageClientFactory } from '../../shared/lsp/lspLauncher'
+import { getLogger } from '../../shared/logger/logger'
+import { ChangeSetsManager } from './stacks/changeSetsManager'
+import { CfnEnvironmentManager } from './cfn-init/cfnEnvironmentManager'
+import { CfnEnvironmentSelector } from './ui/cfnEnvironmentSelector'
+import { CfnInitUiInterface } from './cfn-init/cfnInitUiInterface'
+import { CfnInitCliCaller } from './cfn-init/cfnInitCliCaller'
+import { CfnEnvironmentFileSelector } from './ui/cfnEnvironmentFileSelector'
+import { fs } from '../../shared/fs/fs'
+import { ToolkitError } from '../../shared/errors'
+
+let launcher: LspLauncher | undefined
+let clientDisposables: Disposable[] = []
+let statusBarRegistered = false
+
+const serverStoppedMessage = formatMessage(
+    'CloudFormation language server stopped unexpectedly. Restart it to continue using CloudFormation features.'
+)
+const restartServerAction = 'Restart Server'
+
+function createClientFactory(
+    telemetryEnabled: boolean,
+    clientId: string,
+    cfnLspConfig: Record<string, string | undefined>
+): LanguageClientFactory {
+    return async ({ serverPath, errorHandler }): Promise<LanguageClient> => {
+        if (!(await fs.existsFile(serverPath))) {
+            throw new Error(`CloudFormation LSP ${serverPath} not found`)
+        }
+        getLogger('awsCfnLsp').info(`Found CloudFormation LSP executable: ${serverPath}`)
+
+        const clientOptions: LanguageClientOptions = {
+            documentSelector: CfnDocumentSelector,
+            initializationOptions: {
+                handledSchemaProtocols: ['file'],
+                aws: {
+                    clientInfo: {
+                        extension: {
+                            name: 'toolkit-vscode',
+                            version: extensionVersion,
+                        },
+                        clientId: clientIdForInitialization(telemetryEnabled, clientId),
+                    },
+                    telemetryEnabled: telemetryEnabled,
+                    ...(cfnLspConfig.cloudformationEndpoint && {
+                        cloudformation: {
+                            endpoint: cfnLspConfig.cloudformationEndpoint,
+                        },
+                    }),
+                    encryption: {
+                        key: encryptionKey.toString('base64'),
+                        mode: 'JWT',
+                    },
+                },
+            },
+            // Close/error policy is shared across toolkit language servers (LspServerLifecycleController).
+            errorHandler,
+        }
+
+        return new LanguageClient(ExtensionId, ExtensionName, cfnServerOptions(serverPath), clientOptions)
+    }
+}
+
+async function startClient(context: ExtensionContext): Promise<void> {
+    const cfnTelemetrySettings = new CloudFormationTelemetrySettings()
+    const telemetryEnabled = await handleTelemetryOptIn(context, cfnTelemetrySettings)
+
+    const cfnLspConfig = {
+        ...DevSettings.instance.getServiceConfig('cloudformationLsp', {}),
+        ...getServiceEnvVarConfig('cloudformationLsp', ['path', 'cloudformationEndpoint']),
+    }
+
+    const clientId = getClientId(globals.globalState, telemetryEnabled)
+
+    const serverProvider = new LspServerProvider([
+        new DevLspServerProvider(context),
+        new SettingsLspServerProvider(cfnLspConfig),
+        new RemoteLspServerProvider(),
+    ])
+
+    const clientFactory = createClientFactory(telemetryEnabled, clientId, cfnLspConfig)
+
+    const sessionLauncher = new LspLauncher({
+        name: 'CloudFormation LSP',
+        resolver: serverProvider,
+        invalidator: serverProvider,
+        clientFactory,
+        onError: (error, message) => {
+            void window.showErrorMessage(formatMessage(`${toString(message)} - ${toString(error)}`))
+        },
+        // The shared close policy is DoNotRestart: a crash after `initialize` is not an installation problem,
+        // so the server is not repaired or restarted automatically. Tell the user and offer the restart command.
+        onServerStopped: () => {
+            // Ignore a stop reported for a session that a restart or deactivation has already replaced.
+            if (launcher !== sessionLauncher) {
+                return
+            }
+            getLogger('awsCfnLsp').error('CloudFormation language server stopped unexpectedly')
+            void window.showErrorMessage(serverStoppedMessage, restartServerAction).then((selection) => {
+                if (selection === restartServerAction) {
+                    void commands.executeCommand(commandKey('server.restartServer'))
+                }
+            })
+        },
+    })
+    launcher = sessionLauncher
+
+    try {
+        const client = await sessionLauncher.start()
+        await setupPostStart(client, serverProvider)
+    } catch (error) {
+        // A restart may already have replaced this session; only tear down what this call started.
+        if (launcher === sessionLauncher) {
+            await disposeClientSession()
+        }
+        throw error
+    }
+}
+
+async function setupPostStart(client: LanguageClient, serverProvider: LspServerProvider): Promise<void> {
+    const serverRootDir = await serverProvider.serverRootDir()
+
+    const stacksManager = new StacksManager(client)
+    const documentManager = new DocumentManager(client)
+    const resourceSelector = new ResourceSelector(client)
+    const resourcesManager = new ResourcesManager(client, resourceSelector)
+    const relatedResourceSelector = new RelatedResourceSelector(client)
+    const relatedResourcesManager = new RelatedResourcesManager(
+        client,
+        relatedResourceSelector,
+        resourceSelector,
+        resourcesManager
+    )
+    const changeSetManager = new ChangeSetsManager(client)
+    const environmentSelector = new CfnEnvironmentSelector()
+    const environmentFileSelector = new CfnEnvironmentFileSelector()
+    const environmentManager = new CfnEnvironmentManager(client, environmentSelector, environmentFileSelector)
+
+    const cfnInitCliCaller = new CfnInitCliCaller(serverRootDir)
+    const cfnInitUiInterface = new CfnInitUiInterface(cfnInitCliCaller)
+
+    const cfnExplorer = new CloudFormationExplorer(
+        stacksManager,
+        resourcesManager,
+        changeSetManager,
+        documentManager,
+        globals.regionProvider,
+        environmentManager
+    )
+
+    resourceSelector.setRefreshCallback(() => cfnExplorer.refresh())
+
+    resourcesManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    stacksManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    documentManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+    environmentManager.addListener(() => {
+        cfnExplorer.refresh()
+    })
+
+    const credentialsService = new AwsCredentialsService(stacksManager, resourcesManager, cfnExplorer.regionManager)
+    cfnExplorer.setCredentialsService(credentialsService)
+
+    const stackViewCoordinator = new StackViewCoordinator()
+    stackViewCoordinator.setStackStatusUpdateCallback((stackName, stackStatus) => {
+        stacksManager.updateStackStatus(stackName, stackStatus)
+        cfnExplorer.refresh()
+    })
+
+    const diffProvider = new DiffWebviewProvider(stackViewCoordinator)
+    const resourcesProvider = new StackResourcesWebviewProvider(client, stackViewCoordinator)
+    const overviewProvider = new StackOverviewWebviewProvider(client, stackViewCoordinator)
+    const eventsProvider = new StackEventsWebviewProvider(client, stackViewCoordinator)
+    const outputsProvider = new StackOutputsWebviewProvider(client, stackViewCoordinator)
+
+    const documentSelector = [
+        { scheme: 'file', language: 'cloudformation' },
+        { scheme: 'file', language: 'yaml' },
+        { scheme: 'file', language: 'json' },
+    ]
+
+    const codeLensProvider = languages.registerCodeLensProvider(
+        documentSelector,
+        new StackActionCodeLensProvider(client)
+    )
+
+    clientDisposables = [
+        codeLensProvider,
+        stacksManager,
+        window.createTreeView('aws.cloudformation', {
+            treeDataProvider: cfnExplorer,
+            showCollapseAll: true,
+            canSelectMany: true,
+        }),
+        loadMoreResourcesCommand(cfnExplorer),
+        loadMoreStacksCommand(cfnExplorer),
+        searchResourceCommand(cfnExplorer, resourcesManager),
+        refreshChangeSetsCommand(cfnExplorer),
+        loadMoreChangeSetsCommand(cfnExplorer),
+        viewStackCommand(stackViewCoordinator, overviewProvider, outputsProvider, resourcesProvider),
+        addResourceTypesCommand(resourcesManager),
+        removeResourceTypeCommand(resourcesManager),
+        refreshAllResourcesCommand(resourcesManager),
+        refreshResourceListCommand(resourcesManager, cfnExplorer),
+        copyResourceIdentifierCommand(),
+        importResourceStateCommand(resourcesManager),
+        cloneResourceStateCommand(resourcesManager),
+        getStackManagementInfoCommand(resourcesManager),
+        window.registerWebviewViewProvider(commandKey('stack.overview'), overviewProvider),
+        window.registerWebviewViewProvider(commandKey('diff'), diffProvider),
+        window.registerWebviewViewProvider(commandKey('stack.events'), eventsProvider),
+        window.registerWebviewViewProvider(commandKey('stack.resources'), resourcesProvider),
+        window.registerWebviewViewProvider(commandKey('stack.outputs'), outputsProvider),
+        focusDiffCommand(),
+        deployTemplateCommand(client, diffProvider, documentManager, environmentManager),
+        deployTemplateFromStacksMenuCommand(),
+        executeChangeSetCommand(client, stackViewCoordinator),
+        deleteChangeSetCommand(client),
+        viewChangeSetCommand(client, diffProvider),
+        refreshCommand(stacksManager),
+        openStackTemplateCommand(client),
+        selectRegionCommand(cfnExplorer),
+        selectEnvironmentCommand(cfnExplorer),
+        rerunValidateAndDeployCommand(),
+        extractToParameterPositionCursorCommand(client),
+        createProjectCommand(cfnInitUiInterface),
+        addEnvironmentCommand(cfnInitUiInterface, cfnInitCliCaller, environmentManager),
+        removeEnvironmentCommand(cfnInitCliCaller, environmentManager),
+        addRelatedResourcesCommand(relatedResourcesManager),
+        credentialsService,
+        serverProvider,
+    ]
+
+    if (!statusBarRegistered) {
+        registerStatusBarCommand()
+        statusBarRegistered = true
+    }
+
+    await credentialsService.initialize(client)
+}
+
+async function disposeClientSession(): Promise<void> {
+    for (const disposable of clientDisposables) {
+        disposable.dispose()
+    }
+    clientDisposables = []
+
+    const currentLauncher = launcher
+    launcher = undefined
+    if (currentLauncher) {
+        await currentLauncher.stop()
+        currentLauncher.dispose()
+    }
+}
+
+async function restartClient(context: ExtensionContext): Promise<void> {
+    await disposeClientSession()
+    await startClient(context)
+}
+
+export async function activate(context: ExtensionContext): Promise<void> {
+    context.subscriptions.push(
+        commands.registerCommand(commandKey('server.restartServer'), async () => {
+            try {
+                await restartClient(context)
+            } catch (error) {
+                void window.showErrorMessage(
+                    formatMessage(`Failed to restart CloudFormation language server: ${toString(error)}`)
+                )
+            }
+        }),
+        // The client and its UI are owned by the session (so "Restart Server" can replace them), but the
+        // extension lifetime must still shut the server down gracefully on deactivation.
+        { dispose: () => void disposeClientSession() }
+    )
+
+    try {
+        await startClient(context)
+    } catch (err) {
+        getLogger('awsCfnLsp').error(ToolkitError.chain(err, 'CloudFormation language server failed to start'))
+        const message = startupFailureMessage(err)
+        if (message) {
+            void window.showErrorMessage(message)
+        }
+    }
+}
+
+export async function deactivate(): Promise<void> {
+    try {
+        await disposeClientSession()
+    } catch (err) {
+        getLogger('awsCfnLsp').warn(`Failed to stop CloudFormation language server on deactivate: ${err}`)
+    }
+}

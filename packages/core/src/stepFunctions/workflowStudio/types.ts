@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { IAM } from 'aws-sdk'
-import * as StepFunctions from '@aws-sdk/client-sfn'
+import { ListRolesCommandInput } from '@aws-sdk/client-iam'
+import { TestStateInput } from '@aws-sdk/client-sfn'
 import * as vscode from 'vscode'
 
 export enum WorkflowMode {
@@ -94,8 +94,8 @@ export enum ApiAction {
 }
 
 type ApiCallRequestMapping = {
-    [ApiAction.IAMListRoles]: IAM.ListRolesRequest
-    [ApiAction.SFNTestState]: StepFunctions.TestStateInput
+    [ApiAction.IAMListRoles]: ListRolesCommandInput
+    [ApiAction.SFNTestState]: TestStateInput
 }
 
 interface ApiCallRequestMessageBase<ApiName extends ApiAction> extends Message {

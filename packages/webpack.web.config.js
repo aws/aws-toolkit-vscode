@@ -53,6 +53,9 @@ module.exports = (env, argv) => {
             new webpack.IgnorePlugin({
                 resourceRegExp: /svgdom/, // matches the path in the require() statement
             }),
+            new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+                resource.request = resource.request.replace(/^node:/, '')
+            }),
         ],
         resolve: {
             extensions: ['.ts', '.js'],
@@ -79,6 +82,8 @@ module.exports = (env, argv) => {
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,
                 net: false,
+                util: false,
+                http2: false,
             },
         },
         optimization: {

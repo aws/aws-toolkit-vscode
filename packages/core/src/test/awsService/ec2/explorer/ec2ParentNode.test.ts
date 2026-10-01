@@ -209,4 +209,75 @@ describe('ec2ParentNode', function () {
         assert.throws(() => testNode.trackPendingNode('node2'))
         getInstancesStub.restore()
     })
+
+    describe('tag filter', function () {
+        it('setTagFilter sets tagFilter to correct Filter[] when key and value are non-empty', function () {
+            testNode.setTagFilter('Env', 'prod')
+            const filter = (testNode as any).tagFilter
+            assert.deepStrictEqual(filter, [{ Name: 'tag:Env', Values: ['prod'] }])
+        })
+
+        it('setTagFilter sets tagFilter to undefined when key and value are empty', function () {
+            // First set a filter, then clear it
+            testNode.setTagFilter('Env', 'prod')
+            testNode.setTagFilter('', '')
+            const filter = (testNode as any).tagFilter
+            assert.strictEqual(filter, undefined)
+        })
+
+        it('setTagFilter with key only (empty value) sets filter for tag existence', function () {
+            testNode.setTagFilter('Prod', '')
+            const filter = (testNode as any).tagFilter
+            assert.deepStrictEqual(filter, [{ Name: 'tag-key', Values: ['Prod'] }])
+            assert.strictEqual(testNode.label, 'EC2 [tag: Prod]')
+        })
+
+        it('updateChildren passes tagFilter to getInstances when filter is active', async function () {
+            getInstancesStub.returns(intoCollection([]))
+            testNode.setTagFilter('Env', 'prod')
+            await testNode.updateChildren()
+
+            sinon.assert.calledOnce(getInstancesStub)
+            const callArgs = getInstancesStub.firstCall.args
+            assert.deepStrictEqual(callArgs[0], [{ Name: 'tag:Env', Values: ['prod'] }])
+        })
+
+        it('updateChildren calls getInstances with undefined when no filter is set', async function () {
+            getInstancesStub.returns(intoCollection([]))
+            await testNode.updateChildren()
+
+            sinon.assert.calledOnce(getInstancesStub)
+            const callArgs = getInstancesStub.firstCall.args
+            assert.strictEqual(callArgs[0], undefined)
+        })
+
+        it('label updates to include tag info when filter is set', function () {
+            testNode.setTagFilter('Env', 'prod')
+            assert.strictEqual(testNode.label, 'EC2 [tag: Env=prod]')
+        })
+
+        it('label resets to EC2 when filter is cleared', function () {
+            testNode.setTagFilter('Env', 'prod')
+            testNode.setTagFilter('', '')
+            assert.strictEqual(testNode.label, 'EC2')
+        })
+
+        it('input with multiple = characters splits only on first =', function () {
+            // Simulate the parsing logic from the command handler in activation.ts
+            const input = 'Name=my=server'
+            const trimmed = input.trim()
+            const eqIndex = trimmed.indexOf('=')
+            const key = trimmed.substring(0, eqIndex)
+            const value = trimmed.substring(eqIndex + 1)
+
+            assert.strictEqual(key, 'Name')
+            assert.strictEqual(value, 'my=server')
+
+            // Verify the filter is correctly constructed with the parsed values
+            testNode.setTagFilter(key, value)
+            const filter = (testNode as any).tagFilter
+            assert.deepStrictEqual(filter, [{ Name: 'tag:Name', Values: ['my=server'] }])
+            assert.strictEqual(testNode.label, 'EC2 [tag: Name=my=server]')
+        })
+    })
 })

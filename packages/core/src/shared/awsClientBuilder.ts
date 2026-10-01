@@ -10,6 +10,7 @@ import { AwsContext } from './awsContext'
 import { DevSettings } from './settings'
 import { getUserAgent } from './telemetry/util'
 import { telemetry } from './telemetry/telemetry'
+import { isLocalStackConnection } from '../auth/utils'
 
 /** Suppresses a very noisy warning printed by AWS SDK v2, which clutters local debugging output, CI logs, etc. */
 export function disableAwsSdkWarning() {
@@ -82,8 +83,11 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         const listeners = Array.isArray(onRequest) ? onRequest : [onRequest]
         const opt = { ...options }
         delete opt.onRequestSetup
+        if (opt.credentialProvider) {
+            opt.credentials = await opt.credentialProvider.resolvePromise()
+        }
 
-        if (!opt.credentials && !opt.token) {
+        if (!opt.credentials && !opt.token && !opt.credentialProvider) {
             const shim = this.awsContext.credentialsShim
 
             if (!shim) {
@@ -141,6 +145,16 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
             apiConfig?.metadata?.serviceId?.toLowerCase() ??
             (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
 
+        // Get endpoint url from the active profile if there's no endpoint directly passed as a parameter
+        const endpointUrl = this.awsContext.getCredentialEndpointUrl()
+        if (!('endpoint' in opt) && endpointUrl !== undefined) {
+            opt.endpoint = endpointUrl
+        }
+        if (isLocalStackConnection()) {
+            // Disable host prefixes for LocalStack
+            opt.hostPrefixEnabled = false
+        }
+        // Then check if there's an endpoint in the dev settings
         if (serviceName) {
             opt.endpoint = settings.get('endpoints', {})[serviceName] ?? opt.endpoint
         }

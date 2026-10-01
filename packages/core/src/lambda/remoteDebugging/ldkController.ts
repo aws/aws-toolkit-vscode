@@ -6,23 +6,25 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import { Lambda } from 'aws-sdk'
-import { getRegionFromArn, isTunnelInfo, LdkClient } from './ldkClient'
+import { FunctionConfiguration, Runtime } from '@aws-sdk/client-lambda'
+import { getRegionFromArn, LdkClient } from './ldkClient'
 import { getFamily, mapFamilyToDebugType } from '../models/samLambdaRuntime'
 import { findJavaPath } from '../../shared/utilities/pathFind'
 import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage, showMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import * as nls from 'vscode-nls'
-import { getRemoteDebugLayer } from './ldkLayers'
 import path from 'path'
 import { glob } from 'glob'
 import { Commands } from '../../shared/vscode/commands2'
+import { getLambdaSnapshot, persistLambdaSnapshot, type LambdaDebugger, type DebugConfig } from './lambdaDebugger'
+import { RemoteLambdaDebugger } from './remoteLambdaDebugger'
+import { LocalStackLambdaDebugger } from './localStackLambdaDebugger'
+import { fs } from '../../shared/fs/fs'
+import { detectCdkProjects } from '../../awsService/cdk/explorer/detectCdkProjects'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger()
-export const remoteDebugContextString = 'aws.lambda.remoteDebugContext'
-export const remoteDebugSnapshotString = 'aws.lambda.remoteDebugSnapshot'
 
 // Map debug types to their corresponding VS Code extension IDs
 const mapDebugTypeToExtensionId = new Map<string, string[]>([
@@ -33,30 +35,10 @@ const mapDebugTypeToExtensionId = new Map<string, string[]>([
 
 const mapExtensionToBackup = new Map<string, string>([['ms-vscode.js-debug', 'ms-vscode.js-debug-nightly']])
 
-export interface DebugConfig {
-    functionArn: string
-    functionName: string
-    port: number
-    localRoot: string
-    remoteRoot: string
-    skipFiles: string[]
-    shouldPublishVersion: boolean
-    lambdaRuntime?: string // Lambda runtime (e.g., nodejs18.x)
-    debuggerRuntime?: string // VS Code debugger runtime (e.g., node)
-    outFiles?: string[]
-    sourceMap?: boolean
-    justMyCode?: boolean
-    projectName?: string
-    otherDebugParams?: string
-    lambdaTimeout?: number
-    layerArn?: string
-    handlerFile?: string
-}
-
 // Helper function to create a human-readable diff message
 function createDiffMessage(
-    config: Lambda.FunctionConfiguration,
-    currentConfig: Lambda.FunctionConfiguration,
+    config: FunctionConfiguration,
+    currentConfig: FunctionConfiguration,
     isRevert: boolean = true
 ): string {
     let message = isRevert ? 'The following changes will be reverted:\n\n' : 'The following changes will be made:\n\n'
@@ -185,18 +167,109 @@ export async function activateRemoteDebugging(): Promise<void> {
     }
 }
 
-// this should be called when the debug session is started
-async function persistLambdaSnapshot(config: Lambda.FunctionConfiguration | undefined): Promise<void> {
-    try {
-        await globals.globalState.update(remoteDebugSnapshotString, config)
-    } catch (error) {
-        // TODO raise toolkit error
-        logger.error(`Error persisting debug sessions:${error}`)
+/**
+ * Try to auto-detect outFile for TypeScript debugging (SAM or CDK)
+ * @param debugConfig Debug configuration
+ * @param functionConfig Lambda function configuration
+ * @returns The auto-detected outFile path or undefined
+ */
+export async function tryAutoDetectOutFile(
+    debugConfig: DebugConfig,
+    functionConfig: FunctionConfiguration
+): Promise<string | undefined> {
+    // Only works for TypeScript files
+    if (
+        !debugConfig.handlerFile ||
+        (!debugConfig.handlerFile.endsWith('.ts') && !debugConfig.handlerFile.endsWith('.tsx'))
+    ) {
+        return undefined
     }
-}
 
-export function getLambdaSnapshot(): Lambda.FunctionConfiguration | undefined {
-    return globals.globalState.get<Lambda.FunctionConfiguration>(remoteDebugSnapshotString)
+    // Try SAM detection first using the provided parameters
+    if (debugConfig.samFunctionLogicalId && debugConfig.samProjectRoot) {
+        // if proj root is ..../sam-proj/
+        // build dir will be ..../sam-proj/.aws-sam/build/{LogicalID}/
+        const samBuildPath = vscode.Uri.joinPath(
+            debugConfig.samProjectRoot,
+            '.aws-sam',
+            'build',
+            debugConfig.samFunctionLogicalId
+        )
+
+        if (await fs.exists(samBuildPath)) {
+            getLogger().info(`SAM outFile auto-detected: ${samBuildPath.fsPath}`)
+            return samBuildPath.fsPath
+        }
+    }
+
+    // If SAM detection didn't work, try CDK detection using the function name
+    if (!functionConfig.FunctionName) {
+        return undefined
+    }
+
+    try {
+        // Find which workspace contains the handler file
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(debugConfig.handlerFile))
+        if (!workspaceFolder) {
+            return undefined
+        }
+
+        // Detect CDK projects in the workspace
+        const cdkProjects = await detectCdkProjects([workspaceFolder])
+
+        for (const project of cdkProjects) {
+            // Check if CDK project contains the handler file
+            const cdkProjectDir = vscode.Uri.joinPath(project.cdkJsonUri, '..')
+            // Normalize paths for comparison (handles Windows path separators and case)
+            const normalizedHandlerPath = path.normalize(debugConfig.handlerFile).toLowerCase()
+            const normalizedCdkPath = path.normalize(cdkProjectDir.fsPath).toLowerCase()
+            if (!normalizedHandlerPath.startsWith(normalizedCdkPath)) {
+                continue
+            }
+
+            // Get the cdk.out directory
+            const cdkOutDir = vscode.Uri.joinPath(project.treeUri, '..')
+
+            // Look for template.json files in cdk.out directory
+            const pattern = new vscode.RelativePattern(cdkOutDir.fsPath, '*.template.json')
+            const templateFiles = await vscode.workspace.findFiles(pattern)
+
+            for (const templateFile of templateFiles) {
+                try {
+                    // Read and parse the template.json file
+                    const templateContent = await fs.readFileText(templateFile)
+                    const template = JSON.parse(templateContent)
+
+                    // Search through resources for a Lambda function with matching FunctionName
+                    for (const [_, resource] of Object.entries(template.Resources || {})) {
+                        const res = resource as any
+                        if (
+                            res.Type === 'AWS::Lambda::Function' &&
+                            res.Properties?.FunctionName === functionConfig.FunctionName
+                        ) {
+                            // Found the matching function, extract the asset path from metadata
+                            const assetPath = res.Metadata?.['aws:asset:path']
+                            if (assetPath) {
+                                const assetDir = vscode.Uri.joinPath(cdkOutDir, assetPath)
+
+                                // Check if the asset directory exists
+                                if (await fs.exists(assetDir)) {
+                                    getLogger().info(`CDK outFile auto-detected from template.json: ${assetDir.fsPath}`)
+                                    return assetDir.fsPath
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    getLogger().debug(`Failed to parse template file ${templateFile.fsPath}: ${error}`)
+                }
+            }
+        }
+    } catch (error) {
+        getLogger().warn(`Failed to auto-detect CDK outFile: ${error}`)
+    }
+
+    return undefined
 }
 
 /**
@@ -208,18 +281,64 @@ function isVscodeGlob(pattern: string): boolean {
 }
 
 /**
- * Helper function to validate source map files exist for given outFiles patterns
+ * Extract temp directory patterns from source map files
+ * @param mapFiles Array of source map file paths
+ * @returns Set of temp directory patterns found in source maps
  */
-async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
+async function extractTempPatternsFromSourceMaps(mapFiles: string[]): Promise<Set<string>> {
+    const tempPatterns = new Set<string>()
+
+    for (const mapFile of mapFiles) {
+        try {
+            const content = await fs.readFileText(mapFile)
+            const sourceMap = JSON.parse(content)
+
+            if (sourceMap.sources && Array.isArray(sourceMap.sources)) {
+                for (const source of sourceMap.sources) {
+                    // SAM uses Python's tempfile.mkdtemp() to create tmp dir which we want to detect
+                    // tempfile.mkdtemp() uses lowercase letters, digits, and underscores
+                    // The pattern is: tmp followed by 8 characters from [a-z0-9_]
+                    // see https://github.com/python/cpython/blob/20a677d75a95fa63be904f7ca4f8cb268aec95c1/Lib/tempfile.py#L132-L140
+                    const tempMatch = source.match(/\btmp[a-z0-9_]{8}\b/)
+                    if (tempMatch) {
+                        tempPatterns.add(tempMatch[0])
+                        getLogger().debug(`Found temp pattern in source map: ${tempMatch[0]}`)
+                    }
+                }
+            }
+        } catch (error) {
+            getLogger().debug(`Failed to read or parse source map ${mapFile}: ${error}`)
+        }
+    }
+
+    return tempPatterns
+}
+
+/**
+ * Helper function to validate source map files exist for given outFiles patterns
+ * @returns Object with validation result and temp patterns found in source maps
+ */
+export async function validateSourceMapFiles(
+    outFiles: string[]
+): Promise<{ isValid: boolean; tempPatterns: Set<string> }> {
+    getLogger().debug(`validating outFiles ${outFiles}`)
     const allAreGlobs = outFiles.every((pattern) => isVscodeGlob(pattern))
     if (!allAreGlobs) {
-        return false
+        return { isValid: false, tempPatterns: new Set() }
     }
 
     try {
         let jsfileCount = 0
         let mapfileCount = 0
-        const jsFiles = await glob(outFiles, { ignore: 'node_modules/**' })
+        const mapFiles: string[] = []
+
+        // Convert Windows paths to use forward slashes for glob
+        const normalizedOutFiles = outFiles.map((pattern) => {
+            // Replace backslashes with forward slashes for glob compatibility
+            return pattern.replaceAll(/\\/g, '/')
+        })
+        getLogger().debug(`normalizedOutFiles ${normalizedOutFiles}`)
+        const jsFiles = await glob(normalizedOutFiles, { ignore: 'node_modules/**' })
 
         for (const file of jsFiles) {
             if (file.includes('js')) {
@@ -227,13 +346,20 @@ async function validateSourceMapFiles(outFiles: string[]): Promise<boolean> {
             }
             if (file.includes('.map')) {
                 mapfileCount += 1
+                mapFiles.push(file)
             }
         }
 
-        return jsfileCount === 0 || mapfileCount === 0 ? false : true
+        // Extract temp patterns from source map files
+        const tempPatterns = await extractTempPatternsFromSourceMaps(mapFiles)
+
+        return {
+            isValid: jsfileCount > 0 && mapfileCount > 0,
+            tempPatterns,
+        }
     } catch (error) {
         getLogger().warn(`Error validating source map files: ${error}`)
-        return false
+        return { isValid: false, tempPatterns: new Set() }
     }
 }
 
@@ -282,7 +408,7 @@ function processOutFiles(outFiles: string[], localRoot: string): string[] {
 }
 
 async function getVscodeDebugConfig(
-    functionConfig: Lambda.FunctionConfiguration,
+    functionConfig: FunctionConfiguration,
     debugConfig: DebugConfig
 ): Promise<vscode.DebugConfiguration> {
     // Parse and validate otherDebugParams if provided
@@ -317,10 +443,19 @@ async function getVscodeDebugConfig(
     const debugSessionName = `Debug ${functionConfig.FunctionArn!.split(':').pop()}`
 
     // Define debugConfig before the try block
-    const debugType = mapFamilyToDebugType.get(getFamily(functionConfig.Runtime ?? ''), 'unknown')
+    const debugType = mapFamilyToDebugType.get(getFamily(functionConfig.Runtime!), 'unknown')
     let vsCodeDebugConfig: vscode.DebugConfiguration
     switch (debugType) {
         case 'node':
+            // Try to auto-detect outFiles for TypeScript if not provided
+            if (debugConfig.sourceMap && !debugConfig.outFiles && debugConfig.handlerFile) {
+                const autoDetectedOutFile = await tryAutoDetectOutFile(debugConfig, functionConfig)
+                if (autoDetectedOutFile) {
+                    debugConfig.outFiles = [autoDetectedOutFile]
+                    getLogger().info(`outFile auto-detected: ${autoDetectedOutFile}`)
+                }
+            }
+
             // source map support
             if (debugConfig.sourceMap && debugConfig.outFiles) {
                 // process outFiles first, if they are relative path (not starting with /),
@@ -330,19 +465,26 @@ async function getVscodeDebugConfig(
                 debugConfig.outFiles = processOutFiles(debugConfig.outFiles, debugConfig.localRoot)
 
                 // Use glob to search if there are any matching js file or source map file
-                const hasSourceMaps = await validateSourceMapFiles(debugConfig.outFiles)
+                const sourceMapValidation = await validateSourceMapFiles(debugConfig.outFiles)
 
-                if (hasSourceMaps) {
-                    // support mapping common sam cli location
-                    additionalParams['sourceMapPathOverrides'] = {
+                if (sourceMapValidation.isValid) {
+                    // Start with basic source map overrides
+                    const sourceMapOverrides: Record<string, string> = {
                         ...additionalParams['sourceMapPathOverrides'],
-                        '?:*/T/?:*/*': path.join(debugConfig.localRoot, '*'),
                     }
+
+                    // Add specific temp directory patterns found in source maps
+                    for (const tempPattern of sourceMapValidation.tempPatterns) {
+                        sourceMapOverrides[`?:*/${tempPattern}/*`] = path.join(debugConfig.localRoot, '*')
+                        getLogger().info(`Added source map override for temp pattern: ${tempPattern}`)
+                    }
+
+                    additionalParams['sourceMapPathOverrides'] = sourceMapOverrides
                     debugConfig.localRoot = debugConfig.outFiles[0].split('*')[0]
                 } else {
                     debugConfig.sourceMap = false
                     debugConfig.outFiles = undefined
-                    await showMessage(
+                    void showMessage(
                         'warn',
                         localize(
                             'AWS.lambda.remoteDebug.outFileNotFound',
@@ -409,9 +551,11 @@ export class RemoteDebugController {
     static #instance: RemoteDebugController
     isDebugging: boolean = false
     qualifier: string | undefined = undefined
+    debugger: LambdaDebugger | undefined = undefined
     private lastDebugStartTime: number = 0
     // private debugSession: DebugSession | undefined
     private debugSessionDisposables: Map<string, vscode.Disposable> = new Map()
+    private debugTypeSource: 'remoteDebug' | 'LocalStackDebug' = 'remoteDebug'
 
     public static get instance() {
         if (this.#instance !== undefined) {
@@ -442,8 +586,12 @@ export class RemoteDebugController {
         }
     }
 
-    public supportCodeDownload(runtime: string | undefined): boolean {
+    public supportCodeDownload(runtime: Runtime | undefined, codeSha256: string | undefined = ''): boolean {
         if (!runtime) {
+            return false
+        }
+        // Incompatible with LocalStack hot-reloading
+        if (codeSha256?.startsWith('hot-reloading')) {
             return false
         }
         try {
@@ -454,7 +602,7 @@ export class RemoteDebugController {
         }
     }
 
-    public supportRuntimeRemoteDebug(runtime: string | undefined): boolean {
+    public supportRuntimeRemoteDebug(runtime: Runtime | undefined): boolean {
         if (!runtime) {
             return false
         }
@@ -465,23 +613,7 @@ export class RemoteDebugController {
         }
     }
 
-    public getRemoteDebugLayer(
-        region: string | undefined,
-        architectures: Lambda.ArchitecturesList | undefined
-    ): string | undefined {
-        if (!region || !architectures) {
-            return undefined
-        }
-        if (architectures.includes('x86_64')) {
-            return getRemoteDebugLayer(region, 'x86_64')
-        }
-        if (architectures.includes('arm64')) {
-            return getRemoteDebugLayer(region, 'arm64')
-        }
-        return undefined
-    }
-
-    public async installDebugExtension(runtime: string | undefined): Promise<boolean | undefined> {
+    public async installDebugExtension(runtime: Runtime | undefined): Promise<boolean | undefined> {
         if (!runtime) {
             throw new ToolkitError('Runtime is undefined')
         }
@@ -545,6 +677,20 @@ export class RemoteDebugController {
     }
 
     public async startDebugging(functionArn: string, runtime: string, debugConfig: DebugConfig): Promise<void> {
+        if (debugConfig.isLambdaRemote) {
+            this.debugTypeSource = 'remoteDebug'
+            this.debugger = new RemoteLambdaDebugger(debugConfig, {
+                getQualifier: () => {
+                    return this.qualifier
+                },
+                setQualifier: (qualifier) => {
+                    this.qualifier = qualifier
+                },
+            })
+        } else {
+            this.debugTypeSource = 'LocalStackDebug'
+            this.debugger = new LocalStackLambdaDebugger(debugConfig)
+        }
         if (this.isDebugging) {
             getLogger().error('Debug already in progress, remove debug setup to restart')
             return
@@ -558,7 +704,7 @@ export class RemoteDebugController {
             debugConfigForTelemetry.localRoot = undefined
 
             span.record({
-                source: 'remoteDebug',
+                source: this.debugTypeSource,
                 passive: false,
                 action: JSON.stringify(debugConfigForTelemetry),
             })
@@ -581,12 +727,15 @@ export class RemoteDebugController {
                     }
 
                     // Check if runtime / region is supported for remote debugging
-                    if (!this.supportRuntimeRemoteDebug(runtime)) {
+                    if (!this.supportRuntimeRemoteDebug(runtime as Runtime)) {
                         throw new ToolkitError(
                             `Runtime ${runtime} is not supported for remote debugging. ` +
                                 `Only Python, Node.js, and Java runtimes are supported.`
                         )
                     }
+
+                    // Ensure the remote connection is reachable before calling lambda.GetFunction in revertExistingConfig()
+                    await this.debugger?.checkHealth()
 
                     // Check if a snapshot already exists and revert if needed
                     // Use the revertExistingConfig function from ldkController
@@ -606,7 +755,6 @@ export class RemoteDebugController {
                         // let's preserve this config to a global variable at here
                         // we will use this config to revert the changes back to it once was, once confirm it's success, update the global to undefined
                         // if somehow the changes failed to revert, in init phase(activate remote debugging), we will detect this config and prompt user to revert the changes
-                        const ldkClient = LdkClient.instance
                         // get function config again in case anything changed
                         const functionConfig = await LdkClient.instance.getFunctionDetail(functionArn)
                         if (!functionConfig?.Runtime || !functionConfig?.FunctionArn) {
@@ -619,56 +767,14 @@ export class RemoteDebugController {
                             runtimeString: functionConfig.Runtime as any,
                         })
 
-                        // Create or reuse tunnel
-                        progress.report({ message: 'Creating secure tunnel...' })
-                        getLogger().info('Creating secure tunnel...')
-                        const tunnelInfo = await ldkClient.createOrReuseTunnel(region)
-                        if (!tunnelInfo) {
-                            throw new ToolkitError(`Empty tunnel info response, please retry:${tunnelInfo}`)
-                        }
-
-                        if (!isTunnelInfo(tunnelInfo)) {
-                            throw new ToolkitError(`Invalid tunnel info response:${tunnelInfo}`)
-                        }
-                        // start update lambda funcion, await in the end
-                        // Create debug deployment
-                        progress.report({ message: 'Configuring Lambda function for debugging...' })
-                        getLogger().info('Configuring Lambda function for debugging...')
-
-                        const layerArn =
-                            debugConfig.layerArn ?? this.getRemoteDebugLayer(region, functionConfig.Architectures)
-                        if (!layerArn) {
-                            throw new ToolkitError(`No Layer Arn is provided`)
-                        }
-                        // start this request and await in the end
-                        const debugDeployPromise = ldkClient.createDebugDeployment(
-                            functionConfig,
-                            tunnelInfo.destinationToken,
-                            debugConfig.lambdaTimeout ?? 900,
-                            debugConfig.shouldPublishVersion,
-                            layerArn,
-                            progress
-                        )
+                        await this.debugger?.setup(progress, functionConfig, region)
 
                         const vscodeDebugConfig = await getVscodeDebugConfig(functionConfig, debugConfig)
                         // show every field in debugConfig
                         // getLogger().info(`Debug configuration created successfully ${JSON.stringify(debugConfig)}`)
 
-                        // Start local proxy with timeout and better error handling
-                        progress.report({ message: 'Starting local proxy...' })
+                        await this.debugger?.waitForSetup(progress, functionConfig, region)
 
-                        const proxyStartTimeout = new Promise((_, reject) => {
-                            setTimeout(() => reject(new Error('Local proxy start timed out')), 30000)
-                        })
-
-                        const proxyStartAttempt = ldkClient.startProxy(region, tunnelInfo.sourceToken, debugConfig.port)
-
-                        const proxyStarted = await Promise.race([proxyStartAttempt, proxyStartTimeout])
-
-                        if (!proxyStarted) {
-                            throw new ToolkitError('Failed to start local proxy')
-                        }
-                        getLogger().info('Local proxy started successfully')
                         progress.report({ message: 'Starting debugger...' })
                         // Start debugging in a non-blocking way
                         void Promise.resolve(vscode.debug.startDebugging(undefined, vscodeDebugConfig)).then(
@@ -686,17 +792,7 @@ export class RemoteDebugController {
                             }
                         })
 
-                        // wait until lambda function update is completed
-                        progress.report({ message: 'Waiting for function update...' })
-                        const qualifier = await debugDeployPromise
-                        if (!qualifier || qualifier === 'Failed') {
-                            throw new ToolkitError('Failed to configure Lambda function for debugging')
-                        }
-                        // store the published version for debugging in version
-                        if (debugConfig.shouldPublishVersion) {
-                            // we already reverted
-                            this.qualifier = qualifier
-                        }
+                        await this.debugger?.waitForFunctionUpdates(progress)
 
                         // Store the disposable
                         this.debugSessionDisposables.set(functionConfig.FunctionArn, debugSessionEndDisposable)
@@ -708,7 +804,7 @@ export class RemoteDebugController {
                             await this.stopDebugging()
                         } catch (errStop) {
                             getLogger().error(
-                                'encountered following error when stoping debug for failed debug session:'
+                                'encountered following error when stopping debug for failed debug session:'
                             )
                             getLogger().error(errStop as Error)
                         }
@@ -730,7 +826,10 @@ export class RemoteDebugController {
                 return
             }
             // use sessionDuration to record debug duration
-            span.record({ sessionDuration: this.lastDebugStartTime === 0 ? 0 : Date.now() - this.lastDebugStartTime })
+            span.record({
+                sessionDuration: this.lastDebugStartTime === 0 ? 0 : Date.now() - this.lastDebugStartTime,
+                source: this.debugTypeSource,
+            })
             try {
                 await vscode.window.withProgress(
                     {
@@ -740,7 +839,6 @@ export class RemoteDebugController {
                     },
                     async (progress) => {
                         progress.report({ message: 'Stopping debugging...' })
-                        const ldkClient = LdkClient.instance
 
                         // First attempt to clean up resources from Lambda
                         const savedConfig = getLambdaSnapshot()
@@ -754,19 +852,7 @@ export class RemoteDebugController {
                             disposable.dispose()
                             this.debugSessionDisposables.delete(savedConfig.FunctionArn)
                         }
-                        getLogger().info(`Removing debug deployment for function: ${savedConfig.FunctionName}`)
-
-                        await vscode.commands.executeCommand('workbench.action.debug.stop')
-                        // Then stop the proxy (with more reliable error handling)
-                        getLogger().info('Stopping proxy during cleanup')
-                        await ldkClient.stopProxy()
-                        // Ensure our resources are properly cleaned up
-                        if (this.qualifier) {
-                            await ldkClient.deleteDebugVersion(savedConfig.FunctionArn, this.qualifier)
-                        }
-                        if (await ldkClient.removeDebugDeployment(savedConfig, true)) {
-                            await persistLambdaSnapshot(undefined)
-                        }
+                        await this.debugger?.cleanup(savedConfig)
 
                         progress.report({ message: `Debug session stopped` })
                     }

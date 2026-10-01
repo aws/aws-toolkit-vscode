@@ -1,0 +1,10 @@
+{
+	"date": "2026-01-23",
+	"version": "3.94.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Console session credentials now prompt for window reload when stale, eliminating manual VS Code restarts after token refresh or profile updates (#8488)"
+		}
+	]
+}

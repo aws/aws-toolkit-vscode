@@ -25,7 +25,7 @@ import {
     testLogData,
     unregisteredData,
 } from '../utils.test'
-import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
+import { FilteredLogEvent } from '@aws-sdk/client-cloudwatch-logs'
 import { formatDateTimestamp } from '../../../../shared/datetime'
 
 describe('LogDataRegistry', async function () {
@@ -128,8 +128,8 @@ describe('LogDataRegistry', async function () {
         const pageToken1 = 'page1Token'
         const pageToken2 = 'page2Token'
 
-        function createCwlEvents(id: string, count: number): FilteredLogEvents {
-            let events: FilteredLogEvents = []
+        function createCwlEvents(id: string, count: number): FilteredLogEvent[] {
+            let events: FilteredLogEvent[] = []
             for (let i = 0; i < count; i++) {
                 events = events.concat({ message: `message-${id}`, logStreamName: `stream-${id}` })
             }

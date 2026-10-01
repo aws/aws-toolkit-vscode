@@ -220,4 +220,10 @@ describe('SamCliLocalInvokeInvocation', async function () {
         const invokeArgs = await executeInvocation({ runtime: invalidRuntime })
         assertArgNotPresent(invokeArgs.args, '--runtime')
     })
+
+    it('Passes tenant-id to sam cli', async function () {
+        const expectedTenantId = 'test-tenant-123'
+        const invokeArgs = await executeInvocation({ tenantId: expectedTenantId })
+        assertArgsContainArgument(invokeArgs.args, '--tenant-id', expectedTenantId)
+    })
 })

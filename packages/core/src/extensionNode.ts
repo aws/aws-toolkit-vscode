@@ -8,11 +8,16 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
+import {
+    activate as activateCloudFormation,
+    deactivate as deactivateCloudFormation,
+} from './awsService/cloudformation/extension'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+
 import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
@@ -42,13 +47,13 @@ import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
 import { activate as activateSagemaker } from './awsService/sagemaker/activation'
+import { activate as activateSageMakerUnifiedStudio } from './sagemakerunifiedstudio/activation'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
-import { ExtStartUpSources } from './shared/telemetry/util'
 import { Auth } from './auth/auth'
 import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
@@ -56,8 +61,6 @@ import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
 import { codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { VSCODE_EXTENSION_ID } from './shared/extensions'
-import { isExtensionInstalled } from './shared/utilities/vsCodeUtils'
 import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
@@ -151,6 +154,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
+        // Start CloudFormation activation in background to avoid blocking other services
+        activateCloudFormation(context).catch((error) => {
+            getLogger().error(`CloudFormation activation failed: ${error}`)
+        })
+
         await activateAwsExplorer({
             context: extContext,
             regionProvider: globals.regionProvider,
@@ -194,9 +202,10 @@ export async function activate(context: vscode.ExtensionContext) {
             qExtensionPageCommand.register()
             dismissQTree.register()
             installAmazonQExtension.register()
-
-            await handleAmazonQInstall()
         }
+
+        await activateSageMakerUnifiedStudio(extContext)
+
         await activateApplicationComposer(context)
         await activateThreatComposerEditor(context)
 
@@ -266,55 +275,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
-    await Promise.all([await (await CrashMonitoring.instance())?.shutdown(), deactivateCommon(), deactivateEc2()])
+    await Promise.all([
+        await (await CrashMonitoring.instance())?.shutdown(),
+        deactivateCommon(),
+        deactivateEc2(),
+        deactivateCloudFormation(),
+    ])
     globals.sdkClientBuilderV3.clearServiceCache()
     await globals.resourceManager.dispose()
-}
-
-async function handleAmazonQInstall() {
-    const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
-    if (dismissedInstall) {
-        return
-    }
-
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
-        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-        return
-    }
-
-    await telemetry.toolkit_showNotification.run(async () => {
-        telemetry.record({ id: 'amazonQStandaloneChange' })
-        void vscode.window
-            .showInformationMessage(
-                'Try Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                'Install',
-                'Learn More'
-            )
-            .then(async (resp) => {
-                await telemetry.toolkit_invokeAction.run(async () => {
-                    telemetry.record({
-                        source: ExtensionUse.instance.isFirstUse()
-                            ? ExtStartUpSources.firstStartUp
-                            : ExtStartUpSources.none,
-                    })
-
-                    if (resp === 'Learn More') {
-                        // Clicking learn more will open the q extension page
-                        telemetry.record({ action: 'learnMore' })
-                        await qExtensionPageCommand.execute()
-                        return
-                    }
-
-                    if (resp === 'Install') {
-                        telemetry.record({ action: 'installAmazonQ' })
-                        await installAmazonQExtension.execute()
-                    } else {
-                        telemetry.record({ action: 'dismissQNotification' })
-                    }
-                    await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-                })
-            })
-    })
 }
 
 function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {

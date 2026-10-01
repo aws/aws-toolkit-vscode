@@ -1,0 +1,14 @@
+{
+	"date": "2025-11-15",
+	"version": "3.84.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling"
+		},
+		{
+			"type": "Feature",
+			"description": "Deeplink support for SageMaker Unified Studio"
+		}
+	]
+}

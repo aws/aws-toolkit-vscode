@@ -10,12 +10,24 @@ import http, { IncomingMessage, ServerResponse } from 'http'
 import { handleGetSession } from './routes/getSession'
 import { handleGetSessionAsync } from './routes/getSessionAsync'
 import { handleRefreshToken } from './routes/refreshToken'
+import { handleGetHyperpodSession } from './routes/getHyperpodSession'
+import { handleGetHyperpodSessionAsync } from './routes/getHyperpodSessionAsync'
 import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
 import { execFile } from 'child_process'
 
 const pollInterval = 30 * 60 * 100 // 30 minutes
+
+/**
+ * Generic IDE process patterns for detection across all VS Code forks.
+ * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
+ */
+export const ideProcessPatterns = {
+    windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
+    darwin: /\.app\/Contents\/MacOS\//,
+    linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
+}
 
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     const parsedUrl = url.parse(req.url || '', true)
@@ -27,6 +39,13 @@ const server = http.createServer((req: IncomingMessage, res: ServerResponse) => 
             return handleGetSessionAsync(req, res)
         case '/refresh_token':
             return handleRefreshToken(req, res)
+        case '/get_hyperpod_session':
+            return handleGetHyperpodSession(req, res)
+        case '/get_hyperpod_session_async':
+            return handleGetHyperpodSessionAsync(req, res)
+        // TODO(reconnection): uncomment when reconnection PR re-adds credentials/eksClusterName to HyperpodSpaceMapping
+        // case '/refresh_hyperpod_session':
+        //     return handleRefreshHyperpodSession(req, res)
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' })
             res.end(`Not Found: ${req.url}`)
@@ -43,7 +62,9 @@ server.listen(0, '127.0.0.1', async () => {
 
         const filePath = process.env.SAGEMAKER_LOCAL_SERVER_FILE_PATH
         if (!filePath) {
-            throw new Error('SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set')
+            console.error('SAGEMAKER_LOCAL_SERVER_FILE_PATH environment variable is not set')
+            process.exit(0)
+            return
         }
 
         const data = { pid, port }
@@ -62,12 +83,13 @@ function checkVSCodeWindows(): Promise<boolean> {
         const platform = os.platform()
 
         if (platform === 'win32') {
-            execFile('tasklist', ['/FI', 'IMAGENAME eq Code.exe'], (err, stdout) => {
+            // Check for any VS Code fork process
+            execFile('tasklist', [], (err, stdout) => {
                 if (err) {
                     resolve(false)
                     return
                 }
-                resolve(/Code\.exe/i.test(stdout))
+                resolve(ideProcessPatterns.windows.test(stdout))
             })
         } else if (platform === 'darwin') {
             execFile('ps', ['aux'], (err, stdout) => {
@@ -76,9 +98,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout
-                    .split('\n')
-                    .some((line) => /Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\/Electron/.test(line))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.darwin.test(line))
                 resolve(found)
             })
         } else {
@@ -88,7 +108,7 @@ function checkVSCodeWindows(): Promise<boolean> {
                     return
                 }
 
-                const found = stdout.split('\n').some((line) => /^(code(-insiders)?|electron)$/i.test(line.trim()))
+                const found = stdout.split('\n').some((line) => ideProcessPatterns.linux.test(line.trim()))
                 resolve(found)
             })
         }
@@ -99,7 +119,7 @@ async function monitorVSCodeAndExit() {
     while (true) {
         const found = await checkVSCodeWindows()
         if (!found) {
-            console.log('No VSCode windows found. Shutting down detached server.')
+            console.log('No IDE windows found. Shutting down detached server.')
             process.exit(0)
         }
         await new Promise((r) => setTimeout(r, pollInterval))

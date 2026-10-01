@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as os from 'os'
+import * as YAML from 'js-yaml'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
@@ -119,14 +120,62 @@ export async function parseBuildFile() {
     return undefined
 }
 
-// return the first missing key in the custom versions file, or undefined if all required keys are present
-export async function validateCustomVersionsFile(fileContents: string) {
+// return an error message, or undefined if YAML file is valid
+export function validateCustomVersionsFile(fileContents: string) {
     const requiredKeys = ['dependencyManagement', 'identifier', 'targetVersion', 'originType']
     for (const key of requiredKeys) {
         if (!fileContents.includes(key)) {
             getLogger().info(`CodeTransformation: .YAML file is missing required key: ${key}`)
-            return key
+            return `Missing required key: \`${key}\``
         }
+    }
+    try {
+        const yaml = YAML.load(fileContents) as any
+        const dependencies = yaml?.dependencyManagement?.dependencies || []
+        const plugins = yaml?.dependencyManagement?.plugins || []
+        const dependenciesAndPlugins = dependencies.concat(plugins)
+
+        if (dependenciesAndPlugins.length === 0) {
+            getLogger().info('CodeTransformation: .YAML file must contain at least dependencies or plugins')
+            return `YAML file must contain at least \`dependencies\` or \`plugins\` under \`dependencyManagement\``
+        }
+        for (const item of dependencies) {
+            const errorMessage = validateItem(item, false)
+            if (errorMessage) {
+                return errorMessage
+            }
+        }
+        for (const item of plugins) {
+            const errorMessage = validateItem(item, true)
+            if (errorMessage) {
+                return errorMessage
+            }
+        }
+        return undefined
+    } catch (err: any) {
+        getLogger().info(`CodeTransformation: Invalid YAML format: ${err.message}`)
+        return `Invalid YAML format: ${err.message}`
+    }
+}
+
+// return an error message, or undefined if item is valid
+function validateItem(item: any, isPlugin: boolean) {
+    const validOriginTypes = ['FIRST_PARTY', 'THIRD_PARTY']
+    if (!isPlugin && !/^[^\s:]+:[^\s:]+$/.test(item.identifier)) {
+        getLogger().info(`CodeTransformation: Invalid identifier format: ${item.identifier}`)
+        return `Invalid dependency identifier format: \`${item.identifier}\`. Must be in format \`groupId:artifactId\` without spaces`
+    }
+    if (isPlugin && !item.identifier?.trim()) {
+        getLogger().info('CodeTransformation: Missing identifier in plugin')
+        return 'Missing `identifier` in plugin'
+    }
+    if (!validOriginTypes.includes(item.originType)) {
+        getLogger().info(`CodeTransformation: Invalid originType: ${item.originType}`)
+        return `Invalid originType: \`${item.originType}\`. Must be either \`FIRST_PARTY\` or \`THIRD_PARTY\``
+    }
+    if (!item.targetVersion?.trim()) {
+        getLogger().info(`CodeTransformation: Missing targetVersion in: ${item.identifier}`)
+        return `Missing \`targetVersion\` in: \`${item.identifier}\``
     }
     return undefined
 }

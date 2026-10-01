@@ -10,12 +10,18 @@ import {
     convertLegacy,
     getClientId,
     getUserAgent,
+    getUserAgentPairs,
+    userAgentPairsToString,
     hadClientIdOnStartup,
     platformPair,
     SessionId,
     telemetryClientIdEnvKey,
     TelemetryConfig,
     validateMetricEvent,
+    isAnonymousClientId,
+    testClientId,
+    telemetryDisabledClientId,
+    nilClientId,
 } from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
@@ -256,6 +262,24 @@ describe('getClientId', function () {
     })
 })
 
+describe('isAnonymousClientId', function () {
+    it('is true for the test/automation sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(testClientId), true)
+    })
+
+    it('is true for the telemetry-disabled sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(telemetryDisabledClientId), true)
+    })
+
+    it('is true for the nil (error) sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(nilClientId), true)
+    })
+
+    it('is false for a real client id', function () {
+        assert.strictEqual(isAnonymousClientId(randomUUID()), false)
+    })
+})
+
 describe('getUserAgent', function () {
     it('includes product name and version', async function () {
         const userAgent = getUserAgent()
@@ -286,6 +310,86 @@ describe('getUserAgent', function () {
         const clientPairIndex = pairs.findIndex((pair) => pair.startsWith('ClientId/'))
         const beforeClient = pairs[clientPairIndex - 1]
         assert.strictEqual(beforeClient, platformPair())
+    })
+})
+
+describe('getUserAgentPairs', function () {
+    it('returns array of [name, version] pairs', function () {
+        const pairs = getUserAgentPairs()
+        assert.ok(Array.isArray(pairs))
+        assert.strictEqual(pairs.length, 1, 'Should have exactly one pair by default')
+        assert.ok(Array.isArray(pairs[0]), 'Each pair should be an array')
+        assert.strictEqual(pairs[0].length, 2, 'Each pair should have exactly 2 elements')
+        assert.ok(pairs[0][0].includes('Toolkit-For-VSCode'), 'Should include toolkit name')
+        assert.strictEqual(pairs[0][1], extensionVersion, 'Should include extension version')
+    })
+
+    it('includes platform pair when opted in', function () {
+        const pairs = getUserAgentPairs({ includePlatform: true })
+        assert.ok(pairs.length > 1, 'Should have more than one pair when platform is included')
+        const platformPairStr = platformPair()
+        const [platformName, platformVersion] = platformPairStr.split('/')
+        const foundPlatformPair = pairs.find((pair) => pair[0] === platformName && pair[1] === platformVersion)
+        assert.ok(foundPlatformPair, 'Should include platform pair')
+    })
+
+    it('includes ClientId pair when opted in', function () {
+        const pairs = getUserAgentPairs({ includeClientId: true })
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        assert.ok(clientIdPair[1], 'ClientId should have a value')
+    })
+
+    it('includes both platform and ClientId when both opted in', function () {
+        const pairs = getUserAgentPairs({ includePlatform: true, includeClientId: true })
+        assert.ok(pairs.length >= 3, 'Should have at least 3 pairs')
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        const platformPairStr = platformPair()
+        const [platformName] = platformPairStr.split('/')
+        const foundPlatformPair = pairs.find((pair) => pair[0] === platformName)
+        assert.ok(foundPlatformPair, 'Should include platform pair')
+    })
+
+    it('omits ClientId by default', function () {
+        const pairs = getUserAgentPairs()
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.strictEqual(clientIdPair, undefined, 'Should not include ClientId by default')
+    })
+
+    it('omits platform by default', function () {
+        const pairs = getUserAgentPairs()
+        assert.strictEqual(pairs.length, 1, 'Should have exactly one pair when nothing is opted in')
+    })
+})
+
+describe('userAgentPairsToString', function () {
+    it('converts pairs to string format', function () {
+        const pairs: [string, string][] = [
+            ['LAMBDA-DEBUG', '1.0.0'],
+            ['AWS-Toolkit', '2.0'],
+        ]
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, 'LAMBDA-DEBUG/1.0.0 AWS-Toolkit/2.0')
+    })
+
+    it('handles single pair', function () {
+        const pairs: [string, string][] = [['AWS-Toolkit-For-VSCode', extensionVersion]]
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, `AWS-Toolkit-For-VSCode/${extensionVersion}`)
+    })
+
+    it('handles empty array', function () {
+        const pairs: [string, string][] = []
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, '')
+    })
+
+    it('matches getUserAgent output when using getUserAgentPairs', function () {
+        const userAgentString = getUserAgent({ includePlatform: true, includeClientId: true })
+        const userAgentPairs = getUserAgentPairs({ includePlatform: true, includeClientId: true })
+        const reconstructedString = userAgentPairsToString(userAgentPairs)
+        assert.strictEqual(reconstructedString, userAgentString, 'String conversion should match getUserAgent output')
     })
 })
 

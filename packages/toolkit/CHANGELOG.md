@@ -1,3 +1,218 @@
+## 4.15.0 2026-08-27
+
+- **Feature** SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication.
+- **Feature** SageMaker Studio: filter listed Spaces to those belonging to the signed-in IAM Identity Center user.
+
+## 4.14.0 2026-08-20
+
+- **Bug Fix** SageMaker Unified Studio: Fixed Spaces not appearing in the tree view after signing in with SSO to an IAM-based domain (caught in pre-release).
+- **Bug Fix** Updated the AWS SDK credential provider so credentials refreshed by re-running `aws login` are recognized without restarting the IDE.
+- **Bug Fix** SageMaker Unified Studio: only activated user profiles are used for space filtering.
+- **Feature** SageMaker Unified Studio: Automatically reconnect a deeplink-connected Space by refreshing credentials in the browser when the SSH tunnel drops.
+
+## 4.13.0 2026-08-06
+
+- **Feature** Add profile through console option for IAM auth in SMUS
+
+## 4.12.0 2026-07-30
+
+- **Bug Fix** Hide unsupported SageMaker Unified Studio spaces from the Local IDE space list.
+
+## 4.11.0 2026-07-23
+
+- Miscellaneous non-user-facing changes
+
+## 4.10.0 2026-07-09
+
+- **Feature** Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached
+
+## 4.9.0 2026-07-02
+
+- **Feature** Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`.
+
+## 4.8.0 2026-06-25
+
+- **Bug Fix** Redshift SQL Notebook: Query results with HTML special characters in column names or cell values are now displayed safely instead of being interpreted as HTML.
+- **Bug Fix** Added enhanced validation when handling user input filesystem paths for Application Composer, auth server, and CodeWhisperer Chat to ensure files are not read or written outside the intended directory.
+
+## 4.7.0 2026-06-11
+
+- Miscellaneous non-user-facing changes
+
+## 4.6.1 2026-05-21
+
+- **Feature** HyperPod: Kiro IDE can now connect to HyperPod dev spaces
+- **Feature** HyperPod: Cursor IDE can now connect to HyperPod dev spaces
+- **Feature** Support projects created from admin portal in SMUS IDC domains
+
+## 4.5.0 2026-05-14
+
+- Miscellaneous non-user-facing changes
+
+## 4.4.0 2026-05-07
+
+- **Feature** Add support for SSO and IAM role login into all Sagemaker Unified Studio domain types
+
+## 4.3.0 2026-04-30
+
+- **Bug Fix** Fix bug where occasionally Kiro path was not discovered on MacOS
+
+## 4.2.0 2026-04-23
+
+- Miscellaneous non-user-facing changes
+
+## 4.1.0 2026-04-16
+
+- **Bug Fix** Fix issue for IAM users who cannot see their Sagemaker Unified Studio spaces
+- **Feature** EC2: Added "Filter by Tag" action to the EC2 explorer node, allowing users to filter instances by tag key=value pairs.
+
+## 4.0.0 2026-04-09
+
+- **Bug Fix** HyperPod: Improved connection reliability with automatic token refresh and fixed connection failures on Windows.
+- **Feature** CloudFormation Language Server: templates exceeding 51KB now automatically enforce S3 upload instead of silently failing at deployment
+
+## 3.101.0 2026-03-26
+
+- Miscellaneous non-user-facing changes
+
+## 3.100.0 2026-03-20
+
+- Miscellaneous non-user-facing changes
+
+## 3.99.0 2026-03-12
+
+- **Bug Fix** SageMaker: Connection to studio spaces now works reliably on all VSCode versions
+
+## 3.98.0 2026-03-06
+
+- **Feature** Replace stack: with stack '' to ensure failure messages maintain proper grammar.
+
+## 3.97.0 2026-02-26
+
+- **Bug Fix** Adds a confirmation prompt before initiating console credential login (aws login) when opening a Lambda function in VS Code. Improves clarity around prerequisites and reduces unexpected login cancellations.
+- **Bug Fix** Lamdbda: Console-to-IDE transition shows "Connection does not exist" error when console login is cancelled or fail.
+- **Feature** AI assistants are able to receive SageMaker Unified Studio context when connected to a Space
+- **Feature** This update enhances HyperPod Space connectivity in the Toolkit by adding reconnection support. In the event of a connection disruption, users can now seamlessly reconnect to their existing session and resume work without losing in-progress changes.
+- **Feature** SageMaker Studio users can now connect to Spaces from Kiro IDE
+
+## 3.96.0 2026-02-13
+
+- Miscellaneous non-user-facing changes
+
+## 3.95.0 2026-01-29
+
+- **Bug Fix** AWS CLI update success message now shows the actual CLI installation path that the Toolkit uses for console credentials.
+- **Bug Fix** Opening Lambda functions from AWS Console now works with missing or mismatched local credentials
+
+## 3.94.0 2026-01-23
+
+- **Bug Fix** Console session credentials now prompt for window reload when stale, eliminating manual VS Code restarts after token refresh or profile updates (#8488)
+
+## 3.93.0 2026-01-15
+
+- **Bug Fix** AWS CLI update process could enter an infinite retry loop when outdated CLI is detected during console login. The Toolkit now attempts the update once and prompts users to manually reload and retry, preventing continuous failed authentication attempts.
+
+## 3.92.0 2026-01-08
+
+- Miscellaneous non-user-facing changes
+
+## 3.91.0 2025-12-18
+
+- **Bug Fix** CloudFormation: render stack detail views on stack change
+- **Bug Fix** Lambda deploy always creates new version
+- **Feature** CloudFormation: Show hook invocations in stack events on failure
+- **Feature** AWS Toolkit now supports console credentials, allowing you to use AWS Management Console sign-in credentials for programmatic access. The login webview now pre-selects Console credentials as the recommended authentication option (previously Enterprise SSO was the first choice). When overwriting an existing console session on a profile, you'll be prompted to confirm whether to proceed or cancel.
+- **Feature** Lambda Remote Invoke panel now supports invoking Lambda durable functions
+- **Feature** CloudFormation: group stack events by operation id and display in stack events view
+
+## 3.90.0 2025-12-09
+
+- **Bug Fix** SageMaker: SSH configuration errors now display line numbers and include an "Open SSH Config" button
+- **Bug Fix** SageMaker Unified Studio: Fixed s3 table catalog node showing error when it's empty
+- **Bug Fix** CloudFormation: hide deployment button when change set is not deployable, add delete button when change set has no changes
+- **Feature** CloudFormation: Shorten/simplify deployment prompts by prompting for deployment mode first
+- **Feature** feat(lambda): add support for lmi function resource node
+
+## 3.89.0 2025-11-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.88.0 2025-11-22
+
+- **Bug Fix** CloudFormation: refresh stacks after change set deletion
+- **Bug Fix** CloudFormation: Handle telemetry setting in upgrade path case where setting is not registered
+- **Bug Fix** CloudFormation: prevent eager loading of CloudFormation stacks
+- **Feature** Remote debugging now supports nodejs24.x, python3.14, java25
+
+## 3.87.0 2025-11-21
+
+- **Feature** Support IAM based domains for SageMaker Unified Studio
+
+## 3.86.0 2025-11-21
+
+- **Feature** Remote IDE connection support for IDE Spaces deployed on SageMaker HyperPod clusters
+
+## 3.85.0 2025-11-19
+
+- **Bug Fix** Lambda: Attaching a debugger to your Lambda functions using LocalStack is not working
+- **Feature** CloudFormation: Add comprehensive Language Server Protocol integration with stack management, deployment workflows, drift detection, and cfn-init project support
+
+## 3.84.0 2025-11-15
+
+- **Feature** SageMaker: Improved UX for connecting to running spaces with better progress indicators and streamlined remote access handling
+- **Feature** Deeplink support for SageMaker Unified Studio
+
+## 3.83.0 2025-11-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.82.0 2025-10-30
+
+- **Feature** Lambda AppBuilder: Now you can install Finch from the AppBuilder walkthrough
+
+## 3.81.0 2025-10-22
+
+- Miscellaneous non-user-facing changes
+
+## 3.80.0 2025-10-16
+
+- **Bug Fix** The space is updated upon creation of a new app with the requested settings
+
+## 3.79.0 2025-10-10
+
+- Miscellaneous non-user-facing changes
+
+## 3.78.0 2025-10-02
+
+- **Feature** Refactor and optimize Lambda Remote Invoke UI with enhanced payload management
+- **Feature** Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug.
+
+## 3.77.0 2025-09-29
+
+- Miscellaneous non-user-facing changes
+
+## 3.76.0 2025-09-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.75.0 2025-09-19
+
+- Miscellaneous non-user-facing changes
+
+## 3.74.0 2025-09-10
+
+- **Feature** Feature to support the access of SageMakerUnified Studio resources from the local VSCode IDE
+- **Feature** AWS Toolkit now correctly uses the endpoint URL specified in the AWS config file for the selected profile
+- **Feature** Lambda AppBuilder: Now you can install LocalStack VS Code extension from the AppBuilder walkthrough
+
+## 3.73.0 2025-09-05
+
+- Miscellaneous non-user-facing changes
+
+## 3.72.0 2025-08-22
+
+- Miscellaneous non-user-facing changes
+
 ## 3.71.0 2025-08-06
 
 - Miscellaneous non-user-facing changes

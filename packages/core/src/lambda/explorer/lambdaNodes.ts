@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Lambda } from 'aws-sdk'
+import { FunctionConfiguration } from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
@@ -14,13 +14,15 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { listLambdaFunctions } from '../utils'
+import { listLambdaFunctions, isHotReloadingFunction } from '../utils'
 import {
     contextValueLambdaFunction,
     contextValueLambdaFunctionImportable,
+    contextValueLambdaFunctionDownloadOnly,
     LambdaFunctionNode,
 } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
+import { isLocalStackConnection } from '../../auth/utils'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -52,7 +54,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const functions: Map<string, Lambda.FunctionConfiguration> = toMap(
+        const functions: Map<string, FunctionConfiguration> = toMap(
             await toArrayAsync(listLambdaFunctions(this.client)),
             (configuration) => configuration.FunctionName
         )
@@ -69,11 +71,17 @@ export class LambdaNode extends AWSTreeNodeBase {
 function makeLambdaFunctionNode(
     parent: AWSTreeNodeBase,
     regionCode: string,
-    configuration: Lambda.FunctionConfiguration
+    configuration: FunctionConfiguration
 ): LambdaFunctionNode {
-    const contextValue = samLambdaImportableRuntimes.contains(configuration.Runtime ?? '')
-        ? contextValueLambdaFunctionImportable
-        : contextValueLambdaFunction
+    let contextValue = contextValueLambdaFunction
+    const isImportableRuntime = configuration.Runtime && samLambdaImportableRuntimes.contains(configuration.Runtime)
+    if (isLocalStackConnection()) {
+        if (isImportableRuntime && !isHotReloadingFunction(configuration?.CodeSha256)) {
+            contextValue = contextValueLambdaFunctionDownloadOnly
+        }
+    } else if (isImportableRuntime) {
+        contextValue = contextValueLambdaFunctionImportable
+    }
     const node = new LambdaFunctionNode(parent, regionCode, configuration, contextValue)
 
     return node

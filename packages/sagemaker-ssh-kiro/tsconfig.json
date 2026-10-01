@@ -1,0 +1,11 @@
+{
+    "extends": "../tsconfig.packages.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "baseUrl": ".",
+        "rootDir": ".",
+        "skipLibCheck": true
+    },
+    "exclude": ["node_modules", ".vscode-test", "dist"],
+    "noEmitOnError": false // allow emitting even with type errors
+}

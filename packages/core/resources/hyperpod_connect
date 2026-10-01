@@ -1,0 +1,125 @@
+#!/bin/bash
+
+set -x
+
+_get_hyperpod_session() {
+    local connection_key="$1"
+    local local_endpoint_port="$2"
+
+    local url="http://localhost:${local_endpoint_port}/get_hyperpod_session?connection_key=${connection_key}"
+    local temp_file="/tmp/hyperpod_session_response_$$_$(date +%s%N).json"
+
+    response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url")
+    http_status="${response: -3}"
+    session_json=$(cat "$temp_file")
+    rm -f "$temp_file"
+
+    if [[ "$http_status" -ne 200 ]]; then
+        echo "Error: Failed to get HyperPod session info. HTTP status: $http_status"
+        echo "Response: $session_json"
+        exit 1
+    fi
+
+    if [ -z "$session_json" ]; then
+        echo "Error: HyperPod session info is empty."
+        exit 1
+    fi
+
+    export SSM_SESSION_JSON="$session_json"
+}
+
+_get_hyperpod_session_async() {
+    local connection_key="$1"
+    local local_endpoint_port="$2"
+
+    local request_id=$(date +%s%3N)
+    local url="http://localhost:${local_endpoint_port}/get_hyperpod_session_async?connection_key=${connection_key}&request_id=${request_id}"
+    local max_retries=8
+    local retry_interval=5
+
+    for attempt in $(seq 1 $max_retries); do
+        local temp_file="/tmp/hyperpod_session_response_$$_$(date +%s%N).json"
+        response=$(curl -s -w "%{http_code}" -o "$temp_file" "$url")
+        http_status="${response: -3}"
+        session_json=$(cat "$temp_file")
+        rm -f "$temp_file"
+
+        echo "Attempt ${attempt}: HTTP ${http_status}"
+
+        if [[ "$http_status" -eq 200 ]]; then
+            export SSM_SESSION_JSON="$session_json"
+            return
+        elif [[ "$http_status" -eq 202 ]] || [[ "$http_status" -eq 204 ]]; then
+            echo "Session not ready. Retrying in ${retry_interval} seconds... [${attempt}/${max_retries}]"
+            sleep $retry_interval
+        else
+            echo "Error: Failed to get HyperPod session info. HTTP status: $http_status"
+            echo "Response: $session_json"
+            exit 1
+        fi
+    done
+
+    echo "Error: Timed out after ${max_retries} attempts waiting for session to be ready."
+    exit 1
+}
+
+# Validate input
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <hostname>"
+    exit 1
+fi
+
+HOSTNAME="$1"
+
+# Parse hostname format: smhp_<dl|lc>_<workspace>_<namespace>_<cluster>_<region>_<account>
+if [[ "$HOSTNAME" =~ ^smhp[^_]*_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)$ ]]; then
+    CREDS_TYPE="${BASH_REMATCH[1]}"
+    WORKSPACE_NAME="${BASH_REMATCH[2]}"
+    NAMESPACE="${BASH_REMATCH[3]}"
+    CLUSTER_NAME="${BASH_REMATCH[4]}"
+    CONNECTION_KEY="${WORKSPACE_NAME}:${NAMESPACE}:${CLUSTER_NAME}"
+else
+    echo "Error: Invalid hostname format. Expected: smhp<optional>_<dl|lc>_<workspace>_<namespace>_<cluster>_<region>_<account>"
+    exit 1
+fi
+
+if [[ "$CREDS_TYPE" != "lc" && "$CREDS_TYPE" != "dl" ]]; then
+    echo "Error: Invalid creds_type '$CREDS_TYPE'. Must be 'lc' or 'dl'."
+    exit 1
+fi
+
+# Validate required env var and file
+if [ -z "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+    echo "[Error] SAGEMAKER_LOCAL_SERVER_FILE_PATH is not set"
+    exit 1
+fi
+
+if [ ! -f "$SAGEMAKER_LOCAL_SERVER_FILE_PATH" ]; then
+    echo "[Error] File not found at SAGEMAKER_LOCAL_SERVER_FILE_PATH: $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+    exit 1
+fi
+
+# Extract port from file
+LOCAL_ENDPOINT_PORT=$(jq -r '.port' "$SAGEMAKER_LOCAL_SERVER_FILE_PATH")
+if [ -z "$LOCAL_ENDPOINT_PORT" ] || [ "$LOCAL_ENDPOINT_PORT" == "null" ]; then
+    echo "[Error] 'port' field is missing or invalid in $SAGEMAKER_LOCAL_SERVER_FILE_PATH"
+    exit 1
+fi
+
+# Retrieve HyperPod session
+if [[ "$CREDS_TYPE" == "lc" ]]; then
+    _get_hyperpod_session "$CONNECTION_KEY" "$LOCAL_ENDPOINT_PORT"
+elif [[ "$CREDS_TYPE" == "dl" ]]; then
+    _get_hyperpod_session_async "$CONNECTION_KEY" "$LOCAL_ENDPOINT_PORT"
+fi
+
+# Extract region from StreamUrl in session JSON
+REGION=$(echo "$SSM_SESSION_JSON" | jq -r '.StreamUrl' | grep -o '\.[a-z0-9-]*\.amazonaws\.com' | sed 's/^\.//;s/\.amazonaws\.com$//')
+if [ -z "$REGION" ]; then
+    echo "[Error] Could not extract region from StreamUrl"
+    exit 1
+fi
+
+# Execute the session
+AWS_SSM_CLI="${AWS_SSM_CLI:=session-manager-plugin}"
+exec "${AWS_SSM_CLI}" "$SSM_SESSION_JSON" "$REGION" StartSession

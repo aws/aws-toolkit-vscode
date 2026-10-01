@@ -588,10 +588,12 @@ export class ChatController {
             const userPromptsDirectory = getUserPromptsDirectory()
 
             const title = message.action.formItemValues?.['prompt-name']
-            const newFilePath = path.join(
-                userPromptsDirectory,
-                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-            )
+            const fileName = title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
+            if (fileName.includes('/') || fileName.includes('\\') || fileName.includes('..')) {
+                getLogger().warn(`warn: caller attempted to break out of userPromptsDirectory with path ${fileName}`)
+                return
+            }
+            const newFilePath = path.join(userPromptsDirectory, fileName)
             const newFileContent = new Uint8Array(Buffer.from(''))
             await fs.writeFile(newFilePath, newFileContent, { mode: 0o600 })
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
@@ -619,14 +621,22 @@ export class ChatController {
         if (!projectRoot) {
             return
         }
-        let absoluteFilePath = path.join(projectRoot, message.filePath)
+        let absoluteFilePath = path.resolve(projectRoot, message.filePath)
+        if (!absoluteFilePath.startsWith(path.resolve(projectRoot) + path.sep)) {
+            getLogger().warn(`warn: caller attempted to break out of projectRoot with path ${message.filePath}`)
+            return
+        }
 
         // Handle clicking on a user prompt outside the workspace
         if (message.filePath.endsWith(promptFileExtension)) {
             try {
                 await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
             } catch {
-                absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
+                const promptsDir = path.resolve(getUserPromptsDirectory())
+                absoluteFilePath = path.resolve(promptsDir, message.filePath)
+                if (!absoluteFilePath.startsWith(promptsDir + path.sep)) {
+                    return
+                }
             }
         }
 

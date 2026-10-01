@@ -1,0 +1,14 @@
+{
+	"date": "2025-10-02",
+	"version": "3.78.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Refactor and optimize Lambda Remote Invoke UI with enhanced payload management"
+		},
+		{
+			"type": "Feature",
+			"description": "Appbuilder now show local invoke icon on deployed local lambda node. Remote Debugging now auto detect sam, cdk outFiles for typescript debug."
+		}
+	]
+}

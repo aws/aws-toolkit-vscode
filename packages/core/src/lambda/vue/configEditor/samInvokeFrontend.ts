@@ -74,6 +74,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
             memoryMb: undefined,
             timeoutSec: undefined,
             environmentVariables: {},
+            tenantId: undefined,
             ...existingConfig?.lambda,
             payload: {
                 json: existingConfig?.lambda?.payload?.json ? existingConfig.lambda.payload.json : {},
@@ -430,6 +431,7 @@ export default defineComponent({
                         json: payloadJson,
                     },
                     environmentVariables: environmentVariablesJson,
+                    tenantId: launchConfig.lambda?.tenantId,
                 },
                 sam: {
                     ...launchConfig.sam,

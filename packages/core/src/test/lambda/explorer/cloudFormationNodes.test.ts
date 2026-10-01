@@ -22,6 +22,7 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { stub } from '../../utilities/stubber'
 import { getLabel } from '../../../shared/treeview/utils'
+import { AWSCommandTreeNode } from '../../../shared/treeview/nodes/awsCommandTreeNode'
 
 const regionCode = 'someregioncode'
 
@@ -168,8 +169,15 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        for (const node of children) {
-            assert.ok(node instanceof CloudFormationStackNode, 'Expected child node to be CloudFormationStackNode')
+        // First node should be the panel promotion node
+        assert.ok(children[0] instanceof AWSCommandTreeNode, 'Expected first child to be panel promotion node')
+
+        // Remaining nodes should be CloudFormationStackNode
+        for (let i = 1; i < children.length; i++) {
+            assert.ok(
+                children[i] instanceof CloudFormationStackNode,
+                'Expected child node to be CloudFormationStackNode'
+            )
         }
     })
 
@@ -178,16 +186,19 @@ describe('CloudFormationNode', function () {
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        const actualChildOrder = children.map((node) => (node as CloudFormationStackNode).stackName)
+        // Skip the first node (panel promotion) and check stack sorting
+        const stackNodes = children.slice(1) as CloudFormationStackNode[]
+        const actualChildOrder = stackNodes.map((node) => node.stackName)
         assert.deepStrictEqual(actualChildOrder, ['a', 'b'], 'Unexpected child sort order')
     })
 
-    it('returns placeholder node if no children are present', async function () {
+    it('returns panel promotion node if no stacks are present', async function () {
         const client = createCloudFormationClient()
         const cloudFormationNode = new CloudFormationNode(regionCode, client)
         const children = await cloudFormationNode.getChildren()
 
-        assertNodeListOnlyHasPlaceholderNode(children)
+        assert.strictEqual(children.length, 1, 'Expected exactly one child node')
+        assert.ok(children[0] instanceof AWSCommandTreeNode, 'Expected panel promotion node')
     })
 
     it('has an error node for a child if an error happens during loading', async function () {

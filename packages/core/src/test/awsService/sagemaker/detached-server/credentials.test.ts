@@ -73,6 +73,69 @@ describe('resolveCredentialsFor', () => {
         })
     })
 
+    it('resolves SSO credentials with SMUS project ID', async () => {
+        sinon.stub(utils, 'readMapping').resolves({
+            localCredential: {
+                [connectionId]: {
+                    type: 'sso',
+                    smusProjectId: 'project123',
+                },
+            },
+            smusProjects: {
+                project123: {
+                    accessKey: 'smus-key',
+                    secret: 'smus-secret',
+                    token: 'smus-token',
+                },
+            },
+        })
+
+        const creds = await resolveCredentialsFor(connectionId)
+        assert.deepStrictEqual(creds, {
+            accessKeyId: 'smus-key',
+            secretAccessKey: 'smus-secret',
+            sessionToken: 'smus-token',
+        })
+    })
+
+    it('throws if SMUS project credentials are missing', async () => {
+        sinon.stub(utils, 'readMapping').resolves({
+            localCredential: {
+                [connectionId]: {
+                    type: 'sso',
+                    smusProjectId: 'project123',
+                },
+            },
+            smusProjects: {
+                project123: {
+                    accessKey: '',
+                    secret: 'smus-secret',
+                    token: 'smus-token',
+                },
+            },
+        })
+
+        await assert.rejects(() => resolveCredentialsFor(connectionId), {
+            message: `Missing ProjectRole credentials for SMUS Space "${connectionId}"`,
+        })
+    })
+
+    it('throws if SMUS project is not found', async () => {
+        sinon.stub(utils, 'readMapping').resolves({
+            localCredential: {
+                [connectionId]: {
+                    type: 'sso',
+                    smusProjectId: 'nonexistent',
+                },
+            },
+            smusProjects: {},
+        })
+
+        await assert.rejects(() => resolveCredentialsFor(connectionId), {
+            message: `Missing ProjectRole credentials for SMUS Space "${connectionId}"`,
+        })
+    })
+
     it('throws for unsupported profile types', async () => {
         sinon.stub(utils, 'readMapping').resolves({
             localCredential: {

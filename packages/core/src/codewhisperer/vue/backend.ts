@@ -28,8 +28,12 @@ export class CodeWhispererWebview extends VueWebview {
 
     private isFileSaved: boolean = false
     private getLocalFilePath(fileName: string): string {
-        // This will store the files in the global storage path of VSCode
-        return path.join(globals.context.globalStorageUri.fsPath, fileName)
+        const baseDir = path.resolve(globals.context.globalStorageUri.fsPath)
+        const resolved = path.resolve(baseDir, fileName)
+        if (!resolved.startsWith(baseDir + path.sep)) {
+            throw new Error(`Path is outside of storage directory: ${fileName}`)
+        }
+        return resolved
     }
 
     // This function opens TypeScript/JavaScript/Python/Java/C# file in the editor.

@@ -7,7 +7,7 @@ import assert from 'assert'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { IotNode } from '../../../../awsService/iot/explorer/iotNodes'
 import { IotCertificate, IotClient } from '../../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { Certificate } from '@aws-sdk/client-iot'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { IotCertWithPoliciesNode } from '../../../../awsService/iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../../awsService/iot/explorer/iotCertFolderNode'
@@ -21,7 +21,7 @@ describe('IotCertFolderNode', function () {
     let iot: IotClient
     let config: TestSettings
 
-    const cert: Iot.Certificate = {
+    const cert: Certificate = {
         certificateId: 'cert',
         certificateArn: 'arn',
         status: 'ACTIVE',

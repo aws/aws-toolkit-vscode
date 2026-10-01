@@ -19,22 +19,13 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
 
     public constructor(
         public readonly regionCode: string,
-        private readonly clientType: AwsClientConstructor<C>,
-        private readonly isSageMaker: boolean = false
+        private readonly clientType: AwsClientConstructor<C>
     ) {}
 
     protected getClient(ignoreCache: boolean = false) {
         const args = {
             serviceClient: this.clientType,
             region: this.regionCode,
-            ...(this.isSageMaker
-                ? {
-                      clientOptions: {
-                          endpoint: `https://sagemaker.${this.regionCode}.amazonaws.com`,
-                          region: this.regionCode,
-                      },
-                  }
-                : {}),
         }
         return ignoreCache
             ? globals.sdkClientBuilderV3.createAwsService(args)

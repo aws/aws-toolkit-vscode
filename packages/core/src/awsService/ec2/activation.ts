@@ -8,7 +8,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Ec2InstanceNode, tryRefreshNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../../awsexplorer/commands/copyText'
-import { Ec2Node } from './explorer/ec2ParentNode'
+import { Ec2Node, Ec2ParentNode } from './explorer/ec2ParentNode'
 import {
     openRemoteConnection,
     openTerminal,
@@ -17,6 +17,7 @@ import {
     stopInstance,
     linkToLaunchInstance,
     openLogDocument,
+    filterByTag,
 } from './commands'
 import { Ec2ConnecterMap } from './connectionManagerMap'
 import { ec2LogsScheme } from '../../shared/constants'
@@ -78,6 +79,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await telemetry.ec2_launchInstance.run(async (span) => {
                 await linkToLaunchInstance(node)
             })
+        }),
+
+        Commands.register('aws.ec2.filterByTag', async (node?: Ec2ParentNode) => {
+            await filterByTag(node)
         })
     )
 }

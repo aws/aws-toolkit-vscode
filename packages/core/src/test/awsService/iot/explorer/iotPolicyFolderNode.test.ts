@@ -7,7 +7,7 @@ import assert from 'assert'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { IotNode } from '../../../../awsService/iot/explorer/iotNodes'
 import { IotClient, IotPolicy } from '../../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { Policy } from '@aws-sdk/client-iot'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { IotPolicyWithVersionsNode } from '../../../../awsService/iot/explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../../../../awsService/iot/explorer/iotPolicyFolderNode'
@@ -20,7 +20,7 @@ describe('IotPolicyFolderNode', function () {
 
     let iot: IotClient
     let config: TestSettings
-    const policy: Iot.Policy = { policyName: 'policy', policyArn: 'arn' }
+    const policy: Policy = { policyName: 'policy', policyArn: 'arn' }
     const expectedPolicy: IotPolicy = { name: 'policy', arn: 'arn' }
 
     function assertPolicyNode(node: AWSTreeNodeBase, expectedPolicy: IotPolicy): void {

@@ -512,6 +512,9 @@ describe('SAM runBuild', () => {
                 })
                 .build()
 
+            // Reset the spy before running the test to ensure clean state
+            spyRunInterminal.resetHistory()
+
             // Instead of await runBuild(), prefer this to avoid flakiness due to race condition
             await delayedRunBuild()
 

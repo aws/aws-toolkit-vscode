@@ -37,13 +37,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 500 if resolveCredentialsFor throws', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').rejects(new Error('creds error'))
-        sinon.stub(utils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            spaceName: 'space-name',
-        })
 
         await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
 
@@ -52,13 +47,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 500 if startSagemakerSession throws', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
-        sinon.stub(utils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            spaceName: 'space-name',
-        })
         sinon.stub(utils, 'startSagemakerSession').rejects(new Error('session error'))
 
         await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
@@ -68,13 +58,8 @@ describe('handleGetSession', () => {
     })
 
     it('responds with 200 and session data on success', async () => {
-        req = { url: '/session?connection_identifier=arn:aws:sagemaker:region:acc:space/domain/name' }
+        req = { url: '/session?connection_identifier=arn:aws:sagemaker:us-west-2:123456789012:space/domain/name' }
         sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
-        sinon.stub(utils, 'parseArn').returns({
-            region: 'us-west-2',
-            accountId: '123456789012',
-            spaceName: 'space-name',
-        })
         sinon.stub(utils, 'startSagemakerSession').resolves({
             SessionId: 'abc123',
             StreamUrl: 'https://stream',
@@ -98,5 +83,105 @@ describe('handleGetSession', () => {
 
     afterEach(() => {
         sinon.restore()
+    })
+
+    describe('retry cap', () => {
+        const retryArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/domain/retry-test'
+        const retryUrl = `/session?connection_identifier=${retryArn}`
+
+        beforeEach(() => {
+            sinon.stub(credentials, 'resolveCredentialsFor').rejects(new Error('disconnected'))
+        })
+
+        async function callOnce() {
+            resWriteHead = sinon.spy()
+            resEnd = sinon.spy()
+            res = { writeHead: resWriteHead, end: resEnd }
+            req = { url: retryUrl }
+            await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
+            return resWriteHead.firstCall.args[0] as number
+        }
+
+        it('allows requests up to maxRetries', async () => {
+            for (let i = 0; i < 8; i++) {
+                const status = await callOnce()
+                assert.strictEqual(status, 500, `attempt ${i + 1} should return 500`)
+            }
+        })
+
+        it('returns 429 after maxRetries exceeded', async () => {
+            for (let i = 0; i < 8; i++) {
+                await callOnce()
+            }
+            const status = await callOnce()
+            assert.strictEqual(status, 429)
+        })
+
+        it('resets counter after resetWindowMs elapses', async () => {
+            const realNow = Date.now
+            try {
+                let fakeTime = 1000000
+                Date.now = () => fakeTime
+
+                for (let i = 0; i < 8; i++) {
+                    await callOnce()
+                }
+                assert.strictEqual(await callOnce(), 429)
+
+                // Advance past the 10-minute reset window
+                fakeTime += 10 * 60 * 1000 + 1
+                const status = await callOnce()
+                assert.strictEqual(status, 500, 'should allow requests again after reset window')
+            } finally {
+                Date.now = realNow
+            }
+        })
+
+        it('resets counter on successful session', async () => {
+            const successArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/domain/success-test'
+            const successUrl = `/session?connection_identifier=${successArn}`
+
+            // Use up some retries with failures
+            ;(credentials.resolveCredentialsFor as sinon.SinonStub).restore()
+            sinon.stub(credentials, 'resolveCredentialsFor').resolves({})
+            sinon.stub(utils, 'startSagemakerSession').rejects(new Error('fail'))
+
+            for (let i = 0; i < 5; i++) {
+                req = { url: successUrl }
+                resWriteHead = sinon.spy()
+                resEnd = sinon.spy()
+                res = { writeHead: resWriteHead, end: resEnd }
+                await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
+            }
+
+            // Now succeed
+            ;(utils.startSagemakerSession as sinon.SinonStub).restore()
+            sinon.stub(utils, 'startSagemakerSession').resolves({
+                SessionId: 's',
+                StreamUrl: 'wss://x',
+                TokenValue: 't',
+                $metadata: { httpStatusCode: 200 },
+            })
+
+            req = { url: successUrl }
+            resWriteHead = sinon.spy()
+            resEnd = sinon.spy()
+            res = { writeHead: resWriteHead, end: resEnd }
+            await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
+            assert.strictEqual(resWriteHead.firstCall.args[0], 200)
+
+            // Should be able to fail 8 more times (counter was reset)
+            ;(utils.startSagemakerSession as sinon.SinonStub).restore()
+            sinon.stub(utils, 'startSagemakerSession').rejects(new Error('fail'))
+
+            for (let i = 0; i < 8; i++) {
+                req = { url: successUrl }
+                resWriteHead = sinon.spy()
+                resEnd = sinon.spy()
+                res = { writeHead: resWriteHead, end: resEnd }
+                await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
+                assert.strictEqual(resWriteHead.firstCall.args[0], 500, `attempt ${i + 1} after reset should be 500`)
+            }
+        })
     })
 })

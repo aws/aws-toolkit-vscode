@@ -12,7 +12,7 @@ import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
-import { SSM } from 'aws-sdk'
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
 import { ErrorInformation, ToolkitError } from '../errors'
 
 const localize = nls.loadMessageBundle()
@@ -128,6 +128,19 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
             return false
         }
     }
+
+    public async removeRemotePlatforms(predicate: (hostname: string) => boolean): Promise<number> {
+        const current = { ...this._getOrThrow('remotePlatform', {}) }
+        const stale = Object.keys(current).filter(predicate)
+        if (stale.length === 0) {
+            return 0
+        }
+        for (const key of stale) {
+            delete current[key]
+        }
+        await this.update('remotePlatform', current)
+        return stale.length
+    }
 }
 
 /**
@@ -144,7 +157,7 @@ export async function testSshConnection(
     hostname: string,
     sshPath: string,
     user: string,
-    session: SSM.StartSessionResponse
+    session: StartSessionResponse
 ): Promise<ChildProcessResult | never> {
     const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
     const process = new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo "test connection succeeded" && exit'])

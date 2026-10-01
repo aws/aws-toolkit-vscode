@@ -59,7 +59,8 @@ import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '.
 import { getIdeProperties } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
-import { Runtime, telemetry } from '../../telemetry/telemetry'
+import { telemetry, Runtime as TelemetryRuntime } from '../../telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
@@ -471,8 +472,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
-        const runtime: string | undefined =
-            config.lambda?.runtime ??
+        const runtime: Runtime | undefined =
+            (config.lambda?.runtime as Runtime) ??
             (template && isZip
                 ? CloudFormation.getStringForProperty(templateResource?.Properties, 'Runtime', template)
                 : undefined) ??
@@ -690,7 +691,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     public async invokeConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
         telemetry.record({
             debug: !config.noDebug,
-            runtime: config.runtime as Runtime,
+            runtime: config.runtime as TelemetryRuntime,
             lambdaArchitecture: config.architecture,
             lambdaPackageType: (await isImageLambdaConfig(config)) ? 'Image' : 'Zip',
             version: await getSamCliVersion(getSamCliContext()),

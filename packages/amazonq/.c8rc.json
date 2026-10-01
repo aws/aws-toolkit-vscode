@@ -1,6 +1,0 @@
-{
-    "report-dir": "../../coverage/amazonq",
-    "reporter": ["lcov"],
-    "all": true,
-    "exclude": ["**/test*/**", "**/node_modules/**"]
-}

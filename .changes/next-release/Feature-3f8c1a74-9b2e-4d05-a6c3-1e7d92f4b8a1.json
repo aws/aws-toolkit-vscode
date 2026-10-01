@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication"
+}

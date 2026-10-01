@@ -39,6 +39,7 @@ describe('CredentialsStore', async function () {
         return {
             getCredentials: async () => testCredentials,
             getHashCode: () => credentialsHashCode,
+            getEndpointUrl: () => undefined,
         } as unknown as CredentialsProvider
     }
 

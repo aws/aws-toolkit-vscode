@@ -26,6 +26,9 @@ import { Any } from '../../../../../shared/utilities/typeConstructors'
 import { IamConnection, ProfileMetadata } from '../../../../../auth/connection'
 import * as AuthUtils from '../../../../../auth/utils'
 import { assertLogsContain } from '../../../../../test/globalSetup.test'
+import { GetFunctionResponse } from '@aws-sdk/client-lambda'
+import { LambdaCapacityProviderNode } from '../../../../../lambda/explorer/lambdaCapacityProviderNode'
+import { DefaultAwsContext } from '../../../../../shared'
 
 describe('DeployedResourceNode', () => {
     const expectedStackName = 'myStack'
@@ -62,6 +65,11 @@ describe('DeployedResourceNode', () => {
             explorerNode: sinon.stub(RestApiNode),
             resourceArn: 'arn:aws:apigateway:us-east-1::/apis/my-apgw',
             contextValue: 'awsApiGatewayNode',
+        },
+        {
+            explorerNode: sinon.stub(LambdaCapacityProviderNode),
+            resourceArn: 'arn:aws:lambda:us-east-1:123456789012:capacity-provider:my-capacity-provider-name',
+            contextValue: 'awsCapacityProviderNode',
         },
     ].map(({ explorerNode, resourceArn, contextValue }) => getDeployedResource(explorerNode, resourceArn, contextValue))
 
@@ -137,6 +145,7 @@ describe('generateDeployedNode', () => {
             label: 'iam',
             getCredentials: sinon.stub(),
             state: 'valid',
+            endpointUrl: undefined,
         }
 
         const lambdaDeployedNodeInput = {
@@ -170,7 +179,7 @@ describe('generateDeployedNode', () => {
                     FunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:my-project-lambda-function',
                     Runtime: 'python3.12',
                 },
-            } as AWS.Lambda.GetFunctionResponse
+            } as GetFunctionResponse
 
             mockDefaultLambdaClientInstance.getFunction.resolves(defaultLambdaClientGetFunctionResponse)
 
@@ -178,12 +187,12 @@ describe('generateDeployedNode', () => {
             const expectedFunctionName = 'my-project-lambda-function'
             const expectedFunctionExplorerNodeTooltip = `${expectedFunctionName}${os.EOL}${expectedFunctionArn}`
 
-            const deployedResourceNodes = await generateDeployedNode(
+            const deployedResourceNodes = (await generateDeployedNode(
                 lambdaDeployedNodeInput.deployedResource,
                 lambdaDeployedNodeInput.regionCode,
                 lambdaDeployedNodeInput.stackName,
                 lambdaDeployedNodeInput.resourceTreeEntity
-            )
+            )) as DeployedResourceNode[]
 
             const deployedResourceNodeExplorerNode: LambdaFunctionNode = validateBasicProperties(
                 deployedResourceNodes,
@@ -258,7 +267,7 @@ describe('generateDeployedNode', () => {
             const expectedS3BucketName = 'my-project-source-bucket-physical-id'
 
             const deployedResourceNodeExplorerNode: S3BucketNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedS3BucketArn,
                 'awsS3BucketNode',
                 expectedRegionCode,
@@ -333,7 +342,7 @@ describe('generateDeployedNode', () => {
             )
 
             const deployedResourceNodeExplorerNode: RestApiNode = validateBasicProperties(
-                deployedResourceNodes,
+                deployedResourceNodes as DeployedResourceNode[],
                 expectedApiGatewayArn,
                 'awsApiGatewayNode',
                 expectedRegionCode,
@@ -347,6 +356,50 @@ describe('generateDeployedNode', () => {
             assert.strictEqual(deployedResourceNodeExplorerNode.label, expectedApiGatewayExplorerNodeLabel)
             assert(!deployedResourceNodeExplorerNode.iconPath)
             assert(!deployedResourceNodeExplorerNode.tooltip)
+        })
+    })
+
+    describe('LambdaCapacityProviderNode', () => {
+        const capacityProviderDeployedNodeInput = {
+            deployedResource: {
+                LogicalResourceId: 'MyCapacityProvider',
+                PhysicalResourceId: 'my-project-lambda-physical-id',
+            },
+            regionCode: expectedRegionCode,
+            stackName: expectedStackName,
+            resourceTreeEntity: {
+                Id: 'MyCapacityProvider',
+                Type: 'AWS::Serverless::CapacityProvider',
+            },
+        }
+        beforeEach(() => {
+            // Default mock account ID for testing
+            sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns('123456789012')
+        })
+        it('should return a DeployedResourceNode for valid Lambda Capacity Provider happy path', async () => {
+            const deployedResourceNodes = await generateDeployedNode(
+                capacityProviderDeployedNodeInput.deployedResource,
+                capacityProviderDeployedNodeInput.regionCode,
+                capacityProviderDeployedNodeInput.stackName,
+                capacityProviderDeployedNodeInput.resourceTreeEntity
+            )
+
+            const expectedCapacityProviderArn =
+                'arn:aws:lambda:us-west-2:123456789012:capacity-provider:my-project-lambda-physical-id'
+            const expectedCapacityProviderName = 'MyCapacityProvider'
+
+            const deployedResourceNodeExplorerNode: LambdaCapacityProviderNode = validateBasicProperties(
+                deployedResourceNodes as DeployedResourceNode[],
+                expectedCapacityProviderArn,
+                'awsCapacityProviderNode',
+                expectedRegionCode,
+                expectedStackName,
+                LambdaCapacityProviderNode
+            )
+            assert.strictEqual(deployedResourceNodeExplorerNode.contextValue, 'awsCapacityProviderNode')
+            assert.strictEqual(deployedResourceNodeExplorerNode.name, expectedCapacityProviderName)
+            assert.strictEqual(deployedResourceNodeExplorerNode.regionCode, expectedRegionCode)
+            assert.strictEqual(deployedResourceNodeExplorerNode.iconPath, getIcon('vscode-gear'))
         })
     })
 

@@ -37,7 +37,8 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexCacheDirPath": {},
     "amazonQ.workspaceIndexIgnoreFilePatterns": {},
     "amazonQ.ignoredSecurityIssues": {},
-    "amazonQ.proxy.certificateAuthority": {}
+    "amazonQ.proxy.certificateAuthority": {},
+    "amazonQ.proxy.enableProxyAndCertificateAutoDiscovery": {}
 }
 
 export default amazonqSettings

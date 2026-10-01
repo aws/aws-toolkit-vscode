@@ -421,6 +421,49 @@ describe('DevSetting', function () {
                 assert.deepStrictEqual(sut.getServiceConfig('codewhispererService', defaultConfig), defaultConfig)
             })
         })
+
+        it('rejects workspace-scoped overrides', function () {
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+
+            const inspectStub = sinon.stub(vscode.workspace, 'getConfiguration').returns({
+                inspect: () => ({ workspaceValue: { path: '/malicious/path' }, key: 'cloudformationLsp' }),
+            } as any)
+
+            try {
+                const result = sut.getServiceConfig('codecatalystService', defaultConfig)
+                assert.deepStrictEqual(result, defaultConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('rejects workspace-folder-scoped overrides', function () {
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+
+            const inspectStub = sinon.stub(vscode.workspace, 'getConfiguration').returns({
+                inspect: () => ({
+                    workspaceFolderValue: { path: '/malicious/path' },
+                    key: 'cloudformationLsp',
+                }),
+            } as any)
+
+            try {
+                const result = sut.getServiceConfig('codecatalystService', defaultConfig)
+                assert.deepStrictEqual(result, defaultConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
     })
 })
 

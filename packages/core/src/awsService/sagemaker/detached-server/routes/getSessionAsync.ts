@@ -8,7 +8,9 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
-import { open, parseArn, readServerInfo } from '../utils'
+import { open, readServerInfo, parseArn } from '../utils'
+import { openErrorPage } from '../errorPage'
+import { SmusDeeplinkSessionExpiredError } from '../../constants'
 
 export async function handleGetSessionAsync(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -46,15 +48,46 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
             res.end()
             return
         } else if (status === 'not-started') {
-            const serverInfo = await readServerInfo()
             const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
-            const { spaceName } = parseArn(connectionIdentifier)
 
-            const url = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
+            if (!refreshUrl) {
+                console.log(`Session expired for connection: ${connectionIdentifier}`)
+
+                // Clean up the expired connection entry
+                try {
+                    await store.cleanupExpiredConnection(connectionIdentifier)
+                    console.log(`Cleaned up expired connection: ${connectionIdentifier}`)
+                } catch (cleanupErr) {
+                    console.error(`Failed to cleanup expired connection: ${cleanupErr}`)
+                    // Continue with error response even if cleanup fails
+                }
+
+                await openErrorPage(SmusDeeplinkSessionExpiredError.title, SmusDeeplinkSessionExpiredError.message)
+                res.writeHead(400, { 'Content-Type': 'application/json' })
+                res.end(
+                    JSON.stringify({
+                        error: SmusDeeplinkSessionExpiredError.code,
+                        message: SmusDeeplinkSessionExpiredError.shortMessage,
+                    })
+                )
+                return
+            }
+
+            // Open the browser to refresh the session.
+            const isSMUS = await store.getIsSMUS(connectionIdentifier)
+            const serverInfo = await readServerInfo()
+            const { resourceName: spaceName } = parseArn(connectionIdentifier)
+
+            const baseUrl = `${refreshUrl}/${encodeURIComponent(spaceName)}?remote_access_token_refresh=true&reconnect_identifier=${encodeURIComponent(
                 connectionIdentifier
-            )}&reconnect_request_id=${encodeURIComponent(requestId)}&reconnect_callback_url=${encodeURIComponent(
-                `http://localhost:${serverInfo.port}/refresh_token`
-            )}`
+            )}&reconnect_request_id=${encodeURIComponent(requestId)}`
+
+            // SMUS sends only port (Maxdome WAF blocks localhost URLs); SM AI sends full callback URL.
+            const url = isSMUS
+                ? `${baseUrl}&reconnect_callback_port=${encodeURIComponent(String(serverInfo.port))}`
+                : `${baseUrl}&reconnect_callback_url=${encodeURIComponent(
+                      `http://localhost:${serverInfo.port}/refresh_token`
+                  )}`
 
             await open(url)
             res.writeHead(202, { 'Content-Type': 'text/plain' })

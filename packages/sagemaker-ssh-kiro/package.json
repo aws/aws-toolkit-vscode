@@ -1,0 +1,117 @@
+{
+    "name": "sagemaker-ssh-kiro",
+    "displayName": "Amazon SageMaker SSH Plugin for Kiro",
+    "description": "Plugin for AWS Toolkit that enables secure remote development in Amazon SageMaker Spaces using the Kiro IDE.",
+    "version": "0.2.0",
+    "publisher": "amazonwebservices",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aws/aws-toolkit-vscode"
+    },
+    "icon": "resources/marketplace/aws-icon-256x256.png",
+    "bugs": {
+        "url": "https://github.com/aws/aws-toolkit-vscode/issues"
+    },
+    "galleryBanner": {
+        "color": "#232F3E",
+        "theme": "dark"
+    },
+    "extensionKind": [
+        "ui"
+    ],
+    "enabledApiProposals": [
+        "resolvers",
+        "contribViewsRemote"
+    ],
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "AWS",
+        "SageMaker",
+        "remote development",
+        "ssh"
+    ],
+    "preview": false,
+    "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
+    "api": "none",
+    "activationEvents": [
+        "onStartupFinished",
+        "onResolveRemoteAuthority:sagemaker-ssh-kiro"
+    ],
+    "main": "./dist/extension.js",
+    "engines": {
+        "npm": "^10.1.0",
+        "vscode": "^1.83.0"
+    },
+    "contributes": {
+        "configuration": {
+            "title": "SageMaker SSH",
+            "properties": {
+                "aws.sagemaker.ssh.kiro.defaultExtensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of extensions to be automatically installed when connecting to SageMaker Spaces.",
+                    "scope": "application"
+                },
+                "aws.sagemaker.ssh.kiro.serverDownloadUrlTemplate": {
+                    "type": "string",
+                    "description": "The URL from where the Kiro remote server will be downloaded for SageMaker Spaces.",
+                    "scope": "application"
+                },
+                "aws.sagemaker.ssh.kiro.httpProxy": {
+                    "type": "string",
+                    "markdownDescription": "Set the 'http_proxy' environment variable. This will be set for install and launch of the remote Kiro server. After changing this value, restart the SageMaker Space for it to take effect.",
+                    "examples": [
+                        "http://proxy.example.com:8080",
+                        "http://user:pass@proxy.example.com:8080"
+                    ],
+                    "scope": "application"
+                },
+                "aws.sagemaker.ssh.kiro.httpsProxy": {
+                    "type": "string",
+                    "markdownDescription": "Set the 'https_proxy' environment variable. This will be set for install and launch of the remote Kiro server. After changing this value, restart the SageMaker Space for it to take effect.",
+                    "examples": [
+                        "http://proxy.example.com:8080",
+                        "http://user:pass@proxy.example.com:8080"
+                    ],
+                    "scope": "application"
+                }
+            }
+        },
+        "resourceLabelFormatters": [
+            {
+                "scheme": "vscode-remote",
+                "authority": "sagemaker-ssh-kiro+*",
+                "formatting": {
+                    "label": "${path}",
+                    "separator": "/",
+                    "tildify": true,
+                    "workspaceSuffix": "SageMaker"
+                }
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production",
+        "buildScripts": "npm run copyFiles && tsc -p ./ --noEmit",
+        "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
+        "clean": "ts-node ../../scripts/clean.ts dist/",
+        "webpack": "webpack --mode development",
+        "webpack:analyze": "webpack --mode production --analyze",
+        "bundle-analyze": "npx webpack-bundle-analyzer dist/extension.js",
+        "compile": "tsc -b",
+        "watch": "tsc -b -w",
+        "package": "ts-node ../../scripts/package.ts",
+        "update-dts": "npx vscode-dts dev"
+    },
+    "devDependencies": {
+        "@types/ssh2": "^1.15.0"
+    },
+    "dependencies": {
+        "ssh2": "^1.17.0"
+    }
+}

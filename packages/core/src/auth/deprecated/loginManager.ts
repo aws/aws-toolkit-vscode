@@ -30,10 +30,15 @@ import { isAutomation } from '../../shared/vscode/env'
 import { Credentials } from '@aws-sdk/types'
 import { ToolkitError } from '../../shared/errors'
 import * as localizedText from '../../shared/localizedText'
-import { DefaultStsClient } from '../../shared/clients/stsClient'
+import {
+    DefaultStsClient,
+    type GetCallerIdentityResponse,
+    type GetCallerIdentityResponseWithHeaders,
+} from '../../shared/clients/stsClient'
 import { findAsync } from '../../shared/utilities/collectionUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
+import { localStackConnectionHeader, localStackConnectionString } from '../utils'
 
 const loginManagerClassName = 'LoginManager'
 /**
@@ -65,19 +70,19 @@ export class LoginManager {
 
         try {
             provider = await getProvider(args.providerId)
-
-            const credentials = (await this.store.upsertCredentials(args.providerId, provider))?.credentials
+            const { credentials, endpointUrl } = await this.store.upsertCredentials(args.providerId, provider)
             if (!credentials) {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
-            const accountId = await this.validateCredentials(credentials, provider.getDefaultRegion())
+            const accountId = await this.validateCredentials(credentials, endpointUrl, provider.getDefaultRegion())
             this.awsContext.credentialsShim = createCredentialsShim(this.store, args.providerId, credentials)
             await this.awsContext.setCredentials({
                 credentials,
                 accountId: accountId,
                 credentialsId: asString(args.providerId),
                 defaultRegion: provider.getDefaultRegion(),
+                endpointUrl: provider.getEndpointUrl?.(),
             })
 
             telemetryResult = 'Succeeded'
@@ -111,14 +116,40 @@ export class LoginManager {
         }
     }
 
-    public async validateCredentials(credentials: Credentials, region = this.defaultCredentialsRegion) {
-        const stsClient = new DefaultStsClient(region, credentials)
-        const accountId = (await stsClient.getCallerIdentity()).Account
+    public async validateCredentials(
+        credentials: Credentials,
+        endpointUrl?: string,
+        region = this.defaultCredentialsRegion
+    ) {
+        const stsClient = new DefaultStsClient(region, credentials, endpointUrl)
+        const callerIdentity = await stsClient.getCallerIdentity()
+        await this.detectExternalConnection(callerIdentity)
+        // Validate presence of Account Id
+        const accountId = callerIdentity.Account
         if (!accountId) {
+            if (endpointUrl !== undefined) {
+                telemetry.auth_customEndpoint.emit({ source: 'validateCredentials', result: 'Failed' })
+            }
             throw new Error('Could not determine Account Id for credentials')
+        }
+        if (endpointUrl !== undefined) {
+            telemetry.auth_customEndpoint.emit({ source: 'validateCredentials', result: 'Succeeded' })
         }
 
         return accountId
+    }
+
+    private async detectExternalConnection(
+        callerIdentity: GetCallerIdentityResponse | GetCallerIdentityResponseWithHeaders
+    ): Promise<void> {
+        // SDK v3: Headers are captured via middleware and attached as $httpHeaders
+        const headers = (callerIdentity as GetCallerIdentityResponseWithHeaders).$httpHeaders
+        if (headers !== undefined && localStackConnectionHeader in headers) {
+            await globals.globalState.update('aws.toolkit.externalConnection', localStackConnectionString)
+            telemetry.auth_localstackEndpoint.emit({ source: 'validateCredentials', result: 'Succeeded' })
+        } else {
+            await globals.globalState.update('aws.toolkit.externalConnection', undefined)
+        }
     }
 
     /**

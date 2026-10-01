@@ -156,6 +156,7 @@ describe('lambda2sam', function () {
                     accessKeyId: 'test-key',
                     secretAccessKey: 'test-secret',
                 }),
+                endpointUrl: undefined,
             }
             sandbox.stub(authUtils, 'getIAMConnection').resolves(mockConnection)
 

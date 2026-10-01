@@ -32,6 +32,10 @@ export async function loadFileMessageHandler(request: LoadFileRequestMessage, co
             }
             default: {
                 const filePath = path.join(context.workSpacePath, request.fileName)
+                const normalizedPath = path.resolve(filePath)
+                if (!normalizedPath.startsWith(path.resolve(context.workSpacePath) + path.sep)) {
+                    throw new Error(`Path is outside of workspace: ${request.fileName}`)
+                }
                 const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
                 loadFileResponseMessage = {
                     messageType: MessageType.RESPONSE,

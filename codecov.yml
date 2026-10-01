@@ -31,7 +31,6 @@ coverage:
                 paths:
                     - 'packages/core/src/codewhisperer/'
                     - 'packages/core/src/amazonq*/*'
-                    - 'packages/amazonq/src/'
                 flags:
                     - 'codewhisperer'
                 target: 80
@@ -104,7 +103,6 @@ flags:
         paths:
             - 'packages/core/src/codewhisperer/'
             - 'packages/core/src/amazonq*/*'
-            - 'packages/amazonq/src/'
     amazonqFeatureDev:
         paths:
             - 'packages/core/src/amazonqFeatureDev/'

@@ -55,17 +55,31 @@ interface Cli {
     exec?: string
 }
 
-export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker'>
+export type AwsClis = Extract<ToolId, 'session-manager-plugin' | 'aws-cli' | 'sam-cli' | 'docker' | 'finch'>
 
 /**
  * CLIs and their full filenames and download paths for their respective OSes
  * TODO: Add SAM? Other CLIs?
  */
-export const awsClis: { [cli in AwsClis]: Cli } = {
+export const awsClis: { [cli in AwsClis]: Cli } & { pathResolver: Cli } = {
     'session-manager-plugin': {
         command: {
             unix: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin')],
-            windows: [path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe')],
+            windows: [
+                // First entry must be relative path for local install (installSsmCli uses cmd[0])
+                path.join('sessionmanagerplugin', 'bin', 'session-manager-plugin.exe'),
+                // System-installed paths for global detection
+                'session-manager-plugin.exe',
+                path.join('C:', 'Program Files', 'Amazon', 'SessionManagerPlugin', 'bin', 'session-manager-plugin.exe'),
+                path.join(
+                    'C:',
+                    'Program Files (x86)',
+                    'Amazon',
+                    'SessionManagerPlugin',
+                    'bin',
+                    'session-manager-plugin.exe'
+                ),
+            ],
         },
         source: {
             // use pkg: zip is unsigned
@@ -75,6 +89,7 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
             },
             windows: {
                 x86: 'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
+                arm: 'https://session-manager-downloads.s3.amazonaws.com/plugin/latest/windows/SessionManagerPlugin.zip',
             },
             linux: {
                 x86: 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb',
@@ -170,6 +185,30 @@ export const awsClis: { [cli in AwsClis]: Cli } = {
         manualInstallLink: 'https://docs.docker.com/desktop',
         exec: 'docker',
     },
+    // Currently Finch is available for MacOS and Linux; Windows support will be added if/when available
+    finch: {
+        command: {
+            unix: ['finch', path.join('/', 'usr', 'bin', 'finch'), path.join('/', 'usr', 'local', 'bin', 'finch')],
+        },
+        source: {
+            macos: {
+                x86: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-x86_64.pkg',
+                arm: 'https://github.com/runfinch/finch/releases/download/v1.11.0/Finch-v1.11.0-aarch64.pkg',
+            },
+        },
+        name: 'Finch',
+        manualInstallLink: 'https://runfinch.com/docs/getting-started/installation/',
+        exec: 'finch',
+    },
+    pathResolver: {
+        command: {
+            windows: ['where'],
+            unix: ['which'],
+        },
+        source: {}, // OS utilities used to locate files and executables
+        name: 'Path resolver',
+        manualInstallLink: '',
+    },
 }
 
 /**
@@ -185,7 +224,7 @@ export async function installCli(
 ): Promise<string | never> {
     const cliToInstall = awsClis[cli]
     if (!cliToInstall) {
-        throw new InstallerError(`Invalid not found for CLI: ${cli}`)
+        throw new InstallerError(`Installer not found for CLI: ${cli}`)
     }
     let result: Result = 'Succeeded'
     let reason: string = ''
@@ -247,10 +286,11 @@ export async function installCli(
                 case 'aws-cli':
                 case 'sam-cli':
                 case 'docker':
+                case 'finch':
                     cliPath = await installGui(cli, tempDir, progress, timeout)
                     break
                 default:
-                    throw new InstallerError(`Invalid not found for CLI: ${cli}`)
+                    throw new InstallerError(`Installer not found for CLI: ${cli}`)
             }
         } finally {
             timeout.dispose()
@@ -546,6 +586,42 @@ export async function getOrInstallCli(cli: AwsClis, confirm: boolean, popup: boo
         }
         return path ?? installCli(cli, confirm, skipPostInstallValidation)
     }
+}
+
+/**
+ * @throws {@link CancellationError} if the install times out or the user cancels
+ */
+export async function updateAwsCli(): Promise<string> {
+    const selection = await vscode.window.showInformationMessage(
+        localize('AWS.cli.updateCliPrompt', 'Console credentials require AWS CLI version 2.32.0 or newer. Update now?'),
+        { modal: true },
+        'Update'
+    )
+
+    if (selection !== 'Update') {
+        throw new CancellationError('user')
+    }
+
+    const result = await installCli('aws-cli', false)
+
+    // Get the which/ where command, run it to find the AWS CLI path, and display it to the user
+    const whichCommands = getOsCommands(awsClis.pathResolver)
+    if (whichCommands && whichCommands.length > 0) {
+        const whichCmd = whichCommands[0]
+        const cliExec = awsClis['aws-cli'].exec
+        if (cliExec) {
+            getLogger().info(`Running "${whichCmd} ${cliExec}" to find AWS CLI path`)
+            const whichResult = await new ChildProcess(whichCmd, [cliExec]).run()
+            if (whichResult.exitCode === 0 && whichResult.stdout) {
+                const cliPath = whichResult.stdout.trim().split('\n')[0]
+                const cliInUseMessage = `Toolkit is using AWS CLI at "${cliPath}".`
+                getLogger().info(cliInUseMessage)
+                void vscode.window.showInformationMessage(cliInUseMessage)
+            }
+        }
+    }
+
+    return result
 }
 
 export async function showCliFoundPopup(cli: string, path: string) {

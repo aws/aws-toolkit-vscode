@@ -10,6 +10,7 @@ import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../../shared/clients/ec2'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { Filter } from '@aws-sdk/client-ec2'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
@@ -19,6 +20,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
     public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
+    private tagFilter: Filter[] | undefined
 
     public constructor(
         public override readonly regionCode: string,
@@ -27,6 +29,22 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     ) {
         super('EC2', vscode.TreeItemCollapsibleState.Collapsed)
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
+        this.tagFilter = undefined
+    }
+
+    public setTagFilter(key: string, value: string): void {
+        if (key !== '') {
+            if (value !== '') {
+                this.tagFilter = [{ Name: `tag:${key}`, Values: [value] }]
+                this.label = `EC2 [tag: ${key}=${value}]`
+            } else {
+                this.tagFilter = [{ Name: 'tag-key', Values: [key] }]
+                this.label = `EC2 [tag: ${key}]`
+            }
+        } else {
+            this.tagFilter = undefined
+            this.label = 'EC2'
+        }
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -51,7 +69,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     // TODO: make use of childNodeLoader to avoid loading all of this at once.
     public async updateChildren(): Promise<void> {
         const instanceMap = await this.ec2Client
-            .getInstances()
+            .getInstances(this.tagFilter)
             .flatten()
             .toMap((instance) => instance.InstanceId)
 

@@ -87,16 +87,23 @@ export class AuthSSOServer {
                     break
                 }
                 default: {
+                    const extensionRoot = path.resolve(globals.context.extensionUri.fsPath)
                     if (url.pathname.startsWith('/resources')) {
-                        const iconPath = path.join(globals.context.extensionUri.fsPath, url.pathname)
+                        const iconPath = path.resolve(extensionRoot, url.pathname.slice(1))
+                        if (!iconPath.startsWith(extensionRoot + path.sep)) {
+                            res.writeHead(403)
+                            res.end()
+                            break
+                        }
                         await this.loadResource(res, iconPath)
                         break
                     }
-                    const resourcePath = path.join(
-                        globals.context.extensionUri.fsPath,
-                        'dist/src/auth/sso/vue',
-                        url.pathname
-                    )
+                    const resourcePath = path.resolve(extensionRoot, 'dist/src/auth/sso/vue', url.pathname.slice(1))
+                    if (!resourcePath.startsWith(extensionRoot + path.sep)) {
+                        res.writeHead(403)
+                        res.end()
+                        break
+                    }
                     await this.loadResource(res, resourcePath)
                     break
                 }

@@ -769,7 +769,12 @@ export async function postTransformationJob() {
             latest.status,
             latest.duration,
             transformByQState.getJobId(),
-            transformByQState.getJobHistoryPath()
+            transformByQState.getJobHistoryPath(),
+            latest.transformationType,
+            latest.sourceJDKVersion,
+            latest.targetJDKVersion,
+            latest.customDependencyVersionsFilePath,
+            latest.customBuildCommand
         )
     }
 }

@@ -17,14 +17,14 @@ import globals from '../../../shared/extensionGlobals'
 function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingDirPath: string) {
     getLogger().info('CodeTransformation: running mvn clean test-compile with maven JAR')
 
-    const baseCommand = transformByQState.getMavenName()
-    const jarPath = globals.context.asAbsolutePath(path.join('resources', 'amazonQCT', 'QCT-Maven-6-16.jar'))
+    const baseCommand = transformByQState.getMavenName() // always 'mvn'
+    const jarPath = globals.context.asAbsolutePath(path.join('resources', 'amazonQCT', 'QCT-Maven-1-0-156-0.jar'))
 
     getLogger().info('CodeTransformation: running Maven extension with JAR')
 
     const args = [
-        `-Dmaven.ext.class.path=${jarPath}`,
-        `-Dcom.amazon.aws.developer.transform.jobDirectory=${dependenciesFolderPath}`,
+        `-Dmaven.ext.class.path="${jarPath}"`,
+        `-Dcom.amazon.aws.developer.transform.jobDirectory="${dependenciesFolderPath}"`,
         'clean',
         'test-compile',
     ]

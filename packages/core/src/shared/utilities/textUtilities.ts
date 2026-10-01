@@ -201,10 +201,15 @@ export function toSnakeCase(obj: Record<string, any>) {
 }
 
 /**
- * To satisfy a pentesting concern, encodes HTML to mitigate risk of HTML injection
+ * Encodes HTML special characters to mitigate risk of HTML injection.
  */
 export function encodeHTML(str: string) {
-    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
 }
 
 /**

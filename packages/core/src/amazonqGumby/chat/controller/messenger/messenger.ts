@@ -400,11 +400,22 @@ export class Messenger {
     }
 
     public sendJobRefreshInProgressMessage(tabID: string, jobId: string) {
-        this.dispatcher.sendAsyncEventProgress(
-            new AsyncEventProgressMessage(tabID, {
-                inProgress: true,
-                message: CodeWhispererConstants.refreshingJobChatMessage(jobId),
-            })
+        const buttons: ChatItemButton[] = []
+        buttons.push({
+            keepCardAfterClick: true,
+            text: CodeWhispererConstants.stopTransformationButtonText,
+            id: ButtonActions.STOP_TRANSFORMATION_JOB,
+            disabled: false,
+        })
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: CodeWhispererConstants.refreshingJobChatMessage(jobId),
+                    messageType: 'ai-prompt',
+                    buttons: buttons,
+                },
+                tabID
+            )
         )
     }
 

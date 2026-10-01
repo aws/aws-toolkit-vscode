@@ -129,9 +129,42 @@ function copy(task: CopyTask): void {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }
 }
+
+function moveSageMakerSshKiroExtension(): void {
+    const searchDir = path.resolve(projectRoot, '../../')
+    const destinationDir = path.resolve(outRoot, '../resources')
+
+    fs.mkdirSync(destinationDir, { recursive: true })
+
+    const isSageMakerSshKiroVsix = (file: string) => file.startsWith('sagemaker-ssh-kiro') && file.endsWith('.vsix')
+
+    // Remove all existing sagemaker-ssh-kiro files in the destination directory. This prevents multiple
+    // sagemaker-ssh-kiro VSIX files being present in the destination if the version number has changed.
+    const existingFilesInDestination = fs.readdirSync(destinationDir).filter(isSageMakerSshKiroVsix)
+
+    for (const file of existingFilesInDestination) {
+        const filePath = path.join(destinationDir, file)
+        fs.unlinkSync(filePath)
+    }
+
+    const sourceFiles = fs.readdirSync(searchDir).filter(isSageMakerSshKiroVsix)
+
+    if (sourceFiles.length !== 1) {
+        throw new Error(`Expected 1 sagemaker-ssh-kiro VSIX file but found ${sourceFiles.length}`)
+    }
+
+    const sourceFile = path.join(searchDir, sourceFiles[0])
+    const destinationFile = path.join(destinationDir, sourceFiles[0])
+
+    // Move (rather than copy) the sagemaker-ssh-kiro VSIX file to the toolkit resources directory so it's
+    // no longer at the top level, since we don't want to release it standalone (it should be embedded only).
+    fs.renameSync(sourceFile, destinationFile)
+}
+
 function main() {
     try {
         tasks.map(copy)
+        moveSageMakerSshKiroExtension()
     } catch (error) {
         console.error('`copyFiles.ts` failed')
         console.error(error)

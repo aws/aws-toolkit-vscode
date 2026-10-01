@@ -129,28 +129,28 @@ describe('Application Builder', async () => {
             )
             assert.strictEqual(lambdaResourceNode.id, 'AppBuilderProjectLambda')
             const lambdaTreeItemProperties = lambdaResourceNode.getTreeItem()
-            assert.strictEqual(lambdaTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(lambdaTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
             assert.strictEqual(lambdaTreeItemProperties.iconPath?.toString(), '$(aws-lambda-function)')
 
             // Validate s3 bucket
             const s3BucketResourceNode = getResourceNodeByType(appBuilderTestAppResourceNodes, 'AWS::S3::Bucket')
             assert.strictEqual(s3BucketResourceNode.id, 'AppBuilderProjectBucket')
             const s3BucketTreeItemProperties = s3BucketResourceNode.getTreeItem()
-            assert.strictEqual(s3BucketTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(s3BucketTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
             assert.strictEqual(s3BucketTreeItemProperties.iconPath?.toString(), '$(aws-s3-bucket)')
 
             // Validate s3 policy
             const s3PolicyResourceNode = getResourceNodeByType(appBuilderTestAppResourceNodes, 'AWS::S3::BucketPolicy')
             assert.strictEqual(s3PolicyResourceNode.id, 'AppBuilderProjectBucketBucketPolicy')
             const s3PolicyTreeItemProperties = s3PolicyResourceNode.getTreeItem()
-            assert.strictEqual(s3PolicyTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(s3PolicyTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
             assert.strictEqual(s3PolicyTreeItemProperties.iconPath?.toString(), '$(info)')
 
             // Validate api gateway resource node
             const apigwResourceNode = getResourceNodeByType(appBuilderTestAppResourceNodes, 'AWS::Serverless::Api')
             assert.strictEqual(apigwResourceNode.id, 'AppBuilderProjectAPI')
             const apigwTreeItemProperties = apigwResourceNode.getTreeItem()
-            assert.strictEqual(apigwTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.None)
+            assert.strictEqual(apigwTreeItemProperties.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
             assert.strictEqual(apigwTreeItemProperties.iconPath?.toString(), '$(info)')
         })
 
