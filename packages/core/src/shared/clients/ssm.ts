@@ -51,6 +51,23 @@ export class SsmClient extends ClientWrapper<SSMClient> {
         })
     }
 
+    public async getEndpointUrl(): Promise<string> {
+        const client = this.getClient()
+        const customEndpointProvider = client.config.endpoint
+        if (customEndpointProvider !== undefined) {
+            const endpoint = await customEndpointProvider()
+            const port = endpoint.port === undefined ? '' : `:${endpoint.port}`
+            return `${endpoint.protocol}//${endpoint.hostname}${port}${endpoint.path}`
+        }
+
+        const endpoint = client.config.endpointProvider({
+            Region: await client.config.region(),
+            UseDualStack: await client.config.useDualstackEndpoint(),
+            UseFIPS: await client.config.useFipsEndpoint(),
+        })
+        return endpoint.url.toString()
+    }
+
     public async describeInstance(target: string): Promise<InstanceInformation> {
         return await this.getFirst(
             paginateDescribeInstanceInformation,
