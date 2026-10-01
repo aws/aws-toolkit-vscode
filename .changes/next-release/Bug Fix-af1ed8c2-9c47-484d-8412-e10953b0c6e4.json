@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SageMaker remote connection fails to start when many processes are running on the local machine"
+}
