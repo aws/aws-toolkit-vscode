@@ -1,3 +1,8 @@
+## 4.16.0 2026-10-01
+
+- **Bug Fix** S3 node in explorer is not refreshed on profile change
+- **Feature** CloudFormation: More reliable language server installation. Manifest and bundle downloads are retried, downloads are verified before use, a previously installed version is used when the network is unavailable, and a broken installation is repaired automatically on startup.
+
 ## 4.15.0 2026-08-27
 
 - **Feature** SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication.
