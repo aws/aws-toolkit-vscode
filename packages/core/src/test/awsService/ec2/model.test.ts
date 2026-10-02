@@ -16,10 +16,11 @@ import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUti
 import { fs } from '../../../shared'
 import path from 'path'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
-import { isMac, isWin } from '../../../shared/vscode/env'
+import { isWin } from '../../../shared/vscode/env'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { assertLogsContain } from '../../globalSetup.test'
 import { InstanceStateName } from '@aws-sdk/client-ec2'
+import { getTestWindow } from '../../shared/vscode/window'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -158,8 +159,15 @@ describe('Ec2ConnectClient', function () {
             }
 
             const keys = await SshKeyPair.getSshKeyPair('key', 30000)
-            await client.sendSshKeyToInstance(testSelection, keys, { name: 'test-user', os: 'Amazon Linux' })
+            await client.sendSshKeyToInstance(testSelection, keys, {
+                name: 'test-user',
+                os: 'Amazon Linux',
+                home: '/srv/test user',
+            })
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
+            assert.match(sendCommandStub.firstCall.args[2].commands[0], /mkdir -p '\/srv\/test user\/\.ssh'/)
+            assert.match(sendCommandStub.firstCall.args[2].commands[0], /chmod 700/)
+            assert.match(sendCommandStub.firstCall.args[2].commands[0], /chmod 600/)
             sinon.restore()
         })
 
@@ -172,7 +180,11 @@ describe('Ec2ConnectClient', function () {
             }
             const testWorkspaceFolder = await createTestWorkspaceFolder()
             const keys = await SshKeyPair.getSshKeyPair('key', 60000)
-            await client.sendSshKeyToInstance(testSelection, keys, { name: 'test-user', os: 'Amazon Linux' })
+            await client.sendSshKeyToInstance(testSelection, keys, {
+                name: 'test-user',
+                os: 'Amazon Linux',
+                home: '/home/test-user',
+            })
             const privKey = await fs.readFileText(keys.getPrivateKeyPath())
             assertNoTelemetryMatch(privKey)
             sinon.restore()
@@ -184,35 +196,73 @@ describe('Ec2ConnectClient', function () {
 
     describe('getRemoteUser', async function () {
         let getTargetPlatformNameStub: sinon.SinonStub<[target: string], Promise<string>>
+        let getCommandOutputStub: sinon.SinonStub
 
-        before(async function () {
+        beforeEach(function () {
             getTargetPlatformNameStub = sinon.stub(SsmClient.prototype, 'getTargetPlatformName')
+            getCommandOutputStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWaitForOutput')
         })
 
-        after(async function () {
+        afterEach(function () {
             sinon.restore()
         })
 
-        it('identifies the user for ubuntu as ubuntu', async function () {
+        it('identifies the user and home for ubuntu', async function () {
             getTargetPlatformNameStub.resolves('Ubuntu')
+            getCommandOutputStub.resolves('/home/ubuntu\n')
             const remoteUser = await client.getRemoteUser('testInstance')
-            assert.strictEqual(remoteUser.name, 'ubuntu')
+            assert.deepStrictEqual(remoteUser, { name: 'ubuntu', os: 'Ubuntu', home: '/home/ubuntu' })
+            sinon.assert.calledWith(
+                getCommandOutputStub,
+                'testInstance',
+                'AWS-RunShellScript',
+                sinon.match({ commands: ["getent passwd 'ubuntu' | cut -d: -f6"] })
+            )
         })
 
-        it('identifies the user for amazon linux as ec2-user', async function () {
+        it('identifies the user and home for amazon linux', async function () {
             getTargetPlatformNameStub.resolves('Amazon Linux')
+            getCommandOutputStub.resolves('/home/ec2-user\n')
             const remoteUser = await client.getRemoteUser('testInstance')
-            assert.strictEqual(remoteUser.name, 'ec2-user')
+            assert.deepStrictEqual(remoteUser, {
+                name: 'ec2-user',
+                os: 'Amazon Linux',
+                home: '/home/ec2-user',
+            })
         })
 
-        it('throws error when not given known OS', async function () {
+        it('uses the selected user and its actual home for an unknown OS', async function () {
             getTargetPlatformNameStub.resolves('ThisIsNotARealOs!')
-            try {
-                await client.getRemoteUser('testInstance')
-                assert.ok(false)
-            } catch (exception) {
-                assert.ok(true)
-            }
+            getCommandOutputStub.resolves('/srv/workspaces/developer\n')
+            getTestWindow().onDidShowInputBox((input) => input.acceptValue(' developer '))
+            const remoteUser = await client.getRemoteUser('testInstance')
+            assert.deepStrictEqual(remoteUser, {
+                name: 'developer',
+                os: 'ThisIsNotARealOs!',
+                home: '/srv/workspaces/developer',
+            })
+        })
+
+        it('rejects an unknown user without a valid home directory', async function () {
+            getTargetPlatformNameStub.resolves('Debian')
+            getCommandOutputStub.resolves('')
+            getTestWindow().onDidShowInputBox((input) => input.acceptValue('missing-user'))
+            await assert.rejects(client.getRemoteUser('testInstance'), { code: 'UnknownEc2User' })
+        })
+
+        for (const unsafeUsername of ['-root', 'user name', 'user\nname', 'user`id`', 'user$(id)', 'user\\name']) {
+            it(`rejects unsafe username ${JSON.stringify(unsafeUsername)} before running a command`, async function () {
+                getTargetPlatformNameStub.resolves('Debian')
+                getTestWindow().onDidShowInputBox((input) => input.acceptValue(unsafeUsername))
+                await assert.rejects(client.getRemoteUser('testInstance'), { code: 'UnknownEc2User' })
+                sinon.assert.notCalled(getCommandOutputStub)
+            })
+        }
+
+        it('cancels when an unknown OS username is not selected', async function () {
+            getTargetPlatformNameStub.resolves('Debian')
+            getTestWindow().onDidShowInputBox((input) => input.hide())
+            await assert.rejects(client.getRemoteUser('testInstance'), { code: 'UnknownEc2OS' })
         })
     })
 
@@ -225,9 +275,9 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
 
-            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'path/to/keys')
             sendCommandStub.calledWith(testSelection.instanceId, 'AWS-RunShellScript', {
-                commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
+                commands: [getRemoveLinesCommand('hint', 'path/to/keys')],
             })
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
@@ -243,9 +293,9 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
 
-            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'macOS', 'path/to/keys')
+            await client.tryCleanKeys(testSelection.instanceId, 'hint', 'path/to/keys')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript', {
-                commands: [getRemoveLinesCommand('hint', 'macOS', 'path/to/keys')],
+                commands: [getRemoveLinesCommand('hint', 'path/to/keys')],
             })
             sinon.restore()
             assertLogsContain('failed to clean keys', false, 'warn')
@@ -268,8 +318,6 @@ describe('getRemoveLinesCommand', async function () {
         if (isWin()) {
             this.skip()
         }
-        // For the test, we only need to distinguish mac and linux
-        const hostOS = isMac() ? 'macOS' : 'Amazon Linux'
         const lines = ['line1', 'line2 pattern', 'line3', 'line4 pattern', 'line5', 'line6 pattern', 'line7']
         const expected = ['line1', 'line3', 'line5', 'line7']
 
@@ -278,32 +326,25 @@ describe('getRemoveLinesCommand', async function () {
         const textFile = path.join(tempPath.uri.fsPath, 'test.txt')
         const originalContent = lineToStr(lines)
         await fs.writeFile(textFile, originalContent)
-        const [command, ...args] = getRemoveLinesCommand('pattern', hostOS, textFile).split(' ')
-        const process = new ChildProcess(command, args, { collect: true })
+        const command = getRemoveLinesCommand('pattern', textFile)
+        const process = new ChildProcess('/bin/sh', ['-c', command], { collect: true })
         const result = await process.run()
-        assert.strictEqual(
-            result.exitCode,
-            0,
-            `Ran command '${command} ${args.join(' ')}' and failed with result ${inspect(result)}`
-        )
+        assert.strictEqual(result.exitCode, 0, `Ran command '${command}' and failed with result ${inspect(result)}`)
 
         const newContent = await fs.readFileText(textFile)
         assert.notStrictEqual(newContent, originalContent)
         assert.strictEqual(newContent, lineToStr(expected))
     })
 
-    it('includes empty extension on macOS only', async function () {
-        const macCommand = getRemoveLinesCommand('pattern', 'macOS', 'test.txt')
-        const alCommand = getRemoveLinesCommand('pattern', 'Amazon Linux', 'test.txt')
-        const ubuntuCommand = getRemoveLinesCommand('pattern', 'Ubuntu', 'test.txt')
-
-        assert.ok(macCommand.includes("''"))
-        assert.ok(!alCommand.includes("''"))
-        assert.strictEqual(ubuntuCommand, alCommand)
+    it('uses a portable backup suffix and quotes the path', async function () {
+        assert.strictEqual(
+            getRemoveLinesCommand('pattern', '/home/user name/.ssh/authorized_keys'),
+            "sed -i.bak '/pattern/d' '/home/user name/.ssh/authorized_keys' && rm -f '/home/user name/.ssh/authorized_keys.bak'"
+        )
     })
 
     it('throws when given invalid pattern', function () {
-        assert.throws(() => getRemoveLinesCommand('pat/tern', 'macOS', 'test.txt'))
+        assert.throws(() => getRemoveLinesCommand('pat/tern', 'test.txt'))
     })
 })
 
