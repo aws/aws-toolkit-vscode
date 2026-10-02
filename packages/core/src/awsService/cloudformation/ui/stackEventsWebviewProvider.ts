@@ -10,6 +10,7 @@ import { extractErrorMessage, getStackStatusClass, isStackInTransientState } fro
 import { GetStackEventsRequest, ClearStackEventsRequest } from '../stacks/actions/stackActionProtocol'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { arnToConsoleTabUrl, operationIdToConsoleUrl, externalLinkSvg, consoleLinkStyles } from '../consoleLinksUtils'
+import { encodeHTML, getRandomString } from '../../../shared/utilities/textUtilities'
 
 const EventsPerPage = 50
 const RefreshIntervalMs = 5000
@@ -262,9 +263,10 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
-        body { 
-            font-family: var(--vscode-font-family); 
+        body {
+            font-family: var(--vscode-font-family);
             padding: 20px;
             color: var(--vscode-errorForeground);
         }
@@ -272,7 +274,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
 </head>
 <body>
     <h3>Error</h3>
-    <p>${message}</p>
+    <p>${encodeHTML(message)}</p>
 </body>
 </html>`
     }
@@ -315,10 +317,16 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
                 ? '<div style="padding:20px;text-align:center;color:var(--vscode-descriptionForeground);">No events found.</div>'
                 : ''
 
+        const nonce = getRandomString()
+
         return /* HTML */ `<!doctype html>
             <html>
                 <head>
                     <meta charset="UTF-8" />
+                    <meta
+                        http-equiv="Content-Security-Policy"
+                        content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"
+                    />
                     <style>
                         body {
                             font-family: var(--vscode-font-family);
@@ -443,7 +451,7 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
                     <div class="header">
                         <div class="header-content">
                             <div class="stack-info">
-                                ${this.stackName ?? ''}
+                                ${encodeHTML(this.stackName ?? '')}
                                 ${this.stackArn
                                     ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'events')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>`
                                     : ''}
@@ -451,14 +459,14 @@ export class StackEventsWebviewProvider implements WebviewViewProvider, Disposab
                             </div>
                             <div class="pagination">
                                 <span>Page ${currentPage} of ${totalPages || 1}</span>
-                                <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-                                <button onclick="nextPage()" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>
+                                <button id="prevPage" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                                <button id="nextPage" ${currentPage >= totalPages && !hasMore ? 'disabled' : ''}>
                                     ${currentPage >= totalPages && hasMore ? 'Load More' : 'Next'}
                                 </button>
                             </div>
                         </div>
                     </div>
-                    ${notification ? `<div class="notification">${notification}</div>` : ''}
+                    ${notification ? `<div class="notification">${encodeHTML(notification)}</div>` : ''}
                     <div class="content">
                         ${emptyMessage ||
                         `<table>
@@ -475,16 +483,18 @@ ${events.map((e) => this.renderEventRow(e, hasHooks)).join('')}
 </tbody>
 </table>`}
                     </div>
-                    <script>
+                    <script nonce="${nonce}">
                         const vscode = acquireVsCodeApi()
-                        function nextPage() {
-                            vscode.postMessage({ command: 'nextPage' })
-                        }
-                        function prevPage() {
-                            vscode.postMessage({ command: 'prevPage' })
-                        }
-                        function toggle(id) {
-                            vscode.postMessage({ command: 'toggle', groupId: id })
+                        document
+                            .getElementById('prevPage')
+                            ?.addEventListener('click', () => vscode.postMessage({ command: 'prevPage' }))
+                        document
+                            .getElementById('nextPage')
+                            ?.addEventListener('click', () => vscode.postMessage({ command: 'nextPage' }))
+                        for (const row of document.querySelectorAll('[data-group-id]')) {
+                            row.addEventListener('click', () =>
+                                vscode.postMessage({ command: 'toggle', groupId: row.getAttribute('data-group-id') })
+                            )
                         }
                     </script>
                 </body>
@@ -493,38 +503,41 @@ ${events.map((e) => this.renderEventRow(e, hasHooks)).join('')}
 
     private renderEventRow(event: GroupedEvent, hasHooks: boolean): string {
         const hookCell = hasHooks
-            ? `<td>${event.HookType ? `${event.HookType} (${event.HookStatus ?? '-'})` : '-'}</td>`
+            ? `<td>${event.HookType ? `${encodeHTML(event.HookType)} (${encodeHTML(event.HookStatus ?? '-')})` : '-'}</td>`
             : ''
 
-        if (event.isParent) {
-            const expanded = this.expandedGroups.has(event.groupId)
-            const chevron = event.OperationId ? `<span class="chevron ${expanded ? 'expanded' : ''}">▶</span>` : ''
+        // Builds the Operation ID cell. The console URL and the displayed id are both
+        // HTML-entity-encoded because OperationId is attacker-influenced API data.
+        const opIdDisplay = (): string => {
             const opUrl =
                 event.OperationId && this.stackArn
                     ? operationIdToConsoleUrl(this.stackArn, event.OperationId)
                     : undefined
-            const opIdDisplay = opUrl ? `<a href="${opUrl}">${event.OperationId}</a>` : (event.OperationId ?? '-')
+            return opUrl
+                ? `<a href="${encodeHTML(opUrl)}">${encodeHTML(event.OperationId ?? '')}</a>`
+                : encodeHTML(event.OperationId ?? '-')
+        }
 
-            return `<tr class="parent-row" ${event.OperationId ? `onclick="toggle('${event.groupId}')"` : ''}>
-<td>${chevron} ${opIdDisplay}</td>
+        if (event.isParent) {
+            const expanded = this.expandedGroups.has(event.groupId)
+            const chevron = event.OperationId ? `<span class="chevron ${expanded ? 'expanded' : ''}">▶</span>` : ''
+
+            return `<tr class="parent-row" ${event.OperationId ? `data-group-id="${encodeHTML(event.groupId)}"` : ''}>
+<td>${chevron} ${opIdDisplay()}</td>
 <td>${event.Timestamp ? new Date(event.Timestamp).toLocaleString() : '-'}</td>
-<td>${event.LogicalResourceId ?? '-'}</td>
-<td class="${getStackStatusClass(event.ResourceStatus)}">${event.ResourceStatus ?? '-'}</td>
-<td>${event.ResourceStatusReason ?? '-'}</td>
+<td>${encodeHTML(event.LogicalResourceId ?? '-')}</td>
+<td class="${getStackStatusClass(event.ResourceStatus)}">${encodeHTML(event.ResourceStatus ?? '-')}</td>
+<td>${encodeHTML(event.ResourceStatusReason ?? '-')}</td>
 ${hookCell}
 </tr>`
         }
 
-        const opUrl =
-            event.OperationId && this.stackArn ? operationIdToConsoleUrl(this.stackArn, event.OperationId) : undefined
-        const opIdDisplay = opUrl ? `<a href="${opUrl}">${event.OperationId}</a>` : (event.OperationId ?? '-')
-
-        return `<tr class="child-row ${this.expandedGroups.has(event.groupParentId!) ? 'visible' : ''} child-${event.groupParentId}">
-<td>${opIdDisplay}</td>
+        return `<tr class="child-row ${this.expandedGroups.has(event.groupParentId!) ? 'visible' : ''} child-${encodeHTML(event.groupParentId ?? '')}">
+<td>${opIdDisplay()}</td>
 <td>${event.Timestamp ? new Date(event.Timestamp).toLocaleString() : '-'}</td>
-<td>${event.LogicalResourceId ?? '-'}</td>
-<td class="${getStackStatusClass(event.ResourceStatus)}">${event.ResourceStatus ?? '-'}</td>
-<td>${event.ResourceStatusReason ?? '-'}</td>
+<td>${encodeHTML(event.LogicalResourceId ?? '-')}</td>
+<td class="${getStackStatusClass(event.ResourceStatus)}">${encodeHTML(event.ResourceStatus ?? '-')}</td>
+<td>${encodeHTML(event.ResourceStatusReason ?? '-')}</td>
 ${hookCell}
 </tr>`
     }

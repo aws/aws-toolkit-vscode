@@ -457,8 +457,8 @@ describe('DiffWebviewProvider', function () {
             const html = setupProviderWithChanges('test-stack', changes)
 
             assert.ok(html.includes('Page 1 of 2'))
-            assert.ok(html.includes('nextPage()'))
-            assert.ok(html.includes('prevPage()'))
+            assert.ok(html.includes('id="nextPage"'))
+            assert.ok(html.includes('id="prevPage"'))
             assert.ok(html.includes('pagination-controls'))
         })
 
@@ -551,6 +551,84 @@ describe('DiffWebviewProvider', function () {
             assert.ok(!html.includes('<table'))
             assert.ok(!html.includes('Action'))
             assert.ok(!html.includes('LogicalResourceId'))
+        })
+    })
+
+    describe('XSS hardening', function () {
+        it('should HTML-encode malicious change-set values', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Modify',
+                        logicalResourceId: '<img src=x onerror="alert(1)">',
+                        physicalResourceId: '<script>alert(2)</script>',
+                        resourceType: 'AWS::S3::Bucket',
+                        replacement: 'False',
+                        details: [
+                            {
+                                Target: {
+                                    Name: 'BucketName',
+                                    RequiresRecreation: 'Never',
+                                    BeforeValue: '"><svg onload="alert(3)">',
+                                    AfterValue: 'new',
+                                    AttributeChangeType: 'Modify',
+                                },
+                            },
+                        ],
+                    } as any,
+                },
+            ]
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(!html.includes('<img src=x onerror="alert(1)">'), 'raw logicalResourceId must not be present')
+            assert.ok(!html.includes('<script>alert(2)</script>'), 'raw physicalResourceId must not be present')
+            assert.ok(!html.includes('<svg onload="alert(3)">'), 'raw BeforeValue must not be present')
+            assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), 'logicalResourceId encoded')
+            assert.ok(html.includes('&lt;script&gt;alert(2)&lt;/script&gt;'), 'physicalResourceId encoded')
+        })
+
+        it('should carry logicalResourceId on a data attribute, not an inline handler', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Modify',
+                        logicalResourceId: "');alert(1);//",
+                        resourceType: 'AWS::S3::Bucket',
+                    } as any,
+                },
+            ]
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(!html.includes('onclick='), 'no inline onclick handlers should remain')
+            assert.ok(!html.includes("');alert(1);//"), 'raw JS-breakout payload must not be present')
+            assert.ok(html.includes('data-resource-id='), 'resource link should use a data attribute')
+        })
+
+        it('should HTML-encode a malicious stack name in the no-changes view', function () {
+            const html = setupProviderWithChanges('<svg onload="alert(1)">', [])
+
+            assert.ok(!html.includes('<svg onload="alert(1)">'), 'raw stackName must not be present')
+            assert.ok(html.includes('&lt;svg onload=&quot;alert(1)&quot;&gt;'), 'stackName should be entity-encoded')
+        })
+
+        it('should set a nonce-based CSP on the diff webview', function () {
+            const changes: StackChange[] = [
+                {
+                    resourceChange: {
+                        action: 'Add',
+                        logicalResourceId: 'TestResource',
+                        resourceType: 'AWS::S3::Bucket',
+                    },
+                },
+            ]
+
+            const html = setupProviderWithChanges('test-stack', changes)
+
+            assert.ok(html.includes('Content-Security-Policy'), 'CSP meta tag should be present')
+            assert.ok(html.includes("default-src 'none'"), "CSP should default-src 'none'")
+            assert.ok(/script-src 'nonce-[A-Za-z0-9]+'/.test(html), 'CSP should use a script nonce')
         })
     })
 })
