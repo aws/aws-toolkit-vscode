@@ -121,7 +121,7 @@ describe('StackOutputsWebviewProvider', () => {
         assert.ok(!html.includes('href="https://'))
     })
 
-    it('should HTML-encode malicious output values to prevent XSS (GHSA-8hmf-jv79-54f4)', async () => {
+    it('should HTML-encode malicious output values to prevent XSS', async () => {
         const payload = '<svg onload="alert(1)">'
         mockClient.sendRequest.resolves({
             stack: {
@@ -152,7 +152,7 @@ describe('StackOutputsWebviewProvider', () => {
         assert.ok(html.includes('&lt;script&gt;alert(3)&lt;/script&gt;'), 'Description should be entity-encoded')
     })
 
-    it('should HTML-encode a malicious stack name (GHSA-8hmf-jv79-54f4)', async () => {
+    it('should HTML-encode a malicious stack name', async () => {
         const mockView = createMockView()
         await provider.resolveWebviewView(mockView as any)
 
@@ -168,7 +168,7 @@ describe('StackOutputsWebviewProvider', () => {
         assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), 'stackName should be entity-encoded')
     })
 
-    it('should HTML-encode error messages (GHSA-8hmf-jv79-54f4)', async () => {
+    it('should HTML-encode error messages', async () => {
         mockClient.sendRequest.rejects(new Error('<svg onload="alert(1)">'))
 
         const mockView = createMockView()

@@ -17,7 +17,7 @@ export function arnToConsoleTabUrl(arn: string, tab: 'resources' | 'events' | 'o
 export function operationIdToConsoleUrl(arn: string, operationId: string): string | undefined {
     try {
         const region = parse(arn).region
-        return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/operations/info?stackId=${encodeURIComponent(arn)}&operationId=${operationId}`
+        return `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/operations/info?stackId=${encodeURIComponent(arn)}&operationId=${encodeURIComponent(operationId)}`
     } catch {
         return undefined
     }
