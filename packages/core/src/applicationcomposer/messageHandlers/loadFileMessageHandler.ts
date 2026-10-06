@@ -6,6 +6,7 @@
 import path from 'path'
 import { MessageType, LoadFileRequestMessage, LoadFileResponseMessage, Command, WebviewContext } from '../types'
 import vscode from 'vscode'
+import { isRealPathInDirectory } from '../workspacePath'
 
 export async function loadFileMessageHandler(request: LoadFileRequestMessage, context: WebviewContext) {
     let loadFileResponseMessage: LoadFileResponseMessage
@@ -32,8 +33,7 @@ export async function loadFileMessageHandler(request: LoadFileRequestMessage, co
             }
             default: {
                 const filePath = path.join(context.workSpacePath, request.fileName)
-                const normalizedPath = path.resolve(filePath)
-                if (!normalizedPath.startsWith(path.resolve(context.workSpacePath) + path.sep)) {
+                if (!(await isRealPathInDirectory(context.workSpacePath, filePath))) {
                     throw new Error(`Path is outside of workspace: ${request.fileName}`)
                 }
                 const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
