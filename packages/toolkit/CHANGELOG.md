@@ -1,3 +1,7 @@
+## 4.17.0 2026-10-05
+
+- **Bug Fix** CloudFormation: HTML-encode stack data and add a Content-Security-Policy in views to prevent cross-site scripting
+
 ## 4.16.0 2026-10-01
 
 - **Bug Fix** S3 node in explorer is not refreshed on profile change
