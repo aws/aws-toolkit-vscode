@@ -6,11 +6,15 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import path from 'path'
-import { createSymlinkOrSkip, createTemplate, createWebviewContext } from '../utils'
+import { createSymlinkOrSkip, getHandlerResponse, traversalWorkspaceContext } from '../utils'
 import { saveFileMessageHandler } from '../../../applicationcomposer/messageHandlers/saveFileMessageHandler'
-import { Command, MessageType } from '../../../applicationcomposer/types'
+import { Command, MessageType, SaveFileRequestMessage } from '../../../applicationcomposer/types'
 import { TestFolder } from '../../testUtil'
 import fs from '../../../shared/fs/fs'
+
+function saveRequest(filePath: string, fileContents: string): SaveFileRequestMessage {
+    return { command: Command.SAVE_FILE, messageType: MessageType.REQUEST, eventId: '1', filePath, fileContents }
+}
 
 describe('saveFileMessageHandler', function () {
     afterEach(function () {
@@ -18,82 +22,41 @@ describe('saveFileMessageHandler', function () {
     })
 
     it('rejects path traversal via relative path', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: '/workspace/project',
-            defaultTemplatePath: '/workspace/project/template.yaml',
-        })
-
-        await saveFileMessageHandler(
-            {
-                command: Command.SAVE_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '1',
-                filePath: '../../etc/malicious',
-                fileContents: 'malicious content',
-            },
-            context
+        const response = await getHandlerResponse(
+            saveFileMessageHandler,
+            saveRequest('../../etc/malicious', 'malicious content'),
+            traversalWorkspaceContext
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         assert.strictEqual(response.isSuccess, false)
         assert.ok(response.failureReason.includes('outside of workspace'))
     })
 
     it('rejects path traversal via absolute path component', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: '/workspace/project',
-            defaultTemplatePath: '/workspace/project/template.yaml',
-        })
-
-        await saveFileMessageHandler(
-            {
-                command: Command.SAVE_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '2',
-                filePath: '../../../tmp/evil',
-                fileContents: 'malicious content',
-            },
-            context
+        const response = await getHandlerResponse(
+            saveFileMessageHandler,
+            saveRequest('../../../tmp/evil', 'malicious content'),
+            traversalWorkspaceContext
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         assert.strictEqual(response.isSuccess, false)
         assert.ok(response.failureReason.includes('outside of workspace'))
     })
 
     it('allows valid relative path within workspace', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
         const tmpDir = path.join(__dirname, 'tmp-test-workspace')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: tmpDir,
-            defaultTemplatePath: path.join(tmpDir, 'template.yaml'),
-        })
 
         // This should NOT be rejected by the path traversal check
         // (it may fail for other reasons like the directory not existing, which is fine)
-        await saveFileMessageHandler(
+        const response = await getHandlerResponse(
+            saveFileMessageHandler,
+            saveRequest('subdir/file.yaml', 'safe content'),
             {
-                command: Command.SAVE_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '3',
-                filePath: 'subdir/file.yaml',
-                fileContents: 'safe content',
-            },
-            context
+                workSpacePath: tmpDir,
+                defaultTemplatePath: path.join(tmpDir, 'template.yaml'),
+            }
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         // Should not fail with "outside of workspace" error
         if (!response.isSuccess) {
             assert.ok(!response.failureReason.includes('outside of workspace'))
@@ -111,28 +74,11 @@ describe('saveFileMessageHandler', function () {
             outsideFolder = await testFolder.mkdir('outside')
         })
 
-        async function saveFile(filePath: string, fileContents: string) {
-            const panel = await createTemplate()
-            const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-            const context = await createWebviewContext({
-                panel,
+        function saveFile(filePath: string, fileContents: string) {
+            return getHandlerResponse(saveFileMessageHandler, saveRequest(filePath, fileContents), {
                 workSpacePath: workspace,
                 defaultTemplatePath: path.join(workspace, 'template.yaml'),
             })
-
-            await saveFileMessageHandler(
-                {
-                    command: Command.SAVE_FILE,
-                    messageType: MessageType.REQUEST,
-                    eventId: '1',
-                    filePath,
-                    fileContents,
-                },
-                context
-            )
-
-            assert.ok(postMessageSpy.calledOnce)
-            return postMessageSpy.getCall(0).args[0]
         }
 
         it('rejects a write through a link to a file outside of the workspace', async function () {

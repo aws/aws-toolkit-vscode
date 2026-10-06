@@ -6,10 +6,14 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import path from 'path'
-import { createSymlinkOrSkip, createTemplate, createWebviewContext } from '../utils'
+import { createSymlinkOrSkip, getHandlerResponse, traversalWorkspaceContext } from '../utils'
 import { loadFileMessageHandler } from '../../../applicationcomposer/messageHandlers/loadFileMessageHandler'
-import { Command, MessageType } from '../../../applicationcomposer/types'
+import { Command, LoadFileRequestMessage, MessageType } from '../../../applicationcomposer/types'
 import { TestFolder } from '../../testUtil'
+
+function loadRequest(fileName: string): LoadFileRequestMessage {
+    return { command: Command.LOAD_FILE, messageType: MessageType.REQUEST, eventId: '1', fileName }
+}
 
 describe('loadFileMessageHandler', function () {
     afterEach(function () {
@@ -17,76 +21,34 @@ describe('loadFileMessageHandler', function () {
     })
 
     it('rejects path traversal via relative path', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: '/workspace/project',
-            defaultTemplatePath: '/workspace/project/template.yaml',
-        })
-
-        await loadFileMessageHandler(
-            {
-                command: Command.LOAD_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '1',
-                fileName: '../../etc/passwd',
-            },
-            context
+        const response = await getHandlerResponse(
+            loadFileMessageHandler,
+            loadRequest('../../etc/passwd'),
+            traversalWorkspaceContext
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         assert.strictEqual(response.isSuccess, false)
         assert.ok(response.failureReason.includes('outside of workspace'))
     })
 
     it('rejects deeply nested traversal', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: '/workspace/project',
-            defaultTemplatePath: '/workspace/project/template.yaml',
-        })
-
-        await loadFileMessageHandler(
-            {
-                command: Command.LOAD_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '2',
-                fileName: 'subdir/../../../etc/shadow',
-            },
-            context
+        const response = await getHandlerResponse(
+            loadFileMessageHandler,
+            loadRequest('subdir/../../../etc/shadow'),
+            traversalWorkspaceContext
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         assert.strictEqual(response.isSuccess, false)
         assert.ok(response.failureReason.includes('outside of workspace'))
     })
 
     it('allows valid relative path within workspace', async function () {
-        const panel = await createTemplate()
-        const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-        const context = await createWebviewContext({
-            panel,
-            workSpacePath: '/workspace/project',
-            defaultTemplatePath: '/workspace/project/template.yaml',
-        })
-
-        await loadFileMessageHandler(
-            {
-                command: Command.LOAD_FILE,
-                messageType: MessageType.REQUEST,
-                eventId: '3',
-                fileName: 'subdir/template.yaml',
-            },
-            context
+        const response = await getHandlerResponse(
+            loadFileMessageHandler,
+            loadRequest('subdir/template.yaml'),
+            traversalWorkspaceContext
         )
 
-        assert.ok(postMessageSpy.calledOnce)
-        const response = postMessageSpy.getCall(0).args[0]
         // Should not fail with "outside of workspace" — may fail for file-not-found, which is fine
         if (!response.isSuccess) {
             assert.ok(!response.failureReason.includes('outside of workspace'))
@@ -104,27 +66,11 @@ describe('loadFileMessageHandler', function () {
             outsideFile = await testFolder.write('outside/secret.txt', 'secret')
         })
 
-        async function loadFile(fileName: string, workSpacePath: string = workspace) {
-            const panel = await createTemplate()
-            const postMessageSpy = sinon.spy(panel.webview, 'postMessage')
-            const context = await createWebviewContext({
-                panel,
+        function loadFile(fileName: string, workSpacePath: string = workspace) {
+            return getHandlerResponse(loadFileMessageHandler, loadRequest(fileName), {
                 workSpacePath,
                 defaultTemplatePath: path.join(workSpacePath, 'template.yaml'),
             })
-
-            await loadFileMessageHandler(
-                {
-                    command: Command.LOAD_FILE,
-                    messageType: MessageType.REQUEST,
-                    eventId: '1',
-                    fileName,
-                },
-                context
-            )
-
-            assert.ok(postMessageSpy.calledOnce)
-            return postMessageSpy.getCall(0).args[0]
         }
 
         it('rejects a link to a file outside of the workspace', async function () {
