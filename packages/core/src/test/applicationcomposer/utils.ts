@@ -4,10 +4,34 @@
  */
 
 import assert from 'assert'
+import nodefs from 'fs/promises'
 import { ApplicationComposerManager } from '../../applicationcomposer/webviewManager'
 import { globals } from '../../shared'
 import { WebviewContext } from '../../applicationcomposer/types'
 import { MockDocument } from '../fake/fakeDocument'
+import { hasCode } from '../../shared/errors'
+
+/**
+ * Creates a symbolic link at `linkPath` that points to `target`. On Windows, a folder link is
+ * created as a junction, which needs no extra privileges. A file link needs extra privileges on
+ * Windows, so the current test is skipped if the OS does not allow it.
+ */
+export async function createSymlinkOrSkip(
+    test: Mocha.Context,
+    target: string,
+    linkPath: string,
+    type: 'file' | 'dir' = 'file'
+) {
+    try {
+        // Only Windows uses the type argument.
+        await nodefs.symlink(target, linkPath, type === 'dir' ? 'junction' : 'file')
+    } catch (e) {
+        if (hasCode(e) && e.code === 'EPERM') {
+            test.skip()
+        }
+        throw e
+    }
+}
 
 export async function createTemplate() {
     const manager = await ApplicationComposerManager.create(globals.context)
