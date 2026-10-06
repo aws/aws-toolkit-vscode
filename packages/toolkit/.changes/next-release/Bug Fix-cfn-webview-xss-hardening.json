@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CloudFormation: HTML-encode stack data and add a Content-Security-Policy in views to prevent cross-site scripting"
-}
