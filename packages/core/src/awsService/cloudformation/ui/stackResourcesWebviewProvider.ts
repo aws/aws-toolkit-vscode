@@ -10,6 +10,7 @@ import { GetStackResourcesRequest } from '../stacks/actions/stackActionProtocol'
 import { StackResourceSummary, GetStackResourcesParams } from '../stacks/actions/stackActionRequestType'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { arnToConsoleTabUrl, externalLinkSvg, consoleLinkStyles } from '../consoleLinksUtils'
+import { encodeHTML, getRandomString } from '../../../shared/utilities/textUtilities'
 
 const ResourcesPerPage = 50
 
@@ -220,9 +221,10 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
-        body { 
-            font-family: var(--vscode-font-family); 
+        body {
+            font-family: var(--vscode-font-family);
             padding: 0;
             margin: 0;
             color: var(--vscode-foreground);
@@ -264,7 +266,7 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
 <body>
     <div class="header">
         <div class="stack-info">
-            ${this.stackName}
+            ${encodeHTML(this.stackName)}
             ${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'resources')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
             <span class="resource-count">(0 resources)</span>
         </div>
@@ -280,22 +282,25 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
             .map(
                 (resource) => `
             <tr>
-                <td>${resource.LogicalResourceId}</td>
-                <td>${resource.PhysicalResourceId || ''}</td>
-                <td>${resource.ResourceType}</td>
-                <td>${resource.ResourceStatus}</td>
+                <td>${encodeHTML(resource.LogicalResourceId)}</td>
+                <td>${encodeHTML(resource.PhysicalResourceId || '')}</td>
+                <td>${encodeHTML(resource.ResourceType)}</td>
+                <td>${encodeHTML(resource.ResourceStatus)}</td>
             </tr>
         `
             )
             .join('')
 
+        const nonce = getRandomString()
+
         return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <style>
-        body { 
-            font-family: var(--vscode-font-family); 
+        body {
+            font-family: var(--vscode-font-family);
             padding: 0;
             margin: 0;
             color: var(--vscode-foreground);
@@ -376,14 +381,14 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
     <div class="header">
         <div class="header-content">
             <div class="stack-info">
-                ${this.stackName}
+                ${encodeHTML(this.stackName)}
                 ${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'resources')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
                 <span class="resource-count">(${this.allResources.length} resources${hasMore ? ' loaded' : ''})</span>
             </div>
             <div class="pagination">
                 <span>Page ${this.currentPage + 1} of ${totalPages || 1}</span>
-                <button onclick="prevPage()" ${this.currentPage === 0 ? 'disabled' : ''}>Previous</button>
-                <button onclick="nextPage()" ${this.currentPage >= totalPages - 1 && !hasMore ? 'disabled' : ''}>${this.currentPage >= totalPages - 1 && hasMore ? 'Load More' : 'Next'}</button>
+                <button id="prevPage" ${this.currentPage === 0 ? 'disabled' : ''}>Previous</button>
+                <button id="nextPage" ${this.currentPage >= totalPages - 1 && !hasMore ? 'disabled' : ''}>${this.currentPage >= totalPages - 1 && hasMore ? 'Load More' : 'Next'}</button>
             </div>
         </div>
     </div>
@@ -402,10 +407,10 @@ export class StackResourcesWebviewProvider implements WebviewViewProvider, Dispo
             </tbody>
         </table>
     </div>
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
-        function nextPage() { vscode.postMessage({ command: 'nextPage' }); }
-        function prevPage() { vscode.postMessage({ command: 'prevPage' }); }
+        document.getElementById('prevPage')?.addEventListener('click', () => vscode.postMessage({ command: 'prevPage' }));
+        document.getElementById('nextPage')?.addEventListener('click', () => vscode.postMessage({ command: 'nextPage' }));
     </script>
 </body>
 </html>`

@@ -6,6 +6,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
+import { AppType } from '@amzn/sagemaker-client'
 import { SageMakerUnifiedStudioSpacesParentNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpacesParentNode'
 import { SageMakerUnifiedStudioComputeNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioComputeNode'
 import { SagemakerUnifiedStudioSpaceNode } from '../../../../sagemakerunifiedstudio/explorer/nodes/sageMakerUnifiedStudioSpaceNode'
@@ -206,7 +207,7 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             )
         })
 
-        it('throws error when SageMaker domain ID not found in resources', async function () {
+        it('throws ToolkitError with NoSageMakerDomain code when sageMakerDomainId not in provisioned resources', async function () {
             mockDataZoneClient.getDomainId.returns('domain-123')
             mockDataZoneClient.getToolingEnvironment.resolves({
                 projectId: 'project-123',
@@ -219,7 +220,11 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
 
             await assert.rejects(
                 async () => await spacesNode.getSageMakerDomainId(),
-                /No SageMaker domain found in the tooling environment/
+                (err: any) => {
+                    assert(err instanceof ToolkitError)
+                    assert.strictEqual(err.code, SmusErrorCodes.NoSageMakerDomain)
+                    return true
+                }
             )
         })
 
@@ -288,6 +293,28 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(children.length, 1)
             assert.strictEqual(children[0].id, 'smusNoSpaces')
         })
+
+        function assertNoSpacesFoundForError(errorCode: string, errorMessage: string) {
+            it(`returns no spaces found node when ${errorCode} error is thrown`, async function () {
+                updateChildrenStub.rejects(new ToolkitError(errorMessage, { code: errorCode }))
+
+                const children = await spacesNode.getChildren()
+
+                assert.strictEqual(children.length, 1)
+                assert.strictEqual(children[0].id, 'smusNoSpaces')
+                const treeItem = await children[0].getTreeItem()
+                assert.strictEqual(treeItem.label, '[No Spaces found]')
+            })
+        }
+
+        assertNoSpacesFoundForError(
+            SmusErrorCodes.NoSageMakerDomain,
+            "Spaces are unavailable — this project's tooling environment has no SageMaker domain"
+        )
+        assertNoSpacesFoundForError(
+            SmusErrorCodes.RegionNotFound,
+            'Tooling environment does not have AWS account region information'
+        )
 
         it('returns access denied node when AccessDeniedException is thrown', async function () {
             const accessDeniedError = new Error('Access denied')
@@ -381,16 +408,27 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             } as any)
         })
 
-        function stubSpaceApps(ownerProfiles: Record<string, string | undefined>) {
+        function stubSpaceApps(
+            spaces: Record<string, string | undefined | { owner?: string; appType?: string | undefined }>
+        ) {
             const spaceApps = new Map(
-                Object.entries(ownerProfiles).map(([key, owner]) => [
-                    key,
-                    {
-                        DomainId: 'domain-123',
-                        OwnershipSettingsSummary: { OwnerUserProfileName: owner },
-                        DomainSpaceKey: key,
-                    },
-                ])
+                Object.entries(spaces).map(([key, space]) => {
+                    const config = typeof space === 'object' && space !== null ? space : { owner: space }
+                    const appType = Object.prototype.hasOwnProperty.call(config, 'appType')
+                        ? config.appType
+                        : AppType.JupyterLab
+
+                    return [
+                        key,
+                        {
+                            DomainId: 'domain-123',
+                            SpaceName: key,
+                            OwnershipSettingsSummary: { OwnerUserProfileName: config.owner },
+                            SpaceSettingsSummary: { AppType: appType },
+                            DomainSpaceKey: key,
+                        },
+                    ]
+                })
             )
             const domains = new Map([['domain-123', { DomainId: 'domain-123' }]])
             mockSagemakerClient.fetchSpaceAppsAndDomains.resetBehavior()
@@ -405,6 +443,25 @@ describe('SageMakerUnifiedStudioSpacesParentNode', function () {
             assert.strictEqual(spacesNode['spaceApps'].size, 1)
             assert(spacesNode['spaceApps'].has('space1'))
             assert(!spacesNode['spaceApps'].has('space2'))
+        })
+
+        it('filters spaces to supported local IDE app types', async function () {
+            stubSpaceApps({
+                jupyterLabSpace: { owner: 'user-12345', appType: AppType.JupyterLab },
+                codeEditorSpace: { owner: 'user-12345', appType: AppType.CodeEditor },
+                lowercaseJupyterLabSpace: { owner: 'user-12345', appType: 'jupyterlab' },
+                mixedCaseCodeEditorSpace: { owner: 'user-12345', appType: 'cOdEeDiToR' },
+                canvasSpace: { owner: 'user-12345', appType: 'Canvas' },
+                missingAppTypeSpace: { owner: 'user-12345', appType: undefined },
+                otherUserCodeEditorSpace: { owner: 'other-user', appType: AppType.CodeEditor },
+            })
+
+            await spacesNode['updateChildren']()
+
+            assert.deepStrictEqual(
+                [...spacesNode['spaceApps'].keys()],
+                ['jupyterLabSpace', 'codeEditorSpace', 'lowercaseJupyterLabSpace', 'mixedCaseCodeEditorSpace']
+            )
         })
 
         it('creates space nodes for filtered spaces', async function () {

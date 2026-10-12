@@ -18,6 +18,10 @@ import {
     telemetryClientIdEnvKey,
     TelemetryConfig,
     validateMetricEvent,
+    isAnonymousClientId,
+    testClientId,
+    telemetryDisabledClientId,
+    nilClientId,
 } from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
@@ -255,6 +259,24 @@ describe('getClientId', function () {
             await globalState.update('telemetryClientId', 'bbb-222')
             assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
         })
+    })
+})
+
+describe('isAnonymousClientId', function () {
+    it('is true for the test/automation sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(testClientId), true)
+    })
+
+    it('is true for the telemetry-disabled sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(telemetryDisabledClientId), true)
+    })
+
+    it('is true for the nil (error) sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(nilClientId), true)
+    })
+
+    it('is false for a real client id', function () {
+        assert.strictEqual(isAnonymousClientId(randomUUID()), false)
     })
 })
 

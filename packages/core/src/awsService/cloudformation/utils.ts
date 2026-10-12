@@ -5,6 +5,7 @@
 
 import { ExtensionConfigKey, ExtensionId } from './extensionConfig'
 import { Position } from 'vscode'
+import { isAnonymousClientId } from '../../shared/telemetry/util'
 
 export function toString(value: unknown): string {
     if (value === undefined || !['object', 'function'].includes(typeof value)) {
@@ -16,6 +17,55 @@ export function toString(value: unknown): string {
 
 export function formatMessage(message: string): string {
     return `${ExtensionId}: ${message}`
+}
+
+/**
+ * A placeholder id is never forwarded so the server can assign its own; `getClientId` is memoized,
+ * so the telemetry preference is checked here as well.
+ */
+export function clientIdForInitialization(telemetryEnabled: boolean, clientId: string): string | undefined {
+    return telemetryEnabled && !isAnonymousClientId(clientId) ? clientId : undefined
+}
+
+const installFailureMessages: Record<string, string> = {
+    ManifestFetchFailed: 'Failed to fetch CloudFormation LSP manifest. Check your network connection.',
+    NoCompatibleVersion: 'No compatible CloudFormation LSP version found for your platform.',
+    RemoteDownloadFailed: 'Failed to download CloudFormation LSP. Check your network connection.',
+    ExtractionFailed: 'Failed to extract CloudFormation LSP.',
+    HashIntegrityFailed: 'Downloaded file integrity check failed. The file may be corrupted.',
+}
+
+/** Emitted by `LspLauncher` when the server process could not be started even after a reinstall. */
+const startFailedCode = 'LspStartFailed'
+const startFailedMessage = 'CloudFormation language server failed to start. See the AWS Toolkit logs for details.'
+
+/**
+ * Maps a startup error to a user-facing message. Install errors (which identify a cause the user can
+ * act on) take precedence over the generic process-start failure anywhere in the `cause` chain.
+ */
+export function startupFailureMessage(error: unknown): string | undefined {
+    const codes = collectErrorCodes(error)
+    const installCode = codes.find((code) => code in installFailureMessages)
+    if (installCode) {
+        return formatMessage(installFailureMessages[installCode])
+    }
+    if (codes.includes(startFailedCode)) {
+        return formatMessage(startFailedMessage)
+    }
+    return undefined
+}
+
+function collectErrorCodes(error: unknown): string[] {
+    const codes: string[] = []
+    let current = error
+    while (current instanceof Error) {
+        const code = (current as Error & { code?: unknown }).code
+        if (typeof code === 'string') {
+            codes.push(code)
+        }
+        current = (current as Error & { cause?: unknown }).cause
+    }
+    return codes
 }
 
 export function commandKey(key: string): string {

@@ -8,7 +8,10 @@ import * as nls from 'vscode-nls'
 
 import * as codecatalyst from './codecatalyst/activation'
 import { activate as activateAppBuilder } from './awsService/appBuilder/activation'
-import { activate as activateCloudFormation } from './awsService/cloudformation/extension'
+import {
+    activate as activateCloudFormation,
+    deactivate as deactivateCloudFormation,
+} from './awsService/cloudformation/extension'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCloudWatchLogs } from './awsService/cloudWatchLogs/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
@@ -272,7 +275,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     // Run concurrently to speed up execution. stop() does not throw so it is safe
-    await Promise.all([await (await CrashMonitoring.instance())?.shutdown(), deactivateCommon(), deactivateEc2()])
+    await Promise.all([
+        await (await CrashMonitoring.instance())?.shutdown(),
+        deactivateCommon(),
+        deactivateEc2(),
+        deactivateCloudFormation(),
+    ])
     globals.sdkClientBuilderV3.clearServiceCache()
     await globals.resourceManager.dispose()
 }

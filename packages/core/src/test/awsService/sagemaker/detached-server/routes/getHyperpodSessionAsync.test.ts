@@ -132,4 +132,125 @@ describe('handleGetHyperpodSessionAsync', () => {
 
         assert(getFreshEntryStub.calledWith('other:ns:cluster', 'initial-connection'))
     })
+
+    describe('isValidReconnectUrl (via triggerBrowserReconnectionAsync)', () => {
+        beforeEach(() => {
+            getFreshEntryStub.resolves(undefined)
+            getStatusStub.resolves('consumed')
+        })
+
+        it('rejects http:// URLs pointing to non-localhost hosts', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'http://evil.com/steal',
+                    },
+                },
+            })
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            assert(resWriteHead.calledWith(400))
+            assert(resEnd.calledWith('Invalid reconnection URL.'))
+        })
+
+        it('rejects https:// URLs with non-SageMaker hostnames', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'https://evil.sagemaker.aws.attacker.com/phish',
+                    },
+                },
+            })
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            assert(resWriteHead.calledWith(400))
+        })
+
+        it('rejects javascript: protocol URLs', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'javascript:alert(1)',
+                    },
+                },
+            })
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            assert(resWriteHead.calledWith(400))
+        })
+
+        it('rejects ftp:// protocol URLs', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'ftp://localhost/file',
+                    },
+                },
+            })
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            assert(resWriteHead.calledWith(400))
+        })
+
+        it('accepts valid https://*.sagemaker.aws URLs', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'https://studio-d-abc123.studio.us-west-2.sagemaker.aws/hyperPod/clusters/c1/ws1',
+                    },
+                },
+            })
+            sinon.stub(utils, 'readServerInfo').resolves({ port: 9999, pid: 1234 })
+            sinon.stub(utils, 'open').resolves()
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            // 202 = browser reconnection initiated (not 400)
+            assert(resWriteHead.calledWith(202))
+        })
+
+        it('accepts http://localhost URLs', async () => {
+            req = { url: '/get_hyperpod_session_async?connection_key=ws:ns:cluster&request_id=123' }
+            sinon.stub(hyperpodMappingUtils, 'readHyperpodMapping').resolves({
+                localCredential: {
+                    'ws:ns:cluster': {
+                        namespace: 'ns',
+                        clusterArn: 'arn:aws:eks:us-west-2:123:cluster/cluster',
+                        clusterName: 'cluster',
+                        refreshUrl: 'http://localhost:4011/hyperPod/clusters/c1/ws1',
+                    },
+                },
+            })
+            sinon.stub(utils, 'readServerInfo').resolves({ port: 9999, pid: 1234 })
+            sinon.stub(utils, 'open').resolves()
+
+            await handleGetHyperpodSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+            assert(resWriteHead.calledWith(202))
+        })
+    })
 })

@@ -351,4 +351,43 @@ describe('StackResourcesWebviewProvider', function () {
             assert.ok(html.includes('Resource59'))
         })
     })
+
+    describe('XSS hardening', function () {
+        it('should HTML-encode malicious resource fields', async function () {
+            const malicious = [
+                {
+                    LogicalResourceId: '<img src=x onerror="alert(1)">',
+                    PhysicalResourceId: '<script>alert(2)</script>',
+                    ResourceType: '"><b>bold</b>',
+                    ResourceStatus: '<svg onload="alert(3)">',
+                },
+            ]
+            const mockWebview = await setupProviderWithResources('test-stack', malicious)
+
+            const html = mockWebview.webview.html
+            assert.ok(!html.includes('<img src=x onerror="alert(1)">'), 'raw LogicalResourceId must not be present')
+            assert.ok(!html.includes('<script>alert(2)</script>'), 'raw PhysicalResourceId must not be present')
+            assert.ok(!html.includes('<svg onload="alert(3)">'), 'raw ResourceStatus must not be present')
+            assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), 'LogicalResourceId encoded')
+            assert.ok(html.includes('&lt;script&gt;alert(2)&lt;/script&gt;'), 'PhysicalResourceId encoded')
+        })
+
+        it('should HTML-encode a malicious stack name', async function () {
+            const mockWebview = await setupProviderWithResources('<svg onload="alert(1)">', createMockResources(1))
+
+            const html = mockWebview.webview.html
+            assert.ok(!html.includes('<svg onload="alert(1)">'), 'raw stackName must not be present')
+            assert.ok(html.includes('&lt;svg onload=&quot;alert(1)&quot;&gt;'), 'stackName should be entity-encoded')
+        })
+
+        it('should set a nonce-based Content-Security-Policy and no inline handlers', async function () {
+            const mockWebview = await setupProviderWithResources('test-stack', createMockResources(1))
+
+            const html = mockWebview.webview.html
+            assert.ok(html.includes('Content-Security-Policy'), 'CSP meta tag should be present')
+            assert.ok(html.includes("default-src 'none'"), "CSP should default-src 'none'")
+            assert.ok(/script-src 'nonce-[A-Za-z0-9]+'/.test(html), 'CSP should use a script nonce')
+            assert.ok(!html.includes('onclick='), 'no inline onclick handlers should remain')
+        })
+    })
 })

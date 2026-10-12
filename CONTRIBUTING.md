@@ -400,6 +400,8 @@ If you need to report an issue attach these to give the most detailed informatio
 
 Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
 
+**Note:** The `ssooidc` and `sso` endpoint overrides are only read from **user-level settings** (not workspace or folder settings). Set them via `Preferences: Open User Settings (JSON)` in VS Code.
+
 Example:
 
 ```json

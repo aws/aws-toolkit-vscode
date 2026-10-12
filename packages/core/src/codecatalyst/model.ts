@@ -79,7 +79,11 @@ export function createCodeCatalystEnvProvider(
 }
 
 export async function cacheBearerToken(bearerToken: string, devenvId: string): Promise<void> {
-    await fs.writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, 'utf8')
+    await fs.writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, { mode: 0o600, atomic: true })
+}
+
+export async function deleteBearerTokenCache(devenvId: string): Promise<void> {
+    await fs.delete(bearerTokenCacheLocation(devenvId), { force: true })
 }
 
 export function bearerTokenCacheLocation(devenvId: string): string {

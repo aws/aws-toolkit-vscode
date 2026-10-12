@@ -88,3 +88,58 @@ describe('SearchParams', function () {
         assert.throws(() => params.getOrThrow('foob', new Error()))
     })
 })
+
+describe('UriHandler query decoding', function () {
+    let uriHandler: UriHandler
+
+    function makeUri(query: string): vscode.Uri {
+        return vscode.Uri.parse(`scheme://authority/my/path?${query}`)
+    }
+
+    beforeEach(function () {
+        uriHandler = new UriHandler()
+    })
+
+    it('decodes %3D and %26 in query string for non-http protocol handlers (Cursor/Kiro)', async function () {
+        let receivedParams: SearchParams | undefined
+        uriHandler.onPath('/my/path', (q) => {
+            receivedParams = q as SearchParams
+        })
+
+        // Simulate what Cursor/Kiro OS protocol handlers do: encode = as %3D and & as %26
+        const uri = makeUri('refreshUrl%3Dhttps%253A%252F%252Fexample.com%26sessionId%3Ds1')
+        await uriHandler.handleUri(uri)
+
+        assert.ok(receivedParams)
+        assert.strictEqual(receivedParams!.get('refreshUrl'), 'https%3A%2F%2Fexample.com')
+        assert.strictEqual(receivedParams!.get('sessionId'), 's1')
+    })
+
+    it('preserves + as literal plus (not space) in query values', async function () {
+        let receivedParams: SearchParams | undefined
+        uriHandler.onPath('/my/path', (q) => {
+            receivedParams = q as SearchParams
+        })
+
+        const uri = makeUri('token=abc+def+ghi')
+        await uriHandler.handleUri(uri)
+
+        assert.ok(receivedParams)
+        assert.strictEqual(receivedParams!.get('token'), 'abc+def+ghi')
+    })
+
+    it('normal VS Code URIs with real delimiters still parse correctly', async function () {
+        let receivedParams: SearchParams | undefined
+        uriHandler.onPath('/my/path', (q) => {
+            receivedParams = q as SearchParams
+        })
+
+        const uri = makeUri('sessionId=s1&streamUrl=wss%3A%2F%2Fhost&token=tok1')
+        await uriHandler.handleUri(uri)
+
+        assert.ok(receivedParams)
+        assert.strictEqual(receivedParams!.get('sessionId'), 's1')
+        assert.strictEqual(receivedParams!.get('streamUrl'), 'wss://host')
+        assert.strictEqual(receivedParams!.get('token'), 'tok1')
+    })
+})

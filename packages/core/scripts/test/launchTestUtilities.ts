@@ -5,11 +5,14 @@
 
 import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import packageJson from '../../package.json'
-import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
+import {
+    downloadAndUnzipVSCode,
+    resolveCliArgsFromVSCodeExecutablePath,
+    runTests,
+    TestOptions,
+} from '@vscode/test-electron'
 import { join, resolve } from 'path'
-import { runTests } from '@vscode/test-electron'
 import { VSCODE_EXTENSION_ID_CONSTANTS } from '../../src/shared/extensionIds'
-import { TestOptions } from '@vscode/test-electron/out/runTest'
 
 const envvarVscodeTestVersion = 'VSCODE_TEST_VERSION'
 

@@ -99,6 +99,8 @@ export const SmusErrorCodes = {
     NoIamConnectionFound: 'NoIamConnectionFound',
     /** Error code for when IAM connection credentials are not available */
     NoIamConnectionCredentials: 'NoIamConnectionCredentials',
+    /** Error code for when no SageMaker domain is provisioned in the tooling environment (custom blueprints) */
+    NoSageMakerDomain: 'NoSageMakerDomain',
 } as const
 
 /**
@@ -584,15 +586,11 @@ export async function isExpressDomain(client: DataZoneClient, domainId: string, 
         )
 
         if (defaultIam && projectIam) {
-            // Additional check: verify 'default.iam' connection's environment uses the ToolingLite blueprint.
-            // Can't use getEnvironment because ProjectRole doesn't have this permission.
-            const environment = await client.getEnvironmentDetails(defaultIam.environmentId!, projectId)
-            const blueprints = await client.listEnvironmentBlueprints(domainId, { managed: true, name: 'ToolingLite' })
-            const isToolingLite = blueprints.length === 1 && blueprints[0].id === environment.environmentBlueprintId
+            // Both connections exist (e.g. migrated domain). Presence of default.iam is authoritative.
             logger.debug(
-                `isExpressDomain: ToolingLite blueprint check for domain ${domainId}: isToolingLite=${isToolingLite}`
+                `isExpressDomain: both default.iam and project.iam exist for domain ${domainId}, treating as IAM domain`
             )
-            return isToolingLite
+            return true
         }
 
         return !!defaultIam

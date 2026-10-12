@@ -855,6 +855,11 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         devSetting: T,
         defaultConfig: ServiceTypeMap[T]
     ): Readonly<ServiceTypeMap[T]> {
+        if (this.isSetByWorkspace(devSetting)) {
+            getLogger().warn(`Ignoring dev setting 'aws.dev.${devSetting}': workspace-scoped overrides are not allowed`)
+            return defaultConfig
+        }
+
         const devConfig = this.get<ServiceClients>(devSetting, {})
 
         if (Object.keys(devConfig).length === 0) {
@@ -871,6 +876,11 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
 
         this.logConfigOnce(devSetting, JSON.stringify(devConfig, undefined, 4))
         return devConfig as unknown as ServiceTypeMap[T]
+    }
+
+    private isSetByWorkspace(key: string): boolean {
+        const info = vscode.workspace.getConfiguration('aws.dev').inspect(key)
+        return info?.workspaceValue !== undefined || info?.workspaceFolderValue !== undefined
     }
 
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {

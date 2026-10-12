@@ -519,3 +519,175 @@ describe('SagemakerClient.startSpace', function () {
         await assert.rejects(promise, (err: ToolkitError) => err.message === 'InstanceType has insufficient memory.')
     })
 })
+
+describe('SagemakerClient.resolveUserProfilesForSsoUser', function () {
+    const region = 'test-region'
+    let client: SagemakerClient
+    let describeUserProfileStub: sinon.SinonStub
+
+    function candidateProfiles(profilesByDomain: Record<string, string[]>): Map<string, Set<string>> {
+        return new Map(
+            Object.entries(profilesByDomain).map(([domainId, userProfileNames]) => [
+                domainId,
+                new Set(userProfileNames),
+            ])
+        )
+    }
+
+    /** Maps `${domainId}/${userProfileName}` -> SingleSignOnUserValue (undefined = no SSO binding). */
+    function stubProfiles(
+        profilesByDomain: Record<string, Record<string, string | undefined>>
+    ): Map<string, Set<string>> {
+        describeUserProfileStub = sinon
+            .stub(client, 'describeUserProfile')
+            .callsFake(async ({ DomainId, UserProfileName }) => {
+                const value = profilesByDomain[DomainId as string]?.[UserProfileName as string]
+                return {
+                    DomainId,
+                    UserProfileName,
+                    SingleSignOnUserIdentifier: value ? 'UserName' : undefined,
+                    SingleSignOnUserValue: value,
+                } as any
+            })
+        return candidateProfiles(
+            Object.fromEntries(
+                Object.entries(profilesByDomain).map(([domainId, profiles]) => [domainId, Object.keys(profiles)])
+            )
+        )
+    }
+
+    beforeEach(function () {
+        client = new SagemakerClient(region)
+    })
+
+    afterEach(function () {
+        sinon.restore()
+    })
+
+    it('returns only the user profile whose SingleSignOnUserValue matches the IdC user', async function () {
+        const candidates = stubProfiles({
+            domain1: { alice: 'alice@example.com', bob: 'bob@example.com' },
+        })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual([...result.entries()], [['domain1', ['alice']]])
+        assert.strictEqual(describeUserProfileStub.callCount, 2, 'Expected a describe per candidate profile')
+    })
+
+    it('matches case-insensitively', async function () {
+        const candidates = stubProfiles({ domain1: { alice: 'Alice@Example.COM' } })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual([...result.entries()], [['domain1', ['alice']]])
+    })
+
+    it('omits a domain when no profile matches, so callers fail closed', async function () {
+        const candidates = stubProfiles({ domain1: { bob: 'bob@example.com' } })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.strictEqual(result.size, 0, 'Unmatched domain must be omitted rather than returned empty')
+    })
+
+    it('omits a domain whose profiles carry no SSO binding at all', async function () {
+        const candidates = stubProfiles({ domain1: { legacy: undefined } })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.strictEqual(result.size, 0)
+    })
+
+    it('resolves across multiple domains independently', async function () {
+        const candidates = stubProfiles({
+            domain1: { alice: 'alice@example.com' },
+            domain2: { bob: 'bob@example.com' },
+            domain3: { 'alice-alt': 'alice@example.com' },
+        })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual(
+            [...result.entries()],
+            [
+                ['domain1', ['alice']],
+                ['domain3', ['alice-alt']],
+            ],
+            'domain2 has no matching profile and must be absent'
+        )
+    })
+
+    it('returns every matching profile when the IdC user owns more than one in a domain', async function () {
+        const candidates = stubProfiles({
+            domain1: { alice: 'alice@example.com', 'alice-2': 'alice@example.com', bob: 'bob@example.com' },
+        })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual([...result.entries()], [['domain1', ['alice', 'alice-2']]])
+    })
+
+    it('describes candidate profiles sequentially', async function () {
+        let activeRequests = 0
+        let maxActiveRequests = 0
+        describeUserProfileStub = sinon.stub(client, 'describeUserProfile').callsFake(async () => {
+            activeRequests++
+            maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
+            await Promise.resolve()
+            activeRequests--
+            return { SingleSignOnUserValue: 'alice@example.com' } as any
+        })
+        const candidates = candidateProfiles({
+            domain1: ['profile1', 'profile2', 'profile3', 'profile4', 'profile5', 'profile6'],
+        })
+
+        await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.strictEqual(maxActiveRequests, 1)
+        assert.strictEqual(describeUserProfileStub.callCount, 6)
+    })
+
+    it('omits the domain when its only DescribeUserProfile call fails', async function () {
+        sinon.stub(client, 'describeUserProfile').rejects(new Error('ThrottlingException'))
+        const candidates = candidateProfiles({ domain1: ['alice'] })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.strictEqual(result.size, 0)
+    })
+
+    it('keeps confirmed matches when another profile description fails', async function () {
+        sinon.stub(client, 'describeUserProfile').callsFake(async ({ UserProfileName }) => {
+            if (UserProfileName === 'broken') {
+                throw new Error('ThrottlingException')
+            }
+            return { SingleSignOnUserValue: 'alice@example.com' } as any
+        })
+        const candidates = candidateProfiles({ domain1: ['broken', 'alice'] })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual([...result.entries()], [['domain1', ['alice']]])
+    })
+
+    it('keeps resolving later domains after one fails', async function () {
+        sinon.stub(client, 'describeUserProfile').callsFake(async ({ DomainId }) => {
+            if (DomainId === 'domain1') {
+                throw new Error('ThrottlingException')
+            }
+            return { SingleSignOnUserValue: 'alice@example.com' } as any
+        })
+        const candidates = candidateProfiles({ domain1: ['alice'], domain2: ['alice'] })
+
+        const result = await client.resolveUserProfilesForSsoUser(candidates, 'alice@example.com')
+
+        assert.deepStrictEqual([...result.entries()], [['domain2', ['alice']]])
+    })
+
+    it('returns an empty map for no candidate profiles', async function () {
+        const result = await client.resolveUserProfilesForSsoUser(new Map(), 'alice@example.com')
+
+        assert.strictEqual(result.size, 0)
+    })
+})

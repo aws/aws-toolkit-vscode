@@ -53,13 +53,21 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!validateNode(node)) {
                 return
             }
-            await telemetry.sagemaker_openRemoteConnection.run(async () => {
+            await telemetry.sagemaker_openRemoteConnection.run(async (span) => {
+                span.record({
+                    awsAccount: node.parent.callerIdentity?.Account || undefined,
+                    awsRegion: node.regionCode,
+                })
                 await openRemoteConnect(node, ctx.extensionContext)
             })
         }),
 
         Commands.register('aws.sagemaker.filterSpaceApps', async (node: SagemakerStudioNode) => {
-            await telemetry.sagemaker_filterSpaces.run(async () => {
+            await telemetry.sagemaker_filterSpaces.run(async (span) => {
+                span.record({
+                    awsAccount: node.callerIdentity?.Account || undefined,
+                    awsRegion: node.regionCode,
+                })
                 await filterSpaceAppsByDomainUserProfiles(node)
             })
         }),
@@ -68,7 +76,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!validateNode(node)) {
                 return
             }
-            await telemetry.sagemaker_stopSpace.run(async () => {
+            await telemetry.sagemaker_stopSpace.run(async (span) => {
+                span.record({
+                    awsAccount: node.parent.callerIdentity?.Account || undefined,
+                    awsRegion: node.regionCode,
+                })
                 await stopSpace(node, ctx.extensionContext)
             })
         }),

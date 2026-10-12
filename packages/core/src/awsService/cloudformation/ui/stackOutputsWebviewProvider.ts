@@ -7,6 +7,7 @@ import { WebviewView, WebviewViewProvider, Disposable } from 'vscode'
 import { Output } from '@aws-sdk/client-cloudformation'
 import { LanguageClient } from 'vscode-languageclient/node'
 import { extractErrorMessage } from '../utils'
+import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { arnToConsoleTabUrl, externalLinkSvg, consoleLinkStyles } from '../consoleLinksUtils'
@@ -95,6 +96,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
         body { 
             font-family: var(--vscode-font-family); 
@@ -105,7 +107,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 </head>
 <body>
     <h3>Error</h3>
-    <p>${message}</p>
+    <p>${encodeHTML(message)}</p>
 </body>
 </html>`
     }
@@ -125,10 +127,10 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
                       .map(
                           (output) => `
             <tr>
-                <td>${output.OutputKey ?? ''}</td>
-                <td>${output.OutputValue ?? ''}</td>
-                <td>${output.Description ?? ''}</td>
-                <td>${output.ExportName ?? ''}</td>
+                <td>${encodeHTML(output.OutputKey ?? '')}</td>
+                <td>${encodeHTML(output.OutputValue ?? '')}</td>
+                <td>${encodeHTML(output.Description ?? '')}</td>
+                <td>${encodeHTML(output.ExportName ?? '')}</td>
             </tr>
         `
                       )
@@ -139,6 +141,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
         body { 
             font-family: var(--vscode-font-family); 
@@ -196,7 +199,7 @@ export class StackOutputsWebviewProvider implements WebviewViewProvider, Disposa
 <body>
     <div class="header">
         <div class="stack-info">
-            ${this.stackName ?? ''}
+            ${encodeHTML(this.stackName ?? '')}
             ${this.stackArn ? `<a href="${arnToConsoleTabUrl(this.stackArn, 'outputs')}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
             <span class="output-count">(${outputs.length} outputs)</span>
         </div>

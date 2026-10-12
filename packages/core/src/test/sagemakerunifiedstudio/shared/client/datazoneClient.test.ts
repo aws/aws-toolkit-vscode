@@ -600,91 +600,82 @@ describe('DataZoneClient', () => {
             sinon.restore()
         })
 
-        it('should return environment from first matching blueprint', async function () {
-            const mockDataZone = {
-                listEnvironmentBlueprints: sinon.stub().resolves({
-                    items: [
-                        { id: 'blueprint-tooling', name: 'Tooling' },
-                        { id: 'blueprint-lite', name: 'ToolingLite' },
-                    ],
-                }),
-                listEnvironments: sinon.stub(),
-            }
-
-            // First blueprint has no environment, second does
-            mockDataZone.listEnvironments.onFirstCall().resolves({ items: [] })
-            mockDataZone.listEnvironments.onSecondCall().resolves({
-                items: [{ id: 'env-1', name: 'ToolingLite' }],
+        it('should resolve tooling environment ID via project.iam connection (preferred over default.iam)', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [
+                    { name: 'project.iam', environmentId: 'env-1', connectionId: 'conn-1' },
+                    { name: 'default.iam', environmentId: 'env-2', connectionId: 'conn-2' },
+                ],
             })
 
-            const result = await (dataZoneClient as any).getToolingEnvironmentForProject(
-                mockDataZone,
-                'domain-1',
-                'project-1'
-            )
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
 
-            assert.strictEqual(result?.id, 'env-1')
-            assert.strictEqual(mockDataZone.listEnvironments.callCount, 2)
-        })
-
-        it('should return environment from single blueprint', async function () {
-            const mockDataZone = {
-                listEnvironmentBlueprints: sinon.stub().resolves({
-                    items: [{ id: 'blueprint-lite', name: 'ToolingLite' }],
-                }),
-                listEnvironments: sinon.stub().resolves({
-                    items: [{ id: 'env-1', name: 'ToolingLite' }],
-                }),
-            }
-
-            const result = await (dataZoneClient as any).getToolingEnvironmentForProject(
-                mockDataZone,
-                'domain-1',
-                'project-1'
-            )
-
+            // Returns just { id } from the connection. Does not call getEnvironment.
             assert.strictEqual(result?.id, 'env-1')
         })
 
-        it('should return undefined when no blueprints found', async function () {
-            const mockDataZone = {
-                listEnvironmentBlueprints: sinon.stub().resolves({ items: [] }),
-            }
+        it('should not call getEnvironment (scoped-down admin creds lack that permission)', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [{ name: 'default.iam', environmentId: 'env-1', connectionId: 'conn-1' }],
+            })
+            // Watch getEnvironment. Calling getDataZoneClient is fine. getEnvironment is not.
+            const getEnvironmentStub = sinon.stub()
+            sinon.stub(dataZoneClient as any, 'getDataZoneClient').resolves({ getEnvironment: getEnvironmentStub })
 
-            const result = await (dataZoneClient as any).getToolingEnvironmentForProject(
-                mockDataZone,
-                'domain-1',
-                'project-1'
-            )
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
+
+            // Regression guard. The env id comes from the IAM connection, so getEnvironment
+            // is never needed. It would fail with AccessDenied under scoped-down admin creds.
+            assert.deepStrictEqual(result, { id: 'env-1' })
+            assert.ok(getEnvironmentStub.notCalled, 'getEnvironment must not be called')
+        })
+
+        it('should fall back to default.iam when project.iam is absent', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [{ name: 'default.iam', environmentId: 'env-2', connectionId: 'conn-2' }],
+            })
+
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
+
+            assert.strictEqual(result?.id, 'env-2')
+        })
+
+        it('should resolve correctly with custom blueprint (no managed Tooling name)', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [{ name: 'default.iam', environmentId: 'env-custom', connectionId: 'conn-1' }],
+            })
+
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
+
+            assert.strictEqual(result?.id, 'env-custom')
+        })
+
+        it('should return undefined when no IAM connections exist', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [],
+            })
+
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
 
             assert.strictEqual(result, undefined)
         })
 
-        it('should return undefined when no environments found for any blueprint', async function () {
-            const mockDataZone = {
-                listEnvironmentBlueprints: sinon.stub().resolves({
-                    items: [{ id: 'blueprint-1', name: 'Tooling' }],
-                }),
-                listEnvironments: sinon.stub().resolves({ items: [] }),
-            }
+        it('should return undefined when IAM connection has no environmentId', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').resolves({
+                items: [{ name: 'default.iam', environmentId: undefined, connectionId: 'conn-1' }],
+            })
 
-            const result = await (dataZoneClient as any).getToolingEnvironmentForProject(
-                mockDataZone,
-                'domain-1',
-                'project-1'
-            )
+            const result = await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
 
             assert.strictEqual(result, undefined)
         })
 
-        it('should throw ToolkitError when API call fails', async function () {
-            const mockDataZone = {
-                listEnvironmentBlueprints: sinon.stub().rejects(new Error('API Error')),
-            }
+        it('should throw ToolkitError when fetchConnections fails', async function () {
+            sinon.stub(dataZoneClient as any, 'fetchConnections').rejects(new Error('API Error'))
 
             await assert.rejects(
                 async () => {
-                    await (dataZoneClient as any).getToolingEnvironmentForProject(mockDataZone, 'domain-1', 'project-1')
+                    await (dataZoneClient as any).getToolingEnvironmentForProject({}, 'domain-1', 'project-1')
                 },
                 (error: Error) => {
                     assert.ok(error instanceof ToolkitError)

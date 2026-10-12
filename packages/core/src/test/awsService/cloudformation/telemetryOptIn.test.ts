@@ -10,6 +10,7 @@ import { handleTelemetryOptIn } from '../../../awsService/cloudformation/telemet
 import { CloudFormationTelemetrySettings } from '../../../awsService/cloudformation/extensionConfig'
 import { commandKey } from '../../../awsService/cloudformation/utils'
 import globals from '../../../shared/extensionGlobals'
+import * as env from '../../../shared/vscode/env'
 
 describe('telemetryOptIn', function () {
     let mockContext: ExtensionContext
@@ -34,9 +35,13 @@ describe('telemetryOptIn', function () {
         } as any
     })
 
+    afterEach(function () {
+        sinon.restore()
+    })
+
     describe('promptTelemetryOptIn - automation mode', function () {
         it('should return current setting without prompting in automation mode', async function () {
-            sinon.stub(require('../../../shared/vscode/env'), 'isAutomation').returns(true)
+            sinon.stub(env, 'isAutomation').returns(true)
             ;(mockSettings.get as sinon.SinonStub).returns(true)
 
             const result = await handleTelemetryOptIn(mockContext, mockSettings)

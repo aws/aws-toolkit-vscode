@@ -10,6 +10,7 @@ import { commandKey } from '../utils'
 import { StackViewCoordinator } from './stackViewCoordinator'
 import { showWarningConfirmation } from './message'
 import { ChangeSetStatus } from '@aws-sdk/client-cloudformation'
+import { encodeHTML, getRandomString } from '../../../shared/utilities/textUtilities'
 
 const webviewCommandOpenDiff = 'openDiff'
 
@@ -118,6 +119,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
 
     private getHtmlContent(): string {
         const changes = this.changes
+        const nonce = getRandomString()
 
         const startIndex = this.currentPage * this.pageSize
         const endIndex = startIndex + this.pageSize
@@ -131,7 +133,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
         ]
 
         const deletionButton = `
-        <button id="deleteChangeSet" onclick="deleteChangeSet()" style="
+        <button id="deleteChangeSet" style="
             background-color: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
             border: none;
@@ -147,6 +149,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 <!DOCTYPE html>
                 <html>
                 <head>
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
                     <style>
                         body {
                             font-family: var(--vscode-font-family);
@@ -157,7 +160,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     </style>
                 </head>
                 <body>
-                    <p>No changes detected for stack: ${this.stackName}</p>
+                    <p>No changes detected for stack: ${encodeHTML(this.stackName)}</p>
                     ${
                         this.changeSetName &&
                         this.changeSetStatus &&
@@ -166,11 +169,11 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     <div class="deletion-button" style="margin: 10px 0; text-align: left; display: inline-block;">
                         ${deletionButton}
                     </div>
-                    <script>
+                    <script nonce="${nonce}">
                         const vscode = acquireVsCodeApi();
-                        function deleteChangeSet() {
-                            vscode.postMessage({ command: 'deleteChangeSet' });
-                        }
+                        document.getElementById('deleteChangeSet')?.addEventListener('click', () =>
+                            vscode.postMessage({ command: 'deleteChangeSet' })
+                        );
                     </script>
                     `
                             : ''
@@ -239,18 +242,18 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
             } else if (hasDriftDetails) {
                 driftDisplay = '⚠️ Modified'
             } else if (driftStatus && driftStatus !== 'IN_SYNC') {
-                driftDisplay = `⚠️ ${driftStatus}`
+                driftDisplay = `⚠️ ${encodeHTML(driftStatus)}`
             }
 
             tableHtml += `<tr style="border-left: 4px solid ${borderColor}; color: var(--vscode-foreground);">
-                <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; cursor: ${hasDetails ? 'pointer' : 'default'};" ${hasDetails ? `onclick="toggleDetails(${changeIndex})"` : ''}>
+                <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; cursor: ${hasDetails ? 'pointer' : 'default'};" ${hasDetails ? `class="toggle-details" data-change-index="${changeIndex}"` : ''}>
                     <span id="expand-icon-${changeIndex}">${expandIcon}</span>
                 </td>
-                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; font-weight: bold;">${rc.action ?? 'Unknown'}</td>
-                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;"><a href="#" onclick="openDiffToResource('${rc.logicalResourceId}'); return false;" style="color: var(--vscode-textLink-foreground); cursor: pointer; font-weight: bold; text-decoration: underline;">${rc.logicalResourceId ?? 'Unknown'}</a></td>
-                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${rc.physicalResourceId ?? ' '}</td>
-                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${rc.resourceType ?? 'Unknown'}</td>
-                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${rc.replacement ?? 'N/A'}</td>${
+                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; font-weight: bold;">${encodeHTML(rc.action ?? 'Unknown')}</td>
+                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;"><a href="#" class="resource-link" data-resource-id="${encodeHTML(rc.logicalResourceId ?? '')}" style="color: var(--vscode-textLink-foreground); cursor: pointer; font-weight: bold; text-decoration: underline;">${encodeHTML(rc.logicalResourceId ?? 'Unknown')}</a></td>
+                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${encodeHTML(rc.physicalResourceId ?? ' ')}</td>
+                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${encodeHTML(rc.resourceType ?? 'Unknown')}</td>
+                <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center;">${encodeHTML(rc.replacement ?? 'N/A')}</td>${
                     hasDrift
                         ? `
                 <td style="word-wrap: break-word; border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; color: ${driftDisplay ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-foreground)'}; font-weight: ${driftDisplay ? 'bold' : 'normal'};">${driftDisplay || '-'}</td>`
@@ -291,17 +294,17 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                                 : borderColor
                     const drift = target?.Drift || target?.LiveResourceDrift
                     tableHtml += `<tr style="border-left: 4px solid ${attrBorderColor}; color: var(--vscode-foreground);">
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; font-weight: bold; color: var(--vscode-foreground);">${attrChangeType}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${target?.Name ?? ' '}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; color: var(--vscode-foreground);">${target?.RequiresRecreation ?? 'Unknown'}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${target?.BeforeValue ?? ' '}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${target?.AfterValue ?? ' '}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; color: var(--vscode-foreground);">${detail?.ChangeSource ?? ' '}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${detail?.CausingEntity ?? ' '}</td>${
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; font-weight: bold; color: var(--vscode-foreground);">${encodeHTML(attrChangeType)}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${encodeHTML(target?.Name ?? ' ')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; color: var(--vscode-foreground);">${encodeHTML(target?.RequiresRecreation ?? 'Unknown')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${encodeHTML(target?.BeforeValue ?? ' ')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${encodeHTML(target?.AfterValue ?? ' ')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; color: var(--vscode-foreground);">${encodeHTML(detail?.ChangeSource ?? ' ')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: var(--vscode-foreground);">${encodeHTML(detail?.CausingEntity ?? ' ')}</td>${
                             hasDriftDetails
                                 ? `
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: ${drift ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-foreground)'};">${drift?.PreviousValue ?? '-'}</td>
-                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: ${drift ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-foreground)'}; font-weight: ${drift ? 'bold' : 'normal'};">${drift?.ActualValue ?? '-'}</td>`
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: ${drift ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-foreground)'};">${encodeHTML(drift?.PreviousValue ?? '-')}</td>
+                        <td style="border: 1px solid var(--vscode-panel-border); padding: 4px; text-align: center; word-wrap: break-word; color: ${drift ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-foreground)'}; font-weight: ${drift ? 'bold' : 'normal'};">${encodeHTML(drift?.ActualValue ?? '-')}</td>`
                                 : ''
                         }
                     </tr>`
@@ -331,7 +334,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 gap: 8px;
             ">
                 <span style="color: var(--vscode-foreground);">Page ${this.currentPage + 1} of ${this.totalPages}</span>
-                <button onclick="prevPage()" ${!hasPrev ? 'disabled' : ''} style="
+                <button id="prevPage" ${!hasPrev ? 'disabled' : ''} style="
                     background-color: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
@@ -340,7 +343,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     border-radius: 2px;
                     opacity: ${hasPrev ? '1' : '0.5'};
                 ">Previous</button>
-                <button onclick="nextPage()" ${!hasNext ? 'disabled' : ''} style="
+                <button id="nextPage" ${!hasNext ? 'disabled' : ''} style="
                     background-color: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
@@ -376,7 +379,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
 
         const viewDiffButton = `
             <div class="view-actions" style="margin: 10px 0; text-align: left; display: inline-block;">
-                <button onclick="openDiff()" style="
+                <button id="openDiff" style="
                     background-color: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
@@ -398,7 +401,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                 ${
                     this.changeSetStatus === ChangeSetStatus.CREATE_COMPLETE
                         ? `
-                <button id="confirmDeploy" onclick="confirmDeploy()" style="
+                <button id="confirmDeploy" style="
                     background-color: var(--vscode-button-background);
                     color: var(--vscode-button-foreground);
                     border: none;
@@ -418,6 +421,7 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
             <!DOCTYPE html>
             <html>
             <head>
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
                 <style>
                     body {
                         font-family: var(--vscode-font-family);
@@ -447,20 +451,8 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                     ${viewDiffButton}${deploymentButtons}
                     ${tableHtml}
                 </div>
-                <script>
+                <script nonce="${nonce}">
                     const vscode = acquireVsCodeApi();
-                    function openDiff() {
-                        vscode.postMessage({ command: '${webviewCommandOpenDiff}' });
-                    }
-                    function openDiffToResource(resourceId) {
-                        vscode.postMessage({ command: '${webviewCommandOpenDiff}', resourceId: resourceId });
-                    }
-                    function confirmDeploy() {
-                        vscode.postMessage({ command: 'confirmDeploy' });
-                    }
-                    function deleteChangeSet() {
-                        vscode.postMessage({ command: 'deleteChangeSet' });
-                    }
                     function toggleDetails(index) {
                         const detailsRow = document.getElementById('details-' + index);
                         const icon = document.getElementById('expand-icon-' + index);
@@ -473,11 +465,32 @@ export class DiffWebviewProvider implements WebviewViewProvider, Disposable {
                             icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><path d="M5 2L11 8L5 14" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linejoin="round"/></svg>';
                         }
                     }
-                    function nextPage() {
-                        vscode.postMessage({ command: 'nextPage' });
+                    document.getElementById('openDiff')?.addEventListener('click', () =>
+                        vscode.postMessage({ command: '${webviewCommandOpenDiff}' })
+                    );
+                    document.getElementById('confirmDeploy')?.addEventListener('click', () =>
+                        vscode.postMessage({ command: 'confirmDeploy' })
+                    );
+                    document.getElementById('deleteChangeSet')?.addEventListener('click', () =>
+                        vscode.postMessage({ command: 'deleteChangeSet' })
+                    );
+                    document.getElementById('prevPage')?.addEventListener('click', () =>
+                        vscode.postMessage({ command: 'prevPage' })
+                    );
+                    document.getElementById('nextPage')?.addEventListener('click', () =>
+                        vscode.postMessage({ command: 'nextPage' })
+                    );
+                    for (const link of document.querySelectorAll('.resource-link')) {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            vscode.postMessage({
+                                command: '${webviewCommandOpenDiff}',
+                                resourceId: link.getAttribute('data-resource-id'),
+                            });
+                        });
                     }
-                    function prevPage() {
-                        vscode.postMessage({ command: 'prevPage' });
+                    for (const cell of document.querySelectorAll('.toggle-details')) {
+                        cell.addEventListener('click', () => toggleDetails(cell.getAttribute('data-change-index')));
                     }
                 </script>
             </body>

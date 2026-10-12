@@ -138,4 +138,52 @@ describe('StackOverviewWebviewProvider', () => {
         const html = view.webview.html
         assert.ok(!html.includes('href="https://'))
     })
+
+    it('should HTML-encode malicious Description and StackStatusReason to prevent XSS', async () => {
+        mockClient.sendRequest.resolves({
+            stack: {
+                StackName: '<img src=x onerror="alert(1)">',
+                StackStatus: 'CREATE_COMPLETE',
+                StackId: 'stack-id-123',
+                Description: '<script>alert(2)</script>',
+                StackStatusReason: '<svg onload="alert(3)">',
+            },
+        })
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackOverview('test-stack')
+
+        const html = view.webview.html
+        assert.ok(!html.includes('<script>alert(2)</script>'), 'raw <script> Description must not be present')
+        assert.ok(!html.includes('<svg onload="alert(3)">'), 'raw StackStatusReason payload must not be present')
+        assert.ok(!html.includes('<img src=x onerror="alert(1)">'), 'raw StackName payload must not be present')
+        assert.ok(html.includes('&lt;script&gt;alert(2)&lt;/script&gt;'), 'Description should be entity-encoded')
+        assert.ok(
+            html.includes('&lt;svg onload=&quot;alert(3)&quot;&gt;'),
+            'StackStatusReason should be entity-encoded'
+        )
+    })
+
+    it('should HTML-encode error messages', async () => {
+        mockClient.sendRequest.rejects(new Error('<svg onload="alert(1)">'))
+
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackOverview('test-stack')
+
+        const html = view.webview.html
+        assert.ok(!html.includes('<svg onload="alert(1)">'), 'raw error payload must not be present')
+        assert.ok(html.includes('&lt;svg onload=&quot;alert(1)&quot;&gt;'), 'error message should be entity-encoded')
+    })
+
+    it('should set a restrictive Content-Security-Policy on the overview webview', async () => {
+        const view = createMockView()
+        provider.resolveWebviewView(view as any)
+        await provider.showStackOverview('test-stack')
+
+        const html = view.webview.html
+        assert.ok(html.includes('Content-Security-Policy'), 'CSP meta tag should be present')
+        assert.ok(html.includes("default-src 'none'"), "CSP should default-src 'none' to block scripts")
+    })
 })

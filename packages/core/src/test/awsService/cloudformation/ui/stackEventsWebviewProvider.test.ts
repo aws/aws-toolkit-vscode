@@ -324,4 +324,60 @@ describe('StackEventsWebviewProvider', () => {
         assert.ok(html.includes('op-123'))
         assert.ok(!html.includes('href="https://') || !html.includes('operationId=op-123'))
     })
+
+    describe('XSS hardening', () => {
+        it('should HTML-encode malicious event fields', async () => {
+            mockClient.sendRequest.resolves({
+                events: [
+                    {
+                        EventId: 'event-1',
+                        StackName: 'test-stack',
+                        Timestamp: new Date(),
+                        ResourceStatus: 'CREATE_FAILED',
+                        LogicalResourceId: '<img src=x onerror="alert(1)">',
+                        ResourceStatusReason: '<script>alert(2)</script>',
+                    },
+                ],
+                nextToken: undefined,
+            })
+
+            const view = createMockView()
+            provider.resolveWebviewView(view as any)
+            await provider.showStackEvents('test-stack')
+
+            const html = view.webview.html
+            assert.ok(!html.includes('<img src=x onerror="alert(1)">'), 'raw LogicalResourceId must not be present')
+            assert.ok(!html.includes('<script>alert(2)</script>'), 'raw ResourceStatusReason must not be present')
+            assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), 'LogicalResourceId encoded')
+            assert.ok(html.includes('&lt;script&gt;alert(2)&lt;/script&gt;'), 'ResourceStatusReason encoded')
+        })
+
+        it('should HTML-encode a malicious stack name', async () => {
+            mockClient.sendRequest.resolves({ events: [], nextToken: undefined })
+
+            const view = createMockView()
+            provider.resolveWebviewView(view as any)
+            await provider.showStackEvents('<svg onload="alert(1)">')
+
+            const html = view.webview.html
+            assert.ok(!html.includes('<svg onload="alert(1)">'), 'raw stackName must not be present')
+            assert.ok(html.includes('&lt;svg onload=&quot;alert(1)&quot;&gt;'), 'stackName should be entity-encoded')
+        })
+
+        it('should set a nonce-based CSP and use no inline handlers', async () => {
+            mockSingleEventWithOperationId()
+
+            const view = createMockView()
+            provider.resolveWebviewView(view as any)
+            await provider.showStackEvents('test-stack')
+
+            const html = view.webview.html
+            assert.ok(html.includes('Content-Security-Policy'), 'CSP meta tag should be present')
+            assert.ok(html.includes("default-src 'none'"), "CSP should default-src 'none'")
+            assert.ok(/script-src 'nonce-[A-Za-z0-9]+'/.test(html), 'CSP should use a script nonce')
+            assert.ok(!html.includes('onclick='), 'no inline onclick handlers should remain')
+            // The toggle group id is carried on a data attribute instead of an inline handler.
+            assert.ok(html.includes('data-group-id='), 'toggle should use a data attribute')
+        })
+    })
 })

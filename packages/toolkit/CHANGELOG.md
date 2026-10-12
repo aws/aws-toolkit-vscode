@@ -1,3 +1,49 @@
+## 4.17.0 2026-10-05
+
+- **Bug Fix** CloudFormation: HTML-encode stack data and add a Content-Security-Policy in views to prevent cross-site scripting
+
+## 4.16.0 2026-10-01
+
+- **Bug Fix** S3 node in explorer is not refreshed on profile change
+- **Feature** CloudFormation: More reliable language server installation. Manifest and bundle downloads are retried, downloads are verified before use, a previously installed version is used when the network is unavailable, and a broken installation is repaired automatically on startup.
+
+## 4.15.0 2026-08-27
+
+- **Feature** SageMaker Studio: Support connecting to spaces in domains that use IAM Identity Center (SSO) authentication.
+- **Feature** SageMaker Studio: filter listed Spaces to those belonging to the signed-in IAM Identity Center user.
+
+## 4.14.0 2026-08-20
+
+- **Bug Fix** SageMaker Unified Studio: Fixed Spaces not appearing in the tree view after signing in with SSO to an IAM-based domain (caught in pre-release).
+- **Bug Fix** Updated the AWS SDK credential provider so credentials refreshed by re-running `aws login` are recognized without restarting the IDE.
+- **Bug Fix** SageMaker Unified Studio: only activated user profiles are used for space filtering.
+- **Feature** SageMaker Unified Studio: Automatically reconnect a deeplink-connected Space by refreshing credentials in the browser when the SSH tunnel drops.
+
+## 4.13.0 2026-08-06
+
+- **Feature** Add profile through console option for IAM auth in SMUS
+
+## 4.12.0 2026-07-30
+
+- **Bug Fix** Hide unsupported SageMaker Unified Studio spaces from the Local IDE space list.
+
+## 4.11.0 2026-07-23
+
+- Miscellaneous non-user-facing changes
+
+## 4.10.0 2026-07-09
+
+- **Feature** Auto generate client id for cloudformation lsp if an telemetry is enabled and an anonymous client id is cached
+
+## 4.9.0 2026-07-02
+
+- **Feature** Threat Composer: The CDN used for the Threat Composer editor is now configurable via the setting `aws.threatComposer.cdn`.
+
+## 4.8.0 2026-06-25
+
+- **Bug Fix** Redshift SQL Notebook: Query results with HTML special characters in column names or cell values are now displayed safely instead of being interpreted as HTML.
+- **Bug Fix** Added enhanced validation when handling user input filesystem paths for Application Composer, auth server, and CodeWhisperer Chat to ensure files are not read or written outside the intended directory.
+
 ## 4.7.0 2026-06-11
 
 - Miscellaneous non-user-facing changes

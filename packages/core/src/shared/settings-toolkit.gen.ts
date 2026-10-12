@@ -79,7 +79,8 @@ export const toolkitSettings = {
     "aws.cloudformation.diagnostics.cfnGuard.enabledRulePacks": {},
     "aws.cloudformation.diagnostics.cfnGuard.rulesFile": {},
     "aws.cloudformation.s3": {},
-    "aws.cloudformation.environment.saveOptions": {}
+    "aws.cloudformation.environment.saveOptions": {},
+    "aws.threatComposer.cdn": {}
 }
 
 export default toolkitSettings

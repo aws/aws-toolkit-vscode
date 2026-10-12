@@ -10,6 +10,7 @@ import { StackViewCoordinator } from './stackViewCoordinator'
 import { DescribeStackRequest } from '../stacks/actions/stackActionProtocol'
 import { extractErrorMessage, getStackStatusClass, isStackInTransientState } from '../utils'
 import { externalLinkSvg, consoleLinkStyles, arnToConsoleUrl } from '../consoleLinksUtils'
+import { encodeHTML } from '../../../shared/utilities/textUtilities'
 
 export class StackOverviewWebviewProvider implements WebviewViewProvider, Disposable {
     private view?: WebviewView
@@ -128,9 +129,10 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
-        body { 
-            font-family: var(--vscode-font-family); 
+        body {
+            font-family: var(--vscode-font-family);
             padding: 20px;
             color: var(--vscode-errorForeground);
         }
@@ -138,7 +140,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 </head>
 <body>
     <h3>Error</h3>
-    <p>${message}</p>
+    <p>${encodeHTML(message)}</p>
 </body>
 </html>`
     }
@@ -148,8 +150,9 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
-        body { 
+        body {
             font-family: var(--vscode-font-family);
             padding: 20px;
             text-align: center;
@@ -168,9 +171,10 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
     <style>
-        body { 
-            font-family: var(--vscode-font-family); 
+        body {
+            font-family: var(--vscode-font-family);
             padding: 20px;
             color: var(--vscode-foreground);
         }
@@ -214,14 +218,14 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
     <div class="section">
         <div class="label">Stack Name</div>
         <div class="stack-header">
-            ${stack.StackName ?? 'N/A'}
+            ${encodeHTML(stack.StackName ?? 'N/A')}
             ${stack.StackId ? `<a href="${arnToConsoleUrl(stack.StackId)}" class="console-link" title="View in AWS Console">${externalLinkSvg()}</a>` : ''}
         </div>
     </div>
     <div class="section">
         <div class="label">Status</div>
         <div class="value">
-            <span class="status ${getStackStatusClass(stack.StackStatus)}">${stack.StackStatus ?? 'UNKNOWN'}</span>
+            <span class="status ${getStackStatusClass(stack.StackStatus)}">${encodeHTML(stack.StackStatus ?? 'UNKNOWN')}</span>
         </div>
     </div>
     ${
@@ -229,7 +233,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
             ? `
     <div class="section">
         <div class="label">Stack ID</div>
-        <div class="value">${stack.StackId}</div>
+        <div class="value">${encodeHTML(stack.StackId)}</div>
     </div>`
             : ''
     }
@@ -238,7 +242,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
             ? `
     <div class="section">
         <div class="label">Description</div>
-        <div class="value">${stack.Description}</div>
+        <div class="value">${encodeHTML(stack.Description)}</div>
     </div>`
             : ''
     }
@@ -265,7 +269,7 @@ export class StackOverviewWebviewProvider implements WebviewViewProvider, Dispos
             ? `
     <div class="section">
         <div class="label">Status Reason</div>
-        <div class="value">${stack.StackStatusReason}</div>
+        <div class="value">${encodeHTML(stack.StackStatusReason)}</div>
     </div>`
             : ''
     }

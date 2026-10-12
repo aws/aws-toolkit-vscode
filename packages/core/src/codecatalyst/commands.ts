@@ -14,7 +14,7 @@ import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
-import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
+import { DevEnvironmentId, deleteBearerTokenCache, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -99,6 +99,8 @@ export async function stopDevEnv(
         projectName: devenv.project.name,
         spaceName: devenv.org.name,
     })
+
+    await deleteBearerTokenCache(devenv.id)
 }
 
 export async function deleteDevEnv(client: CodeCatalystClient, devenv: DevEnvironmentId): Promise<void> {
