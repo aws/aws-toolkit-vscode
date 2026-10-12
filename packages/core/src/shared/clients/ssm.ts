@@ -14,6 +14,8 @@ import {
     InstanceInformation,
     SendCommandCommand,
     SendCommandCommandOutput,
+    GetCommandInvocationCommand,
+    GetCommandInvocationCommandOutput,
     waitUntilCommandExecuted,
     SessionState,
     paginateDescribeInstanceInformation,
@@ -100,6 +102,19 @@ export class SsmClient extends ClientWrapper<SSMClient> {
         } catch (err) {
             throw new ToolkitError(`Failed in sending command to target ${target}`, { cause: err as Error })
         }
+    }
+
+    public async sendCommandAndWaitForOutput(
+        target: string,
+        documentName: string,
+        parameters: Record<string, string[]>
+    ): Promise<string> {
+        const response = await this.sendCommandAndWait(target, documentName, parameters)
+        const invocation = (await this.makeRequest(GetCommandInvocationCommand, {
+            CommandId: response.Command!.CommandId!,
+            InstanceId: target,
+        })) as GetCommandInvocationCommandOutput
+        return invocation.StandardOutputContent ?? ''
     }
 
     public async getInstanceAgentPingStatus(target: string): Promise<string> {
