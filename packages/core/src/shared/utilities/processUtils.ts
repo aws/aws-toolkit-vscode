@@ -195,11 +195,12 @@ export class ChildProcessTracker {
                 .toString()
 
             const cpuPercentage = parseFloat(cpuOutput.split('\n')[1])
-            const memoryBytes = parseInt(memOutput.split('\n')[1]) * 1024
+            // Win32_Process.WorkingSetSize is already in bytes, unlike `ps -o rss` below which is in KiB.
+            const memoryBytes = parseInt(memOutput.split('\n')[1])
 
             return {
                 cpu: isNaN(cpuPercentage) ? 0 : cpuPercentage,
-                memory: memoryBytes,
+                memory: isNaN(memoryBytes) ? 0 : memoryBytes,
             }
         }
 
