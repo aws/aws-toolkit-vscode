@@ -9,7 +9,12 @@ import * as os from 'os'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolkitError } from '../../../shared/errors'
 import { loadSharedCredentialsProfiles, parseIni } from '../../../auth/credentials/sharedCredentials'
-import { getCredentialsFilename, getConfigFilename } from '../../../auth/credentials/sharedCredentialsFile'
+import {
+    createSharedCredentialsDir,
+    getCredentialsFilename,
+    getConfigFilename,
+    writeSharedCredentialsFile,
+} from '../../../auth/credentials/sharedCredentialsFile'
 import { SmusErrorCodes, DataZoneServiceId } from '../../shared/smusUtils'
 import globals from '../../../shared/extensionGlobals'
 import fs from '../../../shared/fs/fs'
@@ -603,7 +608,7 @@ export class SmusIamProfileSelector {
 
             // Create the file if it doesn't exist
             if (!(await fs.existsFile(filePath))) {
-                await fs.writeFile(filePath, '')
+                await writeSharedCredentialsFile(filePath, '')
                 logger.debug(`Created new ${fileLabel} file`)
             }
 
@@ -1517,10 +1522,7 @@ export class SmusIamProfileSelector {
      * Ensures the ~/.aws directory exists
      */
     private static async ensureAwsDirectoryExists(): Promise<void> {
-        const awsDir = path.join(fs.getUserHomeDir(), '.aws')
-        if (!(await fs.existsDir(awsDir))) {
-            await fs.mkdir(awsDir)
-        }
+        await createSharedCredentialsDir(path.join(fs.getUserHomeDir(), '.aws'))
     }
 
     /**
@@ -1604,7 +1606,7 @@ export class SmusIamProfileSelector {
         content = newLines.join(os.EOL)
 
         // Write back to file
-        await fs.writeFile(credentialsPath, content)
+        await writeSharedCredentialsFile(credentialsPath, content)
     }
 
     /**
@@ -1683,7 +1685,7 @@ export class SmusIamProfileSelector {
                 const updatedContent = updatedLines.join(os.EOL)
 
                 // Write back to file
-                await fs.writeFile(filePath, updatedContent)
+                await writeSharedCredentialsFile(filePath, updatedContent)
 
                 logger.debug(`Successfully updated profile ${profileName} with region ${region} in ${filePath}`)
                 profileUpdated = true

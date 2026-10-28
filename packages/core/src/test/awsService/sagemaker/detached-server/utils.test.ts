@@ -6,7 +6,7 @@
 /* eslint-disable no-restricted-imports */
 import * as assert from 'assert'
 import { parseArn } from '../../../../awsService/sagemaker/utils'
-import { writeMapping, readMapping } from '../../../../awsService/sagemaker/detached-server/utils'
+import { writeMapping, readMapping, mappingFilePath } from '../../../../awsService/sagemaker/detached-server/utils'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as os from 'os'
@@ -91,6 +91,18 @@ describe('writeMapping', () => {
             (expected) => JSON.stringify(finalContent) === JSON.stringify(expected)
         )
         assert.strictEqual(isValidResult, true, 'Final content should match one of the written mappings')
+    })
+
+    it('keeps the mapping file readable only by the owner', async function () {
+        if (os.platform() === 'win32') {
+            this.skip()
+        }
+        await writeMapping({})
+        await fs.chmod(mappingFilePath, 0o644)
+
+        await writeMapping({ localCredential: { space: { type: 'iam', profileName: 'p' } } })
+
+        assert.strictEqual((await fs.stat(mappingFilePath)).mode & 0o777, 0o600)
     })
 
     it('queues multiple writes and processes them sequentially', async () => {
