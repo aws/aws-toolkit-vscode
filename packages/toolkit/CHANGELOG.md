@@ -1,3 +1,7 @@
+## 4.18.0 2026-10-29
+
+- **Bug Fix** Shared credentials file (`~/.aws/credentials`) and SageMaker connection files created with insecure file permissions
+
 ## 4.17.0 2026-10-05
 
 - **Bug Fix** CloudFormation: HTML-encode stack data and add a Content-Security-Policy in views to prevent cross-site scripting
