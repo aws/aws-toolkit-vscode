@@ -349,8 +349,10 @@ generating SDKs, etc.
 
 The [DevSettings](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
-your `settings.json`. At runtime, if the Toolkit reads any of these settings,
+your user `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
+
+**Note:** `aws.dev.*` settings are only read from **user-level settings** (not workspace or folder settings). Set them via `Preferences: Open User Settings (JSON)` in VS Code.
 
 The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Without this setting, the presence of any other `aws.dev.*` setting defined in `DevSettings` implicitly enables "dev mode".
 
@@ -399,9 +401,6 @@ If you need to report an issue attach these to give the most detailed informatio
 ### Service Endpoints
 
 Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
-
-**Note:** The `ssooidc` and `sso` endpoint overrides are only read from **user-level settings** (not workspace or folder settings). Set them via `Preferences: Open User Settings (JSON)` in VS Code.
-
 Example:
 
 ```json
