@@ -4,6 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
+import { defaultDnsSuffix } from '../../shared/regions/regionProvider'
 import { workspace } from 'vscode'
 
 import {
@@ -84,7 +85,8 @@ export class OidcClient {
         const params = toSnakeCase(request)
         const searchParams = new URLSearchParams(params).toString()
         const region = await this.client.config.region()
-        return `https://oidc.${region}.amazonaws.com/authorize?${searchParams}`
+        const dnsSuffix = globals.regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
+        return `https://oidc.${region}.${dnsSuffix}/authorize?${searchParams}`
     }
 
     public async createToken(request: CreateTokenRequest) {
