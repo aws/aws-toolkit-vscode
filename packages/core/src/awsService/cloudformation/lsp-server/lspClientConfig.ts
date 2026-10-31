@@ -8,16 +8,14 @@ import { ServerOptions, TextDocumentFilter, TransportKind } from 'vscode-languag
 
 /**
  * Documents the CloudFormation language server is attached to: the file extensions templates are commonly saved
- * with (`yaml`, `yml`, `json`, `template`, `cfn`, `txt`) plus the VS Code language ids those files are commonly
+ * with (`yaml`, `yml`, `json`, `template`, `cfn`) plus the VS Code language ids those files are commonly
  * opened with.
  */
 export const CfnDocumentSelector: TextDocumentFilter[] = [
-    { scheme: 'file', language: 'plaintext' },
     { scheme: 'file', language: 'cloudformation' },
     { scheme: 'file', language: 'template' },
     { scheme: 'file', language: 'json' },
     { scheme: 'file', language: 'yaml' },
-    { scheme: 'file', pattern: '**/*.txt' },
     { scheme: 'file', pattern: '**/*.template' },
     { scheme: 'file', pattern: '**/*.cfn' },
     { scheme: 'file', pattern: '**/*.json' },
