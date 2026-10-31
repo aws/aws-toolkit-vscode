@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Remote debugging will not delete lambda function by accident if publish version failed"
+}
