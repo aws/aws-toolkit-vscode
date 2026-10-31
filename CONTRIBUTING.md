@@ -8,7 +8,7 @@ codebase and sending pull requests.
 
 ## Getting Started
 
-This project is set up as a typescript monorepo. The documentation throughout this project
+This project is set up as a TypeScript monorepo. The documentation throughout this project
 is referring to the subprojects [`packages/toolkit/`](./packages/toolkit/) and [`packages/core/`](./packages/core/).
 See [arch_develop.md](./docs/arch_develop.md#monorepo-structure) to understand the
 structure of this package before contributing.
@@ -24,8 +24,8 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
--   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
--   [Typescript](https://www.typescriptlang.org/)
+-   [Node.js and npm](https://nodejs.org/) (latest version of both)
+-   [TypeScript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
     -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
