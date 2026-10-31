@@ -24,6 +24,7 @@ import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { ToolView } from './toolView'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { CdkRootNode } from '../awsService/cdk/explorer/rootNode'
+import { activateCdkLsp } from '../awsService/cdk/lsp/client'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../awsService/s3/explorer/s3FolderNode'
@@ -136,6 +137,10 @@ export async function activate(args: {
     for (const viewNode of viewNodes) {
         registerToolView(viewNode, args.context.extensionContext)
     }
+
+    // Start `cdk lsp` (discovered from the user's installed CDK CLI) for the CDK app in the workspace.
+    // Non-blocking: registers listeners synchronously and starts the server in the background.
+    activateCdkLsp(args.context.extensionContext)
 
     const toolkitAuthProvider = new CommonAuthViewProvider(args.context.extensionContext, 'toolkit')
     args.context.extensionContext.subscriptions.push(

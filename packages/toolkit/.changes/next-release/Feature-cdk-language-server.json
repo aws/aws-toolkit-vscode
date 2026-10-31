@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "CDK: start the CDK Language Server (`cdk lsp`) from your installed CDK CLI, linking construct source, synthesized template, and policy violations"
+}
