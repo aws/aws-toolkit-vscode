@@ -53,9 +53,11 @@ export async function invokeJavaLambda(ctx: ExtContext, config: SamLaunchRequest
 function getJavaOptionsEnvVar(config: SamLaunchRequestArgs): string {
     switch (config.runtime) {
         case 'java11':
+        case 'java11.al2023' as Runtime:
             // https://github.com/aws/aws-sam-cli/blob/86f88cbd7df365960f7015c5d086b0db7aedd9d5/samcli/local/docker/lambda_debug_settings.py#L53
             return `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=*:${config.debugPort} -XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC -XX:-TieredCompilation -Djava.net.preferIPv4Stack=true`
         case 'java17':
+        case 'java17.al2023' as Runtime:
         case 'java21':
         case 'java25' as Runtime:
             // https://github.com/aws/aws-sam-cli/blob/90aa5cf11e1c5cbfbe66aea2e2de10d478d48231/samcli/local/docker/lambda_debug_settings.py#L96
