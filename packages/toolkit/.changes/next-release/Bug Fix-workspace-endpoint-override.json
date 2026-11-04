@@ -1,0 +1,4 @@
+{
+  "type": "Bug Fix",
+  "description": "Prevent workspace-level settings from overriding developer settings such as service endpoints, which could send credentials to an attacker-controlled host when trusting a specially crafted VSCode workspace"
+}

@@ -4,7 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { workspace } from 'vscode'
+import { DevSettings } from '../../shared/settings'
 
 import {
     AccountInfo,
@@ -275,27 +275,8 @@ export class SsoClient {
  * @returns The endpoint URL if set in user-level settings, otherwise undefined
  */
 export function getUserScopedEndpoint(serviceKey: string): string | undefined {
-    const config = workspace.getConfiguration('aws.dev')
-    const inspected = config.inspect<Record<string, string>>('endpoints')
-
-    // Only use globalValue (user-level settings). Never trust workspace or workspace-folder values
-    // for authentication endpoints.
-    const endpoints = inspected?.globalValue
-
-    if (inspected?.workspaceValue?.['ssooidc'] || inspected?.workspaceValue?.['sso']) {
-        getLogger().warn(
-            'auth: Ignoring workspace-scoped aws.dev.endpoints for SSO/OIDC services. ' +
-                'These settings must be configured in user-level settings for security.'
-        )
-    }
-    if (inspected?.workspaceFolderValue?.['ssooidc'] || inspected?.workspaceFolderValue?.['sso']) {
-        getLogger().warn(
-            'auth: Ignoring workspace-folder-scoped aws.dev.endpoints for SSO/OIDC services. ' +
-                'These settings must be configured in user-level settings for security.'
-        )
-    }
-
-    return endpoints?.[serviceKey]
+    // `DevSettings` never reads `aws.dev.endpoints` from workspace or workspace-folder settings.
+    return DevSettings.instance.get('endpoints', {})[serviceKey]
 }
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
