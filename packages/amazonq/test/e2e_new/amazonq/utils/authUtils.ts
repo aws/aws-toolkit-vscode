@@ -50,7 +50,7 @@ export async function signInToAmazonQ(): Promise<void> {
     await dialog.pushButton('Open')
 
     console.log('Waiting for manual authentication...')
-    await sleep(12000)
+    await sleep(19000)
     console.log('Manual authentication should be done')
     await webviewView.switchBack()
 
@@ -61,6 +61,7 @@ export async function signInToAmazonQ(): Promise<void> {
 
     testContext.workbench = workbench
     testContext.webviewView = webviewView
+    testContext.editorView = editorView
 }
 
 /* NOTE: The workbench and webviewView is grabbed directly from testContext because we are under the assumption that if you want to log out

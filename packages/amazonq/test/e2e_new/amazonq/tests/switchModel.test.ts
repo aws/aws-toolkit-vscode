@@ -7,6 +7,7 @@ import { WebviewView } from 'vscode-extension-tester'
 import { testContext } from '../utils/testContext'
 import { listModels, selectModel } from '../helpers/switchModelHelper'
 import { closeAllTabs } from '../utils/cleanupUtils'
+import { sleep } from '../utils/generalUtils'
 
 describe('Amazon Q Switch Model Functionality', function () {
     // this timeout is the general timeout for the entire test suite
@@ -23,6 +24,8 @@ describe('Amazon Q Switch Model Functionality', function () {
 
     it('Switch Model Test', async () => {
         await listModels(webviewView)
-        await selectModel(webviewView, 'Claude Sonnet 3.7')
+        await selectModel(webviewView, 'Claude Sonnet 4.5')
+        await selectModel(webviewView, 'Claude Sonnet 4')
+        await sleep(2000)
     })
 })

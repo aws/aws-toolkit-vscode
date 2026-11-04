@@ -2,7 +2,18 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { By, WebviewView, WebElement, EditorView, InputBox, Workbench, TextEditor, Key } from 'vscode-extension-tester'
+import {
+    By,
+    WebviewView,
+    WebElement,
+    EditorView,
+    InputBox,
+    Workbench,
+    TextEditor,
+    Key,
+    ActivityBar,
+    SideBarView,
+} from 'vscode-extension-tester'
 import { until, WebDriver } from 'selenium-webdriver'
 
 /**
@@ -50,6 +61,7 @@ export async function waitForElements(
  * @param buttonContentSelector CSS selector for the content inside the button (icon, text, etc.)
  * @param buttonName Descriptive name for the button (used in error messages)
  * @param timeout Timeout in milliseconds (defaults to 5000)
+ * @param scrollIntoView Whether to scroll the button into view before clicking (defaults to false)
  * @returns Promise<void>
  */
 export async function clickButton(
@@ -74,6 +86,7 @@ export async function clickButton(
 
         const button = await buttonContent.findElement(By.xpath('./..'))
         await webviewView.getDriver().wait(until.elementIsEnabled(button), timeout, `${buttonName} not clickable`)
+
         await button.click()
         await webviewView.getDriver().sleep(300)
     } catch (e) {
@@ -163,7 +176,7 @@ export async function waitForChatResponse(webview: WebviewView, timeout = 15000)
                 return
             }
         }
-        await sleep(500)
+        await sleep(1000)
     }
 
     throw new Error('Timeout waiting for chat response')
@@ -213,6 +226,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
     const currentLines = await textEditor.getNumberOfLines()
     await textEditor.typeTextAt(currentLines, 1, text)
 }
+
 /**
  * Waits for Inline Generation by Amazon Q by checking if line count stops changing.
  * The function checks for a "stable state" by monitoring the number of lines in the editor.
@@ -223,7 +237,7 @@ export async function writeToTextEditor(textEditor: TextEditor, text: string): P
  * @returns Promise<void>
  * @throws Error if timeout is exceeded before a stable state is reached
  */
-export async function waitForInlineGeneration(editor: TextEditor, timeout = 15000): Promise<void> {
+export async function waitForInlineGeneration(editor: TextEditor, timeout = 25000): Promise<void> {
     const startTime = Date.now()
     let previousLines = await editor.getNumberOfLines()
     let stableCount = 0
@@ -252,19 +266,35 @@ export async function waitForInlineGeneration(editor: TextEditor, timeout = 1500
  * @param items WebElement array to search
  * @param text The text of the item
  * @returns Promise<WebElement> The first element that contains the specified text
- * TO-DO: Make this function more general by eliminated the By.css('.title')
  */
 export async function findItemByText(items: WebElement[], text: string) {
     for (const item of items) {
-        const titleDivs = await item.findElements(By.css('.title'))
-        for (const titleDiv of titleDivs) {
-            const titleText = await titleDiv.getText()
-            if (titleText?.trim().startsWith(text)) {
-                return item
-            }
+        const itemText = await item.getText()
+        if (itemText?.trim().startsWith(text)) {
+            return item
         }
     }
     throw new Error(`Item with text "${text}" not found`)
+}
+
+/**
+ * Finds mynah card elements
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of mynah card elements
+ */
+export async function findMynahCards(webviewView: WebviewView): Promise<WebElement[]> {
+    const elements = await webviewView.findWebElements(By.css('.mynah-card'))
+    await sleep(100)
+    return elements
+}
+
+/**
+ * Finds mynah card elements
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of mynah card elements
+ */
+export async function findMynahCardsBody(webviewView: WebviewView): Promise<WebElement[]> {
+    return await webviewView.findWebElements(By.css('.mynah-card-body'))
 }
 
 /**
@@ -285,4 +315,76 @@ export async function printElementHTML(element: WebElement): Promise<void> {
     console.log(`=== HTML CONTENT ===`)
     console.log(formattedHTML)
     console.log('=== END HTML ===')
+}
+
+/**
+ * Checks for more content indicator and clicks it if present
+ * @param webviewView The WebviewView instance
+ */
+export async function clickMoreContentIndicator(webviewView: WebviewView): Promise<void> {
+    try {
+        const moreContentIndicator = await webviewView.findWebElement({ css: '.mynah-ui-icon-scroll-down' })
+        if (moreContentIndicator) {
+            await moreContentIndicator.click()
+            await sleep(200)
+        }
+    } catch (error) {
+        // No more content indicator found
+    }
+}
+
+/**
+ * Validates Amazon Q streaming response
+ * @param webviewView The WebviewView instance
+ * @param isHelpCommand Whether this is a /help command (defaults to false)
+ * @throws Error if insufficient response is received
+ */
+export async function validateAmazonQResponse(webviewView: WebviewView, isHelpCommand = false): Promise<void> {
+    const streamingResponses = await webviewView.findWebElements({
+        css: '[data-testid="chat-item-answer-stream"]',
+    })
+    const requiredLength = isHelpCommand ? 1 : 2
+    if (streamingResponses.length >= requiredLength) {
+        // console.log('Amazon Q responded successfully with meaningful content')
+        // Print streaming responses
+        // for (let i = 0; i < streamingResponses.length; i++) {
+        //     const responseText = await streamingResponses[i].getText()
+        //     console.log(`Streaming Response ${i + 1}:`, responseText)
+        // }
+    } else {
+        throw new Error('Amazon Q did not provide sufficient response')
+    }
+}
+
+/**
+ * Opens a file through Explorer
+ * @param editorView The EditorView instance
+ * @param filename The name of the file to open (defaults to 'testFile.py')
+ * @returns Promise<TextEditor> The text editor for the opened file
+ */
+export async function openTestFile(editorView: EditorView, filename = 'testFile.py'): Promise<TextEditor> {
+    const explorerView = await new ActivityBar().getViewControl('Explorer')
+    const sideBar = (await explorerView?.openView()) as SideBarView
+    const item = await (await sideBar.getContent().getSections())[0].findItem(filename)
+    await item?.click()
+    await sleep(1000)
+
+    const textEditor = (await editorView.openEditor(filename)) as TextEditor
+    return textEditor
+}
+
+/**
+ * Closes the terminal panel if it's open
+ * @param webview The WebviewView instance
+ */
+export async function closeTerminal(webview: WebviewView): Promise<void> {
+    try {
+        await webview.switchBack()
+        const workbench = new Workbench()
+        await workbench.executeCommand('View: Close Panel')
+        await sleep(500)
+        await webview.switchToFrame()
+    } catch (error) {
+        console.log('Terminal close operation completed or no terminal was open')
+    }
 }

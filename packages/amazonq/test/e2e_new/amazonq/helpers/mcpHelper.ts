@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewView, By, WebElement } from 'vscode-extension-tester'
-import { clickButton, waitForElement } from '../utils/generalUtils'
-import { dismissOverlayIfPresent } from '../utils/cleanupUtils'
+import { clickButton, sleep, waitForElement } from '../utils/generalUtils'
 
 /**
  * Clicks the tools to get to the MCP server overlay
@@ -12,12 +11,16 @@ import { dismissOverlayIfPresent } from '../utils/cleanupUtils'
  * @returns Promise<boolean> True if tools button was found and clicked, false otherwise
  */
 export async function clickToolsButton(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="tab-bar-buttons-wrapper"]',
-        '[data-testid="tab-bar-button"] .mynah-ui-icon-tools',
-        'tools button'
-    )
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="tab-bar-buttons-wrapper"]',
+            '[data-testid="tab-bar-button"] .mynah-ui-icon-tools',
+            'tools button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to click tools button: ${e}`)
+    }
 }
 
 /**
@@ -26,7 +29,16 @@ export async function clickToolsButton(webviewView: WebviewView): Promise<void> 
  * @returns Promise<boolean> True if add button was found and clicked, false otherwise
  */
 export async function clickMCPAddButton(webviewView: WebviewView): Promise<void> {
-    await clickButton(webviewView, '.mynah-sheet-header-actions-container', 'i.mynah-ui-icon-plus', 'MCP add button')
+    try {
+        await clickButton(
+            webviewView,
+            '.mynah-sheet-header-actions-container',
+            'i.mynah-ui-icon-plus',
+            'MCP add button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to click MCP add button: ${e}`)
+    }
 }
 
 /**
@@ -42,6 +54,7 @@ interface MCPServerConfig {
     transport?: number
     command?: string
     args?: string[]
+    url?: string
     environmentVariable?: { name: string; value: string }
     timeout?: number
 }
@@ -55,6 +68,14 @@ const defaultConfig: MCPServerConfig = {
     timeout: 0,
 }
 
+export const remoteFetchConfig: MCPServerConfig = {
+    scope: 'global',
+    name: 'remote-fetch',
+    transport: 1,
+    url: 'https://remote.mcpservers.org/fetch/mcp',
+    timeout: 0,
+}
+
 // Each name maps to an index in the '.mynah-form-input-wrapper' array
 const formItemsMap = {
     SCOPE: 0,
@@ -62,6 +83,7 @@ const formItemsMap = {
     TRANSPORT: 2,
     COMMAND: 3,
     ARGS: 4,
+    URL: 3,
     ENV_VARS: 6,
     TIMEOUT: 9,
 } as const
@@ -81,8 +103,7 @@ async function selectScope(container: WebElement, scope: string) {
             await workspaceOption.click()
         }
     } catch (e) {
-        console.error('Error selecting the scope:', e)
-        throw e
+        throw new Error(`Error selecting the scope`)
     }
 }
 
@@ -91,8 +112,7 @@ async function inputName(container: WebElement, name: string) {
         const input = await container.findElement(By.css('.mynah-form-input'))
         await input.sendKeys(name)
     } catch (e) {
-        console.error('Error inputing the name:', e)
-        throw e
+        throw new Error(`Error inputing the name`)
     }
 }
 
@@ -103,8 +123,7 @@ async function selectTransport(container: WebElement, transport: number) {
         const optionIndex = transport
         await options[optionIndex].click()
     } catch (e) {
-        console.error('Error selecting the transport:', e)
-        throw e
+        throw new Error(`Error inputing the transport`)
     }
 }
 
@@ -113,8 +132,7 @@ async function inputCommand(container: WebElement, command: string) {
         const input = await container.findElement(By.css('.mynah-form-input'))
         await input.sendKeys(command)
     } catch (e) {
-        console.error('Error inputing the command:', e)
-        throw e
+        throw new Error(`Error inputing the command`)
     }
 }
 
@@ -127,8 +145,7 @@ async function inputArgs(container: WebElement, args: string[]) {
             await addButton.click()
         }
     } catch (e) {
-        console.error('Error inputing the arguments:', e)
-        throw e
+        throw new Error(`Error inputing the arguments`)
     }
 }
 
@@ -144,8 +161,7 @@ async function inputEnvironmentVariables(container: WebElement, environmentVaria
             console.log('No environmental variables for this configuration')
         }
     } catch (e) {
-        console.error('Error inputing the environment variables:', e)
-        throw e
+        throw new Error(`Error inputing the environment variables`)
     }
 }
 
@@ -155,8 +171,19 @@ async function inputTimeout(container: WebElement, timeout: number) {
         await input.clear()
         await input.sendKeys(timeout.toString())
     } catch (e) {
-        console.error('Error inputing the timeout:', e)
-        throw e
+        throw new Error(`Error inputing the timeout`)
+    }
+}
+
+async function inputUrl(container: WebElement, url: string) {
+    try {
+        const input = await container.findElement(By.css('.mynah-form-input'))
+        await input.clear()
+        await input.click()
+        await sleep(200)
+        await input.sendKeys(url)
+    } catch (e) {
+        throw new Error(`Error inputing the url`)
     }
 }
 
@@ -172,10 +199,19 @@ async function processFormItem(mcpFormItem: McpFormItem, container: WebElement, 
             await selectTransport(container, config.transport!)
             break
         case 'COMMAND':
-            await inputCommand(container, config.command!)
+            if (config.command) {
+                await inputCommand(container, config.command)
+            }
             break
         case 'ARGS':
-            await inputArgs(container, config.args!)
+            if (config.args) {
+                await inputArgs(container, config.args)
+            }
+            break
+        case 'URL':
+            if (config.url) {
+                await inputUrl(container, config.url)
+            }
             break
         case 'ENV_VARS':
             await inputEnvironmentVariables(container, config.environmentVariable)
@@ -186,33 +222,56 @@ async function processFormItem(mcpFormItem: McpFormItem, container: WebElement, 
     }
 }
 
+async function getFormContainer(sheetWrapper: WebElement) {
+    const sheetBody = await sheetWrapper.findElement(By.css('.mynah-sheet-body'))
+    const filtersWrapper = await sheetBody.findElement(By.css('.mynah-detailed-list-filters-wrapper'))
+    return await filtersWrapper.findElement(By.css('.mynah-chat-item-form-items-container'))
+}
+
 export async function configureMCPServer(webviewView: WebviewView, config: MCPServerConfig = {}): Promise<void> {
     const mergedConfig = { ...defaultConfig, ...config }
     try {
         const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
-        const sheetBody = await sheetWrapper.findElement(By.css('.mynah-sheet-body'))
-        const filtersWrapper = await sheetBody.findElement(By.css('.mynah-detailed-list-filters-wrapper'))
-        const formContainer = await filtersWrapper.findElement(By.css('.mynah-chat-item-form-items-container'))
-        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+        let formContainer = await getFormContainer(sheetWrapper)
+        let items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
 
-        for (const formItem of Object.keys(formItemsMap) as McpFormItem[]) {
-            const index = formItemsMap[formItem]
-            if (index < items.length) {
-                await processFormItem(formItem, items[index], mergedConfig)
+        await processFormItem('SCOPE', items[formItemsMap.SCOPE], mergedConfig)
+        await processFormItem('NAME', items[formItemsMap.NAME], mergedConfig)
+        await processFormItem('TRANSPORT', items[formItemsMap.TRANSPORT], mergedConfig)
+        await sleep(2000)
+
+        formContainer = await getFormContainer(sheetWrapper)
+        items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+
+        if (mergedConfig.url) {
+            await processFormItem('URL', items[formItemsMap.URL], mergedConfig)
+        } else {
+            if (mergedConfig.command) {
+                await processFormItem('COMMAND', items[formItemsMap.COMMAND], mergedConfig)
+            }
+            if (mergedConfig.args) {
+                await processFormItem('ARGS', items[formItemsMap.ARGS], mergedConfig)
             }
         }
+
+        await processFormItem('TIMEOUT', items[items.length - 1], mergedConfig)
     } catch (e) {
-        console.log('Error configuring the MCP Server')
+        throw new Error(`Error configuring the MCP Server`)
     }
 }
 
-export async function saveMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
-    await clickButton(
-        webviewView,
-        '[data-testid="chat-item-action-button"][action-id="save-mcp"]',
-        'span.mynah-button-label',
-        'save button'
-    )
+export async function saveMCPServerConfiguration(webviewView: WebviewView, sleepTime: number = 25000): Promise<void> {
+    try {
+        await clickButton(
+            webviewView,
+            '[data-testid="chat-item-buttons-wrapper"]',
+            '[action-id="save-mcp"] .mynah-button-label',
+            'save button'
+        )
+        await sleep(sleepTime)
+    } catch (e) {
+        throw new Error(`Failed to save MCP server configuration`)
+    }
 }
 
 export async function cancelMCPServerConfiguration(webviewView: WebviewView): Promise<void> {
@@ -225,7 +284,7 @@ export async function cancelMCPServerConfiguration(webviewView: WebviewView): Pr
         )
         await saveButton.click()
     } catch (e) {
-        console.error('Error saving the MCP server configuration:', e)
+        throw new Error(`Failed to cancel MCP server configuration`)
     }
 }
 
@@ -236,21 +295,27 @@ export async function cancelMCPServerConfiguration(webviewView: WebviewView): Pr
  */
 export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<void> {
     try {
-        // First dismiss any overlay that might be present
-        await dismissOverlayIfPresent(webviewView)
-
         await clickButton(
             webviewView,
             '.mynah-sheet-header-actions-container',
             'i.mynah-ui-icon-refresh',
             'MCP refresh button'
         )
-
-        // Dismiss any overlay that might appear after clicking
-        await dismissOverlayIfPresent(webviewView)
+        await sleep(10000)
     } catch (e) {
-        console.error('Error clicking the MCP refresh button:', e)
-        throw e
+        throw new Error(`Error clicking the MCP refresh button`)
+    }
+}
+
+/**
+ * Clicks the edit button in the MCP server configuration panel
+ * @param webviewView The WebviewView instance
+ */
+export async function clickMCPEditButton(webviewView: WebviewView): Promise<void> {
+    try {
+        await clickButton(webviewView, '.mynah-sheet-header-actions-container', '.mynah-ui-icon-pencil', 'Edit button')
+    } catch (e) {
+        throw new Error(`Failed to click MCP edit button`)
     }
 }
 
@@ -261,10 +326,152 @@ export async function clickMCPRefreshButton(webviewView: WebviewView): Promise<v
  */
 export async function clickMCPCloseButton(webviewView: WebviewView): Promise<void> {
     try {
-        await dismissOverlayIfPresent(webviewView)
         await clickButton(webviewView, '.mynah-sheet-header', 'i.mynah-ui-icon-cancel', 'MCP close button')
     } catch (e) {
-        console.error('Error closing the MCP overlay:', e)
-        throw e
+        throw new Error(`Failed to click MCP close button`)
+    }
+}
+
+/**
+ * Finds MCP items in the list
+ * @param webviewView The WebviewView instance
+ * @returns Promise<WebElement[]> Array of MCP list items
+ * @throws Error if no MCP items are found in the list
+ */
+export async function findMCPListItems(webviewView: WebviewView): Promise<WebElement[]> {
+    try {
+        await sleep(2000)
+        const list = await webviewView.findWebElements(By.css('.mynah-detailed-list-item.mynah-ui-clickable-item'))
+        if (list.length === 0) {
+            throw new Error('No mcp in the list')
+        }
+        return list
+    } catch (e) {
+        throw new Error(`Failed to find MCP list items`)
+    }
+}
+
+/**
+ * Checks MCP server status by looking for success icon
+ * @param webviewView The WebviewView instance
+ * @throws Error if status icon not found
+ */
+export async function checkMCPServerStatus(webviewView: WebviewView): Promise<void> {
+    try {
+        await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-ok-circled.status-success'))
+    } catch {
+        throw new Error('Failed: Status icon not found')
+    }
+}
+
+/**
+ * Checks MCP server error status for a specific server name
+ * @param webviewView The WebviewView instance
+ * @param serverName The name of the server to check
+ * @throws Error if server not found or error status not detected
+ */
+export async function checkMCPServerErrorStatus(webviewView: WebviewView, serverName: string): Promise<void> {
+    try {
+        const list = await findMCPListItems(webviewView)
+        for (const item of list) {
+            const itemText = await item.getText()
+            if (itemText?.trim().startsWith(serverName)) {
+                await waitForElement(webviewView, By.css('.mynah-ui-icon.mynah-ui-icon-cancel-circle.status-error'))
+                return
+            }
+        }
+        throw new Error(`Server '${serverName}' not found in MCP list`)
+    } catch (e) {
+        throw new Error(`Failed to check MCP server error status`)
+    }
+}
+
+/**
+ * Clicks the fix configuration button for MCP server
+ * @param webviewView The WebviewView instance
+ * @throws Error if fix configuration button cannot be clicked
+ */
+export async function clickMCPFixConfigurationButton(webviewView: WebviewView): Promise<void> {
+    try {
+        await clickButton(
+            webviewView,
+            '.mynah-detailed-list-item-actions-item',
+            '.mynah-ui-icon-pencil',
+            'Fix Configuration button'
+        )
+    } catch (e) {
+        throw new Error(`Failed to click fix configuration button`)
+    }
+}
+
+/**
+ * Validates that all tools have 'ask' permission (except claude-sonnet-4)
+ * @param webviewView The WebviewView instance
+ * @throws Error if any tool has permission other than 'ask' (excluding claude-sonnet-4)
+ */
+export async function validateToolPermissions(webviewView: WebviewView): Promise<void> {
+    try {
+        const selectElements = await webviewView.findWebElements(By.css('select.mynah-form-input'))
+        for (const select of selectElements) {
+            const selectedOption = await select.findElement(By.css('option:checked'))
+            const selectedValue = await selectedOption.getAttribute('value')
+            if (selectedValue !== 'claude-sonnet-4' && selectedValue !== 'ask') {
+                throw new Error(`Tool has permission '${selectedValue}' instead of 'ask'`)
+            }
+        }
+    } catch (e) {
+        throw new Error(`Failed to validate tool permissions`)
+    }
+}
+
+/**
+ * Validates MCP dropdown options
+ * @param webviewView The WebviewView instance
+ * @param expectedValues Array of expected option values
+ * @throws Error if any option is not in expectedValues
+ */
+export async function validateMCPDropdownOptions(webviewView: WebviewView, expectedValues: string[]): Promise<void> {
+    try {
+        const select = await webviewView.findWebElement(By.css('.mynah-form-input-wrapper select'))
+        const options = await select.findElements(
+            By.css('option[data-testid="chat-item-form-item-select"]:not(.description-option):not([disabled])')
+        )
+        for (const option of options) {
+            const text = await option.getText()
+            if (!expectedValues.includes(text)) {
+                throw new Error(`Option "${text}" should be one of: ${expectedValues.join(', ')}`)
+            }
+        }
+    } catch (e) {
+        throw new Error(`Failed to validate MCP dropdown options`)
+    }
+}
+
+export async function configureRemoteMCPServer(webviewView: WebviewView, config: MCPServerConfig): Promise<void> {
+    await configureMCPServer(webviewView, config)
+}
+
+export async function updateMCPTimeout(webviewView: WebviewView, timeout: number): Promise<void> {
+    try {
+        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
+        const formContainer = await getFormContainer(sheetWrapper)
+        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+        await inputTimeout(items[items.length - 1], timeout)
+    } catch (e) {
+        throw new Error(`Failed to update MCP timeout`)
+    }
+}
+
+export async function updateMCPCommand(webviewView: WebviewView, command: string): Promise<void> {
+    try {
+        const sheetWrapper = await waitForElement(webviewView, By.id('mynah-sheet-wrapper'))
+        const formContainer = await getFormContainer(sheetWrapper)
+        const items = await formContainer.findElements(By.css('.mynah-form-input-wrapper'))
+        const commandContainer = items[formItemsMap.COMMAND]
+        const input = await commandContainer.findElement(By.css('.mynah-form-input'))
+        await input.clear()
+        await input.sendKeys(command)
+    } catch (e) {
+        throw new Error(`Failed to update MCP command`)
     }
 }
