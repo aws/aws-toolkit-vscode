@@ -812,6 +812,11 @@ interface ServiceTypeMap {
  * an error, even for bad types, unless the code is ran from automated tests. The supplied
  * default will be used in case any errors occur in non-testing environment.
  *
+ * Developer settings are only read from user-level settings. Workspace and workspace-folder values
+ * (e.g. a cloned repository's `.vscode/settings.json`) are ignored, because they could otherwise
+ * redirect authenticated requests to an arbitrary host, or change the paths and code the extension
+ * loads.
+ *
  * ### Usage:
  * ```
  * // Use the `instance` field to retrieve the object
@@ -855,11 +860,6 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         devSetting: T,
         defaultConfig: ServiceTypeMap[T]
     ): Readonly<ServiceTypeMap[T]> {
-        if (this.isSetByWorkspace(devSetting)) {
-            getLogger().warn(`Ignoring dev setting 'aws.dev.${devSetting}': workspace-scoped overrides are not allowed`)
-            return defaultConfig
-        }
-
         const devConfig = this.get<ServiceClients>(devSetting, {})
 
         if (Object.keys(devConfig).length === 0) {
@@ -883,7 +883,23 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return info?.workspaceValue !== undefined || info?.workspaceFolderValue !== undefined
     }
 
+    private getUserScopedValue(key: string): unknown {
+        return vscode.workspace.getConfiguration('aws.dev').inspect(key)?.globalValue
+    }
+
+    /**
+     * Checks if `key` is set, ignoring workspace-scoped values: a setting that is only set by the
+     * workspace is treated as unset.
+     */
+    public override _isSet(key: AwsDevSetting) {
+        return this.isSetByWorkspace(key) ? this.getUserScopedValue(key) !== undefined : super._isSet(key)
+    }
+
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
+        if (this.isSetByWorkspace(key)) {
+            return this.getUserValue(key, defaultValue)
+        }
+
         if (!this._isSet(key)) {
             this.unset(key)
 
@@ -894,6 +910,32 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         this.trap(key, result)
 
         return result
+    }
+
+    /**
+     * Reads only the user-level value of `key`. VS Code merges object-valued settings across scopes,
+     * so the effective value cannot be used once any workspace-scoped value is present.
+     */
+    private getUserValue<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
+        this.logWorkspaceOverrideIgnoredOnce(key)
+
+        const userValue = this.getUserScopedValue(key)
+        if (userValue === undefined) {
+            this.unset(key)
+
+            return defaultValue
+        }
+
+        try {
+            const result = cast<ResolvedDevSettings[K]>(userValue, devSettings[key])
+            this.trap(key, result)
+
+            return result
+        } catch (e) {
+            this._logErr('failed to read "%s": %s', key, (e as Error).message)
+
+            return defaultValue
+        }
     }
 
     private trap<K extends AwsDevSetting>(key: K, value: ResolvedDevSettings[K]) {
@@ -913,6 +955,18 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     private logConfigOnce = onceChanged((serviceName, val) => {
         getLogger().info(`using ${serviceName} service configuration: ${val}`)
     })
+
+    private readonly loggedWorkspaceOverrides = new Set<AwsDevSetting>()
+
+    private logWorkspaceOverrideIgnoredOnce(key: AwsDevSetting) {
+        if (this.loggedWorkspaceOverrides.has(key)) {
+            return
+        }
+        this.loggedWorkspaceOverrides.add(key)
+        getLogger().warn(
+            `Ignoring workspace-scoped value of dev setting 'aws.dev.${key}': it is only read from user-level settings`
+        )
+    }
 
     static #instance: DevSettings
 

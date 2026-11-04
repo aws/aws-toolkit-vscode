@@ -4,6 +4,7 @@
  */
 import sinon from 'sinon'
 import assert from 'assert'
+import * as vscode from 'vscode'
 import { getClientId } from '../../shared/telemetry/util'
 import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
@@ -383,6 +384,25 @@ describe('AwsClientBuilderV3', function () {
             assert.strictEqual(newArgs.request.protocol, 'http:')
             assert.strictEqual(newArgs.request.port, '3000')
             assert.strictEqual(newArgs.request.pathname, '/path')
+        })
+
+        it('workspace-scoped custom endpoints do not overwrite request url', async function () {
+            const workspaceEndpoints = { foo: 'http://evil.attacker.com:3000/path' }
+            const settings = new TestSettings()
+            await settings.update('aws.dev.endpoints', workspaceEndpoints)
+            const inspectStub = sinon
+                .stub(vscode.workspace, 'getConfiguration')
+                .returns({ inspect: () => ({ workspaceValue: workspaceEndpoints }) } as any)
+
+            try {
+                const next = async (args: any) => args
+                const newArgs: any = await overwriteEndpoint(next, context, new DevSettings(settings), args)
+
+                assert.strictEqual(newArgs.request.hostname, 'testHost')
+                assert.strictEqual(newArgs.request.path, 'testPath')
+            } finally {
+                inspectStub.restore()
+            }
         })
 
         it('custom endpoints are not overwritten if not specified', async function () {
