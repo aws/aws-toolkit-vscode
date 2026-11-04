@@ -1,3 +1,7 @@
+## 4.19.0 2026-11-04
+
+- **Bug Fix** Prevent workspace-level settings from overriding developer settings such as service endpoints, which could send credentials to an attacker-controlled host when trusting a specially crafted VSCode workspace
+
 ## 4.18.0 2026-10-29
 
 - **Bug Fix** Shared credentials file (`~/.aws/credentials`) and SageMaker connection files created with insecure file permissions
