@@ -17,6 +17,13 @@ describe('getUserScopedEndpoint', function () {
         inspectStub = sandbox.stub()
         sandbox.stub(workspace, 'getConfiguration').returns({
             inspect: inspectStub,
+            // VS Code merges object-valued settings across scopes
+            get: (key: string, defaultValue?: unknown) => {
+                const info = inspectStub(key)
+                return info
+                    ? { ...info.globalValue, ...info.workspaceValue, ...info.workspaceFolderValue }
+                    : defaultValue
+            },
         } as any)
     })
 
