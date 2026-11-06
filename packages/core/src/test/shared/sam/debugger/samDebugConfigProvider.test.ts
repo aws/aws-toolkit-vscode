@@ -2884,6 +2884,38 @@ describe('SamDebugConfigurationProvider', async function () {
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
+
+        function makeJavaImageDebugInput(runtime: Runtime) {
+            return {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: `test-${runtime}-image`,
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: 'template.yaml',
+                    logicalId: 'HelloWorldFunction',
+                },
+                lambda: { runtime },
+            }
+        }
+
+        it('AL2023 java runtimes produce _JAVA_OPTIONS for image debugging', async function () {
+            const fixture = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-image')
+            )
+            const folder = testutil.getWorkspaceFolder(fixture)
+            for (const runtime of ['java11.al2023', 'java17.al2023'] as unknown as Runtime[]) {
+                const actual = (await debugConfigProvider.makeConfig(
+                    folder,
+                    makeJavaImageDebugInput(runtime)
+                ))! as SamLaunchRequestArgs
+                assert.strictEqual(actual.runtimeFamily, lambdaModel.RuntimeFamily.Java)
+                assert.ok(
+                    actual.containerEnvVars?._JAVA_OPTIONS?.includes('agentlib:jdwp'),
+                    `${runtime} missing _JAVA_OPTIONS`
+                )
+            }
+        })
     })
 })
 

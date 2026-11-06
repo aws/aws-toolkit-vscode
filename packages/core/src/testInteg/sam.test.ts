@@ -131,8 +131,11 @@ const scenarios: TestScenario[] = [
     generateScenario('python', '3.13', { vscodeMinimum: '1.78.0' }),
     generateScenario('dotnet', '6'),
     generateScenario('java', '8.al2', { sourceTag: 'Maven', dependencyManager: 'maven' }),
+    generateScenario('java', '8.al2023', { sourceTag: 'Maven', dependencyManager: 'maven' }),
     generateScenario('java', '11', { sourceTag: 'Gradle' }),
+    generateScenario('java', '11.al2023', { sourceTag: 'Gradle' }),
     generateScenario('java', '17', { sourceTag: 'Gradle' }),
+    generateScenario('java', '17.al2023', { sourceTag: 'Gradle' }),
     // images
     generateScenario('nodejs', '20.x', { baseImage: 'amazon/nodejs20.x-base' }, true),
     generateScenario('nodejs', '22.x', { baseImage: 'amazon/nodejs22.x-base', vscodeMinimum: '1.78.0' }, true),
@@ -147,8 +150,16 @@ const scenarios: TestScenario[] = [
         { baseImage: 'amazon/java8.al2-base', sourceTag: 'Maven', dependencyManager: 'maven' },
         true
     ),
+    generateScenario(
+        'java',
+        '8.al2023',
+        { baseImage: 'amazon/java8.al2023-base', sourceTag: 'Maven', dependencyManager: 'maven' },
+        true
+    ),
     generateScenario('java', '11', { baseImage: 'amazon/java11-base', sourceTag: 'Gradle' }, true),
+    generateScenario('java', '11.al2023', { baseImage: 'amazon/java11.al2023-base', sourceTag: 'Gradle' }, true),
     generateScenario('java', '17', { baseImage: 'amazon/java17-base', sourceTag: 'Gradle' }, true),
+    generateScenario('java', '17.al2023', { baseImage: 'amazon/java17.al2023-base', sourceTag: 'Gradle' }, true),
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
